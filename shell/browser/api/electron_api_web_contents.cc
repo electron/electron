@@ -469,9 +469,16 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        base::ScopedClosureRunner capture_handle,
                        const SkBitmap& bitmap) {
+  auto ui_task_runner = content::GetUIThreadTaskRunner({});
+  if (!ui_task_runner->RunsTasksInCurrentSequence()) {
+    ui_task_runner->PostTask(
+        FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
+                                  std::move(capture_handle), bitmap));
+    return;
+  }
+
   // Hack to enable transparency in captured image
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
-
   capture_handle.RunAndReset();
 }
 
@@ -3462,22 +3469,16 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   }
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
-  if (!view) {
+  if (!view || view->GetViewBounds().size().IsEmpty()) {
     promise.Resolve(gfx::Image());
     return handle;
   }
 
-#if !BUILDFLAG(IS_MAC)
-  // If the view's renderer is suspended this may fail on Windows/Linux -
-  // bail if so. See CopyFromSurface in
-  // content/public/browser/render_widget_host_view.h.
-  auto* rfh = web_contents()->GetPrimaryMainFrame();
-  if (rfh &&
-      rfh->GetVisibilityState() == blink::mojom::PageVisibilityState::kHidden) {
-    promise.Resolve(gfx::Image());
+  if (!view->IsSurfaceAvailableForCopy()) {
+    promise.RejectWithErrorMessage(
+        "Current display surface not available for capture");
     return handle;
   }
-#endif  // BUILDFLAG(IS_MAC)
 
   auto capture_handle = web_contents()->IncrementCapturerCount(
       rect.size(), stay_hidden, stay_awake);
