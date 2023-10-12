@@ -62,11 +62,31 @@ class MediaSession : public gin::Wrappable<MediaSession>,
   void MediaSessionPositionChanged(
       const absl::optional<media_session::MediaPosition>& position) override;
 
+  media_session::mojom::MediaSessionInfoPtr Info() { return std::move(info_); }
+  absl::optional<media_session::MediaMetadata> Metadata() { return metadata_; }
+  base::flat_set<media_session::mojom::MediaSessionAction> Actions() {
+    return actions_;
+  }
+  absl::optional<media_session::MediaPosition> Position() { return position_; }
+  base::flat_map<media_session::mojom::MediaSessionImageType,
+                 std::vector<media_session::MediaImage>>
+  Images() {
+    return images_;
+  }
+
   void Play();
   void Pause();
   void Stop();
 
   raw_ptr<content::MediaSession> const media_session_;
+
+  media_session::mojom::MediaSessionInfoPtr info_;
+  absl::optional<media_session::MediaMetadata> metadata_;
+  base::flat_set<media_session::mojom::MediaSessionAction> actions_;
+  absl::optional<media_session::MediaPosition> position_;
+  base::flat_map<media_session::mojom::MediaSessionImageType,
+                 std::vector<media_session::MediaImage>>
+      images_;
 
   // Binding through which notifications are received from the MediaSession.
   mojo::Receiver<media_session::mojom::MediaSessionObserver> observer_receiver_;

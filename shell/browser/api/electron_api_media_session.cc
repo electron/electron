@@ -7,10 +7,15 @@
 #include <string>
 #include <vector>
 
+#include "base/time/time.h"
 #include "content/public/browser/media_session.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/base_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -94,6 +99,24 @@ struct Converter<media_session::mojom::MediaSessionAction> {
 };
 
 template <>
+struct Converter<media_session::mojom::MediaPlaybackState> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const media_session::mojom::MediaPlaybackState& val) {
+    std::string playback_state;
+    switch (val) {
+      case media_session::mojom::MediaPlaybackState::kPlaying:
+        playback_state = "playing";
+        break;
+      case media_session::mojom::MediaPlaybackState::kPaused:
+        playback_state = "paused";
+        break;
+    }
+    return StringToV8(isolate, playback_state);
+  }
+};
+
+template <>
 struct Converter<media_session::mojom::MediaSessionInfoPtr> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
@@ -118,17 +141,74 @@ struct Converter<media_session::mojom::MediaSessionInfoPtr> {
     // dict.Set("ducked", val->state ==
     // media_session::mojom::MediaSessionInfo::SessionState::kDucking);
 
-    std::string playback_state;
-    switch (val->playback_state) {
-      case media_session::mojom::MediaPlaybackState::kPlaying:
-        playback_state = "playing";
+    dict.Set("playbackState", val->playback_state);
+    dict.Set("muted", val->muted);
+
+    return gin::ConvertToV8(isolate, dict);
+  }
+};
+
+template <>
+struct Converter<base::TimeDelta> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::TimeDelta& val) {
+    return v8::Integer::New(isolate, val.InSecondsF());
+  }
+};
+
+template <>
+struct Converter<media_session::MediaPosition> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const media_session::MediaPosition& val) {
+    auto dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("duration", val.duration());
+    dict.Set("playbackRate", val.playback_rate());
+    dict.Set("position", val.GetPosition());
+    return gin::ConvertToV8(isolate, dict);
+  }
+};
+
+template <>
+struct Converter<media_session::MediaMetadata> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const media_session::MediaMetadata& val) {
+    auto dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("title", val.title);
+    dict.Set("artist", val.artist);
+    dict.Set("album", val.album);
+    return gin::ConvertToV8(isolate, dict);
+  }
+};
+
+template <>
+struct Converter<media_session::mojom::MediaSessionImageType> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const media_session::mojom::MediaSessionImageType& val) {
+    std::string image_type;
+    switch (val) {
+      case media_session::mojom::MediaSessionImageType::kArtwork:
+        image_type = "artwork";
         break;
-      case media_session::mojom::MediaPlaybackState::kPaused:
-        playback_state = "paused";
+      case media_session::mojom::MediaSessionImageType::kSourceIcon:
+        image_type = "source-icon";
+        break;
+      default:
+        image_type = "unknown";
         break;
     }
-    dict.Set("playbackState", playback_state);
+    return StringToV8(isolate, image_type);
+  }
+};
 
+template <>
+struct Converter<media_session::MediaImage> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const media_session::MediaImage& val) {
+    auto dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("src", val.src);
+    dict.Set("type", val.type);
+    dict.Set("sizes", val.sizes);
     return gin::ConvertToV8(isolate, dict);
   }
 };
@@ -156,32 +236,38 @@ MediaSession::~MediaSession() = default;
 
 void MediaSession::MediaSessionInfoChanged(
     media_session::mojom::MediaSessionInfoPtr info) {
-  Emit("info-changed", info);
+  info_ = std::move(info);
+  Emit("info-changed");
 }
 
 void MediaSession::MediaSessionMetadataChanged(
-    const absl::optional<media_session::MediaMetadata>& metadata_mojo) {
-  // TODO(samuelmaddock): emit event
+    const absl::optional<media_session::MediaMetadata>& metadata) {
+  metadata_ = metadata;
+  Emit("metadata-changed");
 }
 
 void MediaSession::MediaSessionActionsChanged(
     const std::vector<media_session::mojom::MediaSessionAction>& actions) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
-  details.Set("actions", actions);
-  Emit("actions-changed", details);
+  // Copy to cached list.
+  actions_.clear();
+  for (const auto& action : actions) {
+    actions_.insert(action);
+  }
+
+  Emit("actions-changed");
 }
 
 void MediaSession::MediaSessionImagesChanged(
     const base::flat_map<media_session::mojom::MediaSessionImageType,
                          std::vector<media_session::MediaImage>>& images) {
-  // TODO(samuelmaddock): emit event
+  images_ = images;
+  Emit("images-changed");
 }
 
 void MediaSession::MediaSessionPositionChanged(
     const absl::optional<media_session::MediaPosition>& position) {
-  // TODO(samuelmaddock): emit event
+  position_ = position;
+  Emit("position-changed");
 }
 
 void MediaSession::Play() {
@@ -209,7 +295,12 @@ gin::ObjectTemplateBuilder MediaSession::GetObjectTemplateBuilder(
              isolate)
       .SetMethod("play", &MediaSession::Play)
       .SetMethod("pause", &MediaSession::Pause)
-      .SetMethod("stop", &MediaSession::Stop);
+      .SetMethod("stop", &MediaSession::Stop)
+      .SetProperty("info", &MediaSession::Info)
+      .SetProperty("metadata", &MediaSession::Metadata)
+      .SetProperty("position", &MediaSession::Position)
+      .SetProperty("actions", &MediaSession::Actions)
+      .SetProperty("images", &MediaSession::Images);
 }
 
 const char* MediaSession::GetTypeName() {

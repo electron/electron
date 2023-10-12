@@ -19,12 +19,13 @@ const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow()
 win.loadURL('https://example.com/videos/123')
+const mediaSession = win.webContents.mediaSession
 
-win.webContents.mediaSession.on(
+mediaSession.on(
   'actions-changed',
-  (event, details) => {
+  () => {
     // Determine media controls visibility based on available actions.
-    if (details.actions.includes('play')) {
+    if (mediaSession.actions.includes('play')) {
       // Show play button UI...
     } else {
       // Show hide button UI...
@@ -32,27 +33,16 @@ win.webContents.mediaSession.on(
   }
 )
 
-let playbackState
-
-function updatePlaybackUI () {
-  // Update UI according to `playbackState`...
-}
-
-win.webContents.mediaSession.on(
-  'info-changed',
-  (event, details) => {
-    // Save last known playback state.
-    playbackState = details.playbackState
-
-    updatePlaybackUI()
-  }
-)
+mediaSession.on('info-changed', () => {
+  const playbackState = mediaSession.info.playbackState
+  // Update UI with playback state...
+})
 
 function togglePlayback () {
-  if (playbackState === 'playing') {
-    win.webContents.mediaSession.pause()
+  if (mediaSession.info.playbackState === 'playing') {
+    mediaSession.pause()
   } else {
-    win.webContents.mediaSession.play()
+    mediaSession.play()
   }
 }
 ```
@@ -78,8 +68,33 @@ Returns:
 * `event` Event
 * `details` Object
   * `playbackState` string - Can be `playing` or `paused`.
+  * `muted` boolean - Whether the media player is muted.
 
 Emitted when the info associated with the session changed.
+
+#### Event: 'metadata-changed'
+
+Returns:
+
+* `event` Event
+
+Emitted when the metadata associated with the session changed.
+
+#### Event: 'images-changed'
+
+Returns:
+
+* `event` Event
+
+Emitted when the images associated with the session changed.
+
+#### Event: 'position-changed'
+
+Returns:
+
+* `event` Event
+
+Emitted when the position associated with the session changed.
 
 ### Instance Methods
 
@@ -94,3 +109,29 @@ Pauses the media session.
 #### `mediaSession.stop()`
 
 Stops the media session.
+
+### Instance Properties
+
+#### `mediaSession.actions`
+
+A `string[]` array of media session actions, can be `play`, `pause`, `previous-track`, `next-track`, `seek-backward`, `seek-forward`, `skip-ad`, `stop`, `seek-to`, `scrub-to`, `enter-picture-in-picture`, `exit-picture-in-picture`, `switch-audio-device`, `toggle-microphone`, `toggle-camera`, `hang-up`, `raise`, `set-mute`, `previous-slide`, `next-slide` or `enter-auto-picture-in-picture`.
+
+#### `mediaSession.info`
+
+An `any` respresenting the media session's info.
+<!-- TODO: document structure -->
+
+#### `mediaSession.metadata`
+
+An `any` respresenting the media session's metadata.
+<!-- TODO: document structure -->
+
+#### `mediaSession.position`
+
+An `any` respresenting the media session's position.
+<!-- TODO: document structure -->
+
+#### `mediaSession.images`
+
+An `any` respresenting the media session's images.
+<!-- TODO: document structure -->

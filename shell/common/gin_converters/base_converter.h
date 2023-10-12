@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
 
+#include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/process/kill.h"
 #include "gin/converter.h"
 
@@ -39,6 +41,37 @@ struct Converter<base::TerminationStatus> {
     }
     NOTREACHED();
     return gin::ConvertToV8(isolate, "");
+  }
+};
+
+template <typename T>
+struct Converter<base::flat_set<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::flat_set<T>& val) {
+    v8::Local<v8::Array> result(
+        v8::Array::New(isolate, static_cast<int>(val.size())));
+    auto context = isolate->GetCurrentContext();
+    typename base::flat_set<T>::const_iterator it;
+    int i;
+    for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)
+      result->Set(context, i, Converter<T>::ToV8(isolate, *it)).Check();
+    return result;
+  }
+};
+
+template <typename K, typename V>
+struct Converter<base::flat_map<K, V>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::flat_map<K, V>& dict) {
+    v8::Local<v8::Object> obj = v8::Object::New(isolate);
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    for (const auto& it : dict) {
+      if (obj->Set(context, ConvertToV8(isolate, it.first),
+                   ConvertToV8(isolate, it.second))
+              .IsNothing())
+        break;
+    }
+    return obj;
   }
 };
 
