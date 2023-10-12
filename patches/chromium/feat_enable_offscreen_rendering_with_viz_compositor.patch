@@ -556,7 +556,7 @@ index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8
  
  }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 2aaa081e160492736033b42d17e09e59ac3bdbe1..334e32d6f9fe1f08f46f2a168c259c70f1e0fc14 100644
+index e7f972abb4ad6309faac81da759800e35582fe8d..d2edcf2c23d5faab2369ef0eace2df5b53aaf964 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -397,8 +397,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -589,13 +589,13 @@ index 62f98959d80cfa961401dda55ea6917bba825ec5..899de1c0bb971b510d377ad1704191d1
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index e6447c185ebcfe387991f27d3fb25dc3c2f32e5b..d291f0db6e9b6a60ee9ca38febaf1ad0397ee113 100644
+index ed0ec3b6a864cfd4db9988c8917d838f8a93d9eb..79a03b30856dfc62c438573a70a6775c9ccd92e8 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
+@@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {
+   bool send_swap_size_notifications = false;
+   // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
-   // Whether to use variable refresh rates when generating begin frames.
-   bool enable_variable_refresh_rate = false;
 +  bool offscreen = false;
  
    [EnableIf=is_android]

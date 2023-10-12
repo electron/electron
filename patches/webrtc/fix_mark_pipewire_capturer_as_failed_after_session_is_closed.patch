@@ -13,10 +13,10 @@ returning Result::ERROR_PERMANENT on the next invocation of
 CaptureFrame().
 
 diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-index 4ef00e68ab58333648b8acaf4256f4b57a42734d..5a67c18c1d1f62aa5e3162d9778ca665bac4a1bb 100644
+index 40764de7aeb463a6e2b8d90f273fef40b1dd3691..a5df76b0cdecd1e2e68f2f25c80c6b17de8bc808 100644
 --- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 +++ b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-@@ -109,6 +109,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
+@@ -111,6 +111,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
  void BaseCapturerPipeWire::OnScreenCastSessionClosed() {
    if (!capturer_failed_) {
      options_.screencast_stream()->StopScreenCastStream();

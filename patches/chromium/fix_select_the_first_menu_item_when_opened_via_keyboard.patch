@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index b02f25526d9cb6983a68a35df8c0700624eb7eb5..04f3c2b9ae8d509a90eb83d074d7a887c4faef2b 100644
+index de9b95fefe6c9c242d627e6662ce7beb31fea1d4..5e8ecca7f11cc27c96e52b3e5267696a41be3462 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -565,6 +565,7 @@ void MenuController::Run(Widget* parent,
@@ -32,7 +32,7 @@ index b02f25526d9cb6983a68a35df8c0700624eb7eb5..04f3c2b9ae8d509a90eb83d074d7a887
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2253,19 +2262,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2256,19 +2265,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -157,7 +157,7 @@ index 2325534ec92430ac4effc95d370925984ce7bd4b..8b6cc1780e53f4edf579e8a62de83133
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index c3c80f6becee734319e374968bc00a08273f07b8..5e1bfcc6e1114c6d9dee56428b41797f447586b6 100644
+index a7a82c6c40216eb5bfae8c3aff9013c11f25046e..268a12da51a0624d87e3a7ce6210a2e5212287e8 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 @@ -189,6 +189,7 @@

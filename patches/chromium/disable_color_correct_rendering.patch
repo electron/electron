@@ -213,7 +213,7 @@ index af19d04e043366a2db07bf6eddfd1fc260590a37..b981128498991ccd67a78bc255da5308
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 7a4c07887d822b5b3fdf700deeff04c377939647..c2f5c9a92a71b4d64beb8e625385cb12dfbcdadd 100644
+index 1bf6fffae161414d650be3210c427dcc47ac1cf8..64a6e263c693b17b26a538219ab681000b98cb9a 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
@@ -226,7 +226,7 @@ index 7a4c07887d822b5b3fdf700deeff04c377939647..c2f5c9a92a71b4d64beb8e625385cb12
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index fa6a82887fc5e069b261aeda594d6027dbcc35a4..5d4c2551088d4d4db5d490b596344f43ecfc59cb 100644
+index 98697d908f507e30ffbe0e5f5996afb7856f7c12..039024924c7fc10d8311746b88369dec1732a9d0 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -13,6 +13,7 @@
