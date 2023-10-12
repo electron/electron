@@ -1210,7 +1210,7 @@ commands:
           build-type: << parameters.build-type >>
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build:
-          additional-targets: shell_browser_ui_unittests electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+          additional-targets: electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
 
       - *step-show-goma-stats
 
