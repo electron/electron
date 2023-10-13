@@ -418,6 +418,11 @@ win2.once('ready-to-show', () => {
 app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) });
 app.exit(0);
 
+app.configureHostResolver({ secureDnsMode: 'off' });
+
+// @ts-expect-error Invalid type value
+app.configureHostResolver({ secureDnsMode: 'foo' });
+
 // auto-updater
 // https://github.com/electron/electron/blob/main/docs/api/auto-updater.md
 
@@ -1244,6 +1249,11 @@ const win4 = new BrowserWindow({
 win4.webContents.on('paint', (event, dirty, _image) => {
   console.log(dirty, _image.getBitmap());
 });
+
+win4.webContents.insertCSS('body {}', { cssOrigin: 'user' });
+
+// @ts-expect-error Invalid type value
+win4.webContents.insertCSS('body {}', { cssOrigin: 'foo' });
 
 win4.loadURL('http://github.com');
 
