@@ -1134,11 +1134,11 @@ indicates success while any other value indicates failure according to Chromium 
     resolver will attempt to use the system's DNS settings to do DNS lookups
     itself. Enabled by default on macOS, disabled by default on Windows and
     Linux.
-  * `secureDnsMode` string (optional) - Can be "off", "automatic" or "secure".
-    Configures the DNS-over-HTTP mode. When "off", no DoH lookups will be
-    performed. When "automatic", DoH lookups will be performed first if DoH is
+  * `secureDnsMode` string (optional) - Can be 'off', 'automatic' or 'secure'.
+    Configures the DNS-over-HTTP mode. When 'off', no DoH lookups will be
+    performed. When 'automatic', DoH lookups will be performed first if DoH is
     available, and insecure DNS lookups will be performed as a fallback. When
-    "secure", only DoH lookups will be performed. Defaults to "automatic".
+    'secure', only DoH lookups will be performed. Defaults to 'automatic'.
   * `secureDnsServers` string[]&#32;(optional) - A list of DNS-over-HTTP
     server templates. See [RFC8484 § 3][] for details on the template format.
     Most servers support the POST method; the template for such servers is
