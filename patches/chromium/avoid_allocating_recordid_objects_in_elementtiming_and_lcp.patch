@@ -1,0 +1,655 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoav Weiss <yoavweiss@chromium.org>
+Date: Thu, 31 Aug 2023 10:11:57 +0000
+Subject: Avoid allocating RecordId objects in ElementTiming and LCP
+
+RecordId objects in current code keep around references to LayoutObject
+and ImageResourceContent, both GCed objects.
+Turn out that most of these references are not needed and are only used
+as hashmap keys that would be better served with an actual hash. The
+ones that are needed don't need extensive lifetimes and can be stack
+allocated.
+
+Bug=1472365,1472366
+
+Change-Id: I3fd77bed9899932d5bfadc2a8e6403a8e434235f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4821128
+Commit-Queue: Yoav Weiss <yoavweiss@chromium.org>
+Reviewed-by: Omer Katz <omerkatz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1190644}
+
+diff --git a/third_party/blink/renderer/core/paint/DEPS b/third_party/blink/renderer/core/paint/DEPS
+index 7b2b644ed89b254e97c59116d0a41f6c137f3b17..38d0a0b6b9c1c3598d2ae5a782d405bf90bf3733 100644
+--- a/third_party/blink/renderer/core/paint/DEPS
++++ b/third_party/blink/renderer/core/paint/DEPS
+@@ -5,6 +5,8 @@ include_rules = [
+     # For DCHECK.
+     "+base/logging.h",
+     "+components/shared_highlighting/core/common",
++    # Hash function access
++    "+base/hash/hash.h",
+ ]
+ 
+ specific_include_rules = {
+diff --git a/third_party/blink/renderer/core/paint/build.gni b/third_party/blink/renderer/core/paint/build.gni
+index 87df076817994e16e4a67331a9b3ce9dc1406c82..7dacd09f9a63eead72ad75d73039e76d1f7809c6 100644
+--- a/third_party/blink/renderer/core/paint/build.gni
++++ b/third_party/blink/renderer/core/paint/build.gni
+@@ -196,6 +196,8 @@ blink_core_sources_paint = [
+   "timing/image_paint_timing_detector.h",
+   "timing/largest_contentful_paint_calculator.cc",
+   "timing/largest_contentful_paint_calculator.h",
++  "timing/media_record_id.cc",
++  "timing/media_record_id.h",
+   "timing/paint_timing.cc",
+   "timing/paint_timing_detector.cc",
+   "timing/paint_timing_detector.h",
+diff --git a/third_party/blink/renderer/core/paint/timing/image_element_timing.cc b/third_party/blink/renderer/core/paint/timing/image_element_timing.cc
+index a8501cfcc91e57b3348e3db8ff11256c4d7176b2..21f7a0ac38732e5381da6b82544044b8e6da3a11 100644
+--- a/third_party/blink/renderer/core/paint/timing/image_element_timing.cc
++++ b/third_party/blink/renderer/core/paint/timing/image_element_timing.cc
+@@ -68,7 +68,7 @@ void ImageElementTiming::NotifyImageFinished(
+     return;
+ 
+   const auto& insertion_result = images_notified_.insert(
+-      std::make_pair(&layout_object, cached_image), ImageInfo());
++      MediaRecordId::GenerateHash(&layout_object, cached_image), ImageInfo());
+   if (insertion_result.is_new_entry)
+     insertion_result.stored_value->value.load_time_ = base::TimeTicks::Now();
+ }
+@@ -97,8 +97,8 @@ void ImageElementTiming::NotifyImagePainted(
+   if (!internal::IsExplicitlyRegisteredForTiming(layout_object))
+     return;
+ 
+-  auto it =
+-      images_notified_.find(std::make_pair(&layout_object, &cached_image));
++  auto it = images_notified_.find(
++      MediaRecordId::GenerateHash(&layout_object, &cached_image));
+   // It is possible that the pair is not in |images_notified_|. See
+   // https://crbug.com/1027948
+   if (it != images_notified_.end() && !it->value.is_painted_) {
+@@ -218,7 +218,8 @@ void ImageElementTiming::NotifyBackgroundImagePainted(
+ 
+   ImageInfo& info =
+       images_notified_
+-          .insert(std::make_pair(layout_object, cached_image), ImageInfo())
++          .insert(MediaRecordId::GenerateHash(layout_object, cached_image),
++                  ImageInfo())
+           .stored_value->value;
+   if (!info.is_painted_) {
+     info.is_painted_ = true;
+@@ -246,7 +247,7 @@ void ImageElementTiming::ReportImagePaintPresentationTime(
+ 
+ void ImageElementTiming::NotifyImageRemoved(const LayoutObject* layout_object,
+                                             const ImageResourceContent* image) {
+-  images_notified_.erase(std::make_pair(layout_object, image));
++  images_notified_.erase(MediaRecordId::GenerateHash(layout_object, image));
+ }
+ 
+ void ImageElementTiming::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/paint/timing/image_element_timing.h b/third_party/blink/renderer/core/paint/timing/image_element_timing.h
+index 0a152210de91ab69c255be8caa951616afb3df06..7d3f5dd7c9137b277543e52d4d1e327d75b01e84 100644
+--- a/third_party/blink/renderer/core/paint/timing/image_element_timing.h
++++ b/third_party/blink/renderer/core/paint/timing/image_element_timing.h
+@@ -5,12 +5,11 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_TIMING_IMAGE_ELEMENT_TIMING_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_TIMING_IMAGE_ELEMENT_TIMING_H_
+ 
+-#include <utility>
+-
+ #include "base/time/time.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/paint/timing/media_record_id.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_hash_map.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
+ #include "third_party/blink/renderer/platform/supplementable.h"
+@@ -123,13 +122,12 @@ class CORE_EXPORT ImageElementTiming final
+ 
+     DISALLOW_NEW();
+   };
+-  typedef std::pair<const LayoutObject*, const ImageResourceContent*> RecordId;
+   // Hashmap of pairs of elements, LayoutObjects (for the elements) and
+   // ImageResourceContent (for the src) which correspond to either images or
+   // background images whose paint has been observed. For background images,
+   // only the |is_painted_| bit is used, as the timestamp needs to be tracked by
+   // |background_image_timestamps_|.
+-  WTF::HashMap<RecordId, ImageInfo> images_notified_;
++  WTF::HashMap<MediaRecordIdHash, ImageInfo> images_notified_;
+ 
+   // Hashmap of background images which contain information about the load time
+   // of the background image.
+diff --git a/third_party/blink/renderer/core/paint/timing/image_element_timing_test.cc b/third_party/blink/renderer/core/paint/timing/image_element_timing_test.cc
+index f1aee5cdd179398a2552e8af2de273479522a623..3643ad57403d46d5bc341478ebb51db6ccc9f175 100644
+--- a/third_party/blink/renderer/core/paint/timing/image_element_timing_test.cc
++++ b/third_party/blink/renderer/core/paint/timing/image_element_timing_test.cc
+@@ -9,6 +9,7 @@
+ #include "third_party/blink/renderer/core/layout/layout_image.h"
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_image.h"
+ #include "third_party/blink/renderer/core/loader/resource/image_resource_content.h"
++#include "third_party/blink/renderer/core/paint/timing/media_record_id.h"
+ #include "third_party/blink/renderer/platform/graphics/unaccelerated_static_bitmap_image.h"
+ #include "third_party/blink/renderer/platform/testing/paint_test_configurations.h"
+ #include "third_party/blink/renderer/platform/testing/url_test_helpers.h"
+@@ -60,11 +61,9 @@ class ImageElementTimingTest : public testing::Test,
+     return nullptr;
+   }
+ 
+-  bool ImagesNotifiedContains(
+-      const std::pair<const LayoutObject*, const ImageResourceContent*>&
+-          record_id) {
++  bool ImagesNotifiedContains(MediaRecordIdHash record_id_hash) {
+     return ImageElementTiming::From(*GetDoc()->domWindow())
+-        .images_notified_.Contains(record_id);
++        .images_notified_.Contains(record_id_hash);
+   }
+ 
+   unsigned ImagesNotifiedSize() {
+@@ -159,7 +158,7 @@ TEST_P(ImageElementTimingTest, IgnoresUnmarkedElement) {
+   ASSERT_TRUE(layout_image);
+   UpdateAllLifecyclePhases();
+   EXPECT_FALSE(ImagesNotifiedContains(
+-      std::make_pair(layout_image, layout_image->CachedImage())));
++      MediaRecordId::GenerateHash(layout_image, layout_image->CachedImage())));
+ }
+ 
+ TEST_P(ImageElementTimingTest, ImageInsideSVG) {
+@@ -179,7 +178,7 @@ TEST_P(ImageElementTimingTest, ImageInsideSVG) {
+ 
+   // |layout_image| should have had its paint notified to ImageElementTiming.
+   EXPECT_TRUE(ImagesNotifiedContains(
+-      std::make_pair(layout_image, layout_image->CachedImage())));
++      MediaRecordId::GenerateHash(layout_image, layout_image->CachedImage())));
+ }
+ 
+ TEST_P(ImageElementTimingTest, ImageInsideNonRenderedSVG) {
+@@ -214,7 +213,7 @@ TEST_P(ImageElementTimingTest, ImageRemoved) {
+   ASSERT_TRUE(layout_image);
+   UpdateAllLifecyclePhases();
+   EXPECT_TRUE(ImagesNotifiedContains(
+-      std::make_pair(layout_image, layout_image->CachedImage())));
++      MediaRecordId::GenerateHash(layout_image, layout_image->CachedImage())));
+ 
+   GetDoc()->getElementById("target")->remove();
+   // |layout_image| should no longer be part of |images_notified| since it will
+@@ -234,7 +233,7 @@ TEST_P(ImageElementTimingTest, SVGImageRemoved) {
+   LayoutSVGImage* layout_image = SetSVGImageResource("target", 5, 5);
+   ASSERT_TRUE(layout_image);
+   UpdateAllLifecyclePhases();
+-  EXPECT_TRUE(ImagesNotifiedContains(std::make_pair(
++  EXPECT_TRUE(ImagesNotifiedContains(MediaRecordId::GenerateHash(
+       layout_image, layout_image->ImageResource()->CachedImage())));
+ 
+   GetDoc()->getElementById("target")->remove();
+@@ -261,7 +260,8 @@ TEST_P(ImageElementTimingTest, BackgroundImageRemoved) {
+       object->Style()->BackgroundLayers().GetImage()->CachedImage();
+   UpdateAllLifecyclePhases();
+   EXPECT_EQ(ImagesNotifiedSize(), 1u);
+-  EXPECT_TRUE(ImagesNotifiedContains(std::make_pair(object, content)));
++  EXPECT_TRUE(
++      ImagesNotifiedContains(MediaRecordId::GenerateHash(object, content)));
+ 
+   GetDoc()->getElementById("target")->remove();
+   EXPECT_EQ(ImagesNotifiedSize(), 0u);
+diff --git a/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.cc b/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.cc
+index b4ed09ccd893b39d4497fc9a237c1ab00bda91fa..e516c2a15a362fa71fcb1d644e8eb61ea2934b1e 100644
+--- a/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.cc
++++ b/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.cc
+@@ -231,8 +231,8 @@ void ImagePaintTimingDetector::OnPaintFinished() {
+ void ImagePaintTimingDetector::NotifyImageRemoved(
+     const LayoutObject& object,
+     const MediaTiming* media_timing) {
+-  RecordId record_id = std::make_pair(&object, media_timing);
+-  records_manager_.RemoveRecord(record_id);
++  records_manager_.RemoveRecord(
++      MediaRecordId::GenerateHash(&object, media_timing));
+ }
+ 
+ void ImagePaintTimingDetector::StopRecordEntries() {
+@@ -270,7 +270,7 @@ void ImageRecordsManager::AssignPaintTimeToRegisteredQueuedRecords(
+     unsigned last_queued_frame_index) {
+   while (!images_queued_for_paint_time_.empty()) {
+     const base::WeakPtr<ImageRecord>& record =
+-        images_queued_for_paint_time_.front().first;
++        images_queued_for_paint_time_.front().image_record;
+     if (!record) {
+       images_queued_for_paint_time_.pop_front();
+       continue;
+@@ -282,8 +282,8 @@ void ImageRecordsManager::AssignPaintTimeToRegisteredQueuedRecords(
+       record->first_animated_frame_time = timestamp;
+       record->queue_animated_paint = false;
+     }
+-    auto it =
+-        pending_images_.find(images_queued_for_paint_time_.front().second);
++    auto it = pending_images_.find(
++        images_queued_for_paint_time_.front().record_id_hash);
+     images_queued_for_paint_time_.pop_front();
+     // A record may be in |images_queued_for_paint_time_| twice, for instance if
+     // is already loaded by the time of its first paint.
+@@ -319,7 +319,8 @@ bool ImagePaintTimingDetector::RecordImage(
+   if (image_border.IsEmpty())
+     return false;
+ 
+-  RecordId record_id = std::make_pair(&object, &media_timing);
++  MediaRecordId record_id(&object, &media_timing);
++  MediaRecordIdHash record_id_hash = record_id.GetHash();
+ 
+   if (int depth = IgnorePaintTimingScope::IgnoreDepth()) {
+     // Record the largest loaded image that is hidden due to documentElement
+@@ -340,17 +341,18 @@ bool ImagePaintTimingDetector::RecordImage(
+     return false;
+   }
+ 
+-  if (records_manager_.IsRecordedImage(record_id)) {
++  if (records_manager_.IsRecordedImage(record_id_hash)) {
+     base::WeakPtr<ImageRecord> record =
+-        records_manager_.GetPendingImage(record_id);
++        records_manager_.GetPendingImage(record_id_hash);
+     if (!record)
+       return false;
+     if (ShouldReportAnimatedImages() && media_timing.IsPaintedFirstFrame()) {
+       added_entry_in_latest_frame_ |=
+-          records_manager_.OnFirstAnimatedFramePainted(record_id, frame_index_);
++          records_manager_.OnFirstAnimatedFramePainted(record_id_hash,
++                                                       frame_index_);
+     }
+     if (!record->loaded && media_timing.IsSufficientContentLoadedForPaint()) {
+-      records_manager_.OnImageLoaded(record_id, frame_index_, style_image);
++      records_manager_.OnImageLoaded(record_id_hash, frame_index_, style_image);
+       added_entry_in_latest_frame_ = true;
+       if (absl::optional<PaintTimingVisualizer>& visualizer =
+               frame_view_->GetPaintTimingDetector().Visualizer()) {
+@@ -386,10 +388,11 @@ bool ImagePaintTimingDetector::RecordImage(
+ 
+   if (ShouldReportAnimatedImages() && media_timing.IsPaintedFirstFrame()) {
+     added_entry_in_latest_frame_ |=
+-        records_manager_.OnFirstAnimatedFramePainted(record_id, frame_index_);
++        records_manager_.OnFirstAnimatedFramePainted(record_id_hash,
++                                                     frame_index_);
+   }
+   if (media_timing.IsSufficientContentLoadedForPaint()) {
+-    records_manager_.OnImageLoaded(record_id, frame_index_, style_image);
++    records_manager_.OnImageLoaded(record_id_hash, frame_index_, style_image);
+     added_entry_in_latest_frame_ = true;
+     return true;
+   }
+@@ -445,8 +448,8 @@ uint64_t ImagePaintTimingDetector::ComputeImageRectSize(
+ void ImagePaintTimingDetector::NotifyImageFinished(
+     const LayoutObject& object,
+     const MediaTiming* media_timing) {
+-  RecordId record_id = std::make_pair(&object, media_timing);
+-  records_manager_.NotifyImageFinished(record_id);
++  records_manager_.NotifyImageFinished(
++      MediaRecordId::GenerateHash(&object, media_timing));
+ }
+ 
+ void ImagePaintTimingDetector::ReportLargestIgnoredImage() {
+@@ -458,9 +461,9 @@ ImageRecordsManager::ImageRecordsManager(LocalFrameView* frame_view)
+     : size_ordered_set_(&LargeImageFirst), frame_view_(frame_view) {}
+ 
+ bool ImageRecordsManager::OnFirstAnimatedFramePainted(
+-    const RecordId& record_id,
++    MediaRecordIdHash record_id_hash,
+     unsigned current_frame_index) {
+-  base::WeakPtr<ImageRecord> record = GetPendingImage(record_id);
++  base::WeakPtr<ImageRecord> record = GetPendingImage(record_id_hash);
+   DCHECK(record);
+   if (record->media_timing &&
+       !record->media_timing->GetFirstVideoFrameTime().is_null()) {
+@@ -473,19 +476,19 @@ bool ImageRecordsManager::OnFirstAnimatedFramePainted(
+     // Otherwise, this is an animated images, and so we should wait for the
+     // presentation callback to fire to set the first frame presentation time.
+     record->queue_animated_paint = true;
+-    QueueToMeasurePaintTime(record_id, record, current_frame_index);
++    QueueToMeasurePaintTime(record_id_hash, record, current_frame_index);
+     return true;
+   }
+   return false;
+ }
+ 
+-void ImageRecordsManager::OnImageLoaded(const RecordId& record_id,
++void ImageRecordsManager::OnImageLoaded(MediaRecordIdHash record_id_hash,
+                                         unsigned current_frame_index,
+                                         const StyleFetchedImage* style_image) {
+-  base::WeakPtr<ImageRecord> record = GetPendingImage(record_id);
++  base::WeakPtr<ImageRecord> record = GetPendingImage(record_id_hash);
+   DCHECK(record);
+   if (!style_image) {
+-    auto it = image_finished_times_.find(record_id);
++    auto it = image_finished_times_.find(record_id_hash);
+     if (it != image_finished_times_.end()) {
+       record->load_time = it->value;
+       DCHECK(!record->load_time.is_null());
+@@ -498,7 +501,7 @@ void ImageRecordsManager::OnImageLoaded(const RecordId& record_id,
+       record->origin_clean = style_image->IsOriginClean();
+     }
+   }
+-  OnImageLoadedInternal(record_id, record, current_frame_index);
++  OnImageLoadedInternal(record_id_hash, record, current_frame_index);
+ }
+ 
+ void ImageRecordsManager::ReportLargestIgnoredImage(
+@@ -518,25 +521,25 @@ void ImageRecordsManager::ReportLargestIgnoredImage(
+   DCHECK(document);
+   PaintTiming::From(*document).MarkFirstContentfulPaint();
+ 
+-  RecordId record_id = std::make_pair(node->GetLayoutObject(),
+-                                      largest_ignored_image_->media_timing);
+-  recorded_images_.insert(record_id);
++  MediaRecordIdHash record_id_hash = MediaRecordId::GenerateHash(
++      node->GetLayoutObject(), largest_ignored_image_->media_timing);
++  recorded_images_.insert(record_id_hash);
+   base::WeakPtr<ImageRecord> record = largest_ignored_image_->AsWeakPtr();
+   size_ordered_set_.insert(record);
+-  pending_images_.insert(record_id, std::move(largest_ignored_image_));
+-  OnImageLoadedInternal(record_id, record, current_frame_index);
++  pending_images_.insert(record_id_hash, std::move(largest_ignored_image_));
++  OnImageLoadedInternal(record_id_hash, record, current_frame_index);
+ }
+ 
+ void ImageRecordsManager::OnImageLoadedInternal(
+-    const RecordId& record_id,
++    MediaRecordIdHash record_id_hash,
+     base::WeakPtr<ImageRecord>& record,
+     unsigned current_frame_index) {
+   SetLoaded(record);
+-  QueueToMeasurePaintTime(record_id, record, current_frame_index);
++  QueueToMeasurePaintTime(record_id_hash, record, current_frame_index);
+ }
+ 
+ void ImageRecordsManager::MaybeUpdateLargestIgnoredImage(
+-    const RecordId& record_id,
++    const MediaRecordId& record_id,
+     const uint64_t& visual_size,
+     const gfx::Rect& frame_visual_rect,
+     const gfx::RectF& root_visual_rect,
+@@ -544,14 +547,14 @@ void ImageRecordsManager::MaybeUpdateLargestIgnoredImage(
+   if (visual_size && (!largest_ignored_image_ ||
+                       visual_size > largest_ignored_image_->recorded_size)) {
+     largest_ignored_image_ = CreateImageRecord(
+-        *record_id.first, record_id.second, visual_size, frame_visual_rect,
+-        root_visual_rect, is_loaded_after_mouseover);
++        *record_id.GetLayoutObject(), record_id.GetMediaTiming(), visual_size,
++        frame_visual_rect, root_visual_rect, is_loaded_after_mouseover);
+     largest_ignored_image_->load_time = base::TimeTicks::Now();
+   }
+ }
+ 
+ bool ImageRecordsManager::RecordFirstPaintAndReturnIsPending(
+-    const RecordId& record_id,
++    const MediaRecordId& record_id,
+     const uint64_t& visual_size,
+     const gfx::Rect& frame_visual_rect,
+     const gfx::RectF& root_visual_rect,
+@@ -562,7 +565,7 @@ bool ImageRecordsManager::RecordFirstPaintAndReturnIsPending(
+   if (visual_size == 0u) {
+     return false;
+   }
+-  recorded_images_.insert(record_id);
++  recorded_images_.insert(record_id.GetHash());
+   // If this cannot become an LCP candidate, no need to do anything else.
+   if (visual_size == 0u ||
+       (largest_painted_image_ &&
+@@ -588,10 +591,10 @@ bool ImageRecordsManager::RecordFirstPaintAndReturnIsPending(
+   }
+ 
+   std::unique_ptr<ImageRecord> record = CreateImageRecord(
+-      *record_id.first, record_id.second, visual_size, frame_visual_rect,
+-      root_visual_rect, is_loaded_after_mouseover);
++      *record_id.GetLayoutObject(), record_id.GetMediaTiming(), visual_size,
++      frame_visual_rect, root_visual_rect, is_loaded_after_mouseover);
+   size_ordered_set_.insert(record->AsWeakPtr());
+-  pending_images_.insert(record_id, std::move(record));
++  pending_images_.insert(record_id.GetHash(), std::move(record));
+   return true;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.h b/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.h
+index 413176e992e110db2818d7ed2b06ebae232fea1f..5a5ee2a9033de3aa74c5296ce6b1e962524a8fd8 100644
+--- a/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.h
++++ b/third_party/blink/renderer/core/paint/timing/image_paint_timing_detector.h
+@@ -15,6 +15,7 @@
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/dom/dom_node_ids.h"
+ #include "third_party/blink/renderer/core/loader/resource/image_resource_content.h"
++#include "third_party/blink/renderer/core/paint/timing/media_record_id.h"
+ #include "third_party/blink/renderer/core/paint/timing/paint_timing_detector.h"
+ #include "third_party/blink/renderer/platform/allow_discouraged_type.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/media_timing.h"
+@@ -90,8 +91,6 @@ class ImageRecord : public base::SupportsWeakPtr<ImageRecord> {
+   bool is_loaded_after_mouseover = false;
+ };
+ 
+-typedef std::pair<const LayoutObject*, const MediaTiming*> RecordId;
+-
+ // |ImageRecordsManager| is the manager of all of the images that Largest
+ // Image Paint cares about. Note that an image does not necessarily correspond
+ // to a node; it can also be one of the background images attached to a node.
+@@ -115,10 +114,10 @@ class CORE_EXPORT ImageRecordsManager {
+   ImageRecordsManager& operator=(const ImageRecordsManager&) = delete;
+   ImageRecord* LargestImage() const;
+ 
+-  inline void RemoveRecord(const RecordId& record_id) {
+-    recorded_images_.erase(record_id);
+-    image_finished_times_.erase(record_id);
+-    auto it = pending_images_.find(record_id);
++  inline void RemoveRecord(MediaRecordIdHash record_id_hash) {
++    recorded_images_.erase(record_id_hash);
++    image_finished_times_.erase(record_id_hash);
++    auto it = pending_images_.find(record_id_hash);
+     if (it != pending_images_.end()) {
+       size_ordered_set_.erase(it->value->AsWeakPtr());
+       pending_images_.erase(it);
+@@ -128,41 +127,42 @@ class CORE_EXPORT ImageRecordsManager {
+     }
+   }
+   // Returns whether an image was added to |pending_images_|.
+-  bool RecordFirstPaintAndReturnIsPending(const RecordId& record_id,
++  bool RecordFirstPaintAndReturnIsPending(const MediaRecordId& record_id,
+                                           const uint64_t& visual_size,
+                                           const gfx::Rect& frame_visual_rect,
+                                           const gfx::RectF& root_visual_rect,
+                                           double bpp,
+                                           bool is_loaded_after_mouseover);
+-  bool IsRecordedImage(const RecordId& record_id) const {
+-    return recorded_images_.Contains(record_id);
++  bool IsRecordedImage(MediaRecordIdHash record_id_hash) const {
++    return recorded_images_.Contains(record_id_hash);
+   }
+ 
+-  void NotifyImageFinished(const RecordId& record_id) {
++  void NotifyImageFinished(MediaRecordIdHash record_id_hash) {
+     // TODO(npm): Ideally NotifyImageFinished() would only be called when the
+     // record has not yet been inserted in |image_finished_times_| but that's
+     // not currently the case. If we plumb some information from
+     // MediaTiming we may be able to ensure that this call does not
+     // require the Contains() check, which would save time.
+-    if (!image_finished_times_.Contains(record_id)) {
+-      image_finished_times_.insert(record_id, base::TimeTicks::Now());
++    if (!image_finished_times_.Contains(record_id_hash)) {
++      image_finished_times_.insert(record_id_hash, base::TimeTicks::Now());
+     }
+   }
+ 
+-  inline base::WeakPtr<ImageRecord> GetPendingImage(const RecordId& record_id) {
+-    auto it = pending_images_.find(record_id);
++  inline base::WeakPtr<ImageRecord> GetPendingImage(
++      MediaRecordIdHash record_id_hash) {
++    auto it = pending_images_.find(record_id_hash);
+     return it == pending_images_.end() ? nullptr : it->value->AsWeakPtr();
+   }
+-  bool OnFirstAnimatedFramePainted(const RecordId&,
++  bool OnFirstAnimatedFramePainted(MediaRecordIdHash,
+                                    unsigned current_frame_index);
+-  void OnImageLoaded(const RecordId&,
++  void OnImageLoaded(MediaRecordIdHash,
+                      unsigned current_frame_index,
+                      const StyleFetchedImage*);
+ 
+   // Receives a candidate image painted under opacity 0 but without nested
+   // opacity. May update |largest_ignored_image_| if the new candidate has a
+   // larger size.
+-  void MaybeUpdateLargestIgnoredImage(const RecordId&,
++  void MaybeUpdateLargestIgnoredImage(const MediaRecordId&,
+                                       const uint64_t& visual_size,
+                                       const gfx::Rect& frame_visual_rect,
+                                       const gfx::RectF& root_visual_rect,
+@@ -186,19 +186,31 @@ class CORE_EXPORT ImageRecordsManager {
+       const gfx::Rect& frame_visual_rect,
+       const gfx::RectF& root_visual_rect,
+       bool is_loaded_after_mouseover);
+-  inline void QueueToMeasurePaintTime(const RecordId& record_id,
++  inline void QueueToMeasurePaintTime(MediaRecordIdHash record_id_hash,
+                                       base::WeakPtr<ImageRecord>& record,
+                                       unsigned current_frame_index) {
+     record->frame_index = current_frame_index;
+-    images_queued_for_paint_time_.push_back(std::make_pair(record, record_id));
++    images_queued_for_paint_time_.push_back(
++        ImageRecordAndHashPair(record, record_id_hash));
+   }
+   inline void SetLoaded(base::WeakPtr<ImageRecord>& record) {
+     record->loaded = true;
+   }
+-  void OnImageLoadedInternal(const RecordId&,
++  void OnImageLoadedInternal(MediaRecordIdHash,
+                              base::WeakPtr<ImageRecord>&,
+                              unsigned current_frame_index);
+ 
++  struct ImageRecordAndHashPair {
++    ImageRecordAndHashPair(base::WeakPtr<ImageRecord>& record,
++                           MediaRecordIdHash id_hash) {
++      image_record = record;
++      record_id_hash = id_hash;
++    }
++
++    base::WeakPtr<ImageRecord> image_record;
++    MediaRecordIdHash record_id_hash;
++  };
++
+   // The ImageRecord corresponding to the largest image that has been loaded and
+   // painted.
+   std::unique_ptr<ImageRecord> largest_painted_image_;
+@@ -207,24 +219,23 @@ class CORE_EXPORT ImageRecordsManager {
+   // timestamp, ordered by size.
+   ImageRecordSet size_ordered_set_;
+ 
+-  // RecordId for images for which we have seen a first paint. A RecordId is
+-  // added to this set regardless of whether the image could be an LCP
+-  // candidate.
+-  HashSet<RecordId> recorded_images_;
++  // MediaRecordId for images for which we have seen a first paint. A
++  // MediaRecordId is added to this set regardless of whether the image could be
++  // an LCP candidate.
++  HashSet<MediaRecordIdHash> recorded_images_;
+ 
+-  // Map of RecordId to ImageRecord for images for which the first paint has
+-  // been seen but which do not have the paint time set yet. This may contain
+-  // only images which are potential LCP candidates.
+-  HashMap<RecordId, std::unique_ptr<ImageRecord>> pending_images_;
++  // Map of MediaRecordId to ImageRecord for images for which the first paint
++  // has been seen but which do not have the paint time set yet. This may
++  // contain only images which are potential LCP candidates.
++  HashMap<MediaRecordIdHash, std::unique_ptr<ImageRecord>> pending_images_;
+ 
+   // |ImageRecord|s waiting for paint time are stored in this map
+   // until they get a presentation time.
+-  Deque<std::pair<base::WeakPtr<ImageRecord>, RecordId>>
+-      images_queued_for_paint_time_;
++  Deque<ImageRecordAndHashPair> images_queued_for_paint_time_;
+ 
+   // Map containing timestamps of when LayoutObject::ImageNotifyFinished is
+   // first called.
+-  HashMap<RecordId, base::TimeTicks> image_finished_times_;
++  HashMap<MediaRecordIdHash, base::TimeTicks> image_finished_times_;
+ 
+   Member<LocalFrameView> frame_view_;
+ 
+diff --git a/third_party/blink/renderer/core/paint/timing/media_record_id.cc b/third_party/blink/renderer/core/paint/timing/media_record_id.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e49c898d1111015d80a71ddc11bd791bb2a0dca1
+--- /dev/null
++++ b/third_party/blink/renderer/core/paint/timing/media_record_id.cc
+@@ -0,0 +1,27 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/paint/timing/media_record_id.h"
++
++#include "base/hash/hash.h"
++
++namespace blink {
++
++MediaRecordId::MediaRecordId(const LayoutObject* layout,
++                             const MediaTiming* media)
++    : layout_object_(layout),
++      media_timing_(media),
++      hash_(GenerateHash(layout, media)) {}
++
++// This hash is used as a key where previously MediaRecordId was used directly.
++// That helps us avoid storing references to the GCed LayoutObject and
++// MediaTiming, as that can be unsafe when using regular WTF containers. It also
++// helps us avoid needlessly allocating MediaRecordId on the heap.
++MediaRecordIdHash MediaRecordId::GenerateHash(const LayoutObject* layout,
++                                              const MediaTiming* media) {
++  return base::HashInts(reinterpret_cast<MediaRecordIdHash>(layout),
++                        reinterpret_cast<MediaRecordIdHash>(media));
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/paint/timing/media_record_id.h b/third_party/blink/renderer/core/paint/timing/media_record_id.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..32952101e8463e31617d1b5f67c36abf04303c4a
+--- /dev/null
++++ b/third_party/blink/renderer/core/paint/timing/media_record_id.h
+@@ -0,0 +1,37 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_TIMING_MEDIA_RECORD_ID_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_TIMING_MEDIA_RECORD_ID_H_
++
++#include "third_party/blink/renderer/core/core_export.h"
++#include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
++
++namespace blink {
++class LayoutObject;
++class MediaTiming;
++
++using MediaRecordIdHash = size_t;
++
++class MediaRecordId {
++  STACK_ALLOCATED();
++
++ public:
++  static MediaRecordIdHash CORE_EXPORT GenerateHash(const LayoutObject* layout,
++                                                    const MediaTiming* media);
++
++  MediaRecordId(const LayoutObject* layout, const MediaTiming* media);
++
++  MediaRecordIdHash GetHash() const { return hash_; }
++  const LayoutObject* GetLayoutObject() const { return layout_object_; }
++  const MediaTiming* GetMediaTiming() const { return media_timing_; }
++
++ private:
++  const LayoutObject* const layout_object_;
++  const MediaTiming* const media_timing_;
++  const MediaRecordIdHash hash_;
++};
++
++}  // namespace blink
++#endif
+diff --git a/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py b/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py
+index 569a2e9dcc37aaad1368d2daa742775ce12ecdd9..7197616a7be18333d51c61a256f1d712a52b8256 100755
+--- a/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py
++++ b/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py
+@@ -68,6 +68,7 @@ _CONFIG = [
+             'base::DefaultTickClock',
+             'base::ElapsedTimer',
+             'base::EnumSet',
++            'base::HashInts',
+             'base::JobDelegate',
+             'base::JobHandle',
+             'base::PostJob',
