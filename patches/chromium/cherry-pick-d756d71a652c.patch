@@ -1,7 +1,8 @@
-From d756d71a652ce5b537f83a020eb2db7c2335817c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Moshchuk <alexmos@chromium.org>
-Date: Mon, 09 Oct 2023 17:14:13 +0000
-Subject: [PATCH] [M118] Fix RFHI::pending_navigate_ cleanup after crashes and early RFH swaps.
+Date: Mon, 9 Oct 2023 17:14:13 +0000
+Subject: Fix RFHI::pending_navigate_ cleanup after crashes and early RFH
+ swaps.
 
 When resuming a navigation that had been saved into
 RenderFrameHostImpl::pending_navigate_, we need to account for the
@@ -38,13 +39,12 @@ Reviewed-by: Krishna Govind <govind@chromium.org>
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5993@{#1208}
 Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
----
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index a1ccfc3..af16b10 100644
+index 2c5a63a85ba37573182ab9b8731f70948c2cc0e6..505ae0be1155585a19deb29e0c6734e9878f46c2 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -3205,6 +3205,13 @@
+@@ -3119,6 +3119,13 @@ void RenderFrameHostImpl::RenderProcessGone(
    ResetOwnedNavigationRequests(NavigationDiscardReason::kRenderProcessGone);
    ResetLoadingState();
  
@@ -58,7 +58,7 @@ index a1ccfc3..af16b10 100644
    // Any future UpdateState or UpdateTitle messages from this or a recreated
    // process should be ignored until the next commit.
    set_nav_entry_id(0);
-@@ -3713,14 +3720,25 @@
+@@ -3528,14 +3535,25 @@ void RenderFrameHostImpl::Init() {
      // BeginNavigation() should only be triggered when the navigation is
      // initiated by a document in the same process.
      const int initiator_process_id = GetProcess()->GetID();
@@ -91,10 +91,10 @@ index a1ccfc3..af16b10 100644
  }
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 9e946e0..916c3f3 100644
+index 7107c17a8f36688d245b4cad5ee92dfcedd2485e..94a726acd9a65fdddd0eed81f064d5f17d536aa3 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -758,9 +758,15 @@
+@@ -757,9 +757,15 @@ void RenderWidgetHostImpl::RendererWidgetCreated(bool for_frame_widget) {
  }
  
  void RenderWidgetHostImpl::Init() {
@@ -112,7 +112,7 @@ index 9e946e0..916c3f3 100644
    waiting_for_init_ = false;
  
    // These two methods avoid running while we are `waiting_for_init_`, so we
-@@ -2274,6 +2280,10 @@
+@@ -2277,6 +2283,10 @@ void RenderWidgetHostImpl::RendererExited() {
  
    blink_widget_.reset();
  
@@ -124,10 +124,10 @@ index 9e946e0..916c3f3 100644
    // RenderWidgetHost cannot track its visibility anymore. We assume such
    // RenderWidgetHost to be invisible for the sake of internal accounting - be
 diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
-index 98de5ddb..460357e 100644
+index c3aebce8b6aeefd85b6e87d50272cf3a798923bb..9a06710dd0998f852f0440c2652d88fc612b4560 100644
 --- a/content/browser/web_contents/web_contents_impl_browsertest.cc
 +++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
-@@ -80,6 +80,7 @@
+@@ -81,6 +81,7 @@
  #include "content/public/test/fenced_frame_test_util.h"
  #include "content/public/test/mock_client_hints_controller_delegate.h"
  #include "content/public/test/mock_web_contents_observer.h"
@@ -135,7 +135,7 @@ index 98de5ddb..460357e 100644
  #include "content/public/test/no_renderer_crashes_assertion.h"
  #include "content/public/test/prerender_test_util.h"
  #include "content/public/test/resource_load_observer.h"
-@@ -5574,6 +5575,63 @@
+@@ -5573,6 +5574,63 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
    EXPECT_FALSE(shell()->web_contents()->IsCrashed());
  }
  
