@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Moshchuk <alexmos@chromium.org>
 Date: Mon, 9 Oct 2023 17:14:13 +0000
-Subject: [M118] Fix RFHI::pending_navigate_ cleanup after crashes and early
- RFH swaps.
+Subject: Fix RFHI::pending_navigate_ cleanup after crashes and early RFH
+ swaps.
 
 When resuming a navigation that had been saved into
 RenderFrameHostImpl::pending_navigate_, we need to account for the
