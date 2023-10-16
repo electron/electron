@@ -1,7 +1,2 @@
 libcxxabi_headers = [
-  "//third_party/libc++abi/src/include/CMakeLists.txt",
-  "//third_party/libc++abi/src/include/__cxxabi_config.h",
-  "//third_party/libc++abi/src/include/cxxabi.h",
-]
-
-libcxxabi_licenses = [ "//third_party/libc++abi/src/LICENSE.TXT" ]
+rizwana gandmari
