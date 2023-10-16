@@ -1,0 +1,201 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Moshchuk <alexmos@chromium.org>
+Date: Mon, 9 Oct 2023 17:14:13 +0000
+Subject: Fix RFHI::pending_navigate_ cleanup after crashes and early RFH
+ swaps.
+
+When resuming a navigation that had been saved into
+RenderFrameHostImpl::pending_navigate_, we need to account for the
+fact that OnBeginNavigation() calls GetFrameHostForNavigation() which
+may perform an early RenderFrameHost swap and synchronously destroy
+the old RFH.
+
+There's also no need to keep a pending_navigate_ around after the
+corresponding renderer process crashes, so this CL also adds logic to
+clear it.  Resuming such a navigation would require additional work,
+since the NavigationClient stashed in pending_navigate_ is no longer
+usable and would just immediately call the disconnect handler and
+cancel the navigation.  But there isn't really any benefit to adding
+that complexity, and we already cancel the RFH's other ongoing
+navigations when its renderer process dies.
+
+This CL also tweaks the logic in RenderWidgetHostImpl to allow the
+resuming logic (ResumeLoadingCreatedWebContents) to work without
+hitting DCHECKs, if it's called after a renderer process crash. This
+case never worked cleanly before, but is supported now (and allows the
+new test to work without crashing).
+
+(cherry picked from commit 093daae65d50511c2027d01f9188681749b5a1be)
+
+Bug: 1487110
+Change-Id: Icd6a55002e52729e6ee966210efba1a5ce23eb55
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4908270
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1205927}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4923011
+Owners-Override: Krishna Govind <govind@chromium.org>
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5993@{#1208}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 2c5a63a85ba37573182ab9b8731f70948c2cc0e6..505ae0be1155585a19deb29e0c6734e9878f46c2 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -3119,6 +3119,13 @@ void RenderFrameHostImpl::RenderProcessGone(
+   ResetOwnedNavigationRequests(NavigationDiscardReason::kRenderProcessGone);
+   ResetLoadingState();
+ 
++  // Also, clear any pending navigations that have been blocked while the
++  // embedder is processing window.open() requests.  This is consistent
++  // with clearing NavigationRequests and loading state above, and it also
++  // makes sense because certain parts of `pending_navigate_`, like the
++  // NavigationClient remote interface, can no longer be used.
++  pending_navigate_.reset();
++
+   // Any future UpdateState or UpdateTitle messages from this or a recreated
+   // process should be ignored until the next commit.
+   set_nav_entry_id(0);
+@@ -3528,14 +3535,25 @@ void RenderFrameHostImpl::Init() {
+     // BeginNavigation() should only be triggered when the navigation is
+     // initiated by a document in the same process.
+     const int initiator_process_id = GetProcess()->GetID();
++
++    // Transfer `pending_navigate_` to a local variable, to avoid resetting it
++    // after OnBeginNavigation since `this` might already be destroyed (see
++    // below).
++    //
++    // This shouldn't matter for early RFH swaps out of crashed frames, since
++    // `pending_navigate_` is cleared when the renderer process dies, but it
++    // may matter for other current/future use cases of the early RFH swap.
++    std::unique_ptr<PendingNavigation> pending_navigation =
++        std::move(pending_navigate_);
+     frame_tree_node()->navigator().OnBeginNavigation(
+-        frame_tree_node(), std::move(pending_navigate_->common_params),
+-        std::move(pending_navigate_->begin_navigation_params),
+-        std::move(pending_navigate_->blob_url_loader_factory),
+-        std::move(pending_navigate_->navigation_client),
++        frame_tree_node(), std::move(pending_navigation->common_params),
++        std::move(pending_navigation->begin_navigation_params),
++        std::move(pending_navigation->blob_url_loader_factory),
++        std::move(pending_navigation->navigation_client),
+         EnsurePrefetchedSignedExchangeCache(), initiator_process_id,
+-        std::move(pending_navigate_->renderer_cancellation_listener));
+-    pending_navigate_.reset();
++        std::move(pending_navigation->renderer_cancellation_listener));
++    // DO NOT ADD CODE after this, as `this` might be deleted if an early
++    // RenderFrameHost swap was performed when starting the navigation above.
+   }
+ }
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 7107c17a8f36688d245b4cad5ee92dfcedd2485e..94a726acd9a65fdddd0eed81f064d5f17d536aa3 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -757,9 +757,15 @@ void RenderWidgetHostImpl::RendererWidgetCreated(bool for_frame_widget) {
+ }
+ 
+ void RenderWidgetHostImpl::Init() {
+-  DCHECK(renderer_widget_created_);
+-  DCHECK(waiting_for_init_);
++  // Note that this may be called after a renderer crash. In this case, we can
++  // just exit early, as there is nothing else to do.  Note that
++  // `waiting_for_init_` should've already been reset to false in that case.
++  if (!renderer_widget_created_) {
++    DCHECK(!waiting_for_init_);
++    return;
++  }
+ 
++  DCHECK(waiting_for_init_);
+   waiting_for_init_ = false;
+ 
+   // These two methods avoid running while we are `waiting_for_init_`, so we
+@@ -2277,6 +2283,10 @@ void RenderWidgetHostImpl::RendererExited() {
+ 
+   blink_widget_.reset();
+ 
++  // No need to perform a deferred show after the renderer crashes, and this
++  // wouldn't work anyway as it requires a valid `blink_widget_`.
++  pending_show_params_.reset();
++
+   // After the renderer crashes, the view is destroyed and so the
+   // RenderWidgetHost cannot track its visibility anymore. We assume such
+   // RenderWidgetHost to be invisible for the sake of internal accounting - be
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index c3aebce8b6aeefd85b6e87d50272cf3a798923bb..9a06710dd0998f852f0440c2652d88fc612b4560 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -81,6 +81,7 @@
+ #include "content/public/test/fenced_frame_test_util.h"
+ #include "content/public/test/mock_client_hints_controller_delegate.h"
+ #include "content/public/test/mock_web_contents_observer.h"
++#include "content/public/test/navigation_handle_observer.h"
+ #include "content/public/test/no_renderer_crashes_assertion.h"
+ #include "content/public/test/prerender_test_util.h"
+ #include "content/public/test/resource_load_observer.h"
+@@ -5573,6 +5574,63 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+   EXPECT_FALSE(shell()->web_contents()->IsCrashed());
+ }
+ 
++// Check that there's no crash if a new window is set to defer navigations (for
++// example, this is done on Android Webview and for <webview> guests), then the
++// renderer process crashes while there's a deferred new window navigation in
++// place, and then navigations are resumed. Prior to fixing
++// https://crbug.com/1487110, the deferred navigation was allowed to proceed,
++// performing an early RenderFrameHost swap and hitting a bug while clearing
++// the deferred navigation state. Now, the deferred navigation should be
++// canceled when the renderer process dies.
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       DeferredWindowOpenNavigationIsResumedWithEarlySwap) {
++  // Force WebContents in a new Shell to defer new navigations until the
++  // delegate is set.
++  shell()->set_delay_popup_contents_delegate_for_testing(true);
++
++  // Load an initial page.
++  ASSERT_TRUE(embedded_test_server()->Start());
++  GURL url(embedded_test_server()->GetURL("/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++
++  // Open a popup to a same-site URL via window.open.
++  ShellAddedObserver new_shell_observer;
++  EXPECT_TRUE(ExecJs(shell(), JsReplace("window.open($1);", url)));
++  Shell* new_shell = new_shell_observer.GetShell();
++  WebContents* new_contents = new_shell->web_contents();
++
++  // The navigation in the new popup should be deferred.
++  EXPECT_TRUE(WaitForLoadStop(new_contents));
++  EXPECT_TRUE(new_contents->GetController().IsInitialBlankNavigation());
++  EXPECT_TRUE(new_contents->GetLastCommittedURL().is_empty());
++
++  // Set the new shell's delegate now.  This doesn't resume the navigation just
++  // yet.
++  EXPECT_FALSE(new_contents->GetDelegate());
++  new_contents->SetDelegate(new_shell);
++
++  // Crash the renderer process.  This should clear the deferred navigation
++  // state.  If this wasn't done due to a bug, it would also force the resumed
++  // navigation to use the early RenderFrameHost swap.
++  {
++    RenderProcessHost* popup_process =
++        new_contents->GetPrimaryMainFrame()->GetProcess();
++    RenderProcessHostWatcher crash_observer(
++        popup_process, RenderProcessHostWatcher::WATCH_FOR_PROCESS_EXIT);
++    EXPECT_TRUE(popup_process->Shutdown(0));
++    crash_observer.Wait();
++  }
++
++  // Resume the navigation and verify that it gets canceled.  Ensure this
++  // doesn't crash.
++  NavigationHandleObserver handle_observer(new_contents, url);
++  new_contents->ResumeLoadingCreatedWebContents();
++  EXPECT_TRUE(WaitForLoadStop(new_contents));
++  EXPECT_FALSE(handle_observer.has_committed());
++  EXPECT_TRUE(new_contents->GetController().IsInitialBlankNavigation());
++  EXPECT_TRUE(new_contents->GetLastCommittedURL().is_empty());
++}
++
+ namespace {
+ 
+ class MediaWaiter : public WebContentsObserver {
