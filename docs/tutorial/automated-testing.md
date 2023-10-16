@@ -71,7 +71,7 @@ describe('keyboard input', () => {
 })
 ```
 
-Furthermore WebdriverIO allows you to access Electron APIs to get static information about your application:
+Furthermore, WebdriverIO allows you to access Electron APIs to get static information about your application:
 
 ```js @ts-nocheck
 import { browser, $, expect } from '@wdio/globals'
