@@ -80,10 +80,10 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index e71994e519f1ee7b0d43ff96ad97907934e56237..a9b09b67392e8e1a67fc295dff5774d1fd095c2d 100644
+index 1abc6784c595b9637222a503329382ccbcab0eb4..968f1ce2663f02f70a55666c6255da4e2fcc826a 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1886,12 +1886,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1884,12 +1884,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ea5749bb130010f21cfa94902af48ba71c5d4765..0b82eb5755c34611b67a8d1dfeb1b1fb3d55ac9b 100644
+index 3d944eccae05922d861616458acc19e387b054fe..f37e1f6355bc936b50951db82d02d22a3244bb82 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4279,8 +4279,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4261,8 +4261,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -358,10 +358,10 @@ index 60acb83c8d76f71db689f9d188bb6e8f64a74ffb..aa6cee708d1e451b443bc26528b56cc8
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index e236e1ac647004c4a91c7098d38572e22d0312da..92c2b13acd54a8aaa14d0d0bab4f93bbd5bfe5ef 100644
+index abdcd673c56c4dc4e25d1fead3b5423afc55968e..71b5e8777da278e54ea22ee6838162f02b330933 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -433,8 +433,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -430,8 +430,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

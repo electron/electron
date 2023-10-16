@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c2347d1df56568f412e860c27dfb801acd71f560..0364d2334213e47e647e97ebf538bf28daf442d4 100644
+index 21486c53e81f144d28258b132dfd32b0ecf208af..adf6ccea22ba063c707c09282530bc243059a5a9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1035,6 +1035,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -110,10 +110,10 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index e44278e5e091efcd0070c259a8eead2d4baf963b..8b680d3448fb08df7a81f81477911a5d96b8457f 100644
+index 7c43fd0c504c0757d27813c1a1974cc551a6bdb7..ba8c2bb12c3226b13976760a08a45acee8d9106f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -484,6 +484,7 @@ static_library("test_support") {
+@@ -482,6 +482,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -212,7 +212,7 @@ index 299a028f23314f479d2da8f914a5bdf34698d854..672dcb04dd3cf4e3cc71403f727a1dde
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index a83252836028a777d1a836e24aa60c871220e490..62348d690d4d539651abf65f94535f1a7b22e368 100644
+index f39f854dbd7f0640f74fc266e69bff046ec2efb4..c5c81632b34677fd38ac7c2bdd5542e53670cd56 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -311,6 +311,7 @@ component("core") {

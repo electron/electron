@@ -93,10 +93,10 @@ index 981c012dc8c3c8d1106c02570e75c7b065f6b814..02dbede2d9291a702dd3d692e849938e
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 271377785a230baaadde51db4bf406adf4c56563..7bc468260debd75bb320b5964f6e3714a26e1896 100644
+index a66d46e157b7bb8b8fdd575bd5c8e16908ce9b1c..ba4d3cb88f5412e1574ac1b82349d86eb310e328 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3346,6 +3346,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3344,6 +3344,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index d6e88526b6cb21f3b2eb983a6d42066b6f2ab3c5..66ea1727f6609008425a47fc485ee71843983133 100644
+index 58219b8f6df2e5281abfa73db3c5d563bfe207f2..1b79343249907ca4a69fc340066a5f9e55f6fedc 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -29,6 +29,7 @@
@@ -159,7 +159,7 @@ index d6e88526b6cb21f3b2eb983a6d42066b6f2ab3c5..66ea1727f6609008425a47fc485ee718
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -328,6 +329,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -337,6 +338,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
