@@ -58,7 +58,7 @@ export const config = {
 
 #### Write your tests
 
-To interacting with elements on the screen you can use the [WebdriverIO API](https://webdriver.io/docs/api) that helps you to write concise and expressive tests. The framework provides custom "matchers" that make asserting the state of your application easy, e.g.:
+Use the [WebdriverIO API](https://webdriver.io/docs/api) to interact with elements on the screen. The framework provides custom "matchers" that make asserting the state of your application easy, e.g.:
 
 ```js @ts-nocheck
 import { browser, $, expect } from '@wdio/globals'
