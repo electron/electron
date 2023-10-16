@@ -125,7 +125,7 @@ To run your tests:
 $ npx wdio run wdio.conf.js
 ```
 
-WebdriverIO helps managing to launch and shut down the application for you.
+WebdriverIO helps launch and shut down the application for you.
 
 #### More Documentation
 
