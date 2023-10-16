@@ -77,6 +77,81 @@ std::string OpenPathOnThread(const base::FilePath& full_path) {
   return success ? "" : "Failed to open path";
 }
 
+// https://developer.apple.com/documentation/servicemanagement/1561515-service_management_errors?language=objc
+std::string GetLaunchStringForError(NSError* error) {
+  if (@available(macOS 13, *)) {
+    switch ([error code]) {
+      case kSMErrorAlreadyRegistered:
+        return "The application is already registered";
+      case kSMErrorAuthorizationFailure:
+        return "The authorization requested failed";
+      case kSMErrorLaunchDeniedByUser:
+        return "The user denied the app's launch request";
+      case kSMErrorInternalFailure:
+        return "An internal failure has occurred";
+      case kSMErrorInvalidPlist:
+        return "The app's property list is invalid";
+      case kSMErrorInvalidSignature:
+        return "The app's code signature doesn't meet the requirements to "
+               "perform the operation";
+      case kSMErrorJobMustBeEnabled:
+        return "The specified job is not enabled";
+      case kSMErrorJobNotFound:
+        return "The system can't find the specified job";
+      case kSMErrorJobPlistNotFound:
+        return "The app's property list cannot be found";
+      case kSMErrorServiceUnavailable:
+        return "The service necessary to perform this operation is unavailable "
+               "or is no longer accepting requests";
+      case kSMErrorToolNotValid:
+        return "The specified path doesn't exist or the helper tool at the "
+               "specified path isn't valid";
+      default:
+        return "Failed to register the login item";
+    }
+  }
+
+  return "";
+}
+
+SMAppService* GetServiceForType(const std::string& type,
+                                const std::string& name)
+    API_AVAILABLE(macosx(13.0)) {
+  NSString* service_name = [NSString stringWithUTF8String:name.c_str()];
+  if (type == "mainAppService") {
+    return [SMAppService mainAppService];
+  } else if (type == "agentService") {
+    return [SMAppService agentServiceWithPlistName:service_name];
+  } else if (type == "daemonService") {
+    return [SMAppService daemonServiceWithPlistName:service_name];
+  } else if (type == "loginService") {
+    return [SMAppService loginItemServiceWithIdentifier:service_name];
+  } else {
+    LOG(ERROR) << "Unrecognized login item type";
+    return nullptr;
+  }
+}
+
+bool GetLoginItemEnabledDeprecated() {
+  BOOL enabled = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // SMJobCopyDictionary does not work in sandbox (see rdar://13626319)
+  CFArrayRef jobs = SMCopyAllJobDictionaries(kSMDomainUserLaunchd);
+#pragma clang diagnostic pop
+  NSArray* jobs_ = CFBridgingRelease(jobs);
+  NSString* identifier = GetLoginHelperBundleIdentifier();
+  if (jobs_ && [jobs_ count] > 0) {
+    for (NSDictionary* job in jobs_) {
+      if ([identifier isEqualToString:[job objectForKey:@"Label"]]) {
+        enabled = [[job objectForKey:@"OnDemand"] boolValue];
+        break;
+      }
+    }
+  }
+  return enabled;
+}
+
 }  // namespace
 
 namespace platform_util {
@@ -167,29 +242,50 @@ void Beep() {
   NSBeep();
 }
 
-bool GetLoginItemEnabled() {
-  BOOL enabled = NO;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  // SMJobCopyDictionary does not work in sandbox (see rdar://13626319)
-  CFArrayRef jobs = SMCopyAllJobDictionaries(kSMDomainUserLaunchd);
-#pragma clang diagnostic pop
-  NSArray* jobs_ = CFBridgingRelease(jobs);
-  NSString* identifier = GetLoginHelperBundleIdentifier();
-  if (jobs_ && [jobs_ count] > 0) {
-    for (NSDictionary* job in jobs_) {
-      if ([identifier isEqualToString:[job objectForKey:@"Label"]]) {
-        enabled = [[job objectForKey:@"OnDemand"] boolValue];
-        break;
-      }
+std::string GetLoginItemEnabled(const std::string& type,
+                                const std::string& service_name) {
+  bool enabled = GetLoginItemEnabledDeprecated();
+  if (@available(macOS 13, *)) {
+    SMAppService* service = GetServiceForType(type, service_name);
+    SMAppServiceStatus status = [service status];
+    if (status == SMAppServiceStatusNotRegistered)
+      return "not-registered";
+    else if (status == SMAppServiceStatusEnabled)
+      return "enabled";
+    else if (status == SMAppServiceStatusRequiresApproval)
+      return "requires-approval";
+    else if (status == SMAppServiceStatusNotFound) {
+      // If the login item was enabled with the old API, return that.
+      return enabled ? "enabled-deprecated" : "not-found";
     }
   }
-  return enabled;
+  return enabled ? "enabled" : "not-registered";
 }
 
-bool SetLoginItemEnabled(bool enabled) {
-  NSString* identifier = GetLoginHelperBundleIdentifier();
-  return SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
+bool SetLoginItemEnabled(const std::string& type,
+                         const std::string& service_name,
+                         bool enabled) {
+  if (@available(macOS 13, *)) {
+#if IS_MAS_BUILD()
+    // If the app was previously set as a LoginItem with the old API, remove it
+    // as a LoginItem via the old API before re-enabling with the new API.
+    if (GetLoginItemEnabledDeprecated() && enabled) {
+      NSString* identifier = GetLoginHelperBundleIdentifier();
+      SMLoginItemSetEnabled((__bridge CFStringRef)identifier, false);
+    }
+#endif
+    SMAppService* service = GetServiceForType(type, service_name);
+    NSError* error = nil;
+    bool result = enabled ? [service registerAndReturnError:&error]
+                          : [service unregisterAndReturnError:&error];
+    if (error != nil)
+      LOG(ERROR) << "Unable to set login item: "
+                 << GetLaunchStringForError(error);
+    return result;
+  } else {
+    NSString* identifier = GetLoginHelperBundleIdentifier();
+    return SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
+  }
 }
 
 }  // namespace platform_util

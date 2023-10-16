@@ -1278,10 +1278,10 @@ Returns `boolean` - Whether the current desktop environment is Unity launcher.
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
-  * `path` string (optional) _Windows_ - The executable path to compare against.
-    Defaults to `process.execPath`.
-  * `args` string[] (optional) _Windows_ - The command-line arguments to compare
-    against. Defaults to an empty array.
+  * `type` string (optional) _macOS_ - Can be one of `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. Only available on macOS 13 and up. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows) for more information about each type.
+  * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default. Only available on macOS 13 and up.
+  * `path` string (optional) _Windows_ - The executable path to compare against. Defaults to `process.execPath`.
+  * `args` string[] (optional) _Windows_ - The command-line arguments to compare against. Defaults to an empty array.
 
 If you provided `path` and `args` options to `app.setLoginItemSettings`, then you
 need to pass the same arguments here for `openAtLogin` to be set correctly.
@@ -1289,17 +1289,11 @@ need to pass the same arguments here for `openAtLogin` to be set correctly.
 Returns `Object`:
 
 * `openAtLogin` boolean - `true` if the app is set to open at login.
-* `openAsHidden` boolean _macOS_ - `true` if the app is set to open as hidden at login.
-  This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAtLogin` boolean _macOS_ - `true` if the app was opened at login
-  automatically. This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAsHidden` boolean _macOS_ - `true` if the app was opened as a hidden login
-  item. This indicates that the app should not open any windows at startup.
-  This setting is not available on [MAS builds][mas-builds].
-* `restoreState` boolean _macOS_ - `true` if the app was opened as a login item that
-  should restore the state from the previous session. This indicates that the
-  app should restore the windows that were open the last time the app was
-  closed. This setting is not available on [MAS builds][mas-builds].
+* `openAsHidden` boolean _macOS_ _Deprecated_ - `true` if the app is set to open as hidden at login. This does not work on macOS 13 and up.
+* `wasOpenedAtLogin` boolean _macOS_ _Deprecated_ - `true` if the app was opened at login automatically. This setting is not available on [MAS builds][mas-builds] or on macOS 13 and up.
+* `wasOpenedAsHidden` boolean _macOS_ _Deprecated_ - `true` if the app was opened as a hidden login item. This indicates that the app should not open any windows at startup. This setting is not available on [MAS builds][mas-builds] or on macOS 13 and up.
+* `restoreState` boolean _macOS_ _Deprecated_ - `true` if the app was opened as a login item that should restore the state from the previous session. This indicates that the app should restore the windows that were open the last time the app was closed. This setting is not available on [MAS builds][mas-builds] or on macOS 13 and up.
+* `status` string _macOS_ - can be one of `not-registered`, `enabled`, `requires-approval`, or `not-found`.
 * `executableWillLaunchAtLogin` boolean _Windows_ - `true` if app is set to open at login and its run key is not deactivated. This differs from `openAtLogin` as it ignores the `args` option, this property will be true if the given executable would be launched at login with **any** arguments.
 * `launchItems` Object[] _Windows_
   * `name` string _Windows_ - name value of a registry entry.
@@ -1313,10 +1307,14 @@ Returns `Object`:
 * `settings` Object
   * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
-  * `openAsHidden` boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
-    `false`. The user can edit this setting from the System Preferences so
-    `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app
-    is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
+  * `openAsHidden` boolean (optional) _macOS_ _Deprecated_ - `true` to open the app as hidden. Defaults to `false`. The user can edit this setting from the System Preferences so `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app is opened to know the current value. This setting is not available on [MAS build
+s][mas-builds] or on macOS 13 and up.
+  * `type` string (optional) _macOS_ - The type of service to add as a login item. Defaults to `mainAppService`. Only available on macOS 13 and up.
+    * `mainAppService` - The primary application.
+    * `agentService` - The property list name for a launch agent. The property list name must correspond to a property list in the app’s `Contents/Library/LaunchAgents` directory.
+    * `daemonService` string (optional) _macOS_ - The property list name for a launch agent. The property list name must correspond to a property list in the app’s `Contents/Library/LaunchDaemons` directory.
+    * `loginItemService` string (optional) _macOS_ - The property list name for a login item service. The property list name must correspond to a property list in the app’s `Contents/Library/LoginItems` directory.
+  * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default. Only available on macOS 13 and up.
   * `path` string (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
   * `args` string[] (optional) _Windows_ - The command-line arguments to pass to
@@ -1325,6 +1323,7 @@ Returns `Object`:
   * `enabled` boolean (optional) _Windows_ - `true` will change the startup approved registry key and `enable / disable` the App in Task Manager and Windows Settings.
     Defaults to `true`.
   * `name` string (optional) _Windows_ - value name to write into registry. Defaults to the app's AppUserModelId().
+
 Set the app's login item settings.
 
 To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
@@ -1348,6 +1347,8 @@ app.setLoginItemSettings({
   ]
 })
 ```
+
+For more information about setting different services as login items on macOS 13 and up, see [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice?language=objc).
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
