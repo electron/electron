@@ -286,7 +286,7 @@ class NativeWindow : public base::SupportsUserData,
     return weak_factory_.GetWeakPtr();
   }
 
-  virtual gfx::Rect GetWindowControlsOverlayRect();
+  virtual absl::optional<gfx::Rect> GetWindowControlsOverlayRect();
   virtual void SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect);
 
   // Methods called by the WebContents.
