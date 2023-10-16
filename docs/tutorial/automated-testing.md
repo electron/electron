@@ -36,7 +36,7 @@ This starts a configuration wizard that helps you put together the right setup, 
 
 #### Connect WDIO to your Electron app
 
-After the configuration wizard finished running your `wdio.conf.js` should include roughly the following content:
+After running the configuration wizard, your `wdio.conf.js` should include roughly the following content:
 
 ```js title='wdio.conf.js' @ts-nocheck
 export const config = {
