@@ -495,7 +495,7 @@ void NativeWindow::PreviewFile(const std::string& path,
 
 void NativeWindow::CloseFilePreview() {}
 
-gfx::Rect NativeWindow::GetWindowControlsOverlayRect() {
+absl::optional<gfx::Rect> NativeWindow::GetWindowControlsOverlayRect() {
   return overlay_rect_;
 }
 
@@ -623,6 +623,7 @@ void NativeWindow::NotifyWindowMoved() {
 }
 
 void NativeWindow::NotifyWindowEnterFullScreen() {
+  NotifyLayoutWindowControlsOverlay();
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowEnterFullScreen();
 }
@@ -648,6 +649,7 @@ void NativeWindow::NotifyWindowSheetEnd() {
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {
+  NotifyLayoutWindowControlsOverlay();
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowLeaveFullScreen();
 }
@@ -691,10 +693,10 @@ void NativeWindow::NotifyWindowSystemContextMenu(int x,
 }
 
 void NativeWindow::NotifyLayoutWindowControlsOverlay() {
-  gfx::Rect bounding_rect = GetWindowControlsOverlayRect();
-  if (!bounding_rect.IsEmpty()) {
+  auto bounding_rect = GetWindowControlsOverlayRect();
+  if (bounding_rect.has_value()) {
     for (NativeWindowObserver& observer : observers_)
-      observer.UpdateWindowControlsOverlay(bounding_rect);
+      observer.UpdateWindowControlsOverlay(bounding_rect.value());
   }
 }
 
