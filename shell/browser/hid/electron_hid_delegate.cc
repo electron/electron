@@ -186,8 +186,8 @@ const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
 bool ElectronHidDelegate::IsFidoAllowedForOrigin(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kDisableHidBlocklist);
+  auto* chooser_context = GetChooserContext(browser_context);
+  return chooser_context->IsFidoAllowedForOrigin(origin);
 }
 
 bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
