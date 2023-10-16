@@ -127,7 +127,7 @@ $ npx wdio run wdio.conf.js
 
 WebdriverIO helps launch and shut down the application for you.
 
-#### More Documentation
+#### More documentation
 
 Find more documentation on Mocking Electron APIs and other useful resources in the [official WebdriverIO documentation](https://webdriver.io/docs/desktop-testing/electron).
 
