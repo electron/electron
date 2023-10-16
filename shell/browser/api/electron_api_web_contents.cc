@@ -1877,7 +1877,7 @@ bool WebContents::EmitNavigationEvent(
   dict.Set("url", url);
   dict.Set("isSameDocument", is_same_document);
   dict.Set("isMainFrame", is_main_frame);
-  dict.Set("frame", frame_host);
+  dict.SetGetter("frame", frame_host);
   dict.SetGetter("initiator", initiator_frame_host);
 
   EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
