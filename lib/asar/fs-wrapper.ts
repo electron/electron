@@ -261,6 +261,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
   };
 
+  const shouldThrowStatError = (options: any) => {
+    if (options && typeof options === 'object' && options.throwIfNoEntry === false) {
+      return false;
+    }
+
+    return true;
+  };
+
   const { lstatSync } = fs;
   fs.lstatSync = (pathArgument: string, options: any) => {
     const pathInfo = splitPath(pathArgument);
@@ -268,10 +276,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
-    if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+    if (!archive) {
+      if (shouldThrowStatError(options)) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+      return null;
+    }
 
     const stats = archive.stat(filePath);
-    if (!stats) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+    if (!stats) {
+      if (shouldThrowStatError(options)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+      return null;
+    }
 
     return asarStatsToFsStats(stats);
   };
