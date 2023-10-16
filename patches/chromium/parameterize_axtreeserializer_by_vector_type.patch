@@ -1,0 +1,511 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris Harrelson <chrishtr@chromium.org>
+Date: Fri, 25 Aug 2023 17:55:16 +0000
+Subject: Parameterize AXTreeSerializer by vector type
+
+This enables us to use HeapVector in Blink, which is necessary because
+AXObject is a garbage-collected type.
+
+Bug: 1472368
+
+Change-Id: Idf6fee18827f2914452be49f61de0b6a36b19678
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4811206
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Commit-Queue: Chris Harrelson <chrishtr@chromium.org>
+Reviewed-by: Mark Schillaci <mschillaci@google.com>
+Cr-Commit-Position: refs/heads/main@{#1188419}
+
+diff --git a/chrome/browser/ash/arc/accessibility/ax_tree_source_arc.h b/chrome/browser/ash/arc/accessibility/ax_tree_source_arc.h
+index b7e0e6dea25fff3deae082f30a765df43756d3df..02c15515f119c48e4d48ffca15ce0049a2b40c16 100644
+--- a/chrome/browser/ash/arc/accessibility/ax_tree_source_arc.h
++++ b/chrome/browser/ash/arc/accessibility/ax_tree_source_arc.h
+@@ -31,7 +31,9 @@ class Window;
+ namespace arc {
+ class AXTreeSourceArcTest;
+ 
+-using AXTreeArcSerializer = ui::AXTreeSerializer<AccessibilityInfoDataWrapper*>;
++using AXTreeArcSerializer =
++    ui::AXTreeSerializer<AccessibilityInfoDataWrapper*,
++                         std::vector<AccessibilityInfoDataWrapper*>>;
+ 
+ // This class represents the accessibility tree from the focused ARC window.
+ class AXTreeSourceArc : public ui::AXTreeSource<AccessibilityInfoDataWrapper*>,
+diff --git a/chrome/browser/ui/ash/accessibility/ax_tree_source_aura_unittest.cc b/chrome/browser/ui/ash/accessibility/ax_tree_source_aura_unittest.cc
+index f973c8c0c2c4b1f96a4ab7e22a924b3d85b44f35..e26827761686946669e21ba6459b24b571bdb4c0 100644
+--- a/chrome/browser/ui/ash/accessibility/ax_tree_source_aura_unittest.cc
++++ b/chrome/browser/ui/ash/accessibility/ax_tree_source_aura_unittest.cc
+@@ -33,7 +33,9 @@ using views::Textfield;
+ using views::View;
+ using views::Widget;
+ 
+-using AuraAXTreeSerializer = ui::AXTreeSerializer<views::AXAuraObjWrapper*>;
++using AuraAXTreeSerializer =
++    ui::AXTreeSerializer<views::AXAuraObjWrapper*,
++                         std::vector<views::AXAuraObjWrapper*>>;
+ 
+ // Helper to count the number of nodes in a tree.
+ size_t GetSize(AXAuraObjWrapper* tree) {
+diff --git a/chrome/browser/ui/aura/accessibility/automation_manager_aura.h b/chrome/browser/ui/aura/accessibility/automation_manager_aura.h
+index 498488f27e7fc273a0797063b6388576dfc5cd93..4d0ae2b291ce5bd607117288b0bfc1d3ce8e1c13 100644
+--- a/chrome/browser/ui/aura/accessibility/automation_manager_aura.h
++++ b/chrome/browser/ui/aura/accessibility/automation_manager_aura.h
+@@ -33,7 +33,9 @@ class AXAuraObjWrapper;
+ class View;
+ }  // namespace views
+ 
+-using AuraAXTreeSerializer = ui::AXTreeSerializer<views::AXAuraObjWrapper*>;
++using AuraAXTreeSerializer =
++    ui::AXTreeSerializer<views::AXAuraObjWrapper*,
++                         std::vector<views::AXAuraObjWrapper*>>;
+ 
+ // Manages a tree of automation nodes backed by aura constructs.
+ class AutomationManagerAura : public ui::AXActionHandler,
+diff --git a/chrome/renderer/accessibility/read_anything_app_controller.cc b/chrome/renderer/accessibility/read_anything_app_controller.cc
+index a30a4fb78d837d98a7c9532f2643ceac742ac5e5..89e45eae934f417c571f2eae8dfa76a977ead825 100644
+--- a/chrome/renderer/accessibility/read_anything_app_controller.cc
++++ b/chrome/renderer/accessibility/read_anything_app_controller.cc
+@@ -401,7 +401,8 @@ void ReadAnythingAppController::Distill() {
+       model_.GetTreeFromId(model_.active_tree_id()).get();
+   std::unique_ptr<ui::AXTreeSource<const ui::AXNode*>> tree_source(
+       tree->CreateTreeSource());
+-  ui::AXTreeSerializer<const ui::AXNode*> serializer(tree_source.get());
++  ui::AXTreeSerializer<const ui::AXNode*, std::vector<const ui::AXNode*>>
++      serializer(tree_source.get());
+   ui::AXTreeUpdate snapshot;
+   CHECK(serializer.SerializeChanges(tree->root(), &snapshot));
+   model_.SetDistillationInProgress(true);
+diff --git a/components/services/screen_ai/screen_ai_ax_tree_serializer.cc b/components/services/screen_ai/screen_ai_ax_tree_serializer.cc
+index ecd818228f31dfefdc436302be9dcb47415b684c..6f921bd47e8dfb585da81cefdbdcf870f420b305 100644
+--- a/components/services/screen_ai/screen_ai_ax_tree_serializer.cc
++++ b/components/services/screen_ai/screen_ai_ax_tree_serializer.cc
+@@ -43,7 +43,8 @@ ScreenAIAXTreeSerializer::ScreenAIAXTreeSerializer(
+   tree_source_ = base::WrapUnique<ui::AXTreeSource<const ui::AXNode*>>(
+       tree_->CreateTreeSource());
+   DCHECK(tree_source_);
+-  serializer_ = std::make_unique<ui::AXTreeSerializer<const ui::AXNode*>>(
++  serializer_ = std::make_unique<
++      ui::AXTreeSerializer<const ui::AXNode*, std::vector<const ui::AXNode*>>>(
+       tree_source_.get(), /* crash_on_error */ true);
+ }
+ 
+diff --git a/components/services/screen_ai/screen_ai_ax_tree_serializer.h b/components/services/screen_ai/screen_ai_ax_tree_serializer.h
+index e522698819c4fe80bfd9da0b49934def0d2abb66..38fd5e2391a4a899f0f46069b42d6056d42f1e01 100644
+--- a/components/services/screen_ai/screen_ai_ax_tree_serializer.h
++++ b/components/services/screen_ai/screen_ai_ax_tree_serializer.h
+@@ -41,7 +41,9 @@ class ScreenAIAXTreeSerializer final {
+  private:
+   const std::unique_ptr<ui::AXSerializableTree> tree_;
+   std::unique_ptr<ui::AXTreeSource<const ui::AXNode*>> tree_source_;
+-  mutable std::unique_ptr<ui::AXTreeSerializer<const ui::AXNode*>> serializer_;
++  mutable std::unique_ptr<
++      ui::AXTreeSerializer<const ui::AXNode*, std::vector<const ui::AXNode*>>>
++      serializer_;
+ };
+ 
+ }  // namespace screen_ai
+diff --git a/content/browser/accessibility/browser_accessibility_manager.cc b/content/browser/accessibility/browser_accessibility_manager.cc
+index 482267f40346c0b0bb4cde27e8a581ec18bef0fd..727907e7d3b804c98625bbc90f9a4f15d3349638 100644
+--- a/content/browser/accessibility/browser_accessibility_manager.cc
++++ b/content/browser/accessibility/browser_accessibility_manager.cc
+@@ -1649,7 +1649,8 @@ bool BrowserAccessibilityManager::IsRootFrameManager() const {
+ ui::AXTreeUpdate BrowserAccessibilityManager::SnapshotAXTreeForTesting() {
+   std::unique_ptr<ui::AXTreeSource<const ui::AXNode*>> tree_source(
+       ax_serializable_tree()->CreateTreeSource());
+-  ui::AXTreeSerializer<const ui::AXNode*> serializer(tree_source.get());
++  ui::AXTreeSerializer<const ui::AXNode*, std::vector<const ui::AXNode*>>
++      serializer(tree_source.get());
+   ui::AXTreeUpdate update;
+   serializer.SerializeChanges(GetRoot(), &update);
+   return update;
+diff --git a/content/renderer/accessibility/render_accessibility_impl.h b/content/renderer/accessibility/render_accessibility_impl.h
+index ddd8273fb0384d326f5ee2c78de23e3e03afe520..088edf542ef06c17e0e149ba5927fae16ee38817 100644
+--- a/content/renderer/accessibility/render_accessibility_impl.h
++++ b/content/renderer/accessibility/render_accessibility_impl.h
+@@ -278,7 +278,8 @@ class CONTENT_EXPORT RenderAccessibilityImpl : public RenderAccessibility,
+   // Manages the automatic image annotations, if enabled.
+   std::unique_ptr<AXImageAnnotator> ax_image_annotator_;
+ 
+-  using PluginAXTreeSerializer = ui::AXTreeSerializer<const ui::AXNode*>;
++  using PluginAXTreeSerializer =
++      ui::AXTreeSerializer<const ui::AXNode*, std::vector<const ui::AXNode*>>;
+   std::unique_ptr<PluginAXTreeSerializer> plugin_serializer_;
+   PluginAXTreeSource* plugin_tree_source_;
+ 
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+index 0de34e2c2327120ce357fbbc9594bb6ffb9a6d6c..b0d37309e7dbd3b9e6061d2269e01e193fef5932 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+@@ -691,9 +691,11 @@ AXObjectCacheImpl::AXObjectCacheImpl(Document& document,
+       permission_observer_receiver_(this, document.GetExecutionContext()),
+       render_accessibility_host_(document.GetExecutionContext()),
+       ax_tree_source_(BlinkAXTreeSource::Create(*this)),
+-      ax_tree_serializer_(std::make_unique<ui::AXTreeSerializer<AXObject*>>(
+-          ax_tree_source_,
+-          /*crash_on_error*/ true)) {
++      ax_tree_serializer_(
++          std::make_unique<
++              ui::AXTreeSerializer<AXObject*, HeapVector<AXObject*>>>(
++              ax_tree_source_,
++              /*crash_on_error*/ true)) {
+   use_ax_menu_list_ = GetSettings()->GetUseAXMenuList();
+ }
+ 
+@@ -3987,7 +3989,8 @@ bool AXObjectCacheImpl::SerializeEntireTree(size_t max_node_count,
+   // or a partial accessibility tree. AXTreeSerializer is stateful, but the
+   // first time you serialize from a brand-new tree you're guaranteed to get a
+   // complete tree.
+-  ui::AXTreeSerializer<AXObject*> serializer(tree_source);
++  ui::AXTreeSerializer<AXObject*, HeapVector<AXObject*>> serializer(
++      tree_source);
+ 
+   if (max_node_count)
+     serializer.set_max_node_count(max_node_count);
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h
+index eeea077f3bc086065b2dbed1fe38c3ee572e83a1..339eae38265b206e4a99447152503b39e12bf00d 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h
+@@ -930,7 +930,8 @@ class MODULES_EXPORT AXObjectCacheImpl
+       render_accessibility_host_;
+ 
+   Member<BlinkAXTreeSource> ax_tree_source_;
+-  std::unique_ptr<ui::AXTreeSerializer<AXObject*>> ax_tree_serializer_;
++  std::unique_ptr<ui::AXTreeSerializer<AXObject*, HeapVector<AXObject*>>>
++      ax_tree_serializer_;
+ 
+   HeapDeque<Member<AXDirtyObject>> dirty_objects_;
+ 
+diff --git a/ui/accessibility/ax_generated_tree_unittest.cc b/ui/accessibility/ax_generated_tree_unittest.cc
+index 2e24152f026a1f6962af348c96744218c783561c..cea591f9a9315ec6476ddec5411a04bb04f49df3 100644
+--- a/ui/accessibility/ax_generated_tree_unittest.cc
++++ b/ui/accessibility/ax_generated_tree_unittest.cc
+@@ -75,7 +75,8 @@ std::string TreeToString(const AXTree& tree) {
+ AXTreeUpdate SerializeEntireTree(AXSerializableTree& tree) {
+   std::unique_ptr<AXTreeSource<const AXNode*>> tree_source(
+       tree.CreateTreeSource());
+-  AXTreeSerializer<const AXNode*> serializer(tree_source.get());
++  AXTreeSerializer<const AXNode*, std::vector<const AXNode*>> serializer(
++      tree_source.get());
+   AXTreeUpdate update;
+   CHECK(serializer.SerializeChanges(tree.root(), &update));
+   return update;
+@@ -270,7 +271,8 @@ TEST_P(SerializeGeneratedTreesTest, SerializeGeneratedTrees) {
+           // empty tree |dst_tree|.
+           std::unique_ptr<AXTreeSource<const AXNode*>> tree0_source(
+               tree0.CreateTreeSource());
+-          AXTreeSerializer<const AXNode*> serializer(tree0_source.get());
++          AXTreeSerializer<const AXNode*, std::vector<const AXNode*>>
++              serializer(tree0_source.get());
+           AXTreeUpdate update0;
+           ASSERT_TRUE(serializer.SerializeChanges(tree0.root(), &update0));
+ 
+diff --git a/ui/accessibility/ax_tree_serializer.h b/ui/accessibility/ax_tree_serializer.h
+index 0fb9303c39c979ab80c572769c2344701478f7e3..7874a5575823489aef2afa03b7f325e56ab689d1 100644
+--- a/ui/accessibility/ax_tree_serializer.h
++++ b/ui/accessibility/ax_tree_serializer.h
+@@ -64,7 +64,7 @@ struct ClientTreeNode;
+ // because AXTreeSerializer always keeps track of what updates it's sent,
+ // it will never send an invalid update and the client tree will not break,
+ // it just may not contain all of the changes.
+-template <typename AXSourceNode>
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
+ class AXTreeSerializer {
+  public:
+   explicit AXTreeSerializer(AXTreeSource<AXSourceNode>* tree,
+@@ -260,14 +260,14 @@ struct AX_EXPORT ClientTreeNode {
+   bool in_dirty_subtree;
+ };
+ 
+-template <typename AXSourceNode>
+-AXTreeSerializer<AXSourceNode>::AXTreeSerializer(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::AXTreeSerializer(
+     AXTreeSource<AXSourceNode>* tree,
+     bool crash_on_error)
+     : tree_(tree), crash_on_error_(crash_on_error) {}
+ 
+-template <typename AXSourceNode>
+-AXTreeSerializer<AXSourceNode>::~AXTreeSerializer() {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::~AXTreeSerializer() {
+   // Clear |tree_| to prevent any additional calls to the tree source
+   // during teardown.
+   // TODO(accessibility) How would that happen?
+@@ -276,14 +276,14 @@ AXTreeSerializer<AXSourceNode>::~AXTreeSerializer() {
+   Reset();
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::Reset() {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::Reset() {
+   InternalReset();
+   did_reset_ = true;
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::InternalReset() {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::InternalReset() {
+   client_tree_data_ = AXTreeData();
+ 
+   // Normally we use DeleteClientSubtree to remove nodes from the tree,
+@@ -296,26 +296,28 @@ void AXTreeSerializer<AXSourceNode>::InternalReset() {
+   client_root_ = nullptr;
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::ChangeTreeSourceForTesting(
+-    AXTreeSource<AXSourceNode>* new_tree) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::
++    ChangeTreeSourceForTesting(AXTreeSource<AXSourceNode>* new_tree) {
+   tree_ = new_tree;
+ }
+ 
+-template <typename AXSourceNode>
+-size_t AXTreeSerializer<AXSourceNode>::ClientTreeNodeCount() const {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++size_t AXTreeSerializer<AXSourceNode,
++                        AXSourceNodeVectorType>::ClientTreeNodeCount() const {
+   return client_id_map_.size();
+ }
+ 
+-template <typename AXSourceNode>
+-AXSourceNode AXTreeSerializer<AXSourceNode>::LeastCommonAncestor(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++AXSourceNode
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::LeastCommonAncestor(
+     AXSourceNode node,
+     ClientTreeNode* client_node) {
+   if (!node || client_node == nullptr) {
+     return tree_->GetNull();
+   }
+ 
+-  std::vector<AXSourceNode> ancestors;
++  AXSourceNodeVectorType ancestors;
+   while (node) {
+     ancestors.push_back(node);
+     node = tree_->GetParent(node);
+@@ -334,17 +336,18 @@ AXSourceNode AXTreeSerializer<AXSourceNode>::LeastCommonAncestor(
+   for (size_t source_index = ancestors.size(),
+               client_index = client_ancestors.size();
+        source_index > 0 && client_index > 0; --source_index, --client_index) {
+-    if (tree_->GetId(ancestors[source_index - 1]) !=
++    if (tree_->GetId(ancestors[(unsigned int)(source_index - 1)]) !=
+         client_ancestors[client_index - 1]->id) {
+       return lca;
+     }
+-    lca = ancestors[source_index - 1];
++    lca = ancestors[(unsigned int)(source_index - 1)];
+   }
+   return lca;
+ }
+ 
+-template <typename AXSourceNode>
+-AXSourceNode AXTreeSerializer<AXSourceNode>::LeastCommonAncestor(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++AXSourceNode
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::LeastCommonAncestor(
+     AXSourceNode node) {
+   // Walk up the tree until the source node's id also exists in the
+   // client tree, whose parent is not invalid, then call LeastCommonAncestor
+@@ -371,10 +374,9 @@ AXSourceNode AXTreeSerializer<AXSourceNode>::LeastCommonAncestor(
+   return LeastCommonAncestor(node, client_node);
+ }
+ 
+-template <typename AXSourceNode>
+-bool AXTreeSerializer<AXSourceNode>::AnyDescendantWasReparented(
+-    AXSourceNode node,
+-    AXSourceNode* out_lca) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++bool AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::
++    AnyDescendantWasReparented(AXSourceNode node, AXSourceNode* out_lca) {
+   bool result = false;
+   int id = tree_->GetId(node);
+   tree_->CacheChildrenIfNeeded(node);
+@@ -422,8 +424,9 @@ bool AXTreeSerializer<AXSourceNode>::AnyDescendantWasReparented(
+   return result;
+ }
+ 
+-template <typename AXSourceNode>
+-ClientTreeNode* AXTreeSerializer<AXSourceNode>::ClientTreeNodeById(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++ClientTreeNode*
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::ClientTreeNodeById(
+     AXNodeID id) {
+   std::map<AXNodeID, ClientTreeNode*>::iterator iter = client_id_map_.find(id);
+   if (iter != client_id_map_.end())
+@@ -431,8 +434,9 @@ ClientTreeNode* AXTreeSerializer<AXSourceNode>::ClientTreeNodeById(
+   return nullptr;
+ }
+ 
+-template <typename AXSourceNode>
+-ClientTreeNode* AXTreeSerializer<AXSourceNode>::GetClientTreeNodeParent(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++ClientTreeNode*
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::GetClientTreeNodeParent(
+     ClientTreeNode* obj) {
+   ClientTreeNode* parent = obj->parent;
+   if (!parent)
+@@ -457,8 +461,8 @@ ClientTreeNode* AXTreeSerializer<AXSourceNode>::GetClientTreeNodeParent(
+   return parent;
+ }
+ 
+-template <typename AXSourceNode>
+-bool AXTreeSerializer<AXSourceNode>::SerializeChanges(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++bool AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::SerializeChanges(
+     AXSourceNode node,
+     AXTreeUpdate* out_update) {
+   if (!timeout_.is_zero())
+@@ -540,33 +544,37 @@ bool AXTreeSerializer<AXSourceNode>::SerializeChanges(
+   return true;
+ }
+ 
+-template <typename AXSourceNode>
+-std::vector<AXNodeID> AXTreeSerializer<AXSourceNode>::GetIncompleteNodeIds() {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++std::vector<AXNodeID>
++AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::GetIncompleteNodeIds() {
+   DCHECK(max_node_count_ > 0 || !timeout_.is_zero());
+   return incomplete_node_ids_;
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::MarkSubtreeDirty(AXSourceNode node) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::MarkSubtreeDirty(
++    AXSourceNode node) {
+   ClientTreeNode* client_node = ClientTreeNodeById(tree_->GetId(node));
+   if (client_node)
+     MarkClientSubtreeDirty(client_node);
+ }
+ 
+-template <typename AXSourceNode>
+-bool AXTreeSerializer<AXSourceNode>::IsInClientTree(AXSourceNode node) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++bool AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::IsInClientTree(
++    AXSourceNode node) {
+   return ClientTreeNodeById(tree_->GetId(node));
+ }
+ 
+-template <typename AXSourceNode>
+-bool AXTreeSerializer<AXSourceNode>::IsDirty(AXSourceNode node) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++bool AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::IsDirty(
++    AXSourceNode node) {
+   ClientTreeNode* client_node = ClientTreeNodeById(tree_->GetId(node));
+   return client_node ? client_node->in_dirty_subtree : false;
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::MarkClientSubtreeDirty(
+-    ClientTreeNode* client_node) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::
++    MarkClientSubtreeDirty(ClientTreeNode* client_node) {
+   // Return early if already marked dirty, in order to avoid duplicate work in
+   // subtree, as the only method that marks nodes dirty is this one.
+   if (client_node->in_dirty_subtree) {
+@@ -578,9 +586,9 @@ void AXTreeSerializer<AXSourceNode>::MarkClientSubtreeDirty(
+   }
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::DeleteClientSubtree(
+-    ClientTreeNode* client_node) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::
++    DeleteClientSubtree(ClientTreeNode* client_node) {
+   if (client_node == client_root_) {
+     Reset();  // Do not try to reuse a bad root later.
+     // A heuristic for this condition rather than an explicit Reset() from a
+@@ -601,18 +609,17 @@ void AXTreeSerializer<AXSourceNode>::DeleteClientSubtree(
+   }
+ }
+ 
+-template <typename AXSourceNode>
+-void AXTreeSerializer<AXSourceNode>::DeleteDescendants(
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++void AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::DeleteDescendants(
+     ClientTreeNode* client_node) {
+   for (size_t i = 0; i < client_node->children.size(); ++i)
+     DeleteClientSubtree(client_node->children[i]);
+   client_node->children.clear();
+ }
+ 
+-template <typename AXSourceNode>
+-bool AXTreeSerializer<AXSourceNode>::SerializeChangedNodes(
+-    AXSourceNode node,
+-    AXTreeUpdate* out_update) {
++template <typename AXSourceNode, typename AXSourceNodeVectorType>
++bool AXTreeSerializer<AXSourceNode, AXSourceNodeVectorType>::
++    SerializeChangedNodes(AXSourceNode node, AXTreeUpdate* out_update) {
+   // This method has three responsibilities:
+   // 1. Serialize |node| into an AXNodeData, and append it to
+   //    the AXTreeUpdate to be sent to the client.
+diff --git a/ui/accessibility/ax_tree_serializer_unittest.cc b/ui/accessibility/ax_tree_serializer_unittest.cc
+index 3955a06f31795d0941d76976d8ae0a5c3204eedd..126e43a2bdcb1f9780baac6657201f26b3bd3244 100644
+--- a/ui/accessibility/ax_tree_serializer_unittest.cc
++++ b/ui/accessibility/ax_tree_serializer_unittest.cc
+@@ -21,7 +21,8 @@ using testing::UnorderedElementsAre;
+ 
+ namespace ui {
+ 
+-using BasicAXTreeSerializer = AXTreeSerializer<const AXNode*>;
++using BasicAXTreeSerializer =
++    AXTreeSerializer<const AXNode*, std::vector<const AXNode*>>;
+ 
+ // The framework for these tests is that each test sets up |treedata0_|
+ // and |treedata1_| and then calls GetTreeSerializer, which creates a
+@@ -535,7 +536,7 @@ TEST_F(AXTreeSerializerTest, TestPartialSerialization) {
+     // The result should be indistinguishable from the source tree.
+     std::unique_ptr<AXTreeSource<const AXNode*>> dst_tree_source(
+         dst_tree.CreateTreeSource());
+-    AXTreeSerializer<const AXNode*> serializer(dst_tree_source.get());
++    BasicAXTreeSerializer serializer(dst_tree_source.get());
+     AXTreeUpdate dst_update;
+     CHECK(serializer.SerializeChanges(dst_tree.root(), &dst_update));
+     ASSERT_EQ(treedata1_.ToString(), dst_update.ToString());
+diff --git a/ui/accessibility/ax_tree_unittest.cc b/ui/accessibility/ax_tree_unittest.cc
+index 910c03370446e228692aed4e356d06db3d0ec574..bbd9fa9bafc2003204be9ac05c9044e7fc851b1d 100644
+--- a/ui/accessibility/ax_tree_unittest.cc
++++ b/ui/accessibility/ax_tree_unittest.cc
+@@ -333,7 +333,8 @@ TEST(AXTreeTest, SerializeSimpleAXTree) {
+ 
+   std::unique_ptr<AXTreeSource<const AXNode*>> tree_source(
+       src_tree.CreateTreeSource());
+-  AXTreeSerializer<const AXNode*> serializer(tree_source.get());
++  AXTreeSerializer<const AXNode*, std::vector<const AXNode*>> serializer(
++      tree_source.get());
+   AXTreeUpdate update;
+   serializer.SerializeChanges(src_tree.root(), &update);
+ 
+diff --git a/ui/views/accessibility/ax_aura_obj_cache_unittest.cc b/ui/views/accessibility/ax_aura_obj_cache_unittest.cc
+index 42e505a548edab06ebd31c298791959fe1b55867..68f6b64b1e96a18549d78c88a7adff804c9b2da2 100644
+--- a/ui/views/accessibility/ax_aura_obj_cache_unittest.cc
++++ b/ui/views/accessibility/ax_aura_obj_cache_unittest.cc
+@@ -216,7 +216,8 @@ TEST_F(AXAuraObjCacheTest, ValidTree) {
+   ui::AXTreeID tree_id = ui::AXTreeID::CreateNewAXTreeID();
+   AXTreeSourceViews tree_source(
+       cache.GetOrCreate(parent_widget->GetNativeWindow()), tree_id, &cache);
+-  ui::AXTreeSerializer<AXAuraObjWrapper*> serializer(&tree_source);
++  ui::AXTreeSerializer<AXAuraObjWrapper*, std::vector<AXAuraObjWrapper*>>
++      serializer(&tree_source);
+   ui::AXTreeUpdate serialized_tree;
+   serializer.SerializeChanges(tree_source.GetRoot(), &serialized_tree);
+ 
+diff --git a/ui/views/accessibility/views_ax_tree_manager.h b/ui/views/accessibility/views_ax_tree_manager.h
+index 0caff17e0568762d61c7f2fdc6b94c01bc3d9e30..00fe01d00e17b51d7d37d099a8f21549669e69a0 100644
+--- a/ui/views/accessibility/views_ax_tree_manager.h
++++ b/ui/views/accessibility/views_ax_tree_manager.h
+@@ -93,7 +93,8 @@ class VIEWS_EXPORT ViewsAXTreeManager : public ui::AXTreeManager,
+   void OnWidgetDestroyed(Widget* widget) override;
+ 
+  private:
+-  using ViewsAXTreeSerializer = ui::AXTreeSerializer<AXAuraObjWrapper*>;
++  using ViewsAXTreeSerializer =
++      ui::AXTreeSerializer<AXAuraObjWrapper*, std::vector<AXAuraObjWrapper*>>;
+ 
+   void SerializeTreeUpdates();
+   void UnserializeTreeUpdates(const std::vector<ui::AXTreeUpdate>& updates);

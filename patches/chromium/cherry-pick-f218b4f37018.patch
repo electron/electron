@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joshua Pawlicki <waffles@chromium.org>
+Date: Fri, 29 Sep 2023 22:25:20 +0000
+Subject: update_client: Check string length before calling front().
+
+(cherry picked from commit 6581c6b7c4b7b627b32b09cdbe9e84d2dd9ec018)
+
+Fixed: 1486316
+Change-Id: I7be04ea0c8e040b5a67364925fc06d4ee9167242
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4892838
+Commit-Queue: Joshua Pawlicki <waffles@chromium.org>
+Auto-Submit: Joshua Pawlicki <waffles@chromium.org>
+Reviewed-by: Sorin Jianu <sorin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1201617}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4902697
+Cr-Commit-Position: refs/branch-heads/5993@{#978}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/components/update_client/protocol_parser_json.cc b/components/update_client/protocol_parser_json.cc
+index 9858ba06290675ae39d2606fbe4aea34f2efe655..ba1aeba747d990bc97977bebb60f1141e3981517 100644
+--- a/components/update_client/protocol_parser_json.cc
++++ b/components/update_client/protocol_parser_json.cc
+@@ -196,7 +196,7 @@ bool ParseUpdateCheck(const base::Value& updatecheck_node_val,
+   const base::Value::Dict& updatecheck_node = updatecheck_node_val.GetDict();
+ 
+   for (auto kv : updatecheck_node) {
+-    if (kv.first.front() == '_' && kv.second.is_string()) {
++    if (!kv.first.empty() && kv.first.front() == '_' && kv.second.is_string()) {
+       result->custom_attributes[kv.first] = kv.second.GetString();
+     }
+   }
+diff --git a/components/update_client/protocol_parser_json_unittest.cc b/components/update_client/protocol_parser_json_unittest.cc
+index 606c6ddc8f906e4bcd0722828ab34f5c77e73e5d..c59bf8ab7b1f7751c2e78396712f0de283c3b00d 100644
+--- a/components/update_client/protocol_parser_json_unittest.cc
++++ b/components/update_client/protocol_parser_json_unittest.cc
+@@ -393,6 +393,10 @@ const char* kJSONCustomAttributes = R"()]}'
+    ]
+   }})";
+ 
++const char* kBadJSONBadAppIdNoNewlinesBadUCKey =
++    R"()]}'{"response":{"app":[{"appid":";","updatecheck":{"":1}}],)"
++    R"("protocol":"3.1"}})";
++
+ TEST(UpdateClientProtocolParserJSONTest, Parse) {
+   const auto parser = std::make_unique<ProtocolParserJSON>();
+ 
+@@ -610,4 +614,9 @@ TEST(UpdateClientProtocolParserJSONTest, ParseAttrs) {
+   }
+ }
+ 
++TEST(UpdateClientProtocolParserJSONTest, ParseBadJSONNoCrash) {
++  const auto parser = std::make_unique<ProtocolParserJSON>();
++  EXPECT_TRUE(parser->Parse(kBadJSONBadAppIdNoNewlinesBadUCKey));
++}
++
+ }  // namespace update_client
