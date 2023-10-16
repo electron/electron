@@ -317,11 +317,7 @@ describe('ipc module', () => {
           await once(ipcMain, 'closed');
         });
 
-        // TODO(@vertedinde): This broke upstream in CL https://chromium-review.googlesource.com/c/chromium/src/+/4831380
-        // The behavior seems to be an intentional change, we need to either A) implement the task_container_ model in
-        // our renderer message ports or B) patch how we handle renderer message ports being garbage collected
-        // crbug: https://bugs.chromium.org/p/chromium/issues/detail?id=1487835
-        it.skip('is emitted when the other end of a port is garbage-collected', async () => {
+        it('is emitted when the other end of a port is garbage-collected', async () => {
           const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
           w.loadURL('about:blank');
           await w.webContents.executeJavaScript(`(${async function () {
