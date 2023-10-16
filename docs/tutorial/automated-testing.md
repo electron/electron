@@ -22,9 +22,11 @@ There are a few ways that you can set up testing using WebDriver.
 Node.js package for testing with WebDriver. Its ecosystem also includes various plugins
 (e.g. reporter and services) that can help you put together your test setup.
 
+If you already have an existing WebdriverIO setup, it is recommended to update your dependencies and validate your existing configuration with how it is [outlined in the docs](https://webdriver.io/docs/desktop-testing/electron#configuration).
+
 #### Install the test runner
 
-First you need to run the WebdriverIO starter toolkit in your project root directory:
+If you don't use WebdriverIO in your project yet, you can add it by running the starter toolkit in your project root directory:
 
 ```sh npm2yarn
 npm init wdio@latest ./
