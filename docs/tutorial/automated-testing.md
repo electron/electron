@@ -30,7 +30,7 @@ First you need to run the WebdriverIO starter toolkit in your project root direc
 npm init wdio@latest ./
 ```
 
-This starts a configuration wizard that helps you put together the right setup, installs all necessary packages for you and generates a `wdio.conf.js` configuration file. Make sure to select _"Desktop Testing - of Electron Applications"_ on one of the first questions asking _"What type of testing would you like to do?"_.
+This starts a configuration wizard that helps you put together the right setup, installs all necessary packages, and generates a `wdio.conf.js` configuration file. Make sure to select _"Desktop Testing - of Electron Applications"_ on one of the first questions asking _"What type of testing would you like to do?"_.
 
 #### Connect WDIO to your Electron app
 
