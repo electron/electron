@@ -849,10 +849,10 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..23eed033d31eced6a85c794eee550655af7a9a1d
+index 0000000000000000000000000000000000000000..7d2ca477db2415f43ababa270d8aefa3124b2765
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,51 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -894,11 +894,14 @@ index 0000000000000000000000000000000000000000..23eed033d31eced6a85c794eee550655
 +    "lib/nghttp2_pq.c",
 +    "lib/nghttp2_priority_spec.c",
 +    "lib/nghttp2_queue.c",
++    "lib/nghttp2_ratelim.c",
 +    "lib/nghttp2_rcbuf.c",
 +    "lib/nghttp2_session.c",
 +    "lib/nghttp2_stream.c",
 +    "lib/nghttp2_submit.c",
++    "lib/nghttp2_time.c",
 +    "lib/nghttp2_version.c",
++    "lib/sfparse.c"
 +  ]
 +}
 diff --git a/deps/simdutf/BUILD.gn b/deps/simdutf/BUILD.gn
@@ -2104,7 +2107,7 @@ index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868b
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index ac1fc294a412b1a63b6f6bb4c49cd5ce34fb8ad7..eaa480cd63217dc9cd6868dff411932adef4ef08 100644
+index 88cc915177bcf8b86eb8f9f16b215cb6d06b3aa7..8df52c22dd76a850d421075effc44fbfb32307db 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
