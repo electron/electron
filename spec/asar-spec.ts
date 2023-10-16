@@ -490,6 +490,15 @@ describe('asar package', function () {
           }).to.throw(/ENOENT/);
         }
       });
+
+      itremote('returns null when can not find file with throwIfNoEntry === false', function () {
+        const ref2 = ['file4', 'file5', path.join('dir1', 'file4')];
+        for (let j = 0, len = ref2.length; j < len; j++) {
+          const file = ref2[j];
+          const p = path.join(asarDir, 'a.asar', file);
+          expect(fs.lstatSync(p, { throwIfNoEntry: false })).to.equal(null);
+        }
+      });
     });
 
     describe('fs.lstat', function () {
