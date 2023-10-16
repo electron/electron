@@ -37,27 +37,19 @@ This starts a configuration wizard that helps you put together the right setup, 
 After the configuration wizard finished running your `wdio.conf.js` should include roughly the following content:
 
 ```js title='wdio.conf.js' @ts-nocheck
-import fs from 'node:fs'
-import url from 'node:url'
-import path from 'node:path'
-
-import { getBinaryPath } from 'wdio-electron-service/utils'
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
-const packageJson = JSON.parse(fs.readFileSync('./package.json').toString())
-
 export const config = {
   // ...
   services: ['electron'],
-  capabilities: [
-    {
-      browserName: 'electron',
-      'wdio:electronServiceOptions': {
-        appBinaryPath: getBinaryPath(__dirname, productName),
-        appArgs: ['foo', 'bar=baz']
-      }
+  capabilities: [{
+    browserName: 'electron',
+    'wdio:electronServiceOptions': {
+      // WebdriverIO can automatically find your bundled application
+      // if you use Electron Forge or electron-builder, otherwise you
+      // can define it here, e.g.:
+      // appBinaryPath: './path/to/bundled/application.exe',
+      appArgs: ['foo', 'bar=baz']
     }
-  ]
+  }]
   // ...
 }
 ```
