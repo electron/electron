@@ -200,7 +200,10 @@ bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-  return false;
+  // This differs from upstream - we want to allow users greater
+  // ability to communicate with FIDO devices in Electron.
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kDisableHidBlocklist);
 }
 
 void HidChooserContext::AddDeviceObserver(DeviceObserver* observer) {

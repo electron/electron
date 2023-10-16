@@ -133,6 +133,9 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
+  if (!browser_context)
+    return false;
+
   base::Value::Dict details;
   details.Set("securityOrigin", origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -147,21 +150,28 @@ bool ElectronHidDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  return GetChooserContext(browser_context)
-      ->HasDevicePermission(origin, device);
+  auto* chooser_context = GetChooserContext(browser_context);
+  if (!chooser_context)
+    return false;
+  return chooser_context->HasDevicePermission(origin, device);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  return GetChooserContext(browser_context)
-      ->RevokeDevicePermission(origin, device);
+  auto* chooser_context = GetChooserContext(browser_context);
+  if (!chooser_context)
+    return;
+  chooser_context->RevokeDevicePermission(origin, device);
 }
 
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
     content::BrowserContext* browser_context) {
-  return GetChooserContext(browser_context)->GetHidManager();
+  auto* chooser_context = GetChooserContext(browser_context);
+  if (!chooser_context)
+    return nullptr;
+  return chooser_context->GetHidManager();
 }
 
 void ElectronHidDelegate::AddObserver(content::BrowserContext* browser_context,
@@ -180,6 +190,8 @@ const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
     content::BrowserContext* browser_context,
     const std::string& guid) {
   auto* chooser_context = GetChooserContext(browser_context);
+  if (!chooser_context)
+    return nullptr;
   return chooser_context->GetDeviceInfo(guid);
 }
 
@@ -187,6 +199,8 @@ bool ElectronHidDelegate::IsFidoAllowedForOrigin(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
   auto* chooser_context = GetChooserContext(browser_context);
+  if (!chooser_context)
+    return false;
   return chooser_context->IsFidoAllowedForOrigin(origin);
 }
 
