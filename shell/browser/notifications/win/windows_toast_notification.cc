@@ -8,6 +8,8 @@
 
 #include "shell/browser/notifications/win/windows_toast_notification.h"
 
+#include <string_view>
+
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
@@ -63,7 +65,7 @@ namespace {
 // applying Creators Update (build 15063).
 constexpr wchar_t kGroup[] = L"Notifications";
 
-void DebugLog(const std::string& log_msg) {
+void DebugLog(std::string_view log_msg) {
   if (base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS"))
     LOG(INFO) << log_msg;
 }
