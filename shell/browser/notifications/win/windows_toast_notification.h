@@ -52,6 +52,7 @@ class WindowsToastNotification : public Notification {
   // Notification:
   void Show(const NotificationOptions& options) override;
   void Dismiss() override;
+  void Remove() override;
 
  private:
   friend class ToastEventHandler;
