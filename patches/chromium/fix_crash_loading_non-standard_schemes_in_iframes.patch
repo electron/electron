@@ -30,8 +30,8 @@ index 2b740ce0e1eb63b153a06dc43527a48fc92bc0db..a9362a7bb039ec4a2188936a162d62e7
      return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
    }
  
-+  if (!common_params.url.IsStandard()) {
-+    return std::make_pair(url::Origin::Resolve(common_params.url,
++  if (!common_params().url.IsStandard()) {
++    return std::make_pair(url::Origin::Resolve(common_params().url,
 +                                               url::Origin()),
 +                          "url_non_standard");
 +  }
