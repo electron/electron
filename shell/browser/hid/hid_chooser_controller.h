@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/scoped_observation.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/hid_chooser.h"
 #include "content/public/browser/web_contents.h"
