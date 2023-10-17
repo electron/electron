@@ -85,7 +85,7 @@ Emitted when the notification is closed by manual intervention from the user.
 This event is not guaranteed to be emitted in all cases where the notification
 is closed.
 
-On Windows, the `close` event is emitted when the notification leaves the screen either by programmatic dismissal via `notification.close()`, the user closing the notification, or via system timeout. If the notification remains in the Action Center afterwards, a further call to `notification.close()` will remove the notification from the action center, but the `close` event will not be emitted again.
+On Windows, the `close` event can be emitted in one of three ways: programmatic dismissal with `notification.close()`, by the user closing the notification, or via system timeout. If a notification is in the Action Center after the initial `close` event is emitted, a call to `notification.close()` will remove the notification from the action center but the `close` event will not be emitted again.
 
 #### Event: 'reply' _macOS_
 

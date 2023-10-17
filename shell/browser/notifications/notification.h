@@ -50,9 +50,14 @@ class Notification {
 
   // Shows the notification.
   virtual void Show(const NotificationOptions& options) = 0;
-  // Closes the notification, this instance will be destroyed after the
-  // notification gets closed.
+
+  // Dismisses the notification. On some platforms this will result in full
+  // removal and destruction of the notification, but if the initial dismissal
+  // does not fully get rid of the notification it will be destroyed in Remove.
   virtual void Dismiss() = 0;
+
+  // Removes the notification if it was not fully removed during dismissal,
+  // as can happen on some platforms including Windows.
   virtual void Remove();
 
   // Should be called by derived classes.
