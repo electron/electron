@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ac24e4f566f5a6e0192a20bb54f9e0fec3f481c0..2c66f70c6bca652803a934373b5d22f3d51e9f24 100644
+index e6ae1ca1aa68df613b78cd8ce5a8e319f5ffdce0..4010fc40ed4f704033f05ab73df1a3c820d9e0ae 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4261,8 +4261,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -232,7 +232,7 @@ index ac24e4f566f5a6e0192a20bb54f9e0fec3f481c0..2c66f70c6bca652803a934373b5d22f3
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index db12930a449b38966e63c2274275b1157f38bea7..2d770e9c0c88e5ad1fac15fd13b70e6b5be824c8 100644
+index de927486ef1b44bdaf8fb6188dd164482a6e1f9a..234317655a00ed1f6fc81837757d673703b548e1 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -137,8 +137,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index db12930a449b38966e63c2274275b1157f38bea7..2d770e9c0c88e5ad1fac15fd13b70e6b
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 9a0faa1de15fd456bd74ec6f6f50917ad2baf64a..c0a3e2d05ff9346edd6d2d27b3e365bde11c3f90 100644
+index 86c2008df19cf6a95e32919834747eee0b6da542..7b002f20a3e286dd320dfa020612a5e887b2c3a8 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -323,8 +323,7 @@ class CONTENT_EXPORT WebContentsDelegate {
