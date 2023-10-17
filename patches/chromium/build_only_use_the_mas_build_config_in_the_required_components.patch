@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 21486c53e81f144d28258b132dfd32b0ecf208af..adf6ccea22ba063c707c09282530bc243059a5a9 100644
+index d89a73cf62435089e15405fda5aebf254f54a83a..321854b3381151a2250c1c59a8948de0c2b7e6cd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1035,6 +1035,7 @@ component("base") {
+@@ -1034,6 +1034,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,10 +74,10 @@ index 3029fda279a6e2062115ac7fc7ade32e4a3aecd2..a76eb15b7498e13933331f221d8b7314
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 034e9f472b306e70995fc0cc6fe9d4c1561b094d..3f616e26d5dfc992b569e5b13fa0b230c3ff7202 100644
+index 2668cc836808b999e3cd8edf77986a98107c1fbf..20b48fd84a2b52d5c002d4f98c0ac4bea418b362 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -53,6 +53,7 @@ source_set("browser") {
+@@ -52,6 +52,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -110,7 +110,7 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7c43fd0c504c0757d27813c1a1974cc551a6bdb7..ba8c2bb12c3226b13976760a08a45acee8d9106f 100644
+index 3a02c408c4cc145aa0cf0a07f3ecc0a597cf3065..4335e24560d47c8adccce1233daab0f89a653738 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -482,6 +482,7 @@ static_library("test_support") {
@@ -135,7 +135,7 @@ index 5cd75b5bd5dcf31b6a589f69c1086b429c533923..924b5205cd38a80db38d505d8fd9263d
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index d265281b6283af9ec37883e98cbc4f1ec38dd9b8..607798f87ead74bcc9e66620aff606b721763da5 100644
+index f9701412dfce578812b889a0b8e9bacabe9ff0ff..a47fa84485fa29e6a743718ee071fde626eaa9cd 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -242,6 +242,7 @@ component("bluetooth") {
@@ -159,7 +159,7 @@ index 090bbd6f03c5749aaf763dac9e52c776f366c33d..5143231f5b3c95f55bf12aaedf253781
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8ec2ced4e4ea53804e9ee9b3844d28ddc2a0e13c..be0507315eb0d604795d693081f9d780cd818364 100644
+index c07f39acf8a733780b325b17d19718346136712d..c174e10763e8753257c7ebed6eee1fb6df818559 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -206,6 +206,7 @@ source_set("audio") {

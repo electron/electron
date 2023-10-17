@@ -22,7 +22,7 @@ index 5d7780c48a74fc7d95aeb690c90ab394b1e01a83..15f5f0f6aa05d3b17adae87286c92df9
  
  void MessagePort::Entangle(MessagePortDescriptor port_descriptor,
 diff --git a/third_party/blink/renderer/core/messaging/message_port.h b/third_party/blink/renderer/core/messaging/message_port.h
-index f2e944e58226f92cddca87c9aee1be59aeadb980..a178d15c11b1e5fb1ff74d182021fe39e9d9b107 100644
+index 3678c9887c1596f813cd9618b1e9728808659fa8..5fc9edb82bf983fee9084d89904e232ecfe66fd9 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.h
 +++ b/third_party/blink/renderer/core/messaging/message_port.h
 @@ -125,6 +125,13 @@ class CORE_EXPORT MessagePort : public EventTarget,
