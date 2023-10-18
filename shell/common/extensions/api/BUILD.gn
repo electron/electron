@@ -37,6 +37,7 @@ group("extensions_features") {
 
 generated_json_strings("generated_api_json_strings") {
   sources = [
+    "action.json",
     "extension.json",
     "resources_private.idl",
     "scripting.idl",

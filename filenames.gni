@@ -709,6 +709,8 @@ filenames = {
   ]
 
   lib_sources_extensions = [
+    "shell/browser/extensions/api/extension_action/extension_action_api.cc",
+    "shell/browser/extensions/api/extension_action/extension_action_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
     "shell/browser/extensions/api/management/electron_management_api_delegate.h",
     "shell/browser/extensions/api/resources_private/resources_private_api.cc",
