@@ -8,6 +8,8 @@
 
 #include "shell/browser/notifications/win/windows_toast_notification.h"
 
+#include <string_view>
+
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
@@ -34,6 +36,8 @@ using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
 using ABI::Windows::Data::Xml::Dom::IXmlText;
 using Microsoft::WRL::Wrappers::HStringReference;
 
+namespace winui = ABI::Windows::UI;
+
 #define RETURN_IF_FAILED(hr) \
   do {                       \
     HRESULT _hrTemp = hr;    \
@@ -47,8 +51,7 @@ using Microsoft::WRL::Wrappers::HStringReference;
     std::string _msgTemp = msg;                                          \
     if (FAILED(_hrTemp)) {                                               \
       std::string _err = _msgTemp + ",ERROR " + std::to_string(_hrTemp); \
-      if (IsDebuggingNotifications())                                    \
-        LOG(INFO) << _err;                                               \
+      DebugLog(_err);                                                    \
       Notification::NotificationFailed(_err);                            \
       return _hrTemp;                                                    \
     }                                                                    \
@@ -58,17 +61,23 @@ namespace electron {
 
 namespace {
 
-bool IsDebuggingNotifications() {
-  return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
+// This string needs to be max 16 characters to work on Windows 10 prior to
+// applying Creators Update (build 15063).
+constexpr wchar_t kGroup[] = L"Notifications";
+
+void DebugLog(std::string_view log_msg) {
+  if (base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS"))
+    LOG(INFO) << log_msg;
 }
+
 }  // namespace
 
 // static
-ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
+ComPtr<winui::Notifications::IToastNotificationManagerStatics>
     WindowsToastNotification::toast_manager_;
 
 // static
-ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
+ComPtr<winui::Notifications::IToastNotifier>
     WindowsToastNotification::toast_notifier_;
 
 // static
@@ -112,17 +121,37 @@ WindowsToastNotification::~WindowsToastNotification() {
 
 void WindowsToastNotification::Show(const NotificationOptions& options) {
   if (SUCCEEDED(ShowInternal(options))) {
-    if (IsDebuggingNotifications())
-      LOG(INFO) << "Notification created";
+    DebugLog("Notification created");
 
     if (delegate())
       delegate()->NotificationDisplayed();
   }
 }
 
+void WindowsToastNotification::Remove() {
+  DebugLog("Removing notification from action center");
+
+  ComPtr<winui::Notifications::IToastNotificationManagerStatics2>
+      toast_manager2;
+  if (FAILED(toast_manager_.As(&toast_manager2)))
+    return;
+
+  ComPtr<winui::Notifications::IToastNotificationHistory> notification_history;
+  if (FAILED(toast_manager2->get_History(&notification_history)))
+    return;
+
+  ScopedHString app_id;
+  if (!GetAppUserModelID(&app_id))
+    return;
+
+  ScopedHString group(kGroup);
+  ScopedHString tag(base::as_wcstr(base::UTF8ToUTF16(notification_id())));
+  notification_history->RemoveGroupedTagWithId(tag, group, app_id);
+}
+
 void WindowsToastNotification::Dismiss() {
-  if (IsDebuggingNotifications())
-    LOG(INFO) << "Hiding notification";
+  DebugLog("Hiding notification");
+
   toast_notifier_->Hide(toast_notification_.Get());
 }
 
@@ -151,8 +180,7 @@ HRESULT WindowsToastNotification::ShowInternal(
     return E_FAIL;
   }
 
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotificationFactory>
-      toast_factory;
+  ComPtr<winui::Notifications::IToastNotificationFactory> toast_factory;
   REPORT_AND_RETURN_IF_FAILED(
       Windows::Foundation::GetActivationFactory(toast_str, &toast_factory),
       "WinAPI: GetActivationFactory failed");
@@ -160,6 +188,19 @@ HRESULT WindowsToastNotification::ShowInternal(
   REPORT_AND_RETURN_IF_FAILED(toast_factory->CreateToastNotification(
                                   toast_xml.Get(), &toast_notification_),
                               "WinAPI: CreateToastNotification failed");
+
+  ComPtr<winui::Notifications::IToastNotification2> toast2;
+  REPORT_AND_RETURN_IF_FAILED(
+      toast_notification_->QueryInterface(IID_PPV_ARGS(&toast2)),
+      "WinAPI: Getting Notification interface failed");
+
+  ScopedHString group(kGroup);
+  REPORT_AND_RETURN_IF_FAILED(toast2->put_Group(group),
+                              "WinAPI: Setting group failed");
+
+  ScopedHString tag(base::as_wcstr(base::UTF8ToUTF16(notification_id())));
+  REPORT_AND_RETURN_IF_FAILED(toast2->put_Tag(tag),
+                              "WinAPI: Setting tag failed");
 
   REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
                               "WinAPI: SetupCallbacks failed");
@@ -170,22 +211,20 @@ HRESULT WindowsToastNotification::ShowInternal(
 }
 
 HRESULT WindowsToastNotification::GetToastXml(
-    ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
-        toastManager,
+    winui::Notifications::IToastNotificationManagerStatics* toastManager,
     const std::u16string& title,
     const std::u16string& msg,
     const std::wstring& icon_path,
     const std::u16string& timeout_type,
     bool silent,
     IXmlDocument** toast_xml) {
-  ABI::Windows::UI::Notifications::ToastTemplateType template_type;
+  winui::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
     // Single line toast.
     template_type =
         icon_path.empty()
-            ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText01
-            : ABI::Windows::UI::Notifications::
-                  ToastTemplateType_ToastImageAndText01;
+            ? winui::Notifications::ToastTemplateType_ToastText01
+            : winui::Notifications::ToastTemplateType_ToastImageAndText01;
     REPORT_AND_RETURN_IF_FAILED(
         toast_manager_->GetTemplateContent(template_type, toast_xml),
         "XML: Fetching XML ToastImageAndText01 template failed");
@@ -199,9 +238,8 @@ HRESULT WindowsToastNotification::GetToastXml(
     // Title and body toast.
     template_type =
         icon_path.empty()
-            ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02
-            : ABI::Windows::UI::Notifications::
-                  ToastTemplateType_ToastImageAndText02;
+            ? winui::Notifications::ToastTemplateType_ToastText02
+            : winui::Notifications::ToastTemplateType_ToastImageAndText02;
     REPORT_AND_RETURN_IF_FAILED(
         toastManager->GetTemplateContent(template_type, toast_xml),
         "XML: Fetching XML ToastImageAndText02 template failed");
@@ -567,7 +605,7 @@ HRESULT WindowsToastNotification::XmlDocumentFromString(
 }
 
 HRESULT WindowsToastNotification::SetupCallbacks(
-    ABI::Windows::UI::Notifications::IToastNotification* toast) {
+    winui::Notifications::IToastNotification* toast) {
   event_handler_ = Make<ToastEventHandler>(this);
   RETURN_IF_FAILED(
       toast->add_Activated(event_handler_.Get(), &activated_token_));
@@ -578,7 +616,7 @@ HRESULT WindowsToastNotification::SetupCallbacks(
 }
 
 bool WindowsToastNotification::RemoveCallbacks(
-    ABI::Windows::UI::Notifications::IToastNotification* toast) {
+    winui::Notifications::IToastNotification* toast) {
   if (FAILED(toast->remove_Activated(activated_token_)))
     return false;
 
@@ -597,32 +635,29 @@ ToastEventHandler::ToastEventHandler(Notification* notification)
 ToastEventHandler::~ToastEventHandler() = default;
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
-    ABI::Windows::UI::Notifications::IToastNotification* sender,
+    winui::Notifications::IToastNotification* sender,
     IInspectable* args) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&Notification::NotificationClicked, notification_));
-  if (IsDebuggingNotifications())
-    LOG(INFO) << "Notification clicked";
+  DebugLog("Notification clicked");
 
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
-    ABI::Windows::UI::Notifications::IToastNotification* sender,
-    ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
+    winui::Notifications::IToastNotification* sender,
+    winui::Notifications::IToastDismissedEventArgs* e) {
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&Notification::NotificationDismissed, notification_));
-  if (IsDebuggingNotifications())
-    LOG(INFO) << "Notification dismissed";
-
+      FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
+                                notification_, false));
+  DebugLog("Notification dismissed");
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
-    ABI::Windows::UI::Notifications::IToastNotification* sender,
-    ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
+    winui::Notifications::IToastNotification* sender,
+    winui::Notifications::IToastFailedEventArgs* e) {
   HRESULT error;
   e->get_ErrorCode(&error);
   std::string errorMessage =
@@ -630,8 +665,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationFailed,
                                 notification_, errorMessage));
-  if (IsDebuggingNotifications())
-    LOG(INFO) << errorMessage;
+  DebugLog(errorMessage);
 
   return S_OK;
 }
