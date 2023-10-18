@@ -10,17 +10,24 @@
 #include <unordered_map>
 #include <vector>
 
-#include "base/observer_list.h"
-#include "base/scoped_observation.h"
+#include "base/containers/flat_map.h"
+#include "content/public/browser/hid_chooser.h"
 #include "content/public/browser/hid_delegate.h"
+#include "services/device/public/mojom/hid.mojom-forward.h"
 #include "shell/browser/hid/hid_chooser_context.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
+#include "url/origin.h"
+
+namespace content {
+class BrowserContext;
+class RenderFrameHost;
+}  // namespace content
 
 namespace electron {
 
 class HidChooserController;
 
-class ElectronHidDelegate : public content::HidDelegate,
-                            public HidChooserContext::DeviceObserver {
+class ElectronHidDelegate : public content::HidDelegate {
  public:
   ElectronHidDelegate();
   ElectronHidDelegate(ElectronHidDelegate&) = delete;
@@ -54,13 +61,6 @@ class ElectronHidDelegate : public content::HidDelegate,
   bool IsFidoAllowedForOrigin(content::BrowserContext* browser_context,
                               const url::Origin& origin) override;
   bool IsServiceWorkerAllowedForOrigin(const url::Origin& origin) override;
-
-  // HidChooserContext::DeviceObserver:
-  void OnDeviceAdded(const device::mojom::HidDeviceInfo&) override;
-  void OnDeviceRemoved(const device::mojom::HidDeviceInfo&) override;
-  void OnDeviceChanged(const device::mojom::HidDeviceInfo&) override;
-  void OnHidManagerConnectionError() override;
-  void OnHidChooserContextShutdown() override;
   void IncrementConnectionCount(content::BrowserContext* browser_context,
                                 const url::Origin& origin) override {}
   void DecrementConnectionCount(content::BrowserContext* browser_context,
@@ -69,6 +69,14 @@ class ElectronHidDelegate : public content::HidDelegate,
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 
  private:
+  class ContextObservation;
+
+  ContextObservation* GetContextObserver(
+      content::BrowserContext* browser_context);
+
+  base::flat_map<content::BrowserContext*, std::unique_ptr<ContextObservation>>
+      observations_;
+
   HidChooserController* ControllerForFrame(
       content::RenderFrameHost* render_frame_host);
 
@@ -78,10 +86,6 @@ class ElectronHidDelegate : public content::HidDelegate,
       std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback);
 
-  base::ScopedObservation<HidChooserContext, HidChooserContext::DeviceObserver>
-      device_observation_{this};
-  base::ObserverList<content::HidDelegate::Observer> observer_list_;
-
   std::unordered_map<content::RenderFrameHost*,
                      std::unique_ptr<HidChooserController>>
       controller_map_;
@@ -90,24 +94,5 @@ class ElectronHidDelegate : public content::HidDelegate,
 };
 
 }  // namespace electron
-
-namespace base {
-
-template <>
-struct ScopedObservationTraits<electron::HidChooserContext,
-                               electron::HidChooserContext::DeviceObserver> {
-  static void AddObserver(
-      electron::HidChooserContext* source,
-      electron::HidChooserContext::DeviceObserver* observer) {
-    source->AddDeviceObserver(observer);
-  }
-  static void RemoveObserver(
-      electron::HidChooserContext* source,
-      electron::HidChooserContext::DeviceObserver* observer) {
-    source->RemoveDeviceObserver(observer);
-  }
-};
-
-}  // namespace base
 
 #endif  // ELECTRON_SHELL_BROWSER_HID_ELECTRON_HID_DELEGATE_H_
