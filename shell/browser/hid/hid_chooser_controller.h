@@ -13,6 +13,7 @@
 #include "base/scoped_observation.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/hid_chooser.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/hid.mojom-forward.h"
@@ -20,6 +21,7 @@
 #include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/common/gin_converters/frame_converter.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/hid/hid.mojom.h"
 
 namespace content {
@@ -76,6 +78,8 @@ class HidChooserController
   bool DisplayDevice(const device::mojom::HidDeviceInfo& device) const;
   bool FilterMatchesAny(const device::mojom::HidDeviceInfo& device) const;
   bool IsExcluded(const device::mojom::HidDeviceInfo& device) const;
+  void AddMessageToConsole(blink::mojom::ConsoleMessageLevel level,
+                           const std::string& message) const;
 
   // Add |device_info| to |device_map_|. The device is added to the chooser item
   // representing the physical device. If the chooser item does not yet exist, a
@@ -98,8 +102,8 @@ class HidChooserController
   std::vector<blink::mojom::HidDeviceFilterPtr> filters_;
   std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters_;
   content::HidChooser::Callback callback_;
+  content::WeakDocumentPtr initiator_document_;
   const url::Origin origin_;
-  const int frame_tree_node_id_;
 
   // The lifetime of the chooser context is tied to the browser context used to
   // create it, and may be destroyed while the chooser is still active.

@@ -29,8 +29,13 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
-
 #include "ui/base/l10n/l10n_util.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "base/containers/fixed_flat_set.h"
+#include "base/strings/string_piece.h"
+#include "extensions/common/constants.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace electron {
 
@@ -179,6 +184,26 @@ bool HidChooserContext::HasDevicePermission(
       static_cast<blink::PermissionType>(
           WebContentsPermissionHelper::PermissionType::HID),
       origin, DeviceInfoToValue(device), browser_context_);
+}
+
+bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  static constexpr auto kPrivilegedExtensionIds =
+      base::MakeFixedFlatSet<base::StringPiece>({
+          "ckcendljdlmgnhghiaomidhiiclmapok",  // gnubbyd-v3 dev
+          "lfboplenmmjcmpbkeemecobbadnmpfhi",  // gnubbyd-v3 prod
+      });
+
+  if (origin.scheme() == extensions::kExtensionScheme &&
+      base::Contains(kPrivilegedExtensionIds, origin.host())) {
+    return true;
+  }
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+  // This differs from upstream - we want to allow users greater
+  // ability to communicate with FIDO devices in Electron.
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kDisableHidBlocklist);
 }
 
 void HidChooserContext::AddDeviceObserver(DeviceObserver* observer) {
