@@ -1,0 +1,483 @@
+// Copyright (c) 2023 Microsoft, GmbH
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+[
+  {
+    "namespace": "action",
+    "description": "Use the <code>chrome.action</code> API to control the extension's icon in the Google Chrome toolbar.",
+    "compiler_options": {
+      "implemented_in": "shell/browser/extensions/api/extension_action/extension_action_api.h"
+    },
+    "types": [
+      {
+        "id": "TabDetails",
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "type": "integer",
+            "optional": true,
+            "minimum": 0,
+            "description": "The ID of the tab to query state for. If no tab is specified, the non-tab-specific state is returned."
+          }
+        }
+      },
+      {
+        "id": "UserSettings",
+        "type": "object",
+        "properties": {
+          "isOnToolbar": {
+            "type": "boolean",
+            "description": "Whether the extension's action icon is visible on browser windows' top-level toolbar (i.e., whether the extension has been 'pinned' by the user)."
+          }
+        },
+        "description": "The collection of user-specified settings relating to an extension's action."
+      },
+      {
+        "id": "OpenPopupOptions",
+        "type": "object",
+        "properties": {
+          "windowId": {
+            "type": "integer",
+            "description": "The id of the window to open the action popup in. Defaults to the currently-active window if unspecified.",
+            "optional": true
+          }
+        }
+      }
+    ],
+    "functions": [
+      {
+        "name": "setTitle",
+        "deprecated": "chrome.action.setTitle is not supported in Electron",
+        "type": "function",
+        "description": "Sets the title of the action. This shows up in the tooltip.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "The string the action should display when moused over."
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getTitle",
+        "deprecated": "chrome.action.getTitle is not supported in Electron",
+        "type": "function",
+        "description": "Gets the title of the action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setIcon",
+        "deprecated": "chrome.action.setIcon is not supported in Electron",
+        "type": "function",
+        "description": "Sets the icon for the action. The icon can be specified either as the path to an image file or as the pixel data from a canvas element, or as dictionary of either one of those. Either the <b>path</b> or the <b>imageData</b> property must be specified.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "imageData": {
+                "choices": [
+                  {
+                    "$ref": "browserAction.ImageDataType"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "any"
+                    }
+                  }
+                ],
+                "optional": true,
+                "description": "Either an ImageData object or a dictionary {size -> ImageData} representing icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals <code>scale</code>, then image with size <code>scale</code> * n will be selected, where n is the size of the icon in the UI. At least one image must be specified. Note that 'details.imageData = foo' is equivalent to 'details.imageData = {'16': foo}'"
+              },
+              "path": {
+                "choices": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "any"
+                    }
+                  }
+                ],
+                "optional": true,
+                "description": "Either a relative image path or a dictionary {size -> relative image path} pointing to icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals <code>scale</code>, then image with size <code>scale</code> * n will be selected, where n is the size of the icon in the UI. At least one image must be specified. Note that 'details.path = foo' is equivalent to 'details.path = {'16': foo}'"
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "parameters": []
+        }
+      },
+      {
+        "name": "setPopup",
+        "deprecated": "chrome.action.setPopup is not supported in Electron",
+        "type": "function",
+        "description": "Sets the HTML document to be opened as a popup when the user clicks on the action's icon.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              },
+              "popup": {
+                "type": "string",
+                "description": "The relative path to the HTML file to show in a popup. If set to the empty string (<code>''</code>), no popup is shown."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getPopup",
+        "deprecated": "chrome.action.getPopup is not supported in Electron",
+        "type": "function",
+        "description": "Gets the html document set as the popup for this action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setBadgeText",
+        "deprecated": "chrome.action.setBadgeText is not supported in Electron",
+        "type": "function",
+        "description": "Sets the badge text for the action. The badge is displayed on top of the icon.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "optional": true,
+                "description": "Any number of characters can be passed, but only about four can fit in the space. If an empty string (<code>''</code>) is passed, the badge text is cleared.  If <code>tabId</code> is specified and <code>text</code> is null, the text for the specified tab is cleared and defaults to the global badge text."
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getBadgeText",
+        "deprecated": "chrome.action.getBadgeText is not supported in Electron",
+        "type": "function",
+        "description": "Gets the badge text of the action. If no tab is specified, the non-tab-specific badge text is returned. If <a href='declarativeNetRequest#setExtensionActionOptions'>displayActionCountAsBadgeText</a> is enabled, a placeholder text will be returned unless the <a href='declare_permissions#declarativeNetRequestFeedback'>declarativeNetRequestFeedback</a> permission is present or tab-specific badge text was provided.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setBadgeBackgroundColor",
+        "deprecated": "chrome.action.setBadgeBackgroundColor is not supported in Electron",
+        "type": "function",
+        "description": "Sets the background color for the badge.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "color": {
+                "description": "An array of four integers in the range [0,255] that make up the RGBA color of the badge. For example, opaque red is <code>[255, 0, 0, 255]</code>. Can also be a string with a CSS value, with opaque red being <code>#FF0000</code> or <code>#F00</code>.",
+                "choices": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "browserAction.ColorArray"
+                  }
+                ]
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getBadgeBackgroundColor",
+        "deprecated": "chrome.action.getBadgeBackgroundColor is not supported in Electron",
+        "type": "function",
+        "description": "Gets the background color of the action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "$ref": "browserAction.ColorArray"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setBadgeTextColor",
+        "deprecated": "chrome.action.setBadgeTextColor is not supported in Electron",
+        "type": "function",
+        "description": "Sets the text color for the badge.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "color": {
+                "description": "An array of four integers in the range [0,255] that make up the RGBA color of the badge. For example, opaque red is <code>[255, 0, 0, 255]</code>. Can also be a string with a CSS value, with opaque red being <code>#FF0000</code> or <code>#F00</code>. Not setting this value will cause a color to be automatically chosen that will contrast with the badge's background color so the text will be visible. Colors with alpha values equivalent to 0 will not be set and will return an error.",
+                "choices": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "browserAction.ColorArray"
+                  }
+                ]
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getBadgeTextColor",
+        "deprecated": "chrome.action.getBadgeTextColor is not supported in Electron",
+        "type": "function",
+        "description": "Gets the text color of the action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "$ref": "browserAction.ColorArray"
+            }
+          ]
+        }
+      },
+      {
+        "name": "enable",
+        "deprecated": "chrome.action.enable is not supported in Electron",
+        "type": "function",
+        "description": "Enables the action for a tab. By default, actions are enabled.",
+        "parameters": [
+          {
+            "type": "integer",
+            "optional": true,
+            "name": "tabId",
+            "minimum": 0,
+            "description": "The id of the tab for which you want to modify the action."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "disable",
+        "deprecated": "chrome.action.disable is not supported in Electron",
+        "type": "function",
+        "description": "Disables the action for a tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "optional": true,
+            "name": "tabId",
+            "minimum": 0,
+            "description": "The id of the tab for which you want to modify the action."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "isEnabled",
+        "deprecated": "chrome.action.isEnabled is not supported in Electron",
+        "type": "function",
+        "description": "Indicates whether the extension action is enabled for a tab (or globally if no <code>tabId</code> is provided). Actions enabled using only $(ref:declarativeContent) always return false.",
+        "parameters": [
+          {
+            "type": "integer",
+            "optional": true,
+            "name": "tabId",
+            "minimum": 0,
+            "description": "The id of the tab for which you want check enabled status."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "isEnabled",
+              "type": "boolean",
+              "description": "True if the extension action is enabled."
+            }
+          ]
+        }
+      },
+      {
+        "name": "getUserSettings",
+        "deprecated": "chrome.action.getUserSettings is not supported in Electron",
+        "type": "function",
+        "description": "Returns the user-specified settings relating to an extension's action.",
+        "parameters": [],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "userSettings",
+              "$ref": "UserSettings"
+            }
+          ]
+        }
+      },
+      {
+        "name": "openPopup",
+        "deprecated": "chrome.action.openPopup is not supported in Electron",
+        "type": "function",
+        "description": "Opens the extension's popup.",
+        "parameters": [
+          {
+            "$ref": "OpenPopupOptions",
+            "name": "options",
+            "optional": true,
+            "description": "Specifies options for opening the popup."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": []
+        }
+      }
+    ],
+    "events": [
+      {
+        "name": "onClicked",
+        "deprecated": "chrome.action.onClicked is not supported in Electron",
+        "type": "function",
+        "description": "Fired when an action icon is clicked.  This event will not fire if the action has a popup.",
+        "parameters": [
+          {
+            "name": "tab",
+            "$ref": "tabs.Tab"
+          }
+        ]
+      }
+    ]
+  }
+]
