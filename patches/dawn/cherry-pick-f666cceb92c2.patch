@@ -1,7 +1,7 @@
-From f666cceb92c243891bdd09eacde6e53e057d295b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ben Clayton <bclayton@google.com>
 Date: Tue, 17 Oct 2023 14:53:45 +0000
-Subject: [PATCH] [tint][utils] Add support for large allocations
+Subject: Add support for large allocations
 
 From the BumpAllocator.
 
@@ -10,13 +10,12 @@ Change-Id: I632fea8de1451358aa24f8a8d05c07d7f6823d7d
 Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/155840
 Kokoro: Ben Clayton <bclayton@google.com>
 Reviewed-by: Antonio Maiorano <amaiorano@google.com>
----
 
 diff --git a/src/tint/symbol_table.cc b/src/tint/symbol_table.cc
-index cdea0a4..66461a9 100644
+index cdea0a488f2a57ec12628eff29d31eaea2889d7d..66461a9f427542752568edab386da026a3682ee1 100644
 --- a/src/tint/symbol_table.cc
 +++ b/src/tint/symbol_table.cc
-@@ -37,8 +37,10 @@
+@@ -37,8 +37,10 @@ Symbol SymbolTable::Register(std::string_view name) {
  }
  
  Symbol SymbolTable::RegisterInternal(std::string_view name) {
@@ -29,7 +28,7 @@ index cdea0a4..66461a9 100644
      }
  
 diff --git a/src/tint/utils/bump_allocator.h b/src/tint/utils/bump_allocator.h
-index 302f924..6f41c18 100644
+index 302f924bcb6695c01bc36d28c39d3c32482e82a5..6f41c18fb71d70ec8813f0ef781bac2824fef476 100644
 --- a/src/tint/utils/bump_allocator.h
 +++ b/src/tint/utils/bump_allocator.h
 @@ -15,11 +15,14 @@
@@ -47,7 +46,7 @@ index 302f924..6f41c18 100644
  #include "src/tint/utils/math.h"
  
  namespace tint::utils {
-@@ -29,14 +32,17 @@
+@@ -29,14 +32,17 @@ constexpr size_t kBlockSize = 64 * 1024;
  /// A allocator for chunks of memory. The memory is owned by the BumpAllocator. When the
  /// BumpAllocator is freed all of the allocated memory is freed.
  class BumpAllocator {
@@ -69,7 +68,7 @@ index 302f924..6f41c18 100644
      /// Constructor
      BumpAllocator() = default;
  
-@@ -61,38 +67,43 @@
+@@ -61,38 +67,43 @@ class BumpAllocator {
      /// Allocates @p size_in_bytes from the current block, or from a newly allocated block if the
      /// current block is full.
      /// @param size_in_bytes the number of bytes to allocate
@@ -129,7 +128,7 @@ index 302f924..6f41c18 100644
              block = next;
          }
          data = {};
-@@ -106,18 +117,16 @@
+@@ -106,18 +117,16 @@ class BumpAllocator {
      BumpAllocator& operator=(const BumpAllocator&) = delete;
  
      struct {
@@ -159,10 +158,10 @@ index 302f924..6f41c18 100644
      } data;
  };
 diff --git a/src/tint/utils/bump_allocator_test.cc b/src/tint/utils/bump_allocator_test.cc
-index 4f22455..cd840fe 100644
+index 4f224558fdd7baa943e8b7b09765d64d01a9f3e6..cd840fe5e023e26bc308904a881333de2b8e7c16 100644
 --- a/src/tint/utils/bump_allocator_test.cc
 +++ b/src/tint/utils/bump_allocator_test.cc
-@@ -21,6 +21,31 @@
+@@ -21,6 +21,31 @@ namespace {
  
  using BumpAllocatorTest = testing::Test;
  
