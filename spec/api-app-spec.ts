@@ -9,7 +9,6 @@ import { promisify } from 'node:util';
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { once } from 'node:events';
 import split = require('split')
 import * as semver from 'semver';
@@ -526,27 +525,6 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false });
       const [, webContents] = await emitted;
       expect(webContents.id).to.equal(w.webContents.id);
-    });
-
-    // FIXME: re-enable this test on win32.
-    ifit(process.platform !== 'win32')('should emit renderer-process-crashed event when renderer crashes', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        }
-      });
-      await w.loadURL('about:blank');
-
-      expectDeprecationMessages(async () => {
-        const emitted = once(app, 'renderer-process-crashed') as Promise<[any, WebContents, boolean]>;
-        w.webContents.executeJavaScript('process.crash()');
-
-        const [, webContents, killed] = await emitted;
-        expect(webContents).to.equal(w.webContents);
-        expect(killed).to.be.false();
-      }, '\'renderer-process-crashed event\' is deprecated and will be removed. Please use \'render-process-gone event\' instead.');
     });
 
     // FIXME: re-enable this test on win32.
