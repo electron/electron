@@ -29,6 +29,8 @@ namespace {
 
 electron::HidChooserContext* GetChooserContext(
     content::BrowserContext* browser_context) {
+  if (!browser_context)
+    return nullptr;
   return electron::HidChooserContextFactory::GetForBrowserContext(
       browser_context);
 }
@@ -110,6 +112,7 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
     std::vector<blink::mojom::HidDeviceFilterPtr> filters,
     std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
     content::HidChooser::Callback callback) {
+  DCHECK(render_frame_host);
   auto* browser_context = render_frame_host->GetBrowserContext();
 
   // Start observing HidChooserContext for permission and device events.
@@ -133,6 +136,9 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
+  if (!browser_context)
+    return false;
+
   base::Value::Dict details;
   details.Set("securityOrigin", origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -147,31 +153,38 @@ bool ElectronHidDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  return GetChooserContext(browser_context)
-      ->HasDevicePermission(origin, device);
+  return browser_context && GetChooserContext(browser_context)
+                                ->HasDevicePermission(origin, device);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  return GetChooserContext(browser_context)
-      ->RevokeDevicePermission(origin, device);
+  if (browser_context) {
+    GetChooserContext(browser_context)->RevokeDevicePermission(origin, device);
+  }
 }
 
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
     content::BrowserContext* browser_context) {
+  if (!browser_context)
+    return nullptr;
   return GetChooserContext(browser_context)->GetHidManager();
 }
 
 void ElectronHidDelegate::AddObserver(content::BrowserContext* browser_context,
                                       Observer* observer) {
+  if (!browser_context)
+    return;
   GetContextObserver(browser_context)->AddObserver(observer);
 }
 
 void ElectronHidDelegate::RemoveObserver(
     content::BrowserContext* browser_context,
     content::HidDelegate::Observer* observer) {
+  if (!browser_context)
+    return;
   DCHECK(base::Contains(observations_, browser_context));
   GetContextObserver(browser_context)->RemoveObserver(observer);
 }
@@ -180,14 +193,16 @@ const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
     content::BrowserContext* browser_context,
     const std::string& guid) {
   auto* chooser_context = GetChooserContext(browser_context);
+  if (!chooser_context)
+    return nullptr;
   return chooser_context->GetDeviceInfo(guid);
 }
 
 bool ElectronHidDelegate::IsFidoAllowedForOrigin(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kDisableHidBlocklist);
+  auto* chooser_context = GetChooserContext(browser_context);
+  return chooser_context && chooser_context->IsFidoAllowedForOrigin(origin);
 }
 
 bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
