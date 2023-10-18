@@ -747,6 +747,7 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
           base::Time(), base::Time::Max(),
+          nullptr /*mojom::ClearDataFilterPtr*/,
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)));
 
