@@ -13,7 +13,7 @@
 #include "base/scoped_observation.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
-#include "extensions/buildflags/buildflags.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/usb/usb_chooser_context.h"
@@ -21,7 +21,7 @@
 #include "shell/browser/usb/usb_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/containers/fixed_flat_set.h"
 #include "chrome/common/chrome_features.h"
 #include "extensions/browser/extension_registry.h"
@@ -40,7 +40,7 @@ electron::UsbChooserContext* GetChooserContext(
       browser_context);
 }
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // These extensions can claim the smart card USB class and automatically gain
 // permissions for devices that have an interface with this class.
 constexpr auto kSmartCardPrivilegedExtensionIds =
@@ -64,12 +64,12 @@ bool DeviceHasInterfaceWithClass(
   }
   return false;
 }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 bool IsDevicePermissionAutoGranted(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Note: The `DeviceHasInterfaceWithClass()` call is made after checking the
   // origin, since that method call is expensive.
   if (origin.scheme() == extensions::kExtensionScheme &&
@@ -78,7 +78,7 @@ bool IsDevicePermissionAutoGranted(
                                   device::mojom::kUsbSmartCardClass)) {
     return true;
   }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
   return false;
 }
@@ -250,14 +250,14 @@ ElectronUsbDelegate::GetContextObserver(
 
 bool ElectronUsbDelegate::IsServiceWorkerAllowedForOrigin(
     const url::Origin& origin) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebUSB is only available on extension service workers for now.
   if (base::FeatureList::IsEnabled(
           features::kEnableWebUsbOnExtensionServiceWorker) &&
       origin.scheme() == extensions::kExtensionScheme) {
     return true;
   }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return false;
 }
 
