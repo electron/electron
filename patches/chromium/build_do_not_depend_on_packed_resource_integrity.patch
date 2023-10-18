@@ -33,10 +33,10 @@ index dfc645bedf13498abb087f4895f5f316364de069..e17d11e1b15e885d58cb748c22580d84
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index ea049cacfa5a6b2e83027ad10fcf475b0fc049bd..8216e2b5b02276cc4f090179c0e15afd37ad5154 100644
+index a2847f3941ae094f1764ad9ba9575ca7e5dc86a6..4ac0ac7718f3df342e4da3f45dde1f7c9ba15484 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4795,7 +4795,7 @@ static_library("browser") {
+@@ -4792,7 +4792,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index ea049cacfa5a6b2e83027ad10fcf475b0fc049bd..8216e2b5b02276cc4f090179c0e15afd
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 349fd6b0da148053d068ec14541612e78cabe974..a4ae0b402b44a2d22036c3b490264497fbdd74f0 100644
+index 6db1133a84a6d14aea5aa64c400ca9bee40b9e87..cafbf39ebf1e29cee1b95d08dd60139835634354 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6925,7 +6925,6 @@ test("unit_tests") {
+@@ -6927,7 +6927,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 349fd6b0da148053d068ec14541612e78cabe974..a4ae0b402b44a2d22036c3b490264497
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -6946,6 +6945,10 @@ test("unit_tests") {
+@@ -6948,6 +6947,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 349fd6b0da148053d068ec14541612e78cabe974..a4ae0b402b44a2d22036c3b490264497
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7934,7 +7937,6 @@ test("unit_tests") {
+@@ -7935,7 +7938,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 349fd6b0da148053d068ec14541612e78cabe974..a4ae0b402b44a2d22036c3b490264497
        "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:app_registry_cache_waiter",
-@@ -8024,6 +8026,10 @@ test("unit_tests") {
+@@ -8025,6 +8027,10 @@ test("unit_tests") {
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
  

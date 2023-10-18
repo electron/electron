@@ -99,7 +99,7 @@ index 8a18ecf567cd3a6a2fb1627083a5544a93198bf4..6bb4074e033e045de164bc776f75f152
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 578add78e030c562793676d9e4cb82dfe6eaf876..04184ba790132114ed088346c7cf6845c379708b 100644
+index 4e0f7d06f3e67056b5fbc91b2baf1724f850c2a0..da2b6f2b926c47e7914393e98fb81f58b5a62d2b 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2408,6 +2408,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -113,7 +113,7 @@ index 578add78e030c562793676d9e4cb82dfe6eaf876..04184ba790132114ed088346c7cf6845
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3891,20 +3895,34 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3889,20 +3893,34 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -159,7 +159,7 @@ index 578add78e030c562793676d9e4cb82dfe6eaf876..04184ba790132114ed088346c7cf6845
  }
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 6c7cb02a27a75b8424fe38cb24e4c34b10f344bf..f42fb6ec63762a9bc5201d5a03e391d3cd446589 100644
+index 76456104656f863d7e5fb816a3e026c00ca8861d..24ba8dbbfc360ab12f28c2452c72c9f78307968c 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -445,6 +445,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -170,7 +170,7 @@ index 6c7cb02a27a75b8424fe38cb24e4c34b10f344bf..f42fb6ec63762a9bc5201d5a03e391d3
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -914,6 +915,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -912,6 +913,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  

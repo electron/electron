@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7805b45a60ae6157fb771a325a4d969ac2f7c182..4d554adbae6690c6a8be73340841f25a8705fe13 100644
+index bb2d6dbd61fea85fa7bc7aed914f20f157dc7114..abf757a9292e0e632d6b3d7918242a5305c3bd71 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8170,6 +8170,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8197,6 +8197,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 7805b45a60ae6157fb771a325a4d969ac2f7c182..4d554adbae6690c6a8be73340841f25a
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cddc2c47a793c9cdb86555db5b60d3ffed039a54..0406abe8cea27b9eff33c2f578c1376483918117 100644
+index 9b720579e882f5696cd2a9ca13186da79ea764fd..c384642d42ca44958a3bd1936dfa8baee450a84b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4354,6 +4354,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4361,6 +4361,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index cddc2c47a793c9cdb86555db5b60d3ffed039a54..0406abe8cea27b9eff33c2f578c13764
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4395,12 +4401,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4402,12 +4408,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
