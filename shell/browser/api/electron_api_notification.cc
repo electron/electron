@@ -216,7 +216,11 @@ void Notification::NotificationClosed() {
 
 void Notification::Close() {
   if (notification_) {
-    notification_->Dismiss();
+    if (notification_->is_dismissed()) {
+      notification_->Remove();
+    } else {
+      notification_->Dismiss();
+    }
     notification_->set_delegate(nullptr);
     notification_.reset();
   }
