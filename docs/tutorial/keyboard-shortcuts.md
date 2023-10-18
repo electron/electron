@@ -14,11 +14,19 @@ To configure a local keyboard shortcut, you need to specify an [`accelerator`][]
 property when creating a [MenuItem][] within the [Menu][] module.
 
 Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
-following lines:
+[Quick Start Guide](quick-start.md), update the `main.js` to be:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/local'
-const { Menu, MenuItem } = require('electron')
+```fiddle docs/fiddles/features/keyboard-shortcuts/local
+const { app, BrowserWindow, Menu, MenuItem } = require('electron/main')
+
+function createWindow () {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+
+  win.loadFile('index.html')
+}
 
 const menu = new Menu()
 menu.append(new MenuItem({
@@ -31,6 +39,20 @@ menu.append(new MenuItem({
 }))
 
 Menu.setApplicationMenu(menu)
+
+app.whenReady().then(createWindow)
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+})
 ```
 
 > NOTE: In the code above, you can see that the accelerator differs based on the
@@ -53,17 +75,37 @@ module to detect keyboard events even when the application does not have
 keyboard focus.
 
 Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
-following lines:
+[Quick Start Guide](quick-start.md), update the `main.js` to be:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global' @ts-type={createWindow:()=>void}
-const { app, globalShortcut } = require('electron')
+```fiddle docs/fiddles/features/keyboard-shortcuts/global
+const { app, BrowserWindow, globalShortcut } = require('electron/main')
+
+function createWindow () {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+
+  win.loadFile('index.html')
+}
 
 app.whenReady().then(() => {
   globalShortcut.register('Alt+CommandOrControl+I', () => {
     console.log('Electron loves global shortcuts!')
   })
 }).then(createWindow)
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+})
 ```
 
 > NOTE: In the code above, the `CommandOrControl` combination uses `Command`
@@ -81,8 +123,8 @@ If you want to handle keyboard shortcuts within a [BrowserWindow][], you can
 listen for the `keyup` and `keydown` [DOM events][dom-events] inside the
 renderer process using the [addEventListener() API][addEventListener-api].
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/web-apis|focus=renderer.js'
-const handleKeyPress = (event) => {
+```fiddle docs/fiddles/features/keyboard-shortcuts/web-apis|focus=renderer.js
+function handleKeyPress (event) {
   // You can put code here to handle the keypress.
   document.getElementById('last-keypress').innerText = event.key
   console.log(`You pressed ${event.key}`)
@@ -105,8 +147,8 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/interception-from-main'
-const { app, BrowserWindow } = require('electron')
+```fiddle docs/fiddles/features/keyboard-shortcuts/interception-from-main
+const { app, BrowserWindow } = require('electron/main')
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({ width: 800, height: 600 })

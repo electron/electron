@@ -7,6 +7,7 @@ const { ESLint } = require('eslint');
 const fs = require('node:fs');
 const minimist = require('minimist');
 const path = require('node:path');
+const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -265,17 +266,101 @@ const LINTERS = [{
       process.exit(1);
     }
   }
+}, {
+  key: 'md',
+  roots: ['docs'],
+  test: filename => filename.endsWith('.md'),
+  run: async (opts, filenames) => {
+    let errors = false;
+
+    for (const filename of filenames) {
+      const contents = fs.readFileSync(filename, 'utf8');
+      const codeBlocks = await getCodeBlocks(contents);
+
+      for (const codeBlock of codeBlocks) {
+        const line = codeBlock.position.start.line;
+
+        if (codeBlock.lang) {
+          // Enforce all lowercase language identifiers
+          if (codeBlock.lang.toLowerCase() !== codeBlock.lang) {
+            console.log(`${filename}:${line} Code block language identifiers should be all lowercase`);
+            errors = true;
+          }
+
+          // Prefer js/ts to javascript/typescript as the language identifier
+          if (codeBlock.lang === 'javascript') {
+            console.log(`${filename}:${line} Use 'js' as code block language identifier instead of 'javascript'`);
+            errors = true;
+          }
+
+          if (codeBlock.lang === 'typescript') {
+            console.log(`${filename}:${line} Use 'typescript' as code block language identifier instead of 'ts'`);
+            errors = true;
+          }
+
+          // Enforce latest fiddle code block syntax
+          if (codeBlock.lang === 'javascript' && codeBlock.meta && codeBlock.meta.includes('fiddle=')) {
+            console.log(`${filename}:${line} Use 'fiddle' as code block language identifier instead of 'javascript fiddle='`);
+            errors = true;
+          }
+
+          // Ensure non-empty content in fiddle code blocks matches the file content
+          if (codeBlock.lang === 'fiddle' && codeBlock.value.trim() !== '') {
+            // This is copied and adapted from the website repo:
+            // https://github.com/electron/website/blob/62a55ca0dd14f97339e1a361b5418d2f11c34a75/src/transformers/fiddle-embedder.ts#L89C6-L101
+            const parseFiddleEmbedOptions = (
+              optStrings
+            ) => {
+              // If there are optional parameters, parse them out to pass to the getFiddleAST method.
+              return optStrings.reduce((opts, option) => {
+                // Use indexOf to support bizarre combinations like `|key=Myvalue=2` (which will properly
+                // parse to {'key': 'Myvalue=2'})
+                const firstEqual = option.indexOf('=');
+                const key = option.slice(0, firstEqual);
+                const value = option.slice(firstEqual + 1);
+                return { ...opts, [key]: value };
+              }, {});
+            };
+
+            const [dir, ...others] = codeBlock.meta.split('|');
+            const options = parseFiddleEmbedOptions(others);
+
+            const fiddleFilename = path.join(dir, options.focus || 'main.js');
+
+            try {
+              const fiddleContent = fs.readFileSync(fiddleFilename, 'utf8').trim();
+
+              if (fiddleContent !== codeBlock.value.trim()) {
+                console.log(`${filename}:${line} Content for fiddle code block differs from content in ${fiddleFilename}`);
+                errors = true;
+              }
+            } catch (err) {
+              console.error(`${filename}:${line} Error linting fiddle code block content`);
+              if (err.stack) {
+                console.error(err.stack);
+              }
+              errors = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (errors) {
+      process.exit(1);
+    }
+  }
 }];
 
 function parseCommandLine () {
   let help;
   const opts = minimist(process.argv.slice(2), {
-    boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only'],
-    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
+    boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'markdown', 'help', 'changed', 'fix', 'verbose', 'only'],
+    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', markdown: 'md', changed: 'c', help: 'h', verbose: 'v' },
     unknown: () => { help = true; }
   });
   if (help || opts.help) {
-    console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]');
+    console.log('Usage: script/lint.js [--cc] [--js] [--py] [--md] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]');
     process.exit(0);
   }
   return opts;
@@ -338,8 +423,8 @@ async function main () {
   const opts = parseCommandLine();
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches) {
-    opts['c++'] = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = true;
+  if (!opts['c++'] && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches && !opts.markdown) {
+    opts['c++'] = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = opts.markdown = true;
   }
 
   const linters = LINTERS.filter(x => opts[x.key]);
