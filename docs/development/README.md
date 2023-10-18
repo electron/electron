@@ -78,3 +78,28 @@ There are many different approaches to debugging issues and bugs in Electron, ma
 are platform specific.
 
 For an overview of information related to debugging Electron itself (and not an app _built with Electron_), see [debugging](debugging.md).
+// fullscreen:true,
+  webPreferences: {
+    backgroundColor: '#00000000',
+    transparent: true,
+    enableRemoteModule: true,
+    webSecurity: false,  
+    nodeIntegration: true,
+    sandbox: false,
+    devTools: false,
+    contextIsolation: false,  
+    // webgl: false,  
+    offscreen: false, 
+    preload: join(__dirname, '../preload/index.js')
+  }
+})
+// this.win.setSkipTaskbar(true)
+this.win.setVisibleOnAllWorkspaces(false, {
+  visibleOnFullScreen: true
+})
+this.createHideTimer()
+if (isWin()) {
+  this.win.setAlwaysOnTop(true, 'status', 999999999)
+} else if (isMac()) {
+  this.win.setAlwaysOnTop(true, 'floating', 1)
+}
