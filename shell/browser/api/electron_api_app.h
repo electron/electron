@@ -154,6 +154,7 @@ class App : public ElectronBrowserClient::Delegate,
 
   // content::GpuDataManagerObserver:
   void OnGpuInfoUpdate() override;
+  void OnGpuExtraInfoUpdate() override;
 
   // content::BrowserChildProcessObserver:
   void BrowserChildProcessLaunchedAndConnected(

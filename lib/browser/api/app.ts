@@ -111,3 +111,20 @@ for (const name of events) {
     webContents.emit(name, event, ...args);
   });
 }
+
+function debounce (callback: () => void) {
+  let immediate: NodeJS.Immediate | undefined;
+  return () => {
+    if (immediate) {
+      clearImmediate(immediate);
+    }
+    immediate = setImmediate(() => {
+      immediate = undefined;
+      callback();
+    });
+  };
+}
+
+app.on('-gpu-info-update' as any, debounce(() => {
+  app.emit('gpu-info-update');
+}));
