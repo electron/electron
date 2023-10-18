@@ -27,5 +27,7 @@
 
   "src/electron/patches/libwebp": "src/third_party/libwebp/src",
 
-  "src/electron/patches/libvpx": "src/third_party/libvpx/source/libvpx"
+  "src/electron/patches/libvpx": "src/third_party/libvpx/source/libvpx",
+
+  "src/electron/patches/dawn": "src/third_party/dawn"
 }
