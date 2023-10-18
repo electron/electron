@@ -6,7 +6,6 @@ import * as http from 'node:http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
-import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
@@ -2341,30 +2340,6 @@ describe('webContents module', () => {
       bw.webContents.executeJavaScript('child.document.title = "new title"');
       const [, title] = await once(child, 'page-title-updated') as [any, string];
       expect(title).to.equal('new title');
-    });
-  });
-
-  describe('crashed event', () => {
-    it('does not crash main process when destroying WebContents in it', (done) => {
-      const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
-      contents.once('crashed', () => {
-        contents.destroy();
-        done();
-      });
-      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
-    });
-
-    it('logs a warning', async () => {
-      const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
-      await contents.loadURL('about:blank');
-
-      expectDeprecationMessages(async () => {
-        const crashEvent = once(contents, 'crashed');
-        contents.forcefullyCrashRenderer();
-        const [, killed] = await crashEvent;
-
-        expect(killed).to.be.a('boolean');
-      }, '\'crashed event\' is deprecated and will be removed. Please use \'render-process-gone event\' instead.');
     });
   });
 
