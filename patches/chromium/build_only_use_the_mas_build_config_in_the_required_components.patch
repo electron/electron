@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c2363a7d38c488e296a95e7c190436fa632b13cb..df01b75213bab0a8d2495784ac78177f802cf215 100644
+index e1429fd206a89ec3870773160b1a25bc134c0fe0..a59149d8cb9c68b77a7433e588499d877ae86c4f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1034,6 +1034,7 @@ component("base") {
@@ -54,7 +54,7 @@ index 0369b1efab3783c0c61e086f82b3724772e4dff0..11a35c9f611fba4f5313994e41a44065
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 82a5c136165300e0d781f9f67f59d9861a20f819..9422e6cdff1a73a275259d4d4745cc72c85559db 100644
+index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f62aef534 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -335,6 +335,7 @@ viz_component("service") {
@@ -74,7 +74,7 @@ index 82a5c136165300e0d781f9f67f59d9861a20f819..9422e6cdff1a73a275259d4d4745cc72
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e04c5ae23cf512803055e981e32096bb2af5c510..ca475d2883fa0fbb8c507abc88ac2d6c9db25fbc 100644
+index abb7e8d6c6efecbf9f15ea3258048ceaec98e6c9..ba4f187f7e5f082c5e473a752059af506c21a9c2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3a02c408c4cc145aa0cf0a07f3ecc0a597cf3065..4335e24560d47c8adccce1233daab0f89a653738 100644
+index c560e1681fb62453d9bd8f41c249b4b27f46e7e4..10b010eb919c7775bc2dd5d45cf8e3e034facbde 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -482,6 +482,7 @@ static_library("test_support") {
@@ -276,7 +276,7 @@ index a8c6d49637a53961d1e16521ae569c3f03fd1e8a..b36e64816bb296e53479c5666ab418fd
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 729f6c4c9043ab106d48a7bab60430bbfedc3c35..09cb38d28fc08c3be75e56791a6b16ee0a01e19b 100644
+index 9161edba8266e83480da3c04b63d64a6532517c9..2eb1d7637aede0e783cdddc04773015d4c70ecfd 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {

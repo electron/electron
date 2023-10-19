@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 765ccf5f3a2c3df901d9028391d5562a94f6060a..8ed888f678b79229c53f04a4cb18d8edefa9db58 100644
+index 42c27a6fd63abaf1fe096cb24b5bba53b725e4bb..c373d23ff31f18217ab06f668e21a5fb58f275e1 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -341,7 +341,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -338,7 +338,8 @@ void Compositor::SetLayerTreeFrameSink(
    if (display_private_) {
      disabled_swap_until_resize_ = false;
      display_private_->Resize(size());
@@ -25,7 +25,7 @@ index 765ccf5f3a2c3df901d9028391d5562a94f6060a..8ed888f678b79229c53f04a4cb18d8ed
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -533,8 +534,11 @@ void Compositor::SetVisible(bool visible) {
+@@ -530,8 +531,11 @@ void Compositor::SetVisible(bool visible) {
    host_->SetVisible(visible);
    // Visibility is reset when the output surface is lost, so this must also be
    // updated then.
@@ -39,7 +39,7 @@ index 765ccf5f3a2c3df901d9028391d5562a94f6060a..8ed888f678b79229c53f04a4cb18d8ed
  }
  
  bool Compositor::IsVisible() {
-@@ -959,4 +963,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
+@@ -956,4 +960,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
    return host_->GetSettings();
  }
  

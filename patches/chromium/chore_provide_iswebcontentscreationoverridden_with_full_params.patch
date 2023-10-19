@@ -288,7 +288,7 @@ index 2578fa3fe9709cccd116290b4646c4426c41f8c8..32e7f992af1830e619b80f454051044a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index be727edcee87bb6fa71436ba8cd7c3efefa2a68d..c10556a3a22e9563a9be535c03f29e758fa8505a 100644
+index 02f204564a67e7088fc5c84331df51ae461b0225..7640b0df6e30a58afa9ee41a7283cfe75b4c1e8b 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -385,8 +385,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
