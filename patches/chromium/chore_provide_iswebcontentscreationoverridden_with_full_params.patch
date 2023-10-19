@@ -80,7 +80,7 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 1abc6784c595b9637222a503329382ccbcab0eb4..968f1ce2663f02f70a55666c6255da4e2fcc826a 100644
+index f5de1cc9abc383117196ffde3834a9fedb24f7f1..bd0e85a9570f93720815dbdf684f0424232e61bd 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1884,12 +1884,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -99,7 +99,7 @@ index 1abc6784c595b9637222a503329382ccbcab0eb4..968f1ce2663f02f70a55666c6255da4e
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index db37e861d254661b75bbe5802aa9d12c4e07b015..b41cf4e90a014a331835299291665df43f367b44 100644
+index 6f271acab2bfda41436d8761e3dd9492f22f7100..0dee75fac4148da4b0d4a4d6b2e9a468d358a6a0 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -890,8 +890,7 @@ class Browser : public TabStripModelObserver,
@@ -232,7 +232,7 @@ index 37a2ed30b1c38de1976a432df43a07bb4342c056..e5dc3613110895de0b0647bb01d4bc1c
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index de927486ef1b44bdaf8fb6188dd164482a6e1f9a..234317655a00ed1f6fc81837757d673703b548e1 100644
+index 45d4de0e48fce71bdcc612fbda9c8ba25349e98a..96d0ff18fc526f7179e6cc7f6ef86839046627c9 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -137,8 +137,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index de927486ef1b44bdaf8fb6188dd164482a6e1f9a..234317655a00ed1f6fc81837757d6737
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 86c2008df19cf6a95e32919834747eee0b6da542..7b002f20a3e286dd320dfa020612a5e887b2c3a8 100644
+index ab819e0c1f42b195e8e171dabffa88e556c50fd3..2d340d29be4002efb45faaa9bf9ea8506cb33e92 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -323,8 +323,7 @@ class CONTENT_EXPORT WebContentsDelegate {
