@@ -3116,8 +3116,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
-  auto generate_tagged_pdf =
-      settings.GetDict().FindBool("shouldGenerateTaggedPDF");
+  auto generate_tagged_pdf = settings.GetDict().FindBool("generateTaggedPDF");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
