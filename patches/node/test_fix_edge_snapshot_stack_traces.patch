@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 18 Oct 2023 10:40:34 +0200
+Subject: test: fix edge snapshot stack traces
+
+https://github.com/nodejs/node/pull/49659
+
+diff --git a/test/common/assertSnapshot.js b/test/common/assertSnapshot.js
+index 83ee45f5f906adddcbc701112f373332dd1f66f9..7b6a9d59bfaa0247f4466277097cd5575ff81d0c 100644
+--- a/test/common/assertSnapshot.js
++++ b/test/common/assertSnapshot.js
+@@ -8,6 +8,10 @@ const assert = require('node:assert/strict');
+ const stackFramesRegexp = /(\s+)((.+?)\s+\()?(?:\(?(.+?):(\d+)(?::(\d+))?)\)?(\s+\{)?(\[\d+m)?(\n|$)/g;
+ const windowNewlineRegexp = /\r/g;
+ 
++function replaceNodeVersion(str) {
++  return str.replaceAll(process.version, '*');
++}
++
+ function replaceStackTrace(str, replacement = '$1*$7$8\n') {
+   return str.replace(stackFramesRegexp, replacement);
+ }
+@@ -70,6 +74,7 @@ async function spawnAndAssert(filename, transform = (x) => x, { tty = false, ...
+ module.exports = {
+   assertSnapshot,
+   getSnapshotPath,
++  replaceNodeVersion,
+   replaceStackTrace,
+   replaceWindowsLineEndings,
+   replaceWindowsPaths,
+diff --git a/test/fixtures/errors/force_colors.snapshot b/test/fixtures/errors/force_colors.snapshot
+index 4c33acbc2d5c12ac8750b72e0796284176af3da2..21410d492db861876ecfcb82dcc3c1815cba6d09 100644
+--- a/test/fixtures/errors/force_colors.snapshot
++++ b/test/fixtures/errors/force_colors.snapshot
+@@ -4,11 +4,12 @@ throw new Error('Should include grayed stack trace')
+ 
+ Error: Should include grayed stack trace
+     at Object.<anonymous> [90m(/[39mtest*force_colors.js:1:7[90m)[39m
+-[90m    at Module._compile (node:internal*modules*cjs*loader:1256:14)[39m
+-[90m    at Module._extensions..js (node:internal*modules*cjs*loader:1310:10)[39m
+-[90m    at Module.load (node:internal*modules*cjs*loader:1119:32)[39m
+-[90m    at Module._load (node:internal*modules*cjs*loader:960:12)[39m
+-[90m    at Function.executeUserEntryPoint [as runMain] (node:internal*modules*run_main:86:12)[39m
+-[90m    at node:internal*main*run_main_module:23:47[39m
++[90m    at *[39m
++[90m    at *[39m
++[90m    at *[39m
++[90m    at *[39m
++[90m    at *[39m
++[90m    at *[39m
++[90m    at *[39m
+ 
+ Node.js *
+diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
+index b9a55fb7ea22e62553f69bd035797f7aaee1fc38..1f5ce52cf674cfc5fb75ad2cd979752a991c7e28 100644
+--- a/test/parallel/test-node-output-errors.mjs
++++ b/test/parallel/test-node-output-errors.mjs
+@@ -10,14 +10,15 @@ const skipForceColors =
+   (common.isWindows && (Number(os.release().split('.')[0]) !== 10 || Number(os.release().split('.')[2]) < 14393)); // See https://github.com/nodejs/node/pull/33132
+ 
+ 
+-function replaceNodeVersion(str) {
+-  return str.replaceAll(process.version, '*');
+-}
+-
+ function replaceStackTrace(str) {
+   return snapshot.replaceStackTrace(str, '$1at *$7\n');
+ }
+ 
++function replaceForceColorsStackTrace(str) {
++  // eslint-disable-next-line no-control-regex
++  return str.replaceAll(/(\[90m\W+)at .*node:.*/g, '$1at *[39m');
++}
++
+ describe('errors output', { concurrency: true }, () => {
+   function normalize(str) {
+     return str.replaceAll(snapshot.replaceWindowsPaths(process.cwd()), '').replaceAll('//', '*').replaceAll(/\/(\w)/g, '*$1').replaceAll('*test*', '*').replaceAll('*fixtures*errors*', '*').replaceAll('file:**', 'file:*/');
+@@ -28,9 +29,12 @@ describe('errors output', { concurrency: true }, () => {
+   }
+   const common = snapshot
+     .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths);
+-  const defaultTransform = snapshot.transform(common, normalize, replaceNodeVersion);
+-  const errTransform = snapshot.transform(common, normalizeNoNumbers, replaceNodeVersion);
+-  const promiseTransform = snapshot.transform(common, replaceStackTrace, normalizeNoNumbers, replaceNodeVersion);
++  const defaultTransform = snapshot.transform(common, normalize, snapshot.replaceNodeVersion);
++  const errTransform = snapshot.transform(common, normalizeNoNumbers, snapshot.replaceNodeVersion);
++  const promiseTransform = snapshot.transform(common, replaceStackTrace,
++                                              normalizeNoNumbers, snapshot.replaceNodeVersion);
++  const forceColorsTransform = snapshot.transform(common, normalize,
++                                                  replaceForceColorsStackTrace, snapshot.replaceNodeVersion);
+ 
+   const tests = [
+     { name: 'errors/async_error_eval_cjs.js' },
+@@ -50,7 +54,11 @@ describe('errors output', { concurrency: true }, () => {
+     { name: 'errors/throw_in_line_with_tabs.js', transform: errTransform },
+     { name: 'errors/throw_non_error.js', transform: errTransform },
+     { name: 'errors/promise_always_throw_unhandled.js', transform: promiseTransform },
+-    !skipForceColors ? { name: 'errors/force_colors.js', env: { FORCE_COLOR: 1 } } : null,
++    !skipForceColors ? {
++      name: 'errors/force_colors.js',
++      transform: forceColorsTransform,
++      env: { FORCE_COLOR: 1 }
++    } : null,
+   ].filter(Boolean);
+   for (const { name, transform, env } of tests) {
+     if (env) env.ELECTRON_RUN_AS_NODE = 1;
+diff --git a/test/parallel/test-node-output-sourcemaps.mjs b/test/parallel/test-node-output-sourcemaps.mjs
+index 8e43947ab2188f087056eab39d0e1a11481f9da5..c53a0598958e4e386db1993caeb312dae3f302a8 100644
+--- a/test/parallel/test-node-output-sourcemaps.mjs
++++ b/test/parallel/test-node-output-sourcemaps.mjs
+@@ -4,10 +4,6 @@ import * as snapshot from '../common/assertSnapshot.js';
+ import * as path from 'node:path';
+ import { describe, it } from 'node:test';
+ 
+-function replaceNodeVersion(str) {
+-  return str.replaceAll(process.version, '*');
+-}
+-
+ describe('sourcemaps output', { concurrency: true }, () => {
+   function normalize(str) {
+     const result = str
+@@ -16,7 +12,8 @@ describe('sourcemaps output', { concurrency: true }, () => {
+     .replaceAll('/Users/bencoe/oss/coffee-script-test', '')
+     .replaceAll(/\/(\w)/g, '*$1')
+     .replaceAll('*test*', '*')
+-    .replaceAll('*fixtures*source-map*', '*');
++    .replaceAll('*fixtures*source-map*', '*')
++    .replaceAll(/(\W+).*node:internal\*modules.*/g, '$1*');
+     if (common.isWindows) {
+       const currentDeviceLetter = path.parse(process.cwd()).root.substring(0, 1).toLowerCase();
+       const regex = new RegExp(`${currentDeviceLetter}:/?`, 'gi');
+@@ -25,7 +22,8 @@ describe('sourcemaps output', { concurrency: true }, () => {
+     return result;
+   }
+   const defaultTransform = snapshot
+-    .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths, normalize, replaceNodeVersion);
++    .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths,
++               normalize, snapshot.replaceNodeVersion);
+ 
+   const tests = [
+     { name: 'source-map/output/source_map_disabled_by_api.js' },
