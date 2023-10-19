@@ -196,30 +196,23 @@ function checkType<T> (value: T, type: 'number' | 'boolean' | 'string' | 'object
   return value;
 }
 
-function parsePageSize (pageSize: any) {
-  let paperWidth = 8.5;
-  let paperHeight = 11.0;
-
+function parsePageSize (pageSize: string | ElectronInternal.PageSize) {
   if (typeof pageSize === 'string') {
     const format = paperFormats[pageSize.toLowerCase()];
     if (!format) {
       throw new Error(`Invalid pageSize ${pageSize}`);
     }
 
-    paperWidth = format.width;
-    paperHeight = format.height;
+    return { paperWidth: format.width, paperHeight: format.height };
   } else if (typeof pageSize === 'object') {
-    if (!pageSize.height || !pageSize.width) {
-      throw new Error('height and width properties are required for pageSize');
+    if (typeof pageSize.width !== 'number' || typeof pageSize.height !== 'number') {
+      throw new TypeError('width and height properties are required for pageSize');
     }
 
-    paperWidth = pageSize.width;
-    paperHeight = pageSize.height;
-  } else if (pageSize !== undefined) {
+    return { paperWidth: pageSize.width, paperHeight: pageSize.height };
+  } else {
     throw new TypeError('pageSize must be a string or an object');
   }
-
-  return { paperWidth, paperHeight };
 }
 
 // Translate the options of printToPDF.
@@ -242,7 +235,7 @@ WebContents.prototype.printToPDF = async function (options) {
     pageRanges: checkType(options.pageRanges ?? '', 'string', 'pageRanges'),
     preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
     generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
-    ...parsePageSize(options.pageSize)
+    ...parsePageSize(options.pageSize ?? 'letter')
   };
 
   if (this._printToPDF) {
