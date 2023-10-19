@@ -235,14 +235,6 @@ void RendererClientBase::RenderThreadStarted() {
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
-#endif
-
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  spellcheck_ = std::make_unique<SpellCheck>(this);
-#endif
-
-  blink::WebCustomElement::AddEmbedderCustomElementName("webview");
-  blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
   WTF::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
@@ -255,6 +247,14 @@ void RendererClientBase::RenderThreadStarted() {
       extension_scheme);
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
       extension_scheme);
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  spellcheck_ = std::make_unique<SpellCheck>(this);
+#endif
+
+  blink::WebCustomElement::AddEmbedderCustomElementName("webview");
+  blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
   std::vector<std::string> fetch_enabled_schemes =
       ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);
