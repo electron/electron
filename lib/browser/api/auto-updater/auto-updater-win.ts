@@ -2,7 +2,7 @@ import { app } from 'electron/main';
 import { EventEmitter } from 'events';
 import * as squirrelUpdate from '@electron/internal/browser/api/auto-updater/squirrel-update-win';
 
-class AutoUpdater extends EventEmitter {
+class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
   updateAvailable: boolean = false;
   updateURL: string | null = null;
 
@@ -15,7 +15,7 @@ class AutoUpdater extends EventEmitter {
   }
 
   getFeedURL () {
-    return this.updateURL;
+    return this.updateURL ?? '';
   }
 
   setFeedURL (options: { url: string } | string) {
