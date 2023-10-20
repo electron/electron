@@ -17,24 +17,18 @@ const isSameArgs = (args: string[]) => args.length === spawnedArgs.length && arg
 // and the output from standard out.
 const spawnUpdate = async function (args: string[], detached: boolean): Promise<string> {
   return new Promise((resolve, reject) => {
-    try {
-      // Ensure we don't spawn multiple squirrel processes
-      // Process spawned, same args:        Attach events to already running process
-      // Process spawned, different args:   Return with error
-      // No process spawned:                Spawn new process
-      if (spawnedProcess && !isSameArgs(args)) {
-        return reject(new Error(`AutoUpdater process with arguments ${args} is already running`));
-      } else if (!spawnedProcess) {
-        spawnedProcess = spawn(updateExe, args, {
-          detached: detached,
-          windowsHide: true
-        });
-        spawnedArgs = args || [];
-      }
-    } catch (error) {
-      // Shouldn't happen, but still guard it.
-      process.nextTick(() => reject(error));
-      return;
+    // Ensure we don't spawn multiple squirrel processes
+    // Process spawned, same args:        Attach events to already running process
+    // Process spawned, different args:   Return with error
+    // No process spawned:                Spawn new process
+    if (spawnedProcess && !isSameArgs(args)) {
+      throw new Error(`AutoUpdater process with arguments ${args} is already running`);
+    } else if (!spawnedProcess) {
+      spawnedProcess = spawn(updateExe, args, {
+        detached,
+        windowsHide: true
+      });
+      spawnedArgs = args || [];
     }
 
     let stdout = '';
