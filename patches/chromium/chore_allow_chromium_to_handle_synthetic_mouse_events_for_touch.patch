@@ -22,7 +22,7 @@ index 6cee219cf9128453f1102fd95747bbdd40b549c7..3117036f80dfea71392db76f6cc2d6c3
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 2e4bacce52a45b5d9d7829c1f88f82aa0bb1b4bb..f3537e89191bd2c6d9b06c9b741a168071eb8662 100644
+index 0a3dcdbba1d808605723ecbdddfe0d7952f236f2..12633f447e1cc9ee65e0b6f425709f75f3af8bf9 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -261,6 +261,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin

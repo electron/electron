@@ -97,7 +97,7 @@ index 2d09abe5f1ab95ab2c0952638078417ae4316b21..0e4461228b33f01a7542c8e74affd505
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 67f81a0552defe6892ba73f170f6c2662104e56d..f533501e28c70fff4d2aa1a9fd6d588c05eda4ff 100644
+index 6fa2559accc6abe55b450a85eb2bcd1ad539efd0..5d73bc525bed92df79cc7507e594148ec446ea6c 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -938,6 +938,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
@@ -109,10 +109,10 @@ index 67f81a0552defe6892ba73f170f6c2662104e56d..f533501e28c70fff4d2aa1a9fd6d588c
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index 438de31065a4834c169318de9e8e5693e2703efb..a285be083128f96120c1f673f5da8c6fa194fbe8 100644
+index f63a3f391d405ca9daa7181c748d181ef7377d2c..f39e697af6de1f222bfd7c868d11004bbc5ab8c5 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-@@ -248,7 +248,7 @@ void PausableScriptExecutor::CreateAndRun(
+@@ -249,7 +249,7 @@ void PausableScriptExecutor::CreateAndRun(
            script_state, mojom::blink::UserActivationOption::kDoNotActivate,
            mojom::blink::LoadEventBlockingOption::kDoNotBlock,
            want_result_option, mojom::blink::PromiseResultOption::kDoNotWait,
@@ -121,7 +121,7 @@ index 438de31065a4834c169318de9e8e5693e2703efb..a285be083128f96120c1f673f5da8c6f
            MakeGarbageCollected<V8FunctionExecutor>(
                script_state->GetIsolate(), function, receiver, argc, argv));
    executor->Run();
-@@ -263,10 +263,11 @@ void PausableScriptExecutor::CreateAndRun(
+@@ -264,10 +264,11 @@ void PausableScriptExecutor::CreateAndRun(
      mojom::blink::LoadEventBlockingOption blocking_option,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_result_option,
@@ -135,7 +135,7 @@ index 438de31065a4834c169318de9e8e5693e2703efb..a285be083128f96120c1f673f5da8c6f
        MakeGarbageCollected<WebScriptExecutor>(std::move(sources),
                                                execute_script_policy));
    switch (evaluation_timing) {
-@@ -288,6 +289,14 @@ void PausableScriptExecutor::ContextDestroyed() {
+@@ -289,6 +290,14 @@ void PausableScriptExecutor::ContextDestroyed() {
      ScriptState::Scope script_scope(script_state_);
      std::move(callback_).Run({}, {});
    }
@@ -150,7 +150,7 @@ index 438de31065a4834c169318de9e8e5693e2703efb..a285be083128f96120c1f673f5da8c6f
    Dispose();
  }
  
-@@ -298,10 +307,12 @@ PausableScriptExecutor::PausableScriptExecutor(
+@@ -299,10 +308,12 @@ PausableScriptExecutor::PausableScriptExecutor(
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_result_option,
      WebScriptExecutionCallback callback,
@@ -163,7 +163,7 @@ index 438de31065a4834c169318de9e8e5693e2703efb..a285be083128f96120c1f673f5da8c6f
        user_activation_option_(user_activation_option),
        blocking_option_(blocking_option),
        want_result_option_(want_result_option),
-@@ -425,6 +436,9 @@ void PausableScriptExecutor::HandleResults(
+@@ -426,6 +437,9 @@ void PausableScriptExecutor::HandleResults(
      std::move(callback_).Run(std::move(value), start_time_);
    }
  
@@ -174,7 +174,7 @@ index 438de31065a4834c169318de9e8e5693e2703efb..a285be083128f96120c1f673f5da8c6f
  }
  
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.h b/third_party/blink/renderer/core/frame/pausable_script_executor.h
-index 1e4d9e098463d61dcab787afcc46fea63b27e012..3f1ebf493ddd7d1c209acee2fb1255a0530e45d0 100644
+index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706b4b52f22 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.h
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.h
 @@ -48,7 +48,8 @@ class CORE_EXPORT PausableScriptExecutor final

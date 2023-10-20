@@ -358,7 +358,7 @@ index 60acb83c8d76f71db689f9d188bb6e8f64a74ffb..aa6cee708d1e451b443bc26528b56cc8
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index abdcd673c56c4dc4e25d1fead3b5423afc55968e..71b5e8777da278e54ea22ee6838162f02b330933 100644
+index 31baf3534e7ddaa16a9dc6078ed816b9abe102a3..270bb9041b6812cbb95df46f8a0815020ab0ed97 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -430,8 +430,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
@@ -372,7 +372,7 @@ index abdcd673c56c4dc4e25d1fead3b5423afc55968e..71b5e8777da278e54ea22ee6838162f0
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 517debd480aba9340f058c9b37bef0a56a171659..2815466b8041beda9f05b36b1ff9ca221a22558b 100644
+index 66fd14db447d27b457e04e51b5fe76b94eb2cd45..8082fd27b0ad1637ee41f787bd769511af9e40b1 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -158,8 +158,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
