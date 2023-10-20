@@ -14,6 +14,8 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
+#include "components/os_crypt/async/browser/key_provider.h"
+#include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
@@ -129,6 +131,7 @@ void BrowserProcessImpl::PreCreateThreads() {
 
 void BrowserProcessImpl::PreMainMessageLoopRun() {
   CreateNetworkQualityObserver();
+  CreateOSCryptAsync();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -301,6 +304,10 @@ UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
   return nullptr;
 }
 
+os_crypt_async::OSCryptAsync* BrowserProcessImpl::os_crypt_async() {
+  return os_crypt_async_.get();
+}
+
 void BrowserProcessImpl::SetSystemLocale(const std::string& locale) {
   system_locale_ = locale;
 }
@@ -374,4 +381,19 @@ void BrowserProcessImpl::CreateNetworkQualityObserver() {
   network_quality_observer_ =
       content::CreateNetworkQualityObserver(GetNetworkQualityTracker());
   DCHECK(network_quality_observer_);
+}
+
+void BrowserProcessImpl::CreateOSCryptAsync() {
+  // source: https://chromium-review.googlesource.com/c/chromium/src/+/4455776
+
+  // For now, initialize OSCryptAsync with no providers. This delegates all
+  // encryption operations to OSCrypt.
+  // TODO(crbug.com/1373092): Add providers behind features, as support for them
+  // is added.
+  os_crypt_async_ = std::make_unique<os_crypt_async::OSCryptAsync>(
+      std::vector<
+          std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>());
+
+  // Trigger async initialization of OSCrypt key providers.
+  std::ignore = os_crypt_async_->GetInstance(base::DoNothing());
 }
