@@ -146,6 +146,16 @@ app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
 app.on('child-process-gone', (event, details) => { /* ... */ })
 ```
 
+### Deprecated: `event.sender` in `IpcRendererEvent`
+
+```js
+// Deprecated
+ipcRenderer.on('ping', (event) => event.sender.send('pong'))
+
+// Replace with
+ipcRenderer.on('ping', () => ipcRenderer.send('pong'))
+```
+
 ## Planned Breaking API Changes (27.0)
 
 ### Removed: macOS 10.13 / 10.14 support

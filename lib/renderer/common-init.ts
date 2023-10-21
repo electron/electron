@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron/renderer';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import * as deprecate from '@electron/internal/common/deprecate';
 
 import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
 import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
@@ -19,7 +20,15 @@ const isWebView = mainFrame.getWebPreference('isWebView');
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[]) {
     const sender = internal ? ipcRendererInternal : ipcRenderer;
-    sender.emit(channel, { sender, ports }, ...args);
+    const event = { ports };
+    const warn = deprecate.warnOnce('event.sender', 'ipcRenderer');
+    Object.defineProperty(event, 'sender', {
+      get: () => {
+        warn();
+        return sender;
+      }
+    });
+    sender.emit(channel, event, ...args);
   }
 });
 
