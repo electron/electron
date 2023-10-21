@@ -29,16 +29,12 @@ describe('debugger module', () => {
       expect(w.webContents.debugger.isAttached()).to.be.true();
     });
 
-    it('fails when protocol version is not supported', done => {
-      try {
-        w.webContents.debugger.attach('2.0');
-      } catch {
-        expect(w.webContents.debugger.isAttached()).to.be.false();
-        done();
-      }
+    it('fails when protocol version is not supported', () => {
+      expect(() => w.webContents.debugger.attach('2.0')).to.throw();
+      expect(w.webContents.debugger.isAttached()).to.be.false();
     });
 
-    it('attaches when no protocol version is specified', async () => {
+    it('attaches when no protocol version is specified', () => {
       w.webContents.debugger.attach();
       expect(w.webContents.debugger.isAttached()).to.be.true();
     });
