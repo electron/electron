@@ -6,6 +6,7 @@ import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
+import { setImmediate } from 'node:timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -110,6 +111,36 @@ describe('utilityProcess module', () => {
       expect(details.serviceName).to.equal('node.mojom.NodeService');
       expect(details.name).to.equal('Hello World!');
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
+  });
+
+  describe('app.getAppMetrics()', () => {
+    it('with default serviceName', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'));
+      await once(child, 'spawn');
+      expect(child.pid).to.not.be.null();
+
+      await setImmediate();
+
+      const details = app.getAppMetrics().find(item => item.pid === child.pid)!;
+      expect(details).to.be.an('object');
+      expect(details.type).to.equal('Utility');
+      expect(details.serviceName).to.to.equal('node.mojom.NodeService');
+      expect(details.name).to.equal('Node Utility Process');
+    });
+
+    it('with custom serviceName', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'), [], { serviceName: 'Hello World!' });
+      await once(child, 'spawn');
+      expect(child.pid).to.not.be.null();
+
+      await setImmediate();
+
+      const details = app.getAppMetrics().find(item => item.pid === child.pid)!;
+      expect(details).to.be.an('object');
+      expect(details.type).to.equal('Utility');
+      expect(details.serviceName).to.to.equal('node.mojom.NodeService');
+      expect(details.name).to.equal('Hello World!');
     });
   });
 
