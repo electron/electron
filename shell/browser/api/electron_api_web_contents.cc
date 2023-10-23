@@ -1660,12 +1660,13 @@ void WebContents::HandleNewRenderFrame(
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
     auto maybe_color = web_preferences->GetBackgroundColor();
-    bool guest = IsGuest() || type_ == Type::kBrowserView;
+    bool default_transparent =
+        (IsGuest() && transparent_) || type_ == Type::kBrowserView;
 
     // If webPreferences has no color stored we need to explicitly set guest
     // webContents background color to transparent.
     auto bg_color = maybe_color.value_or(
-        guest && transparent_ ? SK_ColorTRANSPARENT : SK_ColorWHITE);
+        default_transparent ? SK_ColorTRANSPARENT : SK_ColorWHITE);
     web_contents()->SetPageBaseBackgroundColor(bg_color);
     SetBackgroundColor(rwhv, bg_color);
   }
