@@ -822,7 +822,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
-  // Get type
+  // Get transparent for guest view
   options.Get("transparent", &transparent_);
 
   bool b = false;
