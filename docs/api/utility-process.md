@@ -29,7 +29,7 @@ Process: [Main](../glossary.md#main-process)<br />
     * `inherit`: equivalent to \['ignore', 'inherit', 'inherit']
   * `serviceName` string (optional) - Name of the process that will appear in `name` property of
     [`child-process-gone` event of `app`](app.md#event-child-process-gone).
-    Default is `node.mojom.NodeService`.
+    Default is `Node Utility Process`.
   * `allowLoadingUnsignedLibraries` boolean (optional) _macOS_ - With this flag, the utility process will be
     launched via the `Electron Helper (Plugin).app` helper executable on macOS, which can be
     codesigned with `com.apple.security.cs.disable-library-validation` and
