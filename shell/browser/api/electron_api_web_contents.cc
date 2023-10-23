@@ -822,6 +822,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
+  // Get type
+  options.Get("transparent", &transparent_);
+
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::kOffScreen;
@@ -1655,8 +1658,17 @@ void WebContents::HandleNewRenderFrame(
 
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences)
-    SetBackgroundColor(web_preferences->GetBackgroundColor());
+  if (web_preferences) {
+    auto maybe_color = web_preferences->GetBackgroundColor();
+    bool guest = IsGuest() || type_ == Type::kBrowserView;
+
+    // If webPreferences has no color stored we need to explicitly set guest
+    // webContents background color to transparent.
+    auto bg_color = maybe_color.value_or(
+        guest && transparent_ ? SK_ColorTRANSPARENT : SK_ColorWHITE);
+    web_contents()->SetPageBaseBackgroundColor(bg_color);
+    SetBackgroundColor(rwhv, bg_color);
+  }
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
