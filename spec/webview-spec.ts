@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as url from 'node:url';
-import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, WebContents, screen } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedUntil } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
@@ -9,6 +9,7 @@ import * as http from 'node:http';
 import * as auth from 'basic-auth';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -1415,6 +1416,66 @@ describe('<webview> tag', function () {
         expect(result).to.equal('ok');
         const type = await w.executeJavaScript('webview.executeJavaScript("typeof require")');
         expect(type).to.equal('function');
+      });
+    });
+
+    describe('transparent attribute', () => {
+      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+
+      let window: BrowserWindow;
+      before(async () => {
+        window = new BrowserWindow({
+          webPreferences: {
+            webviewTag: true,
+            nodeIntegration: true,
+            contextIsolation: false
+          }
+        });
+        await window.loadURL(`file://${fixtures}/pages/flex-webview.html`);
+        window.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      });
+      afterEach(async () => {
+        await window.webContents.executeJavaScript(`{
+          for (const el of document.querySelectorAll('webview')) el.remove();
+        }`);
+      });
+      after(() => window.close());
+
+      // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+      ifit(process.platform === 'win32' && process.arch === 'x64')('should not be transparent when not set', async () => {
+        await loadWebView(window.webContents, {
+          src: 'data:text/html,foo'
+        });
+
+        await setTimeout(1000);
+
+        const display = screen.getPrimaryDisplay();
+        const screenCapture = await captureScreen();
+        const centerColor = getPixelColor(screenCapture, {
+          x: display.size.width / 2,
+          y: display.size.height / 2
+        });
+
+        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.true();
+      });
+
+      // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+      ifit(process.platform === 'win32' && process.arch === 'x64')('should be transparent when set', async () => {
+        await loadWebView(window.webContents, {
+          src: 'data:text/html,foo',
+          transparent: ''
+        });
+
+        await setTimeout(1000);
+
+        const display = screen.getPrimaryDisplay();
+        const screenCapture = await captureScreen();
+        const centerColor = getPixelColor(screenCapture, {
+          x: display.size.width / 2,
+          y: display.size.height / 2
+        });
+
+        expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
       });
     });
   });
