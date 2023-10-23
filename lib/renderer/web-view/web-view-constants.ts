@@ -13,6 +13,7 @@ export const enum WEB_VIEW_ATTRIBUTES {
   BLINKFEATURES = 'blinkfeatures',
   DISABLEBLINKFEATURES = 'disableblinkfeatures',
   WEBPREFERENCES = 'webpreferences',
+  TRANSPARENT = 'transparent',
 }
 
 export const enum WEB_VIEW_ERROR_MESSAGES {
