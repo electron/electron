@@ -1196,6 +1196,40 @@ describe('BrowserWindow module', () => {
           await isClosed3;
         }
       });
+
+      ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
+        // Show to focus app, then remove existing window
+        w.show();
+        w.destroy();
+
+        // We first need to resign app focus for this test to work
+        const isInactive = once(app, 'did-resign-active');
+        childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
+        await isInactive;
+
+        // Create new window
+        w = new BrowserWindow({
+          type: 'panel',
+          height: 200,
+          width: 200,
+          center: true,
+          show: false
+        });
+
+        const isShow = once(w, 'show');
+        const isFocus = once(w, 'focus');
+
+        w.showInactive();
+        w.focus();
+
+        await isShow;
+        await isFocus;
+
+        const getActiveAppOsa = 'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const activeApp = childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
+
+        expect(activeApp).to.equal('Finder');
+      });
     });
 
     // TODO(RaisinTen): Make this work on Windows too.
