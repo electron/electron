@@ -53,7 +53,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RestoreFocus() override;
   void FocusThroughTabTraversal(bool reverse) override;
   content::DropData* GetDropData() const override;
-  void CancelDragDropForPortalActivation() override;
+  void TransferDragSecurityInfo(WebContentsView* view) override;
   gfx::Rect GetViewBounds() const override;
   void CreateView(gfx::NativeView context) override;
   content::RenderWidgetHostViewBase* CreateViewForWidget(

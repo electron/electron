@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index a91b303e77f4b5b47742d12749eb70d857e0badf..284174aa697b3379863e0aa440b5d03c6b06f8e3 100644
+index ce42101bdec901047af1f97287d83879541ab53e..785382fdc0f47ff31baef16da13eab688be3689d 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -523,12 +523,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -527,12 +527,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
    return std::make_unique<gtk::NavButtonProviderGtk>();
  }
  
@@ -31,10 +31,10 @@ index a91b303e77f4b5b47742d12749eb70d857e0badf..284174aa697b3379863e0aa440b5d03c
  }
  
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index 8ae3369be0b628ce94eeb067b2be9f3ace31eccb..520de739d2f6f63757c15bf738c9c09b71c2a479 100644
+index 38c1297588f30cc81d48cfd2321845815bb93ea5..0f4141d2146c38f054b060ddfa06a9f68ee2179c 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -109,7 +109,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -110,7 +110,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
    bool PreferDarkTheme() const override;
    void SetDarkTheme(bool dark) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
@@ -43,7 +43,7 @@ index 8ae3369be0b628ce94eeb067b2be9f3ace31eccb..520de739d2f6f63757c15bf738c9c09b
  
   private:
    using TintMap = std::map<int, color_utils::HSL>;
-@@ -200,6 +200,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -203,6 +203,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
    // while Chrome is running.
    std::unique_ptr<ui::WindowFrameProvider> solid_frame_provider_;
    std::unique_ptr<ui::WindowFrameProvider> transparent_frame_provider_;
@@ -173,7 +173,7 @@ index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf
  
  }  // namespace gtk
 diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
-index 6d77be047e202d1b1a75c62ab829dd1131ce7f68..ee1f503a679b3e939e3f2d2417aec2182063dbd8 100644
+index 2b67f6ebcae4f0495b73c750e73250921fa0ac04..796b44df8c8b9a63ba97e28f14e457d724c8ae50 100644
 --- a/ui/linux/fallback_linux_ui.cc
 +++ b/ui/linux/fallback_linux_ui.cc
 @@ -135,7 +135,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
@@ -186,10 +186,10 @@ index 6d77be047e202d1b1a75c62ab829dd1131ce7f68..ee1f503a679b3e939e3f2d2417aec218
  }
  
 diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
-index 9901d4939400da87610b1a960ca989eb9da6dc9b..035ab6679f9f6a9083382580bbbe7fa2420ab28d 100644
+index 9a6a5a7f21c318d3009df1766a7789f9c7597339..9454e8f8e622a5b92f980fdf6c1f68d6c4795cf7 100644
 --- a/ui/linux/fallback_linux_ui.h
 +++ b/ui/linux/fallback_linux_ui.h
-@@ -67,7 +67,7 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
+@@ -68,7 +68,7 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
    bool PreferDarkTheme() const override;
    void SetDarkTheme(bool dark) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
@@ -199,10 +199,10 @@ index 9901d4939400da87610b1a960ca989eb9da6dc9b..035ab6679f9f6a9083382580bbbe7fa2
   private:
    std::string default_font_family_;
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index a47134d7fa67213e8928ce98071f85fa1bc66508..2fe17292aee5021864615abc5b60ee38d7fa0e4b 100644
+index 9cc65cf5713464e5964e9aa2109c281055e5b70f..014d1145e44e5e9420846476d4349070c78852d0 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -313,7 +313,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+@@ -316,7 +316,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
    // if transparency is unsupported and the frame should be rendered opaque.
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.

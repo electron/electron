@@ -130,7 +130,7 @@ class DataPipeReader {
   std::vector<char> buffer_;
 
   // The head of buffer.
-  raw_ptr<char> head_ = nullptr;
+  raw_ptr<char, AllowPtrArithmetic> head_ = nullptr;
 
   // Remaining data to read.
   uint64_t remaining_size_ = 0;

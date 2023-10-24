@@ -99,7 +99,7 @@ index b267bc2272fa82334a70d897a900f1ea37b1a598..967e22699bf565368704972c021f9b42
      DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
    }
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 9642854e237edff1020ec5cd54e2cbe6b9e85dd2..4e84d8b09787a8a4592b64622bb8a8ca78fbaf49 100644
+index b0d1486beef9115a03c036281dc6a9deed5b8f7a..1ec166ea009e0ba422a7fd0d868a04812694a17c 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -127,10 +127,10 @@ index 9642854e237edff1020ec5cd54e2cbe6b9e85dd2..4e84d8b09787a8a4592b64622bb8a8ca
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
+index 095c639b9893e885d8937e29ed7d47a7c28bc6b6..cfa5e307de8326fbc335996feaf9595d1572cd3d 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
-@@ -32,9 +32,11 @@
+@@ -33,9 +33,11 @@
    }
  #endif
  
@@ -142,9 +142,9 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907
  
  namespace sandbox::logging {
  
-@@ -71,9 +73,11 @@ void SendOsLog(Level level, const char* message) {
- 
-   os_log_with_type(log.get(), os_log_type, "%{public}s", message);
+@@ -76,9 +78,11 @@ void SendOsLog(Level level, const char* message) {
+     sandbox::crash_message::SetCrashMessage(message);
+   }
  
 +#if !IS_MAS_BUILD()
    if (level == Level::FATAL) {

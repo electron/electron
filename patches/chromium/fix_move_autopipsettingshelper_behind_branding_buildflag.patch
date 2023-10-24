@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85cc5ab845 100644
+index 726b212594a22c3dc3003ca96f76f6e10e966094..02cf32181f77d39fe65f4b2fdcf8e135a456b651 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -19,8 +19,10 @@
@@ -23,7 +23,16 @@ index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85
  #include "third_party/blink/public/common/features.h"
  #include "ui/views/view.h"
  #endif  // !BUILDFLAG(IS_ANDROID)
-@@ -337,7 +339,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
+@@ -148,7 +150,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+     return false;
+   }
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (auto_pip_setting_helper_) {
+     auto_pip_setting_helper_->OnUserClosedWindow();
+   }
+@@ -343,7 +345,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
    pip_window_controller_->Close(false /* should_pause_video */);
    pip_window_controller_ = nullptr;
@@ -32,26 +41,26 @@ index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85
    auto_pip_setting_helper_.reset();
  #endif  // !BUILDFLAG(IS_ANDROID)
  }
-@@ -348,8 +350,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -354,8 +356,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
    // contents, so we only need to forget the controller here when user closes
    // the parent web contents with the PiP window open.
    document_web_contents_observer_.reset();
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-   // `setting_helper_` depends on the opener's WebContents.
+   // `auto_pip_setting_helper_` depends on the opener's WebContents.
    auto_pip_setting_helper_.reset();
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
    if (pip_window_controller_)
      pip_window_controller_ = nullptr;
  }
-@@ -371,6 +375,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -377,6 +381,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-   auto* const web_contents = pip_window_controller_->GetWebContents();
- 
-   auto* auto_pip_tab_helper =
-@@ -393,6 +398,8 @@ PictureInPictureWindowManager::GetOverlayView(
+   // It would be nice to create this in `EnterPictureInPicture*`, but detecting
+   // auto-pip while pip is in the process of opening doesn't work.
+   //
+@@ -404,6 +409,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -60,8 +69,17 @@ index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85
  }
  #endif  // !BUILDFLAG(IS_ANDROID)
  
+@@ -417,7 +424,7 @@ PictureInPictureWindowManager::GetActiveSessionOrigins() {
+   return active_origins;
+ }
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ void PictureInPictureWindowManager::CreateAutoPipSettingHelperIfNeeded() {
+   // Because we have to defer creating this until after the tab helper finds out
+   // about pip, we don't care if there's already a helper.  Just use it.
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 85ae9fb9f969709c35c27ac1235e5bdc48e2084a..a2adddb3ec8c72a2ff1a3739a1792868a6f89ffc 100644
+index dfad60d82ab51d88d1f9d17985f38225f17737d3..4b3171c7ebec98d3477b3d71749a1f51eec925b9 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -11,6 +11,7 @@
@@ -82,7 +100,29 @@ index 85ae9fb9f969709c35c27ac1235e5bdc48e2084a..a2adddb3ec8c72a2ff1a3739a1792868
  
  namespace views {
  class View;
-@@ -238,7 +241,9 @@ class PictureInPictureWindowManager {
+@@ -171,10 +174,11 @@ class PictureInPictureWindowManager {
+       const gfx::Rect& browser_view_overridden_bounds,
+       views::View* anchor_view,
+       views::BubbleBorder::Arrow arrow);
+-
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   AutoPipSettingHelper* get_setting_helper_for_testing() {
+     return auto_pip_setting_helper_.get();
+   }
++#endif
+ #endif
+ 
+   // Get the origins for initiators of active Picture-in-Picture sessions.
+@@ -232,7 +236,7 @@ class PictureInPictureWindowManager {
+   // helper class for callbacks, to avoid re-entrant calls during pip set-up.
+   static void ExitPictureInPictureSoon();
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Create the settings helper if this is auto-pip and we don't have one.
+   void CreateAutoPipSettingHelperIfNeeded();
+ #endif  // !BUILDFLAG(IS_ANDROID)
+@@ -247,7 +251,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  
