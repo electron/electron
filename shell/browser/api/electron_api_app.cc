@@ -1370,8 +1370,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("pid", process_metric.second->process.Pid());
     pid_dict.Set("type", content::GetProcessTypeNameInEnglish(
                              process_metric.second->type));
-    pid_dict.Set("creationTime",
-                 process_metric.second->process.CreationTime().ToJsTime());
+    pid_dict.Set("creationTime", process_metric.second->process.CreationTime()
+                                     .InMillisecondsFSinceUnixEpoch());
 
     if (!process_metric.second->service_name.empty()) {
       pid_dict.Set("serviceName", process_metric.second->service_name);
