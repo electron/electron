@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 18722961833e489b359a28cf691b67bbeeb3ac56..f1d61a47cae0e508d03cf773be4191c57712c59d 100644
+index 4203c52895ee6ef16506a2c1fdd9b608be5ec07a..393efb454a6f90f41e3ba3d8314f2819d290365f 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -162,6 +162,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
+@@ -175,6 +175,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index 18722961833e489b359a28cf691b67bbeeb3ac56..f1d61a47cae0e508d03cf773be4191c5
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index ddfd9e4d3424a21bcc6c3d59cbb0b813b5e00b78..7f4310b8882ad1ba52eb726ff4f8e21a17cedc8d 100644
+index e924f7f199156912f48c578e8b4d187cffde8cb0..4d79dc59d56bc883f7c2f7e2b0eeb30316765fdf 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -434,6 +434,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -435,6 +435,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index ddfd9e4d3424a21bcc6c3d59cbb0b813b5e00b78..7f4310b8882ad1ba52eb726ff4f8e21a
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -655,6 +672,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -656,6 +673,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool inverted_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;

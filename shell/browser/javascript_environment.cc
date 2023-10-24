@@ -10,7 +10,7 @@
 #include <utility>
 
 #include "base/allocator/partition_alloc_features.h"
-#include "base/allocator/partition_allocator/partition_alloc.h"
+#include "base/allocator/partition_allocator/src/partition_alloc/partition_alloc.h"
 #include "base/bits.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"

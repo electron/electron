@@ -2,6 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#endif
+
+// FIXME(ckerr) this incorrect #include order is a temporary
+// fix to unblock the roll. Will fix in an upgrade followup.
+#ifdef USE_OZONE_PLATFORM_X11
+#include "ui/base/x/x11_util.h"
+#endif
+
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -55,7 +68,7 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
@@ -64,6 +77,8 @@
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
 #include "ui/gfx/x/xproto_util.h"
+#endif
+#if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 

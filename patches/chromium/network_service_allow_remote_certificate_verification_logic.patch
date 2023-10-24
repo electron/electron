@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 0a0fa8772cab92d23a8b75aded6c1dbcf29e7b94..f2b36dbd52bc59928ea14b6adb30005f6505ab19 100644
+index ad15222c06a6d295f50f1119699de02dcdd98fca..416ce43ee7e3632fe2bb796a2f090608c600086f 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -145,6 +145,11 @@
+@@ -146,6 +146,11 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index 0a0fa8772cab92d23a8b75aded6c1dbcf29e7b94..f2b36dbd52bc59928ea14b6adb30005f
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -437,6 +442,99 @@ bool GetFullDataFilePath(
+@@ -461,6 +466,99 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index 0a0fa8772cab92d23a8b75aded6c1dbcf29e7b94..f2b36dbd52bc59928ea14b6adb30005f
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -825,6 +923,13 @@ void NetworkContext::SetClient(
+@@ -828,6 +926,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index 0a0fa8772cab92d23a8b75aded6c1dbcf29e7b94..f2b36dbd52bc59928ea14b6adb30005f
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2448,6 +2553,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2463,6 +2568,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index 0a0fa8772cab92d23a8b75aded6c1dbcf29e7b94..f2b36dbd52bc59928ea14b6adb30005f
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index ef4140d740e233964e1db25d3239a8807f591e2d..c81ae450479d994a89f4d9560028ecd761e8e74f 100644
+index 3d07f29d3aaa2100960cca787b35b626d472d388..49d3215854977cbe78dff2909739646f0c40dad9 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -167,7 +167,7 @@ index ef4140d740e233964e1db25d3239a8807f591e2d..c81ae450479d994a89f4d9560028ecd7
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -904,6 +907,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -905,6 +908,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,10 +177,10 @@ index ef4140d740e233964e1db25d3239a8807f591e2d..c81ae450479d994a89f4d9560028ecd7
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 3d95f8cd1adebd11a57ec7fd5152ac89e30e28bc..5d20e33a59de709a8e21630de2e1c357c5a68dfd 100644
+index 64fc19a76a63ecc172220a25854da0baa8859235..c224584c548b9373b681deae026baec48c458213 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -316,6 +316,17 @@ struct NetworkContextFilePaths {
+@@ -310,6 +310,17 @@ struct NetworkContextFilePaths {
    bool trigger_migration = false;
  };
  
@@ -198,7 +198,7 @@ index 3d95f8cd1adebd11a57ec7fd5152ac89e30e28bc..5d20e33a59de709a8e21630de2e1c357
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -949,6 +960,9 @@ interface NetworkContext {
+@@ -947,6 +958,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

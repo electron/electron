@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 6 Oct 2023 14:15:20 -0400
+Subject: feat: allow passing of ObjectTemplate to ObjectTemplateBuilder
+
+https://chromium-review.googlesource.com/c/chromium/src/+/4905829 removed the
+ObjectTemplateBuilder constructor which allows passing in an ObjectTemplate.
+
+Electron needs this constructor, namely for gin_helper::Constructible
+objects.
+
+diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
+index 1c7277c4f6e8ad7a8de2190a08ac79812823556b..9d4c053d69409ea02da8c2398463a033f5310172 100644
+--- a/gin/object_template_builder.cc
++++ b/gin/object_template_builder.cc
+@@ -168,6 +168,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+   template_->SetInternalFieldCount(kNumberOfInternalFields);
+ }
+ 
++ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
++                                             const char* type_name,
++                                             v8::Local<v8::ObjectTemplate> tmpl)
++    : isolate_(isolate), type_name_(type_name), template_(tmpl) {
++  template_->SetInternalFieldCount(kNumberOfInternalFields);
++}
++
+ ObjectTemplateBuilder::ObjectTemplateBuilder(
+     const ObjectTemplateBuilder& other) = default;
+ 
+diff --git a/gin/object_template_builder.h b/gin/object_template_builder.h
+index c2bd76ba8f7b33c2043636fa8946eedad78817e5..95258a6576a5f8555f73271a7ae119c4ab41145d 100644
+--- a/gin/object_template_builder.h
++++ b/gin/object_template_builder.h
+@@ -46,6 +46,9 @@ class GIN_EXPORT ObjectTemplateBuilder {
+  public:
+   explicit ObjectTemplateBuilder(v8::Isolate* isolate);
+   ObjectTemplateBuilder(v8::Isolate* isolate, const char* type_name);
++  ObjectTemplateBuilder(v8::Isolate* isolate,
++                        const char* type_name,
++                        v8::Local<v8::ObjectTemplate> tmpl);
+   ObjectTemplateBuilder(const ObjectTemplateBuilder& other);
+   ~ObjectTemplateBuilder();
+ 

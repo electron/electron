@@ -1,40 +1,22 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:47:04 -0700
-Subject: webview_cross_drag.patch
+Subject: feat: allow dragging and dropping between <webview>s.
 
 This allows dragging and dropping between <webview>s.
 
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
-diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 1420a19f223cc0cd3f683a96fc0f62516690a363..1830568c52a5ce96bd36ab866ac00012ce518570 100644
---- a/content/browser/web_contents/web_contents_view_aura.cc
-+++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -901,10 +901,7 @@ bool WebContentsViewAura::IsValidDragTarget(
-   // for the outermost view. Inner `WebContents` will have a
-   // `WebContentsViewChildFrame` so when dragging between an inner
-   // `WebContents` and its embedder the view IDs will be the same.
--  bool cross_tab_drag =
--      GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
--      drag_start_->view_id;
--  return cross_tab_drag;
+diff --git a/content/browser/web_contents/web_contents_view_drag_security_info.cc b/content/browser/web_contents/web_contents_view_drag_security_info.cc
+index bf24f4e2ccff56a2a92c4f11c9318644ea59daff..c54e6717144e618b3034e8f5a96fd6d85d207f30 100644
+--- a/content/browser/web_contents/web_contents_view_drag_security_info.cc
++++ b/content/browser/web_contents/web_contents_view_drag_security_info.cc
+@@ -66,7 +66,7 @@ bool WebContentsViewDragSecurityInfo::IsValidDragTarget(
+   // browser-side checks only have local tree fragment (potentially with
+   // multiple origins) granularity at best, but a drag operation eventually
+   // targets one single frame in that local tree fragment.
+-  return target_rwh->GetSiteInstanceGroup()->GetId() == site_instance_group_id_;
 +  return true;
  }
  
- ////////////////////////////////////////////////////////////////////////////////
-diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 9c49e73d58ecf5cd6fce0582e2a767d3f1ac43d9..07ca39e09bb3413bdb95c7c535b6612d18861799 100644
---- a/content/browser/web_contents/web_drag_dest_mac.mm
-+++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -427,9 +427,7 @@ - (void)resetDragStartTrackers {
- }
- 
- - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
--  return targetRWH->GetProcess()->GetID() == _dragStartProcessID ||
--         GetRenderViewHostID(_webContents->GetRenderViewHost()) !=
--             _dragStartViewID;
-+  return YES;
- }
- 
- @end
+ }  // namespace content

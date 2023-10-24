@@ -14,24 +14,24 @@ can potentially be upstreamed but it's likely that the better fix for this
 is to update our OSR code which is several years outdated.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 73cf38cf0846bf224b4e01434b2bcf1875c3e782..91ca97624a1a5a67cd4a7ea7d78393e7041eefe9 100644
+index a633447be5af6b9ab75bb28eb2361b4339771971..56f4c5bd320cb7c4acff9c76a160ba035d9ce787 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3866,6 +3866,8 @@ void WebContentsImpl::Restore() {
- 
+@@ -3867,6 +3867,8 @@ void WebContentsImpl::Restore() {
  void WebContentsImpl::SetWindowShowState(ui::WindowShowState state) {
+ #if defined(USE_AURA)
    aura::Window* window = GetTopLevelNativeWindow();
 +  if (!window)
 +    return;
  
-   // TODO(isandrk, crbug.com/1466855): This API function currently works only on
+   // TODO(laurila, crbug.com/1466855): This API function currently works only on
    // Aura platforms (Win/Lin/CrOS/Fuchsia), make it also work on Mac.
-@@ -3880,7 +3882,7 @@ void WebContentsImpl::SetWindowShowState(ui::WindowShowState state) {
- 
+@@ -3883,7 +3885,7 @@ void WebContentsImpl::SetWindowShowState(ui::WindowShowState state) {
  ui::WindowShowState WebContentsImpl::GetWindowShowState() {
+ #if defined(USE_AURA)
    aura::Window* window = GetTopLevelNativeWindow();
 -  return wm::GetWindowState(window);
 +  return window ? wm::GetWindowState(window) : ui::SHOW_STATE_NORMAL;
- }
- #endif
- 
+ #else
+   // TODO(laurila, crbug.com/1466855): This API function currently works only on
+   // Aura platforms (Win/Lin/CrOS/Fuchsia), make it also work on Mac.

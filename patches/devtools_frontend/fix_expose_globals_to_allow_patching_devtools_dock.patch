@@ -12,12 +12,12 @@ upstream a more durable approach to allowing us to do this, at which
 point this patch can be removed.
 
 diff --git a/config/gni/devtools_grd_files.gni b/config/gni/devtools_grd_files.gni
-index 884afd2a45b4afb68b3b88124eecb4c674dad7c1..de3ed466805c5cf0badb1c98775f9c39c65aa421 100644
+index d6598ef89a5a232e9593391dc2240ab9ff98e428..7f6ca68898ae67dd563f4ff5b358a635cbc1f4fc 100644
 --- a/config/gni/devtools_grd_files.gni
 +++ b/config/gni/devtools_grd_files.gni
-@@ -658,6 +658,7 @@ grd_files_release_sources = [
+@@ -632,6 +632,7 @@ grd_files_release_sources = [
+   "front_end/ui/legacy/components/source_frame/source_frame-meta.js",
    "front_end/ui/legacy/components/source_frame/source_frame.js",
-   "front_end/ui/legacy/components/utils/utils-legacy.js",
    "front_end/ui/legacy/components/utils/utils.js",
 +  "front_end/ui/legacy/legacy-legacy.js",
    "front_end/ui/legacy/legacy.js",
@@ -48,10 +48,10 @@ index b1f0db6afb29188e4e69c5dd899523e836f9d253..4290e626fd875a50740bbd668ca11a4f
  import '../../ui/legacy/components/source_frame/source_frame-meta.js';
  import '../../panels/console_counters/console_counters-meta.js';
 diff --git a/front_end/ui/legacy/BUILD.gn b/front_end/ui/legacy/BUILD.gn
-index 2985b61e9b346709022202b3858a8138003b4439..f4fc031e4ccb988731913f0b3603a3169c54a57f 100644
+index af1d2b2d4fd97d9876329440ba67995e3a0541ea..19c2a27e73c4ff3cb126e85c2dbcbe240f44eef3 100644
 --- a/front_end/ui/legacy/BUILD.gn
 +++ b/front_end/ui/legacy/BUILD.gn
-@@ -179,3 +179,15 @@ devtools_entrypoint("bundle") {
+@@ -180,3 +180,15 @@ devtools_entrypoint("bundle") {
  
    visibility += devtools_ui_legacy_visibility
  }

@@ -23,15 +23,15 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 68b50260715c2a56bacf0f2e856f761c793ff143..e457ea82f6dd9ab8a3f1683bda61f6513f8abd00 100644
+index f3eb74091c0508f2bc7fdafa42229cf7975790c5..4c6e8aa06cf4fcaea9026ba06c3e21afd986ed76 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -799,6 +799,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
+@@ -9838,6 +9838,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
      return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
    }
  
-+  if (!common_params.url.IsStandard()) {
-+    return std::make_pair(url::Origin::Resolve(common_params.url,
++  if (!common_params().url.IsStandard()) {
++    return std::make_pair(url::Origin::Resolve(common_params().url,
 +                                               url::Origin()),
 +                          "url_non_standard");
 +  }
@@ -40,10 +40,10 @@ index 68b50260715c2a56bacf0f2e856f761c793ff143..e457ea82f6dd9ab8a3f1683bda61f651
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 9b0ad2483fcf02d8d46dcf222541b0a4b34984c0..d5f99b20fbe5242f95935918fedaf3e00d771ab9 100644
+index 914ae3c4288d1e4c5c68388a8a51fdc748adc95f..9faf376a1013c6620a0a085afeb4522a00d6af85 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2054,6 +2054,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2084,6 +2084,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 9b0ad2483fcf02d8d46dcf222541b0a4b34984c0..d5f99b20fbe5242f95935918fedaf3e0
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2101,6 +2105,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2131,6 +2135,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");

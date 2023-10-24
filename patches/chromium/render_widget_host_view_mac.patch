@@ -10,10 +10,10 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index da2f9d9576d278dc52274056df8bb66f1eec825b..fc4acff0b5d1a75b3311c6e4ecc938ad3cef05bf 100644
+index 81f705328efd2de0957c1ef309e20c421e0959eb..d6f9998890d7a83a8fb221691aa2f1e761461d52 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -157,6 +157,15 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -158,6 +158,15 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -29,7 +29,7 @@ index da2f9d9576d278dc52274056df8bb66f1eec825b..fc4acff0b5d1a75b3311c6e4ecc938ad
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -744,6 +753,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -746,6 +755,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -39,7 +39,7 @@ index da2f9d9576d278dc52274056df8bb66f1eec825b..fc4acff0b5d1a75b3311c6e4ecc938ad
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -828,6 +840,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -830,6 +842,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -50,7 +50,7 @@ index da2f9d9576d278dc52274056df8bb66f1eec825b..fc4acff0b5d1a75b3311c6e4ecc938ad
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1157,6 +1173,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1159,6 +1175,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  
@@ -61,7 +61,7 @@ index da2f9d9576d278dc52274056df8bb66f1eec825b..fc4acff0b5d1a75b3311c6e4ecc938ad
    // We only handle key down events and just simply forward other events.
    if (eventType != NSEventTypeKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1987,15 +2007,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -1999,15 +2019,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //

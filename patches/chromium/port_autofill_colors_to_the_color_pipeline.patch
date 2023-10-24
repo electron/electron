@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 7b24de2cc853d7e7bd048cf504ae26a89077ad93..7a48532940f3fc1a869a3b3eebbd608250c38315 100644
+index 44ef94806fae66475a1fe6c854e4b43499ba8b1a..cb996c5762f14fc2e1410094813ae8c5528738c5 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -397,6 +397,10 @@
+@@ -400,6 +400,10 @@
    E_CPONLY(kColorRadioButtonForegroundUnchecked) \
    E_CPONLY(kColorRadioButtonForegroundDisabled) \
    E_CPONLY(kColorRadioButtonForegroundChecked) \
@@ -22,7 +22,7 @@ index 7b24de2cc853d7e7bd048cf504ae26a89077ad93..7a48532940f3fc1a869a3b3eebbd6082
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -501,6 +505,7 @@
+@@ -506,6 +510,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,7 +31,7 @@ index 7b24de2cc853d7e7bd048cf504ae26a89077ad93..7a48532940f3fc1a869a3b3eebbd6082
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 01fe909077a786d5c7d896e84fd91b01d730f695..4a71d681177effe8ed06d46056f6ba1cfd7dd690 100644
+index 1bef8b4a80d2d244f469a0ca9bee9b8d67bb8767..3e911e5931301a279b6608d5cb1451ccb67f0806 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -200,6 +200,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
@@ -61,10 +61,10 @@ index 01fe909077a786d5c7d896e84fd91b01d730f695..4a71d681177effe8ed06d46056f6ba1c
                                               ? SkColorSetRGB(0x99, 0xC8, 0xFF)
                                               : SkColorSetRGB(0x00, 0x75, 0xFF)};
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index c499561242bb013714b6909d73d3df0fcbe16a18..03171c32211c0bd2e96eded7bbafab0a9f440074 100644
+index f3a29c3c7393a26a7da72c4b412a98f126059a3f..9508cfc93c4980ef503a0ebb0cc87b3853dcc707 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
-@@ -201,6 +201,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -200,6 +200,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
        SetAlpha(kColorNotificationInputForeground, gfx::kGoogleGreyAlpha700);
    mixer[kColorSliderTrack] = AlphaBlend(
        kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
@@ -75,7 +75,7 @@ index c499561242bb013714b6909d73d3df0fcbe16a18..03171c32211c0bd2e96eded7bbafab0a
  
    CompleteControlsForcedColorsDefinition(mixer);
  
-@@ -211,6 +215,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -210,6 +214,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorFrameInactive] = {kColorNativeWindow};
    mixer[kColorPrimaryBackground] = {kColorNativeWindow};
    mixer[kColorTooltipBackground] = {kColorNativeWindow};
@@ -83,7 +83,7 @@ index c499561242bb013714b6909d73d3df0fcbe16a18..03171c32211c0bd2e96eded7bbafab0a
  
    // Window Text
    mixer[kColorAlertLowSeverity] = {kColorNativeWindowText};
-@@ -224,6 +229,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -223,6 +228,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTableGroupingIndicator] = {kColorNativeWindowText};
    mixer[kColorThrobber] = {kColorNativeWindowText};
    mixer[kColorTooltipForeground] = {kColorNativeWindowText};
@@ -91,7 +91,7 @@ index c499561242bb013714b6909d73d3df0fcbe16a18..03171c32211c0bd2e96eded7bbafab0a
  
    // Hyperlinks
    mixer[kColorLinkForegroundDefault] = {kColorNativeHotlight};
-@@ -266,6 +272,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -265,6 +271,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};

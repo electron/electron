@@ -100,8 +100,6 @@ static_library("chrome") {
     "//chrome/browser/ui/ui_features.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
-    "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
-    "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
     "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.h",
@@ -156,15 +154,6 @@ static_library("chrome") {
     sources += [ "//chrome/browser/media/webrtc/window_icon_util_ozone.cc" ]
   }
 
-  if (use_aura) {
-    sources += [
-      "//chrome/browser/platform_util_aura.cc",
-      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
-      "//ui/views/native_window_tracker_aura.cc",
-      "//ui/views/native_window_tracker_aura.h",
-    ]
-  }
-
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
@@ -188,6 +177,16 @@ static_library("chrome") {
     "//ui/snapshot",
     "//ui/views/controls/webview",
   ]
+
+  if (use_aura) {
+    sources += [
+      "//chrome/browser/platform_util_aura.cc",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_aura.cc",
+      "//ui/views/native_window_tracker_aura.cc",
+      "//ui/views/native_window_tracker_aura.h",
+    ]
+    deps += [ "//components/eye_dropper" ]
+  }
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]

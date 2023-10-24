@@ -95,7 +95,7 @@ index 94ac4fa8db42cb70fa5032a0c1eeb10ad94b8d9a..048cfe7b16d74845492c9317f1ed9790
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 517333705c9b68706159bff2396c3ba1f8dc1f55..f11ce18fb4d1567eb53e6b9272424eecb40e51e1 100644
+index 2a5fa2627fd7abd46d2e87e5df9359ace9a40e91..eca679a3979b0d73455e8fc79f766ca06d2473b1 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -113,7 +113,9 @@ void OrderChildWindow(NSWindow* child_window,
@@ -126,7 +126,7 @@ index 517333705c9b68706159bff2396c3ba1f8dc1f55..f11ce18fb4d1567eb53e6b9272424eec
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -396,6 +402,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -430,6 +436,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 517333705c9b68706159bff2396c3ba1f8dc1f55..f11ce18fb4d1567eb53e6b9272424eec
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -407,6 +415,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -441,6 +449,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
