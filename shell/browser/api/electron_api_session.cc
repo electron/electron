@@ -853,7 +853,8 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
-      length, last_modified, etag, base::Time::FromDoubleT(start_time)));
+      length, last_modified, etag,
+      base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
 void Session::SetPreloads(const std::vector<base::FilePath>& preloads) {

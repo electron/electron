@@ -598,10 +598,10 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
           dict.FindDouble("modificationTime").value_or(0.0);
       int offset = dict.FindInt("offset").value_or(0);
       int length = dict.FindInt("length").value_or(-1);
-      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(*file),
-                              static_cast<uint64_t>(offset),
-                              static_cast<uint64_t>(length),
-                              base::Time::FromDoubleT(modification_time));
+      (*out)->AppendFileRange(
+          base::FilePath::FromUTF8Unsafe(*file), static_cast<uint64_t>(offset),
+          static_cast<uint64_t>(length),
+          base::Time::FromSecondsSinceUnixEpoch(modification_time));
     }
   }
   return true;

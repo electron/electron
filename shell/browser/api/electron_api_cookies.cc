@@ -164,9 +164,9 @@ void FilterCookieWithStatuses(
 base::Time ParseTimeProperty(const absl::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
     return base::Time();
-  if (*value == 0)  // FromDoubleT would convert 0 to empty Time
+  if (*value == 0)  // FromSecondsSinceUnixEpoch would convert 0 to empty Time
     return base::Time::UnixEpoch();
-  return base::Time::FromDoubleT(*value);
+  return base::Time::FromSecondsSinceUnixEpoch(*value);
 }
 
 base::StringPiece InclusionStatusToString(net::CookieInclusionStatus status) {
