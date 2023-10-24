@@ -61,7 +61,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("httpOnly", val.IsHttpOnly());
     dict.Set("session", !val.IsPersistent());
     if (val.IsPersistent())
-      dict.Set("expirationDate", val.ExpiryDate().ToDoubleT());
+      dict.Set("expirationDate", val.ExpiryDate().InSecondsFSinceUnixEpoch());
     dict.Set("sameSite", val.SameSite());
     return ConvertToV8(isolate, dict).As<v8::Object>();
   }

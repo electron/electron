@@ -128,7 +128,8 @@ void ToDictionary(gin_helper::Dictionary* details,
   details->Set("id", info->id);
   details->Set("url", info->url);
   details->Set("method", info->method);
-  details->Set("timestamp", base::Time::Now().ToDoubleT() * 1000);
+  details->Set("timestamp",
+               base::Time::Now().InSecondsFSinceUnixEpoch() * 1000);
   details->Set("resourceType", info->web_request_type);
   if (!info->response_ip.empty())
     details->Set("ip", info->response_ip);

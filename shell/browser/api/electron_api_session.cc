@@ -828,7 +828,7 @@ void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
 
 void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   int64_t offset = 0, length = 0;
-  double start_time = base::Time::Now().ToDoubleT();
+  double start_time = base::Time::Now().InSecondsFSinceUnixEpoch();
   std::string mime_type, last_modified, etag;
   base::FilePath path;
   std::vector<GURL> url_chain;

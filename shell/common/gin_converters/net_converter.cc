@@ -83,8 +83,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("subjectName", val->subject().GetDisplayName());
   dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
                                            val->serial_number().size()));
-  dict.Set("validStart", val->valid_start().ToDoubleT());
-  dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
+  dict.Set("validStart", val->valid_start().InSecondsFSinceUnixEpoch());
+  dict.Set("validExpiry", val->valid_expiry().InSecondsFSinceUnixEpoch());
   dict.Set("fingerprint",
            net::HashValue(val->CalculateFingerprint256(val->cert_buffer()))
                .ToString());
@@ -510,7 +510,8 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
         upload_data.Set("offset", static_cast<int>(element_file.offset()));
         upload_data.Set("length", static_cast<int>(element_file.length()));
         upload_data.Set("modificationTime",
-                        element_file.expected_modification_time().ToDoubleT());
+                        element_file.expected_modification_time()
+                            .InSecondsFSinceUnixEpoch());
         break;
       }
       case network::mojom::DataElement::Tag::kBytes: {
