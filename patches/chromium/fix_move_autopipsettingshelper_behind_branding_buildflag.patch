@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 726b212594a22c3dc3003ca96f76f6e10e966094..02cf32181f77d39fe65f4b2fdcf8e135a456b651 100644
+index 956dd3b205370b37ee85fa956855e59522b07c81..cb8e25d193de836291c75413d5bd620f55417d76 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -19,8 +19,10 @@
@@ -60,7 +60,7 @@ index 726b212594a22c3dc3003ca96f76f6e10e966094..02cf32181f77d39fe65f4b2fdcf8e135
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -404,6 +409,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -407,6 +412,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -69,7 +69,7 @@ index 726b212594a22c3dc3003ca96f76f6e10e966094..02cf32181f77d39fe65f4b2fdcf8e135
  }
  #endif  // !BUILDFLAG(IS_ANDROID)
  
-@@ -417,7 +424,7 @@ PictureInPictureWindowManager::GetActiveSessionOrigins() {
+@@ -420,7 +427,7 @@ PictureInPictureWindowManager::GetActiveSessionOrigins() {
    return active_origins;
  }
  

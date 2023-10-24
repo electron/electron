@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2a8b535c99aaeab6047095bdb1822a2087f640c7..244851bcefe9b3ac1b7ce09219bd19f6c07d6eda 100644
+index 7721a57ce97374f00763f37d5ea05781ebae158c..4a16be1295b69a8b6cd9687df6243260784108fa 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1035,6 +1035,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,7 +74,7 @@ index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 961aa78f3d158ec3745d1cad215cd547b1b415f4..e5e1d4997825993b2f53e7e117512a5c17bc64fb 100644
+index 7d8054f0468513a65f2e9fab94069d33886100f7..9215cce87b0fc668c1a4b92dbcde45289ae89ea4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -86,7 +86,7 @@ index 961aa78f3d158ec3745d1cad215cd547b1b415f4..e5e1d4997825993b2f53e7e117512a5c
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 42148bd0e7f13d0135b8869b1bfc321eabdf5e30..305b3197846034b47ca1810d29f9d2a936d9d064 100644
+index ddfe84e25422812bbf7f7b1a08cfb8534572f7bc..0cefb8fbe178e025dcb3d186473c8ecbada5e522 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -182,6 +182,7 @@ source_set("common") {
@@ -110,10 +110,10 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c560e1681fb62453d9bd8f41c249b4b27f46e7e4..10b010eb919c7775bc2dd5d45cf8e3e034facbde 100644
+index b30bacd72c2de84e55e4ebb7feab0d446583c84f..baec242fd582d3f4bb6f7e49cd72ed0c2e5fb0b8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -482,6 +482,7 @@ static_library("test_support") {
+@@ -480,6 +480,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",

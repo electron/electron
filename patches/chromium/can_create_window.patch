@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e1f688d473d70affeeb19c2ce23fe2fc8fe6f365..6e63cf93684443befb5e4243ef3669316388336c 100644
+index 8638d2ab18b0e16e64156f9db951e19febc4f786..737b17a9b19f13ea117e5f89a071d503b53386af 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8186,6 +8186,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8193,6 +8193,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index e1f688d473d70affeeb19c2ce23fe2fc8fe6f365..6e63cf93684443befb5e4243ef366931
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9b720579e882f5696cd2a9ca13186da79ea764fd..c384642d42ca44958a3bd1936dfa8baee450a84b 100644
+index ca4510b891189587f1d194acc2563f9136e0ae35..0aa7a687a97ac8d0b520508f1bc8793348cedfa1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4361,6 +4361,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4370,6 +4370,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 9b720579e882f5696cd2a9ca13186da79ea764fd..c384642d42ca44958a3bd1936dfa8bae
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4402,12 +4408,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4411,12 +4417,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -79,7 +79,7 @@ index 01ac846da8a36437bcf52f576cf9e4d56c0f7561..23eb25c4413746cda368d5e61c0c2bbb
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4068372cffe3a9115d72dfe3926fb57cf865a1eb..455722f8ae9e65814080c47e75746e68391497eb 100644
+index 22a8993f5c45a0489f91b707d5a10e80698b9fa0..f6cb5d084559768593221ab56f51cee1f391aed4 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -178,6 +178,7 @@ class NetworkService;
@@ -122,7 +122,7 @@ index 3a3e31d8228b662c3d6a2d72b4dc1f77a7dec758..45d4de0e48fce71bdcc612fbda9c8ba2
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index b7657b3e5ce43881de363fa7c18cb863fdb95cd5..ab819e0c1f42b195e8e171dabffa88e556c50fd3 100644
+index a053474f107840cf12c128f626a08f830e0ae7e8..28dcb8d575fc58de96786ab876c7fa097d5c012a 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
