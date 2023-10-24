@@ -574,9 +574,9 @@ describe('chrome extensions', () => {
           const showLastPanel = () => {
             // this is executed in the devtools context, where UI is a global
             const { UI } = (window as any);
-            const tabs = UI.inspectorView.tabbedPane.tabs;
+            const tabs = UI.InspectorView.instance().tabbedPane.tabs;
             const lastPanelId = tabs[tabs.length - 1].id;
-            UI.inspectorView.showPanel(lastPanelId);
+            UI.InspectorView.instance().showPanel(lastPanelId);
           };
           devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
             showPanelTimeoutId = setTimeout(show, 100);
