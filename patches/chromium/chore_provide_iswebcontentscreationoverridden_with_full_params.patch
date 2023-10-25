@@ -80,7 +80,7 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index f5de1cc9abc383117196ffde3834a9fedb24f7f1..bd0e85a9570f93720815dbdf684f0424232e61bd 100644
+index 4427068b0f844468b41985f2ac6da21e17137d74..afa44e4a717bf7fc1a9cd312d25eb8ff06c61759 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1884,12 +1884,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -99,10 +99,10 @@ index f5de1cc9abc383117196ffde3834a9fedb24f7f1..bd0e85a9570f93720815dbdf684f0424
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 6f271acab2bfda41436d8761e3dd9492f22f7100..0dee75fac4148da4b0d4a4d6b2e9a468d358a6a0 100644
+index 691f672ee007e0c8deccf5065a2161f59c8817d2..0d2d2157fd133803fc9cd9185abcef04f832b684 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -890,8 +890,7 @@ class Browser : public TabStripModelObserver,
+@@ -891,8 +891,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -232,7 +232,7 @@ index 7310082b86d902fec8de7c7405c323f26a46c510..eae809351dfb552fbb223f8db23f4db9
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 45d4de0e48fce71bdcc612fbda9c8ba25349e98a..96d0ff18fc526f7179e6cc7f6ef86839046627c9 100644
+index 6b09d4531c1b4301533fd61dcd3e679a070f6d1c..4ee22051813c923fd19c2b4a2e15ac54da30f153 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -137,8 +137,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index 45d4de0e48fce71bdcc612fbda9c8ba25349e98a..96d0ff18fc526f7179e6cc7f6ef86839
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 28dcb8d575fc58de96786ab876c7fa097d5c012a..6512490e7d17f50d9afb421c4cbe070fd6f42d7c 100644
+index 4fa0eda517adda1aaa0d7d0c6605854f98ecefd5..2870e67910097a1dd6344444c2931449ff30f14c 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -323,8 +323,7 @@ class CONTENT_EXPORT WebContentsDelegate {

@@ -40,7 +40,7 @@ index 7b940ead79cb0da3473ba3baa13e59e8bbd66e3b..93cdff3b2a520cca4c619318ff52c0d1
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index ce16f2fe4c0e9a2a54fd271f7f50eb0a5899d032..10ef31d062e0208dc063e48985c3bae38807ca86 100644
+index 440601f36c4e7f1d28520b859e4df9d075db4aa1..0eca1096d5adc39520cb38b62ce38abafbb37759 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2113,6 +2113,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
