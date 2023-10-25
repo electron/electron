@@ -515,7 +515,7 @@ renderer process, expose another API to send a reply back to the main process th
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (event, value) => callback(value)),
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value)),
   counterValue: (value) => ipcRenderer.send('counter-value', value)
 })
 ```
