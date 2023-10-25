@@ -564,11 +564,11 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
       });
 
       it('should compare version numbers correctly', () => {
-        expect(autoUpdater.isVersionAllowedForUpdate('1.0.0', '2.0.0')).to.equal(true);
-        expect(autoUpdater.isVersionAllowedForUpdate('1.0.1', '1.0.10')).to.equal(true);
-        expect(autoUpdater.isVersionAllowedForUpdate('1.0.10', '1.0.1')).to.equal(false);
-        expect(autoUpdater.isVersionAllowedForUpdate('1.31.1', '1.32.0')).to.equal(true);
-        expect(autoUpdater.isVersionAllowedForUpdate('1.31.1', '0.32.0')).to.equal(false);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.0', '2.0.0')).to.equal(true);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.1', '1.0.10')).to.equal(true);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.10', '1.0.1')).to.equal(false);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.31.1', '1.32.0')).to.equal(true);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.31.1', '0.32.0')).to.equal(false);
       });
     });
 
