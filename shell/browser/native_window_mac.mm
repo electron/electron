@@ -486,7 +486,7 @@ void NativeWindowMac::Focus(bool focus) {
     // this safe, we're gating by versions.
     if (@available(macOS 14.0, *)) {
       if (!IsPanel(window_)) {
-        [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
+        [[NSApplication sharedApplication] activate];
       }
     } else {
       [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
