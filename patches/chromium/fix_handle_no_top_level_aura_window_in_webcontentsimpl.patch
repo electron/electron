@@ -14,7 +14,7 @@ can potentially be upstreamed but it's likely that the better fix for this
 is to update our OSR code which is several years outdated.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ade37060638380542cf59377eeef056c32a2bc0a..b44273194168d2bdef9f4627376ad60dcd42c5c2 100644
+index 72965eb6c9f26d2c244adfdc7b7af2de4f8c598f..d4d7238224f659071705b8f82ccb90cae79d9f6c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3876,6 +3876,8 @@ void WebContentsImpl::Restore() {
