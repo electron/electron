@@ -66,14 +66,18 @@
 
 // Manages the PopUpButtonHandler.
 @interface ElectronAccessoryView : NSView
+@property(nonatomic, strong) PopUpButtonHandler* popUpButtonHandler;
 @end
 
 @implementation ElectronAccessoryView
+
+@synthesize popUpButtonHandler;
 
 - (void)dealloc {
   auto* popupButton =
       static_cast<NSPopUpButton*>([[self subviews] objectAtIndex:1]);
   popupButton.target = nil;
+  popUpButtonHandler = nil;
 }
 
 @end
@@ -149,6 +153,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   [accessoryView addSubview:label];
   [accessoryView addSubview:popupButton];
+  [accessoryView setPopUpButtonHandler:popUpButtonHandler];
 
   [dialog setAccessoryView:accessoryView];
 }
