@@ -787,6 +787,7 @@ if (is_mac) {
       "buildflags",
       "shell/common/api:mojo",
       "//base",
+      "//content/public/browser",
       "//skia",
       "//third_party/electron_node:node_lib",
       "//third_party/webrtc_overrides:webrtc_component",
