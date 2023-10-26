@@ -106,7 +106,7 @@ main process also adds custom APIs to interact with the user's operating system.
 Electron exposes various modules that control native desktop functionality, such
 as menus, dialogs, and tray icons.
 
-For a full list of Electron's main process modules, check out our API documentation.
+For a full list of Electron's main process modules, check out our [API documentation](https://www.electronjs.org/docs/latest/api/app).
 
 ## The renderer process
 
