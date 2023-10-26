@@ -706,7 +706,7 @@ index 3f9a514fb41d72c5d06de6ac989f9d7c0513a4e7..0e7ada9df962808dad7caf074a08ebde
    // Tells the browser printing failed.
    PrintingFailed(int32 cookie, PrintFailureReason reason);
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137a9d1ca3b 100644
+index 6000a308a23627e87afd9d979f8cb732a0db71bc..dfa51e2d8d31b34a605ac8dbfcb911b81d70da14 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -717,7 +717,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1216,14 +1217,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1217,14 +1218,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -734,7 +734,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
    if (!weak_this) {
      return;
    }
-@@ -1254,7 +1255,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1255,7 +1256,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -743,7 +743,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1269,7 +1270,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1270,7 +1271,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -752,7 +752,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
  
    if (render_frame_gone_) {
      return;
-@@ -1358,7 +1359,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+@@ -1359,7 +1360,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
    }
  
    Print(frame, print_preview_context_.source_node(),
@@ -762,7 +762,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
    if (render_frame_gone_) {
      return;
    }
-@@ -1421,6 +1423,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1422,6 +1424,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -771,7 +771,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2045,7 +2049,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2046,7 +2050,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
    }
  
    Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -781,7 +781,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
    // Check if `this` is still valid.
    if (!weak_this) {
      return;
-@@ -2061,17 +2066,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2062,17 +2067,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -804,7 +804,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2092,8 +2099,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2093,8 +2100,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -821,7 +821,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2332,25 +2346,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2333,25 +2347,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -861,7 +861,7 @@ index 22daec6f81eeeadc50bf680fd3d8481e224990da..783012ed09c53e23ad61671111da9137
    return true;
  }
  
-@@ -2457,7 +2479,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
+@@ -2458,7 +2480,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
        std::move(params),
        base::BindOnce(
            [](base::OnceClosure quit_closure, mojom::PrintPagesParamsPtr* output,
@@ -905,10 +905,10 @@ index c68b68767ac52602981278ec655d9ccfad0c30ab..df2ea4524584417d859e1a22ec8a49c8
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d809edbfc1207d554e3b9e22a10f611e66acde99..4da0a35fa3f8d9c465ae979c31ae4f696820d92b 100644
+index 1cceb9ac353745b32a2df67b9732756982f1611d..d62c482b41751a11e45f857d896d541a2a2b4cf0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2993,8 +2993,9 @@ source_set("browser") {
+@@ -2991,8 +2991,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -957,7 +957,7 @@ index c753f04d8b73a51cb7e05dcdb86afc0e981e7a71..7ec1729e08bf42a51f80885b3838eee9
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 10096f5a3824c71e6cb13b86ef7bdd02488f76c8..f7de11c89efed78f0280ada29f55f3bbd119ee88 100644
+index 2dd2b99216e6ebc1e326b9ff61ea2254ea7df4e9..3cc24bed974ba52a12272bc856d085cc890859c0 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
 @@ -37,6 +37,10 @@

@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7642cb5dfdb0dadb14c4d4eb2ec534c74be61fc0..630d68dad27b3dbce2b950d086cc2f3976f06570 100644
+index 3b2a1d31aeab17c1153e7ae351d8cfa79ec3bf43..d546ee3c4c0ec532b652f1e88f160f4fb58132d2 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4da0a35fa3f8d9c465ae979c31ae4f696820d92b..6d82b1b3dcf029fe69c7ce4a1ba2f7e84b10f953 100644
+index d62c482b41751a11e45f857d896d541a2a2b4cf0..bda8884b8e2898b9914472c3db0c228a537cc290 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -98,10 +98,10 @@ index ddfe84e25422812bbf7f7b1a08cfb8534572f7bc..0cefb8fbe178e025dcb3d186473c8ecb
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb65e258740 100644
+index 697fa7c5e98e7ee16b1b5e676f60a9689f7aac2b..f5e7278a6e391cbab61bbd2981127beb4c624214 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -222,6 +222,7 @@ target(link_target_type, "renderer") {
+@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -110,7 +110,7 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 59f5592c0694c7ec5996e4436e9e6316dfb6e6ad..eda90dc856f8f60d323fe542e191da00ef03319a 100644
+index ca82ebe11d3e09d631446e942c99761850056522..c480de4375f0293ab6b74f843d9547b16e0a73ff 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -480,6 +480,7 @@ static_library("test_support") {
