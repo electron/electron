@@ -660,6 +660,7 @@ step-nodejs-headers-build: &step-nodejs-headers-build
 step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
+    no_output_timeout: 30m
     command: |
       if [ "`uname`" == "Darwin" ]; then
         rm -rf src/out/Default/obj
