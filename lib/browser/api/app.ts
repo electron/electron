@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 
 import { Menu } from 'electron/main';
-import * as deprecate from '@electron/internal/common/deprecate';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -112,9 +111,3 @@ for (const name of events) {
     webContents.emit(name, event, ...args);
   });
 }
-
-// Deprecation.
-deprecate.event(app, 'gpu-process-crashed', 'child-process-gone', () => {
-  // the old event is still emitted by App::OnGpuProcessCrashed()
-  return undefined;
-});

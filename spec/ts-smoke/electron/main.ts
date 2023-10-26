@@ -442,6 +442,9 @@ app.configureHostResolver({ secureDnsMode: 'foo' });
 console.log(app.runningUnderRosettaTranslation);
 
 // @ts-expect-error Removed API
+app.on('gpu-process-crashed', () => {});
+
+// @ts-expect-error Removed API
 app.on('renderer-process-crashed', () => {});
 
 // auto-updater

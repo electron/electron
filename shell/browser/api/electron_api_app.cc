@@ -842,10 +842,6 @@ void App::OnGpuInfoUpdate() {
   Emit("gpu-info-update");
 }
 
-void App::OnGpuProcessCrashed() {
-  Emit("gpu-process-crashed", true);
-}
-
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
   ChildProcessLaunched(data.process_type, data.id, data.GetProcess().Handle(),

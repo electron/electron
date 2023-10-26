@@ -377,20 +377,6 @@ page.
 
 Emitted whenever there is a GPU info update.
 
-### Event: 'gpu-process-crashed' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `killed` boolean
-
-Emitted when the GPU process crashes or is killed.
-
-**Deprecated:** This event is superceded by the `child-process-gone` event
-which contains more information about why the child process disappeared. It
-isn't always because it crashed. The `killed` boolean can be replaced by
-checking `reason === 'killed'` when you switch to that event.
-
 ### Event: 'render-process-gone'
 
 Returns:

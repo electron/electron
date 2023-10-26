@@ -42,6 +42,19 @@ win.webContents.on('render-process-gone', (event, details) => { /* ... */ })
 webview.addEventListener('render-process-gone', (event) => { /* ... */ })
 ```
 
+### Removed: `gpu-process-crashed` event on `app`
+
+The `gpu-process-crashed` event on `app` has been removed.
+Use the new `child-process-gone` event instead.
+
+```js
+// Removed
+app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
+
+// Replace with
+app.on('child-process-gone', (event, details) => { /* ... */ })
+```
+
 ## Planned Breaking API Changes (28.0)
 
 ### Behavior Changed: `WebContents.backgroundThrottling` set to false affects all `WebContents` in the host `BrowserWindow`
