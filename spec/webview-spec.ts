@@ -547,17 +547,16 @@ describe('<webview> tag', function () {
       await close;
     });
 
-    // Sending ESC via sendInputEvent only works on Windows.
-    ifit(process.platform === 'win32')('pressing ESC should unfullscreen window', async () => {
+    it('pressing ESC should unfullscreen window', async () => {
       const [w, webview] = await loadWebViewWindow();
       const enterFullScreen = once(w, 'enter-full-screen');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await enterFullScreen;
 
       const leaveFullScreen = once(w, 'leave-full-screen');
-      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      webview.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFullScreen;
-      await setTimeout();
+      await setTimeout(1000);
       expect(w.isFullScreen()).to.be.false();
 
       const close = once(w, 'closed');
