@@ -253,6 +253,15 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
       user_gesture);
 }
 
+void WebContentsPermissionHelper::RequestKeyboardLockPermission(
+    bool esc_key_locked,
+    base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
+  RequestPermission(
+      web_contents_->GetPrimaryMainFrame(),
+      static_cast<blink::PermissionType>(PermissionType::KEYBOARD_LOCK),
+      base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
+}
+
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
     content::RenderFrameHost* requesting_frame,
     base::OnceCallback<void(bool)> callback,
