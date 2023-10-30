@@ -28,7 +28,8 @@ Process: [Main](../glossary.md#main-process)<br />
     * `ignore`: equivalent to \['ignore', 'ignore', 'ignore']
     * `inherit`: equivalent to \['ignore', 'inherit', 'inherit']
   * `serviceName` string (optional) - Name of the process that will appear in `name` property of
-    [`child-process-gone` event of `app`](app.md#event-child-process-gone).
+    [`ProcessMetric`](structures/process-metric.md) returned by [`app.getAppMetrics`](app.md#appgetappmetrics)
+    and [`child-process-gone` event of `app`](app.md#event-child-process-gone).
     Default is `Node Utility Process`.
   * `allowLoadingUnsignedLibraries` boolean (optional) _macOS_ - With this flag, the utility process will be
     launched via the `Electron Helper (Plugin).app` helper executable on macOS, which can be
