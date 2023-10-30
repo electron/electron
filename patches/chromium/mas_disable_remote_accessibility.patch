@@ -43,10 +43,10 @@ index 5a096477c123a782341115f964c4975301ccaf9a..ecfbb3b405425af346a6ba6788fc1d8f
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b9cab13f0916c1b6d092badb5100af52e640c479..3cb91f8ca4e7a9518d2ac34ab6a3f45b8aab2763 100644
+index 44e24a3c07a6ddc9feef75f0027bde9ad329ab0f..6acf4dd87dc2cbd4f527c6913ea53054e0ae8e5b 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -605,10 +605,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -595,10 +595,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
