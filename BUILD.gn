@@ -791,6 +791,7 @@ if (is_mac) {
 
     deps = [
       "//base",
+      "//content/public/browser",
       "//skia",
       "//third_party/electron_node:node_lib",
       "//v8",
