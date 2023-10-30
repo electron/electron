@@ -187,148 +187,56 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
   return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
 };
 
+function checkType<T> (value: T, type: 'number' | 'boolean' | 'string' | 'object', name: string): T {
+  // eslint-disable-next-line valid-typeof
+  if (typeof value !== type) {
+    throw new TypeError(`${name} must be a ${type}`);
+  }
+
+  return value;
+}
+
+function parsePageSize (pageSize: string | ElectronInternal.PageSize) {
+  if (typeof pageSize === 'string') {
+    const format = paperFormats[pageSize.toLowerCase()];
+    if (!format) {
+      throw new Error(`Invalid pageSize ${pageSize}`);
+    }
+
+    return { paperWidth: format.width, paperHeight: format.height };
+  } else if (typeof pageSize === 'object') {
+    if (typeof pageSize.width !== 'number' || typeof pageSize.height !== 'number') {
+      throw new TypeError('width and height properties are required for pageSize');
+    }
+
+    return { paperWidth: pageSize.width, paperHeight: pageSize.height };
+  } else {
+    throw new TypeError('pageSize must be a string or an object');
+  }
+}
+
 // Translate the options of printToPDF.
 
 let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
-  const printSettings: Record<string, any> = {
+  const margins = checkType(options.margins ?? {}, 'object', 'margins');
+  const printSettings = {
     requestID: getNextId(),
-    landscape: false,
-    displayHeaderFooter: false,
-    headerTemplate: '',
-    footerTemplate: '',
-    printBackground: false,
-    scale: 1.0,
-    paperWidth: 8.5,
-    paperHeight: 11.0,
-    marginTop: 0.4,
-    marginBottom: 0.4,
-    marginLeft: 0.4,
-    marginRight: 0.4,
-    pageRanges: '',
-    preferCSSPageSize: false,
-    shouldGenerateTaggedPDF: false
+    landscape: checkType(options.landscape ?? false, 'boolean', 'landscape'),
+    displayHeaderFooter: checkType(options.displayHeaderFooter ?? false, 'boolean', 'displayHeaderFooter'),
+    headerTemplate: checkType(options.headerTemplate ?? '', 'string', 'headerTemplate'),
+    footerTemplate: checkType(options.footerTemplate ?? '', 'string', 'footerTemplate'),
+    printBackground: checkType(options.printBackground ?? false, 'boolean', 'printBackground'),
+    scale: checkType(options.scale ?? 1.0, 'number', 'scale'),
+    marginTop: checkType(margins.top ?? 0.4, 'number', 'margins.top'),
+    marginBottom: checkType(margins.bottom ?? 0.4, 'number', 'margins.bottom'),
+    marginLeft: checkType(margins.left ?? 0.4, 'number', 'margins.left'),
+    marginRight: checkType(margins.right ?? 0.4, 'number', 'margins.right'),
+    pageRanges: checkType(options.pageRanges ?? '', 'string', 'pageRanges'),
+    preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
+    generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
+    ...parsePageSize(options.pageSize ?? 'letter')
   };
-
-  if (options.landscape !== undefined) {
-    if (typeof options.landscape !== 'boolean') {
-      throw new Error('landscape must be a Boolean');
-    }
-    printSettings.landscape = options.landscape;
-  }
-
-  if (options.displayHeaderFooter !== undefined) {
-    if (typeof options.displayHeaderFooter !== 'boolean') {
-      throw new Error('displayHeaderFooter must be a Boolean');
-    }
-    printSettings.displayHeaderFooter = options.displayHeaderFooter;
-  }
-
-  if (options.printBackground !== undefined) {
-    if (typeof options.printBackground !== 'boolean') {
-      throw new Error('printBackground must be a Boolean');
-    }
-    printSettings.shouldPrintBackgrounds = options.printBackground;
-  }
-
-  if (options.scale !== undefined) {
-    if (typeof options.scale !== 'number') {
-      throw new Error('scale must be a Number');
-    }
-    printSettings.scale = options.scale;
-  }
-
-  const { pageSize } = options;
-  if (pageSize !== undefined) {
-    if (typeof pageSize === 'string') {
-      const format = paperFormats[pageSize.toLowerCase()];
-      if (!format) {
-        throw new Error(`Invalid pageSize ${pageSize}`);
-      }
-
-      printSettings.paperWidth = format.width;
-      printSettings.paperHeight = format.height;
-    } else if (typeof options.pageSize === 'object') {
-      if (!pageSize.height || !pageSize.width) {
-        throw new Error('height and width properties are required for pageSize');
-      }
-
-      printSettings.paperWidth = pageSize.width;
-      printSettings.paperHeight = pageSize.height;
-    } else {
-      throw new Error('pageSize must be a String or Object');
-    }
-  }
-
-  const { margins } = options;
-  if (margins !== undefined) {
-    if (typeof margins !== 'object') {
-      throw new Error('margins must be an Object');
-    }
-
-    if (margins.top !== undefined) {
-      if (typeof margins.top !== 'number') {
-        throw new Error('margins.top must be a Number');
-      }
-      printSettings.marginTop = margins.top;
-    }
-
-    if (margins.bottom !== undefined) {
-      if (typeof margins.bottom !== 'number') {
-        throw new Error('margins.bottom must be a Number');
-      }
-      printSettings.marginBottom = margins.bottom;
-    }
-
-    if (margins.left !== undefined) {
-      if (typeof margins.left !== 'number') {
-        throw new Error('margins.left must be a Number');
-      }
-      printSettings.marginLeft = margins.left;
-    }
-
-    if (margins.right !== undefined) {
-      if (typeof margins.right !== 'number') {
-        throw new Error('margins.right must be a Number');
-      }
-      printSettings.marginRight = margins.right;
-    }
-  }
-
-  if (options.pageRanges !== undefined) {
-    if (typeof options.pageRanges !== 'string') {
-      throw new Error('pageRanges must be a String');
-    }
-    printSettings.pageRanges = options.pageRanges;
-  }
-
-  if (options.headerTemplate !== undefined) {
-    if (typeof options.headerTemplate !== 'string') {
-      throw new Error('headerTemplate must be a String');
-    }
-    printSettings.headerTemplate = options.headerTemplate;
-  }
-
-  if (options.footerTemplate !== undefined) {
-    if (typeof options.footerTemplate !== 'string') {
-      throw new Error('footerTemplate must be a String');
-    }
-    printSettings.footerTemplate = options.footerTemplate;
-  }
-
-  if (options.preferCSSPageSize !== undefined) {
-    if (typeof options.preferCSSPageSize !== 'boolean') {
-      throw new Error('preferCSSPageSize must be a Boolean');
-    }
-    printSettings.preferCSSPageSize = options.preferCSSPageSize;
-  }
-
-  if (options.generateTaggedPDF !== undefined) {
-    if (typeof options.generateTaggedPDF !== 'boolean') {
-      throw new Error('generateTaggedPDF must be a Boolean');
-    }
-    printSettings.shouldGenerateTaggedPDF = options.generateTaggedPDF;
-  }
 
   if (this._printToPDF) {
     if (pendingPromise) {
@@ -346,7 +254,7 @@ WebContents.prototype.printToPDF = async function (options) {
 // print param logic into new file shared between printToPDF and print
 WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions, callback) {
   if (typeof options !== 'object') {
-    throw new Error('webContents.print(): Invalid print settings specified.');
+    throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
 
   const printSettings: Record<string, any> = { ...options };
@@ -361,7 +269,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     const height = Math.ceil(pageSize.height);
     const width = Math.ceil(pageSize.width);
     if (!isValidCustomPageSize(width, height)) {
-      throw new Error('height and width properties must be minimum 352 microns.');
+      throw new RangeError('height and width properties must be minimum 352 microns.');
     }
 
     printSettings.mediaSize = {
