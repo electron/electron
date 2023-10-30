@@ -44,7 +44,7 @@ index 895f5126806b557c853f163fe69459ea929f11a4..b4ead2f5f2f813c23cd5eddae3d38052
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3a8f1be7379402a350ee5a762cefb9426ec9b466..a577047bd5ba9dcad62ed81edccf3c1bac21d1f0 100644
+index 90181e7d5f564fcd28a9f9ae1c2ed760fe565927..44345a6c5c1e3c69e29703cf1aa6e8a3333085cb 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4964,6 +4964,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -60,10 +60,10 @@ index 3a8f1be7379402a350ee5a762cefb9426ec9b466..a577047bd5ba9dcad62ed81edccf3c1b
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 2611b2b79bc385ec62531d77f70f434cf9946c87..947e0b236109388b8080d9a0ef18ca3774aa2440 100644
+index 8d222b5310ed782bfa4e7c981260429d2f6635f5..a13d5a775957b1e7b4889b43755caf075c0a5a41 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1004,6 +1004,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1007,6 +1007,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,10 +72,10 @@ index 2611b2b79bc385ec62531d77f70f434cf9946c87..947e0b236109388b8080d9a0ef18ca37
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index e15a97a289261a901a7ad8868eeeff6937268627..3cc822d8736fe34c3e6c5b5d8332763e2760a55f 100644
+index 617b5a5609796dccf158273ed729a132f0425f09..a4cc8a53b21b40942b403ac6ffbe1f1c676402bb 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
-@@ -31,6 +31,7 @@
+@@ -32,6 +32,7 @@
  #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-forward.h"
  #include "third_party/blink/public/mojom/media/capture_handle_config.mojom-forward.h"
  #include "third_party/skia/include/core/SkColor.h"
@@ -83,7 +83,7 @@ index e15a97a289261a901a7ad8868eeeff6937268627..3cc822d8736fe34c3e6c5b5d8332763e
  #include "ui/base/page_transition_types.h"
  #include "ui/base/window_open_disposition.h"
  
-@@ -571,6 +572,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
+@@ -572,6 +573,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
    // Invoked when the primary main frame changes size.
    virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  

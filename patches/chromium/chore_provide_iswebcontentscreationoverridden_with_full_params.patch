@@ -35,7 +35,7 @@ index 155296ba7ee5495be62045bc620bb1cd31d3ceb3..954efde9e7a58f8b556c6ceabb81643f
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
-index 878b5cfde7847990e41e1c5dc2de5c1d39c6c4d7..bc019bfb7540c38204316d46e9f46fe8b90395d4 100644
+index 6494db63fa65aea215dbc63283b9575f4ec2068c..d05ce515ee04544677894b116e479727c601d5f5 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
 @@ -104,10 +104,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a577047bd5ba9dcad62ed81edccf3c1bac21d1f0..a7c87cc809d6310329d8832dc057bceba688547f 100644
+index 44345a6c5c1e3c69e29703cf1aa6e8a3333085cb..f651346d1ee31586ae38148ab407a2011150a032 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4270,8 +4270,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

@@ -99,7 +99,7 @@ index 8a18ecf567cd3a6a2fb1627083a5544a93198bf4..6bb4074e033e045de164bc776f75f152
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index c4d93f71ed4766cb5e853d81b0c1a6a239a26719..14604c0fc75bd82a7aecf84a6207b852cb3c4553 100644
+index 3df2c8b7fc1aa06ae703718186374119a702f915..860685b6c26b848eab4958ac94ee0187546064ce 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2413,6 +2413,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -113,7 +113,7 @@ index c4d93f71ed4766cb5e853d81b0c1a6a239a26719..14604c0fc75bd82a7aecf84a6207b852
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3890,13 +3894,26 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3903,10 +3907,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -134,14 +134,9 @@ index c4d93f71ed4766cb5e853d81b0c1a6a239a26719..14604c0fc75bd82a7aecf84a6207b852
 +    return;
 +  }
 +
-+  const bool is_visible = visibility_state == mojom::blink::PageVisibilityState::kVisible;
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
--  GetPage()->GetPageScheduler()->SetPageVisible(
--      visibility_state == mojom::blink::PageVisibilityState::kVisible);
-+  GetPage()->GetPageScheduler()->SetPageVisible(is_visible);
-   // Notify observers of the change.
-   if (!is_initial_state) {
-     for (auto& observer : observers_)
+   // Do not throttle if the page should be painting.
+   bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
 index 76456104656f863d7e5fb816a3e026c00ca8861d..24ba8dbbfc360ab12f28c2452c72c9f78307968c 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h

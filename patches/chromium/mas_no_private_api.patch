@@ -145,10 +145,10 @@ index 82836fc5fe3a7279f4fd15f297969162bc63089a..4276251875612430d1b197578f659736
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 03bceeedd5a46fdf6b47d7a6ba825743792e5378..5220b5823b78489437ab49ee0633bfe9930e495e 100644
+index 3dc680c0abe4252e5c733c641a2fc46e13503c43..11e325816ff0e5d49f8f710375ba1d9de8198439 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -995,7 +995,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -989,7 +989,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());

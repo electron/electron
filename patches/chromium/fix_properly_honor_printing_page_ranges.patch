@@ -25,10 +25,10 @@ index c9a13aee1e64f359cd1d5c2e440b4df204420997..7790c311400fc84bfda6c99e1ebd8da7
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index e7c2af99322d27d88e77bdebce44c1356161dfd4..22101df16677599a82e72c89014fa3d73aa3a147 100644
+index fab1e04e754cb63ab7335a45dce25c130c638a04..612a74964adaf7c2d82ca0bb846cb33a6449db98 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -485,7 +485,8 @@ void ApplySystemPrintDialogData(
+@@ -486,7 +486,8 @@ void ApplySystemPrintDialogData(
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index e7c2af99322d27d88e77bdebce44c1356161dfd4..22101df16677599a82e72c89014fa3d7
        return OnError();
      }
    }
-@@ -637,6 +638,22 @@ void ApplySystemPrintDialogData(
+@@ -639,6 +640,22 @@ void ApplySystemPrintDialogData(
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -62,7 +62,7 @@ index e7c2af99322d27d88e77bdebce44c1356161dfd4..22101df16677599a82e72c89014fa3d7
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index 07847521e7217c78480205812a73cc89503c00d2..586e866ca7ec0eb0b573d23e3bd95792c22bff20 100644
+index 8a7d9c115cf5cca8d203cc71c5c83f06df2c6bee..d808b78d57ea2f29e0ed2248304fa720e3deede2 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
 @@ -75,14 +75,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
@@ -100,7 +100,7 @@ index 07847521e7217c78480205812a73cc89503c00d2..586e866ca7ec0eb0b573d23e3bd95792
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 3fb7a99ac1f2efa472dc8aa6682ab5b8c326c7aa..4c43edf8dd9db4416cc1edbb438ee3612524cc8a 100644
+index 525df2cef7d1740ec488c88fd4f6c06314b45fbb..01b2e50d4537ed27916f978a9110b49a49bdcb32 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -241,6 +241,24 @@ void PrintDialogGtk::UpdateSettings(

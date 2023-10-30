@@ -117,7 +117,7 @@ index db596585cbb44b3710636e3fc013f288966f604f..6d5557ee1a2c35ee15e695e024834184
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 3450e36ba7d80ad36d12fc4b85130d985c2f247a..e81a45c1f038cb43b19aa0225fbcf4c35f280442 100644
+index a955d19eedfe56ae3a115ce4c77fea016fd66d49..ad2557495a02cae03dd2b87df8659a6f05f1beac 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
