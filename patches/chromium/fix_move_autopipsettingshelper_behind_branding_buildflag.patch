@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index c74ff0ec2cd7c57b042dddce4e763a4cadf9072a..93954ef66fcb91d62dc31bc889b2467cf0c29100 100644
+index c74ff0ec2cd7c57b042dddce4e763a4cadf9072a..7f60801c4d3e4513ac5aaf27f287776134f63945 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -20,8 +20,10 @@
@@ -23,6 +23,15 @@ index c74ff0ec2cd7c57b042dddce4e763a4cadf9072a..93954ef66fcb91d62dc31bc889b2467c
  #include "third_party/blink/public/common/features.h"
  #include "ui/views/view.h"
  #endif  // !BUILDFLAG(IS_ANDROID)
+@@ -36,7 +38,7 @@ constexpr gfx::Size kMinWindowSize(240, 52);
+ // not apply to video Picture-in-Picture windows.
+ constexpr double kMaxWindowSizeRatio = 0.8;
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ // Returns true if a document picture-in-picture window should be focused upon
+ // opening it.
+ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
 @@ -168,7 +170,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
@@ -32,6 +41,15 @@ index c74ff0ec2cd7c57b042dddce4e763a4cadf9072a..93954ef66fcb91d62dc31bc889b2467c
    if (auto_pip_setting_helper_) {
      auto_pip_setting_helper_->OnUserClosedWindow();
    }
+@@ -351,7 +353,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+ 
+ // static
+ void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Always show document picture-in-picture in a new window. When this is
+   // not opened via the AutoPictureInPictureTabHelper, focus the window.
+   params.window_action = ShouldFocusPictureInPictureWindow(params)
 @@ -374,7 +376,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
    pip_window_controller_->Close(false /* should_pause_video */);
