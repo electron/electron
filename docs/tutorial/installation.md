@@ -91,9 +91,9 @@ The above configuration will download from URLs such as
 `https://npmmirror.com/mirrors/electron/8.0.0/electron-v8.0.0-linux-x64.zip`.
 
 If your mirror serves artifacts with different checksums to the official
-Electron release you may have to set `electron_use_remote_checksums=1` to
-force Electron to use the remote `SHASUMS256.txt` file to verify the checksum
-instead of the embedded checksums.
+Electron release you may have to set `electron_use_remote_checksums=1` directly,
+or configure it in a `.npmrc` file, to force Electron to use the remote `SHASUMS256.txt`
+file to verify the checksum instead of the embedded checksums.
 
 #### Cache
 
