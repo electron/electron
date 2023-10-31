@@ -45,15 +45,15 @@ index 1dfd9c071a41482e0d35257b28522e5b37702f25..41a09e9470dfa5797c69d02fc9b4f5e6
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 65cc847ad501c99e3eb0c403aefb65145e34b1d8..1793cebace7d3c872576c907fc683e2c431bda86 100644
+index 6fd40ddf07a55ec12f18ff88e92a7f59a5a52f96..f107f0089be4d7b75c95821d85b1666b0bf1077f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8393,7 +8393,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -8649,7 +8649,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =
 -      static_cast<RenderWidgetHostViewBase*>(GetRenderWidgetHostView());
 +      static_cast<RenderWidgetHostViewBase*>(GetTopLevelRenderWidgetHostView());
-   if (!root_view || !frame->GetView())
+   if (!root_view || !frame->GetView()) {
      return;
-   // Convert to screen coordinates from window coordinates by adding the
+   }

@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 4210d4ee625b99b720a00905df6d829a0e8281cb..af94b65f21ae4683e5a9fadc1862645fdf23c48f 100644
+index ad4b830fa0932340b7c6b45d94ebf49afb4b7f73..4acc0a5befd0da25460de37eef7c4aabfd291659 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -970,7 +970,6 @@ if (is_win) {
+@@ -964,7 +964,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 4210d4ee625b99b720a00905df6d829a0e8281cb..af94b65f21ae4683e5a9fadc1862645f
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -979,6 +978,10 @@ if (is_win) {
+@@ -973,6 +972,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -904,10 +904,10 @@ index c68b68767ac52602981278ec655d9ccfad0c30ab..df2ea4524584417d859e1a22ec8a49c8
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4b12f7d2fa1cd62a81b510a66e7aa0960485110a..6e5393b30748782a271766293a7a40ed1eada35f 100644
+index 3b4f0f00e2e214b9615a07acfc02c9baf4a2a7ab..7ad4e9e5166265651ef50e3ee5488595ab97bc06 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2996,8 +2996,9 @@ source_set("browser") {
+@@ -2994,8 +2994,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

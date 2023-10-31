@@ -21,10 +21,10 @@ index fe69db83393efd0a4b886761dce4b7ead3c4c7d0..f2e623cd6ed7eb910216ff4e32686f91
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 61616ea7fe22ea7e56d00d384e73ad95e3b25f08..90181e7d5f564fcd28a9f9ae1c2ed760fe565927 100644
+index eab88872f0cee9f2fa208031684b0ed0018333d4..59701b5246e2d07662fb0072b77f3d73ab5df49d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4363,6 +4363,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4487,6 +4487,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 61616ea7fe22ea7e56d00d384e73ad95e3b25f08..90181e7d5f564fcd28a9f9ae1c2ed760
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4404,12 +4410,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4528,12 +4534,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -51,10 +51,10 @@ index 61616ea7fe22ea7e56d00d384e73ad95e3b25f08..90181e7d5f564fcd28a9f9ae1c2ed760
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 89f952c8459c245a18c9e0aeec7fd9310b4ce837..489fa03f969180b91073e6ddc4698f7c2e052604 100644
+index 40c14e1757dee4fda9aa79f3a52532f8ab737a97..2c833d683b737bd6b24d2ec10d97b46d2c9fcdb0 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -593,6 +593,10 @@ struct CreateNewWindowParams {
+@@ -598,6 +598,10 @@ struct CreateNewWindowParams {
    // The navigation initiator's user activation and ad status.
    blink.mojom.NavigationInitiatorActivationAndAdStatus
        initiator_activation_and_ad_status;
@@ -66,10 +66,10 @@ index 89f952c8459c245a18c9e0aeec7fd9310b4ce837..489fa03f969180b91073e6ddc4698f7c
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 14f31208767000b2eadd0267361eaddfcffb86d5..277abfbb3ac7c3d08f36e17a2f9dde57a63b0d06 100644
+index dcdc54f90f114cdef17ae59e579493fe4278c5c8..72d942d2aea9369f319308fc01e6366ebd0f2612 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -708,6 +708,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -715,6 +715,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index 14f31208767000b2eadd0267361eaddfcffb86d5..277abfbb3ac7c3d08f36e17a2f9dde57
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 48e0a81290608ec2185b02543bcd3a3659c4380c..dcefa9d4bdcdae343d1b2fa0351cc624d94c8ccd 100644
+index 06e22b37dfbcefb71f0dc3705f7ab50a27487ff0..5266731678dbfe5fe66ff863b88325546c255be8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -177,6 +177,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index 48e0a81290608ec2185b02543bcd3a3659c4380c..dcefa9d4bdcdae343d1b2fa0351cc624
  }  // namespace network
  
  namespace sandbox {
-@@ -1128,6 +1129,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1142,6 +1143,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

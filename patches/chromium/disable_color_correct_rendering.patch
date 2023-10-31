@@ -35,10 +35,10 @@ index b64603e6a4bb9fae95ea529f90d9ad589bce9284..ae831251bd2a950297e1f2e264db7e24
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index b22501195b7e49d1d01c5efd117cfa6c24117d09..9cfe3599e29eaf7d664174d812e937dcc852a637 100644
+index e43b58e7458336f914662d026a24e774fbe647ba..68c8f235f6afb412ebc65604c7b39109d9842d23 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -101,6 +101,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -93,10 +93,10 @@ index 7c0598fb3f9f08d8d9905c5487f3a128f1262b15..314d443a60d0c9093dd06cd1589ab639
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 835f3729da398b4db15de6263be23729c96bd69b..d73729ad5a96216849c19c8830c9f501518f09aa 100644
+index 179b9a06569a038e95a44ca42e35bf368860f51e..8d2053315bfa2847c7c3602b87f9bd6458bd484d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3356,6 +3356,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3353,6 +3353,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 80113d3eaf969e4219c922270533a24f981bf8d8..171ad9700a1eff7c9395d71c74a918498237cd55 100644
+index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf744e78fe6 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@
@@ -159,7 +159,7 @@ index 80113d3eaf969e4219c922270533a24f981bf8d8..171ad9700a1eff7c9395d71c74a91849
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -335,6 +336,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -336,6 +337,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
