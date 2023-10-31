@@ -52,3 +52,11 @@ use_perfetto_client_library = false
 
 # Disables the builtins PGO for V8
 v8_builtins_profiling_log_file = ""
+
+# Disable threadisolated allocator implementation from gin for partition allocator,
+# we are seeing crashes for Linux x64 users when node integration is enabled in the
+# renderer process causing SIGSEGV when the periodic memory reclaimer runs,
+# Refs https://github.com/electron/electron/issues/39775.
+# The current only user of this pool is the v8 CFI which is
+# not enabled on this branch, so it is safe to disable the feature.
+enable_pkeys = false
