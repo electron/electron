@@ -473,7 +473,7 @@ Converter<absl::optional<blink::mojom::FormControlType>>::ToV8(
         str = "reset-button";
         break;
       case blink::mojom::FormControlType::kButtonSelectList:
-        str = "select-list ";
+        str = "select-list";
         break;
       case blink::mojom::FormControlType::kButtonSubmit:
         str = "submit-button";
