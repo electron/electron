@@ -6,8 +6,6 @@ Everything here should be project agnostic: it shouldn't rely on project's
 structure, or make assumptions about the passed arguments or calls' outcomes.
 """
 
-from __future__ import unicode_literals
-
 import io
 import os
 import posixpath
@@ -229,14 +227,6 @@ def remove_patch_filename(patch):
     force_keep_next_line = l.startswith('Subject: ')
 
 
-def to_utf8(patch):
-  """Python 2/3 compatibility: unicode has been renamed to str in Python3"""
-  if sys.version_info[0] >= 3:
-    return str(patch, "utf-8")
-
-  return unicode(patch, "utf-8")
-
-
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
   if not os.path.exists(repo):
     sys.stderr.write(
@@ -263,7 +253,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
     for patch in patches:
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
-      existing_patch = to_utf8(io.open(filepath, 'rb').read())
+      existing_patch = str(io.open(filepath, 'rb').read(), 'utf-8')
       formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
         bad_patches.append(filename)
