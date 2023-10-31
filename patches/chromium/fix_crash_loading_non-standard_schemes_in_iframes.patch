@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 68b50260715c2a56bacf0f2e856f761c793ff143..e457ea82f6dd9ab8a3f1683bda61f6513f8abd00 100644
+index 8ba07ea4369762a1b1ad2a4c6cdcaae8c03e7ba7..a656a2d66411c58cc3d1ccf3b20033cf7e4aea85 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -799,6 +799,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
+@@ -800,6 +800,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
      return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
    }
  
