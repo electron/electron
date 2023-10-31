@@ -235,10 +235,14 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   options.Get(options::kMinimizable, &minimizable_);
   options.Get(options::kMaximizable, &maximizable_);
 
-  // Transparent window must not have thick frame.
-  options.Get("thickFrame", &thick_frame_);
-  if (transparent())
+  // Transparent window does not have thick frame for default.
+  absl::optional<bool> thick_frame_optional;
+  options.GetOptional("thickFrame", &thick_frame_optional);
+  if (transparent() && !thick_frame_optional.has_value()) {
     thick_frame_ = false;
+  } else {
+    thick_frame_ = thick_frame_optional.value();
+  }
 
   overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
