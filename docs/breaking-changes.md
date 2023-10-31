@@ -14,6 +14,19 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (29.0)
 
+### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`
+
+Attempting to send `ipcRenderer` as an object over the `contextBridge` will now result in
+an empty object on the receiving side of the bridge. This change was made to remove / mitigate
+a security footgun, you should not directly expose ipcRenderer or it's methods over the bridge.
+Instead provide a safe wrapper like below:
+
+```js
+contextBridge.exposeInMainWorld('app', {
+  onEvent: (cb) => ipcRenderer.on('foo', (e, ...args) => cb(args))
+})
+```
+
 ### Removed: `renderer-process-crashed` event on `app`
 
 The `renderer-process-crashed` event on `app` has been removed.
