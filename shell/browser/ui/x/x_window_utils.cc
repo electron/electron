@@ -13,9 +13,9 @@
 #include "dbus/object_proxy.h"
 #include "shell/common/thread_restrictions.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
-#include "ui/gfx/x/xproto_util.h"
 
 namespace electron {
 
@@ -29,8 +29,9 @@ void SetWMSpecState(x11::Window window, bool enabled, x11::Atom state) {
 void SetWindowType(x11::Window window, const std::string& type) {
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   x11::Atom window_type = x11::GetAtom(type_prefix + base::ToUpperASCII(type));
-  x11::SetProperty(window, x11::GetAtom("_NET_WM_WINDOW_TYPE"), x11::Atom::ATOM,
-                   window_type);
+  auto* connection = x11::Connection::Get();
+  connection->SetProperty(window, x11::GetAtom("_NET_WM_WINDOW_TYPE"),
+                          x11::Atom::ATOM, window_type);
 }
 
 bool ShouldUseGlobalMenuBar() {
