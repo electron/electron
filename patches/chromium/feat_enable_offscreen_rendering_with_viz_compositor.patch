@@ -197,7 +197,7 @@ index e82717d5167e13e2926bcaf6c0ad66c1502e66f6..783c4d6ed399120e026bbf18baab4092
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 5dccc2360cd1f3d83ffc59697aeb559a19b0547a..5fe62069b15e6370e63645b257d931be2a714bc3 100644
+index 4ceb1a9d9f336f65e15831856d30b45af594dd0f..646ac22f074c3d1827e59170a93807bc10d83d0b 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
 @@ -106,6 +106,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
@@ -209,13 +209,13 @@ index 5dccc2360cd1f3d83ffc59697aeb559a19b0547a..5fe62069b15e6370e63645b257d931be
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -194,6 +196,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+@@ -191,6 +193,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
      ca_layer_params.is_empty = false;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;
 +    ca_layer_params.damage = last_damage;
      ca_layer_params.io_surface_mach_port.reset(
-         IOSurfaceCreateMachPort(current_paint_buffer_->io_surface.get()));
+         IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
 index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d1cd3a7ca 100644

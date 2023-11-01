@@ -85,7 +85,7 @@ index 6fc9f48d84590f85576be0362c716634c87eff80..33391eeb8ce9f70955e4e991c5f400a2
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index b233430e6049761d478065247e7c2cd4bc26e080..0cb7aef72fdff3686c1c5da81c1f97bf34008d0c 100644
+index 7efb913cb4ec556deeed64a31e4da620a797c875..3e4e873ac62e387067bdfed9fc24b795acd723c6 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -803,6 +803,7 @@ class CORE_EXPORT LocalFrame final
