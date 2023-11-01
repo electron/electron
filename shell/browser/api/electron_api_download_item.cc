@@ -245,7 +245,7 @@ std::string DownloadItem::GetETag() const {
 double DownloadItem::GetStartTime() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->GetStartTime().ToDoubleT();
+  return download_item_->GetStartTime().InSecondsFSinceUnixEpoch();
 }
 
 // static

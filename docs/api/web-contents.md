@@ -769,9 +769,18 @@ Returns:
     word and spellchecker is enabled.
   * `frameCharset` string - The character encoding of the frame on which the
     menu was invoked.
-  * `inputFieldType` string - If the context menu was invoked on an input
-    field, the type of that field. Possible values include `none`, `plainText`,
-    `password`, `other`.
+  * `formControlType` string - The source that the context menu was invoked on.
+    Possible values include `none`, `button-button`, `field-set`,
+    `input-button`, `input-checkbox`, `input-color`, `input-date`,
+    `input-datetime-local`, `input-email`, `input-file`, `input-hidden`,
+    `input-image`, `input-month`, `input-number`, `input-password`, `input-radio`,
+    `input-range`, `input-reset`, `input-search`, `input-submit`, `input-telephone`,
+    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `reset-button`,
+    `select-list`, `select-list`, `select-multiple`, `select-one`, `submit-button`,
+    and `text-area`,
+  * `inputFieldType` string _Deprecated_ - If the context menu was invoked on an
+    input field, the type of that field. Possible values include `none`,
+    `plainText`, `password`, `other`.
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.

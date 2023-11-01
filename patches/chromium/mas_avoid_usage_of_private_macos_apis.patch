@@ -99,7 +99,7 @@ index b267bc2272fa82334a70d897a900f1ea37b1a598..967e22699bf565368704972c021f9b42
      DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
    }
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index b0d1486beef9115a03c036281dc6a9deed5b8f7a..1ec166ea009e0ba422a7fd0d868a04812694a17c 100644
+index 2fa8809df1d4b29525a737cca40694a61e7ca570..c90c81b0bc5d87777b87de2848326696f95d2306 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@

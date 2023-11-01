@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 71b2770a644b3302ffca96addbf068804e0e57f1..89b292e84f95cf6bd19f19dd38291676cd457f89 100644
+index 9b0b1c6011fec0a6653220b98c579443e22b3615..523929431b88fadb9d82838fdbcca9322c4ab490 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -565,6 +565,7 @@ void MenuController::Run(Widget* parent,
+@@ -566,6 +566,7 @@ void MenuController::Run(Widget* parent,
                           MenuAnchorPosition position,
                           bool context_menu,
                           bool is_nested_drag,
@@ -17,7 +17,7 @@ index 71b2770a644b3302ffca96addbf068804e0e57f1..89b292e84f95cf6bd19f19dd38291676
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -629,6 +630,14 @@ void MenuController::Run(Widget* parent,
+@@ -630,6 +631,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
@@ -32,7 +32,7 @@ index 71b2770a644b3302ffca96addbf068804e0e57f1..89b292e84f95cf6bd19f19dd38291676
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2255,19 +2264,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2256,19 +2265,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  

@@ -9,7 +9,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index 342409c31eb73f4a13ac13a4740b32863f4ef0d6..a1b60a8f77fa4d32e07e6cda240447cf114e83cb 100644
+index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d14763d11778 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -28,9 +28,11 @@

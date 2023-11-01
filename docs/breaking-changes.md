@@ -144,6 +144,12 @@ app.on('renderer-process-crashed', (event, webContents, killed) => { /* ... */ }
 app.on('render-process-gone', (event, webContents, details) => { /* ... */ })
 ```
 
+### Deprecated: `params.inputFormType` property on `context-menu` on `WebContents`
+
+The `inputFormType` property of the params object in the `context-menu`
+event from `WebContents` has been deprecated. Use the new `formControlType`
+property instead.
+
 ### Deprecated: `crashed` event on `WebContents` and `<webview>`
 
 The `crashed` events on `WebContents` and `<webview>` have been deprecated.

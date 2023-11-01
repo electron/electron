@@ -80,10 +80,10 @@ struct Converter<blink::mojom::ContextMenuDataMediaType> {
 };
 
 template <>
-struct Converter<blink::mojom::ContextMenuDataInputFieldType> {
+struct Converter<absl::optional<blink::mojom::FormControlType>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const blink::mojom::ContextMenuDataInputFieldType& in);
+      const absl::optional<blink::mojom::FormControlType>& in);
 };
 
 template <>

@@ -54,12 +54,12 @@ index 42c27a6fd63abaf1fe096cb24b5bba53b725e4bb..c373d23ff31f18217ab06f668e21a5fb
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 250818e9850e502a68a64fe96290cba4fed51e5f..343cd29bd5edd28c75a9785e26c32cb90ec8e1e6 100644
+index 59d437e25be86b1d2e30478a90d1e102b891e662..f99676c579402f0961de036a49e62462ec6a6cec 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -515,6 +515,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
- 
-   const cc::LayerTreeSettings& GetLayerTreeSettings() const;
+@@ -519,6 +519,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+     return host_->saved_events_metrics_count_for_testing();
+   }
  
 +  // Sets |background_throttling_| responsible for suspending drawing
 +  // and switching frames.
@@ -68,7 +68,7 @@ index 250818e9850e502a68a64fe96290cba4fed51e5f..343cd29bd5edd28c75a9785e26c32cb9
   private:
    friend class base::RefCounted<Compositor>;
    friend class TotalAnimationThroughputReporter;
-@@ -621,6 +625,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -625,6 +629,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

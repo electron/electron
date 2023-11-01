@@ -138,7 +138,8 @@ void AutoUpdater::CheckForUpdates() {
           delegate->OnUpdateDownloaded(
               base::SysNSStringToUTF8(update.releaseNotes),
               base::SysNSStringToUTF8(update.releaseName),
-              base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
+              base::Time::FromSecondsSinceUnixEpoch(
+                  update.releaseDate.timeIntervalSince1970),
               base::SysNSStringToUTF8(update.updateURL.absoluteString));
         } else {
           g_update_available = false;
