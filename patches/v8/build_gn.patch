@@ -9,7 +9,7 @@ necessary for native modules to load.
 Also change visibility on mksnapshot in order to target mksnapshot for mksnapshot zip.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 01159bc491a4a97bc0d8dd280f5871e9dc8d3dcd..4d0dd3c174bd8dff18f98506c062b595e88a0420 100644
+index 52c9696e6afe89b584487d4a05e1b3680e856862..c7005f6774ea271ba27ea96bb3fe96010b36eeb2 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -752,7 +752,7 @@ config("internal_config") {
