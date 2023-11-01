@@ -1842,19 +1842,6 @@ index 0000000000000000000000000000000000000000..345327e89d71585c558fabcf11970d7c
 +    args += invoker.args
 +  }
 +}
-diff --git a/node.gyp b/node.gyp
-index 6b554d75d89077f0fcfcaaf1636c8a537478f679..7f88a4466cb4a6b55b91345bb3af6b3600afd47a 100644
---- a/node.gyp
-+++ b/node.gyp
-@@ -688,7 +688,7 @@
-         'src/util-inl.h',
-         # Dependency headers
-         'deps/v8/include/v8.h',
--        'deps/postject/postject-api.h'
-+        'deps/postject/postject-api.h',
-         # javascript files to make for an even more pleasant IDE experience
-         '<@(library_files)',
-         '<@(deps_files)',
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868bd1321be2
