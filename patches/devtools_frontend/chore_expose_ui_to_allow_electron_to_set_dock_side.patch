@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 25 Oct 2023 11:48:21 -0400
+Subject: chore: expose UI to allow Electron to set dock side
+
+This patch allows Electron to set the dock side via `webContents.openDevTools({ mode })`.
+
+It also allows us to test certain aspects of devtools extensions. We should look for a way
+to handle this without patching, but this is fairly clean for now and no longer requires
+patching legacy devtools code.
+
+diff --git a/front_end/entrypoints/main/MainImpl.ts b/front_end/entrypoints/main/MainImpl.ts
+index c62a8e6dd401c8be227c3c2a86a8da86ee795fba..af1abee6d5b4414f300854c85bc0e0cc3ddec198 100644
+--- a/front_end/entrypoints/main/MainImpl.ts
++++ b/front_end/entrypoints/main/MainImpl.ts
+@@ -770,6 +770,8 @@ export class MainImpl {
+ globalThis.Main = globalThis.Main || {};
+ // @ts-ignore Exported for Tests.js
+ globalThis.Main.Main = MainImpl;
++// @ts-ignore Exported for Electron
++globalThis.EUI = UI || {};
+ 
+ let zoomActionDelegateInstance: ZoomActionDelegate;
+ 
