@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 623991465edb99ee720c8177c3511e4d025ed890..c94537af56f7de8cd15bd3b3155b79b41ea003f4 100644
+index 42c27a6fd63abaf1fe096cb24b5bba53b725e4bb..c373d23ff31f18217ab06f668e21a5fb58f275e1 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -341,7 +341,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -338,7 +338,8 @@ void Compositor::SetLayerTreeFrameSink(
    if (display_private_) {
      disabled_swap_until_resize_ = false;
      display_private_->Resize(size());
@@ -25,7 +25,7 @@ index 623991465edb99ee720c8177c3511e4d025ed890..c94537af56f7de8cd15bd3b3155b79b4
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -533,8 +534,11 @@ void Compositor::SetVisible(bool visible) {
+@@ -530,8 +531,11 @@ void Compositor::SetVisible(bool visible) {
    host_->SetVisible(visible);
    // Visibility is reset when the output surface is lost, so this must also be
    // updated then.
@@ -39,7 +39,7 @@ index 623991465edb99ee720c8177c3511e4d025ed890..c94537af56f7de8cd15bd3b3155b79b4
  }
  
  bool Compositor::IsVisible() {
-@@ -959,4 +963,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
+@@ -956,4 +960,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
    return host_->GetSettings();
  }
  
@@ -54,12 +54,12 @@ index 623991465edb99ee720c8177c3511e4d025ed890..c94537af56f7de8cd15bd3b3155b79b4
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index ddb28fd6f7549759df7e3b7d6b309cd982e199af..7473f3af9bc8cac8db3c30dfbc9b7140f832ac15 100644
+index 59d437e25be86b1d2e30478a90d1e102b891e662..f99676c579402f0961de036a49e62462ec6a6cec 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -511,6 +511,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
- 
-   const cc::LayerTreeSettings& GetLayerTreeSettings() const;
+@@ -519,6 +519,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+     return host_->saved_events_metrics_count_for_testing();
+   }
  
 +  // Sets |background_throttling_| responsible for suspending drawing
 +  // and switching frames.
@@ -68,7 +68,7 @@ index ddb28fd6f7549759df7e3b7d6b309cd982e199af..7473f3af9bc8cac8db3c30dfbc9b7140
   private:
    friend class base::RefCounted<Compositor>;
    friend class TotalAnimationThroughputReporter;
-@@ -617,6 +621,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -625,6 +629,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  
