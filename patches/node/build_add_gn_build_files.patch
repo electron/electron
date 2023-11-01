@@ -156,7 +156,7 @@ index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c
 +    "NODE_IMPLEMENTATION",
 +  ]
 +  if (node_module_version != "") {
-+    defines += [ "NODE_MODULE_VERSION=" + node_module_version ]
++    defines += [ "NODE_EMBEDDER_MODULE_VERSION=" + node_module_version ]
 +  }
 +  if (is_component_build) {
 +    defines += [
@@ -2061,21 +2061,6 @@ index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868b
 +  script = "../../tools/compress_json.py"
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
-diff --git a/src/node_version.h b/src/node_version.h
-index 88cc915177bcf8b86eb8f9f16b215cb6d06b3aa7..8df52c22dd76a850d421075effc44fbfb32307db 100644
---- a/src/node_version.h
-+++ b/src/node_version.h
-@@ -89,7 +89,10 @@
-  * version matching should open a pull request to reserve a number in this
-  * registry.
-  */
-+// Electron sets NODE_MODULE_VERSION in their GN configuration
-+#ifndef NODE_MODULE_VERSION
- #define NODE_MODULE_VERSION 108
-+#endif
- 
- // The NAPI_VERSION provided by this version of the runtime. This is the version
- // which the Node binary being built supports.
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec566a83e42
