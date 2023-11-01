@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2a8b535c99aaeab6047095bdb1822a2087f640c7..244851bcefe9b3ac1b7ce09219bd19f6c07d6eda 100644
+index 24f2397278ccb400a47e065a676be5ae783fa2e6..7d96eee167aadcea896fa18b7c806d9b6ccfff83 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1035,6 +1035,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,7 +74,7 @@ index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 961aa78f3d158ec3745d1cad215cd547b1b415f4..e5e1d4997825993b2f53e7e117512a5c17bc64fb 100644
+index 7ad4e9e5166265651ef50e3ee5488595ab97bc06..a10c3387aa8e81c7b02983e7bae9480a5354a0f3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -86,7 +86,7 @@ index 961aa78f3d158ec3745d1cad215cd547b1b415f4..e5e1d4997825993b2f53e7e117512a5c
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 42148bd0e7f13d0135b8869b1bfc321eabdf5e30..305b3197846034b47ca1810d29f9d2a936d9d064 100644
+index ddfe84e25422812bbf7f7b1a08cfb8534572f7bc..0cefb8fbe178e025dcb3d186473c8ecbada5e522 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -182,6 +182,7 @@ source_set("common") {
@@ -98,10 +98,10 @@ index 42148bd0e7f13d0135b8869b1bfc321eabdf5e30..305b3197846034b47ca1810d29f9d2a9
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb65e258740 100644
+index 697fa7c5e98e7ee16b1b5e676f60a9689f7aac2b..f5e7278a6e391cbab61bbd2981127beb4c624214 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -222,6 +222,7 @@ target(link_target_type, "renderer") {
+@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -110,10 +110,10 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c560e1681fb62453d9bd8f41c249b4b27f46e7e4..10b010eb919c7775bc2dd5d45cf8e3e034facbde 100644
+index 810032493d005228fb9c49b924f91c247f6a9de2..46baa84dd5c05b185e8ea7ea7ea44a441056b9f1 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -482,6 +482,7 @@ static_library("test_support") {
+@@ -480,6 +480,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -212,7 +212,7 @@ index 299a028f23314f479d2da8f914a5bdf34698d854..672dcb04dd3cf4e3cc71403f727a1dde
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f39f854dbd7f0640f74fc266e69bff046ec2efb4..c5c81632b34677fd38ac7c2bdd5542e53670cd56 100644
+index 2e6598b26ca41f973c4a84578b82f52895cdf065..8825ce847e5da43d7fd659329ddd7c5ad113d730 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -311,6 +311,7 @@ component("core") {

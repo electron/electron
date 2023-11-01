@@ -12,7 +12,8 @@ namespace gin {
 v8::Local<v8::Value> Converter<base::Time>::ToV8(v8::Isolate* isolate,
                                                  const base::Time& val) {
   v8::Local<v8::Value> date;
-  if (v8::Date::New(isolate->GetCurrentContext(), val.ToJsTime())
+  if (v8::Date::New(isolate->GetCurrentContext(),
+                    val.InMillisecondsFSinceUnixEpoch())
           .ToLocal(&date))
     return date;
   else
