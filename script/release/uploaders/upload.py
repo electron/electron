@@ -363,8 +363,10 @@ def upload_io_to_github(release, filename, filepath, version):
       (filename))
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
-  execute([TS_NODE, script_path, filepath, filename, str(release['id']),
-          version])
+  upload_gh_output = execute([TS_NODE, script_path, filepath, filename, 
+          str(release['id']), version])
+  if is_verbose_mode():
+    print(upload_gh_output)
 
 
 def upload_sha256_checksum(version, file_path, key_prefix=None):
