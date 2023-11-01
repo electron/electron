@@ -605,7 +605,8 @@ void InspectableWebContents::LoadCompleted() {
     }
 #endif
     std::u16string javascript = base::UTF8ToUTF16(
-        "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
+        "EUI.DockController.DockController.instance().setDockSide(\"" +
+        dock_state_ + "\");");
     GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
   }

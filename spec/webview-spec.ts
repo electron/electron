@@ -297,10 +297,11 @@ describe('<webview> tag', function () {
           const showPanelIntervalId = setInterval(function () {
             if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
               webContents.devToolsWebContents.executeJavaScript('(' + function () {
-                const { UI } = (window as any);
-                const tabs = UI.inspectorView.tabbedPane.tabs;
+                const { EUI } = (window as any);
+                const instance = EUI.InspectorView.InspectorView.instance();
+                const tabs = instance.tabbedPane.tabs;
                 const lastPanelId: any = tabs[tabs.length - 1].id;
-                UI.inspectorView.showPanel(lastPanelId);
+                instance.showPanel(lastPanelId);
               }.toString() + ')()');
             } else {
               clearInterval(showPanelIntervalId);
