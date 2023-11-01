@@ -49,12 +49,6 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 * Since Electron 6, Electron major versions have been targeting every other Chromium major version. Each Electron stable should happen on the same day as Chrome stable ([see blog post](https://www.electronjs.org/blog/12-week-cadence)).
 * Since Electron 16, Electron has been releasing major versions on an 8-week cadence in accordance to Chrome's change to a 4-week release cadence ([see blog post](https://www.electronjs.org/blog/8-week-cadence)).
 
-:::info Chrome release dates
-
-Chromium has the own public release schedule [here](https://chromiumdash.appspot.com/schedule).
-
-:::
-
 ## Version support policy
 
 :::info
@@ -78,6 +72,38 @@ The latest stable release unilaterally receives all fixes from `main`,
 and the version prior to that receives the vast majority of those fixes
 as time and bandwidth warrants. The oldest supported release line will receive
 only security fixes directly.
+
+### Chromium version support
+
+:::info Chromium release schedule
+
+Chromium's public release schedule is [here](https://chromiumdash.appspot.com/schedule).
+
+:::
+
+Electron targets Chromium even-number versions, releasing every 8 weeks in concert
+with Chromium's 4-week release schedule. For example, Electron 26 uses Chromium 116, while Electron 27 uses Chromium 118.
+
+### Node.js version support
+
+Electron upgrades its `main` branch to even-number versions of Node.js when they enter Active LTS. The schedule
+is as follows:
+
+<img src="https://raw.githubusercontent.com/nodejs/Release/main/schedule.svg?sanitize=true" alt="Releases">
+
+As a rule, stable branches of Electron do not receive Node.js upgrades after they have been cut.
+If Electron has recently updated its `main` branch to a new major version of Node.js, the next stable
+branch to be cut will be released with the new version.
+
+Patch upgrades of Node that contain significant security or bug fixes, and are submitted
+more than 2 weeks prior to a stable release date, will be accepted into an Electron alpha
+or beta release branch.
+
+Minor upgrades of Node that contain significant security or bug fixes, and are submitted
+more than 2 weeks prior to a stable release date may be accepted into an Electron alpha or
+beta release branch on a case-by-case basis. These requests will be reviewed and voted on
+by the [Releases Working Group](https://github.com/electron/governance/tree/main/wg-releases),
+to ensure minimal disruption for developers who may be consuming alpha or beta releases.
 
 ### Breaking API changes
 
