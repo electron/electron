@@ -65,11 +65,11 @@ mojom::CSSOrigin ConvertStyleOriginToCSSOrigin(
     api::scripting::StyleOrigin style_origin) {
   mojom::CSSOrigin css_origin = mojom::CSSOrigin::kAuthor;
   switch (style_origin) {
-    case api::scripting::STYLE_ORIGIN_NONE:
-    case api::scripting::STYLE_ORIGIN_AUTHOR:
+    case api::scripting::StyleOrigin::kNone:
+    case api::scripting::StyleOrigin::kAuthor:
       css_origin = mojom::CSSOrigin::kAuthor;
       break;
-    case api::scripting::STYLE_ORIGIN_USER:
+    case api::scripting::StyleOrigin::kUser:
       css_origin = mojom::CSSOrigin::kUser;
       break;
   }
@@ -81,10 +81,10 @@ mojom::ExecutionWorld ConvertExecutionWorld(
     api::scripting::ExecutionWorld world) {
   mojom::ExecutionWorld execution_world = mojom::ExecutionWorld::kIsolated;
   switch (world) {
-    case api::scripting::EXECUTION_WORLD_NONE:
-    case api::scripting::EXECUTION_WORLD_ISOLATED:
+    case api::scripting::ExecutionWorld::kNone:
+    case api::scripting::ExecutionWorld::kIsolated:
       break;  // Default to mojom::ExecutionWorld::kIsolated.
-    case api::scripting::EXECUTION_WORLD_MAIN:
+    case api::scripting::ExecutionWorld::kMain:
       execution_world = mojom::ExecutionWorld::kMain;
   }
 
@@ -95,15 +95,15 @@ api::scripting::ExecutionWorld ConvertExecutionWorldForAPI(
     mojom::ExecutionWorld world) {
   switch (world) {
     case mojom::ExecutionWorld::kIsolated:
-      return api::scripting::EXECUTION_WORLD_ISOLATED;
+      return api::scripting::ExecutionWorld::kIsolated;
     case mojom::ExecutionWorld::kMain:
-      return api::scripting::EXECUTION_WORLD_MAIN;
+      return api::scripting::ExecutionWorld::kMain;
     case mojom::ExecutionWorld::kUserScript:
       NOTREACHED() << "UserScript worlds are not supported in this API.";
   }
 
   NOTREACHED();
-  return api::scripting::EXECUTION_WORLD_ISOLATED;
+  return api::scripting::ExecutionWorld::kIsolated;
 }
 
 std::string InjectionKeyForCode(const mojom::HostID& host_id,

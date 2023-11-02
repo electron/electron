@@ -4,6 +4,7 @@
 
 // Use the <code>chrome.scripting</code> API to execute script in different
 // contexts.
+[modernised_enums]
 namespace scripting {
   callback InjectedFunction = void();
 
