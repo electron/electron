@@ -63,22 +63,22 @@ index 7006887a6fe2bab525e52c6b0c76b5d089699a14..a93d93b3c2aae3ef790ffa4f417d50b8
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index a425749e82acd7593c9fb1ceffedc119a4e416f2..1ceb89da21610c703f4a18be5888373c7feaa370 100644
+index b143cd0ad34d0e039db3e7493be00d923cc68b2d..4020813f061d85ee27d50b938825319ab455c311 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -154,7 +154,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -220,7 +220,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
-   if (!cjsParse) await initCJSParse();
-   const { module, exportNames } = cjsPreparseModuleExports(filename);
+   const { exportNames, module } = cjsPreparseModuleExports(filename, source);
+   cjsCache.set(url, module);
 -  const namesWithDefault = exportNames.has('default') ?
 +  const namesWithDefault = filename === 'electron' ? ['default', ...Object.keys(module.exports)] : exportNames.has('default') ?
      [...exportNames] : ['default', ...exportNames];
  
-   return new ModuleWrap(url, undefined, namesWithDefault, function() {
-@@ -173,9 +173,9 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
-       }
+   if (isMain) {
+@@ -241,9 +241,9 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+     } else {
+       ({ exports } = module);
      }
- 
 -    for (const exportName of exportNames) {
 -      if (!ObjectPrototypeHasOwnProperty(exports, exportName) ||
 -          exportName === 'default')
