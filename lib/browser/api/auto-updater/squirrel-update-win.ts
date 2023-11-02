@@ -15,7 +15,7 @@ const isSameArgs = (args: string[]) => args.length === spawnedArgs.length && arg
 
 // Spawn a command and invoke the callback when it completes with an error
 // and the output from standard out.
-const spawnUpdate = async function (args: string[], detached: boolean): Promise<string> {
+const spawnUpdate = async function (args: string[], options: { detached: boolean }): Promise<string> {
   return new Promise((resolve, reject) => {
     // Ensure we don't spawn multiple squirrel processes
     // Process spawned, same args:        Attach events to already running process
@@ -25,7 +25,7 @@ const spawnUpdate = async function (args: string[], detached: boolean): Promise<
       throw new Error(`AutoUpdater process with arguments ${args} is already running`);
     } else if (!spawnedProcess) {
       spawnedProcess = spawn(updateExe, args, {
-        detached,
+        detached: options.detached,
         windowsHide: true
       });
       spawnedArgs = args || [];
@@ -58,16 +58,16 @@ const spawnUpdate = async function (args: string[], detached: boolean): Promise<
 
 // Start an instance of the installed app.
 export function processStart () {
-  spawnUpdate(['--processStartAndWait', exeName], true);
+  spawnUpdate(['--processStartAndWait', exeName], { detached: true });
 }
 
 // Download the releases specified by the URL and write new results to stdout.
 export async function checkForUpdate (updateURL: string): Promise<any> {
-  const stdout = await spawnUpdate(['--checkForUpdate', updateURL], false);
+  const stdout = await spawnUpdate(['--checkForUpdate', updateURL], { detached: false });
   try {
     // Last line of output is the JSON details about the releases
     const json = stdout.trim().split('\n').pop();
-    JSON.parse(json!)?.releasesToApply?.pop?.();
+    return JSON.parse(json!)?.releasesToApply?.pop?.();
   } catch {
     throw new Error(`Invalid result:\n${stdout}`);
   }
@@ -75,7 +75,7 @@ export async function checkForUpdate (updateURL: string): Promise<any> {
 
 // Update the application to the latest remote version specified by URL.
 export async function update (updateURL: string): Promise<void> {
-  await spawnUpdate(['--update', updateURL], false);
+  await spawnUpdate(['--update', updateURL], { detached: false });
 }
 
 // Is the Update.exe installed with the current application?
