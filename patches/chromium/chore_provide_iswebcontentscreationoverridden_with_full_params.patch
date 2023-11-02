@@ -141,10 +141,10 @@ index 0c8f72c7e6cbe38c2e05381e97c58a3a6c991f8e..2afc5dc73d6e23555faf39bf144b43a1
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index bf521a05278e2b2344751794def98324e7cdcbb5..bf984aa612e4a464ce46703d37402ef0fa24ea0c 100644
+index 9c4a21c5bbe8f2b1b2321ccbcf45b426d861dc89..52b11b0ab6b9dcebf26f09934d6a3e3edb57f5ea 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -71,8 +71,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -75,8 +75,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b907488927e11061f41669c8c16c427a051d783c..93a0fba3b73c9569a148472d5acec7e2cdc4eaa6 100644
+index 268caca4f16bbd6368eb40f8c058a043b98f57fe..241915fb6821f6f264a128a528b01e0596eb4765 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4389,8 +4389,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4398,8 +4398,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -246,7 +246,7 @@ index 331e86ca4023980a2f26dab388dac02bbeb49f1c..31781b898f30337185eca611d2b7838c
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 845465508a768052fc4e7dccf0ec1a58766b9409..990f974d1a66e1cfe591f55742a4db854e8a4dc8 100644
+index a5cceee737e55e3429ab05c26f0870f36bdf5495..2275954b001f26553a1061069432d6b5a39d4c78 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -324,8 +324,7 @@ class CONTENT_EXPORT WebContentsDelegate {
