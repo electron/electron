@@ -47,17 +47,17 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   api::resources_private::Component component = params->component;
 
   switch (component) {
-    case api::resources_private::COMPONENT_PDF:
+    case api::resources_private::Component::kPdf:
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       pdf_extension_util::AddStrings(
           pdf_extension_util::PdfViewerContext::kPdfViewer, &dict);
       pdf_extension_util::AddAdditionalData(true, false, &dict);
 #endif
       break;
-    case api::resources_private::COMPONENT_IDENTITY:
+    case api::resources_private::Component::kIdentity:
       NOTREACHED();
       break;
-    case api::resources_private::COMPONENT_NONE:
+    case api::resources_private::Component::kNone:
       NOTREACHED();
       break;
   }
