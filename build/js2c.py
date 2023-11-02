@@ -24,7 +24,7 @@ def main():
   natives = os.path.abspath(sys.argv[2])
   js_source_files = sys.argv[3:]
 
-  js2c = os.path.join(node_path, 'tools', 'js2c.py')
+  js2c = os.path.join(node_path, 'tools', 'js2c.cc')
   subprocess.check_call(
     [sys.executable, js2c] +
     js_source_files +

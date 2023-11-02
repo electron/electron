@@ -249,7 +249,7 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
-  inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
+  inputs = sources + [ "//third_party/electron_node/tools/js2c.cc" ]
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
   script = "build/js2c.py"
