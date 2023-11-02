@@ -237,14 +237,3 @@ index 6864f2d88b34abfa4090780d6993684cd0b366a3..0249574c4431fb5b98852699f1368f71
  
    if (!buf.IsEmpty()) {
      args.GetReturnValue().Set(buf.ToLocalChecked());
-diff --git a/test/parallel/test-v8-serialize-leak.js b/test/parallel/test-v8-serialize-leak.js
-index 696dbfea65ba95b1157cb6f469762d4a6e196199..b342ec59100809187689d0770a462b0b99e75e58 100644
---- a/test/parallel/test-v8-serialize-leak.js
-+++ b/test/parallel/test-v8-serialize-leak.js
-@@ -25,5 +25,5 @@ if (process.config.variables.asan) {
- } else if (process.config.variables.node_builtin_modules_path) {
-   assert(after < before * 4, `node_builtin_modules_path: before=${before} after=${after}`);
- } else {
--  assert(after < before * 2, `before=${before} after=${after}`);
-+  assert(after < before * 3, `before=${before} after=${after}`);
- }
