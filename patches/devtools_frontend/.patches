@@ -1,1 +1,1 @@
-fix_expose_globals_to_allow_patching_devtools_dock.patch
+chore_expose_ui_to_allow_electron_to_set_dock_side.patch

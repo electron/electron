@@ -2,6 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#endif
+
+// FIXME(ckerr) this incorrect #include order is a temporary
+// fix to unblock the roll. Will fix in an upgrade followup.
+#ifdef USE_OZONE_PLATFORM_X11
+#include "ui/base/x/x11_util.h"
+#endif
+
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -55,15 +68,17 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
-#include "ui/gfx/x/xproto_util.h"
+#endif
+#if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -357,10 +372,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
         state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_MODAL"));
     }
 
-    if (!state_atom_list.empty())
-      SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                       x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM,
-                       state_atom_list);
+    if (!state_atom_list.empty()) {
+      auto* connection = x11::Connection::Get();
+      connection->SetArrayProperty(
+          static_cast<x11::Window>(GetAcceleratedWidget()),
+          x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM, state_atom_list);
+    }
 
     // Set the _NET_WM_WINDOW_TYPE.
     if (!window_type.empty())
@@ -467,9 +484,10 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 #if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     const std::string color = use_dark_theme ? "dark" : "light";
-    x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                           x11::GetAtom("_GTK_THEME_VARIANT"),
-                           x11::GetAtom("UTF8_STRING"), color);
+    auto* connection = x11::Connection::Get();
+    connection->SetStringProperty(
+        static_cast<x11::Window>(GetAcceleratedWidget()),
+        x11::GetAtom("_GTK_THEME_VARIANT"), x11::GetAtom("UTF8_STRING"), color);
   }
 #endif
 }
@@ -1381,12 +1399,14 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
 #if defined(USE_OZONE_PLATFORM_X11)
-  if (IsX11())
-    x11::SetProperty(
+  if (IsX11()) {
+    auto* connection = x11::Connection::Get();
+    connection->SetProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
         x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
         parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
                : ui::GetX11RootWindow());
+  }
 #elif BUILDFLAG(IS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent
@@ -1501,8 +1521,10 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
     // determine whether the current window is visible on all workspaces.
     x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
     std::vector<x11::Atom> wm_states;
-    GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                     x11::GetAtom("_NET_WM_STATE"), &wm_states);
+    auto* connection = x11::Connection::Get();
+    connection->GetArrayProperty(
+        static_cast<x11::Window>(GetAcceleratedWidget()),
+        x11::GetAtom("_NET_WM_STATE"), &wm_states);
     return base::Contains(wm_states, sticky_atom);
   }
 #endif

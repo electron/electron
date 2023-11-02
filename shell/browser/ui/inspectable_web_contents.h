@@ -165,6 +165,10 @@ class InspectableWebContents
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
+  void RecordImpression(const ImpressionEvent& event) override {}
+  void RecordClick(const ClickEvent& event) override {}
+  void RecordChange(const ChangeEvent& event) override {}
+  void RecordKeyDown(const KeyDownEvent& event) override {}
   void ShowSurvey(DispatchCallback callback,
                   const std::string& trigger) override {}
   void CanShowSurvey(DispatchCallback callback,

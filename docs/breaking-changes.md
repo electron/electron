@@ -14,6 +14,19 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (29.0)
 
+### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`
+
+Attempting to send `ipcRenderer` as an object over the `contextBridge` will now result in
+an empty object on the receiving side of the bridge. This change was made to remove / mitigate
+a security footgun, you should not directly expose ipcRenderer or it's methods over the bridge.
+Instead provide a safe wrapper like below:
+
+```js
+contextBridge.exposeInMainWorld('app', {
+  onEvent: (cb) => ipcRenderer.on('foo', (e, ...args) => cb(args))
+})
+```
+
 ### Removed: `renderer-process-crashed` event on `app`
 
 The `renderer-process-crashed` event on `app` has been removed.
@@ -40,6 +53,19 @@ webview.addEventListener('crashed', (event) => { /* ... */ })
 // Replace with
 win.webContents.on('render-process-gone', (event, details) => { /* ... */ })
 webview.addEventListener('render-process-gone', (event) => { /* ... */ })
+```
+
+### Removed: `gpu-process-crashed` event on `app`
+
+The `gpu-process-crashed` event on `app` has been removed.
+Use the new `child-process-gone` event instead.
+
+```js
+// Removed
+app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
+
+// Replace with
+app.on('child-process-gone', (event, details) => { /* ... */ })
 ```
 
 ## Planned Breaking API Changes (28.0)
@@ -117,6 +143,12 @@ app.on('renderer-process-crashed', (event, webContents, killed) => { /* ... */ }
 // Replace with
 app.on('render-process-gone', (event, webContents, details) => { /* ... */ })
 ```
+
+### Deprecated: `params.inputFormType` property on `context-menu` on `WebContents`
+
+The `inputFormType` property of the params object in the `context-menu`
+event from `WebContents` has been deprecated. Use the new `formControlType`
+property instead.
 
 ### Deprecated: `crashed` event on `WebContents` and `<webview>`
 

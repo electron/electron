@@ -429,7 +429,7 @@ modules in the preload script to expose IPC functionality to the renderer proces
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback)
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value))
 })
 ```
 
@@ -439,6 +439,8 @@ After loading the preload script, your renderer process should have access to th
 :::caution Security warning
 We don't directly expose the whole `ipcRenderer.on` API for [security reasons][]. Make sure to
 limit the renderer's access to Electron APIs as much as possible.
+Also don't just pass the callback to `ipcRenderer.on` as this will leak `ipcRenderer` via `event.sender`.
+Use a custom handler that invoke the `callback` only with the desired arguments.
 :::
 
 :::info
@@ -486,10 +488,10 @@ To tie it all together, we'll create an interface in the loaded HTML file that c
 Finally, to make the values update in the HTML document, we'll add a few lines of DOM manipulation
 so that the value of the `#counter` element is updated whenever we fire an `update-counter` event.
 
-```javascript title='renderer.js (Renderer Process)' @ts-window-type={electronAPI:{onUpdateCounter:(callback:(event:Electron.IpcRendererEvent,value:number)=>void)=>void}}
+```javascript title='renderer.js (Renderer Process)' @ts-window-type={electronAPI:{onUpdateCounter:(callback:(value:number)=>void)=>void}}
 const counter = document.getElementById('counter')
 
-window.electronAPI.onUpdateCounter((_event, value) => {
+window.electronAPI.onUpdateCounter((value) => {
   const oldValue = Number(counter.innerText)
   const newValue = oldValue + value
   counter.innerText = newValue.toString()
@@ -506,17 +508,26 @@ There's no equivalent for `ipcRenderer.invoke` for main-to-renderer IPC. Instead
 send a reply back to the main process from within the `ipcRenderer.on` callback.
 
 We can demonstrate this with slight modifications to the code from the previous example. In the
-renderer process, use the `event` parameter to send a reply back to the main process through the
+renderer process, expose another API to send a reply back to the main process through the
 `counter-value` channel.
 
-```javascript title='renderer.js (Renderer Process)' @ts-window-type={electronAPI:{onUpdateCounter:(callback:(event:Electron.IpcRendererEvent,value:number)=>void)=>void}}
+```javascript title='preload.js (Preload Script)'
+const { contextBridge, ipcRenderer } = require('electron')
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value)),
+  counterValue: (value) => ipcRenderer.send('counter-value', value)
+})
+```
+
+```javascript title='renderer.js (Renderer Process)' @ts-window-type={electronAPI:{onUpdateCounter:(callback:(value:number)=>void)=>void,counterValue:(value:number)=>void}}
 const counter = document.getElementById('counter')
 
-window.electronAPI.onUpdateCounter((event, value) => {
+window.electronAPI.onUpdateCounter((value) => {
   const oldValue = Number(counter.innerText)
   const newValue = oldValue + value
   counter.innerText = newValue.toString()
-  event.sender.send('counter-value', newValue)
+  window.electronAPI.counterValue(newValue)
 })
 ```
 

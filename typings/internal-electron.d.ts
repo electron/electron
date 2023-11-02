@@ -20,7 +20,7 @@ declare namespace Electron {
   }
 
   interface AutoUpdater {
-    isVersionAllowedForUpdate(currentVersion: string, targetVersion: string): boolean;
+    isVersionAllowedForUpdate?(currentVersion: string, targetVersion: string): boolean;
   }
 
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];

@@ -15,10 +15,10 @@ at some point be an API to "unfreeze" the flags, or we may be able to refactor
 node initialization to not update flags after V8 initialization.
 
 diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
-index 82d45115a964310fdccdedb03e542d417e632e6a..1b8f927f7a9b79d25178179205ddb63f8c425126 100644
+index be1f39d4038a80b9d73ae0cb0a6709d280501bd4..d3ae9bcab7e28145c3c196f6c5bba56597c29ee4 100644
 --- a/content/renderer/render_process_impl.cc
 +++ b/content/renderer/render_process_impl.cc
-@@ -212,6 +212,9 @@ RenderProcessImpl::RenderProcessImpl()
+@@ -224,6 +224,9 @@ RenderProcessImpl::RenderProcessImpl()
      v8::V8::SetFlagsFromString(kSABPerContextFlag, sizeof(kSABPerContextFlag));
    }
  
