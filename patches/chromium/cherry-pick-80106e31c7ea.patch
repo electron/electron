@@ -1,7 +1,7 @@
-From 80106e31c7ea8b38bfe9452879287edbcd8a3f3b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Matt Reynolds <mattreynolds@google.com>
 Date: Wed, 25 Oct 2023 00:56:26 +0000
-Subject: [PATCH] [M-118] usb: Validate isochronous transfer packet lengths
+Subject: usb: Validate isochronous transfer packet lengths
 
 USBDevice.isochronousTransferIn and
 USBDevice.isochronousTransferOut take a parameter containing
@@ -27,10 +27,9 @@ Commit-Queue: Reilly Grant <reillyg@chromium.org>
 Auto-Submit: Matt Reynolds <mattreynolds@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5993@{#1425}
 Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
----
 
 diff --git a/services/device/usb/mojo/device_impl.cc b/services/device/usb/mojo/device_impl.cc
-index 34cc1f3..a44cb3b 100644
+index 34cc1f360a0340fa235ee0e086f5f5b2ee56309d..a44cb3b262203cc519012e60465cc01af9b4260c 100644
 --- a/services/device/usb/mojo/device_impl.cc
 +++ b/services/device/usb/mojo/device_impl.cc
 @@ -19,6 +19,7 @@
@@ -41,7 +40,7 @@ index 34cc1f3..a44cb3b 100644
  
  namespace device {
  
-@@ -89,6 +90,20 @@
+@@ -89,6 +90,20 @@ bool IsAndroidSecurityKeyRequest(
           memcmp(data.data(), magic, strlen(magic)) == 0;
  }
  
@@ -62,7 +61,7 @@ index 34cc1f3..a44cb3b 100644
  }  // namespace
  
  // static
-@@ -397,6 +412,15 @@
+@@ -397,6 +412,15 @@ void DeviceImpl::IsochronousTransferIn(
      return;
    }
  
@@ -78,7 +77,7 @@ index 34cc1f3..a44cb3b 100644
    uint8_t endpoint_address = endpoint_number | 0x80;
    device_handle_->IsochronousTransferIn(
        endpoint_address, packet_lengths, timeout,
-@@ -415,6 +439,14 @@
+@@ -415,6 +439,14 @@ void DeviceImpl::IsochronousTransferOut(
      return;
    }
  
@@ -94,7 +93,7 @@ index 34cc1f3..a44cb3b 100644
    auto buffer = base::MakeRefCounted<base::RefCountedBytes>(data);
    device_handle_->IsochronousTransferOut(
 diff --git a/services/device/usb/mojo/device_impl_unittest.cc b/services/device/usb/mojo/device_impl_unittest.cc
-index b239186..2d401f7 100644
+index b23918682064047f644344f96c7a13ccbbe7d95d..2d401f70b2b9d827153adb8b14a5acb6d4a9a8de 100644
 --- a/services/device/usb/mojo/device_impl_unittest.cc
 +++ b/services/device/usb/mojo/device_impl_unittest.cc
 @@ -9,7 +9,6 @@
@@ -105,7 +104,7 @@ index b239186..2d401f7 100644
  #include <set>
  #include <string>
  #include <utility>
-@@ -54,8 +53,11 @@
+@@ -54,8 +53,11 @@ MATCHER_P(BufferSizeIs, size, "") {
  
  class ConfigBuilder {
   public:
@@ -119,7 +118,7 @@ index b239186..2d401f7 100644
  
    ConfigBuilder(const ConfigBuilder&) = delete;
    ConfigBuilder& operator=(const ConfigBuilder&) = delete;
-@@ -413,8 +415,10 @@
+@@ -413,8 +415,10 @@ class USBDeviceImplTest : public testing::Test {
  
      ASSERT_EQ(packets.size(), packet_lengths.size());
      for (size_t i = 0; i < packets.size(); ++i) {
@@ -132,7 +131,7 @@ index b239186..2d401f7 100644
      }
  
      std::move(callback).Run(buffer, std::move(packets));
-@@ -428,10 +432,8 @@
+@@ -428,10 +432,8 @@ class USBDeviceImplTest : public testing::Test {
        UsbDeviceHandle::IsochronousTransferCallback& callback) {
      ASSERT_FALSE(mock_outbound_data_.empty());
      const std::vector<uint8_t>& bytes = mock_outbound_data_.front();
@@ -145,7 +144,7 @@ index b239186..2d401f7 100644
        EXPECT_EQ(bytes[i], buffer->front()[i])
            << "Contents differ at index: " << i;
      }
-@@ -444,8 +446,10 @@
+@@ -444,8 +446,10 @@ class USBDeviceImplTest : public testing::Test {
  
      ASSERT_EQ(packets.size(), packet_lengths.size());
      for (size_t i = 0; i < packets.size(); ++i) {
@@ -158,7 +157,7 @@ index b239186..2d401f7 100644
      }
  
      std::move(callback).Run(buffer, std::move(packets));
-@@ -1084,6 +1088,122 @@
+@@ -1084,6 +1088,122 @@ TEST_F(USBDeviceImplTest, IsochronousTransfer) {
    EXPECT_CALL(mock_handle(), Close());
  }
  
@@ -282,7 +281,7 @@ index b239186..2d401f7 100644
                                       public testing::WithParamInterface<bool> {
  };
 diff --git a/third_party/blink/renderer/modules/webusb/usb_device.cc b/third_party/blink/renderer/modules/webusb/usb_device.cc
-index 3d562fa..c64c7fb 100644
+index 3d562fa22bd84dc438abfe9fa883eff6f5846b1b..c64c7fb1b15f7f523b37671abca2ab50655cf4d8 100644
 --- a/third_party/blink/renderer/modules/webusb/usb_device.cc
 +++ b/third_party/blink/renderer/modules/webusb/usb_device.cc
 @@ -4,9 +4,11 @@
@@ -297,7 +296,7 @@ index 3d562fa..c64c7fb 100644
  #include "third_party/blink/public/platform/platform.h"
  #include "third_party/blink/renderer/bindings/core/v8/script_promise.h"
  #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
-@@ -43,6 +45,10 @@
+@@ -43,6 +45,10 @@ namespace {
  
  const char kAccessDeniedError[] = "Access denied.";
  const char kBufferTooBig[] = "The data buffer exceeded its maximum size.";
@@ -308,7 +307,7 @@ index 3d562fa..c64c7fb 100644
  const char kDetachedBuffer[] = "The data buffer has been detached.";
  const char kDeviceStateChangeInProgress[] =
      "An operation that changes the device state is in progress.";
-@@ -106,6 +112,20 @@
+@@ -106,6 +112,20 @@ String ConvertTransferStatus(const UsbTransferStatus& status) {
    }
  }
  
@@ -329,7 +328,7 @@ index 3d562fa..c64c7fb 100644
  }  // namespace
  
  USBDevice::USBDevice(USB* parent,
-@@ -555,6 +575,13 @@
+@@ -555,6 +575,13 @@ ScriptPromise USBDevice::isochronousTransferIn(
    if (exception_state.HadException())
      return ScriptPromise();
  
@@ -343,7 +342,7 @@ index 3d562fa..c64c7fb 100644
    auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(
        script_state, exception_state.GetContext());
    ScriptPromise promise = resolver->Promise();
-@@ -586,6 +613,18 @@
+@@ -586,6 +613,18 @@ ScriptPromise USBDevice::isochronousTransferOut(
      return ScriptPromise();
    }
  
@@ -363,10 +362,10 @@ index 3d562fa..c64c7fb 100644
        script_state, exception_state.GetContext());
    ScriptPromise promise = resolver->Promise();
 diff --git a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
-index b1b0c13..804af2a 100644
+index b1b0c133ce160a314ea392514ac5b38e4cac136d..804af2afb9db3a0d5fafbeb26aed64f89badb1b3 100644
 --- a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
 +++ b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
-@@ -1247,3 +1247,60 @@
+@@ -1247,3 +1247,60 @@ usb_test((t) => {
          .then(() => promise_rejects_dom(t, 'NotFoundError', device.reset()));
    });
  }, 'resetDevice rejects when called on a disconnected device');
