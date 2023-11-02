@@ -165,92 +165,6 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    const algo = 'aes-128-ccm';
    const key = Buffer.alloc(16);
    const iv = Buffer.alloc(12);
-diff --git a/test/parallel/test-crypto-binary-default.js b/test/parallel/test-crypto-binary-default.js
-index 3bbca5b0da395b94c04da7bb7c55b107e41367d8..af62558c4f23aa82804e0077da7b7f3a86cfac60 100644
---- a/test/parallel/test-crypto-binary-default.js
-+++ b/test/parallel/test-crypto-binary-default.js
-@@ -51,15 +51,15 @@ tls.createSecureContext({ pfx: certPfx, passphrase: 'sample' });
- 
- assert.throws(function() {
-   tls.createSecureContext({ pfx: certPfx });
--}, /^Error: mac verify failure$/);
-+}, /^Error: (mac verify failure|INCORRECT_PASSWORD)$/);
- 
- assert.throws(function() {
-   tls.createSecureContext({ pfx: certPfx, passphrase: 'test' });
--}, /^Error: mac verify failure$/);
-+}, /^Error: (mac verify failure|INCORRECT_PASSWORD)$/);
- 
- assert.throws(function() {
-   tls.createSecureContext({ pfx: 'sample', passphrase: 'test' });
--}, /^Error: not enough data$/);
-+}, /^Error: (not enough data|BAD_PKCS12_DATA)$/);
- 
- // Test HMAC
- {
-@@ -462,7 +462,7 @@ assert.throws(function() {
- function testCipher1(key) {
-   // Test encryption and decryption
-   const plaintext = 'Keep this a secret? No! Tell everyone about node.js!';
--  const cipher = crypto.createCipher('aes192', key);
-+  const cipher = crypto.createCipher('aes-192-cbc', key);
- 
-   // Encrypt plaintext which is in utf8 format
-   // to a ciphertext which will be in hex
-@@ -470,7 +470,7 @@ function testCipher1(key) {
-   // Only use binary or hex, not base64.
-   ciph += cipher.final('hex');
- 
--  const decipher = crypto.createDecipher('aes192', key);
-+  const decipher = crypto.createDecipher('aes-192-cbc', key);
-   let txt = decipher.update(ciph, 'hex', 'utf8');
-   txt += decipher.final('utf8');
- 
-@@ -485,14 +485,14 @@ function testCipher2(key) {
-       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
-       'eCBsThSsfUHLeRe0KCsK8ooHgxie0zOINpXxfZi/oNG7uq9JWFVCk70gfzQH8ZUJ' +
-       'jAfaFg**';
--  const cipher = crypto.createCipher('aes256', key);
-+  const cipher = crypto.createCipher('aes-256-cbc', key);
- 
-   // Encrypt plaintext which is in utf8 format
-   // to a ciphertext which will be in Base64
-   let ciph = cipher.update(plaintext, 'utf8', 'base64');
-   ciph += cipher.final('base64');
- 
--  const decipher = crypto.createDecipher('aes256', key);
-+  const decipher = crypto.createDecipher('aes-256-cbc', key);
-   let txt = decipher.update(ciph, 'base64', 'utf8');
-   txt += decipher.final('utf8');
- 
-@@ -537,6 +537,10 @@ function testCipher4(key, iv) {
- 
- 
- function testCipher5(key, iv) {
-+  if (!crypto.getCiphers().includes('id-aes128-wrap')) {
-+    common.printSkipMessage(`unsupported id-aes128-wrap test`);
-+    return;
-+  }
-   // Test encryption and decryption with explicit key with aes128-wrap
-   const plaintext =
-       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
-@@ -662,6 +666,8 @@ assert.throws(
- }
- 
- 
-+/* NB: BoringSSL does not support using DSA through the EVP API.
-+ * https://boringssl.googlesource.com/boringssl/+/a2278d4d2cabe73f6663e3299ea7808edfa306b9/PORTING.md#dsa-s
- //
- // Test DSA signing and verification
- //
-@@ -682,6 +688,7 @@ assert.throws(
- 
-   assert.strictEqual(verify.verify(publicKey, signature, 'hex'), true);
- }
-+*/
- 
- 
- //
 diff --git a/test/parallel/test-crypto-certificate.js b/test/parallel/test-crypto-certificate.js
 index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..b3287f428ce6b3fde11d449c601a57ff5e3843f9 100644
 --- a/test/parallel/test-crypto-certificate.js
@@ -432,11 +346,11 @@ index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420f
  assert.notStrictEqual(bad_dh.verifyError, 0);
  
  const availableCurves = new Set(crypto.getCurves());
-diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index c730eac4ce76dde880fe2b36b17414b0c311ac0b..416cfa0ac019fe5eab696df36f6cc65e311bf20f 100644
---- a/test/parallel/test-crypto-dh.js
-+++ b/test/parallel/test-crypto-dh.js
-@@ -47,17 +47,19 @@ for (const bits of [-1, 0, 1]) {
+diff --git a/test/parallel/test-crypto-dh-errors.js b/test/parallel/test-crypto-dh-errors.js
+index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af514538780 100644
+--- a/test/parallel/test-crypto-dh-errors.js
++++ b/test/parallel/test-crypto-dh-errors.js
+@@ -32,9 +32,9 @@ for (const bits of [-1, 0, 1]) {
      });
    } else {
      assert.throws(() => crypto.createDiffieHellman(bits), {
@@ -448,8 +362,57 @@ index c730eac4ce76dde880fe2b36b17414b0c311ac0b..416cfa0ac019fe5eab696df36f6cc65e
      });
    }
  }
+@@ -43,7 +43,7 @@ for (const g of [-1, 1]) {
+   const ex = {
+     code: 'ERR_OSSL_DH_BAD_GENERATOR',
+     name: 'Error',
+-    message: /bad generator/,
++    message: /bad generator|BAD_GENERATOR/,
+   };
+   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
+   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
+@@ -55,7 +55,7 @@ for (const g of [Buffer.from([]),
+   const ex = {
+     code: 'ERR_OSSL_DH_BAD_GENERATOR',
+     name: 'Error',
+-    message: /bad generator/,
++    message: /bad generator|BAD_GENERATOR/,
+   };
+   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
+   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
+diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
+index abbe1abe7e53d7bd113afb68b0e9af1e814c70bd..086a8e38021ed1a87be22246cdb4f5ceb56eee4c 100644
+--- a/test/parallel/test-crypto-dh.js
++++ b/test/parallel/test-crypto-dh.js
+@@ -55,18 +55,17 @@ const crypto = require('crypto');
+   let wrongBlockLength;
+   if (common.hasOpenSSL3) {
+     wrongBlockLength = {
+-      message: 'error:1C80006B:Provider routines::wrong final block length',
+-      code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
+-      library: 'Provider routines',
+-      reason: 'wrong final block length'
++      message: /error:1C80006B:Provider routines::wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++      code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
++      library: /digital envelope routines|Cipher functions/,
++      reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
+     };
+   } else {
+     wrongBlockLength = {
+-      message: 'error:0606506D:digital envelope' +
+-        ' routines:EVP_DecryptFinal_ex:wrong final block length',
+-      code: 'ERR_OSSL_EVP_WRONG_FINAL_BLOCK_LENGTH',
+-      library: 'digital envelope routines',
+-      reason: 'wrong final block length'
++      message: /error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++      code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
++      library: /digital envelope routines|Cipher functions/,
++      reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
+     };
+   }
  
--// Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
+@@ -95,10 +94,16 @@ const crypto = require('crypto');
+ // Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
  {
    const g = 0;
 -  crypto.createDiffieHellman('abcdef', g);
@@ -460,63 +423,13 @@ index c730eac4ce76dde880fe2b36b17414b0c311ac0b..416cfa0ac019fe5eab696df36f6cc65e
    crypto.createDiffieHellman('abcdef', 'hex', g);
  }
  
-@@ -65,13 +67,18 @@ for (const g of [-1, 1]) {
-   const ex = {
-     code: 'ERR_OSSL_DH_BAD_GENERATOR',
-     name: 'Error',
--    message: /bad generator/,
-+    message: /bad generator|BAD_GENERATOR/,
-   };
-   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
-   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
- }
- 
--crypto.createDiffieHellman('abcdef', Buffer.from([2]));  // OK
-+{
+ {
+-  crypto.createDiffieHellman('abcdef', Buffer.from([2]));  // OK
 +  assert.throws(() => crypto.createDiffieHellman('abcdef', Buffer.from([2])), {
 +    code: /INVALID_PARAMETERS/,
 +    name: 'Error'
 +  });
-+}
- 
- for (const g of [Buffer.from([]),
-                  Buffer.from([0]),
-@@ -79,7 +86,7 @@ for (const g of [Buffer.from([]),
-   const ex = {
-     code: 'ERR_OSSL_DH_BAD_GENERATOR',
-     name: 'Error',
--    message: /bad generator/,
-+    message: /bad generator|BAD_GENERATOR/,
-   };
-   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
-   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -133,18 +140,17 @@ assert.strictEqual(secret1, secret4);
- let wrongBlockLength;
- if (common.hasOpenSSL3) {
-   wrongBlockLength = {
--    message: 'error:1C80006B:Provider routines::wrong final block length',
--    code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
--    library: 'Provider routines',
--    reason: 'wrong final block length'
-+    message: /error:1C80006B:Provider routines::wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
-+    code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
-+    library: /digital envelope routines|Cipher functions/,
-+    reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
-   };
- } else {
-   wrongBlockLength = {
--    message: 'error:0606506D:digital envelope' +
--      ' routines:EVP_DecryptFinal_ex:wrong final block length',
--    code: 'ERR_OSSL_EVP_WRONG_FINAL_BLOCK_LENGTH',
--    library: 'digital envelope routines',
--    reason: 'wrong final block length'
-+    message: /error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
-+    code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
-+    library: /digital envelope routines|Cipher functions/,
-+    reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
-   };
  }
- 
 diff --git a/test/parallel/test-crypto-getcipherinfo.js b/test/parallel/test-crypto-getcipherinfo.js
 index 98d2a52eceac4bc564fd2878f77b50c336a67a66..bcb2de6e354c26816000f2400d9c1d46de01888a 100644
 --- a/test/parallel/test-crypto-getcipherinfo.js
@@ -783,8 +696,8 @@ index 930a2ba09088663298208f165f06a7710770938f..592b4140f14e659dfa38e438473c8d4a
 +
    // Verify that legacy encoding works
    const legacyObjectCheck = {
-     subject: Object.assign(Object.create(null), {
-@@ -277,16 +287,8 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+     subject: Object.assign({ __proto__: null }, {
+@@ -277,15 +287,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -797,11 +710,10 @@ index 930a2ba09088663298208f165f06a7710770938f..592b4140f14e659dfa38e438473c8d4a
 -              'C574197693E959CEA1362FFAE1BBA10C8C0D88840ABFEF103631B2E8F5C3' +
 -              '9B5548A7EA57E8A39F89291813F45A76C448033A2B7ED8403F4BAA147CF3' +
 -              '5E2D2554AA65CE49695797095BF4DC6B',
-     bits: 2048,
 +    modulusPattern: new RegExp(modulusOSSL, 'i'),
+     bits: 2048,
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
-     valid_to: 'Jun 17 21:40:37 2296 GMT',
 @@ -298,7 +300,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
