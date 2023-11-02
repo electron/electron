@@ -454,6 +454,10 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 
 void NativeWindow::SetVibrancy(const std::string& type) {}
 
+absl::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
+  return "";  // for non-Mac platforms
+}
+
 void NativeWindow::SetBackgroundMaterial(const std::string& type) {}
 
 void NativeWindow::SetTouchBar(
