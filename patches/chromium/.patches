@@ -137,3 +137,4 @@ cherry-pick-f218b4f37018.patch
 cherry-pick-d756d71a652c.patch
 parameterize_axtreeserializer_by_vector_type.patch
 avoid_allocating_recordid_objects_in_elementtiming_and_lcp.patch
+cherry-pick-80106e31c7ea.patch
