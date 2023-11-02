@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Matt Reynolds <mattreynolds@google.com>
 Date: Wed, 25 Oct 2023 00:56:26 +0000
-Subject: [M-118] usb: Validate isochronous transfer packet lengths
+Subject: usb: Validate isochronous transfer packet lengths
 
 USBDevice.isochronousTransferIn and
 USBDevice.isochronousTransferOut take a parameter containing
