@@ -40,7 +40,7 @@ index ee1c94ccd389915ea7572cce044256a7788025ad..d31abf714d5d1433ec8473ccb1aae3b6
  
  typedef enum {
 diff --git a/deps/uv/src/unix/async.c b/deps/uv/src/unix/async.c
-index e1805c323795e5b0c465d80100eebeb7bf838caa..dd4358c0cdaa97ba8fadf4d9755993803beddd18 100644
+index 0ff2669e30a628dbb2df9e28ba14b38cf14114e5..117190ef26338944b78dbed7380c631de8057223 100644
 --- a/deps/uv/src/unix/async.c
 +++ b/deps/uv/src/unix/async.c
 @@ -38,7 +38,6 @@
@@ -49,18 +49,18 @@ index e1805c323795e5b0c465d80100eebeb7bf838caa..dd4358c0cdaa97ba8fadf4d975599380
  
 -static void uv__async_send(uv_loop_t* loop);
  static int uv__async_start(uv_loop_t* loop);
+ static void uv__cpu_relax(void);
  
- 
-@@ -70,7 +69,7 @@ int uv_async_send(uv_async_t* handle) {
-     return 0;
+@@ -78,7 +77,7 @@ int uv_async_send(uv_async_t* handle) {
  
    /* Wake up the other thread's event loop. */
--  uv__async_send(handle->loop);
-+  uv__loop_interrupt(handle->loop);
+   if (atomic_exchange(pending, 1) == 0)
+-    uv__async_send(handle->loop);
++    uv__loop_interrupt(handle->loop);
  
-   /* Tell the other thread we're done. */
-   if (cmpxchgi(&handle->pending, 1, 2) != 1)
-@@ -165,40 +164,6 @@ static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+   /* Set the loop to not-busy. */
+   atomic_fetch_add(busy, -1);
+@@ -178,39 +177,6 @@ static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
  }
  
  
@@ -97,15 +97,14 @@ index e1805c323795e5b0c465d80100eebeb7bf838caa..dd4358c0cdaa97ba8fadf4d975599380
 -  abort();
 -}
 -
--
+ 
  static int uv__async_start(uv_loop_t* loop) {
    int pipefd[2];
-   int err;
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 54c769f37f2331136c87a37c13fb4e3f9a8f22f9..ac52ab79a5fc3050effd2b1f2f605cee9b1ab336 100644
+index 25c5181f370e94983e8a5f797f02f7a8dc207e00..f4d9059796d2c65339a5d48ecb273b09d9364d21 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -900,6 +900,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -926,6 +926,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
      loop->watchers[w->fd] = w;
      loop->nfds++;
    }
@@ -115,20 +114,20 @@ index 54c769f37f2331136c87a37c13fb4e3f9a8f22f9..ac52ab79a5fc3050effd2b1f2f605cee
  }
  
  
-@@ -931,6 +934,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -957,6 +960,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
    }
-   else if (QUEUE_EMPTY(&w->watcher_queue))
-     QUEUE_INSERT_TAIL(&loop->watcher_queue, &w->watcher_queue);
+   else if (uv__queue_empty(&w->watcher_queue))
+     uv__queue_insert_tail(&loop->watcher_queue, &w->watcher_queue);
 +
 +  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
 +    uv__loop_interrupt(loop);
  }
  
  
-@@ -947,6 +953,9 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
+@@ -973,6 +979,9 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
  void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
-   if (QUEUE_EMPTY(&w->pending_queue))
-     QUEUE_INSERT_TAIL(&loop->pending_queue, &w->pending_queue);
+   if (uv__queue_empty(&w->pending_queue))
+     uv__queue_insert_tail(&loop->pending_queue, &w->pending_queue);
 +
 +  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
 +    uv__loop_interrupt(loop);
@@ -463,7 +462,7 @@ index 1d3355fdc67310feb63738c9e30724f0e77f7895..77a63dbb4d188b2ad571c814dbc6cbc6
 +  run_loop();
 +  ASSERT_EQ(main_timer_called, 1);
  
-   MAKE_VALGRIND_HAPPY();
+   MAKE_VALGRIND_HAPPY(loop);
    return 0;
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
 index b19c10c7e40c77061337416fd623c53d0863d276..1f54ac21c36902bccb35c64cefa8bb14dd675bb0 100644
