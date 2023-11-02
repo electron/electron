@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index ae39e6adf98e783e19d83e4e31dde47a19e37593..022ed0a5767806b66f32b8a7555d6726636b09cf 100644
+index 42d5da95cb1a5b8964d4adb1c143fd36da0ef144..0196b1ba2fc3a13220cdec6d1106cd6d9407923a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -8231,6 +8231,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -66,7 +66,7 @@ index 40c14e1757dee4fda9aa79f3a52532f8ab737a97..2c833d683b737bd6b24d2ec10d97b46d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index b9cb67d2350da2a59c69f7dc45ba8fec5f4192c5..cd26851920c6fae8721ba5c3a126962b1c036e49 100644
+index 39b5ff0122f950990ab1cdd7b686fb4429e97a8a..f602a3fac375bcd18a6db25d163efb40de485cd0 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -716,6 +716,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index b9cb67d2350da2a59c69f7dc45ba8fec5f4192c5..cd26851920c6fae8721ba5c3a126962b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e637fcabba2637d6044992c332a90c73d058e926..a5600d50354e21139baecbee89b27cf62a0f90fa 100644
+index e479adacb16343891c2782973fa9ba8c1925b275..9bef261091b60fcf1b79b224612180f307f8f0c6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -177,6 +177,7 @@ class NetworkService;
