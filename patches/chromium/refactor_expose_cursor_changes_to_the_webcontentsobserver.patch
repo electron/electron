@@ -44,7 +44,7 @@ index 895f5126806b557c853f163fe69459ea929f11a4..b4ead2f5f2f813c23cd5eddae3d38052
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1b90fdfd07db502ee2e3647a2ca82f58221e5c01..268caca4f16bbd6368eb40f8c058a043b98f57fe 100644
+index 161d0c99eb1da6af69a5dcf6bbb6f753e3397b5b..63c234f6a66b2e7fc7b457b6141aa1ec55ebcc7e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5115,6 +5115,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -60,10 +60,10 @@ index 1b90fdfd07db502ee2e3647a2ca82f58221e5c01..268caca4f16bbd6368eb40f8c058a043
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 0d14b053ea7e11a52795175a1240a733bce00e7c..5461c17d970eb6dbdb709d2c43c11708ae85ba2e 100644
+index 14281119070e4a6caa4291914386a93493593430..b884dfc2237d5f973de0edb5f05fcbe82f752a74 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1010,6 +1010,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1013,6 +1013,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index 0d14b053ea7e11a52795175a1240a733bce00e7c..5461c17d970eb6dbdb709d2c43c11708
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index cd6a0302a3d42255261e6cbf521152a8882b058d..def30e137ad8a254e77b6e421a007574a2ac4107 100644
+index 63905767fedc33f8a33be1d86e5a554003a95069..3d0b6cdbcf9f1de188aea8723a0bf4c67a4b5891 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -32,6 +32,7 @@
