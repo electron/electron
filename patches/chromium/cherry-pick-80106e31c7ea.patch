@@ -1,0 +1,428 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Reynolds <mattreynolds@google.com>
+Date: Wed, 25 Oct 2023 00:56:26 +0000
+Subject: usb: Validate isochronous transfer packet lengths
+
+USBDevice.isochronousTransferIn and
+USBDevice.isochronousTransferOut take a parameter containing
+a list of packet lengths. This CL adds validation that the
+total packet length does not exceed the maximum buffer size.
+For isochronousTransferOut, it also checks that the total
+length of all packets in bytes is equal to the size of the
+data buffer.
+
+Passing invalid packet lengths causes the promise to be
+rejected with a DataError.
+
+(cherry picked from commit bb36f739e7e0a3722beeb2744744195c22fd6143)
+
+Bug: 1492381, 1492384
+Change-Id: Id9ae16c7e6f1c417e0fc4f21d53e9de11560b2b7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4944690
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1212916}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4974416
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Auto-Submit: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5993@{#1425}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/services/device/usb/mojo/device_impl.cc b/services/device/usb/mojo/device_impl.cc
+index 34cc1f360a0340fa235ee0e086f5f5b2ee56309d..a44cb3b262203cc519012e60465cc01af9b4260c 100644
+--- a/services/device/usb/mojo/device_impl.cc
++++ b/services/device/usb/mojo/device_impl.cc
+@@ -19,6 +19,7 @@
+ #include "base/ranges/algorithm.h"
+ #include "services/device/public/cpp/usb/usb_utils.h"
+ #include "services/device/usb/usb_device.h"
++#include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ namespace device {
+ 
+@@ -89,6 +90,20 @@ bool IsAndroidSecurityKeyRequest(
+          memcmp(data.data(), magic, strlen(magic)) == 0;
+ }
+ 
++// Returns the sum of `packet_lengths`, or nullopt if the sum would overflow.
++absl::optional<uint32_t> TotalPacketLength(
++    base::span<const uint32_t> packet_lengths) {
++  uint32_t total_bytes = 0;
++  for (const uint32_t packet_length : packet_lengths) {
++    // Check for overflow.
++    if (std::numeric_limits<uint32_t>::max() - total_bytes < packet_length) {
++      return absl::nullopt;
++    }
++    total_bytes += packet_length;
++  }
++  return total_bytes;
++}
++
+ }  // namespace
+ 
+ // static
+@@ -397,6 +412,15 @@ void DeviceImpl::IsochronousTransferIn(
+     return;
+   }
+ 
++  absl::optional<uint32_t> total_bytes = TotalPacketLength(packet_lengths);
++  if (!total_bytes.has_value()) {
++    mojo::ReportBadMessage("Invalid isochronous packet lengths.");
++    std::move(callback).Run(
++        {}, BuildIsochronousPacketArray(
++                packet_lengths, mojom::UsbTransferStatus::TRANSFER_ERROR));
++    return;
++  }
++
+   uint8_t endpoint_address = endpoint_number | 0x80;
+   device_handle_->IsochronousTransferIn(
+       endpoint_address, packet_lengths, timeout,
+@@ -415,6 +439,14 @@ void DeviceImpl::IsochronousTransferOut(
+     return;
+   }
+ 
++  absl::optional<uint32_t> total_bytes = TotalPacketLength(packet_lengths);
++  if (!total_bytes.has_value() || total_bytes.value() != data.size()) {
++    mojo::ReportBadMessage("Invalid isochronous packet lengths.");
++    std::move(callback).Run(BuildIsochronousPacketArray(
++        packet_lengths, mojom::UsbTransferStatus::TRANSFER_ERROR));
++    return;
++  }
++
+   uint8_t endpoint_address = endpoint_number;
+   auto buffer = base::MakeRefCounted<base::RefCountedBytes>(data);
+   device_handle_->IsochronousTransferOut(
+diff --git a/services/device/usb/mojo/device_impl_unittest.cc b/services/device/usb/mojo/device_impl_unittest.cc
+index b23918682064047f644344f96c7a13ccbbe7d95d..2d401f70b2b9d827153adb8b14a5acb6d4a9a8de 100644
+--- a/services/device/usb/mojo/device_impl_unittest.cc
++++ b/services/device/usb/mojo/device_impl_unittest.cc
+@@ -9,7 +9,6 @@
+ 
+ #include <map>
+ #include <memory>
+-#include <numeric>
+ #include <set>
+ #include <string>
+ #include <utility>
+@@ -54,8 +53,11 @@ MATCHER_P(BufferSizeIs, size, "") {
+ 
+ class ConfigBuilder {
+  public:
+-  explicit ConfigBuilder(uint8_t value)
+-      : config_(BuildUsbConfigurationInfoPtr(value, false, false, 0)) {}
++  explicit ConfigBuilder(uint8_t configuration_value)
++      : config_(BuildUsbConfigurationInfoPtr(configuration_value,
++                                             /*self_powered=*/false,
++                                             /*remote_wakeup=*/false,
++                                             /*maximum_power=*/0)) {}
+ 
+   ConfigBuilder(const ConfigBuilder&) = delete;
+   ConfigBuilder& operator=(const ConfigBuilder&) = delete;
+@@ -413,8 +415,10 @@ class USBDeviceImplTest : public testing::Test {
+ 
+     ASSERT_EQ(packets.size(), packet_lengths.size());
+     for (size_t i = 0; i < packets.size(); ++i) {
+-      EXPECT_EQ(packets[i]->length, packet_lengths[i])
+-          << "Packet lengths differ at index: " << i;
++      if (packets[i]->status == mojom::UsbTransferStatus::COMPLETED) {
++        EXPECT_EQ(packets[i]->length, packet_lengths[i])
++            << "Packet lengths differ at index: " << i;
++      }
+     }
+ 
+     std::move(callback).Run(buffer, std::move(packets));
+@@ -428,10 +432,8 @@ class USBDeviceImplTest : public testing::Test {
+       UsbDeviceHandle::IsochronousTransferCallback& callback) {
+     ASSERT_FALSE(mock_outbound_data_.empty());
+     const std::vector<uint8_t>& bytes = mock_outbound_data_.front();
+-    size_t length =
+-        std::accumulate(packet_lengths.begin(), packet_lengths.end(), 0u);
+-    ASSERT_EQ(bytes.size(), length);
+-    for (size_t i = 0; i < length; ++i) {
++    ASSERT_EQ(buffer->size(), bytes.size());
++    for (size_t i = 0; i < bytes.size(); ++i) {
+       EXPECT_EQ(bytes[i], buffer->front()[i])
+           << "Contents differ at index: " << i;
+     }
+@@ -444,8 +446,10 @@ class USBDeviceImplTest : public testing::Test {
+ 
+     ASSERT_EQ(packets.size(), packet_lengths.size());
+     for (size_t i = 0; i < packets.size(); ++i) {
+-      EXPECT_EQ(packets[i]->length, packet_lengths[i])
+-          << "Packet lengths differ at index: " << i;
++      if (packets[i]->status == mojom::UsbTransferStatus::COMPLETED) {
++        EXPECT_EQ(packets[i]->length, packet_lengths[i])
++            << "Packet lengths differ at index: " << i;
++      }
+     }
+ 
+     std::move(callback).Run(buffer, std::move(packets));
+@@ -1084,6 +1088,122 @@ TEST_F(USBDeviceImplTest, IsochronousTransfer) {
+   EXPECT_CALL(mock_handle(), Close());
+ }
+ 
++TEST_F(USBDeviceImplTest, IsochronousTransferOutBufferSizeMismatch) {
++  mojo::Remote<mojom::UsbDevice> device = GetMockDeviceProxy();
++
++  EXPECT_CALL(mock_device(), OpenInternal);
++
++  base::test::TestFuture<mojom::UsbOpenDeviceResultPtr> open_future;
++  device->Open(open_future.GetCallback());
++  EXPECT_TRUE(open_future.Get()->is_success());
++
++  constexpr size_t kPacketCount = 4;
++  constexpr size_t kPacketLength = 8;
++  std::vector<UsbIsochronousPacketPtr> fake_packets;
++  for (size_t i = 0; i < kPacketCount; ++i) {
++    fake_packets.push_back(mojom::UsbIsochronousPacket::New(
++        kPacketLength, kPacketLength, UsbTransferStatus::TRANSFER_ERROR));
++  }
++
++  std::string outbound_data = "aaaaaaaabbbbbbbbccccccccdddddddd";
++  std::vector<uint8_t> fake_outbound_data(outbound_data.size());
++  base::ranges::copy(outbound_data, fake_outbound_data.begin());
++
++  std::string inbound_data = "ddddddddccccccccbbbbbbbbaaaaaaaa";
++  std::vector<uint8_t> fake_inbound_data(inbound_data.size());
++  base::ranges::copy(inbound_data, fake_inbound_data.begin());
++
++  AddMockConfig(ConfigBuilder(/*configuration_value=*/1)
++                    .AddInterface(/*interface_number=*/7,
++                                  /*alternate_setting=*/0, /*class_code=*/1,
++                                  /*subclass_code=*/2, /*protocol_code=*/3)
++                    .Build());
++  AddMockOutboundPackets(fake_outbound_data, mojo::Clone(fake_packets));
++  AddMockInboundPackets(fake_inbound_data, mojo::Clone(fake_packets));
++
++  // The `packet_lengths` parameter for IsochronousTransferOut describes the
++  // number of bytes in each packet. Set the size of the last packet one byte
++  // shorter than the buffer size and check that the returned packets indicate
++  // a transfer error.
++  std::vector<uint32_t> short_packet_lengths(kPacketCount, kPacketLength);
++  short_packet_lengths.back() = kPacketLength - 1;
++
++  base::test::TestFuture<std::vector<UsbIsochronousPacketPtr>>
++      transfer_out_future;
++  device->IsochronousTransferOut(
++      /*endpoint_number=*/1, fake_outbound_data, short_packet_lengths,
++      /*timeout=*/0, transfer_out_future.GetCallback());
++  ASSERT_EQ(kPacketCount, transfer_out_future.Get().size());
++  for (const auto& packet : transfer_out_future.Get()) {
++    EXPECT_EQ(packet->status, UsbTransferStatus::TRANSFER_ERROR);
++  }
++
++  EXPECT_CALL(mock_handle(), Close);
++}
++
++TEST_F(USBDeviceImplTest, IsochronousTransferPacketLengthsOverflow) {
++  mojo::Remote<mojom::UsbDevice> device = GetMockDeviceProxy();
++
++  EXPECT_CALL(mock_device(), OpenInternal);
++
++  base::test::TestFuture<mojom::UsbOpenDeviceResultPtr> open_future;
++  device->Open(open_future.GetCallback());
++  EXPECT_TRUE(open_future.Get()->is_success());
++
++  constexpr size_t kPacketCount = 2;
++  constexpr size_t kPacketLength = 8;
++  std::vector<UsbIsochronousPacketPtr> fake_packets;
++  for (size_t i = 0; i < kPacketCount; ++i) {
++    fake_packets.push_back(mojom::UsbIsochronousPacket::New(
++        kPacketLength, kPacketLength, UsbTransferStatus::TRANSFER_ERROR));
++  }
++
++  std::string outbound_data = "aaaaaaaabbbbbbbb";
++  std::vector<uint8_t> fake_outbound_data(outbound_data.size());
++  base::ranges::copy(outbound_data, fake_outbound_data.begin());
++
++  std::string inbound_data = "bbbbbbbbaaaaaaaa";
++  std::vector<uint8_t> fake_inbound_data(inbound_data.size());
++  base::ranges::copy(inbound_data, fake_inbound_data.begin());
++
++  AddMockConfig(ConfigBuilder(/*configuration_value=*/1)
++                    .AddInterface(/*interface_number=*/7,
++                                  /*alternate_setting=*/0, /*class_code=*/1,
++                                  /*subclass_code=*/2, /*protocol_code=*/3)
++                    .Build());
++  AddMockOutboundPackets(fake_outbound_data, mojo::Clone(fake_packets));
++  AddMockInboundPackets(fake_inbound_data, mojo::Clone(fake_packets));
++
++  // The `packet_lengths` parameter for IsochronousTransferOut and
++  // IsochronousTransferIn describes the number of bytes in each packet. Set
++  // the packet sizes so the total will exceed the maximum value for uint32_t
++  // and check that the returned packets indicate a transfer error.
++  std::vector<uint32_t> overflow_packet_lengths = {0xffffffff, 1};
++
++  base::test::TestFuture<std::vector<UsbIsochronousPacketPtr>>
++      transfer_out_future;
++  device->IsochronousTransferOut(
++      /*endpoint_number=*/1, fake_outbound_data, overflow_packet_lengths,
++      /*timeout=*/0, transfer_out_future.GetCallback());
++  ASSERT_EQ(kPacketCount, transfer_out_future.Get().size());
++  for (const auto& packet : transfer_out_future.Get()) {
++    EXPECT_EQ(packet->status, UsbTransferStatus::TRANSFER_ERROR);
++  }
++
++  base::test::TestFuture<base::span<const uint8_t>,
++                         std::vector<UsbIsochronousPacketPtr>>
++      transfer_in_future;
++  device->IsochronousTransferIn(
++      /*endpoint_number=*/1, overflow_packet_lengths, /*timeout=*/0,
++      transfer_in_future.GetCallback());
++  ASSERT_EQ(kPacketCount, transfer_in_future.Get<1>().size());
++  for (const auto& packet : transfer_in_future.Get<1>()) {
++    EXPECT_EQ(packet->status, UsbTransferStatus::TRANSFER_ERROR);
++  }
++
++  EXPECT_CALL(mock_handle(), Close);
++}
++
+ class USBDeviceImplSecurityKeyTest : public USBDeviceImplTest,
+                                      public testing::WithParamInterface<bool> {
+ };
+diff --git a/third_party/blink/renderer/modules/webusb/usb_device.cc b/third_party/blink/renderer/modules/webusb/usb_device.cc
+index bffe45ca2fe4acbe8edfdbe19d889dd62c68cd10..25de0c1e96fb57f822de9dad6c6641c2b77ad48d 100644
+--- a/third_party/blink/renderer/modules/webusb/usb_device.cc
++++ b/third_party/blink/renderer/modules/webusb/usb_device.cc
+@@ -4,9 +4,11 @@
+ 
+ #include "third_party/blink/renderer/modules/webusb/usb_device.h"
+ 
++#include <limits>
+ #include <utility>
+ 
+ #include "base/containers/span.h"
++#include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+@@ -43,6 +45,10 @@ namespace {
+ 
+ const char kAccessDeniedError[] = "Access denied.";
+ const char kBufferTooBig[] = "The data buffer exceeded its maximum size.";
++const char kPacketLengthsTooBig[] =
++    "The total packet length exceeded the maximum size.";
++const char kBufferSizeMismatch[] =
++    "The data buffer size must match the total packet length.";
+ const char kDetachedBuffer[] = "The data buffer has been detached.";
+ const char kDeviceStateChangeInProgress[] =
+     "An operation that changes the device state is in progress.";
+@@ -106,6 +112,20 @@ String ConvertTransferStatus(const UsbTransferStatus& status) {
+   }
+ }
+ 
++// Returns the sum of `packet_lengths`, or nullopt if the sum would overflow.
++absl::optional<uint32_t> TotalPacketLength(
++    const Vector<unsigned>& packet_lengths) {
++  uint32_t total_bytes = 0;
++  for (const auto packet_length : packet_lengths) {
++    // Check for overflow.
++    if (std::numeric_limits<uint32_t>::max() - total_bytes < packet_length) {
++      return absl::nullopt;
++    }
++    total_bytes += packet_length;
++  }
++  return total_bytes;
++}
++
+ }  // namespace
+ 
+ USBDevice::USBDevice(USB* parent,
+@@ -578,6 +598,13 @@ ScriptPromise USBDevice::isochronousTransferIn(
+   if (exception_state.HadException())
+     return ScriptPromise();
+ 
++  absl::optional<uint32_t> total_bytes = TotalPacketLength(packet_lengths);
++  if (!total_bytes.has_value()) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kDataError,
++                                      kPacketLengthsTooBig);
++    return ScriptPromise();
++  }
++
+   auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(
+       script_state, exception_state.GetContext());
+   ScriptPromise promise = resolver->Promise();
+@@ -615,6 +642,18 @@ ScriptPromise USBDevice::isochronousTransferOut(
+     return ScriptPromise();
+   }
+ 
++  absl::optional<uint32_t> total_bytes = TotalPacketLength(packet_lengths);
++  if (!total_bytes.has_value()) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kDataError,
++                                      kPacketLengthsTooBig);
++    return ScriptPromise();
++  }
++  if (total_bytes.value() != data.ByteLength()) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kDataError,
++                                      kBufferSizeMismatch);
++    return ScriptPromise();
++  }
++
+   auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(
+       script_state, exception_state.GetContext());
+   ScriptPromise promise = resolver->Promise();
+diff --git a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
+index b1b0c133ce160a314ea392514ac5b38e4cac136d..804af2afb9db3a0d5fafbeb26aed64f89badb1b3 100644
+--- a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
++++ b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
+@@ -1247,3 +1247,60 @@ usb_test((t) => {
+         .then(() => promise_rejects_dom(t, 'NotFoundError', device.reset()));
+   });
+ }, 'resetDevice rejects when called on a disconnected device');
++
++usb_test(async (t) => {
++  const PACKET_COUNT = 4;
++  const PACKET_LENGTH = 8;
++  const {device, fakeDevice} = await getFakeDevice();
++  await device.open();
++  await device.selectConfiguration(2);
++  await device.claimInterface(0);
++  await device.selectAlternateInterface(0, 1);
++  const buffer = new Uint8Array(PACKET_COUNT * PACKET_LENGTH);
++  const packetLengths = new Array(PACKET_COUNT).fill(PACKET_LENGTH);
++  packetLengths[0] = PACKET_LENGTH - 1;
++  await promise_rejects_dom(
++      t, 'DataError', device.isochronousTransferOut(1, buffer, packetLengths));
++}, 'isochronousTransferOut rejects when buffer size exceeds packet lengths');
++
++usb_test(async (t) => {
++  const PACKET_COUNT = 4;
++  const PACKET_LENGTH = 8;
++  const {device, fakeDevice} = await getFakeDevice();
++  await device.open();
++  await device.selectConfiguration(2);
++  await device.claimInterface(0);
++  await device.selectAlternateInterface(0, 1);
++  const buffer = new Uint8Array(PACKET_COUNT * PACKET_LENGTH);
++  const packetLengths = new Array(PACKET_COUNT).fill(PACKET_LENGTH);
++  packetLengths[0] = PACKET_LENGTH + 1;
++  await promise_rejects_dom(
++      t, 'DataError', device.isochronousTransferOut(1, buffer, packetLengths));
++}, 'isochronousTransferOut rejects when packet lengths exceed buffer size');
++
++usb_test(async (t) => {
++  const PACKET_COUNT = 2;
++  const PACKET_LENGTH = 8;
++  const {device, fakeDevice} = await getFakeDevice();
++  await device.open();
++  await device.selectConfiguration(2);
++  await device.claimInterface(0);
++  await device.selectAlternateInterface(0, 1);
++  const packetLengths = [0xffffffff, 1];
++  await promise_rejects_dom(
++      t, 'DataError', device.isochronousTransferIn(1, packetLengths));
++}, 'isochronousTransferIn rejects when packet lengths exceed maximum size');
++
++usb_test(async (t) => {
++  const PACKET_COUNT = 2;
++  const PACKET_LENGTH = 8;
++  const {device, fakeDevice} = await getFakeDevice();
++  await device.open();
++  await device.selectConfiguration(2);
++  await device.claimInterface(0);
++  await device.selectAlternateInterface(0, 1);
++  const buffer = new Uint8Array(PACKET_LENGTH * PACKET_COUNT);
++  const packetLengths = [0xffffffff, 1];
++  await promise_rejects_dom(
++      t, 'DataError', device.isochronousTransferOut(1, buffer, packetLengths));
++}, 'isochronousTransferOut rejects when packet lengths exceed maximum size');
