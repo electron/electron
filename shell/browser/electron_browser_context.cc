@@ -64,6 +64,7 @@
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
 #include "extensions/browser/extension_prefs.h"
+#include "extensions/browser/permissions_manager.h"
 #include "extensions/browser/pref_names.h"
 #include "extensions/common/extension_api.h"
 #include "shell/browser/extensions/electron_browser_context_keyed_service_factories.h"
@@ -313,6 +314,7 @@ void ElectronBrowserContext::InitPrefs() {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_)
     extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
+  extensions::PermissionsManager::RegisterProfilePrefs(registry.get());
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
