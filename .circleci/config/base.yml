@@ -2315,12 +2315,11 @@ jobs:
   darwin-testing-x64-tests:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.medium.gen1
       version: 14.0.0
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
-    parallelism: 2
     steps:
       - electron-tests:
           artifact-key: darwin-x64
@@ -2339,12 +2338,11 @@ jobs:
   mas-testing-x64-tests:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.medium.gen1
       version: 14.0.0
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
-    parallelism: 2
     steps:
       - electron-tests:
           artifact-key: mas-x64
