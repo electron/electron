@@ -40,7 +40,7 @@ index af0616d9ca466d146f3c41887857dd4720ebafbf..c088db193f5bd4b88aa42a3803571d2b
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 56da12ea713adc699fc8a5d7eef493824f5a4980..599e3f762a7cd4213f5296a91fc290553608901f 100644
+index f6a8ed0124683cd6729a9d68df0cee3a6811c52d..3aedd88a4773fd5ed6e4e64f46c553e08accd876 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -16,9 +16,11 @@

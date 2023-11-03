@@ -144,7 +144,9 @@
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "base/functional/bind.h"
 #include "chrome/common/webui_url_constants.h"
+#include "components/guest_view/common/guest_view.mojom.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
@@ -164,11 +166,15 @@
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/renderer_startup_helper.h"
 #include "extensions/browser/service_worker/service_worker_host.h"
 #include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/mojom/event_router.mojom.h"
+#include "extensions/common/mojom/guest_view.mojom.h"
+#include "extensions/common/mojom/renderer_host.mojom.h"
 #include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
@@ -1484,6 +1490,12 @@ void ElectronBrowserClient::
                 std::move(receiver), render_frame_host);
           },
           &render_frame_host));
+  associated_registry.AddInterface<guest_view::mojom::GuestViewHost>(
+      base::BindRepeating(&extensions::ExtensionsGuestView::CreateForComponents,
+                          render_frame_host.GetGlobalId()));
+  associated_registry.AddInterface<extensions::mojom::GuestView>(
+      base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
+                          render_frame_host.GetGlobalId()));
 #endif
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   associated_registry.AddInterface<pdf::mojom::PdfService>(base::BindRepeating(
@@ -1559,8 +1571,8 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
   associated_registry->AddInterface<extensions::mojom::EventRouter>(
       base::BindRepeating(&extensions::EventRouter::BindForRenderer,
                           render_process_host->GetID()));
-  associated_registry->AddInterface<extensions::mojom::GuestView>(
-      base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
+  associated_registry->AddInterface<extensions::mojom::RendererHost>(
+      base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
                           render_process_host->GetID()));
   associated_registry->AddInterface<extensions::mojom::ServiceWorkerHost>(
       base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,

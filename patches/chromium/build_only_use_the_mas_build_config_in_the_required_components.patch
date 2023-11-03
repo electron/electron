@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8f12d13dcd67d9dfb97b3e1fbe6a8caefdb9fd2c..9e93386c769b7bb805cf8057ce4b28a6555a144a 100644
+index d3a406962fa71062647510f27169c1d374da1c59..56e0d96940088cc0b65c6558cecb5cda4273a97c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d2b0f343db2cec3667576d37bad76c2294099331..aaa40fe000b85ffe249b1ce8230ac3a7746b0a1a 100644
+index 802b4a695fadcbb67b6c936324f9ceaf9f12255a..03c8cf5a96c1e2a6b306f3c516fc3d61a6c5c62d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index 697fa7c5e98e7ee16b1b5e676f60a9689f7aac2b..f5e7278a6e391cbab61bbd2981127beb
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 97e1984a154b0f4d36d9c02e001234a1d9ed0740..d5d6e524a6063abccee23d1e2632f4e3318f8f10 100644
+index 0967c510f870a6b66f0b577521e2d8df61f0c68d..317c8b68e2d5fb62ae73eec867d6c52a7132ff3c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -482,6 +482,7 @@ static_library("test_support") {
@@ -276,7 +276,7 @@ index a8c6d49637a53961d1e16521ae569c3f03fd1e8a..b36e64816bb296e53479c5666ab418fd
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 9161edba8266e83480da3c04b63d64a6532517c9..2eb1d7637aede0e783cdddc04773015d4c70ecfd 100644
+index df601fcc40b4b8ca131a4f5a3ced5897075aa0f7..9d2edc62d95f04b6f1b3cd667940b1cb2dc728c3 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
@@ -288,10 +288,10 @@ index 9161edba8266e83480da3c04b63d64a6532517c9..2eb1d7637aede0e783cdddc04773015d
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index d69a544d0971b776e59c0980b61961e7a0f83cac..2b4c4405911eba5f8cbb9dadb98e3b0224f1a938 100644
+index 442f6d2fba860c9ed87f5ed66c188945c98734dd..62e0f63f8968dd9b5953aca23afd4f76c673026a 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -684,6 +684,7 @@ component("views") {
+@@ -695,6 +695,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -299,7 +299,7 @@ index d69a544d0971b776e59c0980b61961e7a0f83cac..2b4c4405911eba5f8cbb9dadb98e3b02
    }
  
    if (is_win) {
-@@ -1113,6 +1114,8 @@ source_set("test_support") {
+@@ -1124,6 +1125,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 42c27a6fd63abaf1fe096cb24b5bba53b725e4bb..c373d23ff31f18217ab06f668e21a5fb58f275e1 100644
+index 64775be482d47143fb56d815d390bd56875e8493..347f135c75c226faec33199909cc5ee4a8924a24 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -338,7 +338,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -39,7 +39,7 @@ index 42c27a6fd63abaf1fe096cb24b5bba53b725e4bb..c373d23ff31f18217ab06f668e21a5fb
  }
  
  bool Compositor::IsVisible() {
-@@ -956,4 +960,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
+@@ -958,4 +962,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
    return host_->GetSettings();
  }
  
@@ -54,10 +54,10 @@ index 42c27a6fd63abaf1fe096cb24b5bba53b725e4bb..c373d23ff31f18217ab06f668e21a5fb
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 59d437e25be86b1d2e30478a90d1e102b891e662..f99676c579402f0961de036a49e62462ec6a6cec 100644
+index e1781e682f2e1217fe4cc7ab26cd82e7bcc352e7..2cd96e3518b9a62091a69782b65ef61a8e798022 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -519,6 +519,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -522,6 +522,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
      return host_->saved_events_metrics_count_for_testing();
    }
  
@@ -68,7 +68,7 @@ index 59d437e25be86b1d2e30478a90d1e102b891e662..f99676c579402f0961de036a49e62462
   private:
    friend class base::RefCounted<Compositor>;
    friend class TotalAnimationThroughputReporter;
-@@ -625,6 +629,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -628,6 +632,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

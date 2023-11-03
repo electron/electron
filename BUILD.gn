@@ -716,6 +716,7 @@ source_set("electron_lib") {
       "shell/common/extensions/api",
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
+      "//components/guest_view/common:mojom",
       "//components/update_client:update_client",
       "//components/zoom",
       "//extensions/browser",

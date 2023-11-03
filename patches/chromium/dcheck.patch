@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 41f27ac3bc062c5549799622a9c23ef828cf7791..e87df727c4c4ef2ecd1c5928e2a09108dc682855 100644
+index 2ca479b9fb0b41b66220c524e242d4927c138f1f..61a85717ceb02cd0e19297a143ba9b0de8496eeb 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -913,10 +913,10 @@ SkBitmap ClipboardWin::ReadBitmapInternal(ClipboardBuffer buffer) const {
+@@ -914,10 +914,10 @@ SkBitmap ClipboardWin::ReadBitmapInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

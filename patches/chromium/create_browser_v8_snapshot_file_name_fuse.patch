@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index c5b68291a9632e8820721de5513ed682c65a175c..5b6c92952de30bb9a80b9595ab57344323484eea 100644
+index 5f25a4b71b7b2a9cf9d91b655d9976b5a32b1c9e..24798bf2a35ffd4a42fe8956a27b00756e6f5c00 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -18,7 +18,7 @@ index c5b68291a9632e8820721de5513ed682c65a175c..5b6c92952de30bb9a80b9595ab573443
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/string_util.h"
  #include "base/task/single_thread_task_runner.h"
-@@ -254,8 +255,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -253,8 +254,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  #endif
  
@@ -33,7 +33,7 @@ index c5b68291a9632e8820721de5513ed682c65a175c..5b6c92952de30bb9a80b9595ab573443
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -284,11 +290,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -283,11 +289,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -48,7 +48,7 @@ index c5b68291a9632e8820721de5513ed682c65a175c..5b6c92952de30bb9a80b9595ab573443
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -969,7 +976,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -963,7 +970,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -102,10 +102,10 @@ index c891c5649a6ae76c9f0f988359649ece0e8ac1d9..54e30c4dd82042c283e36cae767dcdd7
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index d60429bab364f63afacb5e022ebf4dc65fbcba07..439f215ac7ecac065fe504ba0365cff20ed9147a 100644
+index 795c6cf3a1736607c6a0786c0c71dea5714e1d31..afe12745606c043cf03e1cccfa93915622cdd198 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -549,8 +549,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -552,8 +552,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index d60429bab364f63afacb5e022ebf4dc65fbcba07..439f215ac7ecac065fe504ba0365cff2
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -559,10 +558,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -562,10 +561,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =
