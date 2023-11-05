@@ -6,19 +6,18 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index daaa153516c424334c18b5dfa35e0e55e1fbcce4..6181cc21bf303c41ed9c65681a34f6393223fb67 100644
+index 0bfe7b11241416bfca0d470047b14777ad99307f..c86add4395ed59cee0d880961e7572b0cc3d6698 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
-@@ -3,6 +3,7 @@
+@@ -2,12 +2,19 @@
+ 
  const {
-   ObjectCreate,
    StringPrototypeEndsWith,
 +  StringPrototypeStartsWith,
  } = primordials;
- const CJSLoader = require('internal/modules/cjs/loader');
- const { Module, toRealPath, readPackageScope } = CJSLoader;
-@@ -13,6 +14,13 @@ const {
- } = require('internal/modules/esm/handle_process_exit');
+ 
+ const { getOptionValue } = require('internal/options');
+ const path = require('path');
  
  function resolveMainPath(main) {
 +  // For built-in modules used as the main entry point we _never_
@@ -27,11 +26,10 @@ index daaa153516c424334c18b5dfa35e0e55e1fbcce4..6181cc21bf303c41ed9c65681a34f639
 +  if (typeof main === 'string' && StringPrototypeStartsWith(main, 'electron/js2c')) {
 +    return main;
 +  }
-+
    // Note extension resolution for the main entry point can be deprecated in a
    // future major.
    // Module._findPath is monkey-patchable here.
-@@ -28,6 +36,13 @@ function resolveMainPath(main) {
+@@ -24,6 +31,12 @@ function resolveMainPath(main) {
  }
  
  function shouldUseESMLoader(mainPath) {
@@ -41,7 +39,6 @@ index daaa153516c424334c18b5dfa35e0e55e1fbcce4..6181cc21bf303c41ed9c65681a34f639
 +  if (typeof mainPath === 'string' && StringPrototypeStartsWith(mainPath, 'electron/js2c')) {
 +    return false;
 +  }
-+
    /**
     * @type {string[]} userLoaders A list of custom loaders registered by the user
     * (or an empty list when none have been registered).
