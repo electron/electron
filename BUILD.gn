@@ -237,6 +237,7 @@ action("electron_js2c") {
     ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
     ":electron_worker_bundle",
+    "//third_party/electron_node:node_js2c",
   ]
 
   sources = [
@@ -249,10 +250,10 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
-  inputs = sources + [ "//third_party/electron_node/tools/js2c.cc" ]
+  inputs = sources
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
-  script = "build/js2c.py"
+  script = "$root_out_dir/node_js2c"
   args = [ rebase_path("//third_party/electron_node") ] +
          rebase_path(outputs, root_build_dir) +
          rebase_path(sources, root_build_dir)

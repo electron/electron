@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Mon, 6 Nov 2023 15:45:45 -0800
+Subject: build: node_js2c_exec as GN exec
+
+https://github.com/nodejs/node/pull/46997
+
+diff --git a/BUILD.gn b/BUILD.gn
+index ed74ff4855a4e7869e40eb2e85ba15227abd089c..37879871fc7d5a1934e76800a27816861e7b8c89 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -79,10 +79,11 @@ copy("node_js2c_inputs") {
+   ]
+ }
+ 
+-chdir_action("node_js2c") {
++chdir_action("node_js2c_exec") {
+   deps = [
+     "//electron:generate_config_gypi",
+     ":node_js2c_inputs",
++    ":node_js2c"
+   ]
+   config_gypi = [ "$root_gen_dir/config.gypi" ]
+   inputs = library_files + config_gypi
+@@ -91,7 +92,7 @@ chdir_action("node_js2c") {
+   ]
+ 
+   cwd = "$target_gen_dir/js2c_inputs"
+-  script = "tools/js2c.cc"
++  script = "$root_out_dir/node_js2c"
+   args = library_files + rebase_path(config_gypi) + ["--target"] + rebase_path(outputs)
+ }
+ 
+@@ -203,9 +204,29 @@ executable("overlapped-checker") {
+   }
+ }
+ 
++executable("node_js2c") {
++  defines = []
++  sources = [
++    "tools/js2c.cc",
++    "tools/executable_wrapper.h"
++  ]
++  include_dirs = [ "tools" ]
++  deps = [ "deps/simdutf", "deps/uv" ]
++  if (!is_win) {
++    defines += [ "NODE_JS2C_USE_STRING_LITERALS" ]
++  }
++  if (is_debug) {
++    cflags_cc = [
++      "-g",
++      "-O0",
++    ]
++    defines += [ "DEBUG" ]
++  }
++}
++
+ component("node_lib") {
+   deps = [
+-    ":node_js2c",
++    ":node_js2c_exec",
+     "deps/googletest:gtest",
+     "deps/ada",
+     "deps/base64",
+diff --git a/tools/js2c.cc b/tools/js2c.cc
+old mode 100644
+new mode 100755
