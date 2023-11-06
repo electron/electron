@@ -40,10 +40,6 @@ void WebViewGuestDelegate::AttachToIframe(
 
   content::WebContents* guest_web_contents = api_web_contents_->web_contents();
 
-  // Force a refresh of the webPreferences so that OverrideWebkitPrefs runs on
-  // the new web contents before the renderer process initializes.
-  // guest_web_contents->NotifyPreferencesChanged();
-
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
@@ -76,15 +72,18 @@ content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() {
 void WebViewGuestDelegate::OnZoomChanged(
     const WebContentsZoomController::ZoomChangedEventData& data) {
   if (data.web_contents == GetOwnerWebContents()) {
+    auto* zoom_controller = api_web_contents_->GetZoomController();
     if (data.temporary) {
-      api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(
-          data.new_zoom_level);
+      zoom_controller->SetTemporaryZoomLevel(data.new_zoom_level);
     } else {
-      api_web_contents_->GetZoomController()->SetZoomLevel(data.new_zoom_level);
+      if (blink::PageZoomValuesEqual(data.new_zoom_level,
+                                     zoom_controller->GetZoomLevel()))
+        return;
+      zoom_controller->SetZoomLevel(data.new_zoom_level);
     }
     // Change the default zoom factor to match the embedders' new zoom level.
     double zoom_factor = blink::PageZoomLevelToZoomFactor(data.new_zoom_level);
-    api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
+    zoom_controller->SetDefaultZoomFactor(zoom_factor);
   }
 }
 
