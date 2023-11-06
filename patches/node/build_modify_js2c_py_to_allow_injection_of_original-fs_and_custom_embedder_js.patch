@@ -153,7 +153,7 @@ index 904fb6fa44d4f56fb67476e937edcbb797d78fe7..69078f3c2fcaab9f1b22d28c797a7e4c
 +      // std::equal(prefix.begin(), prefix.end(), toCheck.begin())?
 +      std::string original_fs_filename = filename;
 +      std::replace(original_fs_filename.begin(), original_fs_filename.end(), "internal/fs/", "internal/original-fs/");
-+
++ 
 +      std::function<std::vector<char>(const std::vector<char>&)> ReadFileTransform = [](const char* path, size_t size, int* error) {
 +        std::vector<char> code = ReadFileSync(path, size, &error);
 +        std::replace(code.begin(), code.end(), "require('fs')", "require('original-fs')");
