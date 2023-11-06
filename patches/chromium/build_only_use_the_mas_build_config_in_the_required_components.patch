@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d3a406962fa71062647510f27169c1d374da1c59..56e0d96940088cc0b65c6558cecb5cda4273a97c 100644
+index 5bb39e9b3b879a48514c69432569e0b3cd4a8fe4..f1283670da29d6559ce1431ce5c2cdafd42c24e9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 802b4a695fadcbb67b6c936324f9ceaf9f12255a..03c8cf5a96c1e2a6b306f3c516fc3d61a6c5c62d 100644
+index 204bbd1d3e67a5340f57ba9e562a427255859487..51ef5610ef8b3f20cea34ddc95595216d312603b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -261,10 +261,10 @@ index 39a960146504ac6034fe24593006d09ff9c667ac..67d0b5c26ef4788559efc696656dc88f
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index a8c6d49637a53961d1e16521ae569c3f03fd1e8a..b36e64816bb296e53479c5666ab418fdebfde4e4 100644
+index 301e8792b1259e7f7c4eb8e75a09a32f0d60e91f..36da16f203b14e872fb8153e8fc10c3f6725280d 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -67,6 +67,10 @@ component("display") {
+@@ -68,6 +68,10 @@ component("display") {
        "mac/display_link_mac.h",
        "mac/screen_mac.mm",
      ]

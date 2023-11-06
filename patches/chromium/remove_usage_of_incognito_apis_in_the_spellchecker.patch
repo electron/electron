@@ -23,7 +23,7 @@ index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index ab3979e69f272bbc9596300823d96641fdf960bd..0df82b71f05c34bd7896996feabcdd91ef3ea654 100644
+index bf2e926f03c6c15a7141f40d446cb42251c5d930..78c1e22427794262a33acd5a318abc9a1ec35871 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -121,6 +121,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {

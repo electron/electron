@@ -80,7 +80,7 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 4c7eb689245e52aee3f2f4e791f510b4aa24cfb4..e93970db0785c2864ac51d1fd77c57834dfc1d1d 100644
+index 2b0bbd4bab6c1d7ec7aee8e723096a3948cec3ea..5824add91b529fb9c196078cf5a496c723f11ca8 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1891,12 +1891,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -141,7 +141,7 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 9c4a21c5bbe8f2b1b2321ccbcf45b426d861dc89..52b11b0ab6b9dcebf26f09934d6a3e3edb57f5ea 100644
+index 59849e7b7cd411eca0dfec2b55c0328d08222277..45fabbb399da8e030846cacec8639ed3ad5dccd2 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -75,8 +75,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
@@ -358,10 +358,10 @@ index 60acb83c8d76f71db689f9d188bb6e8f64a74ffb..aa6cee708d1e451b443bc26528b56cc8
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 31baf3534e7ddaa16a9dc6078ed816b9abe102a3..270bb9041b6812cbb95df46f8a0815020ab0ed97 100644
+index 08879fbbdf3e4baa8a73de10fcc7b15cb3ca0cc4..f9652e92323f1739f1aaa932e4239f6971d4f736 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -430,8 +430,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -426,8 +426,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
