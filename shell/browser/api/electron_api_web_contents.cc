@@ -1511,11 +1511,10 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result.GetHandle());
 }
 
-void WebContents::RequestExclusivePointerAccess(
-    content::WebContents* web_contents,
-    bool user_gesture,
-    bool last_unlocked_by_target,
-    bool allowed) {
+void WebContents::OnRequestToLockMouse(content::WebContents* web_contents,
+                                       bool user_gesture,
+                                       bool last_unlocked_by_target,
+                                       bool allowed) {
   if (allowed) {
     exclusive_access_manager_.mouse_lock_controller()->RequestToLockMouse(
         web_contents, user_gesture, last_unlocked_by_target);
@@ -1532,7 +1531,7 @@ void WebContents::RequestToLockMouse(content::WebContents* web_contents,
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::RequestExclusivePointerAccess,
+      base::BindOnce(&WebContents::OnRequestToLockMouse,
                      base::Unretained(this)));
 }
 
@@ -1540,10 +1539,24 @@ void WebContents::LostMouseLock() {
   exclusive_access_manager_.mouse_lock_controller()->LostMouseLock();
 }
 
+void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
+                                        bool esc_key_locked,
+                                        bool allowed) {
+  if (allowed) {
+    exclusive_access_manager_.keyboard_lock_controller()->RequestKeyboardLock(
+        web_contents, esc_key_locked);
+  } else {
+    web_contents->GotResponseToKeyboardLockRequest(false);
+  }
+}
+
 void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
                                       bool esc_key_locked) {
-  exclusive_access_manager_.keyboard_lock_controller()->RequestKeyboardLock(
-      web_contents, esc_key_locked);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestKeyboardLockPermission(
+      esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
+                                     base::Unretained(this)));
 }
 
 void WebContents::CancelKeyboardLockRequest(
