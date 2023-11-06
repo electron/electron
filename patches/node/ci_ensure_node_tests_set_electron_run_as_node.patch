@@ -47,14 +47,14 @@ index 5a1b9feb6c8bedb50b89f5c4f3c5983455bb042d..efca7811dc0b6a590c5ee023c7180170
      });
    }
 diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
-index fca2149fea32123dc4d4c6f21c64cc3c583454b3..b9a55fb7ea22e62553f69bd035797f7aaee1fc38 100644
+index 4c4fc08c0cf3828d11aefe9f12318001bf10c16d..b08bcd40cdf26093e158c0bb9ae566c76f2c731e 100644
 --- a/test/parallel/test-node-output-errors.mjs
 +++ b/test/parallel/test-node-output-errors.mjs
-@@ -53,6 +53,7 @@ describe('errors output', { concurrency: true }, () => {
-     !skipForceColors ? { name: 'errors/force_colors.js', env: { FORCE_COLOR: 1 } } : null,
-   ].filter(Boolean);
-   for (const { name, transform, env } of tests) {
-+    if (env) env.ELECTRON_RUN_AS_NODE = 1;
-     it(name, async () => {
-       await snapshot.spawnAndAssert(fixtures.path(name), transform ?? defaultTransform, { env });
+@@ -61,6 +61,7 @@ describe('errors output', { concurrency: true }, () => {
+   ];
+   for (const { name, transform = defaultTransform, env, skip = false } of tests) {
+     it(name, { skip }, async () => {
++      if (env) env.ELECTRON_RUN_AS_NODE = 1;
+       await snapshot.spawnAndAssert(fixtures.path(name), transform, { env });
      });
+   }
