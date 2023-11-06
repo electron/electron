@@ -31,10 +31,10 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d9970d15c9a 100644
+index 6178445adbc634160c3c3ca699a36868f894e544..ff4dc2f7d527b5eb1fa442ba6b0f9ba04af39357 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
-@@ -50,7 +50,9 @@ const errMessages = {
+@@ -48,7 +48,9 @@ const errMessages = {
  const ciphers = crypto.getCiphers();
  
  const expectedWarnings = common.hasFipsCrypto ?
@@ -45,7 +45,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
      ['Use Cipheriv for counter mode of aes-192-gcm'],
      ['Use Cipheriv for counter mode of aes-192-ccm'],
      ['Use Cipheriv for counter mode of aes-192-ccm'],
-@@ -318,7 +320,9 @@ for (const test of TEST_CASES) {
+@@ -315,7 +317,9 @@ for (const test of TEST_CASES) {
  
  // Test that create(De|C)ipher(iv)? throws if the mode is CCM and an invalid
  // authentication tag length has been specified.
@@ -56,7 +56,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    for (const authTagLength of [-1, true, false, NaN, 5.5]) {
      assert.throws(() => {
        crypto.createCipheriv('aes-256-ccm',
-@@ -406,6 +410,10 @@ for (const test of TEST_CASES) {
+@@ -403,6 +407,10 @@ for (const test of TEST_CASES) {
  // authentication tag has been specified.
  {
    for (const mode of ['ccm', 'ocb']) {
@@ -67,7 +67,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
      assert.throws(() => {
        crypto.createCipheriv(`aes-256-${mode}`,
                              'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
-@@ -440,7 +448,9 @@ for (const test of TEST_CASES) {
+@@ -437,7 +445,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that setAAD throws if an invalid plaintext length has been specified.
@@ -78,7 +78,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    const cipher = crypto.createCipheriv('aes-256-ccm',
                                         'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
                                         'qkuZpJWCewa6S',
-@@ -461,7 +471,9 @@ for (const test of TEST_CASES) {
+@@ -458,7 +468,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that setAAD and update throw if the plaintext is too long.
@@ -89,7 +89,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    for (const ivLength of [13, 12]) {
      const maxMessageSize = (1 << (8 * (15 - ivLength))) - 1;
      const key = 'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8';
-@@ -492,7 +504,9 @@ for (const test of TEST_CASES) {
+@@ -489,7 +501,9 @@ for (const test of TEST_CASES) {
  
  // Test that setAAD throws if the mode is CCM and the plaintext length has not
  // been specified.
@@ -100,7 +100,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    assert.throws(() => {
      const cipher = crypto.createCipheriv('aes-256-ccm',
                                           'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
-@@ -517,7 +531,9 @@ for (const test of TEST_CASES) {
+@@ -514,7 +528,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that final() throws in CCM mode when no authentication tag is provided.
@@ -111,7 +111,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    if (!common.hasFipsCrypto) {
      const key = Buffer.from('1ed2233fa2223ef5d7df08546049406c', 'hex');
      const iv = Buffer.from('7305220bca40d4c90e1791e9', 'hex');
-@@ -549,7 +565,9 @@ for (const test of TEST_CASES) {
+@@ -546,7 +562,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that an IV length of 11 does not overflow max_message_size_.
@@ -122,7 +122,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    const key = 'x'.repeat(16);
    const iv = Buffer.from('112233445566778899aabb', 'hex');
    const options = { authTagLength: 8 };
-@@ -566,6 +584,10 @@ for (const test of TEST_CASES) {
+@@ -563,6 +581,10 @@ for (const test of TEST_CASES) {
    const iv = Buffer.from('0123456789ab', 'utf8');
  
    for (const mode of ['gcm', 'ocb']) {
@@ -133,7 +133,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
      for (const authTagLength of mode === 'gcm' ? [undefined, 8] : [8]) {
        const cipher = crypto.createCipheriv(`aes-128-${mode}`, key, iv, {
          authTagLength
-@@ -600,6 +622,10 @@ for (const test of TEST_CASES) {
+@@ -597,6 +619,10 @@ for (const test of TEST_CASES) {
    const opts = { authTagLength: 8 };
  
    for (const mode of ['gcm', 'ccm', 'ocb']) {
@@ -144,7 +144,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
      const cipher = crypto.createCipheriv(`aes-128-${mode}`, key, iv, opts);
      const ciphertext = Buffer.concat([cipher.update(plain), cipher.final()]);
      const tag = cipher.getAuthTag();
-@@ -622,7 +648,9 @@ for (const test of TEST_CASES) {
+@@ -619,7 +645,9 @@ for (const test of TEST_CASES) {
  // Test chacha20-poly1305 rejects invalid IV lengths of 13, 14, 15, and 16 (a
  // length of 17 or greater was already rejected).
  // - https://www.openssl.org/news/secadv/20190306.txt
@@ -155,7 +155,7 @@ index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d99
    // Valid extracted from TEST_CASES, check that it detects IV tampering.
    const valid = {
      algo: 'chacha20-poly1305',
-@@ -667,6 +695,9 @@ for (const test of TEST_CASES) {
+@@ -664,6 +692,9 @@ for (const test of TEST_CASES) {
  
  {
    // CCM cipher without data should not crash, see https://github.com/nodejs/node/issues/38035.
@@ -585,10 +585,10 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385a7b39b91 100644
+index b39ec22dceb5b704f8c262bd38163d93ac1a3b47..89cfa9fc49719e5a6f2c5b96f25c61340286cadb 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
-@@ -29,6 +29,7 @@ const keySize = 2048;
+@@ -28,6 +28,7 @@ const keySize = 2048;
                                       'instance when called without `new`');
  }
  
@@ -596,7 +596,7 @@ index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385
  // Test handling of exceptional conditions
  {
    const library = {
-@@ -69,6 +70,7 @@ const keySize = 2048;
+@@ -68,6 +69,7 @@ const keySize = 2048;
  
    delete Object.prototype.opensslErrorStack;
  }
@@ -604,7 +604,7 @@ index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385
  
  assert.throws(
    () => crypto.createVerify('SHA256').verify({
-@@ -342,15 +344,17 @@ assert.throws(
+@@ -341,15 +343,17 @@ assert.throws(
          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
        });
    }, common.hasOpenSSL3 ? {
@@ -626,7 +626,7 @@ index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385
    });
  }
  
-@@ -420,10 +424,12 @@ assert.throws(
+@@ -419,10 +423,12 @@ assert.throws(
      public: fixtures.readKey('ed25519_public.pem', 'ascii'),
      algo: null,
      sigLen: 64 },
@@ -639,7 +639,7 @@ index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385
    { private: fixtures.readKey('rsa_private_2048.pem', 'ascii'),
      public: fixtures.readKey('rsa_public_2048.pem', 'ascii'),
      algo: 'sha1',
-@@ -494,7 +500,7 @@ assert.throws(
+@@ -493,7 +499,7 @@ assert.throws(
  
  {
    const data = Buffer.from('Hello world');
@@ -668,7 +668,7 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 930a2ba09088663298208f165f06a7710770938f..592b4140f14e659dfa38e438473c8d4ac4ae60ab 100644
+index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f639056b21ee3b 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
 @@ -111,7 +111,7 @@ const der = Buffer.from(
@@ -865,7 +865,7 @@ index 543ee176fb6af38874fee9f14be76f3fdda11060..fef9f1bc2f9fc6c220cf47847e86e038
  }
  
 diff --git a/test/parallel/test-https-agent-session-eviction.js b/test/parallel/test-https-agent-session-eviction.js
-index 940c43cc40bf15e51df177ee30ecc69ffbeec296..e95743a91a3c709c7d2c10dc80b3f75b7d988027 100644
+index da5600710560b22049eba1ef18bbb742d447a673..8917b96f666de916616af2fb3ce3a58d00af7438 100644
 --- a/test/parallel/test-https-agent-session-eviction.js
 +++ b/test/parallel/test-https-agent-session-eviction.js
 @@ -14,7 +14,7 @@ const options = {
@@ -905,10 +905,10 @@ index aa685ca9e09cf0d17ff4d5480089e9977dd51f72..ccafa427433922155c1afd5d95ba69d8
    }));
    socket.end('Hello');
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
-index d45287d671d8afb1be391d391efc4d098d0b77c9..86f1a12528b535eefeb8c263581f1240f3df5771 100644
+index 7da2f60676d00e8e40d890f2efd46102154ca34d..2230b8cf85259d6670e274d6b84d83fd8788e83e 100644
 --- a/test/parallel/test-tls-getprotocol.js
 +++ b/test/parallel/test-tls-getprotocol.js
-@@ -18,7 +18,7 @@ const clientConfigs = [
+@@ -27,7 +27,7 @@ const clientConfigs = [
  
  const serverConfig = {
    secureProtocol: 'TLS_method',
@@ -931,10 +931,10 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index 442423954b10b2ee1696eb7db56eaa4c88492122..cbb96d7de046c80fad608431b7ec0216e2d271fb 100644
+index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..da891fffa29d5666d91e4445e54c43e3688b870a 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
-@@ -101,6 +101,7 @@ const { subtle } = require('crypto').webcrypto;
+@@ -101,6 +101,7 @@ const { subtle } = globalThis.crypto;
    tests.then(common.mustCall());
  }
  
@@ -942,16 +942,16 @@ index 442423954b10b2ee1696eb7db56eaa4c88492122..cbb96d7de046c80fad608431b7ec0216
  // Test X25519 and X448 bit derivation
  {
    async function test(name) {
-@@ -126,3 +127,4 @@ const { subtle } = require('crypto').webcrypto;
+@@ -126,3 +127,4 @@ const { subtle } = globalThis.crypto;
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index b819b998d217e0c71e9b41f175de6802d3ac7d90..fbd32b02abd120aa02b9ac92341ef1331422308d 100644
+index 558d37d90d5796b30101d1b512c9df3e7661d0db..c18f9670b10cb84c6902391f20e0ff75729cc960 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
-@@ -174,6 +174,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -175,6 +175,7 @@ const { KeyObject } = require('crypto');
    })().then(common.mustCall());
  }
  
@@ -959,16 +959,16 @@ index b819b998d217e0c71e9b41f175de6802d3ac7d90..fbd32b02abd120aa02b9ac92341ef133
  // Test X25519 and X448 key derivation
  {
    async function test(name) {
-@@ -208,3 +209,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -209,3 +210,4 @@ const { KeyObject } = require('crypto');
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-sign-verify.js b/test/parallel/test-webcrypto-sign-verify.js
-index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3ffc469407 100644
+index de736102bdcb71a5560c95f7041537f25026aed4..638fdf0d798f3309528c63f0f8598f3df5528339 100644
 --- a/test/parallel/test-webcrypto-sign-verify.js
 +++ b/test/parallel/test-webcrypto-sign-verify.js
-@@ -105,6 +105,7 @@ const { subtle } = require('crypto').webcrypto;
+@@ -105,6 +105,7 @@ const { subtle } = globalThis.crypto;
    test('hello world').then(common.mustCall());
  }
  
@@ -976,13 +976,13 @@ index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3f
  // Test Sign/Verify Ed25519
  {
    async function test(data) {
-@@ -144,3 +145,4 @@ const { subtle } = require('crypto').webcrypto;
+@@ -144,3 +145,4 @@ const { subtle } = globalThis.crypto;
  
    test('hello world').then(common.mustCall());
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
-index 670f19b7e4a190a222cc997f67975c3d49f65035..d4c4812cab56bcb51435aa6dd27545368fc11ed7 100644
+index d1ca571af4be713082d32093bfb8a65f2aef9800..57b8df2ce18df58ff54b2d828af67e3c2e082fe0 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
 @@ -18,14 +18,15 @@ const kWrappingData = {
@@ -1014,7 +1014,7 @@ index 670f19b7e4a190a222cc997f67975c3d49f65035..d4c4812cab56bcb51435aa6dd2754536
  
  function generateWrappingKeys() {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index 170103fd9c973d64a30ee319a45c7e11c72a19d4..c19118146269651e4fe7d5591360876ce66bb1f6 100644
+index e6ae4d886908cbc0e56787009db855dad8b12ba7..a17147daa0576ec49e560c05448f1ed0ae8d5640 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
 @@ -447,7 +447,7 @@ const { hasOpenSSL3 } = common;

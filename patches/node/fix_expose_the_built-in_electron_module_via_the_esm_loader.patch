@@ -6,10 +6,10 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 219ef03a21214deb8961044cfc18ef9c1e711b60..7749b37001f869fe565d8c450ff7ca2b6f3faa7a 100644
+index 4ac9c011d153f4cb39cb7d4f46de0f8e65f70a56..c702bd6ad329e9693557cdd5fb7435396ad76bad 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
-@@ -30,6 +30,7 @@ const protocolHandlers = {
+@@ -27,6 +27,7 @@ const protocolHandlers = {
    'http:': getHttpProtocolModuleFormat,
    'https:': getHttpProtocolModuleFormat,
    'node:'() { return 'builtin'; },
@@ -18,10 +18,10 @@ index 219ef03a21214deb8961044cfc18ef9c1e711b60..7749b37001f869fe565d8c450ff7ca2b
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 71a9f8da0b49f3dca786eab07d44201a1bc76240..d8a072cf6af3b0d3a47ee69be04b26875683d261 100644
+index d064296d11c463616111d28a32b7ad3f6a72bebd..9be4495726597bb48c544b362e3cf0e79e0291e1 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -121,6 +121,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -201,6 +201,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
@@ -29,7 +29,7 @@ index 71a9f8da0b49f3dca786eab07d44201a1bc76240..d8a072cf6af3b0d3a47ee69be04b2687
      (
        !experimentalNetworkImports ||
        (
-@@ -129,7 +130,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -209,7 +210,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
        )
      )
    ) {
@@ -39,10 +39,10 @@ index 71a9f8da0b49f3dca786eab07d44201a1bc76240..d8a072cf6af3b0d3a47ee69be04b2687
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 7006887a6fe2bab525e52c6b0c76b5d089699a14..a93d93b3c2aae3ef790ffa4f417d50b884451549 100644
+index acb5ddca8af3d2495ce27d6426b28e6ff73a8f33..6a5d92d932df4f0b34840283821cf18839fbe1a5 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -825,6 +825,8 @@ function parsePackageName(specifier, base) {
+@@ -725,6 +725,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
@@ -51,7 +51,7 @@ index 7006887a6fe2bab525e52c6b0c76b5d089699a14..a93d93b3c2aae3ef790ffa4f417d50b8
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -837,6 +839,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -736,6 +738,10 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -89,10 +89,10 @@ index b143cd0ad34d0e039db3e7493be00d923cc68b2d..4020813f061d85ee27d50b938825319a
        // We might trigger a getter -> dont fail.
        let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 9c11377aef1f24c6ce5cfdf02b800440afc4686a..b66a5bbde3e8c419d5385339805cbd94f630986d 100644
+index 8d5926e8fcb9df031e37698588075a34a80aea6c..6df0b68c8d35445d5f02475678484a6d5157762e 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1432,6 +1432,8 @@ function fileURLToPath(path) {
+@@ -1389,6 +1389,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

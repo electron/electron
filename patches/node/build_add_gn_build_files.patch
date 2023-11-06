@@ -7,7 +7,7 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c18272b70
+index 0000000000000000000000000000000000000000..cf4f9b577010ee1e3122bdc1097dfecdfc063b43
 --- /dev/null
 +++ b/BUILD.gn
 @@ -0,0 +1,358 @@
@@ -2350,4 +2350,3 @@ index 11616e1bcac5308020eb68fdb811bfb86cb14dd5..845e6ce69d93983963a7a57117ecab3b
  
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
-  

@@ -29,7 +29,7 @@ index 838ee86f74ea89e052676a5c25e23481369857fa..3aacfa064561c64c218fcc4e3090f795
    replaceStackTrace,
    replaceWindowsLineEndings,
 diff --git a/test/fixtures/errors/force_colors.snapshot b/test/fixtures/errors/force_colors.snapshot
-index 4c33acbc2d5c12ac8750b72e0796284176af3da2..21410d492db861876ecfcb82dcc3c1815cba6d09 100644
+index be1d45d0d8e8ba7b637754e32fe379cb2cf1e6ac..21410d492db861876ecfcb82dcc3c1815cba6d09 100644
 --- a/test/fixtures/errors/force_colors.snapshot
 +++ b/test/fixtures/errors/force_colors.snapshot
 @@ -4,11 +4,12 @@ throw new Error('Should include grayed stack trace')
@@ -106,7 +106,7 @@ index b08bcd40cdf26093e158c0bb9ae566c76f2c731e..bf8eacbac479a2bf5698ed29ede648e1
    for (const { name, transform = defaultTransform, env, skip = false } of tests) {
      it(name, { skip }, async () => {
 diff --git a/test/parallel/test-node-output-sourcemaps.mjs b/test/parallel/test-node-output-sourcemaps.mjs
-index 8e43947ab2188f087056eab39d0e1a11481f9da5..c53a0598958e4e386db1993caeb312dae3f302a8 100644
+index 2043fa57f06a8d2326a4ea1ba24341502c8b7471..b01f30765c7de81a4d956b9c1124affea0fc2aef 100644
 --- a/test/parallel/test-node-output-sourcemaps.mjs
 +++ b/test/parallel/test-node-output-sourcemaps.mjs
 @@ -4,10 +4,6 @@ import * as snapshot from '../common/assertSnapshot.js';

@@ -25,7 +25,7 @@ index fe8ddee7cbf05e0d4dbbe970cdc357ec6841390c..1ba65e26d293e9524e6c756b3a66693d
  [$system==win32]
  # https://github.com/nodejs/node/issues/41206
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 0688f5b05e789c15f2c9fc4c9e1a20cd5d1ba8be..64dc814fd24f3e6d90f246a4e66531696eab03cd 100644
+index 5cefcb95773bedc80bc462e058a11045be176741..33f50be5898754af696468499bcfa8e3c721434d 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential
