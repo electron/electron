@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Tue, 7 Nov 2023 08:31:56 -0800
+Subject: fix: (WIP) handle string replacement of fs -> original-fs
+
+Co-authored-by: Samuel Attard <MarshallOfSound@users.noreply.github.com>
+
+diff --git a/tools/js2c.cc b/tools/js2c.cc
+index 69078f3c2fcaab9f1b22d28c797a7e4cceb0646c..9a19b9227e148d65e81bf2dfb638d260c51782ca 100755
+--- a/tools/js2c.cc
++++ b/tools/js2c.cc
+@@ -7,6 +7,7 @@
+ #include <functional>
+ #include <iostream>
+ #include <map>
++#include <regex>
+ #include <set>
+ #include <string>
+ #include <string_view>
+@@ -260,7 +261,7 @@ Fragment Format(const Fragments& definitions,
+ 
+ std::vector<char> ReadFileSync(const char* path, size_t size, int* error) {
+   std::string filepath(path);
+-  if (filepath.starts_with("//v8"))
++  if (filepath.rfind("//v8", 0) == 0)
+     filepath = "../../" + filepath.substr(2);
+ 
+   uv_fs_t req;
+@@ -546,7 +547,7 @@ int AddModule(const std::string& filename,
+               Fragments* definitions,
+               Fragments* initializers,
+               Fragments* registrations,
+-              std::function<std::vector<char>(const std::vector<char>&)> read_file_fn = ReadFileSync) {
++              std::optional<std::function<std::vector<char>(std::vector<char>)>> transform) {
+   Debug("AddModule %s start\n", filename.c_str());
+ 
+   int error = 0;
+@@ -554,10 +555,13 @@ int AddModule(const std::string& filename,
+   if (error != 0) {
+     return error;
+   }
+-  std::vector<char> code = read_file_fn(filename.c_str(), file_size, &error);
++  std::vector<char> code = ReadFileSync(filename.c_str(), file_size, &error);
+   if (error != 0) {
+     return error;
+   }
++  if (transform.has_value()) {
++    code = transform.value()(code);
++  }
+   std::string file_id = GetFileId(filename);
+   std::string var = GetVariableName(file_id);
+ 
+@@ -709,7 +713,7 @@ int JS2C(const FileList& js_files,
+   registrations.reserve(js_files.size() + mjs_files.size() + 1);
+ 
+   for (const auto& filename : js_files) {
+-    int r = AddModule(filename, &definitions, &initializers, &registrations);
++    int r = AddModule(filename, &definitions, &initializers, &registrations, std::nullopt);
+     if (r != 0) {
+       return r;
+     }
+@@ -717,38 +721,52 @@ int JS2C(const FileList& js_files,
+     // Electron: Expose fs module without asar support.
+     if (filename == "lib/fs.js") {
+       int error = 0;
+-      size_t size = GetFileSize(filename, &error);
+       if (error != 0 && error != UV_ENOENT)
+         return error;
+ 
+-      std::function<std::vector<char>(const std::vector<char>&)> ReadFileTransform = [](const char* path, size_t size, int* error) {
+-        std::vector<char> code = ReadFileSync(path, size, &error);
+-        std::replace(code.begin(), code.end(), "require('internal/fs/", "require('internal/original-fs/");
+-        return code;
+-      };
+-      int r = AddModule("lib/original-fs.js", definitions, initializers, ReadFileTransform)
+-      if (r != 0) {
+-        return r;
++      // std::function<std::vector<char>(const std::vector<char>&)> ReadFileTransform = [](const char* path, size_t size, int* error) {
++      //   std::vector<char> code = ReadFileSync(path, size, &error);
++      //   std::replace(code.begin(), code.end(), "require('internal/fs/", "require('internal/original-fs/");
++      //   return code;
++      // };
++      int rr = AddModule("lib/original-fs.js", &definitions, &initializers, &registrations, std::nullopt);
++      if (rr != 0) {
++        return rr;
+       }
+     } else if (filename.rfind("lib/internal/fs/")) {
+       // std::equal(prefix.begin(), prefix.end(), toCheck.begin())?
+       std::string original_fs_filename = filename;
+-      std::replace(original_fs_filename.begin(), original_fs_filename.end(), "internal/fs/", "internal/original-fs/");
++      original_fs_filename = std::regex_replace(original_fs_filename, std::regex("internal/fs/"), "internal/original-fs/");
+  
+-      std::function<std::vector<char>(const std::vector<char>&)> ReadFileTransform = [](const char* path, size_t size, int* error) {
+-        std::vector<char> code = ReadFileSync(path, size, &error);
+-        std::replace(code.begin(), code.end(), "require('fs')", "require('original-fs')");
+-        return code;
++      std::function<std::vector<char>(std::vector<char>)> ReadFileTransform = [](std::vector<char> code) {
++        bool is_one_byte = simdutf::validate_ascii(code.data(), code.size());
++        if (is_one_byte) {
++          std::string str(code.begin(), code.end());
++          str = std::regex_replace(str, std::regex("internal/fs/"), "internal/original-fs/");
++          return std::vector<char>(str.begin(), str.end());
++        } else {
++          std::u16string str(code.begin(), code.end());
++          std::string base = "internal/fs/";
++          std::string replace = "internal/original-fs/";
++          char16_t wide_base;
++          size_t base_size = simdutf::convert_utf8_to_utf16(base.c_str(), base.size(), &wide_base);
++          char16_t wide_replace;
++          size_t replace_size = simdutf::convert_utf8_to_utf16(replace.c_str(), replace.size(), &wide_replace);
++          str = std::regex_replace(str, std::basic_regex<char16_t>(std::u16string(wide_base, base_size)), std::u16string(wide_replace, replace_size));
++          return std::vector<char>(str.begin(), str.end());
++        }
++        // std::replace(code.begin(), code.end(), "require('fs')", "require('original-fs')");
++        // return code;
+       };
+ 
+-      int r = AddModule(original_fs_filename, definitions, initializers, ReadFileTransform)
+-      if (r != 0) {
+-        return r;
+-      }
++      int rrr = AddModule(original_fs_filename, &definitions, &initializers, &registrations, &ReadFileTransform);
++      if (rrr != 0) {
++        return rrr;
++      };
+     }
+   }
+   for (const auto& filename : mjs_files) {
+-    int r = AddModule(filename, &definitions, &initializers, &registrations);
++    int r = AddModule(filename, &definitions, &initializers, &registrations, std::nullopt);
+     if (r != 0) {
+       return r;
+     }
