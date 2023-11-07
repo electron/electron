@@ -34,7 +34,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     this.updateURL = updateURL;
   }
 
-  checkForUpdates () {
+  async checkForUpdates () {
     const url = this.updateURL;
     if (!url) {
       return this.emitError(new Error('Update URL is not set'));
@@ -43,27 +43,24 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
       return this.emitError(new Error('Can not find Squirrel'));
     }
     this.emit('checking-for-update');
-    squirrelUpdate.checkForUpdate(url, (error, update) => {
-      if (error != null) {
-        return this.emitError(error);
-      }
+    try {
+      const update = await squirrelUpdate.checkForUpdate(url);
       if (update == null) {
         return this.emit('update-not-available');
       }
       this.updateAvailable = true;
       this.emit('update-available');
-      squirrelUpdate.update(url, (error) => {
-        if (error != null) {
-          return this.emitError(error);
-        }
-        const { releaseNotes, version } = update;
-        // Date is not available on Windows, so fake it.
-        const date = new Date();
-        this.emit('update-downloaded', {}, releaseNotes, version, date, this.updateURL, () => {
-          this.quitAndInstall();
-        });
+
+      await squirrelUpdate.update(url);
+      const { releaseNotes, version } = update;
+      // Date is not available on Windows, so fake it.
+      const date = new Date();
+      this.emit('update-downloaded', {}, releaseNotes, version, date, this.updateURL, () => {
+        this.quitAndInstall();
       });
-    });
+    } catch (error) {
+      this.emitError(error as Error);
+    }
   }
 
   // Private: Emit both error object and message, this is to keep compatibility
