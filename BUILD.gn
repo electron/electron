@@ -654,6 +654,7 @@ source_set("electron_lib") {
   if (is_win) {
     libs += [ "dwmapi.lib", "Bcrypt.lib", "Crypt32.lib", "User32.lib" ]
     sources += [
+      "shell/common/integrity_check_win.h",
       "shell/common/integrity_check_win.cc",
     ]
     deps += [
