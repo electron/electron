@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 8aa5ad8401d047197694b0aa908cd48abb479c25..0d2f09549829a55099b60cfc8915a28fbcb9b3d5 100644
+index 6a2f4989eff402e61e00832cf7be504a1a19db13..4fc07868f9b6db2b634356dea8e329a191c8c139 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8270,6 +8270,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8288,6 +8288,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,7 +66,7 @@ index 40c14e1757dee4fda9aa79f3a52532f8ab737a97..2c833d683b737bd6b24d2ec10d97b46d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 39b5ff0122f950990ab1cdd7b686fb4429e97a8a..f602a3fac375bcd18a6db25d163efb40de485cd0 100644
+index 06027ffc39095213aa37d63b61f85ae52bc06e0a..b0198ac52eeab64eca5962ef644ff227b62be11a 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -716,6 +716,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 39b5ff0122f950990ab1cdd7b686fb4429e97a8a..f602a3fac375bcd18a6db25d163efb40
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e479adacb16343891c2782973fa9ba8c1925b275..9bef261091b60fcf1b79b224612180f307f8f0c6 100644
+index 8b94386ec6e26a08fc8625ed8fc98a559c276692..f9e01547d36eed733414a34beed950057ecdb5b8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -177,6 +177,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index e479adacb16343891c2782973fa9ba8c1925b275..9bef261091b60fcf1b79b224612180f3
  }  // namespace network
  
  namespace sandbox {
-@@ -1153,6 +1154,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1154,6 +1155,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -148,10 +148,10 @@ index 9fc7ad92817cc7fea982492b08da6e91ec4b8274..2885b140bb3a7e544d6ab7431090252e
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d7c6222c977058f230d5e6153b1df13e127a9939..47562a65e99b1bdbeca57f1ba69822df768c0291 100644
+index be58abae55bd455bb84d3873f68f34efbab4cbde..cdcb4a0a0ec3a44a79dac18086721d8fbb598e2e 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6507,6 +6507,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6512,6 +6512,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -210,7 +210,7 @@ index bef5a989bac50c177f15f52fe87ac3790d553e85..65dcd2e3b51929400c8bfb6a98a4fb59
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 7405d410af1859db405f3cc7a2169f3aab597631..bb27d4350590bc7712a271567e1457e6551c7f7d 100644
+index f9517395278c9965c7191957f5b5b94be972e1c3..72be5fe31c7f1eda71784d0d2c1790511d6a2c1a 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2175,6 +2175,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
