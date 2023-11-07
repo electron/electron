@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sun, 5 Nov 2023 21:05:04 +0900
+Subject: Crash GPU process and clear shader cache when skia reports
+ compileError.
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/4988290
+
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index c0d19ba3e2ba35d801d33240d9c845eb7cdb4fc1..c37f24925cb59a265e7bbbf03a3f16ca550287d5 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ 
++#include "base/immediate_crash.h"
+ #include "base/observer_list.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/system/sys_info.h"
+@@ -84,6 +85,12 @@ void SharedContextState::compileError(const char* shader, const char* errors) {
+                << "------------------------\n"
+                << shader << "\nErrors:\n"
+                << errors;
++    // Increase shader cache shm count and crash the GPU process so that the
++    // browser process would clear the cache.
++    GpuProcessActivityFlags::ScopedSetFlag set_flag(
++        activity_flags_.get(), ActivityFlagsBase::FLAG_LOADING_PROGRAM_BINARY);
++
++    base::ImmediateCrash();
+   }
+ }
+ 
+@@ -273,6 +280,7 @@ bool SharedContextState::InitializeGanesh(
+     gl::ProgressReporter* progress_reporter) {
+   progress_reporter_ = progress_reporter;
+   gr_shader_cache_ = cache;
++  activity_flags_ = activity_flags;
+ 
+   size_t max_resource_cache_bytes;
+   size_t glyph_cache_max_texture_bytes;
+diff --git a/gpu/command_buffer/service/shared_context_state.h b/gpu/command_buffer/service/shared_context_state.h
+index b493316b8667ca1ff66e07eacc4b42091b7b212b..6ffd0bb55cf2f6e4eb66e4ba2ad19b29a014c21d 100644
+--- a/gpu/command_buffer/service/shared_context_state.h
++++ b/gpu/command_buffer/service/shared_context_state.h
+@@ -387,6 +387,8 @@ class GPU_GLES2_EXPORT SharedContextState
+   std::vector<uint8_t> scratch_deserialization_buffer_;
+   raw_ptr<gpu::raster::GrShaderCache, DanglingUntriaged> gr_shader_cache_ =
+       nullptr;
++  raw_ptr<GpuProcessActivityFlags, DanglingUntriaged> activity_flags_ =
++      nullptr;
+ 
+   // |need_context_state_reset| is set whenever Skia may have altered the
+   // driver's GL state.
