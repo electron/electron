@@ -37,6 +37,7 @@
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
+#include "shell/common/integrity_check_win.h"
 #include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
 
 namespace {
@@ -213,6 +214,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
       exit_code_watcher->StopWatching();
     }
     return crashpad_status;
+  }
+
+  if (process_type.empty()) {
+    IntegrityCheck();
   }
 
 #if BUILDFLAG(IS_WIN)
