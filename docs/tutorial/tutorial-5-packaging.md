@@ -35,7 +35,7 @@ as a **distributable**). Distributables can be either installers (e.g. MSI on Wi
 portable executable files (e.g. `.app` on macOS).
 
 Electron Forge is an all-in-one tool that handles the packaging and distribution of Electron
-apps. Under the hood, it combines a lot of existing Electron tools (e.g. [`electron-packager`][],
+apps. Under the hood, it combines a lot of existing Electron tools (e.g. [`@electron/packager`][],
 [`@electron/osx-sign`][], [`electron-winstaller`][], etc.) into a single interface so you do not
 have to worry about wiring them all together.
 
@@ -200,7 +200,7 @@ information.
 
 [`@electron/osx-sign`]: https://github.com/electron/osx-sign
 [application packaging]: ./application-distribution.md
-[`electron-packager`]: https://github.com/electron/electron-packager
+[`@electron/packager`]: https://github.com/electron/packager
 [`electron-winstaller`]: https://github.com/electron/windows-installer
 [electron forge]: https://www.electronforge.io
 [electron forge cli documentation]: https://www.electronforge.io/cli#commands

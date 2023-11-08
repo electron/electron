@@ -159,7 +159,7 @@ shows the bare minimum needed to add the configuration changes)_:
 }
 ```
 
-#### [Electron Packager](https://github.com/electron/electron-packager)
+#### [Electron Packager](https://github.com/electron/packager)
 
 For macOS support:
 
@@ -168,7 +168,7 @@ Electron Forge is handled, except
 `protocols` is part of the Packager options passed to the `packager` function.
 
 ```javascript @ts-nocheck
-const packager = require('electron-packager')
+const packager = require('@electron/packager')
 
 packager({
   // ...other options...
