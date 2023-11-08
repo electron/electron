@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Tue, 31 Oct 2023 08:52:25 +0000
+Subject: Crash GPU process and clear shader cache when skia reports
+ compileError.
+
+Sometimes Skia failed to compile the cached GLSL because the driver had
+been changed but GL_RENDERER was still the same. In this case, we better
+crash the GPU process and signal the browser to clear the cache & let
+Skia regenerate the GLSL in the next run.
+
+Even if the compile failure wasn't caused by the cached GLSL. It's still
+better to crash the GPU process and let the shaders be re-generated.
+Because a failed compilation would have resulted in wrong rendering
+even if we had allowed the process to continue its execution.
+
+Bug: 1442633
+Change-Id: Ia0e36bd4674877de5be451a6ea9c4e7fa5e34e8e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4988290
+Reviewed-by: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1217461}
+
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index f675b3b4fb0c1892f7ddbec7aa4e2284ff3dfcba..f5d1c60ee99b84641a46fbefa9915eb409690098 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ 
++#include "base/immediate_crash.h"
+ #include "base/observer_list.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/system/sys_info.h"
+@@ -99,6 +100,13 @@ void SharedContextState::compileError(const char* shader, const char* errors) {
+                << "------------------------\n"
+                << shader << "\nErrors:\n"
+                << errors;
++
++    // Increase shader cache shm count and crash the GPU process so that the
++    // browser process would clear the cache.
++    GpuProcessShmCount::ScopedIncrement increment(
++        use_shader_cache_shm_count_.get());
++
++    base::ImmediateCrash();
+   }
+ }
+ 
+@@ -294,6 +302,7 @@ bool SharedContextState::InitializeGanesh(
+     gl::ProgressReporter* progress_reporter) {
+   progress_reporter_ = progress_reporter;
+   gr_shader_cache_ = cache;
++  use_shader_cache_shm_count_ = use_shader_cache_shm_count;
+ 
+   size_t max_resource_cache_bytes;
+   size_t glyph_cache_max_texture_bytes;
+diff --git a/gpu/command_buffer/service/shared_context_state.h b/gpu/command_buffer/service/shared_context_state.h
+index 00aab5227f30a3f56b2b5c63ee5f627aa2a6c03b..4b9cf8ac797f6d5f9146fb1be43ff78a756d4ee5 100644
+--- a/gpu/command_buffer/service/shared_context_state.h
++++ b/gpu/command_buffer/service/shared_context_state.h
+@@ -391,6 +391,8 @@ class GPU_GLES2_EXPORT SharedContextState
+   std::vector<uint8_t> scratch_deserialization_buffer_;
+   raw_ptr<gpu::raster::GrShaderCache, DanglingUntriaged> gr_shader_cache_ =
+       nullptr;
++  raw_ptr<GpuProcessShmCount, DanglingUntriaged> use_shader_cache_shm_count_ =
++      nullptr;
+ 
+   // |need_context_state_reset| is set whenever Skia may have altered the
+   // driver's GL state.
