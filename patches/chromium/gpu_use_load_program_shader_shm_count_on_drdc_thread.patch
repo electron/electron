@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sun, 5 Nov 2023 18:22:15 +0900
+Subject: gpu: Use load_program_shader_shm_count on DrDC thread
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/4766018
+
+diff --git a/components/viz/service/display_embedder/compositor_gpu_thread.cc b/components/viz/service/display_embedder/compositor_gpu_thread.cc
+index a9ca58db18823c09457eb89eb9776ce51ec668b2..d8384bddd7ebd45c5fa87ddb7af10c967db9ac25 100644
+--- a/components/viz/service/display_embedder/compositor_gpu_thread.cc
++++ b/components/viz/service/display_embedder/compositor_gpu_thread.cc
+@@ -207,7 +207,8 @@ CompositorGpuThread::GetSharedContextState() {
+   // Initialize Skia.
+   if (!shared_context_state->InitializeSkia(
+           gpu_preferences, workarounds, gpu_channel_manager_->gr_shader_cache(),
+-          /*activity_flags=*/nullptr, /*progress_reporter=*/nullptr)) {
++          gpu_channel_manager_->activity_flags(),
++          /*progress_reporter=*/nullptr)) {
+     LOG(ERROR) << "Failed to Initialize Skia for DrDC SharedContextState";
+   }
+   shared_context_state_ = std::move(shared_context_state);

@@ -147,3 +147,5 @@ cherry-pick-d756d71a652c.patch
 parameterize_axtreeserializer_by_vector_type.patch
 avoid_allocating_recordid_objects_in_elementtiming_and_lcp.patch
 cherry-pick-80106e31c7ea.patch
+gpu_use_load_program_shader_shm_count_on_drdc_thread.patch
+crash_gpu_process_and_clear_shader_cache_when_skia_reports.patch
