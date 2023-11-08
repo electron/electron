@@ -7,7 +7,7 @@ Subject: Crash GPU process and clear shader cache when skia reports
 Refs https://chromium-review.googlesource.com/c/chromium/src/+/4988290
 
 diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
-index c0d19ba3e2ba35d801d33240d9c845eb7cdb4fc1..c37f24925cb59a265e7bbbf03a3f16ca550287d5 100644
+index 9960748b644a4f89919c6c19889d8cb3d875d3b8..71f9495306ad817a0d530f701d6ff35fc9966960 100644
 --- a/gpu/command_buffer/service/shared_context_state.cc
 +++ b/gpu/command_buffer/service/shared_context_state.cc
 @@ -4,6 +4,7 @@
@@ -18,7 +18,7 @@ index c0d19ba3e2ba35d801d33240d9c845eb7cdb4fc1..c37f24925cb59a265e7bbbf03a3f16ca
  #include "base/observer_list.h"
  #include "base/strings/stringprintf.h"
  #include "base/system/sys_info.h"
-@@ -84,6 +85,12 @@ void SharedContextState::compileError(const char* shader, const char* errors) {
+@@ -82,6 +83,12 @@ void SharedContextState::compileError(const char* shader, const char* errors) {
                 << "------------------------\n"
                 << shader << "\nErrors:\n"
                 << errors;
@@ -31,7 +31,7 @@ index c0d19ba3e2ba35d801d33240d9c845eb7cdb4fc1..c37f24925cb59a265e7bbbf03a3f16ca
    }
  }
  
-@@ -273,6 +280,7 @@ bool SharedContextState::InitializeGanesh(
+@@ -271,6 +278,7 @@ bool SharedContextState::InitializeGanesh(
      gl::ProgressReporter* progress_reporter) {
    progress_reporter_ = progress_reporter;
    gr_shader_cache_ = cache;
@@ -40,13 +40,13 @@ index c0d19ba3e2ba35d801d33240d9c845eb7cdb4fc1..c37f24925cb59a265e7bbbf03a3f16ca
    size_t max_resource_cache_bytes;
    size_t glyph_cache_max_texture_bytes;
 diff --git a/gpu/command_buffer/service/shared_context_state.h b/gpu/command_buffer/service/shared_context_state.h
-index b493316b8667ca1ff66e07eacc4b42091b7b212b..6ffd0bb55cf2f6e4eb66e4ba2ad19b29a014c21d 100644
+index c07796e90453c8ecbcfc4a8b3946deb1c46a3300..b795d0cf8e16218c01acdbe921bad067e0b63677 100644
 --- a/gpu/command_buffer/service/shared_context_state.h
 +++ b/gpu/command_buffer/service/shared_context_state.h
-@@ -387,6 +387,8 @@ class GPU_GLES2_EXPORT SharedContextState
+@@ -379,6 +379,8 @@ class GPU_GLES2_EXPORT SharedContextState
+   uint64_t skia_gr_cache_size_ = 0;
    std::vector<uint8_t> scratch_deserialization_buffer_;
-   raw_ptr<gpu::raster::GrShaderCache, DanglingUntriaged> gr_shader_cache_ =
-       nullptr;
+   raw_ptr<gpu::raster::GrShaderCache> gr_shader_cache_ = nullptr;
 +  raw_ptr<GpuProcessActivityFlags, DanglingUntriaged> activity_flags_ =
 +      nullptr;
  
