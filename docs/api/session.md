@@ -266,7 +266,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [HIDDevice[]](structures/hid-device.md)
+  * `device` [HIDDevice](structures/hid-device.md)
   * `frame` [WebFrameMain](web-frame-main.md)
 
 Emitted after `navigator.hid.requestDevice` has been called and
@@ -281,7 +281,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [HIDDevice[]](structures/hid-device.md)
+  * `device` [HIDDevice](structures/hid-device.md)
   * `frame` [WebFrameMain](web-frame-main.md)
 
 Emitted after `navigator.hid.requestDevice` has been called and
@@ -296,7 +296,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [HIDDevice[]](structures/hid-device.md)
+  * `device` [HIDDevice](structures/hid-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
 
 Emitted after `HIDDevice.forget()` has been called.  This event can be used
