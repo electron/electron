@@ -110,7 +110,7 @@ index 697fa7c5e98e7ee16b1b5e676f60a9689f7aac2b..f5e7278a6e391cbab61bbd2981127beb
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0967c510f870a6b66f0b577521e2d8df61f0c68d..317c8b68e2d5fb62ae73eec867d6c52a7132ff3c 100644
+index 0967c510f870a6b66f0b577521e2d8df61f0c68d..e533490c0001ff3f0a3ffe4369215ca1510c408c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -482,6 +482,7 @@ static_library("test_support") {
@@ -121,6 +121,14 @@ index 0967c510f870a6b66f0b577521e2d8df61f0c68d..317c8b68e2d5fb62ae73eec867d6c52a
    ]
  
    public_deps = [
+@@ -2916,6 +2917,7 @@ test("content_unittests") {
+   }
+ 
+   configs += [ "//build/config:precompiled_headers" ]
++  configs += ["//electron/build/config:mas_build"]
+ 
+   public_deps = [ "//content:content_resources" ]
+ 
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
 index e2a496c7be6045d0a69d4fdf227e4951602620ae..1fa040e47d6acdfcac203e30af88d5ac2db6e03f 100644
 --- a/content/web_test/BUILD.gn

@@ -77,10 +77,10 @@ index 3ef031b0c876c36c51a91ba9724f8f2fd7b455ac..646d9276a9ca6a55cfcb156380bd9435
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index a133f8b85fce871219963bbcc428f1e7a0c97a2c..d6ea67709877567ad83c5d25e7d2936647f184ff 100644
+index 5a15e699f24f0691f6d45c0e9f4dcf6f97944e31..462c432f36976b3dcc34fdc45515de9fb1f89524 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
-@@ -145,6 +145,7 @@ class TestNetworkContext : public mojom::NetworkContext {
+@@ -147,6 +147,7 @@ class TestNetworkContext : public mojom::NetworkContext {
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override {}
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override {}
