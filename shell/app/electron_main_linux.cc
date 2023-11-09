@@ -18,18 +18,23 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
 
+namespace {
+
+bool IsEnvSet(const char* name) {
+  char* indicator = getenv(name);
+  return indicator && indicator[0] != '\0';
+}
+
+}  // namespace
+
 int main(int argc, char* argv[]) {
   FixStdioStreams();
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  char* indicator = getenv(electron::kRunAsNode);
-  if (electron::fuses::IsRunAsNodeEnabled() && indicator &&
-      indicator[0] != '\0') {
+  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return electron::NodeMain(argc, argv);
   }
-#endif
 
   electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);

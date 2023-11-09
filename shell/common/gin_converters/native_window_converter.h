@@ -15,9 +15,9 @@ struct Converter<electron::NativeWindow*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::NativeWindow** out) {
-    // null would be transferred to NULL.
+    // null would be transferred to nullptr.
     if (val->IsNull()) {
-      *out = NULL;
+      *out = nullptr;
       return true;
     }
 

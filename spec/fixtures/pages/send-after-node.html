@@ -1,7 +1,7 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  require('fs').readdir(process.cwd(), () => {
+  require('node:fs').readdir(process.cwd(), () => {
     require('electron').ipcRenderer.send('async-node-api-done');
   })
 </script>

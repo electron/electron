@@ -45,8 +45,6 @@ struct Product {
   // Product Attributes
   std::string localizedDescription;
   std::string localizedTitle;
-  std::string contentVersion;
-  std::vector<uint32_t> contentLengths;
 
   // Pricing Information
   double price = 0.0;

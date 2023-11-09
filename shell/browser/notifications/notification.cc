@@ -27,10 +27,14 @@ void Notification::NotificationClicked() {
   Destroy();
 }
 
-void Notification::NotificationDismissed() {
+void Notification::NotificationDismissed(bool should_destroy) {
   if (delegate())
     delegate()->NotificationClosed();
-  Destroy();
+
+  set_is_dismissed(true);
+
+  if (should_destroy)
+    Destroy();
 }
 
 void Notification::NotificationFailed(const std::string& error) {
@@ -38,6 +42,8 @@ void Notification::NotificationFailed(const std::string& error) {
     delegate()->NotificationFailed(error);
   Destroy();
 }
+
+void Notification::Remove() {}
 
 void Notification::Destroy() {
   presenter()->RemoveNotification(this);

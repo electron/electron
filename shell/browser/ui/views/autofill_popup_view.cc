@@ -48,11 +48,9 @@ AutofillPopupView::~AutofillPopupView() {
 
   RemoveObserver();
 
-#if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->ResetView();
   }
-#endif
 
   if (GetWidget()) {
     GetWidget()->Close();
@@ -61,9 +59,7 @@ AutofillPopupView::~AutofillPopupView() {
 
 void AutofillPopupView::Show() {
   bool visible = parent_widget_->IsVisible();
-#if BUILDFLAG(ENABLE_OSR)
   visible = visible || view_proxy_;
-#endif
   if (!popup_ || !visible || parent_widget_->IsClosed())
     return;
 
@@ -228,11 +224,9 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
   popup_->popup_bounds_.Union(
       gfx::Rect(popup_->popup_bounds_.origin(), gfx::Size(1, 1)));
   GetWidget()->SetBounds(popup_->popup_bounds_);
-#if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
   }
-#endif
   SchedulePaint();
 }
 
@@ -243,7 +237,6 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
 
-#if BUILDFLAG(ENABLE_OSR)
   std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view().width(),
@@ -251,7 +244,6 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     paint_canvas = std::make_unique<cc::SkiaPaintCanvas>(bitmap);
     draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
   }
-#endif
 
   draw_canvas->DrawColor(
       GetColorProvider()->GetColor(ui::kColorResultsTableNormalBackground));
@@ -263,12 +255,10 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     DrawAutofillEntry(draw_canvas, i, line_rect);
   }
 
-#if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
   }
-#endif
 }
 
 void AutofillPopupView::GetAccessibleNodeData(ui::AXNodeData* node_data) {

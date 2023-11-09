@@ -104,6 +104,10 @@ content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }
 
+void OffScreenWebContentsView::TransferDragSecurityInfo(WebContentsView* view) {
+  NOTREACHED();
+}
+
 gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
   return GetView() ? GetView()->GetViewBounds() : gfx::Rect();
 }
@@ -162,6 +166,7 @@ bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
 
 void OffScreenWebContentsView::StartDragging(
     const content::DropData& drop_data,
+    const url::Origin& source_origin,
     blink::DragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& cursor_offset,
@@ -173,8 +178,9 @@ void OffScreenWebContentsView::StartDragging(
         ->SystemDragEnded(source_rwh);
 }
 
-void OffScreenWebContentsView::UpdateDragCursor(
-    ui::mojom::DragOperation operation) {}
+void OffScreenWebContentsView::UpdateDragOperation(
+    ui::mojom::DragOperation operation,
+    bool document_is_handling_drag) {}
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   auto* view = GetView();

@@ -1,4 +1,4 @@
-self.addEventListener('install', function (event) {
+self.addEventListener('install', function () {
   console.log('log log');
   console.info('info log');
   console.warn('warn log');

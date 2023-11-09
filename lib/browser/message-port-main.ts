@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
-export class MessagePortMain extends EventEmitter {
-  _internalPort: any
+export class MessagePortMain extends EventEmitter implements Electron.MessagePortMain {
+  _internalPort: any;
   constructor (internalPort: any) {
     super();
     this._internalPort = internalPort;

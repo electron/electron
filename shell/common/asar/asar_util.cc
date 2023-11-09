@@ -5,8 +5,8 @@
 #include "shell/common/asar/asar_util.h"
 
 #include <map>
+#include <memory>
 #include <string>
-#include <utility>
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -152,7 +152,7 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
 void ValidateIntegrityOrDie(const char* data,
                             size_t size,
                             const IntegrityPayload& integrity) {
-  if (integrity.algorithm == HashAlgorithm::SHA256) {
+  if (integrity.algorithm == HashAlgorithm::kSHA256) {
     uint8_t hash[crypto::kSHA256Length];
     auto hasher = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
     hasher->Update(data, size);

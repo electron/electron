@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { nativeImage } from 'electron/common';
 import { ifdescribe, ifit } from './lib/spec-helpers';
-import * as path from 'path';
+import * as path from 'node:path';
 
 describe('nativeImage module', () => {
   const fixturesPath = path.join(__dirname, 'fixtures');

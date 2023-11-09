@@ -27,8 +27,8 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(
       kPowerMonitorWindowClass,
-      &base::win::WrappedWindowProc<PowerMonitor::WndProcStatic>, 0, 0, 0, NULL,
-      NULL, NULL, NULL, NULL, &window_class);
+      &base::win::WrappedWindowProc<PowerMonitor::WndProcStatic>, 0, 0, 0,
+      nullptr, nullptr, nullptr, nullptr, nullptr, &window_class);
   instance_ = window_class.hInstance;
   atom_ = RegisterClassEx(&window_class);
 

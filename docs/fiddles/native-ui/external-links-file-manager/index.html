@@ -17,7 +17,7 @@
       <p>This module works in both the main and renderer process.</p>
       <p>
         Open the
-        <a href="https://electronjs.org/docs/api/shell">
+        <a href="https://www.electronjs.org/docs/latest/api/shell">
           full API documentation (opens in new window)
         </a>
         in your browser.
@@ -80,7 +80,7 @@ const shell = require('electron').shell
 
 const links = document.querySelectorAll('a[href]')
 
-Array.prototype.forEach.call(links, (link) => {
+for (const link of links) {
   const url = link.getAttribute('href')
   if (url.indexOf('http') === 0) {
     link.addEventListener('click', (e) => {
@@ -88,17 +88,13 @@ Array.prototype.forEach.call(links, (link) => {
       shell.openExternal(url)
     })
   }
-})
+}
                 </code>
               </pre>
           </div>
         </div>
       </div>
     </div>
-
-    <script>
-      // You can also require other files to run in this process
-      require("./renderer.js");
-    </script>
+    <script src="renderer.js"></script>
   </body>
 </html>

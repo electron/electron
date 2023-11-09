@@ -1,5 +1,5 @@
-import * as path from 'path';
-import * as fs from 'fs';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 import { screen, desktopCapturer, NativeImage } from 'electron';
 
 const fixtures = path.resolve(__dirname, '..', 'fixtures');
@@ -8,7 +8,8 @@ export enum HexColors {
   GREEN = '#00b140',
   PURPLE = '#6a0dad',
   RED = '#ff0000',
-  BLUE = '#0000ff'
+  BLUE = '#0000ff',
+  WHITE = '#ffffff'
 };
 
 /**

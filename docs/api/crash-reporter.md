@@ -16,7 +16,7 @@ crashReporter.start({ submitURL: 'https://your-domain.com/url-to-submit' })
 For setting up a server to accept and process crash reports, you can use
 following projects:
 
-* [socorro](https://github.com/mozilla/socorro)
+* [socorro](https://github.com/mozilla-services/socorro)
 * [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
 > **Note:** Electron uses Crashpad, not Breakpad, to collect and upload
@@ -100,7 +100,7 @@ longer than the maximum length will be truncated.
 
 ### `crashReporter.getLastCrashReport()`
 
-Returns [`CrashReport`](structures/crash-report.md) - The date and ID of the
+Returns [`CrashReport | null`](structures/crash-report.md) - The date and ID of the
 last crash report. Only crash reports that have been uploaded will be returned;
 even if a crash report is present on disk it will not be returned until it is
 uploaded. In the case that there are no uploaded reports, `null` is returned.

@@ -9,11 +9,11 @@
 
 #include <vector>
 
+#include "base/apple/foundation_util.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
-#include "base/mac/foundation_util.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "third_party/zlib/google/zip.h"
@@ -102,7 +102,7 @@ void FileSelectHelper::ProcessSelectedFilesMac(
   std::vector<base::FilePath> temporary_files;
 
   for (auto& file_info : files_out) {
-    NSString* filename = base::mac::FilePathToNSString(file_info.local_path);
+    NSString* filename = base::apple::FilePathToNSString(file_info.local_path);
     BOOL isPackage =
         [[NSWorkspace sharedWorkspace] isFilePackageAtPath:filename];
     if (isPackage && base::DirectoryExists(file_info.local_path)) {
@@ -133,8 +133,8 @@ void FileSelectHelper::ProcessSelectedFilesMacOnUIThread(
                             temporary_files.end());
 
     // Typically, |temporary_files| are deleted after |web_contents_| is
-    // destroyed. If |web_contents_| is already NULL, then the temporary files
-    // need to be deleted now.
+    // destroyed. If |web_contents_| is already nullptr, then the temporary
+    // files need to be deleted now.
     if (!web_contents_) {
       DeleteTemporaryFiles();
       RunFileChooserEnd();

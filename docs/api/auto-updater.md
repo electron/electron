@@ -137,7 +137,7 @@ application starts.
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
-[installer]: https://github.com/electron/grunt-electron-installer
+[installer]: https://github.com/electron-archive/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
 [electron-forge-lib]: https://github.com/electron/forge
 [app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids

@@ -7,9 +7,9 @@
 
 #include <map>
 #include <set>
-#include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/unguessable_token.h"
@@ -107,7 +107,7 @@ class SerialChooserContext : public KeyedService,
   mojo::Receiver<device::mojom::SerialPortManagerClient> client_receiver_{this};
   base::ObserverList<PortObserver> port_observer_list_;
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   base::WeakPtrFactory<SerialChooserContext> weak_factory_{this};
 };

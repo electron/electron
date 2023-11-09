@@ -4,8 +4,8 @@
 
 // This interface is for managing the global services of the application. Each
 // service is lazily created when requested the first time. The service getters
-// will return NULL if the service is not available, so callers must check for
-// this condition.
+// will return nullptr if the service is not available, so callers must check
+// for this condition.
 
 #ifndef ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
 #define ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
@@ -15,11 +15,17 @@
 
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
+#include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/net/system_network_context_manager.h"
+
+#if BUILDFLAG(IS_LINUX)
+#include "components/os_crypt/sync/key_storage_util_linux.h"
+#endif
 
 namespace printing {
 class PrintJobManager;
@@ -29,7 +35,7 @@ class PrintJobManager;
 class BackgroundModeManager {};
 
 // NOT THREAD SAFE, call only from the main thread.
-// These functions shouldn't return NULL unless otherwise noted.
+// These functions shouldn't return nullptr unless otherwise noted.
 class BrowserProcessImpl : public BrowserProcess {
  public:
   BrowserProcessImpl();
@@ -44,11 +50,17 @@ class BrowserProcessImpl : public BrowserProcess {
   BuildState* GetBuildState() override;
   void PostEarlyInitialization();
   void PreCreateThreads();
+  void PreMainMessageLoopRun();
   void PostDestroyThreads() {}
   void PostMainMessageLoopRun();
 
   void SetSystemLocale(const std::string& locale);
   const std::string& GetSystemLocale() const;
+
+#if BUILDFLAG(IS_LINUX)
+  void SetLinuxStorageBackend(os_crypt::SelectedLinuxBackend selected_backend);
+  const std::string& GetLinuxStorageBackend() const;
+#endif
 
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
@@ -68,6 +80,8 @@ class BrowserProcessImpl : public BrowserProcess {
   NotificationPlatformBridge* notification_platform_bridge() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
+  embedder_support::OriginTrialsSettingsStorage*
+  GetOriginTrialsSettingsStorage() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
@@ -92,8 +106,9 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   resource_coordinator::TabManager* GetTabManager() override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
-  HidPolicyAllowedDevices* hid_policy_allowed_devices() override;
   HidSystemTrayIcon* hid_system_tray_icon() override;
+  UsbSystemTrayIcon* usb_system_tray_icon() override;
+  os_crypt_async::OSCryptAsync* os_crypt_async() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(
@@ -105,18 +120,29 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
-  device::GeolocationManager* geolocation_manager() override;
-  void SetGeolocationManager(
-      std::unique_ptr<device::GeolocationManager> geolocation_manager) override;
 
  private:
+  void CreateNetworkQualityObserver();
+  void CreateOSCryptAsync();
+  network::NetworkQualityTracker* GetNetworkQualityTracker();
+
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
   std::unique_ptr<PrefService> local_state_;
-  std::unique_ptr<device::GeolocationManager> geolocation_manager_;
   std::string locale_;
   std::string system_locale_;
+#if BUILDFLAG(IS_LINUX)
+  std::string selected_linux_storage_backend_;
+#endif
+  embedder_support::OriginTrialsSettingsStorage origin_trials_settings_storage_;
+
+  std::unique_ptr<network::NetworkQualityTracker> network_quality_tracker_;
+  std::unique_ptr<
+      network::NetworkQualityTracker::RTTAndThroughputEstimatesObserver>
+      network_quality_observer_;
+
+  std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

@@ -9,19 +9,17 @@
 
 #include "shell/browser/ui/autofill_popup.h"
 
-#include "content/public/browser/native_web_keyboard_event.h"
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/render_widget_host.h"
+#include "content/public/common/input/native_web_keyboard_event.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_node_data.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
-
-#if BUILDFLAG(ENABLE_OSR)
-#include "shell/browser/osr/osr_view_proxy.h"
-#endif
 
 namespace electron {
 
@@ -130,10 +128,10 @@ class AutofillPopupView : public views::WidgetDelegateView,
   void RemoveObserver();
 
   // Controller for this popup. Weak reference.
-  AutofillPopup* popup_;
+  raw_ptr<AutofillPopup> popup_;
 
   // The widget of the window that triggered this popup. Weak reference.
-  views::Widget* parent_widget_;
+  raw_ptr<views::Widget> parent_widget_;
 
   // The time when the popup was shown.
   base::Time show_time_;
@@ -141,9 +139,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   // The index of the currently selected line
   absl::optional<int> selected_line_;
 
-#if BUILDFLAG(ENABLE_OSR)
   std::unique_ptr<OffscreenViewProxy> view_proxy_;
-#endif
 
   // The registered keypress callback, responsible for switching lines on
   // key presses

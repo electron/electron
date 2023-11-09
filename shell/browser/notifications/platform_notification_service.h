@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/platform_notification_service.h"
 
 namespace electron {
@@ -43,6 +44,9 @@ class PlatformNotificationService
   void CloseNotification(const std::string& notification_id) override;
   void GetDisplayedNotifications(
       DisplayedNotificationsCallback callback) override;
+  void GetDisplayedNotificationsForOrigin(
+      const GURL& origin,
+      DisplayedNotificationsCallback callback) override;
   int64_t ReadNextPersistentNotificationId() override;
   void RecordNotificationUkmEvent(
       const content::NotificationDatabaseData& data) override;
@@ -50,7 +54,7 @@ class PlatformNotificationService
   base::Time ReadNextTriggerTimestamp() override;
 
  private:
-  ElectronBrowserClient* browser_client_;
+  raw_ptr<ElectronBrowserClient> browser_client_;
 };
 
 }  // namespace electron

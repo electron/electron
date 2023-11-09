@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "shell/common/application_info.h"
+#include "shell/common/application_info.h"
 
 #include <string>
 
-#import "base/mac/foundation_util.h"
-#import "base/strings/sys_string_conversions.h"
-#import "shell/common/mac/main_application_bundle.h"
+#include "base/apple/foundation_util.h"
+#include "base/strings/sys_string_conversions.h"
+#include "shell/common/mac/main_application_bundle.h"
 
 namespace electron {
 
@@ -20,7 +20,8 @@ std::string ApplicationInfoDictionaryValue(NSString* key) {
 }
 
 std::string ApplicationInfoDictionaryValue(CFStringRef key) {
-  return ApplicationInfoDictionaryValue(base::mac::CFToNSCast(key));
+  NSString* key_ns = const_cast<NSString*>((__bridge const NSString*)(key));
+  return ApplicationInfoDictionaryValue(key_ns);
 }
 
 }  // namespace

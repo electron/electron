@@ -9,13 +9,12 @@ const args = require('minimist')(process.argv.slice(2), {
   ],
   default: { verboseNugget: false }
 });
-const fs = require('fs');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const { execSync } = require('node:child_process');
 const got = require('got');
-const path = require('path');
+const path = require('node:path');
 const semver = require('semver');
 const temp = require('temp').track();
-const { URL } = require('url');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Octokit } = require('@octokit/rest');
 
@@ -51,7 +50,7 @@ async function getDraftRelease (version, skipValidation) {
   if (!skipValidation) {
     failureCount = 0;
     check(drafts.length === 1, 'one draft exists', true);
-    if (versionToCheck.indexOf('beta') > -1) {
+    if (versionToCheck.includes('beta')) {
       check(draft.prerelease, 'draft is a prerelease');
     }
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes');
@@ -66,9 +65,9 @@ async function validateReleaseAssets (release, validatingRelease) {
   const downloadUrls = release.assets.map(asset => ({ url: asset.browser_download_url, file: asset.name })).sort((a, b) => a.file.localeCompare(b.file));
 
   failureCount = 0;
-  requiredAssets.forEach(asset => {
+  for (const asset of requiredAssets) {
     check(extantAssets.includes(asset), asset);
-  });
+  }
   check((failureCount === 0), 'All required GitHub assets exist for release', true);
 
   if (!validatingRelease || !release.draft) {
@@ -77,7 +76,7 @@ async function validateReleaseAssets (release, validatingRelease) {
     } else {
       await verifyShasumsForRemoteFiles(downloadUrls)
         .catch(err => {
-          console.log(`${fail} error verifyingShasums`, err);
+          console.error(`${fail} error verifyingShasums`, err);
         });
     }
     const azRemoteFiles = azRemoteFilesForVersion(release.tag_name);
@@ -90,7 +89,7 @@ function check (condition, statement, exitIfFail = false) {
     console.log(`${pass} ${statement}`);
   } else {
     failureCount++;
-    console.log(`${fail} ${statement}`);
+    console.error(`${fail} ${statement}`);
     if (exitIfFail) process.exit(1);
   }
 }
@@ -212,7 +211,7 @@ function runScript (scriptName, scriptArgs, cwd) {
   try {
     return execSync(scriptCommand, scriptOptions);
   } catch (err) {
-    console.log(`${fail} Error running ${scriptName}`, err);
+    console.error(`${fail} Error running ${scriptName}`, err);
     process.exit(1);
   }
 }
@@ -266,7 +265,8 @@ async function createReleaseShasums (release) {
       repo: targetRepo,
       asset_id: existingAssets[0].id
     }).catch(err => {
-      console.log(`${fail} Error deleting ${fileName} on GitHub:`, err);
+      console.error(`${fail} Error deleting ${fileName} on GitHub:`, err);
+      process.exit(1);
     });
   }
   console.log(`Creating and uploading the release ${fileName}.`);
@@ -292,22 +292,22 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
     data: fs.createReadStream(filePath),
     name: fileName
   }).catch(err => {
-    console.log(`${fail} Error uploading ${filePath} to GitHub:`, err);
+    console.error(`${fail} Error uploading ${filePath} to GitHub:`, err);
     process.exit(1);
   });
 }
 
 function saveShaSumFile (checksums, fileName) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     temp.open(fileName, (err, info) => {
       if (err) {
-        console.log(`${fail} Could not create ${fileName} file`);
+        console.error(`${fail} Could not create ${fileName} file`);
         process.exit(1);
       } else {
         fs.writeFileSync(info.fd, checksums);
         fs.close(info.fd, (err) => {
           if (err) {
-            console.log(`${fail} Could close ${fileName} file`);
+            console.error(`${fail} Could close ${fileName} file`);
             process.exit(1);
           }
           resolve(info.path);
@@ -336,7 +336,7 @@ async function publishRelease (release) {
     draft: false,
     make_latest: makeLatest ? 'true' : 'false'
   }).catch(err => {
-    console.log(`${fail} Error publishing release:`, err);
+    console.error(`${fail} Error publishing release:`, err);
     process.exit(1);
   });
 }
@@ -354,29 +354,21 @@ async function makeRelease (releaseToValidate) {
   } else {
     let draftRelease = await getDraftRelease();
     uploadNodeShasums();
-    uploadIndexJson();
-
     await createReleaseShasums(draftRelease);
 
     // Fetch latest version of release before verifying
     draftRelease = await getDraftRelease(pkgVersion, true);
     await validateReleaseAssets(draftRelease);
+    // index.json goes live once uploaded so do these uploads as
+    // late as possible to reduce the chances it contains a release
+    // which fails to publish. It has to be done before the final
+    // publish to ensure there aren't published releases not contained
+    // in index.json, which causes other problems in downstream projects
+    uploadIndexJson();
     await publishRelease(draftRelease);
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
       '"npm run publish-to-npm" to publish release to npm.');
   }
-}
-
-async function makeTempDir () {
-  return new Promise((resolve, reject) => {
-    temp.mkdir('electron-publish', (err, dirPath) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(dirPath);
-      }
-    });
-  });
 }
 
 const SHASUM_256_FILENAME = 'SHASUMS256.txt';
@@ -406,7 +398,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
 
     return { url: response.headers.location, file: asset.name };
   })).catch(err => {
-    console.log(`${fail} Error downloading files from GitHub`, err);
+    console.error(`${fail} Error downloading files from GitHub`, err);
     process.exit(1);
   });
 

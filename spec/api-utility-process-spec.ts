@@ -1,10 +1,12 @@
 import { expect } from 'chai';
-import * as childProcess from 'child_process';
-import * as path from 'path';
-import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main';
+import * as childProcess from 'node:child_process';
+import * as path from 'node:path';
+import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
+import { pathToFileURL } from 'node:url';
+import { setImmediate } from 'node:timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -13,41 +15,33 @@ describe('utilityProcess module', () => {
   describe('UtilityProcess constructor', () => {
     it('throws when empty script path is provided', async () => {
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork('');
-        /* eslint-disable no-new */
       }).to.throw();
     });
 
     it('throws when options.stdio is not valid', async () => {
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: 'ipc'
         });
-        /* eslint-disable no-new */
       }).to.throw(/stdio must be of the following values: inherit, pipe, ignore/);
 
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['ignore', 'ignore']
         });
-        /* eslint-disable no-new */
       }).to.throw(/configuration missing for stdin, stdout or stderr/);
 
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['pipe', 'inherit', 'inherit']
         });
-        /* eslint-disable no-new */
       }).to.throw(/stdin value other than ignore is not supported/);
     });
   });
@@ -86,11 +80,67 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(1);
     });
 
+    it('emits \'exit\' when there is uncaught exception in ESM', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'exception.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
     it('emits \'exit\' when process.exit is called', async () => {
       const exitCode = 2;
       const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(exitCode);
+    });
+  });
+
+  describe('app \'child-process-gone\' event', () => {
+    it('with default serviceName', async () => {
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      expect(details.type).to.equal('Utility');
+      expect(details.serviceName).to.equal('node.mojom.NodeService');
+      expect(details.name).to.equal('Node Utility Process');
+      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
+
+    it('with custom serviceName', async () => {
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: 'Hello World!' });
+      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      expect(details.type).to.equal('Utility');
+      expect(details.serviceName).to.equal('node.mojom.NodeService');
+      expect(details.name).to.equal('Hello World!');
+      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
+  });
+
+  describe('app.getAppMetrics()', () => {
+    it('with default serviceName', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'));
+      await once(child, 'spawn');
+      expect(child.pid).to.not.be.null();
+
+      await setImmediate();
+
+      const details = app.getAppMetrics().find(item => item.pid === child.pid)!;
+      expect(details).to.be.an('object');
+      expect(details.type).to.equal('Utility');
+      expect(details.serviceName).to.to.equal('node.mojom.NodeService');
+      expect(details.name).to.equal('Node Utility Process');
+    });
+
+    it('with custom serviceName', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'), [], { serviceName: 'Hello World!' });
+      await once(child, 'spawn');
+      expect(child.pid).to.not.be.null();
+
+      await setImmediate();
+
+      const details = app.getAppMetrics().find(item => item.pid === child.pid)!;
+      expect(details).to.be.an('object');
+      expect(details.type).to.equal('Utility');
+      expect(details.serviceName).to.to.equal('node.mojom.NodeService');
+      expect(details.name).to.equal('Hello World!');
     });
   });
 
@@ -102,6 +152,23 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
       expect(child.kill()).to.be.true();
       await once(child, 'exit');
+    });
+  });
+
+  describe('esm', () => {
+    it('is launches an mjs file', async () => {
+      const fixtureFile = path.join(fixturesPath, 'esm.mjs');
+      const child = utilityProcess.fork(fixtureFile, [], {
+        stdio: 'pipe'
+      });
+      await once(child, 'spawn');
+      expect(child.stdout).to.not.be.null();
+      let log = '';
+      child.stdout!.on('data', (chunk) => {
+        log += chunk.toString('utf8');
+      });
+      await once(child, 'exit');
+      expect(log).to.equal(pathToFileURL(fixtureFile) + '\n');
     });
   });
 
@@ -265,6 +332,30 @@ describe('utilityProcess module', () => {
       child.stdout!.on('data', listener);
     });
 
+    it('supports changing dns verbatim with --dns-result-order', (done) => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
+        stdio: 'pipe',
+        execArgv: ['--dns-result-order=ipv4first']
+      });
+
+      let output = '';
+      const cleanup = () => {
+        child.stderr!.removeListener('data', listener);
+        child.stdout!.removeListener('data', listener);
+        child.once('exit', () => { done(); });
+        child.kill();
+      };
+
+      const listener = (data: Buffer) => {
+        output += data;
+        expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
+        cleanup();
+      };
+
+      child.stderr!.on('data', listener);
+      child.stdout!.on('data', listener);
+    });
+
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
       const result = 'Output from utility process';
       const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stdout'), `--payload=${result}`]);
@@ -359,6 +450,20 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'exit');
       expect(log).to.equal('hello\n');
+    });
+
+    it('does not crash when running eval', async () => {
+      const child = utilityProcess.fork('./eval.js', [], {
+        cwd: fixturesPath,
+        stdio: 'ignore'
+      });
+      await once(child, 'spawn');
+      const [data] = await once(child, 'message');
+      expect(data).to.equal(42);
+      // Cleanup.
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
     });
   });
 });

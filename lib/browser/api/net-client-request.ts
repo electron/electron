@@ -70,9 +70,9 @@ class IncomingMessage extends Readable {
   get rawHeaders () {
     const rawHeadersArr: string[] = [];
     const { rawHeaders } = this._responseHead;
-    rawHeaders.forEach(header => {
+    for (const header of rawHeaders) {
       rawHeadersArr.push(header.key, header.value);
-    });
+    }
     return rawHeadersArr;
   }
 
@@ -209,6 +209,7 @@ type ExtraURLLoaderOptions = {
    allowNonHttpProtocols: boolean;
 }
 function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & ExtraURLLoaderOptions {
+  // eslint-disable-next-line node/no-deprecated-api
   const options: any = typeof optionsIn === 'string' ? url.parse(optionsIn) : { ...optionsIn };
 
   let urlStr: string = options.url;
@@ -241,6 +242,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
       // an invalid request.
       throw new TypeError('Request path contains unescaped characters');
     }
+    // eslint-disable-next-line node/no-deprecated-api
     const pathObj = url.parse(options.path || '/');
     urlObj.pathname = pathObj.pathname;
     urlObj.search = pathObj.search;
@@ -268,7 +270,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     origin: options.origin,
     referrerPolicy: options.referrerPolicy,
     cache: options.cache,
-    allowNonHttpProtocols: Object.prototype.hasOwnProperty.call(options, kAllowNonHttpProtocols)
+    allowNonHttpProtocols: Object.hasOwn(options, kAllowNonHttpProtocols)
   };
   const headers: Record<string, string | string[]> = options.headers || {};
   for (const [name, value] of Object.entries(headers)) {

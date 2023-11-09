@@ -54,10 +54,10 @@ index d196e304a43191b6dc82f25b0b4bf24d242edb3c..85d618efa0574b00fc0cb1e5bde5ed72
    static bool loaded = LoadGtkImpl();
    return loaded;
 diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
-index 94f3997bcfc05b1ce9cb5bd821d8b57e2ffe85f3..da45ce627a9cac6460d0e1577d192f5a2dd03ae4 100644
+index 409e385fc952662c9887d9a810bb3c547c5be282..1518b681f98b3bc051aed74713a23c016c7b755e 100644
 --- a/ui/gtk/gtk_compat.h
 +++ b/ui/gtk/gtk_compat.h
-@@ -34,6 +34,12 @@ using SkColor = uint32_t;
+@@ -40,6 +40,12 @@ using SkColor = uint32_t;
  
  namespace gtk {
  

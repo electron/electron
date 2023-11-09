@@ -1,11 +1,9 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
-const path = require('path')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron/main')
+const path = require('node:path')
 
 async function handleFileOpen () {
   const { canceled, filePaths } = await dialog.showOpenDialog()
-  if (canceled) {
-
-  } else {
+  if (!canceled) {
     return filePaths[0]
   }
 }

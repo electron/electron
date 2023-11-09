@@ -4,7 +4,6 @@
 
 #include "shell/browser/usb/usb_chooser_context.h"
 
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -204,9 +203,8 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
   if (session) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
-    gin_helper::Dictionary details =
-        gin_helper::Dictionary::CreateEmpty(isolate);
-    details.Set("device", object.Clone());
+    auto details = gin_helper::Dictionary::CreateEmpty(isolate);
+    details.Set("device", object);
     details.Set("origin", origin.Serialize());
     session->Emit("usb-device-revoked", details);
   }

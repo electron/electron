@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -18,6 +19,7 @@
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
+#include "base/win/windows_version.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
@@ -83,6 +85,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/mac/mac_util.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #endif
 
@@ -140,40 +143,25 @@ struct Converter<JumpListItem::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      JumpListItem::Type* out) {
-    std::string item_type;
-    if (!ConvertFromV8(isolate, val, &item_type))
-      return false;
-
-    if (item_type == "task")
-      *out = JumpListItem::Type::kTask;
-    else if (item_type == "separator")
-      *out = JumpListItem::Type::kSeparator;
-    else if (item_type == "file")
-      *out = JumpListItem::Type::kFile;
-    else
-      return false;
-
-    return true;
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    JumpListItem::Type val) {
-    std::string item_type;
-    switch (val) {
-      case JumpListItem::Type::kTask:
-        item_type = "task";
-        break;
+    for (const auto& [name, item_val] : Lookup)
+      if (item_val == val)
+        return gin::ConvertToV8(isolate, name);
 
-      case JumpListItem::Type::kSeparator:
-        item_type = "separator";
-        break;
-
-      case JumpListItem::Type::kFile:
-        item_type = "file";
-        break;
-    }
-    return gin::ConvertToV8(isolate, item_type);
+    return gin::ConvertToV8(isolate, "");
   }
+
+ private:
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListItem::Type>({
+          {"file", JumpListItem::Type::kFile},
+          {"separator", JumpListItem::Type::kSeparator},
+          {"task", JumpListItem::Type::kTask},
+      });
 };
 
 template <>
@@ -216,7 +204,7 @@ struct Converter<JumpListItem> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const JumpListItem& val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("type", val.type);
 
     switch (val.type) {
@@ -246,46 +234,26 @@ struct Converter<JumpListCategory::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      JumpListCategory::Type* out) {
-    std::string category_type;
-    if (!ConvertFromV8(isolate, val, &category_type))
-      return false;
-
-    if (category_type == "tasks")
-      *out = JumpListCategory::Type::kTasks;
-    else if (category_type == "frequent")
-      *out = JumpListCategory::Type::kFrequent;
-    else if (category_type == "recent")
-      *out = JumpListCategory::Type::kRecent;
-    else if (category_type == "custom")
-      *out = JumpListCategory::Type::kCustom;
-    else
-      return false;
-
-    return true;
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    JumpListCategory::Type val) {
-    std::string category_type;
-    switch (val) {
-      case JumpListCategory::Type::kTasks:
-        category_type = "tasks";
-        break;
+    for (const auto& [name, type_val] : Lookup)
+      if (type_val == val)
+        return gin::ConvertToV8(isolate, name);
 
-      case JumpListCategory::Type::kFrequent:
-        category_type = "frequent";
-        break;
-
-      case JumpListCategory::Type::kRecent:
-        category_type = "recent";
-        break;
-
-      case JumpListCategory::Type::kCustom:
-        category_type = "custom";
-        break;
-    }
-    return gin::ConvertToV8(isolate, category_type);
+    return gin::ConvertToV8(isolate, "");
   }
+
+ private:
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListCategory::Type>({
+          {"custom", JumpListCategory::Type::kCustom},
+          {"frequent", JumpListCategory::Type::kFrequent},
+          {"recent", JumpListCategory::Type::kRecent},
+          {"tasks", JumpListCategory::Type::kTasks},
+      });
 };
 
 template <>
@@ -372,7 +340,7 @@ struct Converter<Browser::LaunchItem> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LaunchItem val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("name", val.name);
     dict.Set("path", val.path);
     dict.Set("args", val.args);
@@ -397,25 +365,31 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Get("path", &(out->path));
     dict.Get("args", &(out->args));
 #if BUILDFLAG(IS_WIN)
-    dict.Get("enabled", &(out->enabled));
     dict.Get("name", &(out->name));
+    dict.Get("enabled", &(out->enabled));
+#elif BUILDFLAG(IS_MAC)
+    dict.Get("serviceName", &(out->service_name));
+    dict.Get("type", &(out->type));
 #endif
     return true;
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LoginItemSettings val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+#if BUILDFLAG(IS_WIN)
+    dict.Set("launchItems", val.launch_items);
+    dict.Set("executableWillLaunchAtLogin",
+             val.executable_will_launch_at_login);
+#elif BUILDFLAG(IS_MAC)
+    if (base::mac::MacOSMajorVersion() >= 13)
+      dict.Set("status", val.status);
+#endif
     dict.Set("openAtLogin", val.open_at_login);
     dict.Set("openAsHidden", val.open_as_hidden);
     dict.Set("restoreState", val.restore_state);
     dict.Set("wasOpenedAtLogin", val.opened_at_login);
     dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
-#if BUILDFLAG(IS_WIN)
-    dict.Set("launchItems", val.launch_items);
-    dict.Set("executableWillLaunchAtLogin",
-             val.executable_will_launch_at_login);
-#endif
     return dict.GetHandle();
   }
 };
@@ -439,20 +413,13 @@ struct Converter<net::SecureDnsMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::SecureDnsMode* out) {
-    std::string s;
-    if (!ConvertFromV8(isolate, val, &s))
-      return false;
-    if (s == "off") {
-      *out = net::SecureDnsMode::kOff;
-      return true;
-    } else if (s == "automatic") {
-      *out = net::SecureDnsMode::kAutomatic;
-      return true;
-    } else if (s == "secure") {
-      *out = net::SecureDnsMode::kSecure;
-      return true;
-    }
-    return false;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, net::SecureDnsMode>({
+            {"automatic", net::SecureDnsMode::kAutomatic},
+            {"off", net::SecureDnsMode::kOff},
+            {"secure", net::SecureDnsMode::kSecure},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 }  // namespace gin
@@ -473,51 +440,38 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 }
 
 // Return the path constant from string.
-int GetPathConstant(const std::string& name) {
-  if (name == "appData")
-    return DIR_APP_DATA;
-  else if (name == "sessionData")
-    return DIR_SESSION_DATA;
-  else if (name == "userData")
-    return chrome::DIR_USER_DATA;
-  else if (name == "cache")
+int GetPathConstant(base::StringPiece name) {
+  // clang-format off
+  constexpr auto Lookup = base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+      {"appData", DIR_APP_DATA},
 #if BUILDFLAG(IS_POSIX)
-    return base::DIR_CACHE;
+      {"cache", base::DIR_CACHE},
 #else
-    return base::DIR_ROAMING_APP_DATA;
+      {"cache", base::DIR_ROAMING_APP_DATA},
 #endif
-  else if (name == "userCache")
-    return DIR_USER_CACHE;
-  else if (name == "logs")
-    return DIR_APP_LOGS;
-  else if (name == "crashDumps")
-    return DIR_CRASH_DUMPS;
-  else if (name == "home")
-    return base::DIR_HOME;
-  else if (name == "temp")
-    return base::DIR_TEMP;
-  else if (name == "userDesktop" || name == "desktop")
-    return base::DIR_USER_DESKTOP;
-  else if (name == "exe")
-    return base::FILE_EXE;
-  else if (name == "module")
-    return base::FILE_MODULE;
-  else if (name == "documents")
-    return chrome::DIR_USER_DOCUMENTS;
-  else if (name == "downloads")
-    return chrome::DIR_DEFAULT_DOWNLOADS;
-  else if (name == "music")
-    return chrome::DIR_USER_MUSIC;
-  else if (name == "pictures")
-    return chrome::DIR_USER_PICTURES;
-  else if (name == "videos")
-    return chrome::DIR_USER_VIDEOS;
+      {"crashDumps", DIR_CRASH_DUMPS},
+      {"desktop", base::DIR_USER_DESKTOP},
+      {"documents", chrome::DIR_USER_DOCUMENTS},
+      {"downloads", chrome::DIR_DEFAULT_DOWNLOADS},
+      {"exe", base::FILE_EXE},
+      {"home", base::DIR_HOME},
+      {"logs", DIR_APP_LOGS},
+      {"module", base::FILE_MODULE},
+      {"music", chrome::DIR_USER_MUSIC},
+      {"pictures", chrome::DIR_USER_PICTURES},
 #if BUILDFLAG(IS_WIN)
-  else if (name == "recent")
-    return electron::DIR_RECENT;
+      {"recent", electron::DIR_RECENT},
 #endif
-  else
-    return -1;
+      {"sessionData", DIR_SESSION_DATA},
+      {"temp", base::DIR_TEMP},
+      {"userCache", DIR_USER_CACHE},
+      {"userData", chrome::DIR_USER_DATA},
+      {"userDesktop", base::DIR_USER_DESKTOP},
+      {"videos", chrome::DIR_USER_VIDEOS},
+  });
+  // clang-format on
+  const auto* iter = Lookup.find(name);
+  return iter != Lookup.end() ? iter->second : -1;
 }
 
 bool NotificationCallbackWrapper(
@@ -787,6 +741,10 @@ void App::OnNewWindowForTab() {
 void App::OnDidBecomeActive() {
   Emit("did-become-active");
 }
+
+void App::OnDidResignActive() {
+  Emit("did-resign-active");
+}
 #endif
 
 bool App::CanCreateWindow(
@@ -843,6 +801,7 @@ void App::AllowCertificateError(
 }
 
 base::OnceClosure App::SelectClientCertificate(
+    content::BrowserContext* browser_context,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,
@@ -881,10 +840,6 @@ base::OnceClosure App::SelectClientCertificate(
 
 void App::OnGpuInfoUpdate() {
   Emit("gpu-info-update");
-}
-
-void App::OnGpuProcessCrashed() {
-  Emit("gpu-process-crashed", true);
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
@@ -1312,7 +1267,7 @@ v8::Local<v8::Value> App::GetJumpListSettings() {
   }
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("minItems", min_items);
   dict.Set("removedItems", gin::ConvertToV8(isolate, removed_items));
   return dict.GetHandle();
@@ -1393,11 +1348,9 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   int processor_count = base::SysInfo::NumberOfProcessors();
 
   for (const auto& process_metric : app_metrics_) {
-    gin_helper::Dictionary pid_dict = gin::Dictionary::CreateEmpty(isolate);
-    gin_helper::Dictionary cpu_dict = gin::Dictionary::CreateEmpty(isolate);
+    auto pid_dict = gin_helper::Dictionary::CreateEmpty(isolate);
+    auto cpu_dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
-    pid_dict.SetHidden("simple", true);
-    cpu_dict.SetHidden("simple", true);
     cpu_dict.Set(
         "percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
@@ -1417,8 +1370,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("pid", process_metric.second->process.Pid());
     pid_dict.Set("type", content::GetProcessTypeNameInEnglish(
                              process_metric.second->type));
-    pid_dict.Set("creationTime",
-                 process_metric.second->process.CreationTime().ToJsTime());
+    pid_dict.Set("creationTime", process_metric.second->process.CreationTime()
+                                     .InMillisecondsFSinceUnixEpoch());
 
     if (!process_metric.second->service_name.empty()) {
       pid_dict.Set("serviceName", process_metric.second->service_name);
@@ -1431,8 +1384,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 #if !BUILDFLAG(IS_LINUX)
     auto memory_info = process_metric.second->GetMemoryInfo();
 
-    gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
-    memory_dict.SetHidden("simple", true);
+    auto memory_dict = gin_helper::Dictionary::CreateEmpty(isolate);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
@@ -1527,23 +1479,8 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
 }
 
 #if BUILDFLAG(IS_WIN)
-
 bool App::IsRunningUnderARM64Translation() const {
-  USHORT processMachine = 0;
-  USHORT nativeMachine = 0;
-
-  auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
-      GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
-
-  if (IsWow64Process2 == nullptr) {
-    return false;
-  }
-
-  if (!IsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
-    return false;
-  }
-
-  return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
+  return base::win::OSInfo::IsRunningEmulatedOnArm64();
 }
 #endif
 
@@ -1583,7 +1520,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
     // Initialize the Dock API, the methods are bound to "dock" which exists
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
-    gin_helper::Dictionary dock_obj = gin::Dictionary::CreateEmpty(isolate);
+    auto dock_obj = gin_helper::Dictionary::CreateEmpty(isolate);
     dock_obj.SetMethod("bounce", &DockBounce);
     dock_obj.SetMethod(
         "cancelBounce",
@@ -1833,8 +1770,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if BUILDFLAG(IS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
-      .SetProperty("runningUnderRosettaTranslation",
-                   &App::IsRunningUnderRosettaTranslation)
 #endif
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       .SetProperty("runningUnderARM64Translation",

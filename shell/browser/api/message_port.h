@@ -11,6 +11,7 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
@@ -23,7 +24,9 @@ class Handle;
 namespace electron {
 
 // A non-blink version of blink::MessagePort.
-class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
+class MessagePort : public gin::Wrappable<MessagePort>,
+                    public gin_helper::CleanedUpAtExit,
+                    public mojo::MessageReceiver {
  public:
   ~MessagePort() override;
   static gin::Handle<MessagePort> Create(v8::Isolate* isolate);

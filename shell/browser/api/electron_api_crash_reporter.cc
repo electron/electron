@@ -28,6 +28,7 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 
 #if !IS_MAS_BUILD()
@@ -42,7 +43,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/containers/span.h"
 #include "base/files/file_util.h"
-#include "base/guid.h"
+#include "base/uuid.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "components/upload_list/combining_upload_list.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
@@ -116,7 +117,7 @@ std::string GetClientId() {
     return *client_id;
   *client_id = ReadClientId();
   if (client_id->empty()) {
-    *client_id = base::GenerateGUID();
+    *client_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
     WriteClientId(*client_id);
   }
   return *client_id;
@@ -142,17 +143,13 @@ void Start(const std::string& submit_url,
   ElectronCrashReporterClient::Get()->SetShouldRateLimit(rate_limit);
   ElectronCrashReporterClient::Get()->SetShouldCompressUploads(compress);
   ElectronCrashReporterClient::Get()->SetGlobalAnnotations(global_extra);
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      is_node_process
-          ? "node"
-          : command_line->GetSwitchValueASCII(::switches::kProcessType);
+  std::string process_type = is_node_process ? "node" : GetProcessType();
 #if BUILDFLAG(IS_LINUX)
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   {
     electron::ScopedAllowBlockingForElectron allow_blocking;
-    ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+    ::crash_reporter::InitializeCrashpad(IsBrowserProcess(), process_type);
   }
   if (ignore_system_crash_handler) {
     crashpad::CrashpadInfo::GetCrashpadInfo()
@@ -161,7 +158,7 @@ void Start(const std::string& submit_url,
 #elif BUILDFLAG(IS_MAC)
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
-  ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+  ::crash_reporter::InitializeCrashpad(IsBrowserProcess(), process_type);
   if (ignore_system_crash_handler) {
     crashpad::CrashpadInfo::GetCrashpadInfo()
         ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
@@ -172,8 +169,8 @@ void Start(const std::string& submit_url,
   base::FilePath user_data_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
-      process_type.empty(), process_type,
-      base::WideToUTF8(user_data_dir.value()), base::FilePath());
+      IsBrowserProcess(), process_type, base::WideToUTF8(user_data_dir.value()),
+      base::FilePath());
 #endif
 #endif
 }

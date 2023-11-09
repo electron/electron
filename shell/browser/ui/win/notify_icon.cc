@@ -73,7 +73,8 @@ NotifyIcon::~NotifyIcon() {
 
 void NotifyIcon::HandleClickEvent(int modifiers,
                                   bool left_mouse_click,
-                                  bool double_button_click) {
+                                  bool double_button_click,
+                                  bool middle_button_click) {
   gfx::Rect bounds = GetBounds();
 
   if (left_mouse_click) {
@@ -84,9 +85,11 @@ void NotifyIcon::HandleClickEvent(int modifiers,
                     display::Screen::GetScreen()->GetCursorScreenPoint(),
                     modifiers);
     return;
+  } else if (middle_button_click) {  // single middle click
+    NotifyMiddleClicked(bounds, modifiers);
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
-      PopUpContextMenu(gfx::Point(), menu_model_);
+      PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr());
     else
       NotifyRightClicked(bounds, modifiers);
   }
@@ -97,6 +100,16 @@ void NotifyIcon::HandleMouseMoveEvent(int modifiers) {
   // Omit event fired when tray icon is created but cursor is outside of it.
   if (GetBounds().Contains(cursorPos))
     NotifyMouseMoved(cursorPos, modifiers);
+}
+
+void NotifyIcon::HandleMouseEntered(int modifiers) {
+  gfx::Point cursor_pos = display::Screen::GetScreen()->GetCursorScreenPoint();
+  NotifyMouseEntered(cursor_pos, modifiers);
+}
+
+void NotifyIcon::HandleMouseExited(int modifiers) {
+  gfx::Point cursor_pos = display::Screen::GetScreen()->GetCursorScreenPoint();
+  NotifyMouseExited(cursor_pos, modifiers);
 }
 
 void NotifyIcon::ResetIcon() {
@@ -191,7 +204,7 @@ void NotifyIcon::Focus() {
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
-                                  ElectronMenuModel* menu_model) {
+                                  base::WeakPtr<ElectronMenuModel> menu_model) {
   // Returns if context menu isn't set.
   if (menu_model == nullptr && menu_model_ == nullptr)
     return;
@@ -209,9 +222,13 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   if (pos.IsOrigin())
     rect.set_origin(display::Screen::GetScreen()->GetCursorScreenPoint());
 
-  menu_runner_ = std::make_unique<views::MenuRunner>(
-      menu_model != nullptr ? menu_model : menu_model_,
-      views::MenuRunner::HAS_MNEMONICS);
+  if (menu_model) {
+    menu_runner_ = std::make_unique<views::MenuRunner>(
+        menu_model.get(), views::MenuRunner::HAS_MNEMONICS);
+  } else {
+    menu_runner_ = std::make_unique<views::MenuRunner>(
+        menu_model_, views::MenuRunner::HAS_MNEMONICS);
+  }
   menu_runner_->RunMenuAt(nullptr, nullptr, rect,
                           views::MenuAnchorPosition::kTopLeft,
                           ui::MENU_SOURCE_MOUSE);
@@ -223,7 +240,7 @@ void NotifyIcon::CloseContextMenu() {
   }
 }
 
-void NotifyIcon::SetContextMenu(ElectronMenuModel* menu_model) {
+void NotifyIcon::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
   menu_model_ = menu_model;
 }
 

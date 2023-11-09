@@ -6,38 +6,48 @@
 
 #include "base/functional/callback.h"
 #include "base/time/time.h"
+#include "services/device/public/mojom/geoposition.mojom-shared.h"
+#include "services/device/public/mojom/geoposition.mojom.h"
 
 namespace electron {
 
 FakeLocationProvider::FakeLocationProvider() {
-  position_.latitude = 10;
-  position_.longitude = -10;
-  position_.accuracy = 1;
-  position_.error_code =
-      device::mojom::Geoposition::ErrorCode::POSITION_UNAVAILABLE;
+  result_ = device::mojom::GeopositionResult::NewError(
+      device::mojom::GeopositionError::New(
+          device::mojom::GeopositionErrorCode::kPositionUnavailable,
+          "Position unavailable.", ""));
 }
 
 FakeLocationProvider::~FakeLocationProvider() = default;
+
+void FakeLocationProvider::FillDiagnostics(
+    device::mojom::GeolocationDiagnostics& diagnostics) {
+  diagnostics.provider_state = state_;
+}
 
 void FakeLocationProvider::SetUpdateCallback(
     const LocationProviderUpdateCallback& callback) {
   callback_ = callback;
 }
 
-void FakeLocationProvider::StartProvider(bool high_accuracy) {}
+void FakeLocationProvider::StartProvider(bool high_accuracy) {
+  state_ =
+      high_accuracy
+          ? device::mojom::GeolocationDiagnostics::ProviderState::kHighAccuracy
+          : device::mojom::GeolocationDiagnostics::ProviderState::kLowAccuracy;
+}
 
-void FakeLocationProvider::StopProvider() {}
+void FakeLocationProvider::StopProvider() {
+  state_ = device::mojom::GeolocationDiagnostics::ProviderState::kStopped;
+}
 
-const device::mojom::Geoposition& FakeLocationProvider::GetPosition() {
-  return position_;
+const device::mojom::GeopositionResult* FakeLocationProvider::GetPosition() {
+  return result_.get();
 }
 
 void FakeLocationProvider::OnPermissionGranted() {
   if (!callback_.is_null()) {
-    // Check device::ValidateGeoPosition for range of values.
-    position_.error_code = device::mojom::Geoposition::ErrorCode::NONE;
-    position_.timestamp = base::Time::Now();
-    callback_.Run(this, position_);
+    callback_.Run(this, result_.Clone());
   }
 }
 

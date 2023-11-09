@@ -54,7 +54,7 @@ at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-t
 
 ### Recommended Reading
 
-* [Get Started With Analyzing Runtime Performance][chrome-devtools-tutorial]
+* [Analyze runtime performance][chrome-devtools-tutorial]
 * [Talk: "Visual Studio Code - The First Second"][vscode-first-second]
 
 ## Checklist: Performance recommendations
@@ -69,6 +69,7 @@ resource-hungry if you attempt these steps.
 5. [Unnecessary polyfills](#5-unnecessary-polyfills)
 6. [Unnecessary or blocking network requests](#6-unnecessary-or-blocking-network-requests)
 7. [Bundle your code](#7-bundle-your-code)
+8. [Call `Menu.setApplicationMenu(null)` when you do not need a default menu](#8-call-menusetapplicationmenunull-when-you-do-not-need-a-default-menu)
 
 ### 1. Carelessly including modules
 
@@ -172,8 +173,8 @@ in the fictitious `.foo` format. In order to do that, it relies on the
 equally fictitious `foo-parser` module. In traditional Node.js development,
 you might write code that eagerly loads dependencies:
 
-```js title='parser.js'
-const fs = require('fs')
+```js title='parser.js' @ts-expect-error=[2]
+const fs = require('node:fs')
 const fooParser = require('foo-parser')
 
 class Parser {
@@ -195,16 +196,16 @@ In the above example, we're doing a lot of work that's being executed as soon
 as the file is loaded. Do we need to get parsed files right away? Could we
 do this work a little later, when `getParsedFiles()` is actually called?
 
-```js title='parser.js'
+```js title='parser.js' @ts-expect-error=[20]
 // "fs" is likely already being loaded, so the `require()` call is cheap
-const fs = require('fs')
+const fs = require('node:fs')
 
 class Parser {
   async getFiles () {
     // Touch the disk as soon as `getFiles` is called, not sooner.
     // Also, ensure that we're not blocking other operations by using
     // the asynchronous version.
-    this.files = this.files || await fs.readdir('.')
+    this.files = this.files || await fs.promises.readdir('.')
 
     return this.files
   }
@@ -432,7 +433,7 @@ If you build your own menu or use a frameless window without native menu, you sh
 Call `Menu.setApplicationMenu(null)` before `app.on("ready")`. This will prevent Electron from setting a default menu. See also https://github.com/electron/electron/issues/35512 for a related discussion.
 
 [security]: ./security.md
-[chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
+[chrome-devtools-tutorial]: https://developer.chrome.com/docs/devtools/performance/
 [worker-threads]: https://nodejs.org/api/worker_threads.html
 [web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 [request-idle-callback]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback

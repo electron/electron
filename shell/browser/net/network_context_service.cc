@@ -80,8 +80,6 @@ void NetworkContextService::ConfigureNetworkContextParams(
   // Configure on-disk storage for persistent sessions.
   if (!in_memory) {
     // Configure the HTTP cache path and size.
-    network_context_params->http_cache_directory =
-        path.Append(chrome::kCacheDirname);
     network_context_params->http_cache_max_size =
         browser_context_->GetMaxCacheSize();
 
@@ -92,6 +90,8 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->file_paths->unsandboxed_data_path = path;
     network_context_params->file_paths->trigger_migration =
         ShouldTriggerNetworkDataMigration();
+    network_context_params->file_paths->http_cache_directory =
+        path.Append(chrome::kCacheDirname);
 
     // Currently this just contains HttpServerProperties
     network_context_params->file_paths->http_server_properties_file_name =

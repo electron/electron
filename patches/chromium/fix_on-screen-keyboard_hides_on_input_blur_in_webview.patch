@@ -15,10 +15,10 @@ node does not change in this case.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-index 7d471653b3dfadaa91cbe7dfdd5ff324d0fbe1bb..08251f85beef09719808db3fb042c9f6f45c218e 100644
+index f5f30d5696bdd2b8b5948b18b3f7959f9078cc72..660dc5f60bad28ce345827767fc508711ea06d31 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-@@ -994,6 +994,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
+@@ -1046,6 +1046,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
    return viz::ScopedSurfaceIdAllocator(std::move(allocation_task));
  }
  
@@ -32,10 +32,10 @@ index 7d471653b3dfadaa91cbe7dfdd5ff324d0fbe1bb..08251f85beef09719808db3fb042c9f6
    if (!text_input_manager_)
      return ui::TEXT_INPUT_TYPE_NONE;
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-index 2ca4e42342ff6bf3f2ad104208944e36d572aa3c..7421cc779873b580d6f5a109d57ff7445dde9d58 100644
+index 1dfd9c071a41482e0d35257b28522e5b37702f25..41a09e9470dfa5797c69d02fc9b4f5e608a43d94 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-@@ -181,6 +181,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
+@@ -184,6 +184,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
    void DisableAutoResize(const gfx::Size& new_size) override;
    viz::ScopedSurfaceIdAllocator DidUpdateVisualProperties(
        const cc::RenderFrameMetadata& metadata) override;
@@ -45,15 +45,15 @@ index 2ca4e42342ff6bf3f2ad104208944e36d572aa3c..7421cc779873b580d6f5a109d57ff744
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4f802a4ef61778b4239d2b413fdeda7c15e589f0..096dd1e674c6141168ca18fb54ebdb4fbe601be7 100644
+index 5a711c115ab7690409f2b32d8c332151c462254e..1f06b818a48a307b34837deaf8721d8efdfd3013 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8090,7 +8090,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -8653,7 +8653,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =
 -      static_cast<RenderWidgetHostViewBase*>(GetRenderWidgetHostView());
 +      static_cast<RenderWidgetHostViewBase*>(GetTopLevelRenderWidgetHostView());
-   if (!root_view || !frame->GetView())
+   if (!root_view || !frame->GetView()) {
      return;
-   // Convert to screen coordinates from window coordinates by adding the
+   }

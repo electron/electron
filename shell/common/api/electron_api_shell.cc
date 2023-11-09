@@ -59,13 +59,11 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   platform_util::OpenExternalOptions options;
-  if (args->Length() >= 2) {
-    gin::Dictionary obj(nullptr);
-    if (args->GetNext(&obj)) {
-      obj.Get("activate", &options.activate);
-      obj.Get("workingDirectory", &options.working_dir);
-      obj.Get("logUsage", &options.log_usage);
-    }
+  gin_helper::Dictionary obj;
+  if (args->GetNext(&obj)) {
+    obj.Get("activate", &options.activate);
+    obj.Get("workingDirectory", &options.working_dir);
+    obj.Get("logUsage", &options.log_usage);
   }
 
   platform_util::OpenExternal(
@@ -113,7 +111,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   base::win::ShortcutOperation operation =
       base::win::ShortcutOperation::kCreateAlways;
   args->GetNext(&operation);
-  gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
     args->ThrowError();
     return false;
@@ -148,7 +146,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
 v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
                                       const base::FilePath& path) {
   using base::win::ShortcutProperties;
-  gin::Dictionary options = gin::Dictionary::CreateEmpty(thrower.isolate());
+  auto options = gin::Dictionary::CreateEmpty(thrower.isolate());
   electron::ScopedAllowBlockingForElectron allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   base::win::ShortcutProperties properties;

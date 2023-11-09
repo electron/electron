@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -44,13 +45,15 @@ class Protocol : public gin::Wrappable<Protocol>,
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
                                       ElectronBrowserContext* browser_context);
 
+  // gin_helper::Constructible
   static gin::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
-
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> tmpl);
+  static const char* GetClassName() { return "Protocol"; }
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
  private:
@@ -101,7 +104,7 @@ class Protocol : public gin::Wrappable<Protocol>,
 
   // Weak pointer; the lifetime of the ProtocolRegistry is guaranteed to be
   // longer than the lifetime of this JS interface.
-  ProtocolRegistry* protocol_registry_;
+  raw_ptr<ProtocolRegistry> protocol_registry_;
 };
 
 }  // namespace api

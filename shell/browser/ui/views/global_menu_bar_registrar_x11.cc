@@ -52,14 +52,11 @@ GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11() {
       nullptr, kAppMenuRegistrarName, kAppMenuRegistrarPath,
       kAppMenuRegistrarName,
       nullptr,  // Probably want a real cancelable.
-      static_cast<GAsyncReadyCallback>(OnProxyCreatedThunk), this);
+      static_cast<GAsyncReadyCallback>(OnProxyCreated), this);
 }
 
 GlobalMenuBarRegistrarX11::~GlobalMenuBarRegistrarX11() {
   if (registrar_proxy_) {
-    g_signal_handlers_disconnect_by_func(
-        registrar_proxy_, reinterpret_cast<void*>(OnNameOwnerChangedThunk),
-        this);
     g_object_unref(registrar_proxy_);
   }
 }
@@ -99,7 +96,12 @@ void GlobalMenuBarRegistrarX11::UnregisterXWindow(x11::Window window) {
 }
 
 void GlobalMenuBarRegistrarX11::OnProxyCreated(GObject* source,
-                                               GAsyncResult* result) {
+                                               GAsyncResult* result,
+                                               gpointer user_data) {
+  GlobalMenuBarRegistrarX11* that =
+      static_cast<GlobalMenuBarRegistrarX11*>(user_data);
+  DCHECK(that);
+
   GError* error = nullptr;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(result, &error);
   if (error) {
@@ -110,16 +112,21 @@ void GlobalMenuBarRegistrarX11::OnProxyCreated(GObject* source,
   // TODO(erg): Mozilla's implementation has a workaround for GDBus
   // cancellation here. However, it's marked as fixed. If there's weird
   // problems with cancelation, look at how they fixed their issues.
+  that->SetRegistrarProxy(proxy);
 
-  registrar_proxy_ = proxy;
-
-  g_signal_connect(registrar_proxy_, "notify::g-name-owner",
-                   G_CALLBACK(OnNameOwnerChangedThunk), this);
-
-  OnNameOwnerChanged(nullptr, nullptr);
+  that->OnNameOwnerChanged(nullptr, nullptr);
 }
 
-void GlobalMenuBarRegistrarX11::OnNameOwnerChanged(GObject* /* ignored */,
+void GlobalMenuBarRegistrarX11::SetRegistrarProxy(GDBusProxy* proxy) {
+  registrar_proxy_ = proxy;
+
+  signal_ = ScopedGSignal(
+      registrar_proxy_, "notify::g-name-owner",
+      base::BindRepeating(&GlobalMenuBarRegistrarX11::OnNameOwnerChanged,
+                          base::Unretained(this)));
+}
+
+void GlobalMenuBarRegistrarX11::OnNameOwnerChanged(GDBusProxy* /* ignored */,
                                                    GParamSpec* /* ignored */) {
   // If the name owner changed, we need to reregister all the live x11::Window
   // with the system.

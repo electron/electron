@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge } = require('electron');
 
 contextBridge.exposeInMainWorld('str', 'some-text');
 contextBridge.exposeInMainWorld('obj', { prop: 'obj-prop' });

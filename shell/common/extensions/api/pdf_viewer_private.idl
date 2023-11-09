@@ -1,0 +1,39 @@
+// Copyright 2022 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Use the <code>chrome.pdfViewerPrivate</code> API for specific browser
+// functionality that the PDF Viewer needs from outside the PDF plugin. This API
+// is exclusively for the PDF Viewer.
+namespace pdfViewerPrivate {
+  callback IsAllowedLocalFileAccessCallback = void(boolean result);
+  callback IsPdfOcrAlwaysActiveCallback = void(boolean result);
+  callback OnPdfOcrPrefSetCallback = void(boolean result);
+
+  interface Functions {
+    // Determines if the given URL should be allowed to access local files from
+    // the PDF Viewer. |callback|: Called with true if URL should be allowed to
+    // access local files from the PDF Viewer, false otherwise.
+    [supportsPromises] static void isAllowedLocalFileAccess(
+        DOMString url,
+        IsAllowedLocalFileAccessCallback callback);
+
+    // Determines if the preference for PDF OCR is set to run PDF OCR always.
+    // |callback|: Called with true if PDF OCR is set to be always active;
+    // false otherwise.
+    [supportsPromises] static void isPdfOcrAlwaysActive(
+        IsPdfOcrAlwaysActiveCallback callback);
+
+    // Sets a pref value for PDF OCR.
+    // |value|: The new value of the pref.
+    // |callback|: The callback for whether the pref was set or not.
+    [supportsPromises] static void setPdfOcrPref(
+        boolean value, OnPdfOcrPrefSetCallback callback);
+  };
+
+  interface Events {
+    // Fired when a pref value for PDF OCR has changed.
+    // |value| The pref value that changed.
+    static void onPdfOcrPrefChanged(boolean value);
+  };
+};

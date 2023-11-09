@@ -1,10 +1,11 @@
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 // Make sure globals like "process" and "global" are always available in preload
 // scripts even after they are deleted in "loaded" script.
@@ -57,7 +58,7 @@ require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
+  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers');
   global.module = new Module('electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module);
 
@@ -122,15 +123,39 @@ if (nodeIntegration) {
   }
 }
 
-const { preloadPaths } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
-// Load the preload scripts.
-for (const preloadScript of preloadPaths) {
-  try {
-    Module._load(preloadScript);
-  } catch (error) {
-    console.error(`Unable to load preload script: ${preloadScript}`);
-    console.error(error);
+const { appCodeLoaded } = process;
+delete process.appCodeLoaded;
 
-    ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
+const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+const cjsPreloads = preloadPaths.filter(p => path.extname(p) !== '.mjs');
+const esmPreloads = preloadPaths.filter(p => path.extname(p) === '.mjs');
+if (cjsPreloads.length) {
+  // Load the preload scripts.
+  for (const preloadScript of cjsPreloads) {
+    try {
+      Module._load(preloadScript);
+    } catch (error) {
+      console.error(`Unable to load preload script: ${preloadScript}`);
+      console.error(error);
+
+      ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
+    }
   }
+}
+if (esmPreloads.length) {
+  const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
+
+  loadESM(async (esmLoader: any) => {
+    // Load the preload scripts.
+    for (const preloadScript of esmPreloads) {
+      await esmLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {
+        console.error(`Unable to load preload script: ${preloadScript}`);
+        console.error(err);
+
+        ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
+      });
+    }
+  }).finally(() => appCodeLoaded!());
+} else {
+  appCodeLoaded!();
 }

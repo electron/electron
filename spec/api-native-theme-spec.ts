@@ -1,12 +1,9 @@
 import { expect } from 'chai';
-import { nativeTheme, systemPreferences, BrowserWindow, ipcMain } from 'electron/main';
-import { once } from 'events';
-import * as os from 'os';
-import * as path from 'path';
-import * as semver from 'semver';
-import { setTimeout } from 'timers/promises';
+import { nativeTheme, BrowserWindow, ipcMain } from 'electron/main';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('nativeTheme module', () => {
@@ -60,15 +57,6 @@ describe('nativeTheme module', () => {
       expect(called).to.equal(false);
     });
 
-    ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '18.0.0'))('on macOS 10.14', () => {
-      it('should update appLevelAppearance when set', () => {
-        nativeTheme.themeSource = 'dark';
-        expect(systemPreferences.appLevelAppearance).to.equal('dark');
-        nativeTheme.themeSource = 'light';
-        expect(systemPreferences.appLevelAppearance).to.equal('light');
-      });
-    });
-
     const getPrefersColorSchemeIsDark = async (w: Electron.BrowserWindow) => {
       const isDark: boolean = await w.webContents.executeJavaScript(
         'matchMedia("(prefers-color-scheme: dark)").matches'
@@ -84,7 +72,7 @@ describe('nativeTheme module', () => {
           .addEventListener('change', () => require('electron').ipcRenderer.send('theme-change'))
       `);
       const originalSystemIsDark = await getPrefersColorSchemeIsDark(w);
-      let changePromise: Promise<any[]> = once(ipcMain, 'theme-change');
+      let changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'dark';
       if (!originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(true);

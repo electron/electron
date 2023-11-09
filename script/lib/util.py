@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
 import contextlib
 import errno
 import json
@@ -8,11 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
-# Python 3 / 2 compat import
-try:
-  from urllib.request import urlopen
-except ImportError:
-  from urllib2 import urlopen
+from urllib.request import urlopen
 import zipfile
 
 # from lib.config import is_verbose_mode

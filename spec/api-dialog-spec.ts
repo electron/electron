@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifit } from './lib/spec-helpers';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
@@ -97,7 +97,7 @@ describe('dialog module', () => {
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showMessageBox(undefined as any, { type: 'not-a-valid-type', message: '' });
+        dialog.showMessageBox(undefined as any, { type: 'not-a-valid-type' as any, message: '' });
       }).to.throw(/Invalid message box type/);
 
       expect(() => {

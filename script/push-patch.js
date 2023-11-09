@@ -1,5 +1,5 @@
 const { appCredentialsFromString, getTokenForRepo } = require('@electron/github-app-auth');
-const cp = require('child_process');
+const cp = require('node:child_process');
 
 if (!process.env.CIRCLE_BRANCH) {
   console.error('Not building for a specific branch, can\'t autopush a patch');
@@ -31,7 +31,7 @@ async function main () {
   }
 }
 
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);

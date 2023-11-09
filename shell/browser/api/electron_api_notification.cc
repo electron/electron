@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/electron_api_notification.h"
 
-#include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/uuid.h"
 #include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
@@ -36,7 +36,7 @@ struct Converter<electron::NotificationAction> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::NotificationAction val) {
-    gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
     return ConvertToV8(isolate, dict);
@@ -216,7 +216,11 @@ void Notification::NotificationClosed() {
 
 void Notification::Close() {
   if (notification_) {
-    notification_->Dismiss();
+    if (notification_->is_dismissed()) {
+      notification_->Remove();
+    } else {
+      notification_->Dismiss();
+    }
     notification_->set_delegate(nullptr);
     notification_.reset();
   }
@@ -226,7 +230,8 @@ void Notification::Close() {
 void Notification::Show() {
   Close();
   if (presenter_) {
-    notification_ = presenter_->CreateNotification(this, base::GenerateGUID());
+    notification_ = presenter_->CreateNotification(
+        this, base::Uuid::GenerateRandomV4().AsLowercaseString());
     if (notification_) {
       electron::NotificationOptions options;
       options.title = title_;
@@ -255,7 +260,7 @@ bool Notification::IsSupported() {
 
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Notification", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -279,6 +284,10 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("toastXml", &Notification::GetToastXml,
                    &Notification::SetToastXml)
       .Build();
+}
+
+const char* Notification::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

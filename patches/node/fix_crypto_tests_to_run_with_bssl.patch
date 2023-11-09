@@ -419,20 +419,48 @@ index dd073274aef765e8f1e403aa2c8baf9694b521cb..fc6339e040debe61ecc61a3eb5b26823
    TEST_CASES.DiffieHellman = [common.hasOpenSSL3 ? 1024 : 256];
  }
  
+diff --git a/test/parallel/test-crypto-dh-curves.js b/test/parallel/test-crypto-dh-curves.js
+index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420ffc316051 100644
+--- a/test/parallel/test-crypto-dh-curves.js
++++ b/test/parallel/test-crypto-dh-curves.js
+@@ -16,7 +16,7 @@ const p = 'FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74' +
+ crypto.createDiffieHellman(p, 'hex');
+ 
+ // Confirm DH_check() results are exposed for optional examination.
+-const bad_dh = crypto.createDiffieHellman('02', 'hex');
++const bad_dh = crypto.createDiffieHellman('abcd', 'hex', 0);
+ assert.notStrictEqual(bad_dh.verifyError, 0);
+ 
+ const availableCurves = new Set(crypto.getCurves());
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index 18721fcf289e5545408e309db050a2ff0f4b0140..e5235e0a5fbd68416b4a9480818901b411ed91bd 100644
+index c730eac4ce76dde880fe2b36b17414b0c311ac0b..416cfa0ac019fe5eab696df36f6cc65e311bf20f 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
-@@ -49,7 +49,7 @@ for (const bits of [-1, 0, 1]) {
+@@ -47,17 +47,19 @@ for (const bits of [-1, 0, 1]) {
+     });
+   } else {
      assert.throws(() => crypto.createDiffieHellman(bits), {
-       code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
+-      code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
++      code: /ERR_OSSL_BN_BITS_TOO_SMALL|ERR_OSSL_DH_MODULUS_TOO_LARGE/,
        name: 'Error',
 -      message: /bits too small/,
-+      message: /bits too small|BITS_TOO_SMALL/,
++      message: /bits too small|BITS_TOO_SMALL|MODULUS_TOO_LARGE/,
      });
    }
  }
-@@ -65,7 +65,7 @@ for (const g of [-1, 1]) {
+ 
+-// Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
+ {
+   const g = 0;
+-  crypto.createDiffieHellman('abcdef', g);
++  assert.throws(() => crypto.createDiffieHellman('abcdef', g), {
++    code: /INVALID_PARAMETERS/,
++    name: 'Error'
++  });
+   crypto.createDiffieHellman('abcdef', 'hex', g);
+ }
+ 
+@@ -65,13 +67,18 @@ for (const g of [-1, 1]) {
    const ex = {
      code: 'ERR_OSSL_DH_BAD_GENERATOR',
      name: 'Error',
@@ -441,7 +469,19 @@ index 18721fcf289e5545408e309db050a2ff0f4b0140..e5235e0a5fbd68416b4a9480818901b4
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -79,7 +79,7 @@ for (const g of [Buffer.from([]),
+ }
+ 
+-crypto.createDiffieHellman('abcdef', Buffer.from([2]));  // OK
++{
++  assert.throws(() => crypto.createDiffieHellman('abcdef', Buffer.from([2])), {
++    code: /INVALID_PARAMETERS/,
++    name: 'Error'
++  });
++}
+ 
+ for (const g of [Buffer.from([]),
+                  Buffer.from([0]),
+@@ -79,7 +86,7 @@ for (const g of [Buffer.from([]),
    const ex = {
      code: 'ERR_OSSL_DH_BAD_GENERATOR',
      name: 'Error',
@@ -450,7 +490,7 @@ index 18721fcf289e5545408e309db050a2ff0f4b0140..e5235e0a5fbd68416b4a9480818901b4
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -133,18 +133,17 @@ assert.strictEqual(secret1, secret4);
+@@ -133,18 +140,17 @@ assert.strictEqual(secret1, secret4);
  let wrongBlockLength;
  if (common.hasOpenSSL3) {
    wrongBlockLength = {
@@ -715,7 +755,7 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 2f2e443a7f6482c26f3a065520c8764d8402a91f..ccfe79ac65a223139f293f7dd034096fcdbc81ab 100644
+index 930a2ba09088663298208f165f06a7710770938f..592b4140f14e659dfa38e438473c8d4ac4ae60ab 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
 @@ -111,7 +111,7 @@ const der = Buffer.from(
@@ -780,7 +820,7 @@ index 2f2e443a7f6482c26f3a065520c8764d8402a91f..ccfe79ac65a223139f293f7dd034096f
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -316,7 +318,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -316,11 +318,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -790,8 +830,18 @@ index 2f2e443a7f6482c26f3a065520c8764d8402a91f..ccfe79ac65a223139f293f7dd034096f
 -    legacyObjectCheck.serialNumber);
 +    legacyObjectCheck.serialNumberPattern);
  }
+ 
++/*
+ {
+   // This X.509 Certificate can be parsed by OpenSSL because it contains a
+   // structurally sound TBSCertificate structure. However, the SPKI field of the
+@@ -359,3 +362,4 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+ 
+   assert.strictEqual(cert.checkIssued(cert), false);
+ }
++*/
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index a8ceb169de2b3de73f062083c42292babc673e73..a3bb574d0e5dc85b4ba3fb0b3bd8782fbb8c8700 100644
+index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b65795857da1b 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -67,7 +67,7 @@ assert.throws(() => {
@@ -839,7 +889,24 @@ index a8ceb169de2b3de73f062083c42292babc673e73..a3bb574d0e5dc85b4ba3fb0b3bd8782f
      (error) => {
        assert.ok(!('opensslErrorStack' in error));
        if (common.hasFipsCrypto) {
-@@ -240,15 +238,15 @@ assert.throws(() => {
+@@ -219,7 +217,7 @@ assert.throws(
+     return true;
+   }
+ );
+-
++/*
+ assert.throws(() => {
+   const priv = [
+     '-----BEGIN RSA PRIVATE KEY-----',
+@@ -232,6 +230,7 @@ assert.throws(() => {
+   ].join('\n');
+   crypto.createSign('SHA256').update('test').sign(priv);
+ }, (err) => {
++  console.log(err)
+   if (!common.hasOpenSSL3)
+     assert.ok(!('opensslErrorStack' in err));
+   assert.throws(() => { throw err; }, common.hasOpenSSL3 ? {
+@@ -240,10 +239,10 @@ assert.throws(() => {
      library: 'rsa routines',
    } : {
      name: 'Error',
@@ -854,13 +921,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..a3bb574d0e5dc85b4ba3fb0b3bd8782f
      code: 'ERR_OSSL_RSA_DIGEST_TOO_BIG_FOR_RSA_KEY'
    });
    return true;
- });
--
-+/*
- if (!common.hasOpenSSL3) {
-   assert.throws(() => {
-     // The correct header inside `rsa_private_pkcs8_bad.pem` should have been
-@@ -276,7 +274,7 @@ if (!common.hasOpenSSL3) {
+@@ -276,7 +275,7 @@ if (!common.hasOpenSSL3) {
      return true;
    });
  }
@@ -1009,7 +1070,7 @@ index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3f
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
-index 8d107a99bdd8c5ce0c32cfbbc337b2c880bde200..2a2b7e2253ed2d55b3fb973d06dec768ba9b1e1c 100644
+index 670f19b7e4a190a222cc997f67975c3d49f65035..d4c4812cab56bcb51435aa6dd27545368fc11ed7 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
 @@ -18,14 +18,15 @@ const kWrappingData = {

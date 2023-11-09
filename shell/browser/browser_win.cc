@@ -69,10 +69,12 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::StringPrintf(L"\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
-                              base::JoinString(launch_args, L"\"  \"").c_str());
+    *exe = base::UTF8ToWide(
+        base::StringPrintf("\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
+                           base::JoinString(launch_args, L"\"  \"").c_str()));
   else
-    *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
+    *exe =
+        base::UTF8ToWide(base::StringPrintf("\"%ls\" \"%%1\"", exe->c_str()));
   return true;
 }
 
@@ -98,8 +100,8 @@ std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
   wchar_t out_buffer[1024];
   DWORD buffer_size = std::size(out_buffer);
   HRESULT hr =
-      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
-                       out_buffer, &buffer_size);
+      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(),
+                       nullptr, out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
     return std::wstring();
@@ -113,8 +115,7 @@ void OnIconDataAvailable(const base::FilePath& app_path,
                          gfx::Image icon) {
   if (!icon.IsEmpty()) {
     v8::HandleScope scope(promise.isolate());
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(promise.isolate());
+    auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
 
     dict.Set("path", app_path);
     dict.Set("name", app_display_name);
@@ -141,8 +142,8 @@ bool FormatCommandLineString(std::wstring* exe,
 
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
-                              base::as_wcstr(joined_launch_args));
+    *exe = base::UTF8ToWide(base::StringPrintf(
+        "%ls %ls", exe->c_str(), base::as_wcstr(joined_launch_args)));
   }
 
   return true;
@@ -270,7 +271,7 @@ void GetFileIcon(const base::FilePath& path,
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
     dict.Set("name", app_display_name);
     dict.Set("path", normalized_path);
@@ -314,7 +315,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
-  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
+  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), nullptr,
                                            IID_PPV_ARGS(&item));
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;
@@ -411,7 +412,10 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     }
 
     // If now empty, delete the whole key
-    classesKey.DeleteEmptyKey(wprotocol.c_str());
+    if (protocolKey.GetValueCount().value_or(1) == 0) {
+      classesKey.DeleteKey(wprotocol.c_str(),
+                           base::win::RegKey::RecursiveDelete(false));
+    }
 
     return true;
   } else {

@@ -4,7 +4,6 @@
 
 #import "shell/browser/mac/electron_application.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -78,8 +77,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL {
-  currentActivity_ = base::scoped_nsobject<NSUserActivity>(
-      [[NSUserActivity alloc] initWithActivityType:type]);
+  currentActivity_ = [[NSUserActivity alloc] initWithActivityType:type];
   [currentActivity_ setUserInfo:userInfo];
   [currentActivity_ setWebpageURL:webpageURL];
   [currentActivity_ setDelegate:self];
@@ -88,13 +86,13 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (NSUserActivity*)getCurrentActivity {
-  return currentActivity_.get();
+  return currentActivity_;
 }
 
 - (void)invalidateCurrentActivity {
   if (currentActivity_) {
     [currentActivity_ invalidate];
-    currentActivity_.reset();
+    currentActivity_ = nil;
   }
 }
 
@@ -175,11 +173,40 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   electron::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
+// Returns the list of accessibility attributes that this object supports.
+- (NSArray*)accessibilityAttributeNames {
+  NSMutableArray* attributes =
+      [[super accessibilityAttributeNames] mutableCopy];
+  [attributes addObject:@"AXManualAccessibility"];
+  return attributes;
+}
+
+// Returns whether or not the specified attribute can be set by the
+// accessibility API via |accessibilitySetValue:forAttribute:|.
+- (BOOL)accessibilityIsAttributeSettable:(NSString*)attribute {
+  bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
+  return is_manual_ax || [super accessibilityIsAttributeSettable:attribute];
+}
+
+// Returns the accessibility value for the given attribute.  If the value isn't
+// supported this will return nil.
+- (id)accessibilityAttributeValue:(NSString*)attribute {
+  if ([attribute isEqualToString:@"AXManualAccessibility"]) {
+    auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+    return [NSNumber numberWithBool:ax_state->IsAccessibleBrowser()];
+  }
+
+  return [super accessibilityAttributeValue:attribute];
+}
+
+// Sets the value for an accessibility attribute via the accessibility API.
+// AXEnhancedUserInterface is an undocumented attribute that screen reader
+// related functionality sets when running, and AXManualAccessibility is an
+// attribute Electron specifically allows third-party apps to use to enable
+// a11y features in Electron.
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
-  // Undocumented attribute that screen reader related functionality
-  // sets when running.
-  if ([attribute isEqualToString:@"AXEnhancedUserInterface"] ||
-      [attribute isEqualToString:@"AXManualAccessibility"]) {
+  bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
+  if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
     if ([value boolValue]) {
       ax_state->OnScreenReaderDetected();
@@ -188,6 +215,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
     }
 
     electron::Browser::Get()->OnAccessibilitySupportChanged();
+
+    // Don't call the superclass function for AXManualAccessibility,
+    // as it will log an AXError and make it appear as though the attribute
+    // failed to take effect.
+    if (is_manual_ax)
+      return;
   }
 
   return [super accessibilitySetValue:value forAttribute:attribute];

@@ -190,6 +190,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
+  void SetBackgroundMaterial(const std::string& vibrancy);
 
 #if BUILDFLAG(IS_MAC)
   std::string GetAlwaysOnTopLevel();
@@ -197,9 +198,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool GetWindowButtonVisibility() const;
   void SetWindowButtonPosition(absl::optional<gfx::Point> position);
   absl::optional<gfx::Point> GetWindowButtonPosition() const;
-#endif
 
-#if BUILDFLAG(IS_MAC)
   bool IsHiddenInMissionControl();
   void SetHiddenInMissionControl(bool hidden);
 #endif
@@ -209,10 +208,12 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
   void SelectPreviousTab();
   void SelectNextTab();
+  void ShowAllTabs();
   void MergeAllWindows();
   void MoveTabToNewWindow();
   void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
+  v8::Local<v8::Value> GetTabbingIdentifier();
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
@@ -273,7 +274,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
-  std::map<int32_t, v8::Global<v8::Value>> browser_views_;
+  std::vector<v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;

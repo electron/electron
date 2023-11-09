@@ -25,7 +25,7 @@ class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
   // TrayIcon:
   void SetImage(const gfx::Image& image) override;
   void SetToolTip(const std::string& tool_tip) override;
-  void SetContextMenu(ElectronMenuModel* menu_model) override;
+  void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
 
   // ui::StatusIconLinux::Delegate
   void OnClick() override;

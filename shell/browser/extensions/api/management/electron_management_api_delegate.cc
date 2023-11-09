@@ -78,12 +78,17 @@ ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() = default;
 
 ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() = default;
 
-void ElectronManagementAPIDelegate::LaunchAppFunctionDelegate(
+bool ElectronManagementAPIDelegate::LaunchAppFunctionDelegate(
     const extensions::Extension* extension,
     content::BrowserContext* context) const {
+  // Note: Chromium looks for an existing profile and determines whether
+  // the user has set a launch preference
+  // See: https://chromium-review.googlesource.com/c/chromium/src/+/4389621
+  // For Electron, this should always return the default (true).
   // TODO(sentialx): emit event
   extensions::RecordAppLaunchType(extension_misc::APP_LAUNCH_EXTENSION_API,
                                   extension->GetType());
+  return true;
 }
 
 GURL ElectronManagementAPIDelegate::GetFullLaunchURL(
@@ -96,18 +101,6 @@ extensions::LaunchType ElectronManagementAPIDelegate::GetLaunchType(
     const extensions::Extension* extension) const {
   // TODO(sentialx)
   return extensions::LAUNCH_TYPE_DEFAULT;
-}
-
-void ElectronManagementAPIDelegate::
-    GetPermissionWarningsByManifestFunctionDelegate(
-        extensions::ManagementGetPermissionWarningsByManifestFunction* function,
-        const std::string& manifest_str) const {
-  data_decoder::DataDecoder::ParseJsonIsolated(
-      manifest_str,
-      base::BindOnce(
-          &extensions::ManagementGetPermissionWarningsByManifestFunction::
-              OnParse,
-          function));
 }
 
 std::unique_ptr<extensions::InstallPromptDelegate>
@@ -157,23 +150,6 @@ void ElectronManagementAPIDelegate::InstallOrLaunchReplacementWebApp(
     const GURL& web_app_url,
     InstallOrLaunchWebAppCallback callback) const {
   // TODO(sentialx)
-}
-
-bool ElectronManagementAPIDelegate::CanContextInstallAndroidApps(
-    content::BrowserContext* context) const {
-  return false;
-}
-
-void ElectronManagementAPIDelegate::CheckAndroidAppInstallStatus(
-    const std::string& package_name,
-    AndroidAppInstallStatusCallback callback) const {
-  std::move(callback).Run(false);
-}
-
-void ElectronManagementAPIDelegate::InstallReplacementAndroidApp(
-    const std::string& package_name,
-    InstallAndroidAppCallback callback) const {
-  std::move(callback).Run(false);
 }
 
 void ElectronManagementAPIDelegate::EnableExtension(

@@ -182,7 +182,7 @@ In Electron, browser windows can only be created after the `app` module's
 [`app.whenReady()`][app-when-ready] API. Call `createWindow()` after `whenReady()`
 resolves its Promise.
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 })
@@ -239,7 +239,7 @@ from within your existing `whenReady()` callback.
 
 [activate]: ../api/app.md#event-activate-macos
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 
@@ -290,8 +290,9 @@ To attach this script to your renderer process, pass in the path to your preload
 to the `webPreferences.preload` option in your existing `BrowserWindow` constructor.
 
 ```js
+const { app, BrowserWindow } = require('electron')
 // include the Node.js 'path' module at the top of your file
-const path = require('path')
+const path = require('node:path')
 
 // modify your existing createWindow() function
 const createWindow = () => {
@@ -357,7 +358,7 @@ The full code is available below:
 
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const createWindow = () => {
   // Create the browser window.
@@ -458,7 +459,14 @@ To summarize all the steps we've done:
 The fastest way to distribute your newly created app is using
 [Electron Forge](https://www.electronforge.io).
 
-1. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
+:::info
+
+To build an RPM package for Linux, you will need to [install its required system dependencies](https://www.electronforge.io/config/makers/rpm).
+
+:::
+
+1. Add a description to your `package.json` file, otherwise rpmbuild will fail. Blank description are not valid.
+2. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
 Forge's scaffolding:
 
    ```sh npm2yarn
@@ -477,7 +485,7 @@ Forge's scaffolding:
    Thanks for using "electron-forge"!!!
    ```
 
-2. Create a distributable using Forge's `make` command:
+3. Create a distributable using Forge's `make` command:
 
    ```sh npm2yarn
    npm run make

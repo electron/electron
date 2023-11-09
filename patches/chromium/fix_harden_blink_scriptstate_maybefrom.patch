@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 28 Jun 2023 21:11:40 +0900
+Subject: fix: harden blink::ScriptState::MaybeFrom
+
+This is needed as side effect of https://chromium-review.googlesource.com/c/chromium/src/+/4609446
+which now gets blink::ExecutionContext from blink::ScriptState
+and there are isolate callbacks which get entered from Node.js
+environment that has v8::Context not associated with blink::ScriptState.
+Some examples are ModifyCodeGenerationFromStrings in node_bindings.cc,
+blink::UseCounterCallback etc.
+
+Without this patch when blink::ScriptState::MaybeFrom tries to extract
+blink::ScriptState from the provided v8::Context and since Node.js has context
+embedder data fields with index greater than blink (see node_context_data.h)
+leading to the following CHECK failure.
+
+```
+script_state.h(169)] Security Check Failed: script_state
+```
+
+This patch adds a new tag in the context associated with ScriptState
+to uniquely identify. It is based on what Node.js does to identify the
+context created by it in `node_context_data.h`.
+
+PS: We are not performing a check like
+
+```
+ScriptState* script_state =
+    static_cast<ScriptState*>(context->GetAlignedPointerFromEmbedderData(
+        kV8ContextPerContextDataIndex));
+if (!script_state) {
+  return nullptr;
+}
+```
+
+since in 32-bit builds which does not have v8 sandbox enabled unlike 64-bit builds,
+the embedder data slot will not lazy initialize indexes in the former. This means
+accessing uninitialized lower indexes can return garbage values that cannot be null checked.
+Refer to v8::EmbedderDataSlot::store_aligned_pointer for context.
+
+diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
+index 8d7c5631fd8f1499c67384286f0e3c4037673b32..99b2e2f63be8a46c5546dd53bc9b05e8c54e857c 100644
+--- a/gin/public/gin_embedders.h
++++ b/gin/public/gin_embedders.h
+@@ -18,6 +18,8 @@ namespace gin {
+ enum GinEmbedder : uint16_t {
+   kEmbedderNativeGin,
+   kEmbedderBlink,
++  kEmbedderElectron,
++  kEmbedderBlinkTag,
+   kEmbedderPDFium,
+   kEmbedderFuchsia,
+ };
+diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
+index 7ff8785cd64c1264a88f91f7bd3292c6943f58ea..bc14ad8cab9fa3ec45bcb9f670b198970ecbeb92 100644
+--- a/third_party/blink/renderer/platform/bindings/script_state.cc
++++ b/third_party/blink/renderer/platform/bindings/script_state.cc
+@@ -13,6 +13,10 @@ namespace blink {
+ 
+ ScriptState::CreateCallback ScriptState::s_create_callback_ = nullptr;
+ 
++int const ScriptState::kScriptStateTag = 0x6e6f64;
++void* const ScriptState::kScriptStateTagPtr = const_cast<void*>(
++    static_cast<const void*>(&ScriptState::kScriptStateTag));
++
+ // static
+ void ScriptState::SetCreateCallback(CreateCallback create_callback) {
+   DCHECK(create_callback);
+@@ -37,6 +41,8 @@ ScriptState::ScriptState(v8::Local<v8::Context> context,
+   DCHECK(world_);
+   context_.SetWeak(this, &OnV8ContextCollectedCallback);
+   context->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex, this);
++  context->SetAlignedPointerInEmbedderData(
++      kV8ContextPerContextDataTagIndex, ScriptState::kScriptStateTagPtr);
+   RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
+                                                            execution_context);
+ }
+@@ -78,6 +84,8 @@ void ScriptState::DissociateContext() {
+   // Cut the reference from V8 context to ScriptState.
+   GetContext()->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex,
+                                                 nullptr);
++  GetContext()->SetAlignedPointerInEmbedderData(
++      kV8ContextPerContextDataTagIndex, nullptr);
+   reference_from_v8_context_.Clear();
+ 
+   // Cut the reference from ScriptState to V8 context.
+diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
+index 6230f4272feb8aab426d45bebe55846020931bcf..2a973e435cfb0fbe4675a4a34bde8d3ecb9f4ac4 100644
+--- a/third_party/blink/renderer/platform/bindings/script_state.h
++++ b/third_party/blink/renderer/platform/bindings/script_state.h
+@@ -182,7 +182,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+   static ScriptState* MaybeFrom(v8::Local<v8::Context> context) {
+     DCHECK(!context.IsEmpty());
+     if (context->GetNumberOfEmbedderDataFields() <=
+-        kV8ContextPerContextDataIndex) {
++        kV8ContextPerContextDataTagIndex) {
++      return nullptr;
++    }
++    if (context->GetAlignedPointerFromEmbedderData(
++            kV8ContextPerContextDataTagIndex) !=
++        ScriptState::kScriptStateTagPtr) {
+       return nullptr;
+     }
+     ScriptState* script_state =
+@@ -257,9 +262,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+   static void SetCreateCallback(CreateCallback);
+   friend class ScriptStateImpl;
+ 
++  static void* const kScriptStateTagPtr;
++  static int const kScriptStateTag;
+   static constexpr int kV8ContextPerContextDataIndex =
+       static_cast<int>(gin::kPerContextDataStartIndex) +
+       static_cast<int>(gin::kEmbedderBlink);
++  static constexpr int kV8ContextPerContextDataTagIndex =
++      static_cast<int>(gin::kPerContextDataStartIndex) +
++      static_cast<int>(gin::kEmbedderBlink) +
++      static_cast<int>(gin::kEmbedderBlinkTag);
+ };
+ 
+ // ScriptStateProtectingContext keeps the context associated with the

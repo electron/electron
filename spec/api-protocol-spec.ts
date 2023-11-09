@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
-import * as ChildProcess from 'child_process';
-import * as path from 'path';
-import * as url from 'url';
-import * as http from 'http';
-import * as fs from 'fs';
-import * as qs from 'querystring';
-import * as stream from 'stream';
-import { EventEmitter, once } from 'events';
+import * as ChildProcess from 'node:child_process';
+import * as path from 'node:path';
+import * as url from 'node:url';
+import * as http from 'node:http';
+import * as fs from 'node:fs';
+import * as qs from 'node:querystring';
+import * as stream from 'node:stream';
+import { EventEmitter, once } from 'node:events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { listen, defer, ifit } from './lib/spec-helpers';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -104,7 +104,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -263,7 +263,7 @@ describe('protocol module', () => {
         expect(r.headers).to.have.property('x-great-header', 'sogreat');
       });
 
-      it('can load iframes with custom protocols', (done) => {
+      it('can load iframes with custom protocols', async () => {
         registerFileProtocol('custom', (request, callback) => {
           const filename = request.url.substring(9);
           const p = path.join(__dirname, 'fixtures', 'pages', filename);
@@ -278,20 +278,9 @@ describe('protocol module', () => {
           }
         });
 
+        const loaded = once(ipcMain, 'loaded-iframe-custom-protocol');
         w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
-        ipcMain.once('loaded-iframe-custom-protocol', () => done());
-      });
-
-      // DISABLED-FIXME
-      it('throws an error when custom headers are invalid', (done) => {
-        registerFileProtocol(protocolName, (request, callback) => {
-          expect(() => callback({
-            path: filePath,
-            headers: { 'X-Great-Header': (42 as any) }
-          })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string');
-          done();
-        });
-        ajax(protocolName + '://fake-host').catch(() => {});
+        await loaded;
       });
 
       it('sends object as response', async () => {
@@ -569,7 +558,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -880,7 +869,6 @@ describe('protocol module', () => {
       await requestReceived;
     });
 
-    // DISABLED-FIXME
     it('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
@@ -1119,7 +1107,7 @@ describe('protocol module', () => {
           // In case of failure, make sure we unhandle. But we should succeed
           // :)
           protocol.unhandle('test-scheme');
-        } catch (_ignored) { /* ignore */ }
+        } catch { /* ignore */ }
       });
       const resp1 = await net.fetch('test-scheme://foo');
       expect(resp1.status).to.equal(200);
@@ -1127,11 +1115,32 @@ describe('protocol module', () => {
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
     });
 
-    it('receives requests to an existing scheme', async () => {
+    it('receives requests to the existing https scheme', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));
       defer(() => { protocol.unhandle('https'); });
       const body = await net.fetch('https://foo').then(r => r.text());
       expect(body).to.equal('hello https://foo/');
+    });
+
+    it('receives requests to the existing file scheme', (done) => {
+      const filePath = path.join(__dirname, 'fixtures', 'pages', 'a.html');
+
+      protocol.handle('file', (req) => {
+        let file;
+        if (process.platform === 'win32') {
+          file = `file:///${filePath.replaceAll('\\', '/')}`;
+        } else {
+          file = `file://${filePath}`;
+        }
+
+        if (req.url === file) done();
+        return new Response(req.url);
+      });
+
+      defer(() => { protocol.unhandle('file'); });
+
+      const w = new BrowserWindow();
+      w.loadFile(filePath);
     });
 
     it('receives requests to an existing scheme when navigating', async () => {
@@ -1222,6 +1231,42 @@ describe('protocol module', () => {
       protocol.handle('test-scheme', () => Response.error());
       defer(() => { protocol.unhandle('test-scheme'); });
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith('net::ERR_FAILED');
+    });
+
+    it('handles invalid protocol response status', async () => {
+      protocol.handle('test-scheme', () => {
+        return { status: [] } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
+    it('handles invalid protocol response statusText', async () => {
+      protocol.handle('test-scheme', () => {
+        return { statusText: false } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
+    it('handles invalid protocol response header parameters', async () => {
+      protocol.handle('test-scheme', () => {
+        return { headers: false } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
+    it('handles invalid protocol response body parameters', async () => {
+      protocol.handle('test-scheme', () => {
+        return { body: false } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
     });
 
     it('handles a synchronous error in the handler', async () => {

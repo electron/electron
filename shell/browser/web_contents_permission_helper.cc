@@ -4,8 +4,6 @@
 
 #include "shell/browser/web_contents_permission_helper.h"
 
-#include <memory>
-#include <string>
 #include <utility>
 
 #include "content/public/browser/browser_context.h"
@@ -19,7 +17,8 @@
 
 namespace {
 
-std::string MediaStreamTypeToString(blink::mojom::MediaStreamType type) {
+constexpr base::StringPiece MediaStreamTypeToString(
+    blink::mojom::MediaStreamType type) {
   switch (type) {
     case blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE:
       return "audio";
@@ -252,6 +251,15 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
       base::BindOnce(std::move(callback), web_contents_, user_gesture,
                      last_unlocked_by_target),
       user_gesture);
+}
+
+void WebContentsPermissionHelper::RequestKeyboardLockPermission(
+    bool esc_key_locked,
+    base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
+  RequestPermission(
+      web_contents_->GetPrimaryMainFrame(),
+      static_cast<blink::PermissionType>(PermissionType::KEYBOARD_LOCK),
+      base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(

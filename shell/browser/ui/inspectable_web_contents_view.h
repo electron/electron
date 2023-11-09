@@ -7,9 +7,9 @@
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
 #include <string>
-#include <vector>
 
-#include "shell/common/api/api.mojom.h"
+#include "base/memory/raw_ptr.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;
@@ -44,10 +44,6 @@ class InspectableWebContentsView {
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
   // Returns the container control, which has devtools view attached.
   virtual views::View* GetView() = 0;
-
-  // Returns the web view control, which can be used by the
-  // GetInitiallyFocusedView() to set initial focus to web view.
-  virtual views::View* GetWebView() = 0;
 #else
   virtual gfx::NativeView GetNativeView() const = 0;
 #endif
@@ -61,13 +57,15 @@ class InspectableWebContentsView {
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
   virtual void SetTitle(const std::u16string& title) = 0;
+  virtual const std::u16string GetTitle() = 0;
 
  protected:
   // Owns us.
-  InspectableWebContents* inspectable_web_contents_;
+  raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
  private:
-  InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.
+  raw_ptr<InspectableWebContentsViewDelegate> delegate_ =
+      nullptr;  // weak references.
 };
 
 }  // namespace electron
