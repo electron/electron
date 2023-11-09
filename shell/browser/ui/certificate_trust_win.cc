@@ -21,14 +21,14 @@ namespace certificate_trust {
 BOOL AddToTrustedRootStore(const PCCERT_CONTEXT cert_context,
                            const scoped_refptr<net::X509Certificate>& cert) {
   auto* root_cert_store = CertOpenStore(
-      CERT_STORE_PROV_SYSTEM, 0, NULL, CERT_SYSTEM_STORE_CURRENT_USER, L"Root");
+      CERT_STORE_PROV_SYSTEM, 0, 0, CERT_SYSTEM_STORE_CURRENT_USER, L"Root");
 
-  if (root_cert_store == NULL) {
+  if (root_cert_store == nullptr) {
     return false;
   }
 
   auto result = CertAddCertificateContextToStore(
-      root_cert_store, cert_context, CERT_STORE_ADD_REPLACE_EXISTING, NULL);
+      root_cert_store, cert_context, CERT_STORE_ADD_REPLACE_EXISTING, nullptr);
 
   if (result) {
     // force Chromium to reload it's database for this certificate
@@ -44,7 +44,7 @@ BOOL AddToTrustedRootStore(const PCCERT_CONTEXT cert_context,
 CERT_CHAIN_PARA GetCertificateChainParameters() {
   CERT_ENHKEY_USAGE enhkey_usage;
   enhkey_usage.cUsageIdentifier = 0;
-  enhkey_usage.rgpszUsageIdentifier = NULL;
+  enhkey_usage.rgpszUsageIdentifier = nullptr;
 
   CERT_USAGE_MATCH cert_usage;
   // ensure the rules are applied to the entire chain
@@ -69,8 +69,8 @@ v8::Local<v8::Promise> ShowCertificateTrust(
   auto cert_context = net::x509_util::CreateCertContextWithChain(cert.get());
   auto params = GetCertificateChainParameters();
 
-  if (CertGetCertificateChain(NULL, cert_context.get(), NULL, NULL, &params,
-                              NULL, NULL, &chain_context)) {
+  if (CertGetCertificateChain(nullptr, cert_context.get(), nullptr, nullptr,
+                              &params, 0, nullptr, &chain_context)) {
     auto error_status = chain_context->TrustStatus.dwErrorStatus;
     if (error_status == CERT_TRUST_IS_SELF_SIGNED ||
         error_status == CERT_TRUST_IS_UNTRUSTED_ROOT) {

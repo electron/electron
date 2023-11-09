@@ -133,8 +133,8 @@ void FileSelectHelper::ProcessSelectedFilesMacOnUIThread(
                             temporary_files.end());
 
     // Typically, |temporary_files| are deleted after |web_contents_| is
-    // destroyed. If |web_contents_| is already NULL, then the temporary files
-    // need to be deleted now.
+    // destroyed. If |web_contents_| is already nullptr, then the temporary
+    // files need to be deleted now.
     if (!web_contents_) {
       DeleteTemporaryFiles();
       RunFileChooserEnd();

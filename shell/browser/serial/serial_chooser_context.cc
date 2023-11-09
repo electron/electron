@@ -158,8 +158,7 @@ void SerialChooserContext::RevokePortPermissionWebInitiated(
   if (session) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
-    gin_helper::Dictionary details =
-        gin_helper::Dictionary::CreateEmpty(isolate);
+    auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("port", it->second);
     details.SetGetter("frame", render_frame_host);
     details.Set("origin", origin.Serialize());

@@ -169,7 +169,7 @@ v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
   if (timeValue.is_null()) {
     return v8::Null(isolate);
   }
-  double jsTime = timeValue.ToJsTime();
+  double jsTime = timeValue.InMillisecondsFSinceUnixEpoch();
   return v8::Number::New(isolate, jsTime);
 }
 

@@ -65,7 +65,7 @@ index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 2071c301644f95e6cd0448b08cc7b535343a55a0..ec6c6425f4d76557ddb37a80fd68c1086fc5103d 100644
+index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f30557a4f 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -613,6 +613,7 @@ class ProcessSingleton::LinuxWatcher
@@ -179,7 +179,7 @@ index 2071c301644f95e6cd0448b08cc7b535343a55a0..ec6c6425f4d76557ddb37a80fd68c108
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 3dff138357d9e1ae8d572df7630aa6ec429728a3..ae123a441bcf7939fad222d84e4bd6ec84bf6422 100644
+index 11f35769cc53b4aa111a319d155a3916f0040fa7..8e3e870eaac14ce6886878b027c7cf2eba19a759 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -80,10 +80,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {

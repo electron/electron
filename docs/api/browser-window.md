@@ -367,36 +367,6 @@ The following app commands are explicitly supported on Linux:
 * `browser-backward`
 * `browser-forward`
 
-#### Event: 'scroll-touch-begin' _macOS_ _Deprecated_
-
-Emitted when scroll wheel event phase has begun.
-
-> **Note**
-> This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
-> for details of how to migrate to using the [WebContents
-> `input-event`](./web-contents.md#event-input-event) event.
-
-#### Event: 'scroll-touch-end' _macOS_ _Deprecated_
-
-Emitted when scroll wheel event phase has ended.
-
-> **Note**
-> This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
-> for details of how to migrate to using the [WebContents
-> `input-event`](./web-contents.md#event-input-event) event.
-
-#### Event: 'scroll-touch-edge' _macOS_ _Deprecated_
-
-Emitted when scroll wheel event phase filed upon reaching the edge of element.
-
-> **Note**
-> This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
-> for details of how to migrate to using the [WebContents
-> `input-event`](./web-contents.md#event-input-event) event.
-
 #### Event: 'swipe' _macOS_
 
 Returns:
@@ -504,6 +474,10 @@ events.
 #### `win.id` _Readonly_
 
 A `Integer` property representing the unique ID of the window. Each ID is unique among all `BrowserWindow` instances of the entire Electron application.
+
+#### `win.tabbingIdentifier` _macOS_ _Readonly_
+
+A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
 
 #### `win.autoHideMenuBar`
 
@@ -1647,7 +1621,7 @@ removed in future Electron releases.
 * `options` Object
   * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
   * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
-  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+  * `height` Integer (optional) _macOS_ _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
 
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.

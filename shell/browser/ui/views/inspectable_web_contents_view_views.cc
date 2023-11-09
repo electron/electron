@@ -142,8 +142,11 @@ void InspectableWebContentsViewViews::CloseDevTools() {
 
   devtools_visible_ = false;
   if (devtools_window_) {
-    inspectable_web_contents()->SaveDevToolsBounds(
-        devtools_window_->GetWindowBoundsInScreen());
+    auto save_bounds = devtools_window_->IsMinimized()
+                           ? devtools_window_->GetRestoredBounds()
+                           : devtools_window_->GetWindowBoundsInScreen();
+    inspectable_web_contents()->SaveDevToolsBounds(save_bounds);
+
     devtools_window_.reset();
     devtools_window_web_view_ = nullptr;
     devtools_window_delegate_ = nullptr;
@@ -216,6 +219,8 @@ const std::u16string InspectableWebContentsViewViews::GetTitle() {
 void InspectableWebContentsViewViews::Layout() {
   if (!devtools_web_view_->GetVisible()) {
     contents_web_view_->SetBoundsRect(GetContentsBounds());
+    // Propagate layout call to all children, for example browser views.
+    View::Layout();
     return;
   }
 
@@ -232,6 +237,9 @@ void InspectableWebContentsViewViews::Layout() {
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
   contents_web_view_->SetBoundsRect(new_contents_bounds);
+
+  // Propagate layout call to all children, for example browser views.
+  View::Layout();
 
   if (GetDelegate())
     GetDelegate()->DevToolsResized();

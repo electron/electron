@@ -273,7 +273,6 @@ This API is only available on macOS 10.14 Mojave or newer.
     * `window-frame` - Window frame.
     * `window-text` - Text in windows.
   * On **macOS**
-    * `alternate-selected-control-text` - The text on a selected surface in a list or table. _Deprecated_
     * `control-background` - The background of a large interface element, such as a browser or table.
     * `control` - The surface of a control.
     * `control-text` -The text of a control that isn’t disabled.
@@ -307,7 +306,7 @@ This API is only available on macOS 10.14 Mojave or newer.
     * `window-background` - The background of a window.
     * `window-frame-text` - The text in the window's titlebar area.
 
-Returns `string` - The system color setting in RGB hexadecimal form (`#ABCDEF`).
+Returns `string` - The system color setting in RGBA hexadecimal form (`#RRGGBBAA`).
 See the [Windows docs][windows-colors] and the [macOS docs][macos-colors] for more details.
 
 The following colors are only available on macOS 10.14: `find-highlight`, `selected-content-background`, `separator`, `unemphasized-selected-content-background`, `unemphasized-selected-text-background`, and `unemphasized-selected-text`.
@@ -338,21 +337,6 @@ Returns `string` - Can be `dark`, `light` or `unknown`.
 
 Gets the macOS appearance setting that is currently applied to your application,
 maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
-
-### `systemPreferences.getAppLevelAppearance()` _macOS_ _Deprecated_
-
-Returns `string` | `null` - Can be `dark`, `light` or `unknown`.
-
-Gets the macOS appearance setting that you have declared you want for
-your application, maps to [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc).
-You can use the `setAppLevelAppearance` API to set this value.
-
-### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_ _Deprecated_
-
-* `appearance` string | null - Can be `dark` or `light`
-
-Sets the appearance setting for your application, this should override the
-system default and override the value of `getEffectiveAppearance`.
 
 ### `systemPreferences.canPromptTouchID()` _macOS_
 
@@ -417,15 +401,9 @@ Returns an object with system animation settings.
 
 ## Properties
 
-### `systemPreferences.appLevelAppearance` _macOS_ _Deprecated_
+### `systemPreferences.accessibilityDisplayShouldReduceTransparency()` _macOS_
 
-A `string` property that can be `dark`, `light` or `unknown`. It determines the macOS appearance setting for
-your application. This maps to values in: [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc). Setting this will override the
-system default as well as the value of `getEffectiveAppearance`.
-
-Possible values that can be set are `dark` and `light`, and possible return values are `dark`, `light`, and `unknown`.
-
-This property is only available on macOS 10.14 Mojave or newer.
+A `boolean` property which determines whether the app avoids using semitransparent backgrounds. This maps to [NSWorkspace.accessibilityDisplayShouldReduceTransparency](https://developer.apple.com/documentation/appkit/nsworkspace/1533006-accessibilitydisplayshouldreduce)
 
 ### `systemPreferences.effectiveAppearance` _macOS_ _Readonly_
 

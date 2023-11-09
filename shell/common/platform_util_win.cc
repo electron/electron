@@ -117,7 +117,7 @@ HRESULT DeleteFileProgressSink::PreDeleteItem(DWORD dwFlags, IShellItem*) {
 }
 
 HRESULT DeleteFileProgressSink::QueryInterface(REFIID riid, LPVOID* ppvObj) {
-  // Always set out parameter to NULL, validating it first.
+  // Always set out parameter to nullptr, validating it first.
   if (!ppvObj)
     return E_INVALIDARG;
   *ppvObj = nullptr;
@@ -285,16 +285,16 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     return;
 
   base::win::ScopedCoMem<ITEMIDLIST> dir_item;
-  hr = desktop->ParseDisplayName(NULL, NULL,
+  hr = desktop->ParseDisplayName(nullptr, nullptr,
                                  const_cast<wchar_t*>(dir.value().c_str()),
-                                 NULL, &dir_item, NULL);
+                                 nullptr, &dir_item, nullptr);
   if (FAILED(hr))
     return;
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
   hr = desktop->ParseDisplayName(
-      NULL, NULL, const_cast<wchar_t*>(full_path.value().c_str()), NULL,
-      &file_item, NULL);
+      nullptr, nullptr, const_cast<wchar_t*>(full_path.value().c_str()),
+      nullptr, &file_item, nullptr);
   if (FAILED(hr))
     return;
 
@@ -305,7 +305,8 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     // found" even though the file is there.  In these cases, ShellExecute()
     // seems to work as a fallback (although it won't select the file).
     if (hr == ERROR_FILE_NOT_FOUND) {
-      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+      ShellExecute(nullptr, L"open", dir.value().c_str(), nullptr, nullptr,
+                   SW_SHOW);
     } else {
       LOG(WARNING) << " " << __func__ << "(): Can't open full_path = \""
                    << full_path.value() << "\""
@@ -380,7 +381,7 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
 
   // Create an IShellItem from the supplied source path.
   Microsoft::WRL::ComPtr<IShellItem> delete_item;
-  if (FAILED(SHCreateItemFromParsingName(path.value().c_str(), NULL,
+  if (FAILED(SHCreateItemFromParsingName(path.value().c_str(), nullptr,
                                          IID_PPV_ARGS(&delete_item)))) {
     *error = "Failed to parse path";
     return false;
@@ -433,8 +434,8 @@ bool GetFolderPath(int key, base::FilePath* result) {
 
   switch (key) {
     case electron::DIR_RECENT:
-      if (FAILED(SHGetFolderPath(NULL, CSIDL_RECENT, NULL, SHGFP_TYPE_CURRENT,
-                                 system_buffer))) {
+      if (FAILED(SHGetFolderPath(nullptr, CSIDL_RECENT, nullptr,
+                                 SHGFP_TYPE_CURRENT, system_buffer))) {
         return false;
       }
       *result = base::FilePath(system_buffer);

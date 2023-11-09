@@ -133,7 +133,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
       });
 
   if (const auto* iter = Lookup.find(color); iter != Lookup.end())
-    return ToRGBHex(color_utils::GetSysSkColor(iter->second));
+    return ToRGBAHex(color_utils::GetSysSkColor(iter->second));
 
   thrower.ThrowError("Unknown color: " + color);
   return "";
@@ -171,7 +171,7 @@ void SystemPreferences::InitializeWindow() {
   base::win::InitializeWindowClass(
       kSystemPreferencesWindowClass,
       &base::win::WrappedWindowProc<SystemPreferences::WndProcStatic>, 0, 0, 0,
-      NULL, NULL, NULL, NULL, NULL, &window_class);
+      nullptr, nullptr, nullptr, nullptr, nullptr, &window_class);
   instance_ = window_class.hInstance;
   atom_ = RegisterClassEx(&window_class);
 

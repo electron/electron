@@ -104,14 +104,26 @@ branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
-electron_version = exec_script("script/print-version.py",
-                               [],
-                               "trim string",
-                               [
-                                 ".git/packed-refs",
-                                 ".git/HEAD",
-                                 "script/lib/get-version.js",
-                               ])
+
+if (override_electron_version != "") {
+  electron_version = override_electron_version
+} else {
+  # When building from source code tarball there is no git tag available and
+  # builders must explicitly pass override_electron_version in gn args.
+  # This read_file call will assert if there is no git information, without it
+  # gn will generate a malformed build configuration and ninja will get into
+  # infinite loop.
+  read_file(".git/packed-refs", "string")
+
+  # Set electron version from git tag.
+  electron_version = exec_script("script/get-git-version.py",
+                                 [],
+                                 "trim string",
+                                 [
+                                   ".git/packed-refs",
+                                   ".git/HEAD",
+                                 ])
+}
 
 if (is_mas_build) {
   assert(is_mac,
@@ -422,6 +434,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//components/autofill/core/common:features",
     "//components/certificate_transparency",
+    "//components/compose:buildflags",
     "//components/embedder_support:browser_util",
     "//components/language/core/browser",
     "//components/net_log",
@@ -430,6 +443,8 @@ source_set("electron_lib") {
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
     "//components/omnibox/browser:buildflags",
+    "//components/os_crypt/async/browser",
+    "//components/os_crypt/async/browser:key_provider_interface",
     "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
@@ -701,6 +716,7 @@ source_set("electron_lib") {
       "shell/common/extensions/api",
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
+      "//components/guest_view/common:mojom",
       "//components/update_client:update_client",
       "//components/zoom",
       "//extensions/browser",
@@ -904,10 +920,7 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [
-        ":electron_framework+link",
-        "//base/allocator:early_zone_registration_apple",
-      ]
+      deps = [ ":electron_framework+link" ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
@@ -1068,7 +1081,6 @@ if (is_mac) {
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
-      "//base/allocator:early_zone_registration_apple",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
@@ -1318,25 +1330,6 @@ if (is_mac) {
       ]
     }
   }
-}
-
-test("shell_browser_ui_unittests") {
-  sources = [
-    "//electron/shell/browser/ui/accelerator_util_unittests.cc",
-    "//electron/shell/browser/ui/run_all_unittests.cc",
-  ]
-
-  configs += [ ":electron_lib_config" ]
-
-  deps = [
-    ":electron_lib",
-    "//base",
-    "//base/test:test_support",
-    "//testing/gmock",
-    "//testing/gtest",
-    "//ui/base",
-    "//ui/strings",
-  ]
 }
 
 template("dist_zip") {

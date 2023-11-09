@@ -38,6 +38,7 @@
 #include "extensions/common/mojom/run_location.mojom-shared.h"
 #include "extensions/common/permissions/api_permission.h"
 #include "extensions/common/permissions/permissions_data.h"
+#include "extensions/common/script_constants.h"
 #include "extensions/common/utils/content_script_utils.h"
 #include "extensions/common/utils/extension_types_utils.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -64,11 +65,11 @@ mojom::CSSOrigin ConvertStyleOriginToCSSOrigin(
     api::scripting::StyleOrigin style_origin) {
   mojom::CSSOrigin css_origin = mojom::CSSOrigin::kAuthor;
   switch (style_origin) {
-    case api::scripting::STYLE_ORIGIN_NONE:
-    case api::scripting::STYLE_ORIGIN_AUTHOR:
+    case api::scripting::StyleOrigin::kNone:
+    case api::scripting::StyleOrigin::kAuthor:
       css_origin = mojom::CSSOrigin::kAuthor;
       break;
-    case api::scripting::STYLE_ORIGIN_USER:
+    case api::scripting::StyleOrigin::kUser:
       css_origin = mojom::CSSOrigin::kUser;
       break;
   }
@@ -80,10 +81,10 @@ mojom::ExecutionWorld ConvertExecutionWorld(
     api::scripting::ExecutionWorld world) {
   mojom::ExecutionWorld execution_world = mojom::ExecutionWorld::kIsolated;
   switch (world) {
-    case api::scripting::EXECUTION_WORLD_NONE:
-    case api::scripting::EXECUTION_WORLD_ISOLATED:
+    case api::scripting::ExecutionWorld::kNone:
+    case api::scripting::ExecutionWorld::kIsolated:
       break;  // Default to mojom::ExecutionWorld::kIsolated.
-    case api::scripting::EXECUTION_WORLD_MAIN:
+    case api::scripting::ExecutionWorld::kMain:
       execution_world = mojom::ExecutionWorld::kMain;
   }
 
@@ -94,15 +95,15 @@ api::scripting::ExecutionWorld ConvertExecutionWorldForAPI(
     mojom::ExecutionWorld world) {
   switch (world) {
     case mojom::ExecutionWorld::kIsolated:
-      return api::scripting::EXECUTION_WORLD_ISOLATED;
+      return api::scripting::ExecutionWorld::kIsolated;
     case mojom::ExecutionWorld::kMain:
-      return api::scripting::EXECUTION_WORLD_MAIN;
+      return api::scripting::ExecutionWorld::kMain;
     case mojom::ExecutionWorld::kUserScript:
       NOTREACHED() << "UserScript worlds are not supported in this API.";
   }
 
   NOTREACHED();
-  return api::scripting::EXECUTION_WORLD_ISOLATED;
+  return api::scripting::ExecutionWorld::kIsolated;
 }
 
 std::string InjectionKeyForCode(const mojom::HostID& host_id,
@@ -469,18 +470,32 @@ std::unique_ptr<UserScript> ParseUserScript(
     result->set_run_location(ConvertRunLocation(content_script.run_at));
   }
 
-  if (content_script.all_frames)
+  if (content_script.all_frames) {
     result->set_match_all_frames(*content_script.all_frames);
+  }
 
   DCHECK(content_script.matches);
   if (!script_parsing::ParseMatchPatterns(
           *content_script.matches,
-          base::OptionalToPtr(content_script.exclude_matches), definition_index,
+          base::OptionalToPtr(content_script.exclude_matches),
           extension.creation_flags(), scripting::kScriptsCanExecuteEverywhere,
-          valid_schemes, scripting::kAllUrlsIncludesChromeUrls, result.get(),
-          error,
+          valid_schemes, scripting::kAllUrlsIncludesChromeUrls,
+          /*definition_index=*/absl::nullopt, result.get(), error,
           /*wants_file_access=*/nullptr)) {
     return nullptr;
+  }
+
+  if (content_script.match_origin_as_fallback.value_or(false)) {
+    if (!script_parsing::ValidateMatchOriginAsFallback(
+            MatchOriginAsFallbackBehavior::kAlways, result->url_patterns(),
+            error)) {
+      return nullptr;
+    }
+
+    // Default value for MatchOriginAsFallbackBehavior is `kNever`, so this only
+    // needs to be set if `content_script.match_origin_as_fallback` is true.
+    result->set_match_origin_as_fallback(
+        MatchOriginAsFallbackBehavior::kAlways);
   }
 
   if (!script_parsing::ParseFileSources(

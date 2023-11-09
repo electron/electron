@@ -55,6 +55,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.cc",
+    "//chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
     "//chrome/browser/platform_util.cc",
@@ -98,8 +100,6 @@ static_library("chrome") {
     "//chrome/browser/ui/ui_features.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
-    "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
-    "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
     "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.h",
@@ -154,15 +154,6 @@ static_library("chrome") {
     sources += [ "//chrome/browser/media/webrtc/window_icon_util_ozone.cc" ]
   }
 
-  if (use_aura) {
-    sources += [
-      "//chrome/browser/platform_util_aura.cc",
-      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
-      "//ui/views/native_window_tracker_aura.cc",
-      "//ui/views/native_window_tracker_aura.h",
-    ]
-  }
-
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
@@ -187,6 +178,16 @@ static_library("chrome") {
     "//ui/views/controls/webview",
   ]
 
+  if (use_aura) {
+    sources += [
+      "//chrome/browser/platform_util_aura.cc",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_aura.cc",
+      "//ui/views/native_window_tracker_aura.cc",
+      "//ui/views/native_window_tracker_aura.h",
+    ]
+    deps += [ "//components/eye_dropper" ]
+  }
+
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
     if (use_ozone) {
@@ -202,6 +203,10 @@ static_library("chrome") {
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h",
     ]
+    sources += [
+      "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
+      "//chrome/browser/ui/views/dark_mode_manager_linux.h",
+    ]
     public_deps += [
       "//components/dbus/menu",
       "//components/dbus/thread_linux",
@@ -213,7 +218,11 @@ static_library("chrome") {
       "//chrome/browser/win/icon_reader_service.cc",
       "//chrome/browser/win/icon_reader_service.h",
     ]
-    public_deps += [ "//chrome/services/util_win:lib" ]
+    public_deps += [
+      "//chrome/browser/web_applications/proto",
+      "//chrome/services/util_win:lib",
+      "//components/webapps/common:mojo_bindings",
+    ]
   }
 
   if (is_mac) {
@@ -332,6 +341,34 @@ static_library("chrome") {
         "//components/pdf/renderer",
       ]
     }
+  } else {
+    # These are required by the webRequest module.
+    sources += [
+      "//extensions/browser/api/declarative_net_request/request_action.cc",
+      "//extensions/browser/api/declarative_net_request/request_action.h",
+      "//extensions/browser/api/web_request/form_data_parser.cc",
+      "//extensions/browser/api/web_request/form_data_parser.h",
+      "//extensions/browser/api/web_request/upload_data_presenter.cc",
+      "//extensions/browser/api/web_request/upload_data_presenter.h",
+      "//extensions/browser/api/web_request/web_request_api_constants.cc",
+      "//extensions/browser/api/web_request/web_request_api_constants.h",
+      "//extensions/browser/api/web_request/web_request_info.cc",
+      "//extensions/browser/api/web_request/web_request_info.h",
+      "//extensions/browser/api/web_request/web_request_resource_type.cc",
+      "//extensions/browser/api/web_request/web_request_resource_type.h",
+      "//extensions/browser/extension_api_frame_id_map.cc",
+      "//extensions/browser/extension_api_frame_id_map.h",
+      "//extensions/browser/extension_navigation_ui_data.cc",
+      "//extensions/browser/extension_navigation_ui_data.h",
+      "//extensions/browser/extensions_browser_client.cc",
+      "//extensions/browser/extensions_browser_client.h",
+      "//extensions/browser/guest_view/web_view/web_view_renderer_state.cc",
+      "//extensions/browser/guest_view/web_view/web_view_renderer_state.h",
+    ]
+
+    public_deps += [
+      "//extensions/browser/api/declarative_net_request/flat:extension_ruleset",
+    ]
   }
 
   if (!is_mas_build) {

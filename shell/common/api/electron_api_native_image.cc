@@ -114,8 +114,8 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 
   // Load the icon from file.
   return base::win::ScopedHICON(
-      static_cast<HICON>(LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON,
-                                   size, size, LR_LOADFROMFILE)));
+      static_cast<HICON>(LoadImage(nullptr, image_path.value().c_str(),
+                                   IMAGE_ICON, size, size, LR_LOADFROMFILE)));
 }
 #endif
 
@@ -214,7 +214,7 @@ HICON NativeImage::GetHICON(int size) {
 
   // Then convert the image to ICO.
   if (image_.IsEmpty())
-    return NULL;
+    return nullptr;
 
   auto& hicon = hicons_[size];
   hicon = IconUtil::CreateHICONFromSkBitmap(image_.AsBitmap());

@@ -11,6 +11,7 @@ import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { once } from 'node:events';
 import split = require('split')
+import * as semver from 'semver';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -492,7 +493,9 @@ describe('app module', () => {
   describe('BrowserWindow events', () => {
     let w: BrowserWindow = null as any;
 
-    afterEach(() => closeWindow(w).then(() => { w = null as any; }));
+    afterEach(() => {
+      closeWindow(w).then(() => { w = null as any; });
+    });
 
     it('should emit browser-window-focus event when window is focused', async () => {
       const emitted = once(app, 'browser-window-focus') as Promise<[any, BrowserWindow]>;
@@ -522,24 +525,6 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false });
       const [, webContents] = await emitted;
       expect(webContents.id).to.equal(w.webContents.id);
-    });
-
-    // FIXME: re-enable this test on win32.
-    ifit(process.platform !== 'win32')('should emit renderer-process-crashed event when renderer crashes', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        }
-      });
-      await w.loadURL('about:blank');
-
-      const emitted = once(app, 'renderer-process-crashed') as Promise<[any, WebContents]>;
-      w.webContents.executeJavaScript('process.crash()');
-
-      const [, webContents] = await emitted;
-      expect(webContents).to.equal(w.webContents);
     });
 
     // FIXME: re-enable this test on win32.
@@ -610,6 +595,9 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform !== 'linux' && !process.mas)('app.get/setLoginItemSettings API', function () {
+    const isMac = process.platform === 'darwin';
+    const isWin = process.platform === 'win32';
+
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
@@ -625,6 +613,8 @@ describe('app module', () => {
       '/f',
       '/d'
     ];
+    const productVersion = isMac ? cp.execSync('sw_vers -productVersion').toString().trim() : '';
+    const isVenturaOrHigher = semver.gt(semver.coerce(productVersion) || '0.0.0', '13.0.0');
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
@@ -638,18 +628,19 @@ describe('app module', () => {
       app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
     });
 
-    ifit(process.platform !== 'win32')('sets and returns the app as a login item', function () {
+    ifit(!isWin)('sets and returns the app as a login item', () => {
       app.setLoginItemSettings({ openAtLogin: true });
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      });
+
+      const settings = app.getLoginItemSettings();
+      expect(settings.openAtLogin).to.equal(true);
+      expect(settings.openAsHidden).to.equal(false);
+      expect(settings.wasOpenedAtLogin).to.equal(false);
+      expect(settings.wasOpenedAsHidden).to.equal(false);
+      expect(settings.restoreState).to.equal(false);
+      if (isVenturaOrHigher) expect(settings.status).to.equal('enabled');
     });
 
-    ifit(process.platform === 'win32')('sets and returns the app as a login item (windows)', function () {
+    ifit(isWin)('sets and returns the app as a login item (windows)', () => {
       app.setLoginItemSettings({ openAtLogin: true, enabled: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -686,18 +677,21 @@ describe('app module', () => {
       });
     });
 
-    ifit(process.platform !== 'win32')('adds a login item that loads in hidden mode', function () {
+    ifit(!isWin)('adds a login item that loads in hidden mode', () => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      });
+
+      const settings = app.getLoginItemSettings();
+      expect(settings.openAtLogin).to.equal(true);
+
+      const hasOpenAsHidden = process.platform === 'darwin' && !isVenturaOrHigher;
+      expect(settings.openAsHidden).to.equal(hasOpenAsHidden);
+      expect(settings.wasOpenedAtLogin).to.equal(false);
+      expect(settings.wasOpenedAsHidden).to.equal(false);
+      expect(settings.restoreState).to.equal(false);
+      if (isVenturaOrHigher) expect(settings.status).to.equal('enabled');
     });
 
-    ifit(process.platform === 'win32')('adds a login item that loads in hidden mode (windows)', function () {
+    ifit(isWin)('adds a login item that loads in hidden mode (windows)', () => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -716,7 +710,7 @@ describe('app module', () => {
       });
     });
 
-    it('correctly sets and unsets the LoginItem', function () {
+    it('correctly sets and unsets the LoginItem', () => {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
 
       app.setLoginItemSettings({ openAtLogin: true });
@@ -726,20 +720,76 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
     });
 
-    ifit(process.platform === 'darwin')('correctly sets and unsets the LoginItem as hidden', function () {
+    ifit(isMac)('correctly sets and unsets the LoginItem as hidden', () => {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
       expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
 
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
       expect(app.getLoginItemSettings().openAtLogin).to.equal(true);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(true);
+      expect(app.getLoginItemSettings().openAsHidden).to.equal(!isVenturaOrHigher);
 
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false });
       expect(app.getLoginItemSettings().openAtLogin).to.equal(true);
       expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
     });
 
-    ifit(process.platform === 'win32')('allows you to pass a custom executable and arguments', function () {
+    ifdescribe(isMac)('using SMAppService', () => {
+      ifit(isVenturaOrHigher)('can set a login item', () => {
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          type: 'mainAppService'
+        });
+
+        expect(app.getLoginItemSettings()).to.deep.equal({
+          status: 'enabled',
+          openAtLogin: true,
+          openAsHidden: false,
+          restoreState: false,
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false
+        });
+      });
+
+      ifit(isVenturaOrHigher)('throws when setting non-default type with no name', () => {
+        expect(() => {
+          app.setLoginItemSettings({
+            openAtLogin: true,
+            type: 'daemonService'
+          });
+        }).to.throw(/'name' is required when type is not mainAppService/);
+      });
+
+      ifit(isVenturaOrHigher)('throws when getting non-default type with no name', () => {
+        expect(() => {
+          app.getLoginItemSettings({
+            type: 'daemonService'
+          });
+        }).to.throw(/'name' is required when type is not mainAppService/);
+      });
+
+      ifit(isVenturaOrHigher)('can unset a login item', () => {
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          type: 'mainAppService'
+        });
+
+        app.setLoginItemSettings({
+          openAtLogin: false,
+          type: 'mainAppService'
+        });
+
+        expect(app.getLoginItemSettings()).to.deep.equal({
+          status: 'not-registered',
+          openAtLogin: false,
+          openAsHidden: false,
+          restoreState: false,
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false
+        });
+      });
+    });
+
+    ifit(isWin)('allows you to pass a custom executable and arguments', () => {
       app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: true });
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
       const openAtLoginTrueEnabledTrue = app.getLoginItemSettings({
@@ -769,7 +819,7 @@ describe('app module', () => {
       expect(openAtLoginFalseEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
     });
 
-    ifit(process.platform === 'win32')('allows you to pass a custom name', function () {
+    ifit(isWin)('allows you to pass a custom name', () => {
       app.setLoginItemSettings({ openAtLogin: true });
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false });
       expect(app.getLoginItemSettings()).to.deep.equal({
@@ -812,7 +862,7 @@ describe('app module', () => {
       });
     });
 
-    ifit(process.platform === 'win32')('finds launch items independent of args', function () {
+    ifit(isWin)('finds launch items independent of args', () => {
       app.setLoginItemSettings({ openAtLogin: true, args: ['arg1'] });
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg2'] });
       expect(app.getLoginItemSettings()).to.deep.equal({
@@ -838,7 +888,7 @@ describe('app module', () => {
       });
     });
 
-    ifit(process.platform === 'win32')('finds launch items independent of path quotation or casing', function () {
+    ifit(isWin)('finds launch items independent of path quotation or casing', () => {
       const expectation = {
         openAtLogin: false,
         openAsHidden: false,
@@ -874,7 +924,7 @@ describe('app module', () => {
       });
     });
 
-    ifit(process.platform === 'win32')('detects disabled by TaskManager', async function () {
+    ifit(isWin)('detects disabled by TaskManager', async () => {
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, args: ['arg1'] });
       const appProcess = cp.spawn('reg', [...regAddArgs, '030000000000000000000000']);
       await once(appProcess, 'exit');
@@ -895,7 +945,7 @@ describe('app module', () => {
       });
     });
 
-    ifit(process.platform === 'win32')('detects enabled by TaskManager', async function () {
+    ifit(isWin)('detects enabled by TaskManager', async () => {
       const expectation = {
         openAtLogin: false,
         openAsHidden: false,

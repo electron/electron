@@ -431,6 +431,19 @@ describe('webContents module', () => {
       }
     });
 
+    it('fails if loadURL is called inside a non-reentrant critical section', (done) => {
+      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+        expect(validatedURL).to.contain('blank.html');
+        done();
+      });
+
+      w.webContents.once('did-start-loading', () => {
+        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      });
+
+      w.loadURL('data:text/html,<h1>HELLO</h1>');
+    });
+
     it('sets appropriate error information on rejection', async () => {
       let err: any;
       try {
@@ -837,6 +850,20 @@ describe('webContents module', () => {
       expect(shiftKey).to.be.false();
       expect(ctrlKey).to.be.false();
       expect(altKey).to.be.false();
+    });
+
+    it('can correctly convert accelerators to key codes', async () => {
+      const keyup = once(ipcMain, 'keyup');
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'keyUp' });
+
+      await keyup;
+      const inputText = await w.webContents.executeJavaScript('document.getElementById("input").value');
+      expect(inputText).to.equal('+ + +');
     });
 
     it('can send char events with modifiers', async () => {
@@ -2313,17 +2340,6 @@ describe('webContents module', () => {
       bw.webContents.executeJavaScript('child.document.title = "new title"');
       const [, title] = await once(child, 'page-title-updated') as [any, string];
       expect(title).to.equal('new title');
-    });
-  });
-
-  describe('crashed event', () => {
-    it('does not crash main process when destroying WebContents in it', async () => {
-      const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
-      const crashEvent = once(contents, 'render-process-gone');
-      await contents.loadURL('about:blank');
-      contents.forcefullyCrashRenderer();
-      await crashEvent;
-      contents.destroy();
     });
   });
 

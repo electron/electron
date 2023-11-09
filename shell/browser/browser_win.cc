@@ -69,10 +69,12 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::StringPrintf(L"\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
-                              base::JoinString(launch_args, L"\"  \"").c_str());
+    *exe = base::UTF8ToWide(
+        base::StringPrintf("\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
+                           base::JoinString(launch_args, L"\"  \"").c_str()));
   else
-    *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
+    *exe =
+        base::UTF8ToWide(base::StringPrintf("\"%ls\" \"%%1\"", exe->c_str()));
   return true;
 }
 
@@ -98,8 +100,8 @@ std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
   wchar_t out_buffer[1024];
   DWORD buffer_size = std::size(out_buffer);
   HRESULT hr =
-      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
-                       out_buffer, &buffer_size);
+      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(),
+                       nullptr, out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
     return std::wstring();
@@ -140,8 +142,8 @@ bool FormatCommandLineString(std::wstring* exe,
 
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
-                              base::as_wcstr(joined_launch_args));
+    *exe = base::UTF8ToWide(base::StringPrintf(
+        "%ls %ls", exe->c_str(), base::as_wcstr(joined_launch_args)));
   }
 
   return true;
@@ -313,7 +315,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
-  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
+  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), nullptr,
                                            IID_PPV_ARGS(&item));
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;

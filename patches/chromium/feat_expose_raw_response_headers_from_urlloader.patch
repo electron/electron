@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 14049395fbc56fbb4b755da918cc82a9b3e024d4..c9db1f47dca8d166ec6b4391059c3ffbbeff31b4 100644
+index 2a309fe2b1dd672c6a38889f707eb84872cfa57b..a98bcfdef9a7d7723971fd4f8f95317221de3bb4 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -151,6 +151,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -37,7 +37,7 @@ index 14049395fbc56fbb4b755da918cc82a9b3e024d4..c9db1f47dca8d166ec6b4391059c3ffb
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           client_security_state == other.client_security_state;
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index facf69cab3dc0c21ca7eddb7f2828fa7765c5744..45d0bce5d469a977ae8dafe5129265dfd52beea5 100644
+index 2ce7143ee3820e559f68dc67d2b4b6e058235289..9ddf9a26a155aeb6ef0f5c7af6bcb4d92fe6268f 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -69,6 +69,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -49,7 +49,7 @@ index facf69cab3dc0c21ca7eddb7f2828fa7765c5744..45d0bce5d469a977ae8dafe5129265df
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index a7fd270571a01ddaf2971ec1cdc845029bdf9a5e..fc567eeb9332ba7a4018bf51f2ef805e6a7bba71 100644
+index 502a59bd7547c76ed0e57bc9a8b8cfbfcf9eb30b..7db96c8bfe2bbd5d0c9aee3ecd9786d08d306978 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -93,6 +93,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
@@ -61,7 +61,7 @@ index a7fd270571a01ddaf2971ec1cdc845029bdf9a5e..fc567eeb9332ba7a4018bf51f2ef805e
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index aa9a2bffeb7d5c318fe0a094e82ad43a78c8cc9a..97dfddac3d1b520f025a2b50f55519e0295fa612 100644
+index 1831d5c28d79e95ede87e3bd015fc1033c2adcd4..0e8d4b24f8d19c9aee79be1d14abe70c860f637a 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -73,6 +73,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -76,7 +76,7 @@ index aa9a2bffeb7d5c318fe0a094e82ad43a78c8cc9a..97dfddac3d1b520f025a2b50f55519e0
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index ce3b7cef16884a6689fea06907d346452e754925..41c7ae0e74b9dfc65c82141e64b4652d735465da 100644
+index 627a3df2debbc2a66be14556641f29232820ccf7..2a6a6e23244d9e1bc1b1f63279766e61f3962180 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -74,6 +74,9 @@ struct TrustedUrlRequestParams {
@@ -90,7 +90,7 @@ index ce3b7cef16884a6689fea06907d346452e754925..41c7ae0e74b9dfc65c82141e64b4652d
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index d0df2913c2e5102cfd1e1ff140e6c95d168900bd..830f90a83774e32116757f8a3b9598492dff33ee 100644
+index a58666f95cf6c0974e25b0c2805f944b290358ae..fa77efab0cbe5a702796a0e374f847c1f0cba697 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -12,6 +12,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,10 +112,10 @@ index d0df2913c2e5102cfd1e1ff140e6c95d168900bd..830f90a83774e32116757f8a3b959849
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c509cb5af0a15979ea8044367e7b19ba61d09179..4ad8c5476cbf00a4246ec524e5d95037b06a7151 100644
+index db1b5a2fd512ae02d10627bc41d9e3b51e5eb4a2..f92132a446abf8f7134e8539e6875914a211ea55 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -623,6 +623,7 @@ URLLoader::URLLoader(
+@@ -625,6 +625,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index c509cb5af0a15979ea8044367e7b19ba61d09179..4ad8c5476cbf00a4246ec524e5d95037
    }
  
    // Store any cookies passed from the browser process to later attach them to
-@@ -661,7 +662,7 @@ URLLoader::URLLoader(
+@@ -663,7 +664,7 @@ URLLoader::URLLoader(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +132,7 @@ index c509cb5af0a15979ea8044367e7b19ba61d09179..4ad8c5476cbf00a4246ec524e5d95037
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1596,6 +1597,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1598,6 +1599,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,10 +153,10 @@ index c509cb5af0a15979ea8044367e7b19ba61d09179..4ad8c5476cbf00a4246ec524e5d95037
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 5ac365a6aa5a1b3832312fe335bd6f7cf4def18f..6970066e65c6e61a6fed1248127abd6550ddfec6 100644
+index 4f18e0787ce24c91e88c74082a67b1939c69f563..0c3adc48463129541b02d656cd8a9c3a4731a61e 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -631,6 +631,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -634,6 +634,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

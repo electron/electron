@@ -90,7 +90,7 @@ NSMenu* MakeEmptySubmenu() {
   NSString* empty_menu_title =
       l10n_util::GetNSString(IDS_APP_MENU_EMPTY_SUBMENU);
 
-  [submenu addItemWithTitle:empty_menu_title action:NULL keyEquivalent:@""];
+  [submenu addItemWithTitle:empty_menu_title action:nullptr keyEquivalent:@""];
   [[submenu itemAtIndex:0] setEnabled:NO];
   return submenu;
 }

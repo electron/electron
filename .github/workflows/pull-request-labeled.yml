@@ -20,11 +20,9 @@ jobs:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/update-project-action@7ade91760df70df76770a238abee7a4869e01cf8
+        uses: dsanders11/project-actions/edit-item@a24415515fa60a22f71f9d9d00e36ca82660cde9 # v1.0.1
         with:
-          github_token: ${{ steps.generate-token.outputs.token }}
-          organization: electron
-          project_number: 94
-          content_id: ${{ github.event.pull_request.node_id }}
+          token: ${{ steps.generate-token.outputs.token }}
+          project-number: 94
           field: Status
-          value: ✅ Reviewed
+          field-value: ✅ Reviewed

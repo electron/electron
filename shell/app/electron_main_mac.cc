@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <memory>
 
-#include "base/allocator/early_zone_registration_apple.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
@@ -50,7 +49,6 @@ bool IsEnvSet(const char* name) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  partition_alloc::EarlyMallocZoneRegistration();
   FixStdioStreams();
 
   if (electron::fuses::IsRunAsNodeEnabled() &&
@@ -60,7 +58,7 @@ int main(int argc, char* argv[]) {
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
   uint32_t exec_path_size = 0;
-  int rv = _NSGetExecutablePath(NULL, &exec_path_size);
+  int rv = _NSGetExecutablePath(nullptr, &exec_path_size);
   if (rv != -1) {
     FatalError("_NSGetExecutablePath: get length failed.");
   }

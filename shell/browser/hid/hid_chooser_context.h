@@ -14,6 +14,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/scoped_observation_traits.h"
 #include "base/unguessable_token.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/web_contents.h"
@@ -77,6 +78,9 @@ class HidChooserContext : public KeyedService,
   bool HasDevicePermission(const url::Origin& origin,
                            const device::mojom::HidDeviceInfo& device);
 
+  // Returns true if `origin` is allowed to access FIDO reports.
+  bool IsFidoAllowedForOrigin(const url::Origin& origin);
+
   // For ScopedObserver.
   void AddDeviceObserver(DeviceObserver* observer);
   void RemoveDeviceObserver(DeviceObserver* observer);
@@ -137,5 +141,24 @@ class HidChooserContext : public KeyedService,
 };
 
 }  // namespace electron
+
+namespace base {
+
+template <>
+struct ScopedObservationTraits<electron::HidChooserContext,
+                               electron::HidChooserContext::DeviceObserver> {
+  static void AddObserver(
+      electron::HidChooserContext* source,
+      electron::HidChooserContext::DeviceObserver* observer) {
+    source->AddDeviceObserver(observer);
+  }
+  static void RemoveObserver(
+      electron::HidChooserContext* source,
+      electron::HidChooserContext::DeviceObserver* observer) {
+    source->RemoveDeviceObserver(observer);
+  }
+};
+
+}  // namespace base
 
 #endif  // ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_

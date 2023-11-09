@@ -13,15 +13,15 @@
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
 #include "components/zoom/page_zoom_constants.h"
-#include "pdf/buildflags.h"
+#include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/webui/web_ui_util.h"
 
-#if BUILDFLAG(ENABLE_PDF)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/pdf_extension_util.h"
 #include "pdf/pdf_features.h"
-#endif  // BUILDFLAG(ENABLE_PDF)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 // To add a new component to this API, simply:
 // 1. Add your component to the Component enum in
@@ -47,17 +47,17 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   api::resources_private::Component component = params->component;
 
   switch (component) {
-    case api::resources_private::COMPONENT_PDF:
-#if BUILDFLAG(ENABLE_PDF)
+    case api::resources_private::Component::kPdf:
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
       pdf_extension_util::AddStrings(
           pdf_extension_util::PdfViewerContext::kPdfViewer, &dict);
       pdf_extension_util::AddAdditionalData(true, false, &dict);
 #endif
       break;
-    case api::resources_private::COMPONENT_IDENTITY:
+    case api::resources_private::Component::kIdentity:
       NOTREACHED();
       break;
-    case api::resources_private::COMPONENT_NONE:
+    case api::resources_private::Component::kNone:
       NOTREACHED();
       break;
   }

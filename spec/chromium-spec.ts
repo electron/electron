@@ -284,7 +284,7 @@ describe('web security', () => {
   describe('accessing file://', () => {
     async function loadFile (w: BrowserWindow) {
       const thisFile = url.format({
-        pathname: __filename.replace(/\\/g, '/'),
+        pathname: __filename.replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       });
@@ -461,7 +461,7 @@ describe('command line switches', () => {
         throw new Error(`Process exited with code "${code}" signal "${signal}" output "${output}" stderr "${stderr}"`);
       }
 
-      output = output.replace(/(\r\n|\n|\r)/gm, '');
+      output = output.replaceAll(/(\r\n|\n|\r)/gm, '');
       expect(output).to.equal(result);
     };
 
@@ -603,6 +603,63 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => { done(); });
       w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+    });
+  });
+
+  describe('navigator.keyboard', () => {
+    afterEach(closeAllWindows);
+
+    it('getLayoutMap() should return a KeyboardLayoutMap object', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const size = await w.webContents.executeJavaScript(`
+        navigator.keyboard.getLayoutMap().then(map => map.size)
+      `);
+
+      expect(size).to.be.a('number');
+    });
+
+    it('should lock the keyboard', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
+
+      // Test that without lock, with ESC:
+      // - the window leaves fullscreen
+      // - the dialog is not closed
+      const enterFS1 = once(w, 'enter-full-screen');
+      await w.webContents.executeJavaScript('document.body.requestFullscreen()', true);
+      await enterFS1;
+
+      await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
+      const open1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
+      expect(open1).to.be.true();
+
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await setTimeout(1000);
+      const openAfter1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
+      expect(openAfter1).to.be.true();
+      expect(w.isFullScreen()).to.be.false();
+
+      // Test that with lock, with ESC:
+      // - the window does not leave fullscreen
+      // - the dialog is closed
+      const enterFS2 = once(w, 'enter-full-screen');
+      await w.webContents.executeJavaScript(`
+        navigator.keyboard.lock(['Escape']);
+        document.body.requestFullscreen();
+      `, true);
+
+      await enterFS2;
+
+      await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
+      const open2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
+      expect(open2).to.be.true();
+
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await setTimeout(1000);
+      const openAfter2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
+      expect(openAfter2).to.be.false();
+      expect(w.isFullScreen()).to.be.true();
     });
   });
 
@@ -1050,7 +1107,7 @@ describe('chromium features', () => {
     it('defines a window.location getter', async () => {
       let targetURL: string;
       if (process.platform === 'win32') {
-        targetURL = `file:///${fixturesPath.replace(/\\/g, '/')}/pages/base-page.html`;
+        targetURL = `file:///${fixturesPath.replaceAll('\\', '/')}/pages/base-page.html`;
       } else {
         targetURL = `file://${fixturesPath}/pages/base-page.html`;
       }
@@ -1977,7 +2034,7 @@ describe('chromium features', () => {
 
   ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
     const pdfSource = url.format({
-      pathname: path.join(__dirname, 'fixtures', 'cat.pdf').replace(/\\/g, '/'),
+      pathname: path.join(__dirname, 'fixtures', 'cat.pdf').replaceAll('\\', '/'),
       protocol: 'file',
       slashes: true
     });

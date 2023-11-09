@@ -39,7 +39,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
@@ -203,6 +202,14 @@ void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
   }
 }
 
+NSView* GetNativeNSView(NativeBrowserView* view) {
+  if (auto* inspectable = view->GetInspectableWebContentsView()) {
+    return inspectable->GetNativeView().GetNativeNSView();
+  } else {
+    return nullptr;
+  }
+}
+
 }  // namespace
 
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
@@ -226,14 +233,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
-
-  if (options.Has(options::kFullscreenWindowTitle)) {
-    EmitWarning(
-        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate()),
-        "\"fullscreenWindowTitle\" option has been deprecated and is "
-        "no-op now.",
-        "electron");
-  }
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -470,7 +469,20 @@ void NativeWindowMac::Focus(bool focus) {
     return;
 
   if (focus) {
-    [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
+    // On macOS < Sonoma, "activateIgnoringOtherApps:NO" would not
+    // activate apps if focusing a window that is inActive. That
+    // changed with macOS Sonoma.
+    //
+    // There's a slim chance we should have never called
+    // activateIgnoringOtherApps, but we tried that many years ago
+    // and saw weird focus bugs on other macOS versions. So, to make
+    // this safe, we're gating by versions.
+    if (@available(macOS 14.0, *)) {
+      [[NSApplication sharedApplication] activate];
+    } else {
+      [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
+    }
+
     [window_ makeKeyAndOrderFront:nil];
   } else {
     [window_ orderOut:nil];
@@ -491,6 +503,8 @@ void NativeWindowMac::Show() {
           }];
     return;
   }
+
+  set_wants_to_be_visible(true);
 
   // Reattach the window to the parent to actually show it.
   if (parent())
@@ -523,6 +537,10 @@ void NativeWindowMac::Hide() {
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
     return;
   }
+
+  // If the window wants to be visible and has a parent, then the parent may
+  // order it back in (in the period between orderOut: and close).
+  set_wants_to_be_visible(false);
 
   DetachChildren();
 
@@ -659,6 +677,9 @@ void NativeWindowMac::RemoveChildFromParentWindow() {
 
 void NativeWindowMac::AttachChildren() {
   for (auto* child : child_windows_) {
+    if (!static_cast<NativeWindowMac*>(child)->wants_to_be_visible())
+      continue;
+
     auto* child_nswindow = child->GetNativeWindow().GetNativeNSWindow();
     if ([child_nswindow parentWindow] == window_)
       continue;
@@ -672,8 +693,6 @@ void NativeWindowMac::AttachChildren() {
 }
 
 void NativeWindowMac::DetachChildren() {
-  DCHECK(child_windows_.size() == [[window_ childWindows] count]);
-
   // Hide all children before hiding/minimizing the window.
   // NativeWidgetNSWindowBridge::NotifyVisibilityChangeDown()
   // will DCHECK otherwise.
@@ -683,9 +702,6 @@ void NativeWindowMac::DetachChildren() {
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
-  if (!has_frame() && !HasStyleMask(NSWindowStyleMaskTitled))
-    return;
-
   // [NSWindow -toggleFullScreen] is an asynchronous operation, which means
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
@@ -718,7 +734,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
                                      ? FullScreenTransitionState::kEntering
                                      : FullScreenTransitionState::kExiting;
 
-  [window_ toggleFullScreenMode:nil];
+  if (![window_ toggleFullScreenMode:nil])
+    fullscreen_transition_state_ = FullScreenTransitionState::kNone;
 }
 
 bool NativeWindowMac::IsFullscreen() const {
@@ -772,6 +789,16 @@ gfx::Rect NativeWindowMac::GetNormalBounds() {
   // return widget()->GetRestoredBounds();
 }
 
+void NativeWindowMac::SetSizeConstraints(
+    const extensions::SizeConstraints& window_constraints) {
+  // Apply the size constraints to NSWindow.
+  if (window_constraints.HasMinimumSize())
+    [window_ setMinSize:window_constraints.GetMinimumSize().ToCGSize()];
+  if (window_constraints.HasMaximumSize())
+    [window_ setMaxSize:window_constraints.GetMaximumSize().ToCGSize()];
+  NativeWindow::SetSizeConstraints(window_constraints);
+}
+
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   auto convertSize = [this](const gfx::Size& size) {
@@ -786,6 +813,7 @@ void NativeWindowMac::SetContentSizeConstraints(
     }
   };
 
+  // Apply the size constraints to NSWindow.
   NSView* content = [window_ contentView];
   if (size_constraints.HasMinimumSize()) {
     NSSize min_size = convertSize(size_constraints.GetMinimumSize());
@@ -1249,10 +1277,7 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   add_browser_view(view);
-  if (view->GetInspectableWebContentsView()) {
-    auto* native_view = view->GetInspectableWebContentsView()
-                            ->GetNativeView()
-                            .GetNativeNSView();
+  if (auto* native_view = GetNativeNSView(view)) {
     [[window_ contentView] addSubview:native_view
                            positioned:NSWindowAbove
                            relativeTo:nil];
@@ -1271,9 +1296,9 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  if (view->GetInspectableWebContentsView())
-    [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-        removeFromSuperview];
+  if (auto* native_view = GetNativeNSView(view)) {
+    [native_view removeFromSuperview];
+  }
   remove_browser_view(view);
 
   [CATransaction commit];
@@ -1290,10 +1315,7 @@ void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
 
   remove_browser_view(view);
   add_browser_view(view);
-  if (view->GetInspectableWebContentsView()) {
-    auto* native_view = view->GetInspectableWebContentsView()
-                            ->GetNativeView()
-                            .GetNativeNSView();
+  if (auto* native_view = GetNativeNSView(view)) {
     [[window_ contentView] addSubview:native_view
                            positioned:NSWindowAbove
                            relativeTo:nil];
@@ -1420,11 +1442,21 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
-    if (!has_frame() && !is_modal() && !no_rounded_corner) {
+    const int macos_version = base::mac::MacOSMajorVersion();
+
+    // Modal window corners are rounded on macOS >= 11 or higher if the user
+    // hasn't passed noRoundedCorners.
+    bool should_round_modal =
+        !no_rounded_corner && (macos_version >= 11 ? true : !is_modal());
+    // Nonmodal window corners are rounded if they're frameless and the user
+    // hasn't passed noRoundedCorners.
+    bool should_round_nonmodal = !no_rounded_corner && !has_frame();
+
+    if (should_round_nonmodal || should_round_modal) {
       CGFloat radius;
       if (fullscreen) {
         radius = 0.0f;
-      } else if (@available(macOS 11.0, *)) {
+      } else if (macos_version >= 11) {
         radius = 9.0f;
       } else {
         // Smaller corner radius on versions prior to Big Sur.
@@ -1458,6 +1490,8 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
+  NativeWindow::SetVibrancy(type);
+
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
@@ -1631,6 +1665,13 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   return true;
 }
 
+absl::optional<std::string> NativeWindowMac::GetTabbingIdentifier() const {
+  if ([window_ tabbingMode] == NSWindowTabbingModeDisallowed)
+    return absl::nullopt;
+
+  return base::SysNSStringToUTF8([window_ tabbingIdentifier]);
+}
+
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
                                      const gfx::Size& extra_size) {
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
@@ -1692,6 +1733,9 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
   // Restore the window title under fullscreen mode.
   if (buttons_proxy_)
     [window_ setTitleVisibility:NSWindowTitleVisible];
+
+  if (transparent() || !has_frame())
+    [window_ setTitlebarAppearsTransparent:NO];
 }
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
@@ -1701,6 +1745,9 @@ void NativeWindowMac::NotifyWindowLeaveFullScreen() {
     [buttons_proxy_ redraw];
     [buttons_proxy_ setVisible:YES];
   }
+
+  if (transparent() || !has_frame())
+    [window_ setTitlebarAppearsTransparent:YES];
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
@@ -1865,23 +1912,33 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
   [window_ setAcceptsMouseMovedEvents:forward];
 }
 
-gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
-  if (titlebar_overlay_ && buttons_proxy_ &&
-      window_button_visibility_.value_or(true)) {
+absl::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
+  if (!titlebar_overlay_)
+    return absl::nullopt;
+
+  // On macOS, when in fullscreen mode, window controls (the menu bar, title
+  // bar, and toolbar) are attached to a separate NSView that slides down from
+  // the top of the screen, independent of, and overlapping the WebContents.
+  // Disable WCO when in fullscreen, because this space is inaccessible to
+  // WebContents. https://crbug.com/915110.
+  if (IsFullscreen())
+    return gfx::Rect();
+
+  if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
     NSRect buttons = [buttons_proxy_ getButtonsContainerBounds];
     gfx::Rect overlay;
     overlay.set_width(GetContentSize().width() - NSWidth(buttons));
-    if ([buttons_proxy_ useCustomHeight]) {
-      overlay.set_height(titlebar_overlay_height());
-    } else {
-      overlay.set_height(NSHeight(buttons));
-    }
+    overlay.set_height([buttons_proxy_ useCustomHeight]
+                           ? titlebar_overlay_height()
+                           : NSHeight(buttons));
 
     if (!base::i18n::IsRTL())
       overlay.set_x(NSMaxX(buttons));
+
     return overlay;
   }
-  return gfx::Rect();
+
+  return absl::nullopt;
 }
 
 // static

@@ -45,7 +45,6 @@
 #include "ui/display/util/edid_parser.h"  // nogncheck
 #include "ui/gfx/x/randr.h"
 #include "ui/gfx/x/x11_atom_cache.h"
-#include "ui/gfx/x/xproto_util.h"
 #endif  // defined(USE_OZONE_PLATFORM_X11)
 #endif  // BUILDFLAG(IS_WIN)
 

@@ -66,14 +66,18 @@
 
 // Manages the PopUpButtonHandler.
 @interface ElectronAccessoryView : NSView
+@property(nonatomic, strong) PopUpButtonHandler* popUpButtonHandler;
 @end
 
 @implementation ElectronAccessoryView
+
+@synthesize popUpButtonHandler;
 
 - (void)dealloc {
   auto* popupButton =
       static_cast<NSPopUpButton*>([[self subviews] objectAtIndex:1]);
   popupButton.target = nil;
+  popUpButtonHandler = nil;
 }
 
 @end
@@ -149,6 +153,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   [accessoryView addSubview:label];
   [accessoryView addSubview:popupButton];
+  [accessoryView setPopUpButtonHandler:popUpButtonHandler];
 
   [dialog setAccessoryView:accessoryView];
 }
@@ -353,7 +358,7 @@ void OpenDialogCompletion(int chosen,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
@@ -431,7 +436,7 @@ void SaveDialogCompletion(int chosen,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());

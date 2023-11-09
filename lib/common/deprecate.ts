@@ -66,20 +66,23 @@ export function renameFunction<T extends Function> (fn: T, newName: string): T {
 }
 
 // change the name of an event
-export function event (emitter: NodeJS.EventEmitter, oldName: string, newName: string) {
+export function event (emitter: NodeJS.EventEmitter, oldName: string, newName: string, transformer: (...args: any[]) => any[] | undefined = (...args) => args) {
   const warn = newName.startsWith('-') /* internal event */
     ? warnOnce(`${oldName} event`)
     : warnOnce(`${oldName} event`, `${newName} event`);
   return emitter.on(newName, function (this: NodeJS.EventEmitter, ...args) {
     if (this.listenerCount(oldName) !== 0) {
       warn();
-      this.emit(oldName, ...args);
+      const transformedArgs = transformer(...args);
+      if (transformedArgs) {
+        this.emit(oldName, ...transformedArgs);
+      }
     }
   });
 }
 
 // remove a property with no replacement
-export function removeProperty<T, K extends (keyof T & string)>(object: T, removedName: K, onlyForValues?: any[]): T {
+export function removeProperty<T extends Object, K extends (keyof T & string)>(object: T, removedName: K, onlyForValues?: any[]): T {
   // if the property's already been removed, warn about it
   // eslint-disable-next-line no-proto
   const info = Object.getOwnPropertyDescriptor((object as any).__proto__, removedName);

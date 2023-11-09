@@ -6,10 +6,10 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 250a43c5455b4f9ff72dd3a34d5b0aa270f43cc6..4e7a9e7a7585fea2013ff70161672568477172b1 100644
+index b4a24bbffb6c43638d13063e85b6cfba5c0cc9c7..fcbd9ee1af002bc176937e6bb5af55791b2f64b2 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -49,6 +49,8 @@ function prepareWorkerThreadExecution() {
+@@ -52,6 +52,8 @@ function prepareWorkerThreadExecution() {
    });
  }
  
@@ -18,7 +18,7 @@ index 250a43c5455b4f9ff72dd3a34d5b0aa270f43cc6..4e7a9e7a7585fea2013ff70161672568
  function prepareExecution(options) {
    const { expandArgv1, initializeModules, isMainThread } = options;
  
-@@ -117,12 +119,17 @@ function setupUserModules() {
+@@ -130,12 +132,17 @@ function setupUserModules() {
    loadPreloadModules();
    // Need to be done after --require setup.
    initializeFrozenIntrinsics();

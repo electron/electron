@@ -1,4 +1,4 @@
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import os
 import subprocess
@@ -9,11 +9,6 @@ from lib.util import SRC_DIR
 PYYAML_LIB_DIR = os.path.join(SRC_DIR, 'third_party', 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)
 import yaml  #pylint: disable=wrong-import-position,wrong-import-order
-
-try:
-  basestring        # Python 2
-except NameError:   # Python 3
-  basestring = str  # pylint: disable=redefined-builtin
 
 
 class Verbosity:
@@ -148,7 +143,7 @@ class TestsList():
     if isinstance(value, dict):
       return value
 
-    if isinstance(value, basestring):
+    if isinstance(value, str):
       return {value: None}
 
     raise AssertionError("unexpected shorthand type: {}".format(type(value)))

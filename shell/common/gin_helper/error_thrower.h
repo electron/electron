@@ -26,8 +26,8 @@ class ErrorThrower {
   v8::Isolate* isolate() const { return isolate_; }
 
  private:
-  using ErrorGenerator =
-      v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg);
+  using ErrorGenerator = v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg,
+                                                  v8::Local<v8::Value> options);
   void Throw(ErrorGenerator gen, base::StringPiece err_msg) const;
 
   raw_ptr<v8::Isolate> isolate_;

@@ -2,6 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#endif
+
+// FIXME(ckerr) this incorrect #include order is a temporary
+// fix to unblock the roll. Will fix in an upgrade followup.
+#ifdef USE_OZONE_PLATFORM_X11
+#include "ui/base/x/x11_util.h"
+#endif
+
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -55,15 +68,17 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
-#include "ui/gfx/x/xproto_util.h"
+#endif
+#if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -231,8 +246,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   v8::Local<v8::Value> titlebar_overlay;
   if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
       titlebar_overlay->IsObject()) {
-    gin_helper::Dictionary titlebar_overlay_obj =
-        gin::Dictionary::CreateEmpty(options.isolate());
+    auto titlebar_overlay_obj =
+        gin_helper::Dictionary::CreateEmpty(options.isolate());
     options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
 
     std::string overlay_color_string;
@@ -284,12 +299,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (transparent() || has_client_frame())
+  if (IsTranslucent() || has_client_frame())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
-  // The given window is most likely not rectangular since it uses
-  // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent() && !has_frame())
+  // The given window is most likely not rectangular since it is translucent and
+  // has no standard frame, don't show a shadow for it.
+  if (IsTranslucent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
 
   bool focusable;
@@ -357,10 +372,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
         state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_MODAL"));
     }
 
-    if (!state_atom_list.empty())
-      SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                       x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM,
-                       state_atom_list);
+    if (!state_atom_list.empty()) {
+      auto* connection = x11::Connection::Get();
+      connection->SetArrayProperty(
+          static_cast<x11::Window>(GetAcceleratedWidget()),
+          x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM, state_atom_list);
+    }
 
     // Set the _NET_WM_WINDOW_TYPE.
     if (!window_type.empty())
@@ -467,9 +484,10 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 #if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     const std::string color = use_dark_theme ? "dark" : "light";
-    x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                           x11::GetAtom("_GTK_THEME_VARIANT"),
-                           x11::GetAtom("UTF8_STRING"), color);
+    auto* connection = x11::Connection::Get();
+    connection->SetStringProperty(
+        static_cast<x11::Window>(GetAcceleratedWidget()),
+        x11::GetAtom("_GTK_THEME_VARIANT"), x11::GetAtom("UTF8_STRING"), color);
   }
 #endif
 }
@@ -1163,7 +1181,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
-  InvalidateRect(GetAcceleratedWidget(), NULL, 1);
+  InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
 }
 
@@ -1381,12 +1399,14 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
 #if defined(USE_OZONE_PLATFORM_X11)
-  if (IsX11())
-    x11::SetProperty(
+  if (IsX11()) {
+    auto* connection = x11::Connection::Get();
+    connection->SetProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
         x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
         parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
                : ui::GetX11RootWindow());
+  }
 #elif BUILDFLAG(IS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent
@@ -1394,7 +1414,7 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   // For do this we must NOT use the ::SetParent function, instead we must use
   //  the ::GetWindowLongPtr or ::SetWindowLongPtr functions with "nIndex" set
   //  to "GWLP_HWNDPARENT" which actually means the window owner.
-  HWND hwndParent = parent ? parent->GetAcceleratedWidget() : NULL;
+  HWND hwndParent = parent ? parent->GetAcceleratedWidget() : nullptr;
   if (hwndParent ==
       (HWND)::GetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT))
     return;
@@ -1457,6 +1477,8 @@ bool NativeWindowViews::IsMenuBarVisible() {
 }
 
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
+  NativeWindow::SetBackgroundMaterial(material);
+
 #if BUILDFLAG(IS_WIN)
   // DWMWA_USE_HOSTBACKDROPBRUSH is only supported on Windows 11 22H2 and up.
   if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
@@ -1468,6 +1490,20 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
                             &backdrop_type, sizeof(backdrop_type));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set background material to " << material;
+
+  // For frameless windows with a background material set, we also need to
+  // remove the caption color so it doesn't render a caption bar (since the
+  // window is frameless)
+  COLORREF caption_color = DWMWA_COLOR_DEFAULT;
+  if (backdrop_type != DWMSBT_NONE && backdrop_type != DWMSBT_AUTO &&
+      !has_frame()) {
+    caption_color = DWMWA_COLOR_NONE;
+  }
+  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
+                                 &caption_color, sizeof(caption_color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color to transparent";
 #endif
 }
 
@@ -1485,8 +1521,10 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
     // determine whether the current window is visible on all workspaces.
     x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
     std::vector<x11::Atom> wm_states;
-    GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                     x11::GetAtom("_NET_WM_STATE"), &wm_states);
+    auto* connection = x11::Connection::Get();
+    connection->GetArrayProperty(
+        static_cast<x11::Window>(GetAcceleratedWidget()),
+        x11::GetAtom("_NET_WM_STATE"), &wm_states);
     return base::Contains(wm_states, sticky_atom);
   }
 #endif

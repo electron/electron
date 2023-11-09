@@ -37,7 +37,7 @@ index ce885c154c81c5703365fa34957697698da9aff6..229b0d522aeee3632145c86715bea139
  async function* watch(filename, options = kEmptyObject) {
    const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 2220869fa76f35fdfba72eba993b20748b07c546..522670ed5c9951c506dcdf2745585552ad2a081f 100644
+index 356ec3acd0bf3ac1e7518b32a5a58b042a03f598..4d4b59916bfdb203702c4e878ff2659b79de8c52 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -33,6 +33,7 @@ BuiltinLoader BuiltinLoader::instance_;

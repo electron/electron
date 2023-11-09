@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 17 Oct 2023 10:58:41 -0500
+Subject: chore: remove use of deprecated kMaxLength
+
+https://chromium-review.googlesource.com/c/v8/v8/+/4935412
+
+This patch can be removed when upstream moves to kMaxByteLength
+
+diff --git a/src/node_buffer.h b/src/node_buffer.h
+index 606a6f5caa3b11b6d2a9068ed2fd65800530a5eb..080dcce21da05ccea398d8a856deb397b1ac8b07 100644
+--- a/src/node_buffer.h
++++ b/src/node_buffer.h
+@@ -29,7 +29,7 @@ namespace node {
+ 
+ namespace Buffer {
+ 
+-static const size_t kMaxLength = v8::TypedArray::kMaxLength;
++static const size_t kMaxLength = v8::TypedArray::kMaxByteLength;
+ 
+ typedef void (*FreeCallback)(char* data, void* hint);
+ 
+diff --git a/src/node_errors.h b/src/node_errors.h
+index 1687eed35717ae385aedad952c03ebab4f0f3bf7..4cd96bf9dd721ec24dd5f23086da5b72be58d0a9 100644
+--- a/src/node_errors.h
++++ b/src/node_errors.h
+@@ -208,7 +208,7 @@ inline v8::Local<v8::Value> ERR_BUFFER_TOO_LARGE(v8::Isolate* isolate) {
+   char message[128];
+   snprintf(message, sizeof(message),
+       "Cannot create a Buffer larger than 0x%zx bytes",
+-      v8::TypedArray::kMaxLength);
++      v8::TypedArray::kMaxByteLength);
+   return ERR_BUFFER_TOO_LARGE(isolate, message);
+ }
+ 

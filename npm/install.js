@@ -42,7 +42,7 @@ downloadArtifact({
   artifactName: 'electron',
   force: process.env.force_no_cache === 'true',
   cacheRoot: process.env.electron_config_cache,
-  checksums: process.env.electron_use_remote_checksums ? undefined : require('./checksums.json'),
+  checksums: process.env.electron_use_remote_checksums ?? process.env.npm_config_electron_use_remote_checksums ? undefined : require('./checksums.json'),
   platform,
   arch
 }).then(extractFile).catch(err => {

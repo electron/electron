@@ -953,6 +953,14 @@ void BaseWindow::AddTabbedWindow(NativeWindow* window,
     args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
 }
 
+v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
+  auto tabbing_id = window_->GetTabbingIdentifier();
+  if (!tabbing_id.has_value())
+    return v8::Undefined(isolate());
+
+  return gin::ConvertToV8(isolate(), tabbing_id.value());
+}
+
 void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
@@ -1172,8 +1180,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 
 // static
 gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
-  gin_helper::Dictionary options =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
   return new BaseWindow(args, options);
@@ -1305,6 +1312,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("moveTabToNewWindow", &BaseWindow::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &BaseWindow::ToggleTabBar)
       .SetMethod("addTabbedWindow", &BaseWindow::AddTabbedWindow)
+      .SetProperty("tabbingIdentifier", &BaseWindow::GetTabbingIdentifier)
       .SetMethod("setWindowButtonVisibility",
                  &BaseWindow::SetWindowButtonVisibility)
       .SetMethod("_getWindowButtonVisibility",

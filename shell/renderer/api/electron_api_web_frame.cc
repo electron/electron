@@ -140,9 +140,12 @@ class ScriptExecutionCallback {
     {
       v8::TryCatch try_catch(isolate);
       context_bridge::ObjectCache object_cache;
-      maybe_result = PassValueToOtherContext(
-          result->GetCreationContextChecked(), promise_.GetContext(), result,
-          &object_cache, false, 0, BridgeErrorTarget::kSource);
+      v8::Local<v8::Context> source_context =
+          result->GetCreationContextChecked();
+      maybe_result =
+          PassValueToOtherContext(source_context, promise_.GetContext(), result,
+                                  source_context->Global(), &object_cache,
+                                  false, 0, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }

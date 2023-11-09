@@ -4,7 +4,19 @@ import { clipboard, crashReporter, shell } from 'electron/common';
 
 // In renderer process (web page).
 // https://github.com/electron/electron/blob/main/docs/api/ipc-renderer.md
+
+(async () => {
+  console.log(await ipcRenderer.invoke('ping-pong')); // prints "pong"
+})();
+
 console.log(ipcRenderer.sendSync('synchronous-message', 'ping')); // prints "pong"
+
+ipcRenderer.on('test', () => {});
+ipcRenderer.off('test', () => {});
+ipcRenderer.once('test', () => {});
+ipcRenderer.addListener('test', () => {});
+ipcRenderer.removeListener('test', () => {});
+ipcRenderer.removeAllListeners('test');
 
 ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
   console.log(arg); // prints "pong"

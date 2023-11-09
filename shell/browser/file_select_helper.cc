@@ -101,14 +101,7 @@ void FileSelectHelper::FileSelectedWithExtraInfo(
   std::vector<ui::SelectedFileInfo> files;
   files.push_back(file);
 
-#if BUILDFLAG(IS_MAC)
-  base::ThreadPool::PostTask(
-      FROM_HERE,
-      {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
-      base::BindOnce(&FileSelectHelper::ProcessSelectedFilesMac, this, files));
-#else
-  ConvertToFileChooserFileInfoList(files);
-#endif  // BUILDFLAG(IS_MAC)
+  MultiFilesSelectedWithExtraInfo(files, params);
 }
 
 void FileSelectHelper::MultiFilesSelected(
@@ -460,7 +453,7 @@ void FileSelectHelper::RunFileChooserOnUIThread(
           ? 1
           : 0,  // 1-based index of default extension to show.
       base::FilePath::StringType(),
-      web_contents->owner_window()->GetNativeWindow(), NULL);
+      web_contents->owner_window()->GetNativeWindow(), nullptr);
 
   select_file_types_.reset();
 }

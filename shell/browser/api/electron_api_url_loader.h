@@ -93,8 +93,8 @@ class SimpleURLLoaderWrapper
   void OnPrivateNetworkAccessPermissionRequired(
       const GURL& url,
       const net::IPAddress& ip_address,
-      const std::string& private_network_device_id,
-      const std::string& private_network_device_name,
+      const absl::optional<std::string>& private_network_device_id,
+      const absl::optional<std::string>& private_network_device_name,
       OnPrivateNetworkAccessPermissionRequiredCallback callback) override {}
   void OnClearSiteData(
       const GURL& url,

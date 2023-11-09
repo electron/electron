@@ -405,10 +405,10 @@ index 0000000000000000000000000000000000000000..a564653c3f05608d59fed5aa071d63b8
 +}
 diff --git a/deps/base64/BUILD.gn b/deps/base64/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..694e1991bb11c9ea85fcc69a0e06265d4b0c5aab
+index 0000000000000000000000000000000000000000..9b97aabe865e4cf12f6c3ccda196b372769a823b
 --- /dev/null
 +++ b/deps/base64/BUILD.gn
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,135 @@
 +config("base64_config") {
 +  include_dirs = [
 +    "base64/include",
@@ -420,7 +420,15 @@ index 0000000000000000000000000000000000000000..694e1991bb11c9ea85fcc69a0e06265d
 +
 +static_library("base64") {
 +  defines = []
-+  deps = []
++  deps = [
++    ":base64_neon32",
++    ":base64_neon64",
++    ":base64_avx",
++    ":base64_avx2",
++    ":base64_sse41",
++    ":base64_sse42",
++    ":base64_ssse3",
++  ]
 +
 +  public_configs = [ ":base64_config" ]
 +
@@ -438,157 +446,104 @@ index 0000000000000000000000000000000000000000..694e1991bb11c9ea85fcc69a0e06265d
 +    "base64/lib/lib.c",
 +    "base64/lib/tables/tables.c",
 +  ]
-+
-+  if (target_cpu == "arm") {
-+    defines += [ "HAVE_NEON32=1" ]
-+    deps += [ ":base64_neon32" ]
-+  } else {
-+    sources += [ "base64/lib/arch/neon32/neon32_codec.c" ]
-+  }
-+
-+  if (target_cpu == "arm64") {
-+    defines += [ "HAVE_NEON64=1" ]
-+    deps += [ ":base64_neon64" ]
-+  } else {
-+    sources += [ "base64/lib/arch/neon64/neon64_codec.c" ]
-+  }
-+
-+  if (target_cpu == "ia32" || target_cpu == "x64" || target_cpu == "x32") {
-+    defines += [
-+      "HAVE_SSSE3=1",
-+      "HAVE_SSE41=1",
-+      "HAVE_SSE42=1",
-+      "HAVE_AVX=1",
-+      "HAVE_AVX2=1",
-+    ]
-+
-+    deps += [
-+      ":base64_avx",
-+      ":base64_avx2",
-+      ":base64_sse41",
-+      ":base64_sse42",
-+      ":base64_ssse3",
-+    ]
-+  } else {
-+    sources += [
-+      "base64/lib/arch/avx/avx_codec.c",
-+      "base64/lib/arch/avx2/avx2_codec.c",
-+      "base64/lib/arch/sse41/sse41_codec.c",
-+      "base64/lib/arch/sse42/sse42_codec.c",
-+      "base64/lib/arch/ssse3/ssse3_codec.c",
-+    ]
-+  }
 +}
 +
 +source_set("base64_ssse3") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [ "HAVE_SSSE3=1" ]
++  if (target_cpu == "ia32" || target_cpu == "x64" || target_cpu == "x32") {
++    defines = [ "HAVE_SSSE3=1" ]
 +
-+  cflags = [ "-mssse3" ]
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++    cflags = [ "-mssse3" ]
++    cflags_c = [ "-Wno-implicit-fallthrough" ]
++  }
 +
-+  sources = [ "base64/lib/arch/ssse3/ssse3_codec.c" ]
++  sources = [ "base64/lib/arch/ssse3/codec.c" ]
 +}
 +
 +source_set("base64_sse41") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [ "HAVE_SSE41=1" ]
++  if (target_cpu == "ia32" || target_cpu == "x64" || target_cpu == "x32") {
++    defines = [ "HAVE_SSE41=1" ]
 +
-+  cflags = [ "-msse4.1" ]
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++    cflags = [ "-msse4.1" ]
++    cflags_c = [ "-Wno-implicit-fallthrough" ]
++  }
 +
-+  sources = [ "base64/lib/arch/sse41/sse41_codec.c" ]
++  sources = [ "base64/lib/arch/sse41/codec.c" ]
 +}
++
 +
 +source_set("base64_sse42") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [
-+    "BASE64_STATIC_DEFINE",
-+    "HAVE_SSE42=1",
-+  ]
++  if (target_cpu == "ia32" || target_cpu == "x64" || target_cpu == "x32") {
++    defines = [
++      "BASE64_STATIC_DEFINE",
++      "HAVE_SSE42=1",
++    ]
 +
-+  cflags = [ "-msse4.2" ]
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++    cflags = [ "-msse4.2" ]
++    cflags_c = [ "-Wno-implicit-fallthrough" ]
++  }
 +
-+  sources = [ "base64/lib/arch/sse42/sse42_codec.c" ]
++  sources = [ "base64/lib/arch/sse42/codec.c" ]
 +}
 +
 +source_set("base64_avx") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [ "HAVE_AVX=1" ]
++  if (target_cpu == "ia32" || target_cpu == "x64" || target_cpu == "x32") {
++    defines = [ "HAVE_AVX=1" ]
 +
-+  cflags = [ "-mavx" ]
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++    cflags = [ "-mavx" ]
++    cflags_c = [ "-Wno-implicit-fallthrough" ]
++  }
 +
-+  sources = [ "base64/lib/arch/avx/avx_codec.c" ]
++  sources = [ "base64/lib/arch/avx/codec.c" ]
 +}
 +
 +source_set("base64_avx2") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [ "HAVE_AVX2=1" ]
++  if (target_cpu == "ia32" || target_cpu == "x64" || target_cpu == "x32") {
++    defines = [ "HAVE_AVX2=1" ]
 +
-+  cflags = [ "-mavx2" ]
-+  cflags_c = [
-+    "-Wno-implicit-fallthrough",
-+    "-Wno-implicit-function-declaration",
-+  ]
++    cflags = [ "-mavx2" ]
++    cflags_c = [
++      "-Wno-implicit-fallthrough",
++      "-Wno-implicit-function-declaration",
++    ]
++  }
 +
-+  sources = [ "base64/lib/arch/avx2/avx2_codec.c" ]
++  sources = [ "base64/lib/arch/avx2/codec.c" ]
 +}
 +
 +source_set("base64_neon32") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [ "HAVE_NEON32=1" ]
++  if (target_cpu == "arm") {
++    defines = [ "HAVE_NEON32=1" ]
 +
-+  cflags = [ "-mfpu=neon" ]
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++    cflags = [ "-mfpu=neon" ]
++    cflags_c = [ "-Wno-implicit-fallthrough" ]
++  }
 +
-+  sources = [ "base64/lib/arch/neon32/neon32_codec.c" ]
++  sources = [ "base64/lib/arch/neon32/codec.c" ]
 +}
 +
 +source_set("base64_neon64") {
 +  public_configs = [ ":base64_config" ]
 +
-+  defines = [ "HAVE_NEON64=1" ]
++  if (target_cpu == "arm64") {
++    defines = [ "HAVE_NEON64=1" ]
 +
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++    cflags_c = [ "-Wno-implicit-fallthrough" ]
++  }
 +
-+  sources = [ "base64/lib/arch/neon64/neon64_codec.c" ]
++  sources = [ "base64/lib/arch/neon64/codec.c" ]
 +}
-diff --git a/deps/base64/base64/lib/arch/avx/codec.c b/deps/base64/base64/lib/arch/avx/avx_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/avx/codec.c
-rename to deps/base64/base64/lib/arch/avx/avx_codec.c
-diff --git a/deps/base64/base64/lib/arch/avx2/codec.c b/deps/base64/base64/lib/arch/avx2/avx2_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/avx2/codec.c
-rename to deps/base64/base64/lib/arch/avx2/avx2_codec.c
-diff --git a/deps/base64/base64/lib/arch/neon32/codec.c b/deps/base64/base64/lib/arch/neon32/neon32_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/neon32/codec.c
-rename to deps/base64/base64/lib/arch/neon32/neon32_codec.c
-diff --git a/deps/base64/base64/lib/arch/neon64/codec.c b/deps/base64/base64/lib/arch/neon64/neon64_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/neon64/codec.c
-rename to deps/base64/base64/lib/arch/neon64/neon64_codec.c
-diff --git a/deps/base64/base64/lib/arch/sse41/codec.c b/deps/base64/base64/lib/arch/sse41/sse41_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/sse41/codec.c
-rename to deps/base64/base64/lib/arch/sse41/sse41_codec.c
-diff --git a/deps/base64/base64/lib/arch/sse42/codec.c b/deps/base64/base64/lib/arch/sse42/sse42_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/sse42/codec.c
-rename to deps/base64/base64/lib/arch/sse42/sse42_codec.c
-diff --git a/deps/base64/base64/lib/arch/ssse3/codec.c b/deps/base64/base64/lib/arch/ssse3/ssse3_codec.c
-similarity index 100%
-rename from deps/base64/base64/lib/arch/ssse3/codec.c
-rename to deps/base64/base64/lib/arch/ssse3/ssse3_codec.c
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..2a902c68ca445b8451e442c314c60ee5a30719e4
@@ -849,10 +804,10 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..23eed033d31eced6a85c794eee550655af7a9a1d
+index 0000000000000000000000000000000000000000..7d2ca477db2415f43ababa270d8aefa3124b2765
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,51 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -894,11 +849,14 @@ index 0000000000000000000000000000000000000000..23eed033d31eced6a85c794eee550655
 +    "lib/nghttp2_pq.c",
 +    "lib/nghttp2_priority_spec.c",
 +    "lib/nghttp2_queue.c",
++    "lib/nghttp2_ratelim.c",
 +    "lib/nghttp2_rcbuf.c",
 +    "lib/nghttp2_session.c",
 +    "lib/nghttp2_stream.c",
 +    "lib/nghttp2_submit.c",
++    "lib/nghttp2_time.c",
 +    "lib/nghttp2_version.c",
++    "lib/sfparse.c"
 +  ]
 +}
 diff --git a/deps/simdutf/BUILD.gn b/deps/simdutf/BUILD.gn
@@ -929,10 +887,10 @@ index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e546b39ef
+index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713537c7987
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,197 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -978,6 +936,7 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +    "-Wno-string-conversion",
 +    "-Wno-switch",
 +    "-Wno-unused-function",
++    "-Wno-unused-result",
 +    "-Wno-unused-variable",
 +    "-Wno-unreachable-code",
 +    "-Wno-unreachable-code-return",
@@ -1067,7 +1026,6 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +      "include/uv/sunos.h",
 +      "include/uv/unix.h",
 +      "src/unix/async.c",
-+      "src/unix/atomic-ops.h",
 +      "src/unix/core.c",
 +      "src/unix/dl.c",
 +      "src/unix/fs.c",
@@ -1079,7 +1037,6 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
-+      "src/unix/pthread-fixes.c",
 +      "src/unix/random-devurandom.c",
 +      "src/unix/signal.c",
 +      "src/unix/spinlock.h",
@@ -2105,7 +2062,7 @@ index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868b
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 1e898ffcc9104bc50079a9850dc89767199c646e..0f5c5f1cc0845b5d005697d8ab1ab6167c541ced 100644
+index 88cc915177bcf8b86eb8f9f16b215cb6d06b3aa7..8df52c22dd76a850d421075effc44fbfb32307db 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@

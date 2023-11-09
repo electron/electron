@@ -33,6 +33,7 @@
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
+#include "content/browser/renderer_host/navigation_controller_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
@@ -468,9 +469,16 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        base::ScopedClosureRunner capture_handle,
                        const SkBitmap& bitmap) {
+  auto ui_task_runner = content::GetUIThreadTaskRunner({});
+  if (!ui_task_runner->RunsTasksInCurrentSequence()) {
+    ui_task_runner->PostTask(
+        FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
+                                  std::move(capture_handle), bitmap));
+    return;
+  }
+
   // Hack to enable transparency in captured image
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
-
   capture_handle.RunAndReset();
 }
 
@@ -729,7 +737,6 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
 
     case extensions::mojom::ViewType::kAppWindow:
     case extensions::mojom::ViewType::kComponent:
-    case extensions::mojom::ViewType::kExtensionDialog:
     case extensions::mojom::ViewType::kExtensionPopup:
     case extensions::mojom::ViewType::kBackgroundContents:
     case extensions::mojom::ViewType::kExtensionGuest:
@@ -1029,6 +1036,9 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (owner_window_) {
+    owner_window_->RemoveBackgroundThrottlingSource(this);
+  }
   if (web_contents()) {
     content::RenderViewHost* host = web_contents()->GetRenderViewHost();
     if (host)
@@ -1324,12 +1334,6 @@ bool WebContents::HandleKeyboardEvent(
 bool WebContents::PlatformHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  // Escape exits tabbed fullscreen mode.
-  if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen()) {
-    ExitFullscreenModeForTab(source);
-    return true;
-  }
-
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
   if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
@@ -1507,11 +1511,10 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result.GetHandle());
 }
 
-void WebContents::RequestExclusivePointerAccess(
-    content::WebContents* web_contents,
-    bool user_gesture,
-    bool last_unlocked_by_target,
-    bool allowed) {
+void WebContents::OnRequestToLockMouse(content::WebContents* web_contents,
+                                       bool user_gesture,
+                                       bool last_unlocked_by_target,
+                                       bool allowed) {
   if (allowed) {
     exclusive_access_manager_.mouse_lock_controller()->RequestToLockMouse(
         web_contents, user_gesture, last_unlocked_by_target);
@@ -1528,7 +1531,7 @@ void WebContents::RequestToLockMouse(content::WebContents* web_contents,
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::RequestExclusivePointerAccess,
+      base::BindOnce(&WebContents::OnRequestToLockMouse,
                      base::Unretained(this)));
 }
 
@@ -1536,10 +1539,24 @@ void WebContents::LostMouseLock() {
   exclusive_access_manager_.mouse_lock_controller()->LostMouseLock();
 }
 
+void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
+                                        bool esc_key_locked,
+                                        bool allowed) {
+  if (allowed) {
+    exclusive_access_manager_.keyboard_lock_controller()->RequestKeyboardLock(
+        web_contents, esc_key_locked);
+  } else {
+    web_contents->GotResponseToKeyboardLockRequest(false);
+  }
+}
+
 void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
                                       bool esc_key_locked) {
-  exclusive_access_manager_.keyboard_lock_controller()->RequestKeyboardLock(
-      web_contents, esc_key_locked);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestKeyboardLockPermission(
+      esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
+                                     base::Unretained(this)));
 }
 
 void WebContents::CancelKeyboardLockRequest(
@@ -1655,8 +1672,7 @@ void WebContents::RenderFrameCreated(
   if (lifecycle_state == content::RenderFrameHost::LifecycleState::kActive) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    gin_helper::Dictionary details =
-        gin_helper::Dictionary::CreateEmpty(isolate);
+    auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
   }
@@ -1726,16 +1742,9 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
-  auto weak_this = GetWeakPtr();
-  Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
-
-  // User might destroy WebContents in the crashed event.
-  if (!weak_this || !web_contents())
-    return;
-
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
+  auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
   details.Set("exitCode", web_contents()->GetCrashedErrorCode());
   Emit("render-process-gone", details);
@@ -1874,7 +1883,7 @@ bool WebContents::EmitNavigationEvent(
   dict.Set("url", url);
   dict.Set("isSameDocument", is_same_document);
   dict.Set("isMainFrame", is_main_frame);
-  dict.Set("frame", frame_host);
+  dict.SetGetter("frame", frame_host);
   dict.SetGetter("initiator", initiator_frame_host);
 
   EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
@@ -2226,10 +2235,15 @@ void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
 
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
                                  NativeWindow* owner_window) {
+  if (owner_window_) {
+    owner_window_->RemoveBackgroundThrottlingSource(this);
+  }
+
   if (owner_window) {
     owner_window_ = owner_window->GetWeakPtr();
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
+    owner_window_->AddBackgroundThrottlingSource(this);
   } else {
     owner_window_ = nullptr;
     web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());
@@ -2282,6 +2296,10 @@ bool WebContents::GetBackgroundThrottling() const {
 
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
+
+  if (owner_window_) {
+    owner_window_->UpdateBackgroundThrottlingState();
+  }
 
   auto* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)
@@ -2380,8 +2398,20 @@ void WebContents::LoadURL(const GURL& url,
   params.transition_type = ui::PageTransitionFromInt(
       ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
-  // Discard non-committed entries to ensure that we don't re-use a pending
-  // entry
+
+  // It's not safe to start a new navigation or otherwise discard the current
+  // one while the call that started it is still on the stack. See
+  // http://crbug.com/347742.
+  auto& ctrl_impl = static_cast<content::NavigationControllerImpl&>(
+      web_contents()->GetController());
+  if (ctrl_impl.in_navigate_to_pending_entry()) {
+    Emit("did-fail-load", static_cast<int>(net::ERR_FAILED),
+         net::ErrorToShortString(net::ERR_FAILED), url.possibly_invalid_spec(),
+         true);
+    return;
+  }
+
+  // Discard non-committed entries to ensure we don't re-use a pending entry.
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
 
@@ -2524,7 +2554,7 @@ v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
     v8::Isolate* isolate) const {
   auto* prefs = web_contents()->GetMutableRendererPrefs();
 
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("min", static_cast<uint32_t>(prefs->webrtc_udp_min_port));
   dict.Set("max", static_cast<uint32_t>(prefs->webrtc_udp_max_port));
   return dict.GetHandle();
@@ -2666,14 +2696,6 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
       !owner_window()) {
     state = "detach";
   }
-
-#if BUILDFLAG(IS_WIN)
-  auto* win = static_cast<NativeWindowViews*>(owner_window());
-  // Force a detached state when WCO is enabled to match Chrome
-  // behavior and prevent occlusion of DevTools.
-  if (win && win->IsWindowControlsOverlayEnabled())
-    state = "detach";
-#endif
 
   bool activate = true;
   std::string title;
@@ -2910,8 +2932,7 @@ void WebContents::OnGetDeviceNameToUse(
 }
 
 void WebContents::Print(gin::Arguments* args) {
-  gin_helper::Dictionary options =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   base::Value::Dict settings;
 
   if (args->Length() >= 1 && !args->GetNext(&options)) {
@@ -2936,8 +2957,7 @@ void WebContents::Print(gin::Arguments* args) {
   settings.Set(printing::kSettingShouldPrintBackgrounds, print_background);
 
   // Set custom margin settings
-  gin_helper::Dictionary margins =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto margins = gin_helper::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
     printing::mojom::MarginType margin_type =
         printing::mojom::MarginType::kDefaultMargins;
@@ -3102,8 +3122,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
-  auto generate_tagged_pdf =
-      settings.GetDict().FindBool("shouldGenerateTaggedPDF");
+  auto generate_tagged_pdf = settings.GetDict().FindBool("generateTaggedPDF");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
@@ -3455,22 +3474,16 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   }
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
-  if (!view) {
+  if (!view || view->GetViewBounds().size().IsEmpty()) {
     promise.Resolve(gfx::Image());
     return handle;
   }
 
-#if !BUILDFLAG(IS_MAC)
-  // If the view's renderer is suspended this may fail on Windows/Linux -
-  // bail if so. See CopyFromSurface in
-  // content/public/browser/render_widget_host_view.h.
-  auto* rfh = web_contents()->GetPrimaryMainFrame();
-  if (rfh &&
-      rfh->GetVisibilityState() == blink::mojom::PageVisibilityState::kHidden) {
-    promise.Resolve(gfx::Image());
+  if (!view->IsSurfaceAvailableForCopy()) {
+    promise.RejectWithErrorMessage(
+        "Current display surface not available for capture");
     return handle;
   }
-#endif  // BUILDFLAG(IS_MAC)
 
   auto capture_handle = web_contents()->IncrementCapturerCount(
       rect.size(), stay_hidden, stay_awake);

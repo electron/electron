@@ -10,6 +10,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversion_utils.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
@@ -275,11 +276,18 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
   if ((out->GetType() == blink::WebInputEvent::Type::kChar ||
        out->GetType() == blink::WebInputEvent::Type::kRawKeyDown)) {
+    // If the keyCode is e.g. Space or Plus we want to use the character
+    // instead of the keyCode: ' ' instead of 'Space', '+' instead of 'Plus'.
+    std::string character_str;
+    if (str.size() > 1 && domKey.IsCharacter())
+      base::WriteUnicodeCharacter(domKey.ToCharacter(), &character_str);
+
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
     size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
-    std::u16string text16 = base::UTF8ToUTF16(str);
-
+    std::u16string text16 = character_str.empty()
+                                ? base::UTF8ToUTF16(str)
+                                : base::UTF8ToUTF16(character_str);
     std::fill_n(out->text, text_length_cap, 0);
     std::fill_n(out->unmodified_text, text_length_cap, 0);
     for (size_t i = 0; i < std::min(text_length_cap - 1, text16.size()); ++i) {
@@ -452,19 +460,111 @@ v8::Local<v8::Value> Converter<blink::mojom::ContextMenuDataMediaType>::ToV8(
 
 // static
 v8::Local<v8::Value>
-Converter<blink::mojom::ContextMenuDataInputFieldType>::ToV8(
+Converter<absl::optional<blink::mojom::FormControlType>>::ToV8(
     v8::Isolate* isolate,
-    const blink::mojom::ContextMenuDataInputFieldType& in) {
-  switch (in) {
-    case blink::mojom::ContextMenuDataInputFieldType::kPlainText:
-      return StringToV8(isolate, "plainText");
-    case blink::mojom::ContextMenuDataInputFieldType::kPassword:
-      return StringToV8(isolate, "password");
-    case blink::mojom::ContextMenuDataInputFieldType::kOther:
-      return StringToV8(isolate, "other");
-    default:
-      return StringToV8(isolate, "none");
+    const absl::optional<blink::mojom::FormControlType>& in) {
+  base::StringPiece str{"none"};
+  if (in.has_value()) {
+    switch (*in) {
+      case blink::mojom::FormControlType::kButtonButton:
+        str = "button-button";
+        break;
+      case blink::mojom::FormControlType::kButtonReset:
+        str = "reset-button";
+        break;
+      case blink::mojom::FormControlType::kButtonSelectList:
+        str = "select-list";
+        break;
+      case blink::mojom::FormControlType::kButtonSubmit:
+        str = "submit-button";
+        break;
+      case blink::mojom::FormControlType::kFieldset:
+        str = "field-set";
+        break;
+      case blink::mojom::FormControlType::kInputButton:
+        str = "input-button";
+        break;
+      case blink::mojom::FormControlType::kInputCheckbox:
+        str = "input-checkbox";
+        break;
+      case blink::mojom::FormControlType::kInputColor:
+        str = "input-color";
+        break;
+      case blink::mojom::FormControlType::kInputDate:
+        str = "input-date";
+        break;
+      case blink::mojom::FormControlType::kInputDatetimeLocal:
+        str = "input-datetime-local";
+        break;
+      case blink::mojom::FormControlType::kInputEmail:
+        str = "input-email";
+        break;
+      case blink::mojom::FormControlType::kInputFile:
+        str = "input-file";
+        break;
+      case blink::mojom::FormControlType::kInputHidden:
+        str = "input-hidden";
+        break;
+      case blink::mojom::FormControlType::kInputImage:
+        str = "input-image";
+        break;
+      case blink::mojom::FormControlType::kInputMonth:
+        str = "input-month";
+        break;
+      case blink::mojom::FormControlType::kInputNumber:
+        str = "input-number";
+        break;
+      case blink::mojom::FormControlType::kInputPassword:
+        str = "input-password";
+        break;
+      case blink::mojom::FormControlType::kInputRadio:
+        str = "input-radio";
+        break;
+      case blink::mojom::FormControlType::kInputRange:
+        str = "input-range";
+        break;
+      case blink::mojom::FormControlType::kInputReset:
+        str = "input-reset";
+        break;
+      case blink::mojom::FormControlType::kInputSearch:
+        str = "input-search";
+        break;
+      case blink::mojom::FormControlType::kInputSubmit:
+        str = "input-submit";
+        break;
+      case blink::mojom::FormControlType::kInputTelephone:
+        str = "input-telephone";
+        break;
+      case blink::mojom::FormControlType::kInputText:
+        str = "input-text";
+        break;
+      case blink::mojom::FormControlType::kInputTime:
+        str = "input-time";
+        break;
+      case blink::mojom::FormControlType::kInputUrl:
+        str = "input-url";
+        break;
+      case blink::mojom::FormControlType::kInputWeek:
+        str = "input-week";
+        break;
+      case blink::mojom::FormControlType::kOutput:
+        str = "output";
+        break;
+      case blink::mojom::FormControlType::kSelectList:
+        str = "select-list";
+        break;
+      case blink::mojom::FormControlType::kSelectMultiple:
+        str = "select-multiple";
+        break;
+      case blink::mojom::FormControlType::kSelectOne:
+        str = "select-one";
+        break;
+      case blink::mojom::FormControlType::kTextArea:
+        str = "text-area";
+        break;
+    }
   }
+  return StringToV8(isolate, str);
 }
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {

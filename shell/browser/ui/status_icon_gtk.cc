@@ -7,6 +7,7 @@
 
 #include <gtk/gtk.h>
 
+#include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/gtk/menu_gtk.h"
 #include "shell/browser/ui/gtk_util.h"
@@ -15,9 +16,15 @@
 namespace electron {
 
 StatusIconGtk::StatusIconGtk() : icon_(TakeGObject(gtk_status_icon_new())) {
-  g_signal_connect(icon_, "activate", G_CALLBACK(OnClickThunk), this);
-  g_signal_connect(icon_, "popup_menu", G_CALLBACK(OnContextMenuRequestedThunk),
-                   this);
+  auto connect = [&](auto* sender, const char* detailed_signal, auto receiver) {
+    // Unretained() is safe since StatusIconGtk will own the
+    // ScopedGSignal.
+    signals_.emplace_back(
+        sender, detailed_signal,
+        base::BindRepeating(receiver, base::Unretained(this)));
+  };
+  connect(icon_.get(), "activate", &StatusIconGtk::OnClick);
+  connect(icon_.get(), "popup_menu", &StatusIconGtk::OnContextMenuRequested);
 }
 
 StatusIconGtk::~StatusIconGtk() = default;

@@ -1196,6 +1196,40 @@ describe('BrowserWindow module', () => {
           await isClosed3;
         }
       });
+
+      ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
+        // Show to focus app, then remove existing window
+        w.show();
+        w.destroy();
+
+        // We first need to resign app focus for this test to work
+        const isInactive = once(app, 'did-resign-active');
+        childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
+        await isInactive;
+
+        // Create new window
+        w = new BrowserWindow({
+          type: 'panel',
+          height: 200,
+          width: 200,
+          center: true,
+          show: false
+        });
+
+        const isShow = once(w, 'show');
+        const isFocus = once(w, 'focus');
+
+        w.showInactive();
+        w.focus();
+
+        await isShow;
+        await isFocus;
+
+        const getActiveAppOsa = 'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const activeApp = childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
+
+        expect(activeApp).to.equal('Finder');
+      });
     });
 
     // TODO(RaisinTen): Make this work on Windows too.
@@ -2060,10 +2094,7 @@ describe('BrowserWindow module', () => {
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
-    afterEach(async () => {
-      await closeWindow(w);
-      w = null as unknown as BrowserWindow;
-    });
+    afterEach(closeAllWindows);
 
     describe('BrowserWindow.selectPreviousTab()', () => {
       it('does not throw', () => {
@@ -2130,6 +2161,18 @@ describe('BrowserWindow module', () => {
         expect(() => {
           w.addTabbedWindow(w);
         }).to.throw('AddTabbedWindow cannot be called by a window on itself.');
+      });
+    });
+
+    describe('BrowserWindow.tabbingIdentifier', () => {
+      it('is undefined if no tabbingIdentifier was set', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.tabbingIdentifier).to.be.undefined('tabbingIdentifier');
+      });
+
+      it('returns the window tabbingIdentifier', () => {
+        const w = new BrowserWindow({ show: false, tabbingIdentifier: 'group1' });
+        expect(w.tabbingIdentifier).to.equal('group1');
       });
     });
   });
@@ -2215,7 +2258,22 @@ describe('BrowserWindow module', () => {
       expect(visible).to.equal('hidden');
     });
 
-    it('resolves after the window is hidden', async () => {
+    it('resolves when the window is occluded', async () => {
+      const w1 = new BrowserWindow({ show: false });
+      w1.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await once(w1, 'ready-to-show');
+      w1.show();
+
+      const w2 = new BrowserWindow({ show: false });
+      w2.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await once(w2, 'ready-to-show');
+      w2.show();
+
+      const visibleImage = await w1.capturePage();
+      expect(visibleImage.isEmpty()).to.equal(false);
+    });
+
+    it('resolves when the window is not visible', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
       await once(w, 'ready-to-show');
@@ -2224,21 +2282,10 @@ describe('BrowserWindow module', () => {
       const visibleImage = await w.capturePage();
       expect(visibleImage.isEmpty()).to.equal(false);
 
-      w.hide();
+      w.minimize();
 
       const hiddenImage = await w.capturePage();
-      const isEmpty = process.platform !== 'darwin';
-      expect(hiddenImage.isEmpty()).to.equal(isEmpty);
-    });
-
-    it('resolves after the window is hidden and capturer count is non-zero', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.setBackgroundThrottling(false);
-      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
-      await once(w, 'ready-to-show');
-
-      const image = await w.capturePage();
-      expect(image.isEmpty()).to.equal(false);
+      expect(hiddenImage.isEmpty()).to.equal(false);
     });
 
     it('preserves transparency', async () => {
@@ -3425,7 +3472,7 @@ describe('BrowserWindow module', () => {
         w.loadURL(pageUrl);
         const [, url] = await once(ipcMain, 'answer');
         const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replace(/\\/g, '/')
+          ? 'file:///' + htmlPath.replaceAll('\\', '/')
           : pageUrl;
         expect(url).to.equal(expectedUrl);
       });
@@ -3475,7 +3522,7 @@ describe('BrowserWindow module', () => {
         w.loadURL(pageUrl);
         const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window') as [BrowserWindow, Electron.DidCreateWindowDetails];
         const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replace(/\\/g, '/')
+          ? 'file:///' + htmlPath.replaceAll('\\', '/')
           : pageUrl;
         expect(url).to.equal(expectedUrl);
         expect(frameName).to.equal('popup!');
@@ -3542,12 +3589,13 @@ describe('BrowserWindow module', () => {
         // so let's close it from here before we run any checks.
         await closeWindow(popupWindow, { assertNotWindows: false });
 
+        const errorPattern = /Failed to read a named property 'document' from 'Window': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;
         expect(popupAccessMessage).to.be.a('string',
           'child\'s .document is accessible from its parent window');
-        expect(popupAccessMessage).to.match(/^Blocked a frame with origin/);
+        expect(popupAccessMessage).to.match(errorPattern);
         expect(openerAccessMessage).to.be.a('string',
           'opener .document is accessible from a popup window');
-        expect(openerAccessMessage).to.match(/^Blocked a frame with origin/);
+        expect(openerAccessMessage).to.match(errorPattern);
       });
 
       it('should inherit the sandbox setting in opened windows', async () => {
@@ -3754,7 +3802,7 @@ describe('BrowserWindow module', () => {
         const answer = once(ipcMain, 'answer');
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-cross-origin.html'));
         const [, content] = await answer;
-        expect(content).to.equal('Blocked a frame with origin "file://" from accessing a cross-origin frame.');
+        expect(content).to.equal('Failed to read a named property \'toString\' from \'Location\': Blocked a frame with origin "file://" from accessing a cross-origin frame.');
       });
       it('opens window from <iframe> tags', async () => {
         const answer = once(ipcMain, 'answer');
@@ -4670,7 +4718,27 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
-      ifit(process.platform === 'darwin')('child window matches visibility when visibility changes', async () => {
+      ifit(process.platform === 'darwin')('only shows the intended window when a child with siblings is shown', async () => {
+        const w = new BrowserWindow({ show: false });
+        const childOne = new BrowserWindow({ show: false, parent: w });
+        const childTwo = new BrowserWindow({ show: false, parent: w });
+
+        const parentShown = once(w, 'show');
+        w.show();
+        await parentShown;
+
+        expect(childOne.isVisible()).to.be.false('childOne is visible');
+        expect(childTwo.isVisible()).to.be.false('childTwo is visible');
+
+        const childOneShown = once(childOne, 'show');
+        childOne.show();
+        await childOneShown;
+
+        expect(childOne.isVisible()).to.be.true('childOne is not visible');
+        expect(childTwo.isVisible()).to.be.false('childTwo is visible');
+      });
+
+      ifit(process.platform === 'darwin')('child matches parent visibility when parent visibility changes', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
 
@@ -4697,7 +4765,7 @@ describe('BrowserWindow module', () => {
         expect(c.isVisible()).to.be.true('child is visible');
       });
 
-      ifit(process.platform === 'darwin')('matches child window visibility when visibility changes', async () => {
+      ifit(process.platform === 'darwin')('parent matches child visibility when child visibility changes', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
 
@@ -5890,9 +5958,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('returns valid handle', () => {
       const w = new BrowserWindow({ show: false });
-      // The module's source code is hosted at
-      // https://github.com/electron/node-is-valid-window
-      const isValidWindow = require('is-valid-window');
+      const isValidWindow = require('@electron-ci/is-valid-window');
       expect(isValidWindow(w.getNativeWindowHandle())).to.be.true('is valid window');
     });
   });
@@ -6329,7 +6395,7 @@ describe('BrowserWindow module', () => {
       foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
       await once(ipcMain, 'set-transparent');
 
-      await setTimeout();
+      await setTimeout(1000);
       const screenCapture = await captureScreen();
       const centerColor = getPixelColor(screenCapture, {
         x: display.size.width / 2,
@@ -6352,7 +6418,7 @@ describe('BrowserWindow module', () => {
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        await setTimeout(500);
+        await setTimeout(1000);
         const screenCapture = await captureScreen();
         const centerColor = getPixelColor(screenCapture, {
           x: display.size.width / 2,
@@ -6382,6 +6448,7 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await once(w, 'ready-to-show');
 
+      await setTimeout(1000);
       const screenCapture = await captureScreen();
       const centerColor = getPixelColor(screenCapture, {
         x: display.size.width / 2,

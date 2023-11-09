@@ -97,9 +97,6 @@
 * `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
   should have rounded corners on macOS. Default is `true`. Setting this property
   to `false` will prevent the window from being fullscreenable.
-* `fullscreenWindowTitle` boolean (optional) _macOS_ _Deprecated_ - Shows
-  the title in the title bar in full screen mode on macOS for `hiddenInset`
-  titleBarStyle. Default is `false`.
 * `thickFrame` boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
   Windows, which adds standard window frame. Setting it to `false` will remove
   window shadow and window animations. Default is `true`.

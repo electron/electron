@@ -40,6 +40,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
+  bool ShouldWindowContentsBeTransparent() const override;
 
  private:
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref

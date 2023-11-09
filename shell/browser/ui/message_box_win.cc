@@ -156,7 +156,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
 
   TASKDIALOGCONFIG config = {0};
   config.cbSize = sizeof(config);
-  config.hInstance = GetModuleHandle(NULL);
+  config.hInstance = GetModuleHandle(nullptr);
   config.dwFlags = flags;
 
   if (parent) {

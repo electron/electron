@@ -2,7 +2,8 @@ import { Octokit } from '@octokit/rest';
 import * as fs from 'node:fs';
 
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  auth: process.env.ELECTRON_GITHUB_TOKEN,
+  log: console
 });
 
 if (!process.env.CI) require('dotenv-safe').load();

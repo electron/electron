@@ -1,11 +1,12 @@
 import { Buffer } from 'buffer';
+import { constants } from 'fs';
 import * as path from 'path';
 import * as util from 'util';
 import type * as Crypto from 'crypto';
 
 const asar = process._linkedBinding('electron_common_asar');
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 const Promise: PromiseConstructor = global.Promise;
 
@@ -27,7 +28,7 @@ const cachedArchives = new Map<string, NodeJS.AsarArchive>();
 const getOrCreateArchive = (archivePath: string) => {
   const isCached = cachedArchives.has(archivePath);
   if (isCached) {
-    return cachedArchives.get(archivePath);
+    return cachedArchives.get(archivePath)!;
   }
 
   try {
@@ -38,6 +39,8 @@ const getOrCreateArchive = (archivePath: string) => {
     return null;
   }
 };
+
+process._getOrCreateArchive = getOrCreateArchive;
 
 const asarRe = /\.asar/i;
 
@@ -73,18 +76,22 @@ const gid = process.getgid?.() ?? 0;
 
 const fakeTime = new Date();
 
+enum AsarFileType {
+  kFile = (constants as any).UV_DIRENT_FILE,
+  kDirectory = (constants as any).UV_DIRENT_DIR,
+  kLink = (constants as any).UV_DIRENT_LINK,
+}
+
+const fileTypeToMode = new Map<AsarFileType, number>([
+  [AsarFileType.kFile, constants.S_IFREG],
+  [AsarFileType.kDirectory, constants.S_IFDIR],
+  [AsarFileType.kLink, constants.S_IFLNK]
+]);
+
 const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
-  const { Stats, constants } = require('fs');
+  const { Stats } = require('fs');
 
-  let mode = constants.S_IROTH ^ constants.S_IRGRP ^ constants.S_IRUSR ^ constants.S_IWUSR;
-
-  if (stats.isFile) {
-    mode ^= constants.S_IFREG;
-  } else if (stats.isDirectory) {
-    mode ^= constants.S_IFDIR;
-  } else if (stats.isLink) {
-    mode ^= constants.S_IFLNK;
-  }
+  const mode = constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
 
   return new Stats(
     1, // dev
@@ -247,12 +254,19 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
     if (!process.env.ELECTRON_LOG_ASAR_READS) return;
     if (!logFDs.has(asarPath)) {
-      const path = require('path');
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
       const logPath = path.join(require('os').tmpdir(), logFilename);
       logFDs.set(asarPath, fs.openSync(logPath, 'a'));
     }
     fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
+  };
+
+  const shouldThrowStatError = (options: any) => {
+    if (options && typeof options === 'object' && options.throwIfNoEntry === false) {
+      return false;
+    }
+
+    return true;
   };
 
   const { lstatSync } = fs;
@@ -262,10 +276,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
-    if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+    if (!archive) {
+      if (shouldThrowStatError(options)) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+      return null;
+    }
 
     const stats = archive.stat(filePath);
-    if (!stats) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+    if (!stats) {
+      if (shouldThrowStatError(options)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+      return null;
+    }
 
     return asarStatsToFsStats(stats);
   };
@@ -674,13 +694,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           nextTick(callback!, [error]);
           return;
         }
-        if (stats.isFile) {
-          dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_FILE));
-        } else if (stats.isDirectory) {
-          dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_DIR));
-        } else if (stats.isLink) {
-          dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_LINK));
-        }
+        dirents.push(new fs.Dirent(file, stats.type));
       }
       nextTick(callback!, [null, dirents]);
       return;
@@ -717,13 +731,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         if (!stats) {
           throw createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
         }
-        if (stats.isFile) {
-          dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_FILE));
-        } else if (stats.isDirectory) {
-          dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_DIR));
-        } else if (stats.isLink) {
-          dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_LINK));
-        }
+        dirents.push(new fs.Dirent(file, stats.type));
       }
       return dirents;
     }
@@ -774,7 +782,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const stats = archive.stat(filePath);
     if (!stats) return -34;
 
-    return (stats.isDirectory) ? 1 : 0;
+    return (stats.type === AsarFileType.kDirectory) ? 1 : 0;
   };
 
   // Calling mkdir for directory inside asar archive should throw ENOTDIR

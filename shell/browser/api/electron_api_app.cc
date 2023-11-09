@@ -19,6 +19,7 @@
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
+#include "base/win/windows_version.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
@@ -84,6 +85,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/mac/mac_util.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #endif
 
@@ -363,8 +365,11 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Get("path", &(out->path));
     dict.Get("args", &(out->args));
 #if BUILDFLAG(IS_WIN)
-    dict.Get("enabled", &(out->enabled));
     dict.Get("name", &(out->name));
+    dict.Get("enabled", &(out->enabled));
+#elif BUILDFLAG(IS_MAC)
+    dict.Get("serviceName", &(out->service_name));
+    dict.Get("type", &(out->type));
 #endif
     return true;
   }
@@ -372,16 +377,19 @@ struct Converter<Browser::LoginItemSettings> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LoginItemSettings val) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+#if BUILDFLAG(IS_WIN)
+    dict.Set("launchItems", val.launch_items);
+    dict.Set("executableWillLaunchAtLogin",
+             val.executable_will_launch_at_login);
+#elif BUILDFLAG(IS_MAC)
+    if (base::mac::MacOSMajorVersion() >= 13)
+      dict.Set("status", val.status);
+#endif
     dict.Set("openAtLogin", val.open_at_login);
     dict.Set("openAsHidden", val.open_as_hidden);
     dict.Set("restoreState", val.restore_state);
     dict.Set("wasOpenedAtLogin", val.opened_at_login);
     dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
-#if BUILDFLAG(IS_WIN)
-    dict.Set("launchItems", val.launch_items);
-    dict.Set("executableWillLaunchAtLogin",
-             val.executable_will_launch_at_login);
-#endif
     return dict.GetHandle();
   }
 };
@@ -432,7 +440,7 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 }
 
 // Return the path constant from string.
-constexpr int GetPathConstant(base::StringPiece name) {
+int GetPathConstant(base::StringPiece name) {
   // clang-format off
   constexpr auto Lookup = base::MakeFixedFlatMapSorted<base::StringPiece, int>({
       {"appData", DIR_APP_DATA},
@@ -832,10 +840,6 @@ base::OnceClosure App::SelectClientCertificate(
 
 void App::OnGpuInfoUpdate() {
   Emit("gpu-info-update");
-}
-
-void App::OnGpuProcessCrashed() {
-  Emit("gpu-process-crashed", true);
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
@@ -1366,8 +1370,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("pid", process_metric.second->process.Pid());
     pid_dict.Set("type", content::GetProcessTypeNameInEnglish(
                              process_metric.second->type));
-    pid_dict.Set("creationTime",
-                 process_metric.second->process.CreationTime().ToJsTime());
+    pid_dict.Set("creationTime", process_metric.second->process.CreationTime()
+                                     .InMillisecondsFSinceUnixEpoch());
 
     if (!process_metric.second->service_name.empty()) {
       pid_dict.Set("serviceName", process_metric.second->service_name);
@@ -1475,23 +1479,8 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
 }
 
 #if BUILDFLAG(IS_WIN)
-
 bool App::IsRunningUnderARM64Translation() const {
-  USHORT processMachine = 0;
-  USHORT nativeMachine = 0;
-
-  auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
-      GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
-
-  if (IsWow64Process2 == nullptr) {
-    return false;
-  }
-
-  if (!IsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
-    return false;
-  }
-
-  return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
+  return base::win::OSInfo::IsRunningEmulatedOnArm64();
 }
 #endif
 
@@ -1781,8 +1770,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if BUILDFLAG(IS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
-      .SetProperty("runningUnderRosettaTranslation",
-                   &App::IsRunningUnderRosettaTranslation)
 #endif
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       .SetProperty("runningUnderARM64Translation",

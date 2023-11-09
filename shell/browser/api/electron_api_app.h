@@ -153,7 +153,6 @@ class App : public ElectronBrowserClient::Delegate,
 
   // content::GpuDataManagerObserver:
   void OnGpuInfoUpdate() override;
-  void OnGpuProcessCrashed() override;
 
   // content::BrowserChildProcessObserver:
   void BrowserChildProcessLaunchedAndConnected(
@@ -229,7 +228,6 @@ class App : public ElectronBrowserClient::Delegate,
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
-  bool IsRunningUnderRosettaTranslation() const;
   v8::Global<v8::Value> dock_;
 #endif
 

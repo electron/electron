@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-
 import argparse
 import hashlib
 import json
@@ -168,13 +166,7 @@ def main():
             traceback.print_exc(file=sys.stderr)
             return 0
     elif args.operation == "set":
-        # Python 2/3 compatibility
-        try:
-            user_input = raw_input
-        except NameError:
-            user_input = input
-
-        answer = user_input(
+        answer = input(
             "WARNING: Manually setting mtimes could mess up your build. "
             "If you're sure, type yes: "
         )
