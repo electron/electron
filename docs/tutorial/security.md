@@ -759,6 +759,27 @@ function validateSender (frame) {
 }
 ```
 
+### 18. Avoid usage of the `file://` protocol and prefer usage of custom protocols
+
+You should serve local pages from a custom protocol instead of the `file://` protocol.
+
+#### Why?
+
+The `file://` protocol gets more privileges in Electron than in a web browser and even in
+browsers it is treated differently to http/https URLs. Using a custom protocol allows you
+to be more aligned with classic web url behavior while retaining even more control about
+what can be loaded and when.
+
+Pages running on `file://` have unilateral access to every file on your machine meaning
+that XSS issues can be used to load arbitrary files from the users machine. Using a custom
+protocol prevents issues like this as you can limit the protocol to only serving a specific
+set of files.
+
+#### How?
+
+Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
+learn how to serve files / content from a custom protocol.
+
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md

@@ -56,6 +56,7 @@
 #include "content/public/common/url_constants.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
@@ -425,8 +426,10 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
   prefs->databases_enabled = true;
-  prefs->allow_universal_access_from_file_urls = true;
-  prefs->allow_file_access_from_file_urls = true;
+  prefs->allow_universal_access_from_file_urls =
+      electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
+  prefs->allow_file_access_from_file_urls =
+      electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
   prefs->webgl1_enabled = true;
   prefs->webgl2_enabled = true;
   prefs->allow_running_insecure_content = false;
