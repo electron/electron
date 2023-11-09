@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 31 May 2023 11:36:48 +0200
+Subject: feat: expose several extra cipher functions
+
+This patch exposes the following ciphers:
+
+AES_CFB Ciphers: aes-128-cfb, aes-256-cfb
+
+Implementations for these ciphers exist but aren't exposed, so they're
+unusable without this patch. We should upstream this as similar
+patches for implemented cipher functions have been accepted.
+
+Blowfish Ciphers: bf-cbc, bf-cfb, bf-ecb
+
+The addition of Blowfish ciphers adds references decrepit code
+from non-decrepit code, so upstream is unlikely to take the patch.
+
+DES Ciphers: des-ede3
+
+An implementation for this cipher exists but isn't exposed, so it's
+unusable without this patch. Akin to the AES_CFB exposures, we should
+upstream this as similar patches for implemented cipher functions have
+been accepted.
+
+RC2 Ciphers: rc2-40-cbc
+
+It's unclear whether this would be accepted upstream. We should try regardless.
+
+diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
+index 62850ab6a216d401d023f81007fb59a33b4585f3..95bd172c99874610ec9157c52df4fe0232e78c7f 100644
+--- a/crypto/cipher_extra/cipher_extra.c
++++ b/crypto/cipher_extra/cipher_extra.c
+@@ -73,6 +73,7 @@ static const struct {
+   const EVP_CIPHER *(*func)(void);
+ } kCiphers[] = {
+     {NID_aes_128_cbc, "aes-128-cbc", EVP_aes_128_cbc},
++    {NID_aes_128_cfb128, "aes-128-cfb", EVP_aes_128_cfb128},
+     {NID_aes_128_ctr, "aes-128-ctr", EVP_aes_128_ctr},
+     {NID_aes_128_ecb, "aes-128-ecb", EVP_aes_128_ecb},
+     {NID_aes_128_gcm, "aes-128-gcm", EVP_aes_128_gcm},
+@@ -83,17 +84,23 @@ static const struct {
+     {NID_aes_192_gcm, "aes-192-gcm", EVP_aes_192_gcm},
+     {NID_aes_192_ofb128, "aes-192-ofb", EVP_aes_192_ofb},
+     {NID_aes_256_cbc, "aes-256-cbc", EVP_aes_256_cbc},
++    {NID_aes_256_cfb128, "aes-256-cfb", EVP_aes_256_cfb128},
+     {NID_aes_256_ctr, "aes-256-ctr", EVP_aes_256_ctr},
+     {NID_aes_256_ecb, "aes-256-ecb", EVP_aes_256_ecb},
+     {NID_aes_256_gcm, "aes-256-gcm", EVP_aes_256_gcm},
+     {NID_aes_256_ofb128, "aes-256-ofb", EVP_aes_256_ofb},
++    {NID_bf_cbc, "bf-cbc", EVP_bf_cbc},
++    {NID_bf_cfb64, "bf-cfb", EVP_bf_cfb},
++    {NID_bf_ecb, "bf-ecb", EVP_bf_ecb},
+     {NID_des_cbc, "des-cbc", EVP_des_cbc},
+     {NID_des_ecb, "des-ecb", EVP_des_ecb},
+     {NID_des_ede_cbc, "des-ede-cbc", EVP_des_ede_cbc},
+     {NID_des_ede_ecb, "des-ede", EVP_des_ede},
++    {NID_des_ede3_ecb, "des-ede3", EVP_des_ede3},
+     {NID_des_ede3_cbc, "des-ede3-cbc", EVP_des_ede3_cbc},
+     {NID_rc2_cbc, "rc2-cbc", EVP_rc2_cbc},
+     {NID_rc4, "rc4", EVP_rc4},
++    {NID_rc2_40_cbc, "rc2-40-cbc", EVP_rc2_40_cbc}
+ };
+ 
+ const EVP_CIPHER *EVP_get_cipherbynid(int nid) {
+diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
+index 852b76bea69988e0b3ac76a17b603128f239dde0..43fc792697519325725e9ce87801c5dc176c70a1 100644
+--- a/decrepit/evp/evp_do_all.c
++++ b/decrepit/evp/evp_do_all.c
+@@ -20,8 +20,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+                                                const char *unused, void *arg),
+                               void *arg) {
+   callback(EVP_aes_128_cbc(), "AES-128-CBC", NULL, arg);
++  callback(EVP_aes_128_cfb128(), "AES-128-CFB", NULL, arg);
+   callback(EVP_aes_192_cbc(), "AES-192-CBC", NULL, arg);
+   callback(EVP_aes_256_cbc(), "AES-256-CBC", NULL, arg);
++  callback(EVP_aes_256_cfb128(), "AES-256-CFB", NULL, arg);
+   callback(EVP_aes_128_ctr(), "AES-128-CTR", NULL, arg);
+   callback(EVP_aes_192_ctr(), "AES-192-CTR", NULL, arg);
+   callback(EVP_aes_256_ctr(), "AES-256-CTR", NULL, arg);
+@@ -34,9 +36,13 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+   callback(EVP_aes_128_gcm(), "AES-128-GCM", NULL, arg);
+   callback(EVP_aes_192_gcm(), "AES-192-GCM", NULL, arg);
+   callback(EVP_aes_256_gcm(), "AES-256-GCM", NULL, arg);
++  callback(EVP_bf_cbc(), "BF-CBC", NULL, arg);
++  callback(EVP_bf_cfb(), "BF-CFB", NULL, arg);
++  callback(EVP_bf_ecb(), "BF-ECB", NULL, arg);
+   callback(EVP_des_cbc(), "DES-CBC", NULL, arg);
+   callback(EVP_des_ecb(), "DES-ECB", NULL, arg);
+   callback(EVP_des_ede(), "DES-EDE", NULL, arg);
++  callback(EVP_des_ede3(), "DES-EDE3", NULL, arg);
+   callback(EVP_des_ede_cbc(), "DES-EDE-CBC", NULL, arg);
+   callback(EVP_des_ede3_cbc(), "DES-EDE3-CBC", NULL, arg);
+   callback(EVP_rc2_cbc(), "RC2-CBC", NULL, arg);
+@@ -44,8 +50,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+ 
+   // OpenSSL returns everything twice, the second time in lower case.
+   callback(EVP_aes_128_cbc(), "aes-128-cbc", NULL, arg);
++  callback(EVP_aes_128_cfb128(), "aes-128-cfb", NULL, arg);
+   callback(EVP_aes_192_cbc(), "aes-192-cbc", NULL, arg);
+   callback(EVP_aes_256_cbc(), "aes-256-cbc", NULL, arg);
++  callback(EVP_aes_256_cfb128(), "aes-256-cfb", NULL, arg);
+   callback(EVP_aes_128_ctr(), "aes-128-ctr", NULL, arg);
+   callback(EVP_aes_192_ctr(), "aes-192-ctr", NULL, arg);
+   callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
+@@ -58,9 +66,13 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+   callback(EVP_aes_128_gcm(), "aes-128-gcm", NULL, arg);
+   callback(EVP_aes_192_gcm(), "aes-192-gcm", NULL, arg);
+   callback(EVP_aes_256_gcm(), "aes-256-gcm", NULL, arg);
++  callback(EVP_bf_cbc(), "bf-cbc", NULL, arg);
++  callback(EVP_bf_cfb(), "bf-cfb", NULL, arg);
++  callback(EVP_bf_ecb(), "bf-ecb", NULL, arg);
+   callback(EVP_des_cbc(), "des-cbc", NULL, arg);
+   callback(EVP_des_ecb(), "des-ecb", NULL, arg);
+   callback(EVP_des_ede(), "des-ede", NULL, arg);
++  callback(EVP_des_ede3(), "des-ede3", NULL, arg);
+   callback(EVP_des_ede_cbc(), "des-ede-cbc", NULL, arg);
+   callback(EVP_des_ede3_cbc(), "des-ede3-cbc", NULL, arg);
+   callback(EVP_rc2_cbc(), "rc2-cbc", NULL, arg);
+diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
+index 18c1e708a42d7802b7d52564bceb93a53b7ab9c5..08b830a40e4587435b4e026dee4b205b4813c357 100644
+--- a/include/openssl/cipher.h
++++ b/include/openssl/cipher.h
+@@ -476,6 +476,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+ 
+ // EVP_aes_128_cfb128 is only available in decrepit.
+ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);
++OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_256_cfb128(void);
+ 
+ // EVP_aes_128_cfb is an alias for |EVP_aes_128_cfb128| and is only available in
+ // decrepit.

@@ -61,7 +61,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("httpOnly", val.IsHttpOnly());
     dict.Set("session", !val.IsPersistent());
     if (val.IsPersistent())
-      dict.Set("expirationDate", val.ExpiryDate().ToDoubleT());
+      dict.Set("expirationDate", val.ExpiryDate().InSecondsFSinceUnixEpoch());
     dict.Set("sameSite", val.SameSite());
     return ConvertToV8(isolate, dict).As<v8::Object>();
   }
@@ -164,12 +164,12 @@ void FilterCookieWithStatuses(
 base::Time ParseTimeProperty(const absl::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
     return base::Time();
-  if (*value == 0)  // FromDoubleT would convert 0 to empty Time
+  if (*value == 0)  // FromSecondsSinceUnixEpoch would convert 0 to empty Time
     return base::Time::UnixEpoch();
-  return base::Time::FromDoubleT(*value);
+  return base::Time::FromSecondsSinceUnixEpoch(*value);
 }
 
-std::string InclusionStatusToString(net::CookieInclusionStatus status) {
+base::StringPiece InclusionStatusToString(net::CookieInclusionStatus status) {
   if (status.HasExclusionReason(net::CookieInclusionStatus::EXCLUDE_HTTP_ONLY))
     return "Failed to create httponly cookie";
   if (status.HasExclusionReason(

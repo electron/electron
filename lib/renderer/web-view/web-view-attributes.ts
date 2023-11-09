@@ -53,7 +53,7 @@ export class WebViewAttribute implements MutationHandler {
   }
 
   // Called when the attribute's value changes.
-  public handleMutation: MutationHandler['handleMutation'] = () => undefined
+  public handleMutation: MutationHandler['handleMutation'] = () => undefined;
 }
 
 // An attribute that is treated as a Boolean.
@@ -73,7 +73,7 @@ class BooleanAttribute extends WebViewAttribute {
 
 // Attribute representing the state of the storage partition.
 export class PartitionAttribute extends WebViewAttribute {
-  public validPartitionId = true
+  public validPartitionId = true;
 
   constructor (public webViewImpl: WebViewImpl) {
     super(WEB_VIEW_ATTRIBUTES.PARTITION, webViewImpl);
@@ -92,7 +92,7 @@ export class PartitionAttribute extends WebViewAttribute {
       this.validPartitionId = false;
       console.error(WEB_VIEW_ERROR_MESSAGES.INVALID_PARTITION_ATTRIBUTE);
     }
-  }
+  };
 }
 
 // Attribute that handles the location and navigation of the webview.
@@ -134,7 +134,7 @@ export class SrcAttribute extends WebViewAttribute {
       return;
     }
     this.parse();
-  }
+  };
 
   // The purpose of this mutation observer is to catch assignment to the src
   // attribute without any changes to its value. This is useful in the case

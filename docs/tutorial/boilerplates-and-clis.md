@@ -30,7 +30,7 @@ Electron Forge is a tool for packaging and publishing Electron applications. It 
 into a single extensible interface so that anyone can jump right into making Electron apps.
 
 Forge comes with [a ready-to-use template](https://electronforge.io/templates) using Webpack as a bundler. It includes an example typescript configuration and provides two configuration files to enable easy customization. It uses the same core modules used by the
-greater Electron community (like [`electron-packager`](https://github.com/electron/electron-packager)) –
+greater Electron community (like [`@electron/packager`](https://github.com/electron/packager)) –
 changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 
 You can find more information and documentation on [electronforge.io](https://electronforge.io/).
@@ -52,7 +52,7 @@ You can find more information and documentation in [the repository](https://gith
 ## electron-react-boilerplate
 
 If you don't want any tools but only a solid boilerplate to build from,
-CT Lin's [`electron-react-boilerplate`](https://github.com/chentsulin/electron-react-boilerplate) might be worth
+CT Lin's [`electron-react-boilerplate`](https://github.com/electron-react-boilerplate/electron-react-boilerplate) might be worth
 a look. It's quite popular in the community and uses `electron-builder`
 internally.
 

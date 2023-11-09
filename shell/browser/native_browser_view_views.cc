@@ -4,8 +4,6 @@
 
 #include "shell/browser/native_browser_view_views.h"
 
-#include <vector>
-
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/background.h"

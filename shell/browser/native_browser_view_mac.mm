@@ -55,47 +55,26 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   auto* iwc_view = GetInspectableWebContentsView();
   if (!iwc_view)
     return;
+
   auto* view = iwc_view->GetNativeView().GetNativeNSView();
-  auto* superview = view.superview;
-  const auto superview_height = superview ? superview.frame.size.height : 0;
+  const auto superview_height =
+      view.superview ? view.superview.frame.size.height : 0;
+  int y_coord = superview_height - bounds.y() - bounds.height();
 
-  // We need to use the content rect to calculate the titlebar height if the
-  // superview is an framed NSWindow, otherwise it will be offset incorrectly by
-  // the height of the titlebar.
-  auto titlebar_height = 0;
-  if (auto* win = [superview window]) {
-    const auto content_rect_height =
-        [win contentRectForFrameRect:superview.frame].size.height;
-    titlebar_height = superview_height - content_rect_height;
-  }
-
-  auto new_height =
-      superview_height - bounds.y() - bounds.height() + titlebar_height;
-  view.frame =
-      NSMakeRect(bounds.x(), new_height, bounds.width(), bounds.height());
+  view.frame = NSMakeRect(bounds.x(), y_coord, bounds.width(), bounds.height());
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
   auto* iwc_view = GetInspectableWebContentsView();
   if (!iwc_view)
     return gfx::Rect();
+
   NSView* view = iwc_view->GetNativeView().GetNativeNSView();
-  auto* superview = view.superview;
-  const int superview_height = superview ? superview.frame.size.height : 0;
+  const int superview_height =
+      view.superview ? view.superview.frame.size.height : 0;
+  int y_coord = superview_height - view.frame.origin.y - view.frame.size.height;
 
-  // We need to use the content rect to calculate the titlebar height if the
-  // superview is an framed NSWindow, otherwise it will be offset incorrectly by
-  // the height of the titlebar.
-  auto titlebar_height = 0;
-  if (auto* win = [superview window]) {
-    const auto content_rect_height =
-        [win contentRectForFrameRect:superview.frame].size.height;
-    titlebar_height = superview_height - content_rect_height;
-  }
-
-  auto new_height = superview_height - view.frame.origin.y -
-                    view.frame.size.height + titlebar_height;
-  return gfx::Rect(view.frame.origin.x, new_height, view.frame.size.width,
+  return gfx::Rect(view.frame.origin.x, y_coord, view.frame.size.width,
                    view.frame.size.height);
 }
 

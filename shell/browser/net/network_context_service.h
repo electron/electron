@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_H_
 
 #include "base/files/file_path.h"
+#include "base/memory/raw_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -36,7 +37,7 @@ class NetworkContextService : public KeyedService {
       bool in_memory,
       const base::FilePath& path);
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
 };
 

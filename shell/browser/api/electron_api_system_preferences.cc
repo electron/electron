@@ -17,32 +17,25 @@ namespace electron::api {
 
 gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
 
+#if BUILDFLAG(IS_WIN)
 SystemPreferences::SystemPreferences() {
-#if BUILDFLAG(IS_WIN)
   InitializeWindow();
-#endif
 }
+#else
+SystemPreferences::SystemPreferences() = default;
+#endif
 
-SystemPreferences::~SystemPreferences() {
 #if BUILDFLAG(IS_WIN)
+SystemPreferences::~SystemPreferences() {
   Browser::Get()->RemoveObserver(this);
+}
+#else
+SystemPreferences::~SystemPreferences() = default;
 #endif
-}
-
-bool SystemPreferences::IsInvertedColorScheme() {
-  return ui::NativeTheme::GetInstanceForNativeUi()
-             ->GetPlatformHighContrastColorScheme() ==
-         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
-}
-
-bool SystemPreferences::IsHighContrastColorScheme() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->UserHasContrastPreference();
-}
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
     v8::Isolate* isolate) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("shouldRenderRichAnimation",
            gfx::Animation::ShouldRenderRichAnimation());
   dict.Set("scrollAnimationsEnabledBySystem",
@@ -96,16 +89,15 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
       .SetMethod("getEffectiveAppearance",
                  &SystemPreferences::GetEffectiveAppearance)
-      .SetMethod("getAppLevelAppearance",
-                 &SystemPreferences::GetAppLevelAppearance)
-      .SetMethod("setAppLevelAppearance",
-                 &SystemPreferences::SetAppLevelAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
       .SetMethod("isTrustedAccessibilityClient",
                  &SystemPreferences::IsTrustedAccessibilityClient)
       .SetMethod("askForMediaAccess", &SystemPreferences::AskForMediaAccess)
+      .SetProperty(
+          "accessibilityDisplayShouldReduceTransparency",
+          &SystemPreferences::AccessibilityDisplayShouldReduceTransparency)
 #endif
       .SetMethod("getAnimationSettings",
                  &SystemPreferences::GetAnimationSettings);

@@ -10,7 +10,6 @@
 #include <map>
 #include <string>
 
-#include "base/mac/scoped_nsobject.h"
 #include "shell/browser/notifications/notification.h"
 
 namespace electron {
@@ -36,7 +35,7 @@ class CocoaNotification : public Notification {
  private:
   void LogAction(const char* action);
 
-  base::scoped_nsobject<NSUserNotification> notification_;
+  NSUserNotification* __strong notification_;
   std::map<std::string, unsigned> additional_action_indices_;
   unsigned action_index_;
 };

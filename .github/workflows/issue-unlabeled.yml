@@ -1,0 +1,38 @@
+name: Issue Unlabeled
+
+on:
+  issues:
+    types: [unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  issue-unlabeled-blocked:
+    name: All blocked/* labels removed
+    if: startsWith(github.event.label.name, 'blocked/') && github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for any blocked labels
+        id: check-for-blocked-labels
+        run: |
+          set -eo pipefail
+          BLOCKED_LABEL_COUNT=$(echo '${{ toJSON(github.event.issue.labels.*.name) }}' | jq '[ .[] | select(startswith("blocked/")) ] | length')
+          if [[ $BLOCKED_LABEL_COUNT -eq 0 ]]; then
+            echo "NOT_BLOCKED=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Generate GitHub App token
+        if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Set status
+        if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
+        uses: dsanders11/project-actions/edit-item@a24415515fa60a22f71f9d9d00e36ca82660cde9 # v1.0.1
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          project-number: 90
+          field: Status
+          field-value: 📥 Was Blocked

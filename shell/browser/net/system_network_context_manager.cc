@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/memory/raw_ptr.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/browser/browser_process.h"
@@ -21,8 +22,8 @@
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/network_service_util.h"
 #include "content/public/common/content_features.h"
-#include "content/public/common/network_service_util.h"
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/dns/public/dns_over_https_config.h"
@@ -34,7 +35,6 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/api/electron_api_safe_storage.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
@@ -141,7 +141,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
   ~URLLoaderFactoryForSystem() override = default;
 
   SEQUENCE_CHECKER(sequence_checker_);
-  SystemNetworkContextManager* manager_;
+  raw_ptr<SystemNetworkContextManager> manager_;
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
@@ -290,10 +290,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       electron::fuses::IsCookieEncryptionEnabled()) {
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
   }
-
-#if DCHECK_IS_ON()
-  electron::safestorage::SetElectronCryptoReady(true);
-#endif
 }
 
 network::mojom::NetworkContextParamsPtr

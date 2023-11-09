@@ -56,7 +56,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global'
+```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global' @ts-type={createWindow:()=>void}
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {
@@ -84,11 +84,11 @@ renderer process using the [addEventListener() API][addEventListener-api].
 ```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/web-apis|focus=renderer.js'
 const handleKeyPress = (event) => {
   // You can put code here to handle the keypress.
-  document.getElementById("last-keypress").innerText = event.key;
-  console.log(`You pressed ${event.key}`);
+  document.getElementById('last-keypress').innerText = event.key
+  console.log(`You pressed ${event.key}`)
 }
 
-window.addEventListener('keyup', handleKeyPress, true);
+window.addEventListener('keyup', handleKeyPress, true)
 ```
 
 > Note:  the third parameter `true` indicates that the listener will always receive
@@ -131,7 +131,7 @@ If you don't want to do manual shortcut parsing, there are libraries that do
 advanced key detection, such as [mousetrap][]. Below are examples of usage of the
 `mousetrap` running in the Renderer process:
 
-```js
+```js @ts-nocheck
 Mousetrap.bind('4', () => { console.log('4') })
 Mousetrap.bind('?', () => { console.log('show shortcuts!') })
 Mousetrap.bind('esc', () => { console.log('escape') }, 'keyup')

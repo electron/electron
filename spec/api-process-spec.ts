@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron';
 import { defer, ifdescribe } from './lib/spec-helpers';
@@ -99,7 +99,7 @@ describe('process module', () => {
         defer(() => {
           try {
             fs.unlinkSync(filePath);
-          } catch (e) {
+          } catch {
             // ignore error
           }
         });
@@ -211,7 +211,7 @@ describe('process module', () => {
         defer(() => {
           try {
             fs.unlinkSync(filePath);
-          } catch (e) {
+          } catch {
             // ignore error
           }
         });

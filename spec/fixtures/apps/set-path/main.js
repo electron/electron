@@ -1,4 +1,4 @@
-const http = require('http');
+const http = require('node:http');
 const { app, ipcMain, BrowserWindow } = require('electron');
 
 if (process.argv.length > 3) {

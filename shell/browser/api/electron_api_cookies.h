@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/callback_list.h"
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
@@ -61,7 +62,7 @@ class Cookies : public gin::Wrappable<Cookies>,
   base::CallbackListSubscription cookie_change_subscription_;
 
   // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 };
 
 }  // namespace api

@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 19 Apr 2023 14:13:23 +0200
+Subject: chore: remove --no-harmony-atomics related code
+
+This was removed in https://chromium-review.googlesource.com/c/v8/v8/+/4416459.
+
+This patch can be removed when Node.js upgrades to a version of V8 containing
+the above CL.
+
+diff --git a/lib/.eslintrc.yaml b/lib/.eslintrc.yaml
+index 3b406703ce9f981411cd9de5379f8574384e170a..bc439ce0aa072a778a22ba860eed35263740a1cd 100644
+--- a/lib/.eslintrc.yaml
++++ b/lib/.eslintrc.yaml
+@@ -33,10 +33,6 @@ rules:
+       message: Use `const { AbortController } = require('internal/abort_controller');` instead of the global.
+     - name: AbortSignal
+       message: Use `const { AbortSignal } = require('internal/abort_controller');` instead of the global.
+-      # Atomics is not available in primordials because it can be
+-      # disabled with --no-harmony-atomics CLI flag.
+-    - name: Atomics
+-      message: Use `const { Atomics } = globalThis;` instead of the global.
+     - name: Blob
+       message: Use `const { Blob } = require('buffer');` instead of the global.
+     - name: BroadcastChannel
+diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
+index 7fbfb64984c290a1d71c99c92084975c31ce18fe..be4d82086199855a10108528b3dacc663b839454 100644
+--- a/lib/internal/main/worker_thread.js
++++ b/lib/internal/main/worker_thread.js
+@@ -108,7 +108,7 @@ port.on('message', (message) => {
+ 
+     require('internal/worker').assignEnvironmentData(environmentData);
+ 
+-    if (SharedArrayBuffer !== undefined && Atomics !== undefined) {
++    if (SharedArrayBuffer !== undefined) {
+       // The counter is only passed to the workers created by the main thread,
+       // not to workers created by other workers.
+       let cachedCwd = '';
+diff --git a/lib/internal/worker.js b/lib/internal/worker.js
+index 3d828d2f6f2b19554f7fc01ea880c0c144d8837d..78fcaec8d694580798783c83c3282ec1aaac4aa7 100644
+--- a/lib/internal/worker.js
++++ b/lib/internal/worker.js
+@@ -93,8 +93,7 @@ let cwdCounter;
+ const environmentData = new SafeMap();
+ 
+ // SharedArrayBuffers can be disabled with --no-harmony-sharedarraybuffer.
+-// Atomics can be disabled with --no-harmony-atomics.
+-if (isMainThread && SharedArrayBuffer !== undefined && Atomics !== undefined) {
++if (isMainThread && SharedArrayBuffer !== undefined) {
+   cwdCounter = new Uint32Array(new SharedArrayBuffer(4));
+   const originalChdir = process.chdir;
+   process.chdir = function(path) {

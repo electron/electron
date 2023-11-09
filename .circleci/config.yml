@@ -62,9 +62,12 @@ jobs:
             cd .circleci/config
             yarn
             export CIRCLECI_BINARY="$HOME/circleci"
-            curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | DESTDIR=$CIRCLECI_BINARY bash
+            curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/main/install.sh | DESTDIR=$CIRCLECI_BINARY bash
             node build.js
           name: Pack config.yml
+      - run:
+          name: Set params
+          command: node .circleci/config/params.js
       - continuation/continue:
           configuration_path: .circleci/config-staging/built.yml
           parameters: /tmp/pipeline-parameters.json

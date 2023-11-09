@@ -72,7 +72,7 @@ Removes listeners of the specified `channel`.
 ### `ipcMain.handle(channel, listener)`
 
 * `channel` string
-* `listener` Function<Promise\<void&#62; | any&#62;
+* `listener` Function<Promise\<any&#62; | any&#62;
   * `event` [IpcMainInvokeEvent][ipc-main-invoke-event]
   * `...args` any[]
 
@@ -83,14 +83,14 @@ If `listener` returns a Promise, the eventual result of the promise will be
 returned as a reply to the remote caller. Otherwise, the return value of the
 listener will be used as the value of the reply.
 
-```js title='Main Process'
+```js title='Main Process' @ts-type={somePromise:(...args:unknown[])=>Promise<unknown>}
 ipcMain.handle('my-invokable-ipc', async (event, ...args) => {
   const result = await somePromise(...args)
   return result
 })
 ```
 
-```js title='Renderer Process'
+```js title='Renderer Process' @ts-type={arg1:unknown} @ts-type={arg2:unknown}
 async () => {
   const result = await ipcRenderer.invoke('my-invokable-ipc', arg1, arg2)
   // ...
@@ -109,8 +109,8 @@ provided to the renderer process. Please refer to
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` string
-* `listener` Function<Promise\<void&#62; | any&#62;
-  * `event` IpcMainInvokeEvent
+* `listener` Function<Promise\<any&#62; | any&#62;
+  * `event` [IpcMainInvokeEvent][ipc-main-invoke-event]
   * `...args` any[]
 
 Handles a single `invoke`able IPC message, then removes the listener. See
@@ -121,17 +121,6 @@ Handles a single `invoke`able IPC message, then removes the listener. See
 * `channel` string
 
 Removes any handler for `channel`, if present.
-
-## IpcMainEvent object
-
-The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-main-event`][ipc-main-event] structure docs.
-
-## IpcMainInvokeEvent object
-
-The documentation for the `event` object passed to `handle` callbacks can be
-found in the [`ipc-main-invoke-event`][ipc-main-invoke-event]
-structure docs.
 
 [IPC tutorial]: ../tutorial/ipc.md
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "third_party/blink/public/platform/web_spell_check_panel_host_client.h"
@@ -101,7 +102,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // requests so we do not have to use vectors.)
   std::unique_ptr<SpellcheckRequest> pending_request_param_;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> provider_;
   v8::Global<v8::Function> spell_check_;

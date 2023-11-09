@@ -4,7 +4,7 @@ import { Socket } from 'net';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { _fork } = process._linkedBinding('electron_browser_utility_process');
 
-class ForkUtilityProcess extends EventEmitter {
+class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess {
   #handle: ElectronInternal.UtilityProcessWrapper | null;
   #stdout: Duplex | null = null;
   #stderr: Duplex | null = null;
@@ -34,19 +34,19 @@ class ForkUtilityProcess extends EventEmitter {
 
     if (options.execArgv != null) {
       if (!Array.isArray(options.execArgv)) {
-        throw new Error('execArgv must be an array of strings.');
+        throw new TypeError('execArgv must be an array of strings.');
       }
     }
 
     if (options.serviceName != null) {
       if (typeof options.serviceName !== 'string') {
-        throw new Error('serviceName must be a string.');
+        throw new TypeError('serviceName must be a string.');
       }
     }
 
     if (options.cwd != null) {
       if (typeof options.cwd !== 'string') {
-        throw new Error('cwd path must be a string.');
+        throw new TypeError('cwd path must be a string.');
       }
     }
 

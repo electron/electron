@@ -16,7 +16,7 @@ There are three ways to create a `.snap` file:
 1) Using [Electron Forge][electron-forge] or
    [`electron-builder`][electron-builder], both tools that come with `snap`
    support out of the box. This is the easiest option.
-2) Using `electron-installer-snap`, which takes `electron-packager`'s output.
+2) Using `electron-installer-snap`, which takes `@electron/packager`'s output.
 3) Using an already created `.deb` package.
 
 In some cases, you will need to have the `snapcraft` tool installed.
@@ -35,7 +35,7 @@ npm install --save-dev electron-installer-snap
 
 ### Step 1: Package Your Electron Application
 
-Package the application using [electron-packager][electron-packager] (or a
+Package the application using [@electron/packager][electron-packager] (or a
 similar tool). Make sure to remove `node_modules` that you don't need in your
 final application, since any module you don't actually need will increase
 your application's size.
@@ -72,14 +72,14 @@ npx electron-installer-snap --src=out/myappname-linux-x64
 If you have an existing build pipeline, you can use `electron-installer-snap`
 programmatically. For more information, see the [Snapcraft API docs][snapcraft-syntax].
 
-```js
+```js @ts-nocheck
 const snap = require('electron-installer-snap')
 
 snap(options)
   .then(snapPath => console.log(`Created snap at ${snapPath}!`))
 ```
 
-## Using `snapcraft` with `electron-packager`
+## Using `snapcraft` with `@electron/packager`
 
 ### Step 1: Create Sample Snapcraft Project
 
@@ -91,14 +91,14 @@ version: '0.1'
 summary: Hello World Electron app
 description: |
   Simple Hello World Electron app as an example
-base: core18
+base: core22
 confinement: strict
 grade: stable
 
 apps:
   electron-packager-hello-world:
     command: electron-quick-start/electron-quick-start --no-sandbox
-    extensions: [gnome-3-34]
+    extensions: [gnome]
     plugs:
     - browser-support
     - network
@@ -113,7 +113,7 @@ parts:
     plugin: nil
     source: https://github.com/electron/electron-quick-start.git
     override-build: |
-        npm install electron electron-packager
+        npm install electron @electron/packager
         npx electron-packager . --overwrite --platform=linux --output=release-build --prune=true
         cp -rv ./electron-quick-start-linux-* $SNAPCRAFT_PART_INSTALL/electron-quick-start
     build-snaps:
@@ -237,9 +237,37 @@ apps:
     desktop: usr/share/applications/desktop.desktop
 ```
 
+## Optional: Enabling desktop capture
+
+Capturing the desktop requires PipeWire library in some Linux configurations that use
+the Wayland protocol. To bundle PipeWire with your application, ensure that the base
+snap is set to `core22` or newer. Next, create a part called `pipewire` and add it to
+the `after` section of your application:
+
+```yaml
+  pipewire:
+    plugin: nil
+    build-packages: [libpipewire-0.3-dev]
+    stage-packages: [pipewire]
+    prime:
+      - usr/lib/*/pipewire-*
+      - usr/lib/*/spa-*
+      - usr/lib/*/libpipewire*.so*
+      - usr/share/pipewire
+```
+
+Finally, configure your application's environment for PipeWire:
+
+```yaml
+    environment:
+      SPA_PLUGIN_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/spa-0.2
+      PIPEWIRE_CONFIG_NAME: $SNAP/usr/share/pipewire/pipewire.conf
+      PIPEWIRE_MODULE_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/pipewire-0.3
+```
+
 [snapcraft-syntax]: https://docs.snapcraft.io/build-snaps/syntax
-[electron-packager]: https://github.com/electron/electron-packager
+[electron-packager]: https://github.com/electron/packager
 [electron-forge]: https://github.com/electron/forge
 [electron-builder]: https://github.com/electron-userland/electron-builder
-[electron-installer-debian]: https://github.com/unindented/electron-installer-debian
+[electron-installer-debian]: https://github.com/electron-userland/electron-installer-debian
 [electron-winstaller]: https://github.com/electron/windows-installer

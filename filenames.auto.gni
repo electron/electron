@@ -70,6 +70,7 @@ auto_filenames = {
     "docs/api/webview-tag.md",
     "docs/api/window-open.md",
     "docs/api/structures/bluetooth-device.md",
+    "docs/api/structures/browser-window-options.md",
     "docs/api/structures/certificate-principal.md",
     "docs/api/structures/certificate.md",
     "docs/api/structures/cookie.md",
@@ -114,6 +115,7 @@ auto_filenames = {
     "docs/api/structures/protocol-response.md",
     "docs/api/structures/rectangle.md",
     "docs/api/structures/referrer.md",
+    "docs/api/structures/render-process-gone-details.md",
     "docs/api/structures/resolved-endpoint.md",
     "docs/api/structures/resolved-host.md",
     "docs/api/structures/scrubber-item.md",
@@ -134,6 +136,7 @@ auto_filenames = {
     "docs/api/structures/upload-raw-data.md",
     "docs/api/structures/usb-device.md",
     "docs/api/structures/user-default-types.md",
+    "docs/api/structures/web-preferences.md",
     "docs/api/structures/web-request-filter.md",
     "docs/api/structures/web-source.md",
   ]
@@ -194,6 +197,7 @@ auto_filenames = {
     "lib/browser/api/base-window.ts",
     "lib/browser/api/browser-view.ts",
     "lib/browser/api/browser-window.ts",
+    "lib/browser/api/clipboard.ts",
     "lib/browser/api/content-tracing.ts",
     "lib/browser/api/crash-reporter.ts",
     "lib/browser/api/desktop-capturer.ts",
@@ -243,7 +247,6 @@ auto_filenames = {
     "lib/browser/parse-features-string.ts",
     "lib/browser/rpc-server.ts",
     "lib/browser/web-view-events.ts",
-    "lib/common/api/clipboard.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -254,8 +257,6 @@ auto_filenames = {
     "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
-    "lib/renderer/ipc-renderer-internal-utils.ts",
-    "lib/renderer/ipc-renderer-internal.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
@@ -264,7 +265,6 @@ auto_filenames = {
   ]
 
   renderer_bundle_deps = [
-    "lib/common/api/clipboard.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -274,6 +274,7 @@ auto_filenames = {
     "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-provider.ts",
+    "lib/renderer/api/clipboard.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
     "lib/renderer/api/exports/electron.ts",
@@ -302,7 +303,6 @@ auto_filenames = {
   ]
 
   worker_bundle_deps = [
-    "lib/common/api/clipboard.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -311,6 +311,7 @@ auto_filenames = {
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
     "lib/common/webpack-provider.ts",
+    "lib/renderer/api/clipboard.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
     "lib/renderer/api/exports/electron.ts",

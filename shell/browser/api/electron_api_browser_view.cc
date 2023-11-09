@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_browser_view.h"
 
-#include <vector>
-
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_base_window.h"
@@ -76,9 +74,7 @@ gin::WrapperInfo BrowserView::kWrapperInfo = {gin::kEmbedderNativeGin};
 BrowserView::BrowserView(gin::Arguments* args,
                          const gin_helper::Dictionary& options)
     : id_(GetNextId()) {
-  v8::Isolate* isolate = args->isolate();
-  gin_helper::Dictionary web_preferences =
-      gin::Dictionary::CreateEmpty(isolate);
+  auto web_preferences = gin_helper::Dictionary::CreateEmpty(args->isolate());
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
 
@@ -92,7 +88,7 @@ BrowserView::BrowserView(gin::Arguments* args,
   auto web_contents =
       WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 
-  web_contents_.Reset(isolate, web_contents.ToV8());
+  web_contents_.Reset(args->isolate(), web_contents.ToV8());
   api_web_contents_ = web_contents.get();
   api_web_contents_->AddObserver(this);
   Observe(web_contents->web_contents());
@@ -134,6 +130,10 @@ void BrowserView::WebContentsDestroyed() {
   Unpin();
 }
 
+void BrowserView::OnCloseContents() {
+  api_web_contents_ = nullptr;
+}
+
 // static
 gin::Handle<BrowserView> BrowserView::New(gin_helper::ErrorThrower thrower,
                                           gin::Arguments* args) {
@@ -142,7 +142,7 @@ gin::Handle<BrowserView> BrowserView::New(gin_helper::ErrorThrower thrower,
     return gin::Handle<BrowserView>();
   }
 
-  gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
   auto handle =
@@ -197,13 +197,17 @@ v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {
 // static
 void BrowserView::FillObjectTemplate(v8::Isolate* isolate,
                                      v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "BrowserView", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .Build();
+}
+
+const char* BrowserView::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

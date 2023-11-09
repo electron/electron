@@ -51,7 +51,7 @@ def main():
     npx_env = os.environ.copy()
     npx_env['npm_config_yes'] = 'true'
     subprocess.check_output([
-      NPX_CMD, '@sentry/cli@1.51.1', 'difutil', 'bundle-sources',
+      NPX_CMD, '@sentry/cli@1.62.0', 'difutil', 'bundle-sources',
       symbol_file], env=npx_env)
 
   files += glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')

@@ -137,7 +137,7 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   b.SetMethod("get", GetBinding);
   b.SetMethod("createPreloadScript", CreatePreloadScript);
 
-  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
+  auto process = gin_helper::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
@@ -217,7 +217,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
 void ElectronSandboxedRendererClient::EmitProcessEvent(
     content::RenderFrame* render_frame,
     const char* event_name) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (!base::Contains(injected_frames_, render_frame))
     return;
 
   auto* isolate = blink::MainThreadIsolate();

@@ -49,7 +49,7 @@ WebContentsView::~WebContentsView() {
 }
 
 gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, api_web_contents_);
+  return gin::CreateHandle(isolate, api_web_contents_.get());
 }
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {

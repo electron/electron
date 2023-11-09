@@ -9,7 +9,7 @@ toc_max_heading_level: 3
 
 :::info Reporting security issues
 For information on how to properly disclose an Electron vulnerability,
-see [SECURITY.md](https://github.com/electron/electron/tree/main/SECURITY.md).
+see [SECURITY.md](https://github.com/electron/electron/blob/main/SECURITY.md).
 
 For upstream Chromium vulnerabilities: Electron keeps up to date with alternating
 Chromium releases. For more information, see the
@@ -141,7 +141,7 @@ like `HTTP`. Similarly, we recommend the use of `WSS` over `WS`, `FTPS` over
 
 #### How?
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={browserWindow:Electron.BrowserWindow}
 // Bad
 browserWindow.loadURL('http://example.com')
 
@@ -278,7 +278,7 @@ security-conscious developers might want to assume the very opposite.
 
 ```js title='main.js (Main Process)'
 const { session } = require('electron')
-const URL = require('url').URL
+const { URL } = require('url')
 
 session
   .fromPartition('some-partition')
@@ -608,7 +608,8 @@ sometimes be fooled - a `startsWith('https://example.com')` test would let
 `https://example.com.attacker.com` through.
 
 ```js title='main.js (Main Process)'
-const URL = require('url').URL
+const { URL } = require('url')
+const { app } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
@@ -647,8 +648,8 @@ receive, amongst other parameters, the `url` the window was requested to open
 and the options used to create it. We recommend that you register a handler to
 monitor the creation of windows, and deny any unexpected window creation.
 
-```js title='main.js (Main Process)'
-const { shell } = require('electron')
+```js title='main.js (Main Process)' @ts-type={isSafeForExternalOpen:(url:string)=>boolean}
+const { app, shell } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
@@ -683,7 +684,7 @@ leveraged to execute arbitrary commands.
 
 #### How?
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={USER_CONTROLLED_DATA_HERE:string}
 //  Bad
 const { shell } = require('electron')
 shell.openExternal(USER_CONTROLLED_DATA_HERE)
@@ -739,24 +740,45 @@ You should be validating the `sender` of **all** IPC messages by default.
 
 #### How?
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={getSecrets:()=>unknown}
 // Bad
 ipcMain.handle('get-secrets', () => {
-  return getSecrets();
-});
+  return getSecrets()
+})
 
 // Good
 ipcMain.handle('get-secrets', (e) => {
-  if (!validateSender(e.senderFrame)) return null;
-  return getSecrets();
-});
+  if (!validateSender(e.senderFrame)) return null
+  return getSecrets()
+})
 
-function validateSender(frame) {
+function validateSender (frame) {
   // Value the host of the URL using an actual URL parser and an allowlist
-  if ((new URL(frame.url)).host === 'electronjs.org') return true;
-  return false;
+  if ((new URL(frame.url)).host === 'electronjs.org') return true
+  return false
 }
 ```
+
+### 18. Avoid usage of the `file://` protocol and prefer usage of custom protocols
+
+You should serve local pages from a custom protocol instead of the `file://` protocol.
+
+#### Why?
+
+The `file://` protocol gets more privileges in Electron than in a web browser and even in
+browsers it is treated differently to http/https URLs. Using a custom protocol allows you
+to be more aligned with classic web url behavior while retaining even more control about
+what can be loaded and when.
+
+Pages running on `file://` have unilateral access to every file on your machine meaning
+that XSS issues can be used to load arbitrary files from the users machine. Using a custom
+protocol prevents issues like this as you can limit the protocol to only serving a specific
+set of files.
+
+#### How?
+
+Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
+learn how to serve files / content from a custom protocol.
 
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md

@@ -17,11 +17,13 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "pdf/buildflags.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "third_party/widevine/cdm/buildflags.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -148,16 +150,13 @@ base::RefCountedMemory* ElectronContentClient::GetDataResourceBytes(
 }
 
 void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
   // Browser Process registration happens in
   // `api::Protocol::RegisterSchemesAsPrivileged`
   //
   // Renderer Process registration happens in `RendererClientBase`
   //
   // We use this for registration to network utility process
-  if (process_type == ::switches::kUtilityProcess) {
+  if (IsUtilityProcess()) {
     AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
                                   &schemes->service_worker_schemes);
     AppendDelimitedSwitchToVector(switches::kStandardSchemes,
@@ -170,7 +169,9 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
                                   &schemes->cors_enabled_schemes);
   }
 
-  schemes->service_worker_schemes.emplace_back(url::kFileScheme);
+  if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {
+    schemes->service_worker_schemes.emplace_back(url::kFileScheme);
+  }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   schemes->standard_schemes.push_back(extensions::kExtensionScheme);

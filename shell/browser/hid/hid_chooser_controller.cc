@@ -85,12 +85,16 @@ HidChooserController::HidChooserController(
       filters_(std::move(filters)),
       exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
+      initiator_document_(render_frame_host->GetWeakDocumentPtr()),
       origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
                   ->GetPrimaryMainFrame()
                   ->GetLastCommittedOrigin()),
-      frame_tree_node_id_(render_frame_host->GetFrameTreeNodeId()),
       hid_delegate_(hid_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
+  // The use above of GetMainFrame is safe as content::HidService instances are
+  // not created for fenced frames.
+  DCHECK(!render_frame_host->IsNestedWithinFencedFrame());
+
   chooser_context_ = HidChooserContextFactory::GetForBrowserContext(
                          web_contents->GetBrowserContext())
                          ->AsWeakPtr();
@@ -106,7 +110,7 @@ HidChooserController::~HidChooserController() {
 }
 
 // static
-std::string HidChooserController::PhysicalDeviceIdFromDeviceInfo(
+const std::string& HidChooserController::PhysicalDeviceIdFromDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
   // A single physical device may expose multiple HID interfaces, each
   // represented by a HidDeviceInfo object. When a device exposes multiple
@@ -129,6 +133,7 @@ void HidChooserController::OnDeviceAdded(
     const device::mojom::HidDeviceInfo& device) {
   if (!DisplayDevice(device))
     return;
+
   if (AddDeviceInfo(device)) {
     api::Session* session = GetSession();
     if (session) {
@@ -142,16 +147,13 @@ void HidChooserController::OnDeviceAdded(
       session->Emit("hid-device-added", details);
     }
   }
-
-  return;
 }
 
 void HidChooserController::OnDeviceRemoved(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
-  auto items_it = std::find(items_.begin(), items_.end(), id);
-  if (items_it == items_.end())
+  if (!base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
     return;
+
   api::Session* session = GetSession();
   if (session) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
@@ -225,9 +227,8 @@ void HidChooserController::OnGotDevices(
 
   for (auto& device : devices) {
     if (DisplayDevice(*device)) {
-      if (AddDeviceInfo(*device)) {
+      if (AddDeviceInfo(*device))
         devicesToDisplay.push_back(device->Clone());
-      }
     }
   }
 
@@ -235,6 +236,7 @@ void HidChooserController::OnGotDevices(
   // enumeration.
   if (chooser_context_)
     observation_.Observe(chooser_context_.get());
+
   bool prevent_default = false;
   api::Session* session = GetSession();
   if (session) {
@@ -247,9 +249,8 @@ void HidChooserController::OnGotDevices(
                                         .Build();
     prevent_default =
         session->Emit("select-hid-device", details,
-                      base::AdaptCallbackForRepeating(
-                          base::BindOnce(&HidChooserController::OnDeviceChosen,
-                                         weak_factory_.GetWeakPtr())));
+                      base::BindRepeating(&HidChooserController::OnDeviceChosen,
+                                          weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback({});
@@ -258,26 +259,41 @@ void HidChooserController::OnGotDevices(
 
 bool HidChooserController::DisplayDevice(
     const device::mojom::HidDeviceInfo& device) const {
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kDisableHidBlocklist)) {
-    // Do not pass the device to the chooser if it is excluded by the blocklist.
-    if (device.is_excluded_by_blocklist)
-      return false;
+  // Check if `device` has a top-level collection with a FIDO usage. FIDO
+  // devices may be displayed if the origin is privileged or the blocklist is
+  // disabled.
+  const bool has_fido_collection =
+      base::Contains(device.collections, device::mojom::kPageFido,
+                     [](const auto& c) { return c->usage->usage_page; });
 
-    // Do not pass the device to the chooser if it has a top-level collection
-    // with the FIDO usage page.
-    //
-    // Note: The HID blocklist also blocks top-level collections with the FIDO
-    // usage page, but will not block the device if it has other (non-FIDO)
-    // collections. The check below will exclude the device from the chooser
-    // if it has any top-level FIDO collection.
-    auto find_it =
-        std::find_if(device.collections.begin(), device.collections.end(),
-                     [](const device::mojom::HidCollectionInfoPtr& c) {
-                       return c->usage->usage_page == device::mojom::kPageFido;
-                     });
-    if (find_it != device.collections.end())
-      return false;
+  if (has_fido_collection) {
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kDisableHidBlocklist) ||
+        (chooser_context_ &&
+         chooser_context_->IsFidoAllowedForOrigin(origin_))) {
+      return FilterMatchesAny(device) && !IsExcluded(device);
+    }
+
+    AddMessageToConsole(
+        blink::mojom::ConsoleMessageLevel::kInfo,
+        base::StringPrintf(
+            "Chooser dialog is not displaying a FIDO HID device: vendorId=%d, "
+            "productId=%d, name='%s', serial='%s'",
+            device.vendor_id, device.product_id, device.product_name.c_str(),
+            device.serial_number.c_str()));
+    return false;
+  }
+
+  if (device.is_excluded_by_blocklist) {
+    AddMessageToConsole(
+        blink::mojom::ConsoleMessageLevel::kInfo,
+        base::StringPrintf(
+            "Chooser dialog is not displaying a device excluded by "
+            "the HID blocklist: vendorId=%d, "
+            "productId=%d, name='%s', serial='%s'",
+            device.vendor_id, device.product_id, device.product_name.c_str(),
+            device.serial_number.c_str()));
+    return false;
   }
 
   return FilterMatchesAny(device) && !IsExcluded(device);
@@ -306,23 +322,31 @@ bool HidChooserController::IsExcluded(
   return false;
 }
 
+void HidChooserController::AddMessageToConsole(
+    blink::mojom::ConsoleMessageLevel level,
+    const std::string& message) const {
+  if (content::RenderFrameHost* rfh =
+          initiator_document_.AsRenderFrameHostIfValid()) {
+    rfh->AddMessageToConsole(level, message);
+  }
+}
+
 bool HidChooserController::AddDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
-  auto find_it = device_map_.find(id);
-  if (find_it != device_map_.end()) {
-    find_it->second.push_back(device.Clone());
-    return false;
-  }
-  // A new device was connected. Append it to the end of the chooser list.
-  device_map_[id].push_back(device.Clone());
-  items_.push_back(id);
-  return true;
+  const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
+  auto [iter, is_new_physical_device] = device_map_.try_emplace(id);
+  iter->second.emplace_back(device.Clone());
+
+  // append new devices to the chooser list
+  if (is_new_physical_device)
+    items_.emplace_back(id);
+
+  return is_new_physical_device;
 }
 
 bool HidChooserController::RemoveDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
+  const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
   auto find_it = device_map_.find(id);
   DCHECK(find_it != device_map_.end());
   auto& device_infos = find_it->second;
@@ -340,14 +364,12 @@ bool HidChooserController::RemoveDeviceInfo(
 
 void HidChooserController::UpdateDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
+  const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
   auto physical_device_it = device_map_.find(id);
   DCHECK(physical_device_it != device_map_.end());
   auto& device_infos = physical_device_it->second;
-  auto device_it = base::ranges::find_if(
-      device_infos, [&device](const device::mojom::HidDeviceInfoPtr& d) {
-        return d->guid == device.guid;
-      });
+  auto device_it = base::ranges::find(device_infos, device.guid,
+                                      &device::mojom::HidDeviceInfo::guid);
   DCHECK(device_it != device_infos.end());
   *device_it = device.Clone();
 }

@@ -36,7 +36,7 @@ void ErrorThrower::ThrowSyntaxError(base::StringPiece err_msg) const {
 }
 
 void ErrorThrower::Throw(ErrorGenerator gen, base::StringPiece err_msg) const {
-  v8::Local<v8::Value> exception = gen(gin::StringToV8(isolate_, err_msg));
+  v8::Local<v8::Value> exception = gen(gin::StringToV8(isolate_, err_msg), {});
   if (!isolate_->IsExecutionTerminating())
     isolate_->ThrowException(exception);
 }

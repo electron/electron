@@ -46,7 +46,7 @@ void GetDataListSuggestions(const blink::WebInputElement& element,
     if (option.Value() != option.Label())
       labels->push_back(option.Label().Utf16());
     else
-      labels->push_back(std::u16string());
+      labels->emplace_back();
   }
 
   TrimStringVectorForIPC(values);
@@ -159,7 +159,7 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
       (!options.autofill_on_empty_values && value.IsEmpty()) ||
       (options.requires_caret_at_end &&
        (element.SelectionStart() != element.SelectionEnd() ||
-        element.SelectionEnd() != static_cast<int>(value.length())))) {
+        element.SelectionEnd() != value.length()))) {
     // Any popup currently showing is obsolete.
     HidePopup();
     return;

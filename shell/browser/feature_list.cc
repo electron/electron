@@ -16,6 +16,7 @@
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "services/network/public/cpp/features.h"
+#include "third_party/blink/public/common/features.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "device/base/features.h"  // nogncheck
@@ -36,15 +37,17 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
 
-#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-  disable_features += std::string(",") + media::kPictureInPicture.name;
-#endif
+  // TODO(codebytere): Remove WebSQL support per crbug.com/695592.
+  enable_features += std::string(",") + blink::features::kWebSQLAccess.name;
 
 #if BUILDFLAG(IS_WIN)
-  // Disable async spellchecker suggestions for Windows, which causes
-  // an empty suggestions list to be returned
   disable_features +=
-      std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name;
+      // Disable async spellchecker suggestions for Windows, which causes
+      // an empty suggestions list to be returned
+      std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name +
+      // Delayed spellcheck initialization is causing the
+      // 'custom dictionary word list API' spec to crash.
+      std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
 #endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
 }

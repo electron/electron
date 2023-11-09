@@ -84,9 +84,6 @@
  */
 - (void)productsRequest:(SKProductsRequest*)request
      didReceiveResponse:(SKProductsResponse*)response {
-  // Release request object.
-  [request release];
-
   // Get the first product.
   NSArray* products = response.products;
   SKProduct* product = [products count] == 1 ? [products firstObject] : nil;
@@ -129,13 +126,10 @@
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE, base::BindOnce(std::move(callback_), isProductValid));
   }
-  // Release this delegate.
-  [self release];
 }
 
 - (void)dealloc {
-  [username_ release];
-  [super dealloc];
+  username_ = nil;
 }
 
 @end

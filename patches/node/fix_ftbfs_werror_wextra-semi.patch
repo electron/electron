@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Wed, 19 Jul 2023 16:00:08 -0500
+Subject: fix ftbfs Werror Wextra-semi
+
+Fix a deps warning that causes FTBFS when building with -Werror.
+
+This patch can be removed if fixed upstream.
+Upstream PR: https://github.com/nodejs/uvwasi/pull/217
+
+diff --git a/deps/uvwasi/src/uvwasi.c b/deps/uvwasi/src/uvwasi.c
+index 9e7fc7681664b8430bbd2d2324352be8c6735106..708a52b0621666133b5215790cb9d5fd6a71d4fa 100644
+--- a/deps/uvwasi/src/uvwasi.c
++++ b/deps/uvwasi/src/uvwasi.c
+@@ -2564,7 +2564,7 @@ uvwasi_errno_t uvwasi_sock_accept(uvwasi_t* uvwasi,
+   /* TODO(mhdawson): Needs implementation */
+   UVWASI_DEBUG("uvwasi_sock_accept(uvwasi=%p, unimplemented)\n", uvwasi);
+   return UVWASI_ENOTSUP;
+-};
++}
+ 
+ 
+ const char* uvwasi_embedder_err_code_to_string(uvwasi_errno_t code) {
+@@ -2651,4 +2651,4 @@ const char* uvwasi_embedder_err_code_to_string(uvwasi_errno_t code) {
+     default:
+       return "UVWASI_UNKNOWN_ERROR";
+   }
+-}
++}
+\ No newline at end of file

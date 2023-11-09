@@ -135,6 +135,10 @@ void PlatformNotificationService::CloseNotification(
 void PlatformNotificationService::GetDisplayedNotifications(
     DisplayedNotificationsCallback callback) {}
 
+void PlatformNotificationService::GetDisplayedNotificationsForOrigin(
+    const GURL& origin,
+    DisplayedNotificationsCallback callback) {}
+
 int64_t PlatformNotificationService::ReadNextPersistentNotificationId() {
   // Electron doesn't support persistent notifications.
   return 0;

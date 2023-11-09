@@ -1,0 +1,9 @@
+{
+  "main": "./lib/is-valid-window.js",
+  "name": "is-valid-window",
+  "version": "0.0.5",
+  "licenses": "Public Domain",
+  "dependencies": {
+    "nan": "2.x"
+  }
+}

@@ -84,7 +84,7 @@ std::string ElectronBluetoothDelegate::GetDeviceAddress(
     RenderFrameHost* frame,
     const WebBluetoothDeviceId& device_id) {
   NOTIMPLEMENTED();
-  return nullptr;
+  return "";
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::AddScannedDevice(
@@ -169,8 +169,7 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
 
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
-    gin_helper::Dictionary details =
-        gin_helper::Dictionary::CreateEmpty(isolate);
+    auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("deviceId", device_identifier);
     details.Set("pairingKind", pairing_kind);
     details.SetGetter("frame", frame);
@@ -179,9 +178,9 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
     }
 
     permission_manager->CheckBluetoothDevicePair(
-        details, base::AdaptCallbackForRepeating(base::BindOnce(
-                     &ElectronBluetoothDelegate::OnDevicePairPromptResponse,
-                     weak_factory_.GetWeakPtr(), std::move(callback))));
+        details,
+        base::BindOnce(&ElectronBluetoothDelegate::OnDevicePairPromptResponse,
+                       weak_factory_.GetWeakPtr(), std::move(callback)));
   }
 }
 

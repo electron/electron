@@ -25,7 +25,7 @@ namespace auto_updater {
 namespace {
 
 // The global SQRLUpdater object.
-SQRLUpdater* g_updater = nil;
+SQRLUpdater* __strong g_updater = nil;
 
 }  // namespace
 
@@ -87,7 +87,7 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   }
 
   if (g_updater)
-    [g_updater release];
+    g_updater = nil;
 
   // Initialize the SQRLUpdater.
   @try {
@@ -138,7 +138,8 @@ void AutoUpdater::CheckForUpdates() {
           delegate->OnUpdateDownloaded(
               base::SysNSStringToUTF8(update.releaseNotes),
               base::SysNSStringToUTF8(update.releaseName),
-              base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
+              base::Time::FromSecondsSinceUnixEpoch(
+                  update.releaseDate.timeIntervalSince1970),
               base::SysNSStringToUTF8(update.updateURL.absoluteString));
         } else {
           g_update_available = false;
@@ -177,6 +178,13 @@ void AutoUpdater::QuitAndInstall() {
     if (delegate)
       delegate->OnError("No update available, can't quit and install");
   }
+}
+
+bool AutoUpdater::IsVersionAllowedForUpdate(const std::string& current_version,
+                                            const std::string& target_version) {
+  return [SQRLUpdater
+      isVersionAllowedForUpdate:base::SysUTF8ToNSString(target_version)
+                           from:base::SysUTF8ToNSString(current_version)];
 }
 
 }  // namespace auto_updater

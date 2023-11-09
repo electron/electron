@@ -5,10 +5,9 @@
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 
 #include <memory>
-
 #include <utility>
-#include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -66,9 +65,9 @@ class DevToolsWindowDelegate : public views::ClientView,
   }
 
  private:
-  InspectableWebContentsViewViews* shell_;
-  views::View* view_;
-  views::Widget* widget_;
+  raw_ptr<InspectableWebContentsViewViews> shell_;
+  raw_ptr<views::View> view_;
+  raw_ptr<views::Widget> widget_;
   ui::ImageModel icon_;
 };
 
@@ -95,8 +94,8 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
   }
 
   devtools_web_view_->SetVisible(false);
-  AddChildView(devtools_web_view_);
-  AddChildView(contents_web_view_);
+  AddChildView(devtools_web_view_.get());
+  AddChildView(contents_web_view_.get());
 }
 
 InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {
@@ -107,10 +106,6 @@ InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {
 
 views::View* InspectableWebContentsViewViews::GetView() {
   return this;
-}
-
-views::View* InspectableWebContentsViewViews::GetWebView() {
-  return contents_web_view_;
 }
 
 void InspectableWebContentsViewViews::ShowDevTools(bool activate) {
@@ -147,8 +142,11 @@ void InspectableWebContentsViewViews::CloseDevTools() {
 
   devtools_visible_ = false;
   if (devtools_window_) {
-    inspectable_web_contents()->SaveDevToolsBounds(
-        devtools_window_->GetWindowBoundsInScreen());
+    auto save_bounds = devtools_window_->IsMinimized()
+                           ? devtools_window_->GetRestoredBounds()
+                           : devtools_window_->GetWindowBoundsInScreen();
+    inspectable_web_contents()->SaveDevToolsBounds(save_bounds);
+
     devtools_window_.reset();
     devtools_window_web_view_ = nullptr;
     devtools_window_delegate_ = nullptr;
@@ -214,9 +212,15 @@ void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
   }
 }
 
+const std::u16string InspectableWebContentsViewViews::GetTitle() {
+  return title_;
+}
+
 void InspectableWebContentsViewViews::Layout() {
   if (!devtools_web_view_->GetVisible()) {
     contents_web_view_->SetBoundsRect(GetContentsBounds());
+    // Propagate layout call to all children, for example browser views.
+    View::Layout();
     return;
   }
 
@@ -233,6 +237,9 @@ void InspectableWebContentsViewViews::Layout() {
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
   contents_web_view_->SetBoundsRect(new_contents_bounds);
+
+  // Propagate layout call to all children, for example browser views.
+  View::Layout();
 
   if (GetDelegate())
     GetDelegate()->DevToolsResized();

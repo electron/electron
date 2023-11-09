@@ -13,7 +13,7 @@ Currently ASAR integrity checking is only supported on macOS.
 
 ### Electron Forge / Electron Packager
 
-If you are using `>= electron-packager@15.4.0` or `>= @electron-forge/core@6.0.0-beta.61` then all these requirements are met for you automatically and you can skip to [Toggling the Fuse](#toggling-the-fuse).
+If you are using `>= @electron/packager`, `>= electron-packager@15.4.0` or `>= @electron-forge/core@6.0.0-beta.61` then all these requirements are met for you automatically and you can skip to [Toggling the Fuse](#toggling-the-fuse).
 
 ### Other build systems
 
@@ -40,8 +40,10 @@ Valid `algorithm` values are currently `SHA256` only.  The `hash` is a hash of t
 
 ASAR integrity checking is currently disabled by default and can be enabled by toggling a fuse. See [Electron Fuses](fuses.md) for more information on what Electron Fuses are and how they work.  When enabling this fuse you typically also want to enable the `onlyLoadAppFromAsar` fuse otherwise the validity checking can be bypassed via the Electron app code search path.
 
-```js
-require('@electron/fuses').flipFuses(
+```js @ts-nocheck
+const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses')
+
+flipFuses(
   // E.g. /a/b/Foo.app
   pathToPackagedApp,
   {

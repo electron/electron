@@ -13,7 +13,7 @@
 #include "base/scoped_observation.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
-#include "extensions/buildflags/buildflags.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/usb/usb_chooser_context.h"
@@ -21,10 +21,11 @@
 #include "shell/browser/usb/usb_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/containers/fixed_flat_set.h"
 #include "chrome/common/chrome_features.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
 #include "services/device/public/mojom/usb_device.mojom.h"
@@ -40,11 +41,11 @@ electron::UsbChooserContext* GetChooserContext(
       browser_context);
 }
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // These extensions can claim the smart card USB class and automatically gain
 // permissions for devices that have an interface with this class.
 constexpr auto kSmartCardPrivilegedExtensionIds =
-    base::MakeFixedFlatSet<base::StringPiece>({
+    base::MakeFixedFlatSetSorted<base::StringPiece>({
         // Smart Card Connector Extension and its Beta version, see
         // crbug.com/1233881.
         "khpfeaanjngmcnplbdlpegiifgpfgdco",
@@ -64,12 +65,12 @@ bool DeviceHasInterfaceWithClass(
   }
   return false;
 }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 bool IsDevicePermissionAutoGranted(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Note: The `DeviceHasInterfaceWithClass()` call is made after checking the
   // origin, since that method call is expensive.
   if (origin.scheme() == extensions::kExtensionScheme &&
@@ -78,7 +79,7 @@ bool IsDevicePermissionAutoGranted(
                                   device::mojom::kUsbSmartCardClass)) {
     return true;
   }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
   return false;
 }
@@ -152,48 +153,20 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
     const url::Origin& origin,
     content::RenderFrameHost* frame,
     std::vector<uint8_t>& classes) {
-  // Isolated Apps have unrestricted access to any USB interface class.
-  if (frame &&
-      frame->GetWebExposedIsolationLevel() >=
-          content::WebExposedIsolationLevel::kMaybeIsolatedApplication) {
-    // TODO(https://crbug.com/1236706): Should the list of interface classes the
-    // app expects to claim be encoded in the Web App Manifest?
-    classes.clear();
-    return;
-  }
-
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  // Don't enforce protected interface classes for Chrome Apps since the
-  // chrome.usb API has no such restriction.
-  if (origin.scheme() == extensions::kExtensionScheme) {
-    auto* extension_registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    if (extension_registry) {
-      const extensions::Extension* extension =
-          extension_registry->enabled_extensions().GetByID(origin.host());
-      if (extension && extension->is_platform_app()) {
-        classes.clear();
-        return;
-      }
-    }
-  }
-
-  if (origin.scheme() == extensions::kExtensionScheme &&
-      base::Contains(kSmartCardPrivilegedExtensionIds, origin.host())) {
-    base::Erase(classes, device::mojom::kUsbSmartCardClass);
-  }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context->GetPermissionControllerDelegate());
+  classes = permission_manager->CheckProtectedUSBClasses(classes);
 }
 
 std::unique_ptr<UsbChooser> ElectronUsbDelegate::RunChooser(
     content::RenderFrameHost& frame,
-    std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+    blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {
   UsbChooserController* controller = ControllerForFrame(&frame);
   if (controller) {
     DeleteControllerForFrame(&frame);
   }
-  AddControllerForFrame(&frame, std::move(filters), std::move(callback));
+  AddControllerForFrame(&frame, std::move(options), std::move(callback));
   // Return a nullptr because the return value isn't used for anything. The
   // return value is simply used in Chromium to cleanup the chooser UI once the
   // usb service is destroyed.
@@ -278,14 +251,14 @@ ElectronUsbDelegate::GetContextObserver(
 
 bool ElectronUsbDelegate::IsServiceWorkerAllowedForOrigin(
     const url::Origin& origin) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebUSB is only available on extension service workers for now.
   if (base::FeatureList::IsEnabled(
           features::kEnableWebUsbOnExtensionServiceWorker) &&
       origin.scheme() == extensions::kExtensionScheme) {
     return true;
   }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return false;
 }
 
@@ -297,12 +270,12 @@ UsbChooserController* ElectronUsbDelegate::ControllerForFrame(
 
 UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
     content::RenderFrameHost* render_frame_host,
-    std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+    blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto controller = std::make_unique<UsbChooserController>(
-      render_frame_host, std::move(filters), std::move(callback), web_contents,
+      render_frame_host, std::move(options), std::move(callback), web_contents,
       weak_factory_.GetWeakPtr());
   controller_map_.insert(
       std::make_pair(render_frame_host, std::move(controller)));
@@ -312,6 +285,35 @@ UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
 void ElectronUsbDelegate::DeleteControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   controller_map_.erase(render_frame_host);
+}
+
+bool ElectronUsbDelegate::PageMayUseUsb(content::Page& page) {
+  content::RenderFrameHost& main_rfh = page.GetMainDocument();
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // WebViewGuests have no mechanism to show permission prompts and their
+  // embedder can't grant USB access through its permissionrequest API. Also
+  // since webviews use a separate StoragePartition, they must not gain access
+  // through permissions granted in non-webview contexts.
+  if (extensions::WebViewGuest::FromRenderFrameHost(&main_rfh)) {
+    return false;
+  }
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+  // USB permissions are scoped to a BrowserContext instead of a
+  // StoragePartition, so we need to be careful about usage across
+  // StoragePartitions. Until this is scoped correctly, we'll try to avoid
+  // inappropriate sharing by restricting access to the API. We can't be as
+  // strict as we'd like, as cases like extensions and Isolated Web Apps still
+  // need USB access in non-default partitions, so we'll just guard against
+  // HTTP(S) as that presents a clear risk for inappropriate sharing.
+  // TODO(crbug.com/1469672): USB permissions should be explicitly scoped to
+  // StoragePartitions.
+  if (main_rfh.GetStoragePartition() !=
+      main_rfh.GetBrowserContext()->GetDefaultStoragePartition()) {
+    return !main_rfh.GetLastCommittedURL().SchemeIsHTTPOrHTTPS();
+  }
+
+  return true;
 }
 
 }  // namespace electron

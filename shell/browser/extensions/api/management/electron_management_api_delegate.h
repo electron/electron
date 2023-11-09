@@ -17,16 +17,13 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
   ~ElectronManagementAPIDelegate() override;
 
   // ManagementAPIDelegate.
-  void LaunchAppFunctionDelegate(
+  bool LaunchAppFunctionDelegate(
       const extensions::Extension* extension,
       content::BrowserContext* context) const override;
   GURL GetFullLaunchURL(const extensions::Extension* extension) const override;
   extensions::LaunchType GetLaunchType(
       const extensions::ExtensionPrefs* prefs,
       const extensions::Extension* extension) const override;
-  void GetPermissionWarningsByManifestFunctionDelegate(
-      extensions::ManagementGetPermissionWarningsByManifestFunction* function,
-      const std::string& manifest_str) const override;
   std::unique_ptr<extensions::InstallPromptDelegate> SetEnabledFunctionDelegate(
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,
@@ -54,15 +51,6 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
       const GURL& web_app_url,
       ManagementAPIDelegate::InstallOrLaunchWebAppCallback callback)
       const override;
-  bool CanContextInstallAndroidApps(
-      content::BrowserContext* context) const override;
-  void CheckAndroidAppInstallStatus(
-      const std::string& package_name,
-      ManagementAPIDelegate::AndroidAppInstallStatusCallback callback)
-      const override;
-  void InstallReplacementAndroidApp(
-      const std::string& package_name,
-      ManagementAPIDelegate::InstallAndroidAppCallback callback) const override;
   void EnableExtension(content::BrowserContext* context,
                        const std::string& extension_id) const override;
   void DisableExtension(

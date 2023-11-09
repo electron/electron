@@ -4,9 +4,9 @@
 
 #include "shell/common/gin_helper/callback.h"
 
-#include "base/cxx17_backports.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/dictionary.h"
+#include "shell/common/process_util.h"
 
 namespace gin_helper {
 
@@ -70,7 +70,7 @@ void CallTranslater(v8::Local<v8::External> external,
 struct DeleteOnUIThread {
   template <typename T>
   static void Destruct(const T* x) {
-    if (gin_helper::Locker::IsBrowserProcess() &&
+    if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
                                          x);
@@ -126,7 +126,7 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
       v8::Local<v8::FunctionTemplate>::New(isolate, g_call_translater);
   auto* holder = new TranslaterHolder(isolate);
   holder->translater = translater;
-  gin::Dictionary state = gin::Dictionary::CreateEmpty(isolate);
+  auto state = gin::Dictionary::CreateEmpty(isolate);
   if (one_time)
     state.Set("oneTime", true);
   auto context = isolate->GetCurrentContext();

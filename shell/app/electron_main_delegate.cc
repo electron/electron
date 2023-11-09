@@ -9,13 +9,13 @@
 #include <string>
 #include <utility>
 
+#include "base/apple/bundle_locations.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
@@ -40,6 +40,7 @@
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -82,11 +83,6 @@ const char kRelauncherProcess[] = "relauncher";
 constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableStackDumping(
     "ELECTRON_ENABLE_STACK_DUMPING");
-
-bool IsBrowserProcess(base::CommandLine* cmd) {
-  std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
-  return process_type.empty();
-}
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
@@ -220,7 +216,7 @@ std::string LoadResourceBundle(const std::string& locale) {
   base::FilePath pak_dir;
 #if BUILDFLAG(IS_MAC)
   pak_dir =
-      base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
+      base::apple::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
   base::PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif
@@ -250,13 +246,11 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.
-  if (IsBrowserProcess(command_line))
+  if (IsBrowserProcess())
     std::wcout << std::endl;
 #endif  // !BUILDFLAG(IS_WIN)
 
   auto env = base::Environment::Create();
-
-  gin_helper::Locker::SetIsBrowserProcess(IsBrowserProcess(command_line));
 
   // Enable convenient stack printing. This is enabled by default in
   // non-official builds.
@@ -290,7 +284,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   // bugs, but no use in Electron.
   base::win::DisableHandleVerifier();
 
-  if (IsBrowserProcess(command_line))
+  if (IsBrowserProcess())
     base::win::PinUser32();
 #endif
 
@@ -322,9 +316,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
 void ElectronMainDelegate::PreSandboxStartup() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  std::string process_type = GetProcessType();
 
   base::FilePath user_data_dir =
       command_line->GetSwitchValuePath(::switches::kUserDataDir);
@@ -341,9 +333,9 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // know the correct user-data directory. (And, further, accessing the
   // application name on Linux can cause glib calls that end up spawning
   // threads, which if done before the zygote is booted, causes a CHECK().)
-  logging::InitElectronLogging(*command_line,
-                               /* is_preinit = */ process_type.empty() ||
-                                   process_type == ::switches::kZygoteProcess);
+  logging::InitElectronLogging(
+      *command_line,
+      /* is_preinit = */ IsBrowserProcess() || IsZygoteProcess());
 #endif
 
 #if !IS_MAS_BUILD()
@@ -362,7 +354,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad. If we're in the renderer, we want to initialize it
   // immediately at boot.
-  if (!process_type.empty()) {
+  if (!IsBrowserProcess()) {
     ElectronCrashReporterClient::Create();
     crash_reporter::InitializeCrashpad(false, process_type);
   }
@@ -370,7 +362,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 #if BUILDFLAG(IS_LINUX)
   // Zygote needs to call InitCrashReporter() in RunZygote().
-  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
+  if (!IsZygoteProcess() && !IsBrowserProcess()) {
     ElectronCrashReporterClient::Create();
     if (command_line->HasSwitch(
             crash_reporter::switches::kCrashpadHandlerPid)) {
@@ -386,7 +378,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   crash_keys::SetPlatformCrashKey();
 #endif
 
-  if (IsBrowserProcess(command_line)) {
+  if (IsBrowserProcess()) {
     // Only append arguments for browser process.
 
     // Allow file:// URIs to read other file:// URIs by default.
@@ -420,12 +412,8 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
 }
 
 base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
-  const base::CommandLine* command_line =
-      base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
   bool load_browser_process_specific_v8_snapshot =
-      process_type.empty() &&
+      IsBrowserProcess() &&
       electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
   if (load_browser_process_specific_v8_snapshot) {
     return "browser_v8_context_snapshot.bin";

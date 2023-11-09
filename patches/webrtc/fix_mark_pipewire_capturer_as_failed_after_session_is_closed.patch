@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Athul Iddya <athul@iddya.com>
+Date: Sat, 22 Jul 2023 11:11:01 -0700
+Subject: fix: mark PipeWire capturer as failed after session is closed
+
+After a PipeWire screencast session is successfully started, the
+consumer is expected to keep calling CaptureFrame() from the
+DesktopCapturer interface in a loop to pull frames. A PipeWire
+screencast session can be closed by the server on user action. Once the
+session is closed, there's no point in calling CaptureFrame() again as
+the capture has to be restarted. Inform the caller of the failure by
+returning Result::ERROR_PERMANENT on the next invocation of
+CaptureFrame().
+
+diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
+index 40764de7aeb463a6e2b8d90f273fef40b1dd3691..a5df76b0cdecd1e2e68f2f25c80c6b17de8bc808 100644
+--- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
++++ b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
+@@ -111,6 +111,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
+ void BaseCapturerPipeWire::OnScreenCastSessionClosed() {
+   if (!capturer_failed_) {
+     options_.screencast_stream()->StopScreenCastStream();
++    capturer_failed_ = true;
+   }
+ }
+ 

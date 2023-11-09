@@ -8,8 +8,9 @@
 #include <string>
 
 #include "base/compiler_specific.h"
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/electron_menu_model.h"
-#include "ui/base/glib/glib_signal.h"
+#include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/x/xproto.h"
 
@@ -65,17 +66,14 @@ class GlobalMenuBarX11 {
   void RegisterAccelerator(DbusmenuMenuitem* item,
                            const ui::Accelerator& accelerator);
 
-  CHROMEG_CALLBACK_1(GlobalMenuBarX11,
-                     void,
-                     OnItemActivated,
-                     DbusmenuMenuitem*,
-                     unsigned int);
-  CHROMEG_CALLBACK_0(GlobalMenuBarX11, void, OnSubMenuShow, DbusmenuMenuitem*);
+  void OnItemActivated(DbusmenuMenuitem* item, unsigned int timestamp);
+  void OnSubMenuShow(DbusmenuMenuitem* item);
 
-  NativeWindowViews* window_;
+  raw_ptr<NativeWindowViews> window_;
   x11::Window xwindow_;
 
-  DbusmenuServer* server_ = nullptr;
+  raw_ptr<DbusmenuServer> server_ = nullptr;
+  std::vector<ScopedGSignal> signals_;
 };
 
 }  // namespace electron

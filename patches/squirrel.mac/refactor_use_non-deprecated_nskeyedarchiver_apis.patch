@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 22 Jun 2023 12:26:24 +0200
+Subject: refactor: use non-deprecated NSKeyedArchiver APIs
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/4628901
+
+Several NSKeyedArchiver methods have been deprecated and replaced as of macOS 10.13:
+
+- unarchiveObjectWithData -> unarchivedObjectOfClass:fromData:error:
+- archivedDataWithRootObject -> archivedDataWithRootObject:requiringSecureCoding:error:
+
+diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
+index f502df2f88424ea902a061adfeb30358daf212e4..8db6406ec7f0cb51140ea2ee39c04f91626f6e18 100644
+--- a/Squirrel/SQRLInstaller.m
++++ b/Squirrel/SQRLInstaller.m
+@@ -182,14 +182,30 @@ - (SQRLInstallerOwnedBundle *)ownedBundle {
+ 	id archiveData = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+ 	if (![archiveData isKindOfClass:NSData.class]) return nil;
+ 
+-	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchiveObjectWithData:archiveData];
+-	if (![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) return nil;
++	NSError *error;
++	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchivedObjectOfClass:[SQRLInstallerOwnedBundle class]
++																																						fromData:archiveData
++																																						  error:&error];
++	if (error) {
++		NSLog(@"Couldn't unarchive ownedBundle - %@", error.localizedDescription);
++		return nil;
++	}
+ 
+ 	return ownedBundle;
+ }
+ 
+ - (void)setOwnedBundle:(SQRLInstallerOwnedBundle *)ownedBundle {
+-	NSData *archiveData = (ownedBundle == nil ? nil : [NSKeyedArchiver archivedDataWithRootObject:ownedBundle]);
++	NSData *archiveData = nil;
++	if (ownedBundle != nil) {
++		NSError *error;
++		archiveData = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle
++													requiringSecureCoding:NO
++																					error:&error];
++
++		if (error)
++			NSLog(@"Couldn't archive ownedBundle - %@", error.localizedDescription);
++	}
++
+ 	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFPropertyListRef)archiveData, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+ 	CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+ }

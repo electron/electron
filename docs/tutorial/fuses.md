@@ -61,14 +61,29 @@ The onlyLoadAppFromAsar fuse changes the search system that Electron uses to loc
 
 The loadBrowserProcessSpecificV8Snapshot fuse changes which V8 snapshot file is used for the browser process.  By default Electron's processes will all use the same V8 snapshot file.  When this fuse is enabled the browser process uses the file called `browser_v8_context_snapshot.bin` for its V8 snapshot. The other processes will use the V8 snapshot file that they normally do.
 
+### `grantFileProtocolExtraPrivileges`
+
+**Default:** Enabled
+**@electron/fuses:** `FuseV1Options.GrantFileProtocolExtraPrivileges`
+
+The grantFileProtocolExtraPrivileges fuse changes whether pages loaded from the `file://` protocol are given privileges beyond what they would receive in a traditional web browser.  This behavior was core to Electron apps in original versions of Electron but is no longer required as apps should be [serving local files from custom protocols](./security.md#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols) now instead.  If you aren't serving pages from `file://` you should disable this fuse.
+
+The extra privileges granted to the `file://` protocol by this fuse are incompletely documented below:
+
+* `file://` protocol pages can use `fetch` to load other assets over `file://`
+* `file://` protocol pages can use service workers
+* `file://` protocol pages have universal access granted to child frames also running on `file://` protocols regardless of sandbox settings
+
 ## How do I flip the fuses?
 
 ### The easy way
 
 We've made a handy module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make flipping these fuses easy.  Check out the README of that module for more details on usage and potential error cases.
 
-```js
-require('@electron/fuses').flipFuses(
+```js @ts-nocheck
+const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses')
+
+flipFuses(
   // Path to electron
   require('electron'),
   // Fuses to flip
@@ -82,7 +97,7 @@ require('@electron/fuses').flipFuses(
 You can validate the fuses have been flipped or check the fuse status of an arbitrary Electron app using the fuses CLI.
 
 ```bash
- npx @electron/fuses read --app /Applications/Foo.app
+npx @electron/fuses read --app /Applications/Foo.app
 ```
 
 ### The hard way

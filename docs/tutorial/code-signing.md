@@ -51,7 +51,7 @@ ways to get your application signed and notarized.
 
 If you're using Electron's favorite build tool, getting your application signed
 and notarized requires a few additions to your configuration. [Forge](https://electronforge.io) is a
-collection of the official Electron tools, using [`electron-packager`][],
+collection of the official Electron tools, using [`@electron/packager`][],
 [`@electron/osx-sign`][], and [`@electron/notarize`][] under the hood.
 
 Detailed instructions on how to configure your application can be found in the
@@ -61,14 +61,14 @@ the Electron Forge docs.
 ### Using Electron Packager
 
 If you're not using an integrated build pipeline like Forge, you
-are likely using [`electron-packager`][], which includes [`@electron/osx-sign`][] and
+are likely using [`@electron/packager`][], which includes [`@electron/osx-sign`][] and
 [`@electron/notarize`][].
 
 If you're using Packager's API, you can pass [in configuration that both signs
-and notarizes your application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
+and notarizes your application](https://electron.github.io/packager/main/interfaces/electronpackager.options.html).
 
-```js
-const packager = require('electron-packager')
+```js @ts-nocheck
+const packager = require('@electron/packager')
 
 packager({
   dir: '/path/to/my/app',
@@ -116,7 +116,7 @@ Electron app. This is the tool used under the hood by Electron Forge's
 `electron-winstaller` directly, use the `certificateFile` and `certificatePassword` configuration
 options when creating your installer.
 
-```js {10-11}
+```js {10-11} @ts-nocheck
 const electronInstaller = require('electron-winstaller')
 // NB: Use this syntax within an async function, Node does not have support for
 //     top-level await as of Node 12.
@@ -127,7 +127,7 @@ try {
     authors: 'My App Inc.',
     exe: 'myapp.exe',
     certificateFile: './cert.pfx',
-    certificatePassword: 'this-is-a-secret',
+    certificatePassword: 'this-is-a-secret'
   })
   console.log('It worked!')
 } catch (e) {
@@ -146,7 +146,7 @@ If you're not using Electron Forge and want to use `electron-wix-msi` directly, 
 `certificateFile` and `certificatePassword` configuration options
 or pass in parameters directly to [SignTool.exe][] with the `signWithParams` option.
 
-```js {12-13}
+```js {12-13} @ts-nocheck
 import { MSICreator } from 'electron-wix-msi'
 
 // Step 1: Instantiate the MSICreator
@@ -159,7 +159,7 @@ const msiCreator = new MSICreator({
   version: '1.1.2',
   outputDirectory: '/path/to/output/folder',
   certificateFile: './cert.pfx',
-  certificatePassword: 'this-is-a-secret',
+  certificatePassword: 'this-is-a-secret'
 })
 
 // Step 2: Create a .wxs template file
@@ -167,11 +167,11 @@ const supportBinaries = await msiCreator.create()
 
 // 🆕 Step 2a: optionally sign support binaries if you
 // sign you binaries as part of of your packaging script
-supportBinaries.forEach(async (binary) => {
+for (const binary of supportBinaries) {
   // Binaries are the new stub executable and optionally
   // the Squirrel auto updater.
   await signFile(binary)
-})
+}
 
 // Step 3: Compile the template to a .msi file
 await msiCreator.compile()
@@ -190,7 +190,7 @@ See the [Windows Store Guide][].
 
 [apple developer program]: https://developer.apple.com/programs/
 [`@electron/osx-sign`]: https://github.com/electron/osx-sign
-[`electron-packager`]: https://github.com/electron/electron-packager
+[`@electron/packager`]: https://github.com/electron/packager
 [`@electron/notarize`]: https://github.com/electron/notarize
 [`electron-winstaller`]: https://github.com/electron/windows-installer
 [`electron-wix-msi`]: https://github.com/electron-userland/electron-wix-msi

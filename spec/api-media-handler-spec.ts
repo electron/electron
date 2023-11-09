@@ -1,12 +1,10 @@
 import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import * as http from 'http';
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
+import * as http from 'node:http';
+import { ifit, listen } from './lib/spec-helpers';
 
-const features = process._linkedBinding('electron_common_features');
-
-ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler', () => {
+describe('setDisplayMediaRequestHandler', () => {
   afterEach(closeAllWindows);
   // These tests are done on an http server because navigator.userAgentData
   // requires a secure context.
@@ -83,6 +81,47 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(message).to.equal('Could not start video source');
+  });
+
+  it('successfully returns a capture handle', async () => {
+    let w: BrowserWindow | null = null;
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    let mediaRequest: any = null;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      mediaRequest = request;
+      callback({ video: w?.webContents.mainFrame });
+    });
+
+    w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+
+    const { ok, handleID, captureHandle, message } = await w.webContents.executeJavaScript(`
+      const handleID = crypto.randomUUID();
+      navigator.mediaDevices.setCaptureHandleConfig({
+        handle: handleID,
+        exposeOrigin: true,
+        permittedOrigins: ["*"],
+      });
+
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      }).then(stream => {
+        const [videoTrack] = stream.getVideoTracks();
+        const captureHandle = videoTrack.getCaptureHandle();
+        return { ok: true, handleID, captureHandle, message: null }
+      }, e => ({ ok: false, message: e.message }))
+    `, true);
+
+    expect(requestHandlerCalled).to.be.true();
+    expect(mediaRequest.videoRequested).to.be.true();
+    expect(mediaRequest.audioRequested).to.be.false();
+    expect(ok).to.be.true();
+    expect(captureHandle.handle).to.be.a('string');
+    expect(handleID).to.eq(captureHandle.handle);
+    expect(message).to.be.null();
   });
 
   it('does not crash when providing only audio for a video request', async () => {
@@ -239,6 +278,29 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `, true);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
+  it('returns a MediaStream with BrowserCaptureMediaStreamTrack when the current tab is selected', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      callback({ video: w.webContents.mainFrame });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        preferCurrentTab: true,
+        video: true,
+        audio: false,
+      }).then(stream => {
+        const [videoTrack] = stream.getVideoTracks();
+        return { ok: videoTrack instanceof BrowserCaptureMediaStreamTrack, message: null };
+      }, e => ({ok: false, message: e.message}))
     `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);

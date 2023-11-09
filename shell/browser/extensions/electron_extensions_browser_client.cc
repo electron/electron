@@ -85,7 +85,7 @@ bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
   return false;
 }
 
-bool ElectronExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
+bool ElectronExtensionsBrowserClient::IsValidContext(void* context) {
   auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second && entry.second.get() == context)
@@ -121,26 +121,28 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
 }
 
 content::BrowserContext*
-ElectronExtensionsBrowserClient::GetRedirectedContextInIncognito(
+ElectronExtensionsBrowserClient::GetContextRedirectedToOriginal(
     content::BrowserContext* context,
-    bool force_guest_profile,
-    bool force_system_profile) {
+    bool force_guest_profile) {
   return GetOriginalContext(context);
 }
 
-content::BrowserContext*
-ElectronExtensionsBrowserClient::GetContextForRegularAndIncognito(
+content::BrowserContext* ElectronExtensionsBrowserClient::GetContextOwnInstance(
     content::BrowserContext* context,
-    bool force_guest_profile,
-    bool force_system_profile) {
+    bool force_guest_profile) {
   return context;
 }
 
-content::BrowserContext* ElectronExtensionsBrowserClient::GetRegularProfile(
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetContextForOriginalOnly(
     content::BrowserContext* context,
-    bool force_guest_profile,
-    bool force_system_profile) {
+    bool force_guest_profile) {
   return context->IsOffTheRecord() ? nullptr : context;
+}
+
+bool ElectronExtensionsBrowserClient::AreExtensionsDisabledForContext(
+    content::BrowserContext* context) {
+  return false;
 }
 
 bool ElectronExtensionsBrowserClient::IsGuestSession(
