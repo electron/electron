@@ -169,5 +169,5 @@ environment variable.
 [abi]: https://en.wikipedia.org/wiki/Application_binary_interface
 [@electron/rebuild]: https://github.com/electron/rebuild
 [electron-forge]: https://electronforge.io/
-[electron-packager]: https://github.com/electron/electron-packager
+[electron-packager]: https://github.com/electron/packager
 [node-pre-gyp]: https://github.com/mapbox/node-pre-gyp
