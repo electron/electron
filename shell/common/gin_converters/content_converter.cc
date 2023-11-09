@@ -300,6 +300,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
   switch (static_cast<PermissionType>(val)) {
     case PermissionType::POINTER_LOCK:
       return StringToV8(isolate, "pointerLock");
+    case PermissionType::KEYBOARD_LOCK:
+      return StringToV8(isolate, "keyboardLock");
     case PermissionType::FULLSCREEN:
       return StringToV8(isolate, "fullscreen");
     case PermissionType::OPEN_EXTERNAL:
