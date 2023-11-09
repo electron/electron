@@ -31,7 +31,8 @@ class WebContentsPermissionHelper
     OPEN_EXTERNAL,
     SERIAL,
     HID,
-    USB
+    USB,
+    KEYBOARD_LOCK
   };
 
   // Asynchronous Requests
@@ -44,6 +45,9 @@ class WebContentsPermissionHelper
       bool last_unlocked_by_target,
       base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
           callback);
+  void RequestKeyboardLockPermission(
+      bool esc_key_locked,
+      base::OnceCallback<void(content::WebContents*, bool, bool)> callback);
   void RequestWebNotificationPermission(
       content::RenderFrameHost* requesting_frame,
       base::OnceCallback<void(bool)> callback);
