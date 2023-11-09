@@ -6,7 +6,7 @@ Subject: expose WebBlob::Path to allow embedders to get file paths
 Used to replace the File.path augmentation Electron currently implements.  This is safer / more web-standard technique.
 
 diff --git a/third_party/blink/public/web/web_blob.h b/third_party/blink/public/web/web_blob.h
-index c85b4369b0e23c54cd874485ce95b4fa9a1ef318..b495532aefebffc96cfce509a39e929af4c5a3d2 100644
+index 384a59138db11ea38028f844dd67e328ebffbe7b..f153997c2afccef1fa1b64ee5f162c28a2d07e5d 100644
 --- a/third_party/blink/public/web/web_blob.h
 +++ b/third_party/blink/public/web/web_blob.h
 @@ -67,6 +67,7 @@ class BLINK_EXPORT WebBlob {
@@ -18,7 +18,7 @@ index c85b4369b0e23c54cd874485ce95b4fa9a1ef318..b495532aefebffc96cfce509a39e929a
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index 218221d16058d6cc2aaf83d7de117d6d718b1b3e..5c229ff0b99a80a2a68659d8b61cc71b04abc6c6 100644
+index ce7b5e229789d606df5e74461f09e2e1db59fc95..b1bf2affa5b7f10d9b45d062a2ce0479f5a3b80a 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
 @@ -40,6 +40,7 @@
