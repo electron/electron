@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .webview {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+
+<body>
+  <button class="close-btn">close webview</button>
+  <webview class="webview" src="./webview.html"></webview>
+  <script>
+    const close = document.querySelector('.close-btn')
+    const webview = document.querySelector('.webview')
+
+    webview.addEventListener('close', () => {
+      webview.parentNode.removeChild(webview)
+    })
+
+    close.addEventListener('click', () => {
+      webview.executeJavaScript('window.close()', true)
+    })
+  </script>
+</body>
+
+</html>

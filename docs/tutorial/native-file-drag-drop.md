@@ -22,6 +22,7 @@ In `preload.js` use the [`contextBridge`][] to inject a method `window.electron.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
+const path = require('node:path')
 
 contextBridge.exposeInMainWorld('electron', {
   startDrag: (fileName) => {
@@ -43,7 +44,7 @@ Add a draggable element to `index.html`, and reference your renderer script:
 
 In `renderer.js` set up the renderer process to handle drag events by calling the method you added via the [`contextBridge`][] above.
 
-```javascript
+```javascript @ts-expect-error=[3]
 document.getElementById('drag').ondragstart = (event) => {
   event.preventDefault()
   window.electron.startDrag('drag-and-drop.md')

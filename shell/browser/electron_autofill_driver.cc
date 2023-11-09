@@ -36,7 +36,11 @@ void AutofillDriver::ShowAutofillPopup(
   v8::HandleScope scope(isolate);
   auto* web_contents = api::WebContents::From(
       content::WebContents::FromRenderFrameHost(render_frame_host_));
-  if (!web_contents || !web_contents->owner_window())
+  if (!web_contents)
+    return;
+
+  auto* owner_window = web_contents->owner_window();
+  if (!owner_window)
     return;
 
   auto* embedder = web_contents->embedder();
@@ -56,8 +60,7 @@ void AutofillDriver::ShowAutofillPopup(
   }
 
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,
-                              web_contents->owner_window()->content_view(),
-                              popup_bounds);
+                              owner_window->content_view(), popup_bounds);
   autofill_popup_->SetItems(values, labels);
 }
 

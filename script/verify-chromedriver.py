@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-
 import argparse
 import os
 import re
@@ -17,6 +15,7 @@ def main():
   chromedriver_name = {
     'darwin': 'chromedriver',
     'win32': 'chromedriver.exe',
+    'linux': 'chromedriver',
     'linux2': 'chromedriver'
 }
 

@@ -6,7 +6,10 @@
 #include <string>
 
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/strings/string_util.h"
 #include "electron/electron_gtk_stubs.h"
 #include "shell/browser/javascript_environment.h"
@@ -15,7 +18,7 @@
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/thread_restrictions.h"
-#include "ui/base/glib/glib_signal.h"
+#include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gtk/gtk_ui.h"    // nogncheck
 #include "ui/gtk/gtk_util.h"  // nogncheck
 
@@ -36,8 +39,7 @@ std::string MakeCaseInsensitivePattern(const std::string& extension) {
     return extension;
 
   std::string pattern("*.");
-  for (std::size_t i = 0, n = extension.size(); i < n; i++) {
-    char ch = extension[i];
+  for (char ch : extension) {
     if (!base::IsAsciiAlpha(ch)) {
       pattern.push_back(ch);
       continue;
@@ -62,7 +64,7 @@ class FileChooserDialog {
 
     if (electron::IsElectron_gtkInitialized()) {
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_native_new(
-          settings.title.c_str(), NULL, action,
+          settings.title.c_str(), nullptr, action,
           label.empty() ? nullptr : label.c_str(), nullptr));
     } else {
       const char* confirm_text = gtk_util::GetOkLabel();
@@ -74,8 +76,8 @@ class FileChooserDialog {
         confirm_text = gtk_util::GetOpenLabel();
 
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new(
-          settings.title.c_str(), NULL, action, gtk_util::GetCancelLabel(),
-          GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL));
+          settings.title.c_str(), nullptr, action, gtk_util::GetCancelLabel(),
+          GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, nullptr));
     }
 
     if (parent_) {
@@ -120,8 +122,10 @@ class FileChooserDialog {
     // the update-preview signal or the preview widget will just be ignored.
     if (!electron::IsElectron_gtkInitialized()) {
       preview_ = gtk_image_new();
-      g_signal_connect(dialog_, "update-preview",
-                       G_CALLBACK(OnUpdatePreviewThunk), this);
+      signals_.emplace_back(
+          dialog_, "update-preview",
+          base::BindRepeating(&FileChooserDialog::OnUpdatePreview,
+                              base::Unretained(this)));
       gtk_file_chooser_set_preview_widget(dialog_, preview_);
     }
   }
@@ -164,8 +168,10 @@ class FileChooserDialog {
   }
 
   void RunAsynchronous() {
-    g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
-                     this);
+    signals_.emplace_back(
+        GTK_WIDGET(dialog_), "response",
+        base::BindRepeating(&FileChooserDialog::OnFileDialogResponse,
+                            base::Unretained(this)));
     if (electron::IsElectron_gtkInitialized()) {
       gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog_));
     } else {
@@ -209,28 +215,26 @@ class FileChooserDialog {
     return paths;
   }
 
-  CHROMEG_CALLBACK_1(FileChooserDialog,
-                     void,
-                     OnFileDialogResponse,
-                     GtkWidget*,
-                     int);
+  void OnFileDialogResponse(GtkWidget* widget, int response);
 
   GtkFileChooser* dialog() const { return dialog_; }
 
  private:
   void AddFilters(const Filters& filters);
 
-  electron::NativeWindowViews* parent_;
+  raw_ptr<electron::NativeWindowViews> parent_;
 
-  GtkFileChooser* dialog_;
-  GtkWidget* preview_;
+  RAW_PTR_EXCLUSION GtkFileChooser* dialog_;
+  RAW_PTR_EXCLUSION GtkWidget* preview_;
 
   Filters filters_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> save_promise_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> open_promise_;
 
   // Callback for when we update the preview for the selection.
-  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
+  void OnUpdatePreview(GtkFileChooser* chooser);
+
+  std::vector<ScopedGSignal> signals_;
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
@@ -242,8 +246,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   if (save_promise_) {
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(save_promise_->isolate());
+    auto dict = gin_helper::Dictionary::CreateEmpty(save_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
       dict.Set("filePath", GetFileName());
@@ -253,8 +256,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
     }
     save_promise_->Resolve(dict);
   } else if (open_promise_) {
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(open_promise_->isolate());
+    auto dict = gin_helper::Dictionary::CreateEmpty(open_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
       dict.Set("filePaths", GetFileNames());

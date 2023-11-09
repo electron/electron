@@ -1,20 +1,12 @@
 import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
 import { closeAllWindows } from './lib/window-helpers';
 
-const features = process._linkedBinding('electron_common_features');
-
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
-  if (!features.isDesktopCapturerEnabled()) {
-    // This condition can't go the `ifdescribe` call because its inner code
-    // it still executed, and if the feature is disabled some function calls here fail.
-    return;
-  }
-
   let w: BrowserWindow;
 
   before(async () => {
@@ -68,8 +60,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     expect(sources).to.be.an('array').of.length(displays.length);
 
-    for (let i = 0; i < sources.length; i++) {
-      expect(sources[i].display_id).to.equal(displays[i].id.toString());
+    for (const [i, source] of sources.entries()) {
+      expect(source.display_id).to.equal(displays[i].id.toString());
     }
   });
 

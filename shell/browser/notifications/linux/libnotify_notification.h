@@ -5,9 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
+#include "base/memory/raw_ptr_exclusion.h"
 #include "library_loaders/libnotify_loader.h"
 #include "shell/browser/notifications/notification.h"
-#include "ui/base/glib/glib_signal.h"
+#include "ui/base/glib/scoped_gsignal.h"
 
 namespace electron {
 
@@ -24,17 +25,14 @@ class LibnotifyNotification : public Notification {
   void Dismiss() override;
 
  private:
-  CHROMEG_CALLBACK_0(LibnotifyNotification,
-                     void,
-                     OnNotificationClosed,
-                     NotifyNotification*);
-  CHROMEG_CALLBACK_1(LibnotifyNotification,
-                     void,
-                     OnNotificationView,
-                     NotifyNotification*,
-                     char*);
+  void OnNotificationClosed(NotifyNotification* notification);
+  static void OnNotificationView(NotifyNotification* notification,
+                                 char* action,
+                                 gpointer user_data);
 
-  NotifyNotification* notification_ = nullptr;
+  RAW_PTR_EXCLUSION NotifyNotification* notification_ = nullptr;
+
+  ScopedGSignal signal_;
 };
 
 }  // namespace electron

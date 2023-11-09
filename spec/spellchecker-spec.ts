@@ -1,13 +1,13 @@
 import { BrowserWindow, Session, session } from 'electron/main';
 
 import { expect } from 'chai';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as http from 'http';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
 import { closeWindow } from './lib/window-helpers';
 import { ifit, ifdescribe, listen } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');

@@ -6,7 +6,7 @@ Subject: JSON.parse errors made user-friendly
 Update tests for  https://chromium-review.googlesource.com/c/v8/v8/+/3513684
 
 diff --git a/test/es-module/test-esm-data-urls.js b/test/es-module/test-esm-data-urls.js
-index 5be45d0f7af3b6dd483fe3b185c76e41a1bf533b..c20dd4f9067203bf40d35c92c2ef1bb27ec14b99 100644
+index 5be45d0f7af3b6dd483fe3b185c76e41a1bf533b..a99dde30c3d977dfc226a33f632f5f69638892af 100644
 --- a/test/es-module/test-esm-data-urls.js
 +++ b/test/es-module/test-esm-data-urls.js
 @@ -76,7 +76,7 @@ function createBase64URL(mime, body) {
@@ -14,7 +14,7 @@ index 5be45d0f7af3b6dd483fe3b185c76e41a1bf533b..c20dd4f9067203bf40d35c92c2ef1bb2
          { assert: { type: 'json' } }), {
        name: 'SyntaxError',
 -      message: /Unexpected end of JSON input/
-+      message: 'data:application/json;foo="test,",0: Unterminated string in JSON at position 3'
++      message: 'data:application/json;foo="test,",0: Unterminated string in JSON at position 3 (line 1 column 4)'
      });
    }
    {

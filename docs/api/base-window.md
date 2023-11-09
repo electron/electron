@@ -76,125 +76,7 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
 
 ### `new BaseWindow([options])`
 
-* `options` Object (optional)
-  * `width` Integer (optional) - Window's width in pixels. Default is `800`.
-  * `height` Integer (optional) - Window's height in pixels. Default is `600`.
-  * `x` Integer (optional) - (**required** if y is used) Window's left offset from screen.
-    Default is to center the window.
-  * `y` Integer (optional) - (**required** if x is used) Window's top offset from screen.
-    Default is to center the window.
-  * `useContentSize` boolean (optional) - The `width` and `height` would be
-    used as the content size, which means the actual window's size will include
-    window frame's size and be slightly larger. Default is `false`.
-  * `center` boolean (optional) - Show window in the center of the screen. Default is `false`.
-  * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
-  * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
-  * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
-  * `maxHeight` Integer (optional) - Window's maximum height. Default is no limit.
-  * `resizable` boolean (optional) - Whether window is resizable. Default is `true`.
-  * `movable` boolean (optional) _macOS_ _Windows_ - Whether window is
-    movable. This is not implemented on Linux. Default is `true`.
-  * `minimizable` boolean (optional) _macOS_ _Windows_ - Whether window is
-    minimizable. This is not implemented on Linux. Default is `true`.
-  * `maximizable` boolean (optional) _macOS_ _Windows_ - Whether window is
-    maximizable. This is not implemented on Linux. Default is `true`.
-  * `closable` boolean (optional) _macOS_ _Windows_ - Whether window is
-    closable. This is not implemented on Linux. Default is `true`.
-  * `focusable` boolean (optional) - Whether the window can be focused. Default is
-    `true`. On Windows setting `focusable: false` also implies setting
-    `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
-    stop interacting with wm, so the window will always stay on top in all
-    workspaces.
-  * `alwaysOnTop` boolean (optional) - Whether the window should always stay on top of
-    other windows. Default is `false`.
-  * `fullscreen` boolean (optional) - Whether the window should show in fullscreen. When
-    explicitly set to `false` the fullscreen button will be hidden or disabled
-    on macOS. Default is `false`.
-  * `fullscreenable` boolean (optional) - Whether the window can be put into fullscreen
-    mode. On macOS, also whether the maximize/zoom button should toggle full
-    screen mode or maximize window. Default is `true`.
-  * `simpleFullscreen` boolean (optional) _macOS_ - Use pre-Lion fullscreen on
-    macOS. Default is `false`.
-  * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
-    Default is `false`.
-  * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
-  * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
-  * `title` string (optional) - Window title. Default is `"Electron"`.
-  * `icon` ([NativeImage](native-image.md) | string) (optional) - The window icon. On Windows it is
-    recommended to use `ICO` icons to get best visual effects, you can also
-    leave it undefined so the executable's icon will be used.
-  * `show` boolean (optional) - Whether window should be shown when created. Default is
-    `true`.
-  * `frame` boolean (optional) - Specify `false` to create a
-    [frameless window](../tutorial/window-customization.md#create-frameless-windows). Default is `true`.
-  * `parent` BaseWindow (optional) - Specify parent window. Default is `null`.
-  * `modal` boolean (optional) - Whether this is a modal window. This only works when the
-    window is a child window. Default is `false`.
-  * `acceptFirstMouse` boolean (optional) _macOS_ - Whether clicking an
-    inactive window will also click through to the web contents. Default is
-    `false` on macOS. This option is not configurable on other platforms.
-  * `disableAutoHideCursor` boolean (optional) - Whether to hide cursor when typing.
-    Default is `false`.
-  * `autoHideMenuBar` boolean (optional) - Auto hide the menu bar unless the `Alt`
-    key is pressed. Default is `false`.
-  * `enableLargerThanScreen` boolean (optional) _macOS_ - Enable the window to
-    be resized larger than screen. Only relevant for macOS, as other OSes
-    allow larger-than-screen windows by default. Default is `false`.
-  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](#winsetbackgroundcolorbackgroundcolor) for more information.
-  * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
-  * `opacity` number (optional) _macOS_ _Windows_ - Set the initial opacity of
-    the window, between 0.0 (fully transparent) and 1.0 (fully opaque). This
-    is only implemented on Windows and macOS.
-  * `darkTheme` boolean (optional) - Forces using dark theme for the window, only works on
-    some GTK+3 desktop environments. Default is `false`.
-  * `transparent` boolean (optional) - Makes the window [transparent](../tutorial/window-customization.md#create-transparent-windows).
-    Default is `false`. On Windows, does not work unless the window is frameless.
-  * `type` string (optional) - The type of window, default is normal window. See more about
-    this below.
-  * `visualEffectState` string (optional) _macOS_ - Specify how the material
-    appearance should reflect window activity state on macOS. Must be used
-    with the `vibrancy` property. Possible values are:
-    * `followWindow` - The backdrop should automatically appear active when the window is active, and inactive when it is not. This is the default.
-    * `active` - The backdrop should always appear active.
-    * `inactive` - The backdrop should always appear inactive.
-  * `titleBarStyle` string (optional) _macOS_ _Windows_ - The style of window title bar.
-    Default is `default`. Possible values are:
-    * `default` - Results in the standard title bar for macOS or Windows respectively.
-    * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
-    * `hiddenInset` _macOS_ - Only on macOS, results in a hidden title bar
-      with an alternative look where the traffic light buttons are slightly
-      more inset from the window edge.
-    * `customButtonsOnHover` _macOS_ - Only on macOS, results in a hidden
-      title bar and a full size content window, the traffic light buttons will
-      display when being hovered over in the top left of the window.
-      **Note:** This option is currently experimental.
-  * `trafficLightPosition` [Point](structures/point.md) (optional) _macOS_ -
-    Set a custom position for the traffic light buttons in frameless windows.
-  * `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
-    should have rounded corners on macOS. Default is `true`. Setting this property
-    to `false` will prevent the window from being fullscreenable.
-  * `fullscreenWindowTitle` boolean (optional) _macOS_ _Deprecated_ - Shows
-    the title in the title bar in full screen mode on macOS for `hiddenInset`
-    titleBarStyle. Default is `false`.
-  * `thickFrame` boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
-    Windows, which adds standard window frame. Setting it to `false` will remove
-    window shadow and window animations. Default is `true`.
-  * `vibrancy` string (optional) _macOS_ - Add a type of vibrancy effect to
-    the window, only on macOS. Can be `appearance-based`, `light`, `dark`,
-    `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `medium-light`,
-    `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
-    `tooltip`, `content`, `under-window`, or `under-page`. Please note that
-    `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
-    deprecated and have been removed in macOS Catalina (10.15).
-  * `tabbingIdentifier` string (optional) _macOS_ - Tab group name, allows
-    opening the window as a native tab. Windows with the same
-    tabbing identifier will be grouped together. This also adds a native new
-    tab button to your window's tab bar and allows your `app` and window to
-    receive the `new-window-for-tab` event.
-  * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
-    * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
-    * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
-    * `height` Integer (optional) _macOS_ _Windows_ - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
+* `options` [BrowserWindowConstructorOptions](structures/browser-window-options.md) (optional)
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -385,8 +267,8 @@ const { BaseWindow } = require('electron')
 const win = new BaseWindow()
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
-  if (cmd === 'browser-backward' && win.webContents.canGoBack()) {
-    win.webContents.goBack()
+  if (cmd === 'browser-backward') {
+    // Find the appropriate WebContents to navigate.
   }
 })
 ```
@@ -579,7 +461,8 @@ On Linux the setter is a no-op, although the getter returns `true`.
 
 A `boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
 
-```js
+```js @ts-expect-error=[12]
+const { Menu, BaseWindow } = require('electron')
 const win = new BaseWindow({ height: 600, width: 600 })
 
 const template = [
@@ -1518,5 +1401,3 @@ the style of the title bar overlay.
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
-[overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
-[overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables

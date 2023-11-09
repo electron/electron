@@ -1,4 +1,7 @@
+/* global registerPaint */
+
 class CheckerboardPainter {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   paint (ctx, geom, properties) {
     const colors = ['red', 'green', 'blue'];
     const size = 32;
@@ -14,5 +17,4 @@ class CheckerboardPainter {
   }
 }
 
-// eslint-disable-next-line no-undef
 registerPaint('checkerboard', CheckerboardPainter);

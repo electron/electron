@@ -57,12 +57,17 @@ function sortTopologically<T> (originalOrder: T[], edgesById: Map<T, T[]>) {
     marked.add(mark);
     const edges = edgesById.get(mark);
     if (edges != null) {
-      edges.forEach(visit);
+      for (const edge of edges) {
+        visit(edge);
+      }
     }
     sorted.push(mark);
   };
 
-  originalOrder.forEach(visit);
+  for (const edge of originalOrder) {
+    visit(edge);
+  }
+
   return sorted;
 }
 
@@ -98,24 +103,24 @@ function sortItemsInGroup<T> (group: {before?: T[], after?: T[], id?: T}[]) {
   const edges = new Map();
   const idToIndex = new Map(group.map((item, i) => [item.id, i]));
 
-  group.forEach((item, i) => {
+  for (const [i, item] of group.entries()) {
     if (item.before) {
-      item.before.forEach(toID => {
+      for (const toID of item.before) {
         const to = idToIndex.get(toID);
         if (to != null) {
           pushOntoMultiMap(edges, to, i);
         }
-      });
+      }
     }
     if (item.after) {
-      item.after.forEach(toID => {
+      for (const toID of item.after) {
         const to = idToIndex.get(toID);
         if (to != null) {
           pushOntoMultiMap(edges, i, to);
         }
-      });
+      }
     }
-  });
+  }
 
   const sortedNodes = sortTopologically(originalOrder, edges);
   return sortedNodes.map(i => group[i]);

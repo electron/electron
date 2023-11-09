@@ -1,0 +1,21 @@
+{
+  "env": {
+    "browser": true,
+    "mocha": true,
+    "serviceworker": true
+  },
+  "globals": {
+    "Bindings": true,
+    "Components": true,
+    "UI": true,
+    "WebView": true
+  },
+  "plugins": [
+    "mocha",
+    "unicorn"
+  ],
+  "rules": {
+    "mocha/no-exclusive-tests": "error",
+    "unicorn/prefer-node-protocol": "error"
+  }
+}

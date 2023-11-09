@@ -32,6 +32,7 @@ class ElectronSerialDelegate : public content::SerialDelegate,
   std::unique_ptr<content::SerialChooser> RunChooser(
       content::RenderFrameHost* frame,
       std::vector<blink::mojom::SerialPortFilterPtr> filters,
+      std::vector<device::BluetoothUUID> allowed_bluetooth_service_class_ids,
       content::SerialChooser::Callback callback) override;
   bool CanRequestPortPermission(content::RenderFrameHost* frame) override;
   bool HasPortPermission(content::RenderFrameHost* frame,
@@ -83,9 +84,8 @@ class ElectronSerialDelegate : public content::SerialDelegate,
 namespace base {
 
 template <>
-struct base::ScopedObservationTraits<
-    electron::SerialChooserContext,
-    electron::SerialChooserContext::PortObserver> {
+struct ScopedObservationTraits<electron::SerialChooserContext,
+                               electron::SerialChooserContext::PortObserver> {
   static void AddObserver(
       electron::SerialChooserContext* source,
       electron::SerialChooserContext::PortObserver* observer) {

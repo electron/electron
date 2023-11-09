@@ -129,6 +129,45 @@ won't be able to connect to remote sites. However, a return value of
 whether a particular connection attempt to a particular remote site
 will be successful.
 
+#### `net.resolveHost(host, [options])`
+
+* `host` string - Hostname to resolve.
+* `options` Object (optional)
+  * `queryType` string (optional) - Requested DNS query type. If unspecified,
+    resolver will pick A or AAAA (or both) based on IPv4/IPv6 settings:
+    * `A` - Fetch only A records
+    * `AAAA` - Fetch only AAAA records.
+  * `source` string (optional) - The source to use for resolved addresses.
+    Default allows the resolver to pick an appropriate source. Only affects use
+    of big external sources (e.g. calling the system for resolution or using
+    DNS). Even if a source is specified, results can still come from cache,
+    resolving "localhost" or IP literals, etc. One of the following values:
+    * `any` (default) - Resolver will pick an appropriate source. Results could
+      come from DNS, MulticastDNS, HOSTS file, etc
+    * `system` - Results will only be retrieved from the system or OS, e.g. via
+      the `getaddrinfo()` system call
+    * `dns` - Results will only come from DNS queries
+    * `mdns` - Results will only come from Multicast DNS queries
+    * `localOnly` - No external sources will be used. Results will only come
+      from fast local sources that are available no matter the source setting,
+      e.g. cache, hosts file, IP literal resolution, etc.
+  * `cacheUsage` string (optional) - Indicates what DNS cache entries, if any,
+    can be used to provide a response. One of the following values:
+    * `allowed` (default) - Results may come from the host cache if non-stale
+    * `staleAllowed` - Results may come from the host cache even if stale (by
+      expiration or network changes)
+    * `disallowed` - Results will not come from the host cache.
+  * `secureDnsPolicy` string (optional) - Controls the resolver's Secure DNS
+    behavior for this request. One of the following values:
+    * `allow` (default)
+    * `disable`
+
+Returns [`Promise<ResolvedHost>`](structures/resolved-host.md) - Resolves with the resolved IP addresses for the `host`.
+
+This method will resolve hosts from the [default
+session](session.md#sessiondefaultsession). To resolve a host from
+another session, use [ses.resolveHost()](session.md#sesresolvehosthost-options).
+
 ## Properties
 
 ### `net.online` _Readonly_

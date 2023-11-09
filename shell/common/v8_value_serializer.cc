@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "gin/converter.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
@@ -110,7 +111,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     serializer_.WriteUint32(blink_version);
   }
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   std::vector<uint8_t> data_;
   v8::ValueSerializer serializer_;
 };
@@ -217,7 +218,7 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
     return new api::NativeImage(isolate, image);
   }
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   v8::ValueDeserializer deserializer_;
 };
 

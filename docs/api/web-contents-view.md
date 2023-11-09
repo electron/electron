@@ -8,6 +8,7 @@ This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
 ```javascript
+const { BaseWindow, WebContentsView } = require('electron')
 const win = new BaseWindow({ width: 800, height: 400 })
 
 const view1 = new WebContentsView()
@@ -112,6 +113,7 @@ A `WebContents` property containing a reference to the displayed `WebContents`.
 Use this to interact with the `WebContents`, for instance to load a URL.
 
 ```javascript
+const { WebContentsView } = require('electron')
 const view = new WebContentsView()
 view.webContents.loadURL('https://electronjs.org/')
 ```

@@ -9,6 +9,7 @@
 #include "base/logging.h"
 #include "base/process/launch.h"
 #include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
@@ -46,16 +47,16 @@ HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
   ResolveNTFunctionPtr("NtQueryInformationProcess", &NtQueryInformationProcess);
   if (!NtQueryInformationProcess) {
     LOG(ERROR) << "Unable to get NtQueryInformationProcess";
-    return NULL;
+    return nullptr;
   }
 
   PROCESS_BASIC_INFORMATION pbi;
   LONG status =
       NtQueryInformationProcess(handle, ProcessBasicInformation, &pbi,
-                                sizeof(PROCESS_BASIC_INFORMATION), NULL);
+                                sizeof(PROCESS_BASIC_INFORMATION), nullptr);
   if (!NT_SUCCESS(status)) {
     LOG(ERROR) << "NtQueryInformationProcess failed";
-    return NULL;
+    return nullptr;
   }
 
   return ::OpenProcess(PROCESS_ALL_ACCESS, TRUE,
@@ -108,7 +109,8 @@ StringType AddQuoteForArg(const StringType& arg) {
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
-  return base::StringPrintf(L"%ls-%d", kWaitEventName, static_cast<int>(pid));
+  return base::UTF8ToWide(
+      base::StringPrintf("%ls-%d", kWaitEventName, static_cast<int>(pid)));
 }
 
 StringType ArgvToCommandLineString(const StringVector& argv) {
@@ -129,7 +131,7 @@ void RelauncherSynchronizeWithParent() {
   // Notify the parent process that it can quit now.
   StringType name = internal::GetWaitEventName(process.Pid());
   base::win::ScopedHandle wait_event(
-      CreateEvent(NULL, TRUE, FALSE, name.c_str()));
+      CreateEvent(nullptr, TRUE, FALSE, name.c_str()));
   ::SetEvent(wait_event.Get());
 
   // Wait for parent process to quit.

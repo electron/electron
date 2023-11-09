@@ -73,7 +73,7 @@ const { contextBridge } = require('electron')
 contextBridge.exposeInMainWorld('versions', {
   node: () => process.versions.node,
   chrome: () => process.versions.chrome,
-  electron: () => process.versions.electron,
+  electron: () => process.versions.electron
   // we can also expose variables, not just functions
 })
 ```
@@ -83,15 +83,15 @@ To attach this script to your renderer process, pass its path to the
 
 ```js {2,8-10} title="main.js"
 const { app, BrowserWindow } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
 
   win.loadFile('index.html')
@@ -118,7 +118,7 @@ information in the window. This variable can be accessed via `window.versions` o
 `versions`. Create a `renderer.js` script that uses the [`document.getElementById`][]
 DOM API to replace the displayed text for the HTML element with `info` as its `id` property.
 
-```js title="renderer.js"
+```js title="renderer.js" @ts-nocheck
 const information = document.getElementById('info')
 information.innerText = `This app is using Chrome (v${versions.chrome()}), Node.js (v${versions.node()}), and Electron (v${versions.electron()})`
 ```
@@ -183,7 +183,7 @@ contextBridge.exposeInMainWorld('versions', {
   node: () => process.versions.node,
   chrome: () => process.versions.chrome,
   electron: () => process.versions.electron,
-  ping: () => ipcRenderer.invoke('ping'),
+  ping: () => ipcRenderer.invoke('ping')
   // we can also expose variables, not just functions
 })
 ```
@@ -202,28 +202,30 @@ Then, set up your `handle` listener in the main process. We do this _before_
 loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
-```js {1,12} title="main.js"
+```js {1,15} title="main.js"
 const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
-  ipcMain.handle('ping', () => 'pong')
   win.loadFile('index.html')
 }
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  ipcMain.handle('ping', () => 'pong')
+  createWindow()
+})
 ```
 
 Once you have the sender and receiver set up, you can now send messages from the renderer
 to the main process through the `'ping'` channel you just defined.
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-expect-error=[2]
 const func = async () => {
   const response = await window.versions.ping()
   console.log(response) // prints out 'pong'

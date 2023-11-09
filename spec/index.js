@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const v8 = require('v8');
+const fs = require('node:fs');
+const path = require('node:path');
+const v8 = require('node:v8');
 
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
@@ -13,6 +13,11 @@ process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 const { app, protocol } = require('electron');
+
+// Some Linux machines have broken hardware acceleration support.
+if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
+  app.disableHardwareAcceleration();
+}
 
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
@@ -69,6 +74,14 @@ app.whenReady().then(async () => {
       reporterEnabled: process.env.MOCHA_MULTI_REPORTERS
     };
   }
+  // The MOCHA_GREP and MOCHA_INVERT are used in some vendor builds for sharding
+  // tests.
+  if (process.env.MOCHA_GREP) {
+    mochaOptions.grep = process.env.MOCHA_GREP;
+  }
+  if (process.env.MOCHA_INVERT) {
+    mochaOptions.invert = process.env.MOCHA_INVERT === 'true';
+  }
   const mocha = new Mocha(mochaOptions);
 
   // Add a root hook on mocha to skip any tests that are disabled
@@ -107,6 +120,11 @@ app.whenReady().then(async () => {
   if (argv.grep) mocha.grep(argv.grep);
   if (argv.invert) mocha.invert();
 
+  const baseElectronDir = path.resolve(__dirname, '..');
+  const validTestPaths = argv.files && argv.files.map(file =>
+    path.isAbsolute(file)
+      ? path.relative(baseElectronDir, file)
+      : file);
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
@@ -121,8 +139,7 @@ app.whenReady().then(async () => {
       return false;
     }
 
-    const baseElectronDir = path.resolve(__dirname, '..');
-    if (argv.files && !argv.files.includes(path.relative(baseElectronDir, file))) {
+    if (validTestPaths && !validTestPaths.includes(path.relative(baseElectronDir, file))) {
       return false;
     }
 
@@ -131,9 +148,15 @@ app.whenReady().then(async () => {
 
   const { getFiles } = require('./get-files');
   const testFiles = await getFiles(__dirname, { filter });
-  testFiles.sort().forEach((file) => {
+  for (const file of testFiles.sort()) {
     mocha.addFile(file);
-  });
+  }
+
+  if (validTestPaths && validTestPaths.length > 0 && testFiles.length === 0) {
+    console.error('Test files were provided, but they did not match any searched files');
+    console.error('provided file paths (relative to electron/):', validTestPaths);
+    process.exit(1);
+  }
 
   const cb = () => {
     // Ensure the callback is called after runner is defined

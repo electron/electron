@@ -9,7 +9,7 @@ const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._l
 const ERR_FAILED = -2;
 const ERR_UNEXPECTED = -9;
 
-const isBuiltInScheme = (scheme: string) => scheme === 'http' || scheme === 'https';
+const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
 
 function makeStreamFromPipe (pipe: any): ReadableStream {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
@@ -60,6 +60,26 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
   }) as RequestInit['body'];
 }
 
+// TODO(codebytere): Use Object.hasOwn() once we update to ECMAScript 2022.
+function validateResponse (res: Response) {
+  if (!res || typeof res !== 'object') return false;
+
+  if (res.type === 'error') return true;
+
+  const exists = (key: string) => Object.hasOwn(res, key);
+
+  if (exists('status') && typeof res.status !== 'number') return false;
+  if (exists('statusText') && typeof res.statusText !== 'string') return false;
+  if (exists('headers') && typeof res.headers !== 'object') return false;
+
+  if (exists('body')) {
+    if (typeof res.body !== 'object') return false;
+    if (res.body !== null && !(res.body instanceof ReadableStream)) return false;
+  }
+
+  return true;
+}
+
 Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
   const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
@@ -73,13 +93,14 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
       const res = await handler(req);
-      if (!res || typeof res !== 'object') {
+      if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });
-      }
-      if (res.type === 'error') { cb({ error: ERR_FAILED }); } else {
+      } else if (res.type === 'error') {
+        cb({ error: ERR_FAILED });
+      } else {
         cb({
           data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
-          headers: Object.fromEntries(res.headers),
+          headers: res.headers ? Object.fromEntries(res.headers) : {},
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType

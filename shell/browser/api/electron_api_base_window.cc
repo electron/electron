@@ -4,10 +4,12 @@
 
 #include "shell/browser/api/electron_api_base_window.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
@@ -81,7 +83,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
-#if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
   gin_helper::Dictionary web_preferences;
   bool offscreen;
@@ -89,7 +90,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
       web_preferences.Get(options::kOffscreen, &offscreen) && offscreen) {
     const_cast<gin_helper::Dictionary&>(options).Set(options::kFrame, false);
   }
-#endif
 
   // Creates NativeWindow.
   window_.reset(NativeWindow::Create(
@@ -212,7 +212,7 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
                                     bool* prevent_default) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary info = gin::Dictionary::CreateEmpty(isolate);
+  auto info = gin::Dictionary::CreateEmpty(isolate);
   info.Set("edge", edge);
 
   if (Emit("will-resize", new_bounds, info)) {
@@ -569,12 +569,8 @@ std::vector<int> BaseWindow::GetPosition() {
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   if (!window_->MoveAbove(sourceId))
     args->ThrowError("Invalid media source id");
-#else
-  args->ThrowError("enable_desktop_capturer=true to use this feature");
-#endif
 }
 
 void BaseWindow::MoveTop() {
@@ -708,8 +704,6 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
-    menu_.Reset(isolate, menu.ToV8());
-
     // We only want to update the menu if the menu has a non-zero item count,
     // or we risk crashes.
     if (menu->model()->GetItemCount() == 0) {
@@ -717,6 +711,8 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     } else {
       window_->SetMenu(menu->model());
     }
+
+    menu_.Reset(isolate, menu.ToV8());
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -813,6 +809,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
+void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
+  window_->SetBackgroundMaterial(material_type);
+}
+
 #if BUILDFLAG(IS_MAC)
 std::string BaseWindow::GetAlwaysOnTopLevel() {
   return window_->GetAlwaysOnTopLevel();
@@ -866,6 +866,10 @@ void BaseWindow::SelectNextTab() {
   window_->SelectNextTab();
 }
 
+void BaseWindow::ShowAllTabs() {
+  window_->ShowAllTabs();
+}
+
 void BaseWindow::MergeAllWindows() {
   window_->MergeAllWindows();
 }
@@ -882,6 +886,14 @@ void BaseWindow::AddTabbedWindow(NativeWindow* window,
                                  gin_helper::Arguments* args) {
   if (!window_->AddTabbedWindow(window))
     args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
+}
+
+v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
+  auto tabbing_id = window_->GetTabbingIdentifier();
+  if (!tabbing_id.has_value())
+    return v8::Undefined(isolate());
+
+  return gin::ConvertToV8(isolate(), tabbing_id.value());
 }
 
 void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
@@ -1053,8 +1065,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 
 // static
 gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
-  gin_helper::Dictionary options =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
   return new BaseWindow(args, options);
@@ -1162,6 +1173,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
+      .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
 
 #if BUILDFLAG(IS_MAC)
       .SetMethod("isHiddenInMissionControl",
@@ -1176,10 +1188,12 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(IS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
+      .SetMethod("showAllTabs", &BaseWindow::ShowAllTabs)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
       .SetMethod("moveTabToNewWindow", &BaseWindow::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &BaseWindow::ToggleTabBar)
       .SetMethod("addTabbedWindow", &BaseWindow::AddTabbedWindow)
+      .SetProperty("tabbingIdentifier", &BaseWindow::GetTabbingIdentifier)
       .SetMethod("setWindowButtonVisibility",
                  &BaseWindow::SetWindowButtonVisibility)
       .SetMethod("_getWindowButtonVisibility",

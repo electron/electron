@@ -17,6 +17,13 @@ void EmitWarning(node::Environment* env,
                  const std::string& warning_msg,
                  const std::string& warning_type);
 
+std::string GetProcessType();
+
+bool IsBrowserProcess();
+bool IsRendererProcess();
+bool IsUtilityProcess();
+bool IsZygoteProcess();
+
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_COMMON_PROCESS_UTIL_H_

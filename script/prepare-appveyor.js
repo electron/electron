@@ -1,9 +1,9 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
-const assert = require('assert');
-const fs = require('fs');
+const assert = require('node:assert');
+const fs = require('node:fs');
 const got = require('got');
-const path = require('path');
+const path = require('node:path');
 const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
 const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit();
@@ -14,8 +14,8 @@ const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
 const DEFAULT_BUILD_CLOUD_ID = '1598';
 const DEFAULT_BUILD_CLOUD = 'electronhq-16-core';
-const DEFAULT_BAKE_BASE_IMAGE = 'e-112.0.5607.0-vs2022';
-const DEFAULT_BUILD_IMAGE = 'e-112.0.5607.0-vs2022';
+const DEFAULT_BAKE_BASE_IMAGE = 'base-bake-image';
+const DEFAULT_BUILD_IMAGE = 'base-bake-image';
 
 const appveyorBakeJob = 'electron-bake-image';
 const appVeyorJobs = {
@@ -94,7 +94,9 @@ function useAppVeyorImage (targetBranch, options) {
     assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`);
     callAppVeyorBuildJobs(targetBranch, options.job, options);
   } else {
-    validJobs.forEach((job) => callAppVeyorBuildJobs(targetBranch, job, options));
+    for (const job of validJobs) {
+      callAppVeyorBuildJobs(targetBranch, job, options);
+    }
   }
 }
 
@@ -182,8 +184,7 @@ async function prepareAppVeyorImage (opts) {
   if (ROLLER_BRANCH_PATTERN.test(branch)) {
     useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
   } else {
-    // eslint-disable-next-line no-control-regex
-    const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
+    const versionRegex = /chromium_version':\n +'(.+?)',/m;
     const deps = fs.readFileSync(path.resolve(__dirname, '..', 'DEPS'), 'utf8');
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 

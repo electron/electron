@@ -12,7 +12,7 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 1895fc822281ccc9e36500e755f028fb2f877060..8d02e232dcb53e3d753b64c8548a5b98d2bb571f 100644
+index a6b736f8be0fb24bd61f291ca60c1a9ccae30db7..edab197b5729c5b25599bba411c25bac6ed02827 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -22,6 +22,12 @@
@@ -43,7 +43,7 @@ index 1895fc822281ccc9e36500e755f028fb2f877060..8d02e232dcb53e3d753b64c8548a5b98
 -      GetAccountName().size(), GetAccountName().c_str(), &password_length,
 +      service_name.size(), service_name.c_str(),
 +      suffixed_account_name.size(), suffixed_account_name.c_str(), &password_length,
-       &password_data, nullptr);
+       &password_data, /*item=*/nullptr);
  
 +  // If it exists we can return it immediately
    if (error == noErr) {
@@ -62,7 +62,7 @@ index 1895fc822281ccc9e36500e755f028fb2f877060..8d02e232dcb53e3d753b64c8548a5b98
 +
 +  // If the suffixed account didn't exist, we should check if the legacy non-suffixed account
 +  // exists. If it does we can use that key and migrate it to the new account
-+  base::ScopedCFTypeRef<SecKeychainItemRef> item_ref;
++  base::apple::ScopedCFTypeRef<SecKeychainItemRef> item_ref;
 +  error = keychain_.FindGenericPassword(
 +      service_name.size(), service_name.c_str(),
 +      account_name.size(), account_name.c_str(), &password_length,

@@ -125,7 +125,8 @@ void DevToolsManagerDelegate::HandleCommand(
 }
 
 scoped_refptr<content::DevToolsAgentHost>
-DevToolsManagerDelegate::CreateNewTarget(const GURL& url, bool for_tab) {
+DevToolsManagerDelegate::CreateNewTarget(const GURL& url,
+                                         TargetType target_type) {
   return nullptr;
 }
 

@@ -8,6 +8,7 @@ This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
 ```javascript
+const { BaseWindow, View } = require('electron')
 const win = new BaseWindow()
 const view = new View()
 

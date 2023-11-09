@@ -181,8 +181,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
 
   gfx::Rect input_bounds(view->GetWidget()->GetWindowBoundsInScreen().size());
   input_bounds.Inset(insets + input_insets);
-  gfx::Rect scaled_bounds = gfx::ScaleToEnclosingRect(input_bounds, scale);
-  window->SetInputRegion(&scaled_bounds);
+  window->SetInputRegion(gfx::ScaleToEnclosingRect(input_bounds, scale));
 
   if (should_set_opaque_region) {
     // The opaque region is a list of rectangles that contain only fully
@@ -224,8 +223,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
     // Convert the region to a list of rectangles.
     std::vector<gfx::Rect> opaque_region;
     for (SkRegion::Iterator i(region); !i.done(); i.next())
-      opaque_region.push_back(gfx::SkIRectToRect(i.rect()));
-    window->SetOpaqueRegion(&opaque_region);
+      opaque_region.emplace_back(gfx::SkIRectToRect(i.rect()));
+    window->SetOpaqueRegion(opaque_region);
   }
 }
 

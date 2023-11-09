@@ -1,6 +1,6 @@
 const asar = require('@electron/asar');
-const crypto = require('crypto');
-const fs = require('fs');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 
 const archive = process.argv[2];
 const hashFile = process.argv[3];

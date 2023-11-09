@@ -29,14 +29,8 @@ namespace {
 
 #if BUILDFLAG(IS_MAC)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
-  if (base::mac::IsAtLeastOS10_14()) {
-    if (Command::IsMediaKey(accelerator)) {
-      if (!electron::api::SystemPreferences::IsTrustedAccessibilityClient(
-              false))
-        return true;
-    }
-  }
-  return false;
+  return Command::IsMediaKey(accelerator) &&
+         !electron::api::SystemPreferences::IsTrustedAccessibilityClient(false);
 }
 
 bool MapHasMediaKeys(
@@ -62,8 +56,7 @@ GlobalShortcut::~GlobalShortcut() {
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (accelerator_callback_map_.find(accelerator) ==
-      accelerator_callback_map_.end()) {
+  if (!base::Contains(accelerator_callback_map_, accelerator)) {
     // This should never occur, because if it does, GlobalShortcutListener
     // notifies us with wrong accelerator.
     NOTREACHED();

@@ -14,7 +14,7 @@ struct Converter<electron::BluetoothChooser::DeviceInfo> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const electron::BluetoothChooser::DeviceInfo& val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("deviceName", val.device_name);
     dict.Set("deviceId", val.device_id);
     return gin::ConvertToV8(isolate, dict);
@@ -110,13 +110,10 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
     // an event
     return;
   }
-  bool changed = false;
-  auto entry = device_map_.find(device_id);
-  if (entry == device_map_.end()) {
-    device_map_[device_id] = device_name;
-    changed = true;
-  } else if (should_update_name) {
-    entry->second = device_name;
+
+  auto [iter, changed] = device_map_.try_emplace(device_id, device_name);
+  if (!changed && should_update_name) {
+    iter->second = device_name;
     changed = true;
   }
 
@@ -139,11 +136,8 @@ std::vector<electron::BluetoothChooser::DeviceInfo>
 BluetoothChooser::GetDeviceList() {
   std::vector<electron::BluetoothChooser::DeviceInfo> vec;
   vec.reserve(device_map_.size());
-  for (const auto& it : device_map_) {
-    DeviceInfo info = {it.first, it.second};
-    vec.push_back(info);
-  }
-
+  for (const auto& [device_id, device_name] : device_map_)
+    vec.emplace_back(device_id, device_name);
   return vec;
 }
 

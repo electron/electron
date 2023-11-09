@@ -1,6 +1,6 @@
-const cp = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const cp = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const BASE = path.resolve(__dirname, '../..');
 const NAN_DIR = path.resolve(BASE, 'third_party', 'nan');
@@ -9,7 +9,7 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const utils = require('./lib/utils');
 const { YARN_VERSION } = require('./yarn');
 
-if (!process.mainModule) {
+if (!require.main) {
   throw new Error('Must call the nan spec runner directly');
 }
 
@@ -57,11 +57,15 @@ async function main () {
   // file and pull cflags_cc from it instead of using bespoke code here?
   // I think it's unlikely to work; but if it does, it would be more futureproof
   const cxxflags = [
-    '-std=c++17',
+    '-std=c++20',
+    '-Wno-trigraphs',
+    '-fno-exceptions',
+    '-fno-rtti',
     '-nostdinc++',
-    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
+    `-isystem "${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-isystem "${path.resolve(BASE, 'third_party', 'libc++', 'src', 'include')}"`,
+    `-isystem "${path.resolve(BASE, 'third_party', 'libc++abi', 'src', 'include')}"`,
+    ' -fvisibility-inlines-hidden',
     '-fPIC',
     '-D_LIBCPP_ABI_NAMESPACE=Cr',
     ...platformFlags
@@ -108,12 +112,12 @@ async function main () {
 
   const onlyTests = args.only && args.only.split(',');
 
-  const DISABLED_TESTS = [
+  const DISABLED_TESTS = new Set([
     'nannew-test.js',
     'buffer-test.js'
-  ];
+  ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
-    .filter(test => !DISABLED_TESTS.includes(test))
+    .filter(test => !DISABLED_TESTS.has(test))
     .filter(test => {
       return !onlyTests || onlyTests.includes(test) || onlyTests.includes(test.replace('.js', '')) || onlyTests.includes(test.replace('-test.js', ''));
     })

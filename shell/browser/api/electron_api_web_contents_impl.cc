@@ -7,11 +7,8 @@
 #include "content/browser/renderer_host/frame_tree.h"        // nogncheck
 #include "content/browser/renderer_host/frame_tree_node.h"   // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
-
-#if BUILDFLAG(ENABLE_OSR)
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#endif
 
 // Including both web_contents_impl.h and node.h would introduce a error, we
 // have to isolate the usage of WebContentsImpl into a clean file to fix it:
@@ -31,7 +28,6 @@ void WebContents::DetachFromOuterFrame() {
   }
 }
 
-#if BUILDFLAG(ENABLE_OSR)
 OffScreenWebContentsView* WebContents::GetOffScreenWebContentsView() const {
   if (IsOffScreen()) {
     const auto* impl =
@@ -51,6 +47,5 @@ OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
     return nullptr;
   }
 }
-#endif
 
 }  // namespace electron::api

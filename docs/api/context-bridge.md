@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld(
 )
 ```
 
-```javascript
+```javascript @ts-nocheck
 // Renderer (Main World)
 
 window.electron.doThing()
@@ -104,7 +104,7 @@ contextBridge.exposeInIsolatedWorld(
 )
 ```
 
-```javascript
+```javascript @ts-nocheck
 // Renderer (In isolated world id1004)
 
 window.electron.doThing()
@@ -147,7 +147,7 @@ Be very cautious about which globals and APIs you expose to untrusted remote con
 
 ```javascript
 const { contextBridge } = require('electron')
-const crypto = require('crypto')
+const crypto = require('node:crypto')
 contextBridge.exposeInMainWorld('nodeCrypto', {
   sha256sum (data) {
     const hash = crypto.createHash('sha256')

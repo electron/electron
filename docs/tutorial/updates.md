@@ -32,7 +32,7 @@ npm install update-electron-app
 
 Then, invoke the updater from your app's main process file:
 
-```js title="main.js"
+```js title="main.js" @ts-nocheck
 require('update-electron-app')()
 ```
 
@@ -104,8 +104,7 @@ setInterval(() => {
 ```
 
 Once your application is [packaged](./application-distribution.md),
-it will receive an update for each new
-[GitHub Release](https://help.github.com/articles/creating-releases/) that you
+it will receive an update for each new [GitHub Release][gh-releases] that you
 publish.
 
 ### Step 3: Notifying users when updates are available
@@ -114,7 +113,7 @@ Now that you've configured the basic update mechanism for your application, you
 need to ensure that the user will get notified when there's an update. This
 can be achieved using the [autoUpdater API events](../api/auto-updater.md#events):
 
-```javascript title="main.js"
+```javascript title="main.js" @ts-expect-error=[11]
 autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
   const dialogOpts = {
     type: 'info',
@@ -122,7 +121,7 @@ autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
     title: 'Application Update',
     message: process.platform === 'win32' ? releaseNotes : releaseName,
     detail:
-      'A new version has been downloaded. Restart the application to apply the updates.',
+      'A new version has been downloaded. Restart the application to apply the updates.'
   }
 
   dialog.showMessageBox(dialogOpts).then((returnValue) => {
@@ -155,7 +154,7 @@ server-communication aspect of the process by loading your update from a local d
 [vercel]: https://vercel.com
 [hazel]: https://github.com/vercel/hazel
 [nuts]: https://github.com/GitbookIO/nuts
-[gh-releases]: https://help.github.com/articles/creating-releases/
+[gh-releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [nucleus]: https://github.com/atlassian/nucleus
 [update.electronjs.org]: https://github.com/electron/update.electronjs.org

@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 18 May 2023 22:43:53 -0500
+Subject: chore: patch out Profile methods in titlebar_config
+
+Make this code linkable in Electron by removing Profile references.
+
+diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
+index f088a7071b1e0e1e05aee5637484b1dea3e2a6fa..8d411e550f6a8ca1a4070bf5d5719703f90b3dfa 100644
+--- a/chrome/browser/win/titlebar_config.cc
++++ b/chrome/browser/win/titlebar_config.cc
+@@ -19,8 +19,10 @@ BASE_FEATURE(kWindows11MicaTitlebar,
+ 
+ bool ShouldBrowserCustomDrawTitlebar(BrowserView* browser_view) {
+   return !ShouldDefaultThemeUseMicaTitlebar() ||
++#if 0
+          !ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
+               ->UsingSystemTheme() ||
++#endif
+          (!browser_view->browser()->is_type_normal() &&
+           !browser_view->browser()->is_type_popup() &&
+           !browser_view->browser()->is_type_devtools());

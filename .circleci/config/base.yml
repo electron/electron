@@ -35,6 +35,16 @@ parameters:
     default: all
     enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
 
+  medium-linux-executor:
+    type: enum
+    default: electronjs/aks-linux-medium
+    enum: ["electronjs/aks-linux-medium", "medium"]
+  
+  large-linux-executor:
+    type: enum
+    default: electronjs/aks-linux-large
+    enum: ["electronjs/aks-linux-large", "2xlarge"]
+
 # Executors
 executors:
   linux-docker:
@@ -42,7 +52,9 @@ executors:
       size:
         description: "Docker executor size"
         type: enum
-        enum: ["medium", "xlarge", "2xlarge"]
+        # aks-linux-large === 32 core
+        # 2xlarge should not be used directly, use the pipeline param instead
+        enum: ["medium", "electronjs/aks-linux-medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -52,9 +64,14 @@ executors:
       size:
         description: "macOS executor size"
         type: enum
-        enum: ["macos.x86.medium.gen2", "large"]
+        enum: ["macos.x86.medium.gen2", "macos.m1.large.gen1", "macos.m1.medium.gen1"]
+      version:
+        description: "xcode version"
+        type: enum
+        enum: ["15.0.0", "14.0.0"]
+        default: 15.0.0
     macos:
-      xcode: 14.0.0
+      xcode: << parameters.version >>
     resource_class: << parameters.size >>
 
   # Electron Runners
@@ -114,9 +131,8 @@ env-arm: &env-arm
   TARGET_ARCH: arm
 
 env-apple-silicon: &env-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64" use_prebuilt_v8_context_snapshot = true'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
   TARGET_ARCH: arm64
-  USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
   npm_config_arch: arm64
 
 env-runner: &env-runner
@@ -133,10 +149,9 @@ env-mas: &env-mas
   MAS_BUILD: 'true'
 
 env-mas-apple-silicon: &env-mas-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true use_prebuilt_v8_context_snapshot = true'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
   MAS_BUILD: 'true'
   TARGET_ARCH: arm64
-  USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
   npm_config_arch: arm64
 
 env-send-slack-notifications: &env-send-slack-notifications
@@ -171,9 +186,6 @@ env-mac-large-release: &env-mac-large-release
 
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
-
-env-disable-run-as-node: &env-disable-run-as-node
-  GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
 env-32bit-release: &env-32bit-release
   # Set symbol level to 1 for 32 bit releases because of https://crbug.com/648948
@@ -245,14 +257,27 @@ step-depot-tools-get: &step-depot-tools-get
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
         # Remove swift-format dep from cipd on macOS until we send a patch upstream.
         cd depot_tools
-        patch gclient.py -R \<<'EOF'
-      676,677c676
-      <         packages = dep_value.get('packages', [])
-      <         for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
-      ---
-      >         for package in dep_value.get('packages', []):
+        cat > gclient.diff \<< 'EOF'
+      diff --git a/gclient.py b/gclient.py
+      index c305c248..e6e0fbdc 100755
+      --- a/gclient.py
+      +++ b/gclient.py
+      @@ -735,7 +735,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+ 
+                   if dep_type == 'cipd':
+                       cipd_root = self.GetCipdRoot()
+      -                for package in dep_value.get('packages', []):
+      +                packages = dep_value.get('packages', [])
+      +                for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
+                           deps_to_add.append(
+                               CipdDependency(parent=self,
+                                              name=name,
       EOF
+        git apply --3way gclient.diff
       fi
+      # Ensure depot_tools does not update.
+      test -d depot_tools && cd depot_tools
+      touch .disable_auto_update
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
@@ -274,7 +299,7 @@ step-gclient-sync: &step-gclient-sync
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
         if [ "$IS_RELEASE" != "true" ]; then
           # Re-export all the patches to check if there were changes.
-          python src/electron/script/export_all_patches.py src/electron/patches/config.json
+          python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
           git update-index --refresh || true
           if ! git diff-index --quiet HEAD --; then
@@ -334,7 +359,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
         exit 1
       fi
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
-      echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
+      echo 'export GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
       cd ..
       touch "${TMPDIR:=/tmp}"/.goma-ready
@@ -357,14 +382,14 @@ step-restore-brew-cache: &step-restore-brew-cache
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
     keys:
-      - v5-brew-cache-{{ arch }}
+      - v6-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
-    key: v5-brew-cache-{{ arch }}
+    key: v6-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -380,18 +405,24 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
           fi
         }
 
-        strip_arm_deep() {
+        strip_universal_deep() {
           opwd=$(pwd)
           cd $1
           f=$(find . -perm +111 -type f)
           for fp in $f
           do
             if [[ $(file "$fp") == *"universal binary"* ]]; then
-              if [[ $(file "$fp") == *"arm64e)"* ]]; then
-                sudo lipo -remove arm64e "$fp" -o "$fp" || true
-              fi
-              if [[ $(file "$fp") == *"arm64)"* ]]; then
-                sudo lipo -remove arm64 "$fp" -o "$fp" || true
+              if [ "`arch`" == "arm64" ]; then
+                if [[ $(file "$fp") == *"x86_64"* ]]; then
+                  sudo lipo -remove x86_64 "$fp" -o "$fp" || true
+                fi
+              else
+                if [[ $(file "$fp") == *"arm64e)"* ]]; then
+                  sudo lipo -remove arm64e "$fp" -o "$fp" || true
+                fi
+                if [[ $(file "$fp") == *"arm64)"* ]]; then
+                  sudo lipo -remove arm64 "$fp" -o "$fp" || true
+                fi
               fi
             fi
           done
@@ -447,12 +478,12 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
 
         # lipo off some huge binaries arm64 versions to save space
-        strip_arm_deep $(xcode-select -p)/../SharedFrameworks
+        strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
       fi
     background: true
 
-# On macOS delete all .git directories under src/ expect for
+# On macOS delete all .git directories under src/ except for
 # third_party/angle/ and third_party/dawn/ because of build time generation of files
 # gen/angle/commit.h depends on third_party/angle/.git/HEAD
 # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
@@ -506,6 +537,24 @@ step-fix-sync: &step-fix-sync
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
         sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
+
+        # Fix rustc (wrong binary)
+        rm -rf src/third_party/rust-toolchain
+        python3 src/tools/rust/update_rust.py
+        
+        # Fix gn (wrong binary)
+        echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+        cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
+
+        # Fix dsymutil (wrong binary)
+        if  [ "$TARGET_ARCH" == "arm64" ]; then
+          export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+        else
+          export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
+        fi
+        python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
       fi
 
       # Make sure we are using the right ninja
@@ -586,7 +635,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+      if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
         gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
         export CHROMEDRIVER_DIR="out/chromedriver"
       else
@@ -597,7 +646,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
         electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/$CHROMEDRIVER_DIR/chromedriver
       fi
       ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver_zip
-      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+      if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
         cp out/chromedriver/chromedriver.zip out/Default
       fi
 
@@ -606,11 +655,12 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     name: Build Node.js headers
     command: |
       cd src
-      ninja -C out/Default third_party/electron_node:headers
+      ninja -C out/Default electron:node_headers
 
 step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
+    no_output_timeout: 30m
     command: |
       if [ "`uname`" == "Darwin" ]; then
         rm -rf src/out/Default/obj
@@ -674,10 +724,10 @@ step-verify-mksnapshot: &step-verify-mksnapshot
     command: |
       if [ "$IS_ASAN" != "1" ]; then
         cd src
-        if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+        if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
+          python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
         else
-          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+          python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
         fi
       fi
 
@@ -687,7 +737,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     command: |
       if [ "$IS_ASAN" != "1" ]; then
         cd src
-        python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+        python3 electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
       fi
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
@@ -705,8 +755,8 @@ step-show-goma-stats: &step-show-goma-stats
     command: |
       set +e
       set +o pipefail
-      $LOCAL_GOMA_DIR/goma_ctl.py stat
-      $LOCAL_GOMA_DIR/diagnose_goma_log.py
+      python3 $GOMA_DIR/goma_ctl.py stat
+      python3 $GOMA_DIR/diagnose_goma_log.py
       true
     when: always
     background: true
@@ -717,17 +767,16 @@ step-mksnapshot-build: &step-mksnapshot-build
     no_output_timeout: 30m
     command: |
       cd src
-      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
-        ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
-        # Remove unused args from mksnapshot_args
-        SEDOPTION="-i"
-        if [ "`uname`" == "Darwin" ]; then
-          SEDOPTION="-i ''"
-        fi
-        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
-        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+      ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+      gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+      # Remove unused args from mksnapshot_args
+      SEDOPTION="-i"
+      if [ "`uname`" == "Darwin" ]; then
+        SEDOPTION="-i ''"
       fi
+      sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+      sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+      sed $SEDOPTION '/The gn arg use_goma=true .*/d' out/Default/mksnapshot_args
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
@@ -740,7 +789,7 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
         fi
       fi
-      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ] && [ "$SKIP_DIST_ZIP" != "1" ]; then
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
@@ -813,7 +862,7 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         elif [ "`uname`" == "Darwin" ]; then
           cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.dylib" out/Default
         fi
-        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
+        python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
         # Clean up so that ninja does not get confused
@@ -858,13 +907,25 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v16-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v16-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
+
+step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
+  restore_cache_aks:
+    step-name: Restoring src cache
+    cache_key: v17-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_path: /var/portal
+
+step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
+  restore_cache_aks:
+    step-name: Restoring src cache marker
+    cache_key: v17-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_path: "."
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will match an empty cache
@@ -877,6 +938,12 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
+
+step-maybe-restore-git-cache-aks: &step-maybe-restore-git-cache-aks
+  restore_cache_aks:
+    step-name: Conditionally restoring git cache (aks)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ') v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')
+    cache_path: git-cache
 
 step-set-git-cache-path: &step-set-git-cache-path
   run:
@@ -894,6 +961,12 @@ step-save-git-cache: &step-save-git-cache
       - git-cache
     key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
+
+step-save-git-cache-aks: &step-save-git-cache-aks
+  save_cache_aks:
+    step-name: Persisting git cache (AKS)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ')
+    cache_path: git-cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -932,7 +1005,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v16-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -942,7 +1015,17 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v16-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+step-save-src-cache-aks: &step-save-src-cache-aks
+  save_cache_aks:
+    step-name: Persisting src cache (aks)
+    cache_key: v17-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_path: /var/portal
+step-save-src-cache-marker-aks: &step-save-src-cache-marker-aks
+  save_cache_aks:
+    step-name: Persisting src cache marker (aks)
+    cache_key: v17-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_path: .src-cache-marker
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -968,16 +1051,6 @@ step-ts-compile: &step-ts-compile
       done
 
 # List of all steps.
-steps-electron-gn-check: &steps-electron-gn-check
-  steps:
-    - install-python2-mac
-    - *step-setup-goma-for-build
-    - checkout-from-cache
-    - *step-setup-env-for-build
-    - *step-wait-for-goma
-    - *step-gn-gen-default
-    - *step-gn-check
-
 steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
   steps:
     # Checkout - Copied from steps-checkout
@@ -989,36 +1062,92 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
 # Command Aliases
 commands:
-  install-python2-mac:
+  aks-specific-step:
+    parameters:
+      circle:
+        type: steps
+      aks:
+        type: steps
+      could-be-aks:
+        type: boolean
+        description: Only set this to true on linux hosts
     steps:
-      - restore_cache:
-          keys:
-            - v2.7.18-python-cache-{{ arch }}
-          name: Restore python cache
+      - when:
+          condition:
+            or:
+              - equal: [<< parameters.could-be-aks >>, false]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, 2xlarge]
+          steps: << parameters.circle >>
+      - when:
+          condition:
+            and:
+              - equal: [<< parameters.could-be-aks >>, true]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, electronjs/aks-linux-large]
+          steps: << parameters.aks >>
+  save_cache_aks:
+    parameters:
+      step-name:
+        type: string
+      cache_key:
+        type: string
+      cache_path:
+        type: string
+    steps:
       - run:
-          name: Install python2 on macos
+          name: << parameters.step-name >>
           command: |
-            if [ "`uname`" == "Darwin" ] && [ "$IS_ELECTRON_RUNNER" != "1" ]; then
-              if [ ! -f "python-downloads/python-2.7.18-macosx10.9.pkg" ]; then
-                mkdir python-downloads
-                echo 'Downloading Python 2.7.18'
-                curl -O https://dev-cdn.electronjs.org/python/python-2.7.18-macosx10.9.pkg
-                mv python-2.7.18-macosx10.9.pkg python-downloads
+            cache_key="<< parameters.cache_key >>"
+            final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+            echo "Using cache key: $cache_key"
+            echo "Checking path: $final_cache_path"
+            if [ ! -f "$final_cache_path" ]; then
+              echo "Cache key not founding, storing tarball"
+              tmp_container=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID
+              tmp_cache_path=$tmp_container/${cache_key}.tar
+              mkdir -p $tmp_container
+              if [ -f "<< parameters.cache_path >>" ]; then
+                tar -cf $tmp_cache_path -C $(dirname << parameters.cache_path >>) ./$(basename << parameters.cache_path >>)
               else
-                echo 'Using Python install from cache'
+                tar -cf $tmp_cache_path -C << parameters.cache_path >>/ ./
               fi
-              sudo installer -pkg python-downloads/python-2.7.18-macosx10.9.pkg -target /
+              mv -vn $tmp_cache_path $final_cache_path
+              rm -rf $tmp_container
+            else
+              echo "Cache key already exists, skipping.."
             fi
-      - save_cache:
-          paths:
-            - python-downloads
-          key: v2.7.18-python-cache-{{ arch }}
-          name: Persisting python cache
+  restore_cache_aks:
+    parameters:
+      step-name:
+        type: string
+      cache_key:
+        type: string
+      cache_path:
+        type: string
+    steps:
+      - run:
+          name: << parameters.step-name >>
+          command: |
+            df -h
+            for cache_key in << parameters.cache_key >>; do
+              cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+              echo "Using cache key: $cache_key"
+              echo "Checking path: $cache_path"
+              if [ ! -f "$cache_path" ]; then
+                echo "Cache key not found, nothing to restore..."
+              else
+                echo "Cache key found, restoring to path..."
+                mkdir -p << parameters.cache_path >>/
+                tar -xf /mnt/cross-instance-cache/${cache_key}.tar -C << parameters.cache_path >>/
+                exit 0
+              fi
+            done
   maybe-restore-portaled-src-cache:
     parameters:
       halt-if-successful:
         type: boolean
         default: false
+      could-be-aks:
+        type: boolean
     steps:
       - run:
           name: Prepare for cross-OS sync restore
@@ -1028,29 +1157,50 @@ commands:
       - when:
           condition: << parameters.halt-if-successful >>
           steps:
-            - *step-maybe-restore-src-cache-marker
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-src-cache-marker
+                aks:
+                  - *step-maybe-restore-src-cache-marker-aks
+                could-be-aks: << parameters.could-be-aks >>
             - run:
                 name: Halt the job early if the src cache exists
                 command: |
                   if [ -f ".src-cache-marker" ]; then
                     circleci-agent step halt
                   fi
-      - *step-maybe-restore-src-cache
+      - aks-specific-step:
+          circle:
+            - *step-maybe-restore-src-cache
+          aks:
+            - *step-maybe-restore-src-cache-aks
+          could-be-aks: << parameters.could-be-aks >>
       - run:
-          name: Fix the src cache restore point on macOS
+          name: Fix the src cache restore point
           command: |
             if [ -d "/var/portal/src" ]; then
               echo Relocating Cache
               rm -rf src
               mv /var/portal/src ./
             fi
-
+  run-gn-check:
+    parameters:
+      could-be-aks:
+        type: boolean
+    steps:
+      - *step-setup-goma-for-build
+      - checkout-from-cache:
+          could-be-aks: << parameters.could-be-aks >>
+      - *step-setup-env-for-build
+      - *step-wait-for-goma
+      - *step-gn-gen-default
+      - *step-gn-check
   build_and_save_artifacts:
     parameters:
       artifact-key:
         type: string
       build-type:
-        type: string      
+        type: string
       build-nonproprietary-ffmpeg:
         type: boolean
         default: true
@@ -1061,7 +1211,7 @@ commands:
           build-type: << parameters.build-type >>
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build:
-          additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+          additional-targets: electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
 
       - *step-show-goma-stats
 
@@ -1158,12 +1308,16 @@ commands:
             mv_if_exist cross-arch-snapshots src
 
   checkout-from-cache:
+    parameters:
+      could-be-aks:
+        type: boolean
     steps:
       - *step-checkout-electron
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-generate-deps-hash
-      - maybe-restore-portaled-src-cache
+      - maybe-restore-portaled-src-cache:
+          could-be-aks: << parameters.could-be-aks >>
       - run:
           name: Ensure src checkout worked
           command: |
@@ -1229,32 +1383,6 @@ commands:
           no_output_timeout: 60m
           command: |
             cd src
-
-            # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
-            if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
-              ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-              ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
-              gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
-              # Remove unused args from mksnapshot_args
-              SEDOPTION="-i"
-              if [ "`uname`" == "Darwin" ]; then
-                SEDOPTION="-i ''"
-              fi
-              sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
-              sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
-              (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
-              if [ "<< parameters.clean-prebuilt-snapshot >>" == "true" ]; then
-                rm -rf out/Default/clang_x64_v8_arm64/gen
-                rm -rf out/Default/clang_x64_v8_arm64/obj
-                rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
-                rm -rf out/Default/clang_x64/obj
-                # Regenerate because we just deleted some ninja files
-                gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-              fi
-              # For x-compiles this will be built to the wrong arch after the context snapshot build
-              # so we wipe it before re-linking it below
-              rm -rf out/Default/libffmpeg.dylib
-            fi
             NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
             cp out/Default/.ninja_log out/electron_ninja_log
             node electron/script/check-symlinks.js
@@ -1294,13 +1422,15 @@ commands:
       artifact-key:
         type: string
       build-type:
-        type: string        
+        type: string
       after-build-and-save:
         type: steps
         default: []
       after-persist:
         type: steps
         default: []
+      could-be-aks:
+        type: boolean
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1310,7 +1440,6 @@ commands:
             - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
-      - install-python2-mac
       - *step-save-brew-cache
       - when:
           condition: << parameters.build >>
@@ -1319,7 +1448,8 @@ commands:
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
-            - checkout-from-cache
+            - checkout-from-cache:
+                could-be-aks: << parameters.could-be-aks >>
       - when:
           condition: << parameters.checkout >>
           steps:
@@ -1335,8 +1465,15 @@ commands:
                 steps:
                   - maybe-restore-portaled-src-cache:
                       halt-if-successful: << parameters.checkout-to-create-src-cache >>
-            - *step-maybe-restore-git-cache
+                      could-be-aks: << parameters.could-be-aks >>
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-git-cache
+                aks:
+                  - *step-maybe-restore-git-cache-aks
+                could-be-aks: << parameters.could-be-aks >>
             - *step-set-git-cache-path
+            - *step-fix-known-hosts-linux
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             - store_artifacts:
@@ -1352,7 +1489,12 @@ commands:
             - when:
                 condition: << parameters.save-git-cache >>
                 steps:
-                  - *step-save-git-cache
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-git-cache
+                      aks:
+                        - *step-save-git-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
             # Mark sync as done _after_ saving the git cache so that it is uploaded
             # only when the src cache was not present
             # Their are theoretically two cases for this cache key
@@ -1402,9 +1544,19 @@ commands:
                         sudo mkdir -p /var/portal
                         sudo chown -R $(id -u):$(id -g) /var/portal
                         mv ./src /var/portal
-                  - *step-save-src-cache
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-src-cache
+                      aks:
+                        - *step-save-src-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
                   - *step-make-src-cache-marker
-                  - *step-save-src-cache-marker
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-src-cache-marker
+                      aks:
+                        - *step-save-src-cache-marker-aks
+                      could-be-aks: << parameters.could-be-aks >>
 
       - when:
           condition: << parameters.build >>
@@ -1448,6 +1600,8 @@ commands:
                         - src/build/linux
                         - src/buildtools/third_party/libc++
                         - src/buildtools/third_party/libc++abi
+                        - src/third_party/libc++
+                        - src/third_party/libc++abi
                         - src/out/Default/obj/buildtools/third_party
                         - src/v8/tools/builtins-pgo
                   - steps: << parameters.after-persist >>
@@ -1456,6 +1610,18 @@ commands:
           condition: << parameters.build >>
           steps:
             - *step-maybe-notify-slack-failure
+      - when:
+          condition: << parameters.could-be-aks >>
+          steps:
+            - run:
+                name: Wait for active debug sessions
+                command: |
+                  while [ -f /var/.ssh-lock ]
+                  do
+                    sleep 60
+                  done
+                no_output_timeout: 2h
+                when: always
 
   electron-tests:
     parameters:
@@ -1471,7 +1637,6 @@ commands:
       - *step-setup-linux-for-headless-testing
       - *step-restore-brew-cache
       - *step-fix-known-hosts-linux
-      - install-python2-mac
       - *step-install-signing-cert-on-mac
 
       - run:
@@ -1492,7 +1657,7 @@ commands:
               export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
               export MOCHA_TIMEOUT=180000
               echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
-              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
+              (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
             else
               if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
                 export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
@@ -1501,17 +1666,8 @@ commands:
                 if [ "$TARGET_ARCH" == "ia32" ]; then
                   npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
                 fi
-                (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings))
+                (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
               fi
-            fi
-      - run:
-          name: Check test results existence
-          command: |
-            cd src
-
-            # Check if test results exist and are not empty.
-            if [ ! -s "junit/test-results-main.xml" ]; then
-              exit 1
             fi
       - store_test_results:
           path: src/junit
@@ -1581,7 +1737,6 @@ commands:
             - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-restore-brew-cache
-      - install-python2-mac
       - *step-get-more-space-on-mac
       - when:
           condition: << parameters.checkout >>
@@ -1595,6 +1750,7 @@ commands:
             - *step-minimize-workspace-size-from-checkout
       - *step-fix-sync
       - *step-setup-env-for-build
+      - *step-fix-known-hosts-linux
       - *step-setup-goma-for-build
       - *step-wait-for-goma
       - *step-gn-gen-default
@@ -1652,7 +1808,7 @@ jobs:
   linux-make-src-cache:
     executor:
       name: linux-docker
-      size: xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1665,6 +1821,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: true
 
   mac-checkout:
     executor:
@@ -1684,8 +1841,9 @@ jobs:
           restore-src-cache: false
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
-  mac-make-src-cache:
+  mac-make-src-cache-x64:
     executor:
       name: linux-docker
       size: xlarge
@@ -1703,12 +1861,33 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
+
+  mac-make-src-cache-arm64:
+    executor:
+      name: linux-docker
+      size: xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
+          artifact-key: 'nil'
+          build-type: 'nil'
+          could-be-aks: false
 
   # Layer 2: Builds.
   linux-x64-testing:
     executor:
       name: linux-docker
-      size: xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1721,11 +1900,12 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-x64'
           build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-asan:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1736,42 +1916,29 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: true
+          checkout: false
+          checkout-and-assume-cache: true
           build-nonproprietary-ffmpeg: false
           artifact-key: 'linux-x64-asan'
           build-type: 'Linux'
-
-  linux-x64-testing-no-run-as-node:
-    executor:
-      name: linux-docker
-      size: xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      <<: *env-disable-run-as-node
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: false
-          checkout: true
-          artifact-key: 'linux-x64-no-run-as-node'
-          build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-gn-check:
     executor:
       name: linux-docker
-      size: medium
+      size: << pipeline.parameters.medium-linux-executor >>
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: true
 
   linux-x64-publish:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
@@ -1794,7 +1961,7 @@ jobs:
   linux-arm-testing:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1810,11 +1977,12 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm'
           build-type: 'Linux ARM'
+          could-be-aks: true
 
   linux-arm-publish:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
@@ -1839,7 +2007,7 @@ jobs:
   linux-arm64-testing:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -1855,22 +2023,25 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm64'
           build-type: 'Linux ARM64'
+          could-be-aks: true
 
   linux-arm64-testing-gn-check:
     executor:
       name: linux-docker
-      size: medium
+      size: << pipeline.parameters.medium-linux-executor >>
     environment:
       <<: *env-linux-medium
       <<: *env-arm64
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: true
 
   linux-arm64-publish:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
@@ -1925,6 +2096,7 @@ jobs:
                 root: .
                 paths:
                   - generated_artifacts_mas-x64
+          could-be-aks: false
 
   osx-testing-x64-gn-check:
     executor:
@@ -1934,7 +2106,9 @@ jobs:
       <<: *env-machine-mac
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: false
 
   osx-publish-x64:
     executor:
@@ -1961,7 +2135,7 @@ jobs:
   osx-publish-arm64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1984,7 +2158,7 @@ jobs:
   osx-testing-arm64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.medium.gen1
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1992,7 +2166,6 @@ jobs:
       <<: *env-macos-build
       <<: *env-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-      GENERATE_CROSS_ARCH_SNAPSHOT: true
     steps:
       - electron-build:
           persist: true
@@ -2017,6 +2190,7 @@ jobs:
                 root: .
                 paths:
                   - generated_artifacts_mas-arm64
+          could-be-aks: false
 
   mas-publish-x64:
     executor:
@@ -2043,7 +2217,7 @@ jobs:
   mas-publish-arm64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2142,6 +2316,7 @@ jobs:
     executor:
       name: macos
       size: macos.x86.medium.gen2
+      version: 14.0.0
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2165,6 +2340,7 @@ jobs:
     executor:
       name: macos
       size: macos.x86.medium.gen2
+      version: 14.0.0
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2240,9 +2416,6 @@ workflows:
       - linux-x64-testing-asan:
           requires:
             - linux-make-src-cache
-      - linux-x64-testing-no-run-as-node:
-          requires:
-            - linux-make-src-cache
       - linux-x64-testing-gn-check:
           requires:
             - linux-make-src-cache
@@ -2289,19 +2462,20 @@ workflows:
         - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-build-mac >>]
     jobs:
-      - mac-make-src-cache
+      - mac-make-src-cache-x64
+      - mac-make-src-cache-arm64
       - osx-testing-x64:
           requires:
-            - mac-make-src-cache
+            - mac-make-src-cache-x64
       - osx-testing-x64-gn-check:
           requires:
-            - mac-make-src-cache
+            - mac-make-src-cache-x64
       - darwin-testing-x64-tests:
           requires:
             - osx-testing-x64
       - osx-testing-arm64:
           requires:
-            - mac-make-src-cache
+            - mac-make-src-cache-arm64
       - darwin-testing-arm64-tests:
           filters:
             branches:

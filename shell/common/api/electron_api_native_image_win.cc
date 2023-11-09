@@ -62,7 +62,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   hr = pThumbnailCache->GetThumbnail(
       pItem.Get(), size.width(),
       WTS_FLAGS::WTS_SCALETOREQUESTEDSIZE | WTS_FLAGS::WTS_SCALEUP, &pThumbnail,
-      NULL, NULL);
+      nullptr, nullptr);
 
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage(
@@ -71,7 +71,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   }
 
   // Init HBITMAP
-  HBITMAP hBitmap = NULL;
+  HBITMAP hBitmap = nullptr;
   hr = pThumbnail->GetSharedBitmap(&hBitmap);
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage("Failed to extract bitmap from thumbnail");

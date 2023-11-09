@@ -5,7 +5,6 @@
 #include "shell/app/electron_crash_reporter_client.h"
 
 #include <map>
-#include <memory>
 #include <string>
 
 #include "base/command_line.h"

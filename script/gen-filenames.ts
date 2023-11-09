@@ -1,7 +1,7 @@
-import * as cp from 'child_process';
+import * as cp from 'node:child_process';
 import * as fs from 'fs-extra';
-import * as os from 'os';
-import * as path from 'path';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 const rootPath = path.resolve(__dirname, '..');
 const gniPath = path.resolve(__dirname, '../filenames.auto.gni');

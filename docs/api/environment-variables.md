@@ -111,6 +111,16 @@ Options:
 * `kioclient5`
 * `kioclient`
 
+### `ELECTRON_OZONE_PLATFORM_HINT` _Linux_
+
+Selects the preferred platform backend used on Linux. The default one is `x11`. `auto` selects Wayland if possible, X11 otherwise.
+
+Options:
+
+* `auto`
+* `wayland`
+* `x11`
+
 ## Development Variables
 
 The following environment variables are intended primarily for development and

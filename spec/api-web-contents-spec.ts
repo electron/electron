@@ -1,13 +1,13 @@
 import { expect } from 'chai';
-import { AddressInfo } from 'net';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as http from 'http';
-import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
+import { AddressInfo } from 'node:net';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -24,7 +24,7 @@ describe('webContents module', () => {
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
 
-      await once(w.webContents, 'did-attach-webview');
+      await once(w.webContents, 'did-attach-webview') as [any, WebContents];
 
       w.webContents.openDevTools();
 
@@ -192,6 +192,14 @@ describe('webContents module', () => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print(true);
       }).to.throw('webContents.print(): Invalid print settings specified.');
+    });
+
+    it('throws when an invalid pageSize is passed', () => {
+      const badSize = 5;
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: badSize });
+      }).to.throw(`Unsupported pageSize: ${badSize}`);
     });
 
     it('throws when an invalid callback is passed', () => {
@@ -367,6 +375,16 @@ describe('webContents module', () => {
       await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
     });
 
+    it('resolves after browser initiated navigation', async () => {
+      let finishedLoading = false;
+      w.webContents.on('did-finish-load', function () {
+        finishedLoading = true;
+      });
+
+      await w.loadFile(path.join(fixturesPath, 'pages', 'navigate_in_page_and_wait.html'));
+      expect(finishedLoading).to.be.true();
+    });
+
     it('rejects when failing to load a file URL', async () => {
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_FILE_NOT_FOUND');
@@ -411,6 +429,19 @@ describe('webContents module', () => {
       } catch (e) {
         expect((e as Error).message).to.match(/Debugger is already attached to the target/);
       }
+    });
+
+    it('fails if loadURL is called inside a non-reentrant critical section', (done) => {
+      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+        expect(validatedURL).to.contain('blank.html');
+        done();
+      });
+
+      w.webContents.once('did-start-loading', () => {
+        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      });
+
+      w.loadURL('data:text/html,<h1>HELLO</h1>');
     });
 
     it('sets appropriate error information on rejection', async () => {
@@ -492,16 +523,16 @@ describe('webContents module', () => {
     ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.id);
 
       const devToolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await devToolsOpened;
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents!.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.devToolsWebContents!.id);
       const devToolsClosed = once(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
       await devToolsClosed;
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.id);
     });
 
     it('does not crash when called on a detached dev tools window', async () => {
@@ -600,6 +631,27 @@ describe('webContents module', () => {
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
+
+    it('can show a DevTools window with custom title', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false, title: 'myTitle' });
+      await devtoolsOpened;
+      expect(w.webContents.getDevToolsTitle()).to.equal('myTitle');
+    });
+  });
+
+  describe('setDevToolsTitle() API', () => {
+    afterEach(closeAllWindows);
+    it('can set devtools title with function', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      w.webContents.setDevToolsTitle('newTitle');
+      expect(w.webContents.getDevToolsTitle()).to.equal('newTitle');
+    });
   });
 
   describe('before-input-event event', () => {
@@ -629,7 +681,7 @@ describe('webContents module', () => {
         if (opts.meta) modifiers.push('meta');
         if (opts.isAutoRepeat) modifiers.push('isAutoRepeat');
 
-        const p = once(w.webContents, 'before-input-event');
+        const p = once(w.webContents, 'before-input-event') as Promise<[any, Electron.Input]>;
         w.webContents.sendInputEvent({
           type: opts.type,
           keyCode: opts.keyCode,
@@ -712,7 +764,7 @@ describe('webContents module', () => {
           modifiers: ['control', 'meta']
         });
 
-        const [, zoomDirection] = await once(w.webContents, 'zoom-changed');
+        const [, zoomDirection] = await once(w.webContents, 'zoom-changed') as [any, string];
         expect(zoomDirection).to.equal('in');
       };
 
@@ -735,7 +787,7 @@ describe('webContents module', () => {
           modifiers: ['control', 'meta']
         });
 
-        const [, zoomDirection] = await once(w.webContents, 'zoom-changed');
+        const [, zoomDirection] = await once(w.webContents, 'zoom-changed') as [any, string];
         expect(zoomDirection).to.equal('out');
       };
 
@@ -798,6 +850,20 @@ describe('webContents module', () => {
       expect(shiftKey).to.be.false();
       expect(ctrlKey).to.be.false();
       expect(altKey).to.be.false();
+    });
+
+    it('can correctly convert accelerators to key codes', async () => {
+      const keyup = once(ipcMain, 'keyup');
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'keyUp' });
+
+      await keyup;
+      const inputText = await w.webContents.executeJavaScript('document.getElementById("input").value');
+      expect(inputText).to.equal('+ + +');
     });
 
     it('can send char events with modifiers', async () => {
@@ -1179,8 +1245,7 @@ describe('webContents module', () => {
           res.end();
         });
       });
-      server.listen(0, '127.0.0.1', () => {
-        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
+      listen(server).then(({ url }) => {
         const content = `<iframe src=${url}></iframe>`;
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
           if (!isMainFrame) {
@@ -1272,11 +1337,52 @@ describe('webContents module', () => {
         'default_public_interface_only',
         'default_public_and_private_interfaces',
         'disable_non_proxied_udp'
-      ];
-      policies.forEach((policy) => {
-        w.webContents.setWebRTCIPHandlingPolicy(policy as any);
+      ] as const;
+      for (const policy of policies) {
+        w.webContents.setWebRTCIPHandlingPolicy(policy);
         expect(w.webContents.getWebRTCIPHandlingPolicy()).to.equal(policy);
-      });
+      }
+    });
+  });
+
+  describe('webrtc udp port range policy api', () => {
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('check default webrtc udp port range is { min: 0, max: 0 }', () => {
+      const settings = w.webContents.getWebRTCUDPPortRange();
+      expect(settings).to.deep.equal({ min: 0, max: 0 });
+    });
+
+    it('can set and get webrtc udp port range policy with correct arguments', () => {
+      w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65535 });
+      const settings = w.webContents.getWebRTCUDPPortRange();
+      expect(settings).to.deep.equal({ min: 1, max: 65535 });
+    });
+
+    it('can not set webrtc udp port range policy with invalid arguments', () => {
+      expect(() => {
+        w.webContents.setWebRTCUDPPortRange({ min: 0, max: 65535 });
+      }).to.throw("'min' and 'max' must be in the (0, 65535] range or [0, 0]");
+      expect(() => {
+        w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65536 });
+      }).to.throw("'min' and 'max' must be in the (0, 65535] range or [0, 0]");
+      expect(() => {
+        w.webContents.setWebRTCUDPPortRange({ min: 60000, max: 56789 });
+      }).to.throw("'max' must be greater than or equal to 'min'");
+    });
+
+    it('can reset webrtc udp port range policy to default with { min: 0, max: 0 }', () => {
+      w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65535 });
+      const settings = w.webContents.getWebRTCUDPPortRange();
+      expect(settings).to.deep.equal({ min: 1, max: 65535 });
+      w.webContents.setWebRTCUDPPortRange({ min: 0, max: 0 });
+      const defaultSetting = w.webContents.getWebRTCUDPPortRange();
+      expect(defaultSetting).to.deep.equal({ min: 0, max: 0 });
     });
   });
 
@@ -1285,7 +1391,7 @@ describe('webContents module', () => {
     it('can get opener with window.open()', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript('window.open("about:blank")', true);
       const [childWindow] = await childPromise;
       expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
@@ -1293,7 +1399,7 @@ describe('webContents module', () => {
     it('has no opener when using "noopener"', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript('window.open("about:blank", undefined, "noopener")', true);
       const [childWindow] = await childPromise;
       expect(childWindow.webContents.opener).to.be.null();
@@ -1301,7 +1407,7 @@ describe('webContents module', () => {
     it('can get opener with a[target=_blank][rel=opener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript(`(function() {
         const a = document.createElement('a');
         a.target = '_blank';
@@ -1315,7 +1421,7 @@ describe('webContents module', () => {
     it('has no opener with a[target=_blank][rel=noopener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript(`(function() {
         const a = document.createElement('a');
         a.target = '_blank';
@@ -1477,7 +1583,7 @@ describe('webContents module', () => {
 
       it('forcefullyCrashRenderer() crashes the process with reason=killed||crashed', async () => {
         expect(w.webContents.isCrashed()).to.equal(false);
-        const crashEvent = once(w.webContents, 'render-process-gone');
+        const crashEvent = once(w.webContents, 'render-process-gone') as Promise<[any, Electron.RenderProcessGoneDetails]>;
         w.webContents.forcefullyCrashRenderer();
         const [, details] = await crashEvent;
         expect(details.reason === 'killed' || details.reason === 'crashed').to.equal(true, 'reason should be killed || crashed');
@@ -1511,8 +1617,9 @@ describe('webContents module', () => {
           default:
             done('unsupported endpoint');
         }
-      }).listen(0, '127.0.0.1', () => {
-        serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
+      });
+      listen(server).then(({ url }) => {
+        serverUrl = url;
         done();
       });
     });
@@ -1641,11 +1748,10 @@ describe('webContents module', () => {
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
       });
-      server.listen(0, '127.0.0.1', () => {
-        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
+      listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.setWindowOpenHandler(details => {
-            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.url).to.equal(url + '/');
             expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
             return { action: 'allow' };
           });
@@ -1668,11 +1774,10 @@ describe('webContents module', () => {
         }
         res.end('');
       });
-      server.listen(0, '127.0.0.1', () => {
-        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
+      listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.setWindowOpenHandler(details => {
-            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.url).to.equal(url + '/');
             expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
             return { action: 'allow' };
           });
@@ -1708,7 +1813,7 @@ describe('webContents module', () => {
             }
           });
 
-          const promise = once(w.webContents, 'preload-error');
+          const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
           w.loadURL('about:blank');
 
           const [, preloadPath, error] = await promise;
@@ -1727,7 +1832,7 @@ describe('webContents module', () => {
             }
           });
 
-          const promise = once(w.webContents, 'preload-error');
+          const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
           w.loadURL('about:blank');
 
           const [, preloadPath, error] = await promise;
@@ -1746,7 +1851,7 @@ describe('webContents module', () => {
             }
           });
 
-          const promise = once(w.webContents, 'preload-error');
+          const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
           w.loadURL('about:blank');
 
           const [, preloadPath, error] = await promise;
@@ -1778,7 +1883,7 @@ describe('webContents module', () => {
       const cleanup = () => {
         try {
           fs.unlinkSync(filePath);
-        } catch (e) {
+        } catch {
           // ignore error
         }
       };
@@ -1833,7 +1938,7 @@ describe('webContents module', () => {
     it('does not crash when called via BrowserWindow', () => {
       const w = new BrowserWindow({ show: false });
 
-      (w as any).setBackgroundThrottling(true);
+      w.setBackgroundThrottling(true);
     });
 
     it('does not crash when disallowing', () => {
@@ -1868,21 +1973,11 @@ describe('webContents module', () => {
     it('works via BrowserWindow', () => {
       const w = new BrowserWindow({ show: false });
 
-      (w as any).setBackgroundThrottling(false);
-      expect((w as any).getBackgroundThrottling()).to.equal(false);
+      w.setBackgroundThrottling(false);
+      expect(w.getBackgroundThrottling()).to.equal(false);
 
-      (w as any).setBackgroundThrottling(true);
-      expect((w as any).getBackgroundThrottling()).to.equal(true);
-    });
-  });
-
-  ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
-    afterEach(closeAllWindows);
-    it('can get printer list', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-      await w.loadURL('about:blank');
-      const printers = w.webContents.getPrinters();
-      expect(printers).to.be.an('array');
+      w.setBackgroundThrottling(true);
+      expect(w.getBackgroundThrottling()).to.equal(true);
     });
   });
 
@@ -1968,24 +2063,26 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
     });
 
+    type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
+
     it('with custom page sizes', async () => {
-      const paperFormats: Record<string, ElectronInternal.PageSize> = {
-        letter: { width: 8.5, height: 11 },
-        legal: { width: 8.5, height: 14 },
-        tabloid: { width: 11, height: 17 },
-        ledger: { width: 17, height: 11 },
-        a0: { width: 33.1, height: 46.8 },
-        a1: { width: 23.4, height: 33.1 },
-        a2: { width: 16.54, height: 23.4 },
-        a3: { width: 11.7, height: 16.54 },
-        a4: { width: 8.27, height: 11.7 },
-        a5: { width: 5.83, height: 8.27 },
-        a6: { width: 4.13, height: 5.83 }
+      const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
+        Letter: { width: 8.5, height: 11 },
+        Legal: { width: 8.5, height: 14 },
+        Tabloid: { width: 11, height: 17 },
+        Ledger: { width: 17, height: 11 },
+        A0: { width: 33.1, height: 46.8 },
+        A1: { width: 23.4, height: 33.1 },
+        A2: { width: 16.54, height: 23.4 },
+        A3: { width: 11.7, height: 16.54 },
+        A4: { width: 8.27, height: 11.7 },
+        A5: { width: 5.83, height: 8.27 },
+        A6: { width: 4.13, height: 5.83 }
       };
 
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
-      for (const format of Object.keys(paperFormats)) {
+      for (const format of Object.keys(paperFormats) as PageSizeString[]) {
         const data = await w.webContents.printToPDF({ pageSize: format });
 
         const doc = await pdfjs.getDocument(data).promise;
@@ -2050,6 +2147,28 @@ describe('webContents module', () => {
       // Check that correct # of pages are rendered.
       expect(doc.numPages).to.equal(3);
     });
+
+    it('does not tag PDFs by default', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      const data = await w.webContents.printToPDF({});
+      const doc = await pdfjs.getDocument(data).promise;
+      const markInfo = await doc.getMarkInfo();
+      expect(markInfo).to.be.null();
+    });
+
+    it('can generate tag data for PDFs', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      const data = await w.webContents.printToPDF({ generateTaggedPDF: true });
+      const doc = await pdfjs.getDocument(data).promise;
+      const markInfo = await doc.getMarkInfo();
+      expect(markInfo).to.deep.equal({
+        Marked: true,
+        UserProperties: false,
+        Suspects: false
+      });
+    });
   });
 
   describe('PictureInPicture video', () => {
@@ -2065,8 +2184,7 @@ describe('webContents module', () => {
 
       await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')', true);
 
-      const result = await w.webContents.executeJavaScript(
-        `runTest(${features.isPictureInPictureEnabled()})`, true);
+      const result = await w.webContents.executeJavaScript('runTest(true)', true);
       expect(result).to.be.true();
     });
   });
@@ -2218,21 +2336,10 @@ describe('webContents module', () => {
       const bw = new BrowserWindow({ show: false });
       await bw.loadURL('about:blank');
       bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
-      const [, child] = await once(app, 'web-contents-created');
+      const [, child] = await once(app, 'web-contents-created') as [any, WebContents];
       bw.webContents.executeJavaScript('child.document.title = "new title"');
-      const [, title] = await once(child, 'page-title-updated');
+      const [, title] = await once(child, 'page-title-updated') as [any, string];
       expect(title).to.equal('new title');
-    });
-  });
-
-  describe('crashed event', () => {
-    it('does not crash main process when destroying WebContents in it', async () => {
-      const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
-      const crashEvent = once(contents, 'render-process-gone');
-      await contents.loadURL('about:blank');
-      contents.forcefullyCrashRenderer();
-      await crashEvent;
-      contents.destroy();
     });
   });
 
@@ -2242,10 +2349,10 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
 
-      const promise = once(w.webContents, 'context-menu');
+      const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
 
       // Simulate right-click to create context-menu event.
-      const opts = { x: 0, y: 0, button: 'right' as any };
+      const opts = { x: 0, y: 0, button: 'right' as const };
       w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
       w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
 
@@ -2341,7 +2448,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.moveTo(100, 100)', true);
-      const [, rect] = await once(w.webContents, 'content-bounds-updated');
+      const [, rect] = await once(w.webContents, 'content-bounds-updated') as [any, Electron.Rectangle];
       const { width, height } = w.getBounds();
       expect(rect).to.deep.equal({
         x: 100,
@@ -2358,7 +2465,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
-      const [, rect] = await once(w.webContents, 'content-bounds-updated');
+      const [, rect] = await once(w.webContents, 'content-bounds-updated') as [any, Electron.Rectangle];
       const { x, y } = w.getBounds();
       expect(rect).to.deep.equal({
         x,

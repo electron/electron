@@ -1,12 +1,12 @@
 import { autoUpdater } from 'electron/main';
 import { expect } from 'chai';
 import { ifit, ifdescribe } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 ifdescribe(!process.mas)('autoUpdater module', function () {
   describe('checkForUpdates', function () {
     ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', async function () {
-      const errorEvent = once(autoUpdater, 'error');
+      const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
       autoUpdater.setFeedURL({ url: '' });
       autoUpdater.checkForUpdates();
       const [error] = await errorEvent;
@@ -32,7 +32,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         const url = 'http://electronjs.org';
         try {
           (autoUpdater.setFeedURL as any)(url, { header: 'val' });
-        } catch (err) { /* ignore */ }
+        } catch { /* ignore */ }
         expect(autoUpdater.getFeedURL()).to.equal(url);
       });
 
@@ -44,7 +44,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         const url = 'http://mymagicurl.local';
         try {
           autoUpdater.setFeedURL({ url });
-        } catch (err) { /* ignore */ }
+        } catch { /* ignore */ }
         expect(autoUpdater.getFeedURL()).to.equal(url);
       });
 
@@ -56,7 +56,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
 
     ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('on Mac', function () {
       it('emits an error when the application is unsigned', async () => {
-        const errorEvent = once(autoUpdater, 'error');
+        const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
         autoUpdater.setFeedURL({ url: '' });
         const [error] = await errorEvent;
         expect(error.message).equal('Could not get code signature for running application');
@@ -80,7 +80,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
 
   describe('quitAndInstall', () => {
     ifit(process.platform === 'win32')('emits an error on Windows when no update is available', async function () {
-      const errorEvent = once(autoUpdater, 'error');
+      const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
       autoUpdater.quitAndInstall();
       const [error] = await errorEvent;
       expect(error.message).to.equal('No update available, can\'t quit and install');

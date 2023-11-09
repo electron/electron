@@ -21,7 +21,7 @@ void TrayIcon::RemoveBalloon() {}
 void TrayIcon::Focus() {}
 
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
-                                ElectronMenuModel* menu_model) {}
+                                base::WeakPtr<ElectronMenuModel> menu_model) {}
 
 void TrayIcon::CloseContextMenu() {}
 
@@ -39,6 +39,11 @@ void TrayIcon::NotifyClicked(const gfx::Rect& bounds,
 void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds, int modifiers) {
   for (TrayIconObserver& observer : observers_)
     observer.OnDoubleClicked(bounds, modifiers);
+}
+
+void TrayIcon::NotifyMiddleClicked(const gfx::Rect& bounds, int modifiers) {
+  for (TrayIconObserver& observer : observers_)
+    observer.OnMiddleClicked(bounds, modifiers);
 }
 
 void TrayIcon::NotifyBalloonShow() {

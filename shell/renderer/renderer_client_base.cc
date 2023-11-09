@@ -235,14 +235,6 @@ void RendererClientBase::RenderThreadStarted() {
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
-#endif
-
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  spellcheck_ = std::make_unique<SpellCheck>(this);
-#endif
-
-  blink::WebCustomElement::AddEmbedderCustomElementName("webview");
-  blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
   WTF::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
@@ -255,6 +247,14 @@ void RendererClientBase::RenderThreadStarted() {
       extension_scheme);
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
       extension_scheme);
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  spellcheck_ = std::make_unique<SpellCheck>(this);
+#endif
+
+  blink::WebCustomElement::AddEmbedderCustomElementName("webview");
+  blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
   std::vector<std::string> fetch_enabled_schemes =
       ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);
@@ -596,7 +596,7 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
 
-  gin_helper::Dictionary isolated_api = gin::Dictionary::CreateEmpty(isolate);
+  auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
   isolated_api.SetMethod("allowGuestViewElementDefinition",
                          &AllowGuestViewElementDefinition);
   isolated_api.SetMethod("setIsWebView", &SetIsWebView);
@@ -608,7 +608,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
     api::context_bridge::ObjectCache object_cache;
     auto result = api::PassValueToOtherContext(
-        source_context, context, guest_view_internal, &object_cache, false, 0);
+        source_context, context, guest_view_internal, source_context->Global(),
+        &object_cache, false, 0, api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }

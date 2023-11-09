@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 2800a880bbc12cc4fa2c1b21c2ae47f55800f4e9..a985d4a9b1f005c965fc0ec9076e9648bc1ff7c3 100644
+index 372ba8372c24eac18ee69859491370c75fe4288e..10db584346aae90a8280d28f992375a9117eec71 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -138,6 +138,11 @@
+@@ -146,6 +146,11 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index 2800a880bbc12cc4fa2c1b21c2ae47f55800f4e9..a985d4a9b1f005c965fc0ec9076e9648
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -418,6 +423,91 @@ bool GetFullDataFilePath(
+@@ -461,6 +466,99 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -85,6 +85,14 @@ index 2800a880bbc12cc4fa2c1b21c2ae47f55800f4e9..a985d4a9b1f005c965fc0ec9076e9648
 +    upstream_->SetConfig(config);
 +  }
 +
++  void AddObserver(CertVerifier::Observer* observer) override {
++    upstream_->AddObserver(observer);
++  }
++
++  void RemoveObserver(CertVerifier::Observer* observer) override {
++    upstream_->RemoveObserver(observer);
++  }
++
 +  void OnRequestFinished(const RequestParams& params,
 +                         net::CompletionOnceCallback callback,
 +                         net::CertVerifyResult* verify_result,
@@ -113,8 +121,8 @@ index 2800a880bbc12cc4fa2c1b21c2ae47f55800f4e9..a985d4a9b1f005c965fc0ec9076e9648
 +
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
- NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -718,6 +808,13 @@ void NetworkContext::SetClient(
+ NetworkContext::NetworkContextHttpAuthPreferences::
+@@ -828,6 +926,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -128,7 +136,7 @@ index 2800a880bbc12cc4fa2c1b21c2ae47f55800f4e9..a985d4a9b1f005c965fc0ec9076e9648
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2237,6 +2334,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2467,6 +2572,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -139,7 +147,7 @@ index 2800a880bbc12cc4fa2c1b21c2ae47f55800f4e9..a985d4a9b1f005c965fc0ec9076e9648
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 621217cd962c9d9452ee77fc791d450fd508f0d1..9812aef784d8aa1e57a91b4adfeb25befdc57e2c 100644
+index 7e6ae6f9faf4ccdd482c1f5c3440605543baec33..cdfbe0526dae267d912584fe94990276f86cbc54 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -150,7 +158,7 @@ index 621217cd962c9d9452ee77fc791d450fd508f0d1..9812aef784d8aa1e57a91b4adfeb25be
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -245,6 +246,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -247,6 +248,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -159,20 +167,20 @@ index 621217cd962c9d9452ee77fc791d450fd508f0d1..9812aef784d8aa1e57a91b4adfeb25be
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -842,6 +845,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -906,6 +909,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
-+  RemoteCertVerifier* remote_cert_verifier_ = nullptr;
++  raw_ptr<RemoteCertVerifier> remote_cert_verifier_ = nullptr;
 +
    // Created on-demand. Null if unused.
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index f32ad0616a72ff96fefc0540ec9ccefe59f1e228..0d2ff1f52aa217aef66e6b9c10bbb119f9f622e3 100644
+index e696f8197cd9f5e158c148a207ae1398dd16c526..3ef031b0c876c36c51a91ba9724f8f2fd7b455ac 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -293,6 +293,17 @@ struct NetworkContextFilePaths {
+@@ -311,6 +311,17 @@ struct NetworkContextFilePaths {
    bool trigger_migration = false;
  };
  
@@ -190,7 +198,7 @@ index f32ad0616a72ff96fefc0540ec9ccefe59f1e228..0d2ff1f52aa217aef66e6b9c10bbb119
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -837,6 +848,9 @@ interface NetworkContext {
+@@ -948,6 +959,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

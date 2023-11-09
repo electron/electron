@@ -46,10 +46,16 @@ scripts attached to sandboxed renderers will still have a polyfilled subset of N
 APIs available. A `require` function similar to Node's `require` module is exposed,
 but can only import a subset of Electron and Node's built-in modules:
 
-* `electron` (only renderer process modules)
+* `electron` (following renderer process modules: `contextBridge`, `crashReporter`, `ipcRenderer`, `nativeImage`, `webFrame`)
 * [`events`](https://nodejs.org/api/events.html)
 * [`timers`](https://nodejs.org/api/timers.html)
 * [`url`](https://nodejs.org/api/url.html)
+
+[node: imports](https://nodejs.org/api/esm.html#node-imports) are supported as well:
+
+* [`node:events`](https://nodejs.org/api/events.html)
+* [`node:timers`](https://nodejs.org/api/timers.html)
+* [`node:url`](https://nodejs.org/api/url.html)
 
 In addition, the preload script also polyfills certain Node.js primitives as globals:
 

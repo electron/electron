@@ -11,10 +11,10 @@
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
 
+#include "base/apple/foundation_util.h"
+#include "base/apple/scoped_cftyperef.h"
 #include "base/files/file_util.h"
-#include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
-#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -66,15 +66,18 @@
 
 // Manages the PopUpButtonHandler.
 @interface ElectronAccessoryView : NSView
+@property(nonatomic, strong) PopUpButtonHandler* popUpButtonHandler;
 @end
 
 @implementation ElectronAccessoryView
 
+@synthesize popUpButtonHandler;
+
 - (void)dealloc {
   auto* popupButton =
       static_cast<NSPopUpButton*>([[self subviews] objectAtIndex:1]);
-  [[popupButton target] release];
-  [super dealloc];
+  popupButton.target = nil;
+  popUpButtonHandler = nil;
 }
 
 @end
@@ -148,10 +151,11 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [popupButton setTarget:popUpButtonHandler];
   [popupButton setAction:@selector(selectFormat:)];
 
-  [accessoryView addSubview:[label autorelease]];
-  [accessoryView addSubview:[popupButton autorelease]];
+  [accessoryView addSubview:label];
+  [accessoryView addSubview:popupButton];
+  [accessoryView setPopUpButtonHandler:popUpButtonHandler];
 
-  [dialog setAccessoryView:[accessoryView autorelease]];
+  [dialog setAccessoryView:accessoryView];
 }
 
 void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
@@ -281,11 +285,29 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
                                   std::vector<base::FilePath>* paths,
                                   std::vector<std::string>* bookmarks) {
   NSArray* urls = [dialog URLs];
-  for (NSURL* url in urls)
-    if ([url isFileURL]) {
-      paths->push_back(base::FilePath(base::SysNSStringToUTF8([url path])));
-      bookmarks->push_back(GetBookmarkDataFromNSURL(url));
+  for (NSURL* url in urls) {
+    if (![url isFileURL])
+      continue;
+
+    NSString* path = [url path];
+
+    // There's a bug in macOS where despite a request to disallow file
+    // selection, files/packages can be selected. If file selection
+    // was disallowed, drop any files selected. See crbug.com/1357523.
+    if (![dialog canChooseFiles]) {
+      BOOL is_directory;
+      BOOL exists =
+          [[NSFileManager defaultManager] fileExistsAtPath:path
+                                               isDirectory:&is_directory];
+      BOOL is_package =
+          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path];
+      if (!exists || !is_directory || is_package)
+        continue;
     }
+
+    paths->emplace_back(base::SysNSStringToUTF8(path));
+    bookmarks->push_back(GetBookmarkDataFromNSURL(url));
+  }
 }
 
 void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
@@ -336,7 +358,7 @@ void OpenDialogCompletion(int chosen,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
@@ -414,7 +436,7 @@ void SaveDialogCompletion(int chosen,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());

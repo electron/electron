@@ -12,7 +12,7 @@ function parseCommandLine () {
     string: ['bump', 'version'],
     boolean: ['dryRun', 'help'],
     alias: { version: ['v'] },
-    unknown: arg => { help = true; }
+    unknown: () => { help = true; }
   });
   if (help || opts.help || !opts.bump) {
     console.log(`
@@ -32,14 +32,6 @@ async function main () {
   const opts = parseCommandLine();
   const currentVersion = getElectronVersion();
   const version = await nextVersion(opts.bump, currentVersion);
-
-  const parsed = semver.parse(version);
-  const components = {
-    major: parsed.major,
-    minor: parsed.minor,
-    patch: parsed.patch,
-    pre: parsed.prerelease
-  };
 
   // print would-be new version and exit early
   if (opts.dryRun) {
@@ -97,19 +89,7 @@ async function nextVersion (bumpType, version) {
   return version;
 }
 
-function isMajorStable (bump, currentVersion) {
-  if (versionUtils.isBeta(currentVersion) && (bump === 'stable')) return true;
-  return false;
-}
-
-function isMajorNightly (version, currentVersion) {
-  const parsed = semver.parse(version);
-  const current = semver.parse(currentVersion);
-  if (versionUtils.isNightly(currentVersion) && (parsed.major > current.major)) return true;
-  return false;
-}
-
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((error) => {
     console.error(error);
     process.exit(1);

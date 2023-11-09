@@ -7,8 +7,8 @@
 
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
-#include "ui/base/glib/glib_signal.h"
 #include "ui/base/glib/scoped_gobject.h"
+#include "ui/base/glib/scoped_gsignal.h"
 
 typedef struct _GtkMenu GtkMenu;
 typedef struct _GtkWidget GtkWidget;
@@ -17,9 +17,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 class MenuGtk {
  public:
@@ -33,16 +31,15 @@ class MenuGtk {
 
  private:
   // Callback for when a menu item is activated.
-  CHROMEG_CALLBACK_0(MenuGtk, void, OnMenuItemActivated, GtkWidget*);
+  void OnMenuItemActivated(GtkWidget* menu_item);
 
   raw_ptr<ui::MenuModel> menu_model_;  // not owned
   ScopedGObject<GtkWidget> gtk_menu_;
 
   bool block_activation_ = false;
+  std::vector<ScopedGSignal> signals_;
 };
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_MENU_GTK_H_

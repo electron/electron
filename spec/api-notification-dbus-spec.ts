@@ -10,7 +10,7 @@ import { expect } from 'chai';
 import * as dbus from 'dbus-native';
 import { app } from 'electron/main';
 import { ifdescribe } from './lib/spec-helpers';
-import { promisify } from 'util';
+import { promisify } from 'node:util';
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||

@@ -8,9 +8,8 @@
 #include <string>
 
 #include "base/allocator/buildflags.h"
-#include "base/allocator/partition_allocator/shim/allocator_shim.h"
+#include "base/allocator/partition_allocator/src/partition_alloc/shim/allocator_shim.h"
 #include "base/mac/mac_util.h"
-#include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "shell/browser/api/electron_api_push_notifications.h"
@@ -21,8 +20,7 @@
 #import <UserNotifications/UserNotifications.h>
 
 static NSDictionary* UNNotificationResponseToNSDictionary(
-    UNNotificationResponse* response) API_AVAILABLE(macosx(10.14)) {
-  // [response isKindOfClass:[UNNotificationResponse class]]
+    UNNotificationResponse* response) {
   if (![response respondsToSelector:@selector(actionIdentifier)] ||
       ![response respondsToSelector:@selector(notification)]) {
     return nil;
@@ -43,11 +41,13 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   return result;
 }
 
-@implementation ElectronApplicationDelegate
+@implementation ElectronApplicationDelegate {
+  ElectronMenuController* __strong menu_controller_;
+}
 
 - (void)setApplicationDockMenu:(electron::ElectronMenuModel*)model {
-  menu_controller_.reset([[ElectronMenuController alloc] initWithModel:model
-                                                 useDefaultAccelerator:NO]);
+  menu_controller_ = [[ElectronMenuController alloc] initWithModel:model
+                                             useDefaultAccelerator:NO];
 }
 
 - (void)willPowerOff:(NSNotification*)notify {
@@ -78,7 +78,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
     if ([user_notification isKindOfClass:[NSUserNotification class]]) {
       notification_info =
           [static_cast<NSUserNotification*>(user_notification) userInfo];
-    } else if (@available(macOS 10.14, *)) {
+    } else {
       notification_info = UNNotificationResponseToNSDictionary(
           static_cast<UNNotificationResponse*>(user_notification));
     }
@@ -92,11 +92,12 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser::Get()->DidBecomeActive();
 }
 
+- (void)applicationDidResignActive:(NSNotification*)notification {
+  electron::Browser::Get()->DidResignActive();
+}
+
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
-  if (menu_controller_)
-    return [menu_controller_ menu];
-  else
-    return nil;
+  return menu_controller_ ? menu_controller_.menu : nil;
 }
 
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename {
@@ -122,7 +123,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
               restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
   NSURL* url = userActivity.webpageURL;
-  NSDictionary* details = url ? @{@"webpageURL" : [url absoluteString]} : @{};
+  NSDictionary* details = url ? @{@"webpageURL" : url.absoluteString} : @{};
   if (!userActivity.userInfo)
     return NO;
 
@@ -148,7 +149,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
                                     error:(NSError*)error {
   std::string activity_type(base::SysNSStringToUTF8(userActivityType));
   std::string error_message(
-      base::SysNSStringToUTF8([error localizedDescription]));
+      base::SysNSStringToUTF8(error.localizedDescription));
 
   electron::Browser* browser = electron::Browser::Get();
   browser->DidFailToContinueUserActivity(activity_type, error_message);
@@ -161,9 +162,9 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 - (void)application:(NSApplication*)application
     didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
   // https://stackoverflow.com/a/16411517
-  const char* token_data = static_cast<const char*>([deviceToken bytes]);
+  const char* token_data = static_cast<const char*>(deviceToken.bytes);
   NSMutableString* token_string = [NSMutableString string];
-  for (NSUInteger i = 0; i < [deviceToken length]; i++) {
+  for (NSUInteger i = 0; i < deviceToken.length; i++) {
     [token_string appendFormat:@"%02.2hhX", token_data[i]];
   }
   // Resolve outstanding APNS promises created during registration attempts
@@ -178,8 +179,8 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 - (void)application:(NSApplication*)application
     didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
   std::string error_message(base::SysNSStringToUTF8(
-      [NSString stringWithFormat:@"%ld %@ %@", [error code], [error domain],
-                                 [error userInfo]]));
+      [NSString stringWithFormat:@"%ld %@ %@", error.code, error.domain,
+                                 error.userInfo]));
   electron::api::PushNotifications* push_notifications =
       electron::api::PushNotifications::Get();
   if (push_notifications) {
@@ -195,6 +196,14 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
     electron::api::PushNotifications::Get()->OnDidReceiveAPNSNotification(
         electron::NSDictionaryToValue(userInfo));
   }
+}
+
+// This only has an effect on macOS 12+, and requests any state restoration
+// archive to be created with secure encoding. See the article at
+// https://sector7.computest.nl/post/2022-08-process-injection-breaking-all-macos-security-layers-with-a-single-vulnerability/
+// for more details.
+- (BOOL)applicationSupportsSecureRestorableState:(NSApplication*)app {
+  return YES;
 }
 
 @end
