@@ -51,10 +51,11 @@ export default class BrowserView {
 
   // Internal methods
   get ownerWindow (): BrowserWindow | null {
-    return this.webContents.getOwnerBrowserWindow();
+    return !this.webContents.isDestroyed() ? this.webContents.getOwnerBrowserWindow() : null;
   }
 
   set ownerWindow (w: BrowserWindow | null) {
+    if (this.webContents.isDestroyed()) return;
     const oldWindow = this.webContents.getOwnerBrowserWindow();
     if (oldWindow && this.#resizeListener) {
       oldWindow.off('resize', this.#resizeListener);
