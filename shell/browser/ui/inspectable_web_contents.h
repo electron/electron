@@ -173,6 +173,8 @@ class InspectableWebContents
                   const std::string& trigger) override {}
   void CanShowSurvey(DispatchCallback callback,
                      const std::string& trigger) override {}
+  void DoAidaConversation(DispatchCallback callback,
+                          const std::string& request) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
