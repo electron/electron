@@ -7,6 +7,11 @@
 // well as feature.h, simple_feature.h, and feature_provider.h.
 
 {
+  "action": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "min_manifest_version": 3
+  },
   "author": {
     "channel": "stable",
     "extension_types": "all"
