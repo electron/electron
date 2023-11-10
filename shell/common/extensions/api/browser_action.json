@@ -6,7 +6,7 @@
     "namespace": "browserAction",
     "description": "Use browser actions to put icons in the main Google Chrome toolbar, to the right of the address bar. In addition to its <a href='browserAction#icon'>icon</a>, a browser action can have a <a href='browserAction#tooltip'>tooltip</a>, a <a href='browserAction#badge'>badge</a>, and a <a href='browserAction#popups'>popup</a>.",
     "compiler_options": {
-      "implemented_in": "shell/browser/extensions/api/extension_action/extension_action_api.h"
+      "implemented_in": "electron/shell/browser/extensions/api/extension_action/extension_action_api.h"
     },
     "types": [
       {
