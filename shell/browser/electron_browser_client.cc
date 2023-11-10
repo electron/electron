@@ -1413,8 +1413,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
   if (factory_params->top_frame_id) {
     // Bypass CORB and CORS when web security is disabled.
     auto* rfh = content::RenderFrameHost::FromFrameToken(
-        factory_params->process_id,
-        blink::LocalFrameToken(factory_params->top_frame_id.value()));
+        content::GlobalRenderFrameHostToken(
+            factory_params->process_id,
+            blink::LocalFrameToken(factory_params->top_frame_id.value())));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
     if (prefs && !prefs->IsWebSecurityEnabled()) {
