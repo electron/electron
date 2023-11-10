@@ -39,7 +39,7 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
     enableBlinkFeatures: params.blinkfeatures,
     disableBlinkFeatures: params.disableblinkfeatures,
     partition: params.partition,
-    transparent: params.transparent,
+    guestOpaque: params.opaque,
     ...parsedWebPreferences
   };
 

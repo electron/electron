@@ -801,8 +801,8 @@ class WebContents : public ExclusiveAccessContext,
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
-  // Weather the guest view should be transparent
-  bool transparent_ = false;
+  // Weather the guest view should be opaque
+  bool guest_opaque_ = false;
 
   int32_t id_;
 

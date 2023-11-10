@@ -248,15 +248,17 @@ A `string` which is a list of strings which specifies the blink features to be d
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
-### `transparent`
+### `opaque`
 
 ```html
-<webview src="https://www.github.com/" transparent></webview>
+<webview src="https://www.github.com/" opaque></webview>
 ```
 
-A `boolean`. When this attribute is present the guest page will have a transparent background.
+A `boolean`. When this attribute is present the guest page will have an opaque background that changes
+depending on the color scheme of the guest page. The background is transparent by default.
 
-**Note:** If the guest page uses a dark color scheme the text color will be updated but the background will remain transparent.
+**Note:** When this attribute is not set, the text color of the guest page will change depending on it's
+color scheme but the background will remain transparent.
 
 ## Methods
 
