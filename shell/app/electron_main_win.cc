@@ -216,10 +216,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return crashpad_status;
   }
 
-  if (process_type.empty()) {
-    IntegrityCheck();
-  }
-
 #if BUILDFLAG(IS_WIN)
   // access ui native theme here to prevent blocking calls later
   base::win::AllowDarkModeForApp(true);
@@ -232,6 +228,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   if (!electron::CheckCommandLineArguments(arguments.argc, arguments.argv))
     return -1;
+
+  if (process_type.empty()) {
+    IntegrityCheck();
+  }
 
   sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
   content::InitializeSandboxInfo(&sandbox_info);
