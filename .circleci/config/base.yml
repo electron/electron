@@ -1,5 +1,9 @@
 version: 2.1
 
+# Orbs
+orbs:
+  macos: circleci/macos@2.4.0
+
 parameters:
   run-docs-only:
     type: boolean
@@ -2322,6 +2326,9 @@ jobs:
       <<: *env-stack-dumping
     parallelism: 2
     steps:
+      - macos/add-permission:
+          bundle-id: com.github.Electron
+          permission-type: kTCCServiceAppleEvents
       - electron-tests:
           artifact-key: darwin-x64
 
