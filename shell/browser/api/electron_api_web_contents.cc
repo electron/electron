@@ -1661,7 +1661,7 @@ void WebContents::HandleNewRenderFrame(
   if (web_preferences) {
     auto maybe_color = web_preferences->GetBackgroundColor();
     bool default_transparent =
-        (IsGuest() && !opaque_) || type_ == Type::kBrowserView;
+        (IsGuest() && !guest_opaque_) || type_ == Type::kBrowserView;
 
     // If webPreferences has no color stored we need to explicitly set guest
     // webContents background color to transparent.
