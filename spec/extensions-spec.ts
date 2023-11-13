@@ -898,6 +898,65 @@ describe('chrome extensions', () => {
       });
     });
 
+    // chrome.action is not supported in Electron. These tests only ensure
+    // it does not explode.
+    describe('chrome.action', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-action-fail'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('isEnabled', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'isEnabled' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(false);
+      });
+
+      it('setIcon', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setIcon' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(null);
+      });
+
+      it('getBadgeText', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getBadgeText' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal('');
+      });
+    });
+
     describe('chrome.tabs', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
