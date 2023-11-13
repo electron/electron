@@ -78,6 +78,7 @@ jobs:
             core.setOutput("major", major)
             core.setOutput("next-major", nextMajor)
             core.setOutput("prev-major", prevMajor)
+            core.setOutput("prev-prev-major", prevMajor - 1)
             core.setOutput("template-view", JSON.stringify({
                 major,
                 "next-major": nextMajor,
@@ -100,7 +101,7 @@ jobs:
         uses: dsanders11/project-actions/find-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0
         id: find-prev-release-board
         with:
-          title: ${{ steps.generate-project-metadata.outputs.prev-major }}-x-y
+          title: ${{ steps.generate-project-metadata.outputs.prev-prev-major }}-x-y
       - name: Close Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/close-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0
