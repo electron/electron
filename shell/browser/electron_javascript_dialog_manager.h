@@ -20,7 +20,7 @@ namespace electron {
 class ElectronJavaScriptDialogManager : public content::JavaScriptDialogManager,
                                         public content::WebContentsObserver {
  public:
-  ElectronJavaScriptDialogManager(content::WebContents* web_contents);
+  explicit ElectronJavaScriptDialogManager(content::WebContents* web_contents);
   ~ElectronJavaScriptDialogManager() override;
 
   // content::JavaScriptDialogManager implementations.
