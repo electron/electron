@@ -9,6 +9,7 @@
 #include <string>
 
 #include "content/public/browser/javascript_dialog_manager.h"
+#include "content/public/browser/web_contents_observer.h"
 
 namespace content {
 class WebContents;
@@ -16,10 +17,10 @@ class WebContents;
 
 namespace electron {
 
-class ElectronJavaScriptDialogManager
-    : public content::JavaScriptDialogManager {
+class ElectronJavaScriptDialogManager : public content::JavaScriptDialogManager,
+                                        public content::WebContentsObserver {
  public:
-  ElectronJavaScriptDialogManager();
+  ElectronJavaScriptDialogManager(content::WebContents* web_contents);
   ~ElectronJavaScriptDialogManager() override;
 
   // content::JavaScriptDialogManager implementations.
@@ -42,6 +43,9 @@ class ElectronJavaScriptDialogManager
                             const std::string& origin,
                             int code,
                             bool checkbox_checked);
+
+  // content::WebContentsObserver implementation.
+  void WebContentsDestroyed() override;
 
   std::map<std::string, int> origin_counts_;
 };

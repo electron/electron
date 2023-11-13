@@ -27,7 +27,9 @@ constexpr int kUserWantsNoMoreDialogs = -1;
 
 }  // namespace
 
-ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager() = default;
+ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager(
+    content::WebContents* source)
+    : content::WebContentsObserver(source) {}
 ElectronJavaScriptDialogManager::~ElectronJavaScriptDialogManager() = default;
 
 void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
@@ -132,6 +134,10 @@ void ElectronJavaScriptDialogManager::OnMessageBoxCallback(
   if (checkbox_checked)
     origin_counts_[origin] = kUserWantsNoMoreDialogs;
   std::move(callback).Run(code == 0, std::u16string());
+}
+
+void ElectronJavaScriptDialogManager::WebContentsDestroyed() {
+  delete this;
 }
 
 }  // namespace electron
