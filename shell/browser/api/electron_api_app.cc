@@ -494,7 +494,7 @@ bool NotificationCallbackWrapper(
                           base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
                                          std::move(additional_data)));
   }
-  // ProcessSingleton needs to know whether current process is quiting.
+  // ProcessSingleton needs to know whether current process is quitting.
   return !Browser::Get()->is_shutting_down();
 }
 

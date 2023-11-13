@@ -92,7 +92,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // since this call will start compilation and execution
   // of the entry script. If there is an uncaught exception
   // the exit handler set above will be triggered and it expects
-  // both Node Env and JavaScriptEnviroment are setup to perform
+  // both Node Env and JavaScriptEnvironment are setup to perform
   // a clean shutdown of this process.
   node_bindings_->LoadEnvironment(node_env_.get());
 

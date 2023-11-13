@@ -249,7 +249,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
   }
 
   // If we get here then we have a node environment, so either a) we're in the
-  // non-rendrer process, or b) we're in the renderer process in a context that
+  // non-renderer process, or b) we're in the renderer process in a context that
   // has both node and blink, i.e. contextIsolation disabled.
 
   // If we're in the renderer with contextIsolation disabled, ask blink first

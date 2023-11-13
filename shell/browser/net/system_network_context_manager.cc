@@ -56,7 +56,7 @@ const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
 }
 #endif  // BUILDFLAG(IS_WIN)
 
-// The global instance of the SystemNetworkContextmanager.
+// The global instance of the SystemNetworkContextManager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
 
 network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
