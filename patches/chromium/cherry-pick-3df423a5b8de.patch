@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Fri, 3 Nov 2023 16:39:55 +0000
+Subject: Check context status before recreating platform destination
+
+Changing the channel count in the RealtimeAudioDestinationHandler will
+trigger the recreation of the platform destination. This in turn can
+activate the audio rendering thread.
+
+This CL adds a check to prevent this from happening after the handler
+is garbage collected.
+
+(cherry picked from commit 4997f2ba263ff7e1dbc7987dd3665459be14dffe)
+
+Bug: 1497859
+Test: Locally confirmed with ASAN
+Change-Id: I5d2649f3fd3639779ae40b0ca4ef2fe305653421
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4995928
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1217868}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5004961
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5993@{#1520}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+index 6781dcff462db872d1f5a786aef0c89f43189100..2e4757d155800700b7c6a8b7cbf2e02250cfce65 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+@@ -118,12 +118,21 @@ void RealtimeAudioDestinationHandler::SetChannelCount(
+   uint32_t old_channel_count = ChannelCount();
+   AudioHandler::SetChannelCount(channel_count, exception_state);
+ 
+-  // Stop, re-create and start the destination to apply the new channel count.
+-  if (ChannelCount() != old_channel_count && !exception_state.HadException()) {
+-    StopPlatformDestination();
+-    CreatePlatformDestination();
+-    StartPlatformDestination();
++  // After the context is closed, changing channel count will be ignored
++  // because it will trigger the recreation of the platform destination. This
++  // in turn can activate the audio rendering thread.
++  AudioContext* context = static_cast<AudioContext*>(Context());
++  CHECK(context);
++  if (context->ContextState() == AudioContext::kClosed ||
++      ChannelCount() == old_channel_count ||
++      exception_state.HadException()) {
++    return;
+   }
++
++  // Stop, re-create and start the destination to apply the new channel count.
++  StopPlatformDestination();
++  CreatePlatformDestination();
++  StartPlatformDestination();
+ }
+ 
+ void RealtimeAudioDestinationHandler::StartRendering() {
