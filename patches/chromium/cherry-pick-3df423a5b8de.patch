@@ -1,7 +1,7 @@
-From 3df423a5b8dec79237c4c486bc06737e40499c2a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
-Date: Fri, 03 Nov 2023 16:39:55 +0000
-Subject: [PATCH] Check context status before recreating platform destination
+Date: Fri, 3 Nov 2023 16:39:55 +0000
+Subject: Check context status before recreating platform destination
 
 Changing the channel count in the RealtimeAudioDestinationHandler will
 trigger the recreation of the platform destination. This in turn can
@@ -23,13 +23,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5004961
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/5993@{#1520}
 Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
-index 6781dcf..2e4757d1 100644
+index 6781dcff462db872d1f5a786aef0c89f43189100..2e4757d155800700b7c6a8b7cbf2e02250cfce65 100644
 --- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
-@@ -118,12 +118,21 @@
+@@ -118,12 +118,21 @@ void RealtimeAudioDestinationHandler::SetChannelCount(
    uint32_t old_channel_count = ChannelCount();
    AudioHandler::SetChannelCount(channel_count, exception_state);
  
