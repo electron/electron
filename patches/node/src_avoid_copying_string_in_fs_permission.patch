@@ -6,7 +6,7 @@ Subject: src: avoid copying string in fs_permission
 Ref: https://github.com/nodejs/node/pull/47746/files
 
 diff --git a/src/permission/fs_permission.cc b/src/permission/fs_permission.cc
-index fadf75968c779d5aee8d9d1ee27e7b4abf241240..ba0b8e7a6b545dd6b69dfa23fa75262987206775 100644
+index fadf75968c779d5aee8d9d1ee27e7b4abf241240..d407d440d74c66d9dc8ca4d4653096292c5adc4c 100644
 --- a/src/permission/fs_permission.cc
 +++ b/src/permission/fs_permission.cc
 @@ -199,18 +199,18 @@ bool FSPermission::RadixTree::Lookup(const std::string_view& s,
@@ -32,6 +32,15 @@ index fadf75968c779d5aee8d9d1ee27e7b4abf241240..ba0b8e7a6b545dd6b69dfa23fa752629
        current_node = current_node->CreateChild(node_path);
      }
  
+@@ -222,7 +222,7 @@ void FSPermission::RadixTree::Insert(const std::string& path) {
+ 
+   if (UNLIKELY(per_process::enabled_debug_list.enabled(
+           DebugCategory::PERMISSION_MODEL))) {
+-    per_process::Debug(DebugCategory::PERMISSION_MODEL, "Inserting %s\n", path);
++    per_process::Debug(DebugCategory::PERMISSION_MODEL, "Inserting %s\n", path_prefix);
+     PrintTree(root_node_);
+   }
+ }
 diff --git a/src/permission/fs_permission.h b/src/permission/fs_permission.h
 index 244e95727ad48757995c6404f457f42a4ba33ccd..4b6aab197333928bfbd5143bea15b3a5abd6d4c0 100644
 --- a/src/permission/fs_permission.h
