@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 14 Nov 2023 17:48:11 +0100
+Subject: deps: add v8::Object::SetInternalFieldForNodeCore()
+
+This is a non-ABI breaking solution added by Node.js in v20.x for:
+
+* https://chromium-review.googlesource.com/c/v8/v8/+/4827307
+* https://chromium-review.googlesource.com/c/v8/v8/+/4707972
+
+which are necessary for backporting the vm-related memory fixes in https://github.com/nodejs/node/pull/48510.
+
+diff --git a/include/v8-object.h b/include/v8-object.h
+index 454458f9c28c840c5800ca841966812fc74884d2..36d774b015e4bb404b19dac50a9bac675d14abe0 100644
+--- a/include/v8-object.h
++++ b/include/v8-object.h
+@@ -20,6 +20,8 @@ class Function;
+ class FunctionTemplate;
+ template <typename T>
+ class PropertyCallbackInfo;
++class Module;
++class UnboundScript;
+ 
+ /**
+  * A private symbol
+@@ -504,6 +506,21 @@ class V8_EXPORT Object : public Value {
+    */
+   V8_INLINE void* GetAlignedPointerFromInternalField(int index);
+ 
++  /**
++   * Warning: These are Node.js-specific extentions used to avoid breaking
++   * changes in Node.js v20.x. They do not exist in V8 upstream and will
++   * not exist in Node.js v21.x. Node.js embedders and addon authors should
++   * not use them from v20.x.
++   */
++#ifndef NODE_WANT_INTERNALS
++  V8_DEPRECATED("This extention should only be used by Node.js core")
++#endif
++  void SetInternalFieldForNodeCore(int index, Local<Module> value);
++#ifndef NODE_WANT_INTERNALS
++  V8_DEPRECATED("This extention should only be used by Node.js core")
++#endif
++  void SetInternalFieldForNodeCore(int index, Local<UnboundScript> value);
++
+   /** Same as above, but works for PersistentBase. */
+   V8_INLINE static void* GetAlignedPointerFromInternalField(
+       const PersistentBase<Object>& object, int index) {
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 7fdd28a9303f16a9ae90395e15deb6286032e647..5367e063d3f793173ad754bd5639c1fef76baf5a 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -6288,14 +6288,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
+       isolate);
+ }
+ 
+-void v8::Object::SetInternalField(int index, v8::Local<Data> value) {
+-  auto obj = Utils::OpenDirectHandle(this);
++template<typename T>
++void SetInternalFieldImpl(v8::Object* receiver, int index, v8::Local<T> value) {
++  auto obj = Utils::OpenDirectHandle(receiver);
+   const char* location = "v8::Object::SetInternalField()";
+   if (!InternalFieldOK(obj, index, location)) return;
+   auto val = Utils::OpenDirectHandle(*value);
+   i::DirectHandle<i::JSObject>::cast(obj)->SetEmbedderField(index, *val);
+ }
+ 
++void v8::Object::SetInternalField(int index, v8::Local<Data> value) {
++  SetInternalFieldImpl(this, index, value);
++}
++
++/**
++ * These are Node.js-specific extentions used to avoid breaking changes in
++ * Node.js v20.x.
++ */
++void v8::Object::SetInternalFieldForNodeCore(int index,
++                                             v8::Local<Module> value) {
++  SetInternalFieldImpl(this, index, value);
++}
++
++void v8::Object::SetInternalFieldForNodeCore(int index,
++                                             v8::Local<UnboundScript> value) {
++  SetInternalFieldImpl(this, index, value);
++}
++
+ void* v8::Object::SlowGetAlignedPointerFromInternalField(int index) {
+   auto obj = Utils::OpenDirectHandle(this);
+   const char* location = "v8::Object::GetAlignedPointerFromInternalField()";
