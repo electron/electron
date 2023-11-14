@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5bb39e9b3b879a48514c69432569e0b3cd4a8fe4..f1283670da29d6559ce1431ce5c2cdafd42c24e9 100644
+index 7f1993c93a8bb21b3ea3917fa4b71118c4307350..84a5643ead19b23abbb5c05cf315ac8fa2401938 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1035,6 +1035,7 @@ component("base") {
+@@ -1034,6 +1034,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -30,7 +30,7 @@ index 7f80b6fab53e62296351695429e3a6b9bb717300..420a13c16741037cf81de817c1808603
  
  if (is_win) {
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index c4bca6fca7c990222b0bf65087d14b21b01c1b5f..b95e2f3824ac4a029fb98a8d7e24f47e610120bd 100644
+index 445b70c2f381cde2c540fe386ecd34d30ad973b7..1a8072f6e0456569db8f435248e8051374212b4c 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -47,6 +47,7 @@ component("os_crypt") {
@@ -74,7 +74,7 @@ index 53611e788cde9012ca566444e6c1ee05c99b921e..c5d018ae78b486ef4b3cc86a8091869f
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 204bbd1d3e67a5340f57ba9e562a427255859487..51ef5610ef8b3f20cea34ddc95595216d312603b 100644
+index 264aecf8928c820ac7624d798e834f8056bed405..83afe4327beefdf494f6b822da2f62a1cfb78484 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -52,6 +52,7 @@ source_set("browser") {
@@ -86,7 +86,7 @@ index 204bbd1d3e67a5340f57ba9e562a427255859487..51ef5610ef8b3f20cea34ddc95595216
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index ddfe84e25422812bbf7f7b1a08cfb8534572f7bc..0cefb8fbe178e025dcb3d186473c8ecbada5e522 100644
+index ca5222bd7f79efa305ac1813f0904fb38a627f52..d0714b5630ec9899e792cbf2c406eb98db937dfa 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -182,6 +182,7 @@ source_set("common") {
@@ -98,7 +98,7 @@ index ddfe84e25422812bbf7f7b1a08cfb8534572f7bc..0cefb8fbe178e025dcb3d186473c8ecb
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 697fa7c5e98e7ee16b1b5e676f60a9689f7aac2b..f5e7278a6e391cbab61bbd2981127beb4c624214 100644
+index 19a85853ced691c017760ebc415d8a78ab5a970b..104fd36fc669db13b4af483f81ef991358df1e8f 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -110,7 +110,7 @@ index 697fa7c5e98e7ee16b1b5e676f60a9689f7aac2b..f5e7278a6e391cbab61bbd2981127beb
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0967c510f870a6b66f0b577521e2d8df61f0c68d..e533490c0001ff3f0a3ffe4369215ca1510c408c 100644
+index 401517d9e298f508781f3b2c8b235483f9cc2a8a..980a1011555cae5ed1fba982cc45985a55884b64 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -482,6 +482,7 @@ static_library("test_support") {
@@ -130,7 +130,7 @@ index 0967c510f870a6b66f0b577521e2d8df61f0c68d..e533490c0001ff3f0a3ffe4369215ca1
    public_deps = [ "//content:content_resources" ]
  
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index e2a496c7be6045d0a69d4fdf227e4951602620ae..1fa040e47d6acdfcac203e30af88d5ac2db6e03f 100644
+index 53f5e64a980a83606cf3a350d610118de86807a8..cc84b5f6088a02eecf131cce7c7133e1ceed8c3e 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -147,6 +147,8 @@ static_library("web_test_browser") {
@@ -220,10 +220,10 @@ index 299a028f23314f479d2da8f914a5bdf34698d854..672dcb04dd3cf4e3cc71403f727a1dde
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2e6598b26ca41f973c4a84578b82f52895cdf065..8825ce847e5da43d7fd659329ddd7c5ad113d730 100644
+index 3c095a52ebca04905445843a536eb92103a326f2..97b413d1283d79af6954de2f04919a11c8e46689 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -311,6 +311,7 @@ component("core") {
+@@ -312,6 +312,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -296,10 +296,10 @@ index df601fcc40b4b8ca131a4f5a3ced5897075aa0f7..9d2edc62d95f04b6f1b3cd667940b1cb
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 442f6d2fba860c9ed87f5ed66c188945c98734dd..62e0f63f8968dd9b5953aca23afd4f76c673026a 100644
+index e1bc7d4e424a2bcfa51394edf8b22a8711d9ec95..d2e2370658a86c99581d9f4d009af552f71eac94 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -695,6 +695,7 @@ component("views") {
+@@ -697,6 +697,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -307,7 +307,7 @@ index 442f6d2fba860c9ed87f5ed66c188945c98734dd..62e0f63f8968dd9b5953aca23afd4f76
    }
  
    if (is_win) {
-@@ -1124,6 +1125,8 @@ source_set("test_support") {
+@@ -1126,6 +1127,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
