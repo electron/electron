@@ -49,9 +49,7 @@ ElectronNavigationThrottle::WillStartRequest() {
     auto* render_frame_host = contents->GetPrimaryMainFrame();
     auto* rfh_impl =
         static_cast<content::RenderFrameHostImpl*>(render_frame_host);
-    if (rfh_impl && rfh_impl->web_ui()) {
-      is_renderer_initiated = true;
-    }
+    is_renderer_initiated = rfh_impl && rfh_impl->web_ui();
   }
 
   if (is_renderer_initiated &&
