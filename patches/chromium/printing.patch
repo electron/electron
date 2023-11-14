@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index e4aee00c085d9bc76092dd0f90c15926987f1e8d..9dcfb268d153b73a5d4ba3a73ddd6c316d5ee3f9 100644
+index 884e33397c89e48c648c0fb99f343b8bd671f719..6fb7823bbdff9f8fca9c2afaa44e56a12db2c5aa 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -964,7 +964,6 @@ if (is_win) {
+@@ -965,7 +965,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index e4aee00c085d9bc76092dd0f90c15926987f1e8d..9dcfb268d153b73a5d4ba3a73ddd6c31
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -973,6 +972,10 @@ if (is_win) {
+@@ -974,6 +973,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -904,10 +904,10 @@ index c68b68767ac52602981278ec655d9ccfad0c30ab..df2ea4524584417d859e1a22ec8a49c8
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 34e00e884f05ed43d6966372479d268ac4b681ed..264aecf8928c820ac7624d798e834f8056bed405 100644
+index 116f44853f423d028b99d2ce7c2ab6905358d8e1..6d656435565494c6a98ce4f2733a88a82a70d266 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2992,8 +2992,9 @@ source_set("browser") {
+@@ -2991,8 +2991,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -956,10 +956,10 @@ index 6db58a9992642e557bac669b10f109bf6fd0f6ad..e1a5fcdca50d612dcb56faaf846752a4
    virtual mojom::ResultCode OnError();
  
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 2dd2b99216e6ebc1e326b9ff61ea2254ea7df4e9..3cc24bed974ba52a12272bc856d085cc890859c0 100644
+index 9f4e6a633cdba2f23f46405ca5118edf06796668..5f541dece15713507fc2f02af94f3e8921cb50d6 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -37,6 +37,10 @@
+@@ -38,6 +38,10 @@
  #include "sandbox/policy/mac/utility.sb.h"
  #include "sandbox/policy/mojom/sandbox.mojom.h"
  

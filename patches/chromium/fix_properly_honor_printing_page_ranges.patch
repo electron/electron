@@ -25,7 +25,7 @@ index 0b21e7034392efa28d69c0d092086ae9bd1c43c4..c5824bdbdfbfab1c221f6bca3517d540
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index b051381ebf164fe5b88db6c39152b65c98a625ed..d02db9e0b8295be6f397215fc447acd96baf6e0c 100644
+index f40256615e1cef93b2677c0abcabe4574ec8d444..a752fd7461418938db71e7f3479455181523f5f7 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -486,7 +486,8 @@ void ApplySystemPrintDialogData(

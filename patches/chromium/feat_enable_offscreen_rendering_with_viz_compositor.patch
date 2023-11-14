@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9e66224b5cdb17a12c447eb67e2b1066d949128e..53611e788cde9012ca566444e6c1ee05c99b921e 100644
+index 24ef0dfe8918c926b189762608397c3e557366b6..dc3ceef21d62d1d8abb5fb390a47456a1f9e9dda 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -143,6 +143,8 @@ viz_component("service") {
@@ -559,10 +559,10 @@ index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8
  
  }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index e07a065e91ccb1cd1925730c5543f89529bf8d23..07b46588b89d5dfaef954175bccc0fe7451a3eeb 100644
+index 90d8ab9b0f442c1cc74d2a3efd70b0e20530b9df..8af4c54d7deb8566fdf2febf787b5b8b67fa7350 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -414,8 +414,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -413,8 +413,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

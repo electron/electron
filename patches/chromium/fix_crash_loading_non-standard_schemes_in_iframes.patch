@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 3976dd740982403021393e190c21669747f7d01a..c8dd7de82272f20528975d6061bec6e63c15d85f 100644
+index c1c84701b625ad6414797b6ca26109efa37395f9..fe3de7a3c1f5371a9f9928b5551e053709964f35 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -9899,6 +9899,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -9920,6 +9920,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
      return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
    }
  
@@ -40,7 +40,7 @@ index 3976dd740982403021393e190c21669747f7d01a..c8dd7de82272f20528975d6061bec6e6
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 5d38566b28404654238033b9fff3fcb6a112f37b..18c35d4d17090e9870e57b86678f083271e6f1ef 100644
+index d7356a5ca9f470d956ce5074ffac3cb00869bf01..2a2e53bcef3e2177d460a7c8e7f031f11b03f2a9 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2120,6 +2120,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
