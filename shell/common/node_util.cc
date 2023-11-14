@@ -17,9 +17,11 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     node::Environment* optional_env) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::TryCatch try_catch(isolate);
+  thread_local node::builtins::BuiltinLoader builtin_loader;
+
+  node::Realm* realm = node::Realm::GetCurrent(context);
   v8::MaybeLocal<v8::Function> compiled =
-      node::builtins::BuiltinLoader::LookupAndCompile(context, id, parameters,
-                                                      optional_env);
+      builtin_loader.LookupAndCompile(context, id, parameters, realm);
   if (compiled.IsEmpty()) {
     return v8::MaybeLocal<v8::Value>();
   }
