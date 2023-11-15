@@ -84,7 +84,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
     return false;
 
   if (is_hidden)
-    *is_hidden = base::mac::IsHiddenLoginItem(item);
+    *is_hidden = base::mac::IsHiddenLoginItem(item.get());
 
   return true;
 }
@@ -252,8 +252,8 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
-  NSComparisonResult result =
-      [base::apple::CFToNSPtrCast(bundleId) caseInsensitiveCompare:identifier];
+  NSComparisonResult result = [base::apple::CFToNSPtrCast(bundleId.get())
+      caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
 }
 

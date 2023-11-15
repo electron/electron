@@ -208,3 +208,16 @@ index e696f8197cd9f5e158c148a207ae1398dd16c526..3ef031b0c876c36c51a91ba9724f8f2f
    // Creates a new URLLoaderFactory with the given |params|.
    CreateURLLoaderFactory(pending_receiver<URLLoaderFactory> url_loader_factory,
                           URLLoaderFactoryParams params);
+diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
+index a133f8b85fce871219963bbcc428f1e7a0c97a2c..5a15e699f24f0691f6d45c0e9f4dcf6f97944e31 100644
+--- a/services/network/test/test_network_context.h
++++ b/services/network/test/test_network_context.h
+@@ -62,6 +62,8 @@ class TestNetworkContext : public mojom::NetworkContext {
+   void CreateURLLoaderFactory(
+       mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
+       mojom::URLLoaderFactoryParamsPtr params) override {}
++  void SetCertVerifierClient(
++      mojo::PendingRemote<mojom::CertVerifierClient> client) override {}
+   void GetCookieManager(
+       mojo::PendingReceiver<mojom::CookieManager> cookie_manager) override {}
+   void GetRestrictedCookieManager(

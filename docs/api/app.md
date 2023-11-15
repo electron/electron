@@ -1514,7 +1514,7 @@ A `boolean` property that returns  `true` if the app is packaged, `false` otherw
 [tasks]:https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
 [app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
 [electron-forge]: https://www.electronforge.io/
-[electron-packager]: https://github.com/electron/electron-packager
+[electron-packager]: https://github.com/electron/packager
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/documentation/coreservices/1441725-lscopydefaulthandlerforurlscheme?language=objc
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html

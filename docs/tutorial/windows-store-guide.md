@@ -42,7 +42,7 @@ npm install -g electron-windows-store
 
 ## Step 1: Package Your Electron Application
 
-Package the application using [electron-packager][electron-packager] (or a similar tool).
+Package the application using [`@electron/packager`][electron-packager] (or a similar tool).
 Make sure to remove `node_modules` that you don't need in your final application, since
 any module you don't actually need will increase your application's size.
 
@@ -151,7 +151,7 @@ Once installation succeeded, you can move on to compiling your Electron app.
 [windows-sdk]: https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/
 [app-converter]: https://learn.microsoft.com/en-us/windows/msix/packaging-tool/tool-overview
 [add-appxpackage]: https://learn.microsoft.com/en-us/previous-versions//hh856048(v=technet.10)?redirectedfrom=MSDN
-[electron-packager]: https://github.com/electron/electron-packager
+[electron-packager]: https://github.com/electron/packager
 [electron-windows-store]: https://github.com/electron-userland/electron-windows-store
 [background-task]: https://github.com/felixrieseberg/electron-uwp-background
 [centennial-campaigns]: https://developer.microsoft.com/en-us/windows/projects/campaigns/desktop-bridge
