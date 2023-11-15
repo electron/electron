@@ -15,7 +15,7 @@ We recommend using [Electron Forge](./forge-overview.md). You can check out
 its [documentation](https://www.electronforge.io) directly, or refer to the [Packaging and Distribution](./tutorial-5-packaging.md)
 part of the Electron tutorial.
 
-## Manual packaging
+## Manual packagingb
 
 If you prefer the manual approach, there are 2 ways to distribute your application:
 
