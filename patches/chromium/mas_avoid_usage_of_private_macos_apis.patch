@@ -14,13 +14,13 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 1977180038a11c24b2d94f49be9f8cc42a9e4227..48c3f56946da59ea9d178fb6bd8df6cf4c798fbc 100644
+index 2bad2ed2f5205b3a2599aa3a620812aa32d52f87..ab3d4c953556d4f94075671436565a6c442f30d5 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
-@@ -113,6 +113,13 @@ MacDeviceManagementState IsDeviceRegisteredWithManagement() {
- DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
-   static DeviceUserDomainJoinState state = [] {
-     DeviceUserDomainJoinState state{false, false};
+@@ -115,6 +115,14 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+     DeviceUserDomainJoinState state{.device_joined = false,
+                                     .user_joined = false};
+ 
 +#if IS_MAS_BUILD()
 +    return state;
 +  }();
@@ -28,10 +28,11 @@ index 1977180038a11c24b2d94f49be9f8cc42a9e4227..48c3f56946da59ea9d178fb6bd8df6cf
 +  return state;
 +}
 +#else
- 
++
      @autoreleasepool {
        ODSession* session = [ODSession defaultSession];
-@@ -221,5 +228,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+       if (session == nil) {
+@@ -218,5 +226,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
  
    return state;
  }

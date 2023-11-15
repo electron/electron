@@ -90,7 +90,7 @@ index 627a3df2debbc2a66be14556641f29232820ccf7..2a6a6e23244d9e1bc1b1f63279766e61
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index a58666f95cf6c0974e25b0c2805f944b290358ae..fa77efab0cbe5a702796a0e374f847c1f0cba697 100644
+index 105e0bc1b7f3d6d42826f84ceb03011b5f132385..29a29c4ab75c6a4b1d4327fe48562a4ef9467e8f 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -12,6 +12,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,10 +112,10 @@ index a58666f95cf6c0974e25b0c2805f944b290358ae..fa77efab0cbe5a702796a0e374f847c1
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index db1b5a2fd512ae02d10627bc41d9e3b51e5eb4a2..f92132a446abf8f7134e8539e6875914a211ea55 100644
+index 1e9ee24847e50f4894b0ce2296ec9f9eefe56b88..d3fae5cebb21ff12d821594ec57962b051ae8ae0 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -625,6 +625,7 @@ URLLoader::URLLoader(
+@@ -626,6 +626,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index db1b5a2fd512ae02d10627bc41d9e3b51e5eb4a2..f92132a446abf8f7134e8539e6875914
    }
  
    // Store any cookies passed from the browser process to later attach them to
-@@ -663,7 +664,7 @@ URLLoader::URLLoader(
+@@ -664,7 +665,7 @@ URLLoader::URLLoader(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +132,7 @@ index db1b5a2fd512ae02d10627bc41d9e3b51e5eb4a2..f92132a446abf8f7134e8539e6875914
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1598,6 +1599,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1599,6 +1600,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

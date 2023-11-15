@@ -93,10 +93,10 @@ index 7c0598fb3f9f08d8d9905c5487f3a128f1262b15..314d443a60d0c9093dd06cd1589ab639
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index f259d42038ec740f1aed32f833f258aa724642d7..b8c8ed10d9fbfab0935a04f2421efde1d21050b2 100644
+index 716c206e5c758c0dec8355e126845d06c91178f9..0776746b29bf0992bff29068490f41ae78a89515 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3353,6 +3353,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3350,6 +3350,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf744e78fe6 100644
+index 0e5ecb97bff85e0775a840f205893b5d6d12f38e..986f9a6f3de813feb16711d65d03dc8200215e27 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@
@@ -159,7 +159,7 @@ index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf7
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -336,6 +337,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -342,6 +343,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -170,7 +170,7 @@ index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf7
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2f2eb750b71e6a219af9f8601c6053a9799a0044..928dc14ef709c0d4fcb3e5883fc073d00f91b7a9 100644
+index 2f2eb750b71e6a219af9f8601c6053a9799a0044..9d4daa0d5d2df9c55caad9881ee462e20beff2b9 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -21,6 +21,7 @@
@@ -189,7 +189,7 @@ index 2f2eb750b71e6a219af9f8601c6053a9799a0044..928dc14ef709c0d4fcb3e5883fc073d0
 +  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
 +    base::apple::ScopedCFTypeRef<CFDataRef> system_icc(
 +        CGColorSpaceCopyICCData(base::mac::GetSystemColorSpace()));
-+    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc);
++    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc.get());
 +    return true;
 +  }
 +
@@ -205,7 +205,7 @@ index 2f2eb750b71e6a219af9f8601c6053a9799a0044..928dc14ef709c0d4fcb3e5883fc073d0
 +    CGColorSpaceRef color_space = base::mac::GetSystemColorSpace();
 +    base::apple::ScopedCFTypeRef<CFDataRef> color_space_icc(
 +        CGColorSpaceCopyICCData(color_space));
-+    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
++    IOSurfaceSetValue(surface.get(), CFSTR("IOSurfaceColorSpace"), color_space_icc.get());
 +    return surface;
 +  }
 +

@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index e4e7ac767c927535af1e27133ab03f3b039874fe..c790fbe637635d2fa46e0cd7529b876318ee62ef 100644
+index 41fdfa8cc4de8fb3316552dc9851874e430c238e..6a51498c9ec7b35b8609a8369ae4703e1936d1ad 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -47,9 +47,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -39,10 +39,20 @@ index e4e7ac767c927535af1e27133ab03f3b039874fe..c790fbe637635d2fa46e0cd7529b8763
      gpu::SurfaceHandle child_window) {
    NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index fa7f12e204cda40fafb9e6f6e52400f6002a1f9f..1afd52cc13aeb426cf505f02e2134ef8b34a7ac5 100644
+index a55ab928c0d9190dd42852655b175053dbb11610..e1cdec8fe6e316dc38f89400ab7844d3d6b32784 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
-@@ -50,11 +50,13 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
+@@ -42,6 +42,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
+   gfx::AcceleratedWidget widget() const { return widget_; }
+ #endif
+ 
++  void CreateLayeredWindowUpdater(
++      mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
++
+  private:
+   // mojom::DisplayClient implementation:
+ #if BUILDFLAG(IS_APPLE)
+@@ -50,8 +53,6 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
  #endif
  
  #if BUILDFLAG(IS_WIN)
@@ -51,13 +61,6 @@ index fa7f12e204cda40fafb9e6f6e52400f6002a1f9f..1afd52cc13aeb426cf505f02e2134ef8
    void AddChildWindowToBrowser(gpu::SurfaceHandle child_window) override;
  #endif
  
-+ protected:
-+  void CreateLayeredWindowUpdater(
-+      mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
-+
- #if BUILDFLAG(IS_OZONE)
- #if BUILDFLAG(OZONE_PLATFORM_X11)
-   void DidCompleteSwapWithNewSize(const gfx::Size& size) override;
 diff --git a/components/viz/host/layered_window_updater_impl.cc b/components/viz/host/layered_window_updater_impl.cc
 index 8f726bde2cb5da6acfe630006af0fc3a09811d6c..45d8cae3ba0fca9a1514f83032a10c8820b3126d 100644
 --- a/components/viz/host/layered_window_updater_impl.cc
@@ -514,7 +517,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index da6b2717ddee4077d8e70dec98f70ddc9edbf8bd..25482cad4441507085fd5eeb4b572832a599d996 100644
+index ea86c71d440ae6128cde311e0791cf4c7bdc82ce..5f1372aa6386763b54d327d21ca9c85201f999a5 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -101,7 +101,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -556,7 +559,7 @@ index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8
  
  }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 6dad3a86b2880d73a764f81c0959d5e2b26df744..4caa2835d930e8bbf3ac9c1ccb7b791b1e1477ac 100644
+index e07a065e91ccb1cd1925730c5543f89529bf8d23..07b46588b89d5dfaef954175bccc0fe7451a3eeb 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -414,8 +414,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -577,7 +580,7 @@ index 6dad3a86b2880d73a764f81c0959d5e2b26df744..4caa2835d930e8bbf3ac9c1ccb7b791b
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 62f98959d80cfa961401dda55ea6917bba825ec5..899de1c0bb971b510d377ad1704191d1d8628ac6 100644
+index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83a0544ed4 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -114,7 +114,6 @@ interface DisplayClient {
@@ -612,7 +615,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 2f358a2d95cfbf83a0b82f22a648926726b1fd34..e1781e682f2e1217fe4cc7ab26cd82e7bcc352e7 100644
+index b8098b7e777f8fcdd4d01e8b7a1d4c5b964c4a32..67738f95affa1b7998c03d10f5f62d70afcbd62a 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -93,6 +93,7 @@ class DisplayPrivate;

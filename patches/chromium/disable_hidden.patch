@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index a1ce7be62ca99bf8fecc750c781e18b282c12772..895f5126806b557c853f163fe69459ea929f11a4 100644
+index 22eccd1647c4ff48e994366527e45154d986d164..b7a3f5643ced5013c38197f654bd616ffe0f73de 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -818,6 +818,9 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -33,7 +33,7 @@ index 28001459e1357d9c14b240d6a729484b5a7e4eff..d194945e1f9d30a85d2bcd8482b7094a
    void StartDragging(blink::mojom::DragDataPtr drag_data,
                       const url::Origin& source_origin,
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 96dbd73ff09724236d912382409e0166ba6777ff..2b7a01cd1e7637031bbd28ba32f332f9f97456f1 100644
+index 40347e87b306953812691977ac028b48f6dac25e..09b5b06dce35ab337708d6a6753b9f096ca6ba63 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -625,7 +625,7 @@ void RenderWidgetHostViewAura::HideImpl() {
