@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 15 Nov 2023 12:09:38 +0100
+Subject: chore: remove AllCan Read/Write from SetAccessor
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/5006387
+
+This patch can be removed when Node.js upgrades to a version of V8
+containing the above CL.
+
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 92f765eb0a99f92eac3ce77011e0ec787ccfcb8d..6a7aa5d69b9cbff9c6ccf05374cb3931f6a8dbb4 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -928,8 +928,7 @@ napi_define_class(napi_env env,
+       tpl->PrototypeTemplate()->SetAccessorProperty(property_name,
+                                                     getter_tpl,
+                                                     setter_tpl,
+-                                                    attributes,
+-                                                    v8::AccessControl::DEFAULT);
++                                                    attributes);
+     } else if (p->method != nullptr) {
+       v8::Local<v8::FunctionTemplate> t;
+       STATUS_CALL(v8impl::FunctionCallbackWrapper::NewTemplate(
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index 77386bd234d0b49b122f1de3d27b1a92da5d0ea4..15fb370e245a54d73b9fe65b1a127d7b1193444f 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -697,7 +697,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+                       ConfigStringGetter,
+                       nullptr,
+                       Local<Value>(),
+-                      DEFAULT,
+                       None,
+                       SideEffectType::kHasNoSideEffect);
+ 
+@@ -705,7 +704,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+                       BuiltinIdsGetter,
+                       nullptr,
+                       Local<Value>(),
+-                      DEFAULT,
+                       None,
+                       SideEffectType::kHasNoSideEffect);
+ 
+@@ -713,7 +711,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+                       GetBuiltinCategories,
+                       nullptr,
+                       Local<Value>(),
+-                      DEFAULT,
+                       None,
+                       SideEffectType::kHasNoSideEffect);
+ 
+@@ -721,7 +718,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+                       GetNatives,
+                       nullptr,
+                       Local<Value>(),
+-                      DEFAULT,
+                       None,
+                       SideEffectType::kHasNoSideEffect);
+ 

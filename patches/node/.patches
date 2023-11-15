@@ -45,3 +45,4 @@ chore_remove_use_of_deprecated_kmaxlength.patch
 api_remove_allcan_read_write.patch
 fix_avx_detection.patch
 src_avoid_copying_string_in_fs_permission.patch
+chore_remove_allcan_read_write_from_setaccessor.patch
