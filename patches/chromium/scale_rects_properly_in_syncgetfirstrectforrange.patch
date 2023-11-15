@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Avi Drissman <avi@chromium.org>
+Date: Wed, 27 Sep 2023 19:48:06 +0000
+Subject: Scale rects properly in SyncGetFirstRectForRange
+
+When dsf-for-zoom was enabled in https://crrev.com/c/2577963,
+coordinates coming from Blink were changed to be pixels and not DIPs,
+but the RenderWidgetHostViewMac::SyncGetFirstRectForRange() function
+was never updated.
+
+LocalFrameMojoHandler::GetFirstRectForRange() sometimes returned
+physical pixels and sometimes DIPs. Because most functions in
+RenderWidgetHostViewMac do coordinate conversion, fix
+GetFirstRectForRange() to always return physical pixels, and make
+GetDeviceScaleFactor() scale the returned value like the other
+functions in RenderWidgetHostViewMac do.
+
+Fixed: 1486615
+Change-Id: I6d5c29b2020eca38d566f5f50ebc010a371f97a2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4894366
+Code-Coverage: findit-for-me@appspot.gserviceaccount.com <findit-for-me@appspot.gserviceaccount.com>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Commit-Queue: Avi Drissman <avi@chromium.org>
+Auto-Submit: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1202056}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index e995e9b652397a67ca0b89e107975ab04bae7725..e3762097cea0dc10c486f2150f18722363f8b788 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -75,6 +75,7 @@
+ #include "ui/events/keycodes/dom/dom_code.h"
+ #include "ui/events/keycodes/dom/dom_keyboard_layout_map.h"
+ #include "ui/gfx/geometry/dip_util.h"
++#include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/mac/coordinate_conversion.h"
+ 
+ using blink::WebInputEvent;
+@@ -2019,8 +2020,13 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+     // https://crbug.com/121917
+     base::ScopedAllowBlocking allow_wait;
+     // TODO(thakis): Pipe |actualRange| through TextInputClientMac machinery.
+-    *rect = TextInputClientMac::GetInstance()->GetFirstRectForRange(
+-        GetFocusedWidget(), requested_range);
++    gfx::Rect blink_rect =
++        TextInputClientMac::GetInstance()->GetFirstRectForRange(
++            GetFocusedWidget(), requested_range);
++
++    // With zoom-for-dsf, RenderWidgetHost coordinate system is physical points,
++    // which means we have to scale the rect by the device scale factor.
++    *rect = gfx::ScaleToEnclosingRect(blink_rect, 1.f / GetDeviceScaleFactor());
+   }
+   return true;
+ }
+diff --git a/third_party/blink/public/mojom/input/text_input_host.mojom b/third_party/blink/public/mojom/input/text_input_host.mojom
+index e7440063084c347e380a61909029da6f710345b0..58a1960eedd544de1cbf1714457e7d4dc671293d 100644
+--- a/third_party/blink/public/mojom/input/text_input_host.mojom
++++ b/third_party/blink/public/mojom/input/text_input_host.mojom
+@@ -23,7 +23,8 @@ interface TextInputHost {
+   GotCharacterIndexAtPoint(uint32 index);
+ 
+   // Reply for GetFirstRectForRange from LocalFrame. It works in the same
+-  // manner as GetCharacterIndexAtPoint.
++  // manner as GetCharacterIndexAtPoint. The returned rect is in physical
++  // pixels.
+   // [EnableIf=is_mac]
+   GotFirstRectForRange(gfx.mojom.Rect rect);
+ };
+diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
+index e2cdf0c00cf165cbd8f7f2279ddffcd2b71c0fda..15a7a2720179638fe3b3885a8bfa969339e0eff4 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
+@@ -957,9 +957,7 @@ void LocalFrameMojoHandler::GetFirstRectForRange(const gfx::Range& range) {
+   WebPluginContainerImpl* plugin_container = frame_->GetWebPluginContainer();
+   if (plugin_container) {
+     // Pepper-free PDF will reach here.
+-    FrameWidget* frame_widget = frame_->GetWidgetForLocalRoot();
+-    rect = frame_widget->BlinkSpaceToEnclosedDIPs(
+-        plugin_container->Plugin()->GetPluginCaretBounds());
++    rect = plugin_container->Plugin()->GetPluginCaretBounds();
+   } else {
+     // TODO(crbug.com/702990): Remove `pepper_has_caret` once pepper is removed.
+     bool pepper_has_caret = client->GetCaretBoundsFromFocusedPlugin(rect);
