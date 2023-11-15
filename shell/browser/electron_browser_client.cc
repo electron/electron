@@ -1481,9 +1481,13 @@ void ElectronBrowserClient::
           &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  int render_process_id = render_frame_host.GetProcess()->GetID();
+  associated_registry.AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
+                          render_process_id));
   associated_registry.AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
-                          render_frame_host.GetProcess()->GetID()));
+                          render_process_id));
   associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -1571,9 +1575,6 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
     blink::AssociatedInterfaceRegistry* associated_registry,
     content::RenderProcessHost* render_process_host) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  associated_registry->AddInterface<extensions::mojom::EventRouter>(
-      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
-                          render_process_host->GetID()));
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
                           render_process_host->GetID()));
