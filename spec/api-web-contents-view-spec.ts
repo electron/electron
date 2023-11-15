@@ -1,7 +1,8 @@
 import { closeAllWindows } from './lib/window-helpers';
 import { expect } from 'chai';
 
-import { BaseWindow, WebContentsView } from 'electron/main';
+import { BaseWindow, View, WebContentsView } from 'electron/main';
+import { once } from 'node:events';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
@@ -9,6 +10,20 @@ describe('WebContentsView', () => {
   it('can be used as content view', () => {
     const w = new BaseWindow({ show: false });
     w.setContentView(new WebContentsView({}));
+  });
+
+  it('can be removed after a close', async () => {
+    const w = new BaseWindow({ show: false });
+    const v = new View();
+    const wcv = new WebContentsView({});
+    w.setContentView(v);
+    v.addChildView(wcv);
+    await wcv.webContents.loadURL('about:blank');
+    const destroyed = once(wcv.webContents, 'destroyed');
+    wcv.webContents.executeJavaScript('window.close()');
+    await destroyed;
+    expect(wcv.webContents.isDestroyed()).to.be.true();
+    v.removeChildView(wcv);
   });
 
   function triggerGCByAllocation () {

@@ -183,7 +183,12 @@ View::~View() {
 
 void View::AddChildViewAt(gin::Handle<View> child,
                           absl::optional<size_t> maybe_index) {
-  CHECK(view_);
+  // TODO(nornagon): !view_ is only for supporting the weird case of
+  // WebContentsView's view being deleted when the underlying WebContents is
+  // destroyed (on non-Mac). We should fix that so that WebContentsView always
+  // has a View, possibly a wrapper view around the underlying platform View.
+  if (!view_)
+    return;
   size_t index =
       std::min(child_views_.size(), maybe_index.value_or(child_views_.size()));
   child_views_.emplace(child_views_.begin() + index,     // index
@@ -204,7 +209,10 @@ void View::AddChildViewAt(gin::Handle<View> child,
 }
 
 void View::RemoveChildView(gin::Handle<View> child) {
-  CHECK(view_);
+  if (!view_)
+    return;
+  if (!child->view())
+    return;
   auto it = std::find(child_views_.begin(), child_views_.end(), child.ToV8());
   if (it != child_views_.end()) {
 #if BUILDFLAG(IS_MAC)
@@ -216,17 +224,20 @@ void View::RemoveChildView(gin::Handle<View> child) {
 }
 
 void View::SetBounds(const gfx::Rect& bounds) {
-  CHECK(view_);
+  if (!view_)
+    return;
   view_->SetBoundsRect(bounds);
 }
 
 gfx::Rect View::GetBounds() {
-  CHECK(view_);
+  if (!view_)
+    return gfx::Rect();
   return view_->bounds();
 }
 
 void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value) {
-  CHECK(view_);
+  if (!view_)
+    return;
   gin_helper::Dictionary dict(isolate, value);
   LayoutCallback calculate_proposed_layout;
   if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
@@ -282,12 +293,14 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 }
 
 void View::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
-  CHECK(view_);
+  if (!view_)
+    return;
   view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
 }
 
 void View::SetVisible(bool visible) {
-  CHECK(view_);
+  if (!view_)
+    return;
   view_->SetVisible(visible);
 }
 
