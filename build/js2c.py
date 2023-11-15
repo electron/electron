@@ -6,11 +6,12 @@ import sys
 
 def main():
   js2c = sys.argv[1]
-  natives = sys.argv[2]
-  js_source_files = sys.argv[3:]
+  root = sys.argv[2]
+  natives = sys.argv[3]
+  js_source_files = sys.argv[4:]
 
   subprocess.check_call(
-    [js2c, natives] + js_source_files + ['--only-js'])
+    [js2c, natives] + js_source_files + ['--only-js', "--root", root])
 
 if __name__ == '__main__':
   sys.exit(main())
