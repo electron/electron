@@ -584,6 +584,26 @@ describe('BrowserWindow module', () => {
           expect(initiator).not.to.be.undefined();
           expect(initiator).to.equal(subframe);
         });
+
+        it('is triggered when navigating from chrome: to http:', async () => {
+          let hasEmittedWillNavigate = false;
+          const willNavigatePromise = new Promise((resolve) => {
+            w.webContents.once('will-navigate', e => {
+              e.preventDefault();
+              hasEmittedWillNavigate = true;
+              resolve(e.url);
+            });
+          });
+          await w.loadURL('chrome://gpu');
+
+          // shouldn't emit for browser-initiated request via loadURL
+          expect(hasEmittedWillNavigate).to.equal(false);
+
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          const navigatedTo = await willNavigatePromise;
+          expect(navigatedTo).to.equal(url + '/');
+          expect(w.webContents.getURL()).to.equal('chrome://gpu/');
+        });
       });
 
       describe('will-frame-navigate event', () => {
