@@ -733,8 +733,6 @@ filenames = {
     "shell/browser/extensions/electron_extension_host_delegate.h",
     "shell/browser/extensions/electron_extension_loader.cc",
     "shell/browser/extensions/electron_extension_loader.h",
-    "shell/browser/extensions/electron_extension_message_filter.cc",
-    "shell/browser/extensions/electron_extension_message_filter.h",
     "shell/browser/extensions/electron_extension_system_factory.cc",
     "shell/browser/extensions/electron_extension_system_factory.h",
     "shell/browser/extensions/electron_extension_system.cc",

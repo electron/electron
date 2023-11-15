@@ -151,13 +151,11 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
-#include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_host.h"
-#include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
@@ -177,7 +175,6 @@
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
 #include "extensions/common/switches.h"
-#include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -385,20 +382,6 @@ bool ElectronBrowserClient::IsRendererSubFrame(int process_id) const {
 
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
-  // When a render process is crashed, it might be reused.
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  int process_id = host->GetID();
-
-  auto* browser_context = host->GetBrowserContext();
-
-  host->AddFilter(
-      new extensions::ExtensionMessageFilter(process_id, browser_context));
-  host->AddFilter(
-      new ElectronExtensionMessageFilter(process_id, browser_context));
-  host->AddFilter(
-      new extensions::MessagingAPIMessageFilter(process_id, browser_context));
-#endif
-
   // Remove in case the host is reused after a crash, otherwise noop.
   host->RemoveObserver(this);
 
@@ -1429,6 +1412,19 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 #endif
 }
 
+void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
+    const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
+    blink::AssociatedInterfaceRegistry& associated_registry) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  associated_registry.AddInterface<extensions::mojom::RendererHost>(
+      base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
+                          service_worker_version_info.process_id));
+  associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
+      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
+                          service_worker_version_info.process_id));
+#endif
+}
+
 void ElectronBrowserClient::
     RegisterAssociatedInterfaceBindersForRenderFrameHost(
         content::RenderFrameHost&
@@ -1485,6 +1481,13 @@ void ElectronBrowserClient::
           &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  int render_process_id = render_frame_host.GetProcess()->GetID();
+  associated_registry.AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
+                          render_process_id));
+  associated_registry.AddInterface<extensions::mojom::RendererHost>(
+      base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
+                          render_process_id));
   associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -1572,14 +1575,8 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
     blink::AssociatedInterfaceRegistry* associated_registry,
     content::RenderProcessHost* render_process_host) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  associated_registry->AddInterface<extensions::mojom::EventRouter>(
-      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
-                          render_process_host->GetID()));
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
-                          render_process_host->GetID()));
-  associated_registry->AddInterface<extensions::mojom::ServiceWorkerHost>(
-      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
                           render_process_host->GetID()));
 #endif
 }
