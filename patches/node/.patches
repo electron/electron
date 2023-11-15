@@ -45,6 +45,3 @@ chore_remove_use_of_deprecated_kmaxlength.patch
 api_remove_allcan_read_write.patch
 fix_avx_detection.patch
 src_avoid_copying_string_in_fs_permission.patch
-build_node_js2c_exec_as_gn_exec.patch
-fix_wip_handle_string_replacement_of_fs_-_original-fs.patch
-look_upon_my_works_ye_mighty.patch

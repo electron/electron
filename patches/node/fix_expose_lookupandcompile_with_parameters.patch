@@ -10,7 +10,7 @@ parameters.
 This should be upstreamed.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 7e4a43a6f13845c8a81bae96ec073ccdfc655999..b9598eff8acd8390007be0a09ac019b488ce0855 100644
+index f3cda64beaa1403cb33f1b0bd8089f3dfcbfc8b9..77386bd234d0b49b122f1de3d27b1a92da5d0ea4 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -482,6 +482,18 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
@@ -33,10 +33,10 @@ index 7e4a43a6f13845c8a81bae96ec073ccdfc655999..b9598eff8acd8390007be0a09ac019b4
    std::vector<std::string_view> ids = GetBuiltinIds();
    bool all_succeeded = true;
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index ba0c926a7968ec6a4cf07a469f1fd9314287a937..9e76bc2c9b7031dde9b1497125c4af608e55d54c 100644
+index 11d10f52b7c492bfae4bc58b39c20a693762a72d..b995e15fcd795f310126a38ec652efcd9fd36945 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
-@@ -97,6 +97,12 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+@@ -99,6 +99,12 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
                                                  const char* id,
                                                  Realm* optional_realm);
  
@@ -49,7 +49,7 @@ index ba0c926a7968ec6a4cf07a469f1fd9314287a937..9e76bc2c9b7031dde9b1497125c4af60
    v8::MaybeLocal<v8::Value> CompileAndCall(v8::Local<v8::Context> context,
                                             const char* id,
                                             int argc,
-@@ -107,6 +113,7 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+@@ -109,6 +115,7 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
                                             const char* id,
                                             Realm* realm);
  

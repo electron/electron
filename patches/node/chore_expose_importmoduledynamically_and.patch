@@ -11,9 +11,18 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 985784383024450833a8324d45a7af2fe214a09c..524558b6d00969c2b62cd6050fde9de583f14e90 100644
+index 985784383024450833a8324d45a7af2fe214a09c..356c10aef57454be3b4607156606784f473042cf 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
+@@ -16,7 +16,7 @@ const {
+   ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
+   ERR_INVALID_ARG_VALUE,
+ } = require('internal/errors').codes;
+-const { getOptionValue } = require('internal/options');
++const { getOptionValue, getEmbedderOptions } = require('internal/options');
+ const {
+   loadPreloadModules,
+   initializeFrozenIntrinsics,
 @@ -148,12 +148,13 @@ async function importModuleDynamicallyCallback(symbol, specifier, assertions) {
  // the loader worker in internal/main/worker_thread.js.
  let _isLoaderWorker = false;
