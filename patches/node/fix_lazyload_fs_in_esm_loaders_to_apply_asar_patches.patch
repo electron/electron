@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 9be4495726597bb48c544b362e3cf0e79e0291e1..8c800d8790d59465b0d8b807735953ea1b5692bc 100644
+index 14d5236d0ead946acf9a2f63bf979e7193bfbf56..74136abfb9aae1fc8ab746908be752056b6d7c5a 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const { kEmptyObject } = require('internal/util');
@@ -60,7 +60,7 @@ index 6a5d92d932df4f0b34840283821cf18839fbe1a5..fb47a40e04a9851db5287c7f61300feb
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 4020813f061d85ee27d50b938825319ab455c311..0ab3100a6fdb729f977888332d6765a9c6e8953c 100644
+index 178f362b2869173d51b2e97a8d35a16ab4ed4962..4c3a0d8c484a402fe419a0bd45c7e2b1d717cb4a 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -25,7 +25,7 @@ function lazyTypes() {
@@ -81,7 +81,7 @@ index 4020813f061d85ee27d50b938825319ab455c311..0ab3100a6fdb729f977888332d6765a9
      // Emit the warning synchronously because we are in the middle of handling
      // a SyntaxError that will throw and likely terminate the process before an
      // asynchronous warning would be emitted.
-@@ -290,7 +290,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -294,7 +294,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
  
    try {
      // We still need to read the FS to detect the exports.
@@ -90,7 +90,7 @@ index 4020813f061d85ee27d50b938825319ab455c311..0ab3100a6fdb729f977888332d6765a9
    } catch {
      // Continue regardless of error.
    }
-@@ -353,7 +353,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -357,7 +357,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).
