@@ -268,12 +268,21 @@ const LINTERS = [{
   }
 }, {
   key: 'md',
-  roots: ['docs'],
+  roots: ['.'],
+  ignoreRoots: ['node_modules', 'spec/node_modules'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
     let errors = false;
 
-    for (const filename of filenames) {
+    // Run markdownlint on all Markdown files
+    for (const chunk of chunkFilenames(filenames)) {
+      spawnAndCheckExitCode('electron-markdownlint', chunk);
+    }
+
+    // Run the remaining checks only in docs
+    const docs = filenames.filter(filename => path.dirname(filename).split(path.sep)[0] === 'docs');
+
+    for (const filename of docs) {
       const contents = fs.readFileSync(filename, 'utf8');
       const codeBlocks = await getCodeBlocks(contents);
 
