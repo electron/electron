@@ -150,3 +150,4 @@ cherry-pick-80106e31c7ea.patch
 gpu_use_load_program_shader_shm_count_on_drdc_thread.patch
 crash_gpu_process_and_clear_shader_cache_when_skia_reports.patch
 cherry-pick-3df423a5b8de.patch
+cherry-pick-9384cddc7705.patch

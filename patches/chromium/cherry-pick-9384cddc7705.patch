@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nidhi Jaju <nidhijaju@chromium.org>
+Date: Wed, 8 Nov 2023 04:19:31 +0000
+Subject: Make URLSearchParams persistent to avoid UaF
+
+The URLSearchParams::Create() function returns an on-heap object, but it
+can be garbage collected, so making it a persistent variable in
+DidFetchDataLoadedString() mitigates the issue.
+
+(cherry picked from commit 8b1bd7726a1394e2fe287f6a882822d8ee9d4e96)
+
+Bug: 1497997
+Change-Id: I4ae0f93fccc561cd8a088d3fa0bf2968bf298acf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4996929
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Nidhi Jaju <nidhijaju@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1218682}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5007484
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Auto-Submit: Nidhi Jaju <nidhijaju@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5993@{#1546}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/third_party/blink/renderer/core/fetch/body.cc b/third_party/blink/renderer/core/fetch/body.cc
+index 1b0ce3c8dceac103c24d513c3c5f4bc3aabcf6b7..5ffef06442a508c4dbf8133d5d20491c159bbfde 100644
+--- a/third_party/blink/renderer/core/fetch/body.cc
++++ b/third_party/blink/renderer/core/fetch/body.cc
+@@ -135,8 +135,13 @@ class BodyFormDataConsumer final : public BodyConsumerBase {
+ 
+   void DidFetchDataLoadedString(const String& string) override {
+     auto* formData = MakeGarbageCollected<FormData>();
+-    for (const auto& pair : URLSearchParams::Create(string)->Params())
++    // URLSearchParams::Create() returns an on-heap object, but it can be
++    // garbage collected, so making it a persistent variable on the stack
++    // mitigates use-after-free scenarios. See crbug.com/1497997.
++    Persistent<URLSearchParams> search_params = URLSearchParams::Create(string);
++    for (const auto& pair : search_params->Params()) {
+       formData->append(pair.first, pair.second);
++    }
+     DidFetchDataLoadedFormData(formData);
+   }
+ };
