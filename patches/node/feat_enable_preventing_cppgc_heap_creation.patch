@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 16 Nov 2023 15:23:01 +0100
+Subject: feat: enable preventing cppgc heap creation
+
+Refs https://github.com/nodejs/node/pull/45704
+
+The author of the above PR added a process initialization flag to prevent
+calling cppgc::InitializeAsNeeded(), but the PR then goes on to call
+CppHeap::Create in all cases. This will then crash in the case where kNoInitializeCppgc
+was called, because the CagedHeap instance won't exist. We need to also prevent
+the heap from being created when we're preventing cppgc initialization, because
+it will clash with the heap potentially already existing, as is the case in the
+renderer process. This PR adds a new parameter to the IsolateData ctor to allow this.
+
+This should be upstreamed.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 74b4e15b8230c6380d41e84aa504824bb79b2ee5..4b3a7c5d76b39f5b5ea70c062180786f6e16aff6 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -409,10 +409,11 @@ IsolateData* CreateIsolateData(
+     uv_loop_t* loop,
+     MultiIsolatePlatform* platform,
+     ArrayBufferAllocator* allocator,
+-    const EmbedderSnapshotData* embedder_snapshot_data) {
++    const EmbedderSnapshotData* embedder_snapshot_data,
++    IsolateDataFlags::Flags flags) {
+   const SnapshotData* snapshot_data =
+       SnapshotData::FromEmbedderWrapper(embedder_snapshot_data);
+-  return new IsolateData(isolate, loop, platform, allocator, snapshot_data);
++  return new IsolateData(isolate, loop, platform, allocator, snapshot_data, flags);
+ }
+ 
+ void FreeIsolateData(IsolateData* isolate_data) {
+diff --git a/src/env.cc b/src/env.cc
+index 1d8df40c3446ac9c72c5f0ad24edf0b8a96cf16b..985f0fb526b7c5bc0394229c0e80cc62444580e9 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -503,7 +503,7 @@ void IsolateData::CreateProperties() {
+   contextify::ContextifyContext::InitializeGlobalTemplates(this);
+ }
+ 
+-constexpr uint16_t kDefaultCppGCEmebdderID = 0x90de;
++constexpr uint16_t kDefaultCppGCEmbedderID = 0x90de;
+ Mutex IsolateData::isolate_data_mutex_;
+ std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
+     IsolateData::wrapper_data_map_;
+@@ -512,7 +512,8 @@ IsolateData::IsolateData(Isolate* isolate,
+                          uv_loop_t* event_loop,
+                          MultiIsolatePlatform* platform,
+                          ArrayBufferAllocator* node_allocator,
+-                         const SnapshotData* snapshot_data)
++                         const SnapshotData* snapshot_data,
++                         IsolateDataFlags::Flags flags)
+     : isolate_(isolate),
+       event_loop_(event_loop),
+       node_allocator_(node_allocator == nullptr ? nullptr
+@@ -523,7 +524,7 @@ IsolateData::IsolateData(Isolate* isolate,
+       new PerIsolateOptions(*(per_process::cli_options->per_isolate)));
+   v8::CppHeap* cpp_heap = isolate->GetCppHeap();
+ 
+-  uint16_t cppgc_id = kDefaultCppGCEmebdderID;
++  uint16_t cppgc_id = kDefaultCppGCEmbedderID;
+   if (cpp_heap != nullptr) {
+     // The general convention of the wrappable layout for cppgc in the
+     // ecosystem is:
+@@ -542,7 +543,7 @@ IsolateData::IsolateData(Isolate* isolate,
+     // for embedder ID, V8 could accidentally enable cppgc on them. So
+     // safe guard against this.
+     DCHECK_NE(descriptor.wrappable_type_index, BaseObject::kSlot);
+-  } else {
++  } else if ((flags & IsolateDataFlags::kNoCreateCppgcHeap) == 0) {
+     cpp_heap_ = CppHeap::Create(
+         platform,
+         CppHeapCreateParams{
+diff --git a/src/env.h b/src/env.h
+index c9a455be8c395a2f231f56e0a54211466362aa1d..ecfc3fa27bbce5c4683f66480becf70af5675b70 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -139,7 +139,8 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+               uv_loop_t* event_loop,
+               MultiIsolatePlatform* platform = nullptr,
+               ArrayBufferAllocator* node_allocator = nullptr,
+-              const SnapshotData* snapshot_data = nullptr);
++              const SnapshotData* snapshot_data = nullptr,
++              IsolateDataFlags::Flags flags = IsolateDataFlags::kNoFlags);
+   ~IsolateData();
+ 
+   SET_MEMORY_INFO_NAME(IsolateData)
+diff --git a/src/node.h b/src/node.h
+index 9ac0d5addcdd40d5c91d375b626099b95729548a..ccb3c9acc02a2f8f75dd0bf4f196381188dc5ce0 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -497,6 +497,16 @@ struct IsolateSettings {
+       modify_code_generation_from_strings_callback = nullptr;
+ };
+ 
++namespace IsolateDataFlags {
++enum Flags : uint32_t {
++  kNoFlags = 0,
++  // Controls whether to create the cppgc heap. Embedders do not want this in
++  // some processes because it may already have been created, e.g. by Blink
++  // in Chromium.
++  kNoCreateCppgcHeap = 1
++};
++}
++
+ // Represents a startup snapshot blob, e.g. created by passing
+ // --node-snapshot-main=entry.js to the configure script at build time,
+ // or by running Node.js with the --build-snapshot option.
+@@ -611,7 +621,8 @@ NODE_EXTERN IsolateData* CreateIsolateData(
+     struct uv_loop_s* loop,
+     MultiIsolatePlatform* platform = nullptr,
+     ArrayBufferAllocator* allocator = nullptr,
+-    const EmbedderSnapshotData* snapshot_data = nullptr);
++    const EmbedderSnapshotData* snapshot_data = nullptr,
++    IsolateDataFlags::Flags flags = IsolateDataFlags::kNoFlags);
+ NODE_EXTERN void FreeIsolateData(IsolateData* isolate_data);
+ 
+ struct ThreadId {

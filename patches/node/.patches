@@ -47,4 +47,4 @@ fix_avx_detection.patch
 src_avoid_copying_string_in_fs_permission.patch
 chore_remove_allcan_read_write_from_setaccessor.patch
 fix_missing_include_for_node_extern.patch
-build_get_rid_of_cppheap_for_now.patch
+feat_enable_preventing_cppgc_heap_creation.patch
