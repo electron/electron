@@ -928,10 +928,10 @@ index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713537c7987
+index 0000000000000000000000000000000000000000..7518168141db7958550c7f5dc1ed17ccdbbe4a60
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,194 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -989,9 +989,9 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +
 +  sources = [
 +    "include/uv.h",
++    "include/uv/tree.h",
 +    "include/uv/errno.h",
 +    "include/uv/threadpool.h",
-+    "include/uv/tree.h",
 +    "include/uv/version.h",
 +    "src/fs-poll.c",
 +    "src/heap-inl.h",
@@ -1004,11 +1004,12 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +    "src/strscpy.h",
 +    "src/strtok.c",
 +    "src/strtok.h",
++    "src/thread-common.c",
 +    "src/threadpool.c",
 +    "src/timer.c",
++    "src/uv-data-getter-setters.c",
 +    "src/uv-common.c",
 +    "src/uv-common.h",
-+    "src/uv-data-getter-setters.c",
 +    "src/version.c",
 +  ]
 +
@@ -1022,25 +1023,25 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +      "src/win/detect-wakeup.c",
 +      "src/win/dl.c",
 +      "src/win/error.c",
-+      "src/win/fs-event.c",
 +      "src/win/fs.c",
++      "src/win/fs-event.c",
 +      "src/win/getaddrinfo.c",
 +      "src/win/getnameinfo.c",
-+      "src/win/handle-inl.h",
 +      "src/win/handle.c",
++      "src/win/handle-inl.h",
 +      "src/win/internal.h",
 +      "src/win/loop-watcher.c",
 +      "src/win/pipe.c",
++      "src/win/thread.c",
 +      "src/win/poll.c",
-+      "src/win/process-stdio.c",
 +      "src/win/process.c",
++      "src/win/process-stdio.c",
 +      "src/win/req-inl.h",
 +      "src/win/signal.c",
 +      "src/win/snprintf.c",
-+      "src/win/stream-inl.h",
 +      "src/win/stream.c",
++      "src/win/stream-inl.h",
 +      "src/win/tcp.c",
-+      "src/win/thread.c",
 +      "src/win/tty.c",
 +      "src/win/udp.c",
 +      "src/win/util.c",
@@ -1049,6 +1050,7 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +      "src/win/winsock.c",
 +      "src/win/winsock.h",
 +    ]
++
 +    libs += [
 +      "advapi32.lib",
 +      "iphlpapi.lib",
@@ -1060,12 +1062,12 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +    ]
 +  } else {
 +    sources += [
-+      "include/uv/aix.h",
-+      "include/uv/bsd.h",
-+      "include/uv/darwin.h",
++      "include/uv/unix.h",
 +      "include/uv/linux.h",
 +      "include/uv/sunos.h",
-+      "include/uv/unix.h",
++      "include/uv/darwin.h",
++      "include/uv/bsd.h",
++      "include/uv/aix.h",
 +      "src/unix/async.c",
 +      "src/unix/core.c",
 +      "src/unix/dl.c",
@@ -1073,14 +1075,13 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +      "src/unix/getaddrinfo.c",
 +      "src/unix/getnameinfo.c",
 +      "src/unix/internal.h",
-+      "src/unix/loop-watcher.c",
 +      "src/unix/loop.c",
++      "src/unix/loop-watcher.c",
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
 +      "src/unix/random-devurandom.c",
 +      "src/unix/signal.c",
-+      "src/unix/spinlock.h",
 +      "src/unix/stream.c",
 +      "src/unix/tcp.c",
 +      "src/unix/thread.c",
@@ -1108,11 +1109,7 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +  if (is_linux) {
 +    defines += [ "_GNU_SOURCE" ]
 +    sources += [
-+      "src/unix/epoll.c",
-+      "src/unix/linux-core.c",
-+      "src/unix/linux-inotify.c",
-+      "src/unix/linux-syscalls.c",
-+      "src/unix/linux-syscalls.h",
++      "src/unix/linux.c",
 +      "src/unix/procfs-exepath.c",
 +      "src/unix/random-getrandom.c",
 +      "src/unix/random-sysctl-linux.c",
