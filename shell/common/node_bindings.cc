@@ -524,6 +524,9 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   if (browser_env_ != BrowserEnvironment::kUtility)
     process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
 
+  if (browser_env_ == BrowserEnvironment::kRenderer)
+    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc;
+
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
