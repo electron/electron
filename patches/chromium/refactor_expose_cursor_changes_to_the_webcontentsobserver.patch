@@ -44,10 +44,10 @@ index b7a3f5643ced5013c38197f654bd616ffe0f73de..749ee4641462aec1142f75de9f0459d7
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index aec9792b814f534fbae70e08b3da05d22ec53a00..4732a6cb4ebff7632fce0ce98ffbbf1a38f49912 100644
+index 9d208ba60d8aba2f807df66415dfe51f6d77a58e..61e2bb968d0c0bee8679da35b5d617e21abb278f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5130,6 +5130,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5126,6 +5126,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,7 +60,7 @@ index aec9792b814f534fbae70e08b3da05d22ec53a00..4732a6cb4ebff7632fce0ce98ffbbf1a
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 227094889bba0af0470a6511fe3e66a78c422a15..c1adb8702724c56a8d1d658637bf904971d111b5 100644
+index 961a05b6ed4242a4f9d4ae38f297b5dda4c35f67..bcaad3fe7a274a940a67952c27b9c9ea2f8fc423 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1015,6 +1015,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -72,7 +72,7 @@ index 227094889bba0af0470a6511fe3e66a78c422a15..c1adb8702724c56a8d1d658637bf9049
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 63905767fedc33f8a33be1d86e5a554003a95069..3d0b6cdbcf9f1de188aea8723a0bf4c67a4b5891 100644
+index 45ede1905729b9c694d2b73e2f8a4df2636cbf0d..525403fca71f1396a868cc52ca232eb986d1ada0 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -32,6 +32,7 @@

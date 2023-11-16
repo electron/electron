@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 55279d498a81bef863d40d9f41e9a85430e10985..53a96ee187fc84d5594e06d78ac70169c49bb5ee 100644
+index 5411ac75c9c97dc93d9c0bc47101b6a10fe123da..d7e646a03f7be909c25221e2af9ac8fec394070e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1038,6 +1038,7 @@ component("base") {
+@@ -1034,6 +1034,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,10 +74,10 @@ index dc3ceef21d62d1d8abb5fb390a47456a1f9e9dda..e094d5e310745082a0562183c4b4b59d
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6d656435565494c6a98ce4f2733a88a82a70d266..195cc2c3123eb0ba6257720d4d2473c98495853f 100644
+index 392e421e35e171d23dc746b9bd0d3d5bc3471916..e37014769b90efbcdd77d46e58361250dbf700cb 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -52,6 +52,7 @@ source_set("browser") {
+@@ -53,6 +53,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -110,7 +110,7 @@ index 19a85853ced691c017760ebc415d8a78ab5a970b..104fd36fc669db13b4af483f81ef9913
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index cfaed92bc540d928b230b767765f8e85c4971695..6318459321f2177afe64efe325dae7c4a567e89e 100644
+index e73b1bc2bb75ca0ab0c95a71011f65f1906d3e16..0f2cb21416ab3da17fd63b4e1d09c28a6350fe6a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -121,7 +121,7 @@ index cfaed92bc540d928b230b767765f8e85c4971695..6318459321f2177afe64efe325dae7c4
    ]
  
    public_deps = [
-@@ -2916,6 +2917,7 @@ test("content_unittests") {
+@@ -2918,6 +2919,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

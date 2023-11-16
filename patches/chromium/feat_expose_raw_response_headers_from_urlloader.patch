@@ -112,10 +112,10 @@ index 105e0bc1b7f3d6d42826f84ceb03011b5f132385..29a29c4ab75c6a4b1d4327fe48562a4e
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 17c509c8ba246b85674988e9a885cbb945a86b69..bdbcc0abfcd199a26add9dc97d07515b719e6cb3 100644
+index 0200f90094364fd26e525519afa81cf5e90f03bf..69941372fb00517ddaf90af3f39cabd1eb0ee63f 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -626,6 +626,7 @@ URLLoader::URLLoader(
+@@ -627,6 +627,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index 17c509c8ba246b85674988e9a885cbb945a86b69..bdbcc0abfcd199a26add9dc97d07515b
    }
  
    // Store any cookies passed from the browser process to later attach them to
-@@ -664,7 +665,7 @@ URLLoader::URLLoader(
+@@ -665,7 +666,7 @@ URLLoader::URLLoader(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +132,7 @@ index 17c509c8ba246b85674988e9a885cbb945a86b69..bdbcc0abfcd199a26add9dc97d07515b
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1599,6 +1600,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1603,6 +1604,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

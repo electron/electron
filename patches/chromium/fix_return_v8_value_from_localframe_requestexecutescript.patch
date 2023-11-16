@@ -64,10 +64,10 @@ index 4cd668a127a50e5462e3878c3f1dcb7384926768..dfbec49249404df8f8ebdbd26e6e865c
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index b8cb208a2f257c3ec061950fb766cec7e3845664..c2a3cf1e89aa4df3ef153ba8340c25231949274c 100644
+index 0f5839ebbd08bd62fc1f1d1c5bacbd5890ea6b45..62f0d64433714e1db3da45f9121bc1b892a76503 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -2901,6 +2901,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -2899,6 +2899,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -75,7 +75,7 @@ index b8cb208a2f257c3ec061950fb766cec7e3845664..c2a3cf1e89aa4df3ef153ba8340c2523
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -2934,7 +2935,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -2932,7 +2933,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -85,10 +85,10 @@ index b8cb208a2f257c3ec061950fb766cec7e3845664..c2a3cf1e89aa4df3ef153ba8340c2523
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index c379c158710b066c011deb3d1d3d3f5c8e90c39d..235c372536ff32f41b5311a7fed6f58e6be5e02f 100644
+index ec490c4c5aaa0f6ddc68445911c9c9fc13c9b83b..401b36add16ef64350ad3a563d165aa928a12e14 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
-@@ -810,6 +810,7 @@ class CORE_EXPORT LocalFrame final
+@@ -811,6 +811,7 @@ class CORE_EXPORT LocalFrame final
                              mojom::blink::EvaluationTiming,
                              mojom::blink::LoadEventBlockingOption,
                              WebScriptExecutionCallback,

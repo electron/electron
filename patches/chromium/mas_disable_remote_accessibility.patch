@@ -121,7 +121,7 @@ index 5a6706495ed2a8f1cd781da9bde8572318bf6897..afd4d1f728a7f056e49b2ecb006c5a05
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 90d8ab3119b469e62ca771aaeb3d6b5c13d79775..825d46c85a44adb68adefe4adc0dd926e71c9129 100644
+index 066c1a8fa873558d90e7eeb84fcc7746c2a695c3..d7024510d39870ec57d51f9f0c6ef7da71cf02f5 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -50,7 +50,9 @@ class ScopedPasswordInputEnabler;
@@ -134,7 +134,7 @@ index 90d8ab3119b469e62ca771aaeb3d6b5c13d79775..825d46c85a44adb68adefe4adc0dd926
  @class RenderWidgetHostViewCocoa;
  @class CursorAccessibilityScaleFactorObserver;
  
-@@ -676,9 +678,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -677,9 +679,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -147,7 +147,7 @@ index 90d8ab3119b469e62ca771aaeb3d6b5c13d79775..825d46c85a44adb68adefe4adc0dd926
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9d047b057909d908bfa9bc956eae6bb05ac836b6..24d33a4796509549861ce3d70b63a1f276abcd9b 100644
+index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddfc64d3cea 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -161,7 +161,7 @@ index 9d047b057909d908bfa9bc956eae6bb05ac836b6..24d33a4796509549861ce3d70b63a1f2
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1639,8 +1641,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1645,8 +1647,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -172,7 +172,7 @@ index 9d047b057909d908bfa9bc956eae6bb05ac836b6..24d33a4796509549861ce3d70b63a1f2
    return [GetInProcessNSView() window];
  }
  
-@@ -1685,9 +1689,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1691,9 +1695,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -184,7 +184,7 @@ index 9d047b057909d908bfa9bc956eae6bb05ac836b6..24d33a4796509549861ce3d70b63a1f2
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2194,12 +2200,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2200,12 +2206,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -265,7 +265,7 @@ index f37c02488e6ba943ebf9b880a04bcfef9afc9d97..b10ed25b5cdf5eb2f314ed72226f71c8
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index b3fa0a3684892edc14053ba8e7a5f2d5fb15e6e3..c45fd31fb1ac4cd256addabdd0a11ff75eaa3a99 100644
+index efbbc2fcaa96bfe717ab41269d273acddadb4bac..61421ddad4f76667c1e0b5775e4f26284357f64b 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -345,7 +345,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -292,7 +292,7 @@ index b3fa0a3684892edc14053ba8e7a5f2d5fb15e6e3..c45fd31fb1ac4cd256addabdd0a11ff7
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1407,6 +1415,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1410,6 +1418,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -300,7 +300,7 @@ index b3fa0a3684892edc14053ba8e7a5f2d5fb15e6e3..c45fd31fb1ac4cd256addabdd0a11ff7
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1418,11 +1427,13 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1421,11 +1430,13 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
        ![NSAccessibilityRemoteUIElement isRemoteUIApp]) {
      [NSAccessibilityRemoteUIElement setRemoteUIApp:YES];
    }
@@ -314,7 +314,7 @@ index b3fa0a3684892edc14053ba8e7a5f2d5fb15e6e3..c45fd31fb1ac4cd256addabdd0a11ff7
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1435,6 +1446,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1438,6 +1449,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

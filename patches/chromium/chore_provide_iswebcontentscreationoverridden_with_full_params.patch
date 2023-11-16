@@ -80,7 +80,7 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 5a704e07bb6f39d16f28c6b2e34543030b294fae..1befa3215b035bb9a1262b8ed17e886a2120b43e 100644
+index 64ff1a156d04ed6d86c04b7ffb43ea6e72c409a0..b0871a3bbc1a716fee0be25616704cb43ef22e78 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1895,12 +1895,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -218,10 +218,10 @@ index 46924048ef26310b25d8ce7dd370c086193cf7ea..28a2b8c99b2cf32bb283ef1474b536ab
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4732a6cb4ebff7632fce0ce98ffbbf1a38f49912..aad421420aec8254766bf104f9abe0a7b96fb522 100644
+index 61e2bb968d0c0bee8679da35b5d617e21abb278f..9d497044f6df510969b29a33ec9394b2bf936079 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4413,8 +4413,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4409,8 +4409,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

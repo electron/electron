@@ -70,10 +70,10 @@ index 55d0bb090d22149aa045515dac874b909fa18f34..7a66ddf13786a88eb19aad346c6588e0
  
    bool for_drop() const { return for_drop_; }
 diff --git a/ui/views/controls/menu/menu_runner.cc b/ui/views/controls/menu/menu_runner.cc
-index 76c758b46e6431ae2900316e231ca3c913cac747..c05edcd009c8e34e0ec034f943577794df27041b 100644
+index acd0612106e008df287465050b4caa3ab8c0698b..82d61fb7fa30af7ecffb64376e6866c53732ebe3 100644
 --- a/ui/views/controls/menu/menu_runner.cc
 +++ b/ui/views/controls/menu/menu_runner.cc
-@@ -85,7 +85,7 @@ void MenuRunner::RunMenuAt(
+@@ -92,7 +92,7 @@ void MenuRunner::RunMenuAt(
    }
  
    impl_->RunMenuAt(parent, button_controller, bounds, anchor, run_types_,
@@ -83,10 +83,10 @@ index 76c758b46e6431ae2900316e231ca3c913cac747..c05edcd009c8e34e0ec034f943577794
  }
  
 diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
-index a21e0d7b28095d988ef79315a216087b2b537294..8546ad2ae49363f78b8a3a271f1e561c55bb7907 100644
+index 8100d5e1b4a44783d8d26e86600c0b20e9cc6bd2..0dc9adbab1e980bd1c6dda49cfd6d40ecf6a1459 100644
 --- a/ui/views/controls/menu/menu_runner_impl.cc
 +++ b/ui/views/controls/menu/menu_runner_impl.cc
-@@ -117,6 +117,7 @@ void MenuRunnerImpl::RunMenuAt(
+@@ -115,6 +115,7 @@ void MenuRunnerImpl::RunMenuAt(
      const gfx::Rect& bounds,
      MenuAnchorPosition anchor,
      int32_t run_types,
@@ -94,8 +94,8 @@ index a21e0d7b28095d988ef79315a216087b2b537294..8546ad2ae49363f78b8a3a271f1e561c
      gfx::NativeView native_view_for_gestures,
      absl::optional<gfx::RoundedCornersF> corners,
      absl::optional<std::string> show_menu_host_duration_histogram) {
-@@ -191,7 +192,7 @@ void MenuRunnerImpl::RunMenuAt(
-   controller->Run(parent, button_controller, menu_, bounds, anchor,
+@@ -189,7 +190,7 @@ void MenuRunnerImpl::RunMenuAt(
+   controller->Run(parent, button_controller, menu_.get(), bounds, anchor,
                    (run_types & MenuRunner::CONTEXT_MENU) != 0,
                    (run_types & MenuRunner::NESTED_DRAG) != 0,
 -                  native_view_for_gestures);
@@ -104,7 +104,7 @@ index a21e0d7b28095d988ef79315a216087b2b537294..8546ad2ae49363f78b8a3a271f1e561c
  
  void MenuRunnerImpl::Cancel() {
 diff --git a/ui/views/controls/menu/menu_runner_impl.h b/ui/views/controls/menu/menu_runner_impl.h
-index e0faa131a4e03cf3961a065dfcd969f40371928a..cc9b713245d04236e1d6ef035d7bc50876c88ce1 100644
+index 9b2ac3f475acc009d85eee9eb19c230d72ea708b..00ca9b558f08924110b8cb20d205539d6329deff 100644
 --- a/ui/views/controls/menu/menu_runner_impl.h
 +++ b/ui/views/controls/menu/menu_runner_impl.h
 @@ -52,6 +52,7 @@ class VIEWS_EXPORT MenuRunnerImpl : public MenuRunnerImplInterface,
@@ -116,10 +116,10 @@ index e0faa131a4e03cf3961a065dfcd969f40371928a..cc9b713245d04236e1d6ef035d7bc508
                   absl::optional<gfx::RoundedCornersF> corners = absl::nullopt,
                   absl::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_adapter.cc b/ui/views/controls/menu/menu_runner_impl_adapter.cc
-index 02fab92aecd2bd017b5ae9748338cc36cd0eeda0..f5107bceb0da462c3c9193d297f49311b2be2cc6 100644
+index b56ec1d258b584a1e6c4bb90e122b3980bfd2f07..8e0528a9e0c83f9212fe5258700e0ef14f963bbc 100644
 --- a/ui/views/controls/menu/menu_runner_impl_adapter.cc
 +++ b/ui/views/controls/menu/menu_runner_impl_adapter.cc
-@@ -34,11 +34,12 @@ void MenuRunnerImplAdapter::RunMenuAt(
+@@ -37,11 +37,12 @@ void MenuRunnerImplAdapter::RunMenuAt(
      const gfx::Rect& bounds,
      MenuAnchorPosition anchor,
      int32_t types,
