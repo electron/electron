@@ -61,10 +61,16 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      // const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
       const w = new BaseWindow();
       w.setContentView(v);
-      await p;
+      // <DEBUGGING>
+      while (true) {
+        const vs = await v.webContents.executeJavaScript('document.visibilityState');
+        if (vs === 'visible') break;
+      }
+      // </DEBUGGING>
+      // await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
     });
 
