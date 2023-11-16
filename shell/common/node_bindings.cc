@@ -516,17 +516,13 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   std::vector<std::string> args = ParseNodeCliFlags();
   uint64_t process_flags =
       node::ProcessInitializationFlags::kNoInitializeV8 |
-      node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
+      node::ProcessInitializationFlags::kNoInitializeNodeV8Platform |
+      node::ProcessInitializationFlags::kNoEnableWasmTrapHandler;
 
   // We do not want the child processes spawned from the utility process
   // to inherit the custom stdio handles created for the parent.
   if (browser_env_ != BrowserEnvironment::kUtility)
     process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
-
-  // We do not want cppgc in the renderer process as it
-  // would clash with Blink's initialization.
-  if (browser_env_ == BrowserEnvironment::kRenderer)
-    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc;
 
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
@@ -609,13 +605,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  uint64_t isolate_data_flags = browser_env_ == BrowserEnvironment::kRenderer
-                                    ? node::IsolateDataFlags::kNoCreateCppgcHeap
-                                    : node::IsolateDataFlags::kNoFlags;
-
-  auto* isolate_data = node::CreateIsolateData(
-      isolate, uv_loop_, platform, nullptr, nullptr,
-      static_cast<node::IsolateDataFlags::Flags>(isolate_data_flags));
+  auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                            static_cast<void*>(isolate_data));
 
