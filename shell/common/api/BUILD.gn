@@ -11,7 +11,7 @@ mojom("mojo") {
   ]
 
   # Needed for component build or we'll get duplicate symbols for many mojom
-  # interfaces aready included in blink_common.dll
+  # interfaces already included in blink_common.dll
   overridden_deps = [ "//third_party/blink/public/mojom:mojom_core" ]
   component_deps = [ "//third_party/blink/public/common" ]
 }

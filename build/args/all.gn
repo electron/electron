@@ -60,8 +60,3 @@ enable_dangling_raw_ptr_checks = false
 # This flag speeds up the performance of fork/execve on linux systems.
 # Ref: https://chromium-review.googlesource.com/c/v8/v8/+/4602858
 v8_enable_private_mapping_fork_optimization = true
-
-# https://chromium-review.googlesource.com/c/chromium/src/+/4995136
-# TODO(jkleinsc): convert legacy IPC calls in extensions to use mojo
-# https://github.com/electron/electron/issues/40439
-enable_extensions_legacy_ipc = true

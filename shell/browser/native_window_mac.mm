@@ -1182,7 +1182,7 @@ bool NativeWindowMac::IsKiosk() {
 void NativeWindowMac::SetBackgroundColor(SkColor color) {
   base::apple::ScopedCFTypeRef<CGColorRef> cgcolor(
       skia::CGColorCreateFromSkColor(color));
-  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+  [[[window_ contentView] layer] setBackgroundColor:cgcolor.get()];
 }
 
 SkColor NativeWindowMac::GetBackgroundColor() {

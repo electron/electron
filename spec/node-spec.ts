@@ -873,7 +873,7 @@ describe('node feature', () => {
       });
     };
 
-    process.once('unhandledRejection', () => done('catch block is delayed to next tick'));
+    process.once('unhandledRejection', () => done(new Error('catch block is delayed to next tick')));
 
     setTimeout(() => {
       f3().catch(() => done());

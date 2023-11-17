@@ -9,4 +9,4 @@
 * `array` Array\<unknown>
 * `dictionary` Record\<string, unknown>
 
-This type is a helper alias, no object will never exist of this type.
+This type is a helper alias, no object will ever exist of this type.

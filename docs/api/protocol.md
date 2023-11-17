@@ -122,7 +122,7 @@ Example:
 
 ```js
 const { app, net, protocol } = require('electron')
-const { join } = require('node:path')
+const path = require('node:path')
 const { pathToFileURL } = require('url')
 
 protocol.registerSchemesAsPrivileged([
@@ -145,9 +145,19 @@ app.whenReady().then(() => {
           headers: { 'content-type': 'text/html' }
         })
       }
-      // NB, this does not check for paths that escape the bundle, e.g.
+      // NB, this checks for paths that escape the bundle, e.g.
       // app://bundle/../../secret_file.txt
-      return net.fetch(pathToFileURL(join(__dirname, pathname)).toString())
+      const pathToServe = path.resolve(__dirname, pathname)
+      const relativePath = path.relative(__dirname, pathToServe)
+      const isSafe = relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
+      if (!isSafe) {
+        return new Response('bad', {
+          status: 400,
+          headers: { 'content-type': 'text/html' }
+        })
+      }
+
+      return net.fetch(pathToFileURL(pathToServe).toString())
     } else if (host === 'api') {
       return net.fetch('https://api.my-server.com/' + pathname, {
         method: req.method,
