@@ -61,16 +61,16 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-      // const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      // Ensure that the above listener has been registered before we add the
+      // view to the window, or else the visibilitychange event might be
+      // dispatched before the listener is registered.
+      // executeJavaScript calls are sequential so if this one's finished then
+      // the previous one must also have been finished :)
+      await v.webContents.executeJavaScript('undefined');
       const w = new BaseWindow();
       w.setContentView(v);
-      // <DEBUGGING>
-      while (true) {
-        const vs = await v.webContents.executeJavaScript('document.visibilityState');
-        if (vs === 'visible') break;
-      }
-      // </DEBUGGING>
-      // await p;
+      await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
     });
 
@@ -122,6 +122,8 @@ describe('WebContentsView', () => {
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
 
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
+      // Ensure the listener has been registered.
+      await v.webContents.executeJavaScript('undefined');
       const w2 = new BaseWindow();
       w2.setContentView(v);
       // A visibilitychange event is triggered, because the page cycled from
