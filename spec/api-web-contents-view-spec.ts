@@ -129,6 +129,7 @@ describe('WebContentsView', () => {
       // A visibilitychange event is triggered, because the page cycled from
       // visible -> hidden -> visible, but the page's JS can't observe the
       // 'hidden' state.
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
       expect(await p).to.equal('visible');
     });
   });
