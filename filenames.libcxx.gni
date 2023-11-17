@@ -1003,6 +1003,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/string.h",
   "//third_party/libc++/src/include/string_view",
   "//third_party/libc++/src/include/strstream",
+  "//third_party/libc++/src/include/syncstream",
   "//third_party/libc++/src/include/system_error",
   "//third_party/libc++/src/include/tgmath.h",
   "//third_party/libc++/src/include/thread",
