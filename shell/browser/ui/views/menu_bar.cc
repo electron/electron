@@ -270,4 +270,7 @@ void MenuBar::UpdateViewColors() {
 #endif
 }
 
+BEGIN_METADATA(MenuBar)
+END_METADATA
+
 }  // namespace electron

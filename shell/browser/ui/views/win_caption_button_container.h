@@ -11,6 +11,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/base/pointer/touch_ui_controller.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/view.h"
@@ -27,6 +28,8 @@ class WinCaptionButton;
 // grab bar for moving the window.
 class WinCaptionButtonContainer : public views::View,
                                   public views::WidgetObserver {
+  METADATA_HEADER(WinCaptionButtonContainer, views::View)
+
  public:
   explicit WinCaptionButtonContainer(WinFrameView* frame_view);
   ~WinCaptionButtonContainer() override;
