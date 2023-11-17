@@ -1615,7 +1615,7 @@ describe('webContents module', () => {
             response.end();
             break;
           default:
-            done('unsupported endpoint');
+            done(new Error('unsupported endpoint'));
         }
       });
       listen(server).then(({ url }) => {

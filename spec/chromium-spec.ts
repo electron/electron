@@ -8,7 +8,6 @@ import * as fs from 'node:fs';
 import * as url from 'node:url';
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
-import { promisify } from 'node:util';
 import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
@@ -2514,7 +2513,7 @@ describe('font fallback', () => {
 });
 
 describe('iframe using HTML fullscreen API while window is OS-fullscreened', () => {
-  const fullscreenChildHtml = promisify(fs.readFile)(
+  const fullscreenChildHtml = fs.promises.readFile(
     path.join(fixturesPath, 'pages', 'fullscreen-oopif.html')
   );
   let w: BrowserWindow;
