@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..9fd76d03e60177ed6b465b9e8c753427e57f1a54
+index 0000000000000000000000000000000000000000..bc96a6fa174f8a9e131b047c8cbb90f105c06614
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,399 @@
+@@ -0,0 +1,398 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -244,7 +244,6 @@ index 0000000000000000000000000000000000000000..9fd76d03e60177ed6b465b9e8c753427
 +  deps = [
 +    "deps/simdutf",
 +    "deps/uv",
-+    "//base",
 +    "//v8"
 +  ]
 +
