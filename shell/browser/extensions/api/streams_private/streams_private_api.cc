@@ -24,7 +24,8 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     bool embedded,
     int frame_tree_node_id,
     blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
-    const GURL& original_url) {
+    const GURL& original_url,
+    const std::string& internal_id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   content::WebContents* web_contents =
