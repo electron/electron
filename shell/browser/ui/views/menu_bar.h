@@ -26,8 +26,6 @@ class MenuBar : public views::AccessiblePaneView,
   METADATA_HEADER(MenuBar, views::AccessiblePaneView)
 
  public:
-  static const char kViewClassName[];
-
   MenuBar(NativeWindow* window, RootView* root_view);
   ~MenuBar() override;
 
