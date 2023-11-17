@@ -51,6 +51,15 @@ index be1d45d0d8e8ba7b637754e32fe379cb2cf1e6ac..21410d492db861876ecfcb82dcc3c181
 +[90m    at *[39m
  
  Node.js *
+diff --git a/test/fixtures/source-map/output/source_map_sourcemapping_url_string.snapshot b/test/fixtures/source-map/output/source_map_sourcemapping_url_string.snapshot
+index 2c1e11eeb9eab1bcb101f8f5af909461b26036ec..6a109c904e115503b743d5c4e0418ae693ca9856 100644
+--- a/test/fixtures/source-map/output/source_map_sourcemapping_url_string.snapshot
++++ b/test/fixtures/source-map/output/source_map_sourcemapping_url_string.snapshot
+@@ -1,3 +1,3 @@
+ Error: an exception.
+     at Object.<anonymous> (*typescript-sourcemapping_url_string.ts:3:7)
+-    at Module._compile (node:internal*modules*cjs*loader:1241:14)
++    *
 diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
 index b08bcd40cdf26093e158c0bb9ae566c76f2c731e..bf8eacbac479a2bf5698ed29ede648e149f185b5 100644
 --- a/test/parallel/test-node-output-errors.mjs
