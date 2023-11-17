@@ -1172,7 +1172,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..dedbbdea74d94e81f9968f4d951a0ad217da82f8
+index 0000000000000000000000000000000000000000..aa118ab320d83745723a2275efc556555c1e7768
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,733 @@
@@ -1651,17 +1651,17 @@ index 0000000000000000000000000000000000000000..dedbbdea74d94e81f9968f4d951a0ad2
 +    "lib/wasi.js",
 +    "lib/worker_threads.js",
 +    "lib/zlib.js",
-+    "../../v8/tools/splaytree.mjs",
-+    "../../v8/tools/codemap.mjs",
-+    "../../v8/tools/consarray.mjs",
-+    "../../v8/tools/csvparser.mjs",
-+    "../../v8/tools/profile.mjs",
-+    "../../v8/tools/profile_view.mjs",
-+    "../../v8/tools/logreader.mjs",
-+    "../../v8/tools/arguments.mjs",
-+    "../../v8/tools/tickprocessor.mjs",
-+    "../../v8/tools/sourcemap.mjs",
-+    "../../v8/tools/tickprocessor-driver.mjs",
++    "deps/v8/tools/splaytree.mjs",
++    "deps/v8/tools/codemap.mjs",
++    "deps/v8/tools/consarray.mjs",
++    "deps/v8/tools/csvparser.mjs",
++    "deps/v8/tools/profile.mjs",
++    "deps/v8/tools/profile_view.mjs",
++    "deps/v8/tools/logreader.mjs",
++    "deps/v8/tools/arguments.mjs",
++    "deps/v8/tools/tickprocessor.mjs",
++    "deps/v8/tools/sourcemap.mjs",
++    "deps/v8/tools/tickprocessor-driver.mjs",
 +    "deps/acorn/acorn/dist/acorn.js",
 +    "deps/acorn/acorn-walk/dist/walk.js",
 +    "deps/minimatch/index.js",
