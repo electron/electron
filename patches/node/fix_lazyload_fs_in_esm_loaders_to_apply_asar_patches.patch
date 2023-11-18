@@ -38,7 +38,7 @@ index 14d5236d0ead946acf9a2f63bf979e7193bfbf56..74136abfb9aae1fc8ab746908be75205
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 6a5d92d932df4f0b34840283821cf18839fbe1a5..fb47a40e04a9851db5287c7f61300feb85511ea3 100644
+index acfcc1f1f92548117ded857fa8d4dd140e07ab2b..ce8092b96aee8d09ff382110db4be62dcd760cce 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {

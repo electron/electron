@@ -49,22 +49,23 @@ index d064296d11c463616111d28a32b7ad3f6a72bebd..14d5236d0ead946acf9a2f63bf979e71
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index acb5ddca8af3d2495ce27d6426b28e6ff73a8f33..6a5d92d932df4f0b34840283821cf18839fbe1a5 100644
+index acb5ddca8af3d2495ce27d6426b28e6ff73a8f33..acfcc1f1f92548117ded857fa8d4dd140e07ab2b 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -725,6 +725,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
-+const electronSpecifiers = new SafeSet(['electron', 'electron/main', 'electron/common', 'electron/renderer']);
++const electronTypes = ['electron', 'electron/main', 'electron/common', 'electron/renderer'];
 +
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -736,6 +738,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -736,6 +738,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
++  const electronSpecifiers = new SafeSet(electronTypes);
 +  if (electronSpecifiers.has(specifier)) {
 +    return new URL('electron:electron');
 +  }
