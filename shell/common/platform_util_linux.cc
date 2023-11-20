@@ -21,6 +21,7 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "base/strings/escape.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
@@ -216,8 +217,9 @@ class ShowItemHelper {
     dbus::MessageWriter writer(&show_items_call);
 
     writer.AppendArrayOfStrings(
-        {"file://" + full_path.value()});  // List of file(s) to highlight.
-    writer.AppendString({});               // startup-id
+        {"file://" + base::EscapePath(
+                         full_path.value())});  // List of file(s) to highlight.
+    writer.AppendString({});                    // startup-id
 
     ShowItemUsingBusCall(&show_items_call, full_path);
   }
