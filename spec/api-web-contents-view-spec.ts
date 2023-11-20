@@ -126,11 +126,17 @@ describe('WebContentsView', () => {
       await v.webContents.executeJavaScript('undefined');
       const w2 = new BaseWindow();
       w2.setContentView(v);
-      // A visibilitychange event is triggered, because the page cycled from
-      // visible -> hidden -> visible, but the page's JS can't observe the
-      // 'hidden' state.
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
-      expect(await p).to.equal('visible');
+      // Wait for the visibility state to settle as "visible".
+      // On macOS one visibilitychange event is fired but visibilityState
+      // remains "visible". On Win/Linux, two visibilitychange events are
+      // fired, a "hidden" and a "visible" one. Reconcile these two models
+      // by waiting until at least one event has been fired, and then waiting
+      // until the visibility state settles as "visible".
+      let visibilityState = await p;
+      for (let attempts = 0; visibilityState !== 'visible' && attempts < 10; attempts++) {
+        visibilityState = await v.webContents.executeJavaScript('document.visibilityState');
+      }
+      expect(visibilityState).to.equal('visible');
     });
   });
 });
