@@ -22,7 +22,7 @@ class BrowserObserver : public base::CheckedObserver {
   // The browser has closed all windows and will quit.
   virtual void OnWillQuit(bool* prevent_default) {}
 
-  // The browser has closed all windows. If the browser is quiting, then this
+  // The browser has closed all windows. If the browser is quitting, then this
   // method will not be called, instead it will call OnWillQuit.
   virtual void OnWindowAllClosed() {}
 

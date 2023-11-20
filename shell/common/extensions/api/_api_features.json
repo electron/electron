@@ -1,4 +1,17 @@
 {
+  "action": {
+    "dependencies": ["manifest:action"],
+    "contexts": ["blessed_extension"]
+  },
+  "action.isEnabled": {
+    "channel": "stable"
+  },
+  "action.getBadgeTextColor": {
+    "channel": "stable"
+  },
+  "action.setBadgeTextColor": {
+    "channel": "stable"
+  },
   "tabs": {
     "channel": "stable",
     "extension_types": ["extension"],

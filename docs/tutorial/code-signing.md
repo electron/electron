@@ -51,7 +51,7 @@ ways to get your application signed and notarized.
 
 If you're using Electron's favorite build tool, getting your application signed
 and notarized requires a few additions to your configuration. [Forge](https://electronforge.io) is a
-collection of the official Electron tools, using [`electron-packager`][],
+collection of the official Electron tools, using [`@electron/packager`][],
 [`@electron/osx-sign`][], and [`@electron/notarize`][] under the hood.
 
 Detailed instructions on how to configure your application can be found in the
@@ -61,14 +61,14 @@ the Electron Forge docs.
 ### Using Electron Packager
 
 If you're not using an integrated build pipeline like Forge, you
-are likely using [`electron-packager`][], which includes [`@electron/osx-sign`][] and
+are likely using [`@electron/packager`][], which includes [`@electron/osx-sign`][] and
 [`@electron/notarize`][].
 
 If you're using Packager's API, you can pass [in configuration that both signs
-and notarizes your application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
+and notarizes your application](https://electron.github.io/packager/main/interfaces/electronpackager.options.html).
 
 ```js @ts-nocheck
-const packager = require('electron-packager')
+const packager = require('@electron/packager')
 
 packager({
   dir: '/path/to/my/app',
@@ -190,7 +190,7 @@ See the [Windows Store Guide][].
 
 [apple developer program]: https://developer.apple.com/programs/
 [`@electron/osx-sign`]: https://github.com/electron/osx-sign
-[`electron-packager`]: https://github.com/electron/electron-packager
+[`@electron/packager`]: https://github.com/electron/packager
 [`@electron/notarize`]: https://github.com/electron/notarize
 [`electron-winstaller`]: https://github.com/electron/windows-installer
 [`electron-wix-msi`]: https://github.com/electron-userland/electron-wix-msi

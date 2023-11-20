@@ -149,7 +149,7 @@ void ZoomLevelDelegate::InitHostZoomMap(content::HostZoomMap* host_zoom_map) {
   if (host_zoom_dictionary) {
     // Since we're calling this before setting up zoom_subscription_ below we
     // don't need to worry that host_zoom_dictionary is indirectly affected
-    // by calls to HostZoomMap::SExtractPerHostZoomLevelsetZoomLevelForHost().
+    // by calls to HostZoomMap::SetZoomLevelForHost().
     ExtractPerHostZoomLevels(*host_zoom_dictionary);
   }
   zoom_subscription_ =

@@ -1868,8 +1868,9 @@ bool WebContents::EmitNavigationEvent(
   content::RenderFrameHost* initiator_frame_host =
       navigation_handle->GetInitiatorFrameToken().has_value()
           ? content::RenderFrameHost::FromFrameToken(
-                navigation_handle->GetInitiatorProcessId(),
-                navigation_handle->GetInitiatorFrameToken().value())
+                content::GlobalRenderFrameHostToken(
+                    navigation_handle->GetInitiatorProcessId(),
+                    navigation_handle->GetInitiatorFrameToken().value()))
           : nullptr;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

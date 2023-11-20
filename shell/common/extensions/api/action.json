@@ -6,7 +6,7 @@
     "namespace": "action",
     "description": "Use the <code>chrome.action</code> API to control the extension's icon in the Google Chrome toolbar.",
     "compiler_options": {
-      "implemented_in": "shell/browser/extensions/api/extension_action/extension_action_api.h"
+      "implemented_in": "electron/shell/browser/extensions/api/extension_action/extension_action_api.h"
     },
     "types": [
       {

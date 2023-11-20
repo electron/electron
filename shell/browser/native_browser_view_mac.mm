@@ -84,7 +84,7 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
     return;
   auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.wantsLayer = YES;
-  view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
+  view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color).get();
 }
 
 // static
