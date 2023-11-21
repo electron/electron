@@ -7,7 +7,7 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 The following example shows how to bounce your icon on the dock.
 
-```javascript
+```js
 const { app } = require('electron')
 app.dock.bounce()
 ```

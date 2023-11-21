@@ -15,7 +15,7 @@ Shortcuts are registered with the [`globalShortcut`](global-shortcut.md) module
 using the [`register`](global-shortcut.md#globalshortcutregisteraccelerator-callback)
 method, i.e.
 
-```javascript
+```js
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {

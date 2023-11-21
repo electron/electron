@@ -9,7 +9,7 @@ It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
@@ -53,7 +53,7 @@ If you want to also observe navigations in `<iframe>`s, use [`will-frame-navigat
 
 These methods can be accessed from the `webContents` module:
 
-```javascript
+```js
 const { webContents } = require('electron')
 console.log(webContents)
 ```
@@ -439,7 +439,7 @@ Emitted when a `beforeunload` event handler is attempting to cancel a page unloa
 Calling `event.preventDefault()` will ignore the `beforeunload` event handler
 and allow the page to be unloaded.
 
-```javascript
+```js
 const { BrowserWindow, dialog } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.webContents.on('will-prevent-unload', (event) => {
@@ -527,7 +527,7 @@ and the menu shortcuts.
 To only prevent the menu shortcuts, use
 [`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 600 })
@@ -837,7 +837,7 @@ Due to the nature of bluetooth, scanning for devices when
 `select-bluetooth-device` to fire multiple times until `callback` is called
 with either a device id or an empty string to cancel the request.
 
-```javascript title='main.js'
+```js title='main.js'
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -872,7 +872,7 @@ Returns:
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ webPreferences: { offscreen: true } })
@@ -1004,7 +1004,7 @@ Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
-```javascript
+```js
 const win = new BrowserWindow()
 const options = { extraHeaders: 'pragma: no-cache\n' }
 win.webContents.loadURL('https://github.com', options)
@@ -1054,7 +1054,7 @@ Initiates a download of the resource at `url` without navigating. The
 
 Returns `string` - The URL of the current web page.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('https://github.com').then(() => {
@@ -1503,7 +1503,7 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
-```javascript
+```js
 const win = new BrowserWindow()
 win.webContents.on('found-in-page', (event, result) => {
   if (result.finalUpdate) win.webContents.stopFindInPage('clearSelection')
@@ -1623,7 +1623,7 @@ The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
 
 An example of `webContents.printToPDF`:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -1655,7 +1655,7 @@ See [Page.printToPdf](https://chromedevtools.github.io/devtools-protocol/tot/Pag
 Adds the specified path to DevTools workspace. Must be used after DevTools
 creation:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 win.webContents.on('devtools-opened', () => {
@@ -1978,7 +1978,7 @@ the cursor when dragging.
 
 Returns `Promise<void>` - resolves if the page is saved.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
