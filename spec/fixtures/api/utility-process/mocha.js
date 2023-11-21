@@ -38,9 +38,6 @@ mocha.timeout(mochaTimeout);
 const baseElectronDir = path.resolve(__dirname, '../../../..');
 
 process.parentPort.on('message', (e) => {
-  console.log('child received', e);
-  console.log('path', path.join(baseElectronDir, e.data));
-
   mocha.addFile(path.join(baseElectronDir, e.data));
 
   // Set up chai in the correct order
