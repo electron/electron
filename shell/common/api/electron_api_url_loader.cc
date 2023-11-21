@@ -472,6 +472,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   if (electron::IsUtilityProcess()) {
     return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
   }
+  CHECK(browser_context_);
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory;
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context_);
