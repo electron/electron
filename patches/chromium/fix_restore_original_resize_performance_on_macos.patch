@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 21 Nov 2023 15:03:21 -0800
+Subject: fix: restore original resize performance on macOS
+
+Reverts https://chromium-review.googlesource.com/c/chromium/src/+/3118293 which
+fixed a android only regression but in the process regressed electron window
+resize perf wildly on macOS.
+
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 749ee4641462aec1142f75de9f0459d7e7cf322f..4dcee366b8bd43add1f7e1dbedaf73403dd944cd 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -2205,9 +2205,8 @@ RenderWidgetHostImpl::GetWidgetInputHandler() {
+ void RenderWidgetHostImpl::NotifyScreenInfoChanged() {
+   // The resize message (which may not happen immediately) will carry with it
+   // the screen info as well as the new size (if the screen has changed scale
+-  // factor). Force sending the new visual properties even if there is one in
+-  // flight to ensure proper IPC ordering for features like the Fullscreen API.
+-  SynchronizeVisualPropertiesIgnoringPendingAck();
++  // factor).
++  SynchronizeVisualProperties();
+ 
+   // The device scale factor will be same for all the views contained by the
+   // primary main frame, so just set it once.
