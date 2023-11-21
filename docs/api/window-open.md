@@ -80,7 +80,7 @@ window will not close when the opener window closes. The default value is `false
 
 ### Native `Window` example
 
-```javascript
+```js
 // main.js
 const mainWindow = new BrowserWindow()
 
@@ -104,7 +104,7 @@ mainWindow.webContents.setWindowOpenHandler(({ url }) => {
 })
 ```
 
-```javascript
+```js
 // renderer process (mainWindow)
 const childWindow = window.open('', 'modal')
 childWindow.document.write('<h1>Hello</h1>')

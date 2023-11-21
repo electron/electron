@@ -8,7 +8,7 @@ The `webFrameMain` module can be used to lookup frames across existing
 [`WebContents`](web-contents.md) instances. Navigation events are the common
 use case.
 
-```javascript
+```js
 const { BrowserWindow, webFrameMain } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
@@ -29,7 +29,7 @@ win.webContents.on(
 You can also access frames of existing pages by using the `mainFrame` property
 of [`WebContents`](web-contents.md).
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 async function main () {

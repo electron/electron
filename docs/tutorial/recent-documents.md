@@ -24,12 +24,12 @@ the application via JumpList or dock menu, respectively.
 
 ### Managing recent documents
 
-```javascript fiddle='docs/fiddles/features/recent-documents'
-const { app, BrowserWindow } = require('electron')
+```fiddle docs/fiddles/features/recent-documents
+const { app, BrowserWindow } = require('electron/main')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const createWindow = () => {
+function createWindow () {
   const win = new BrowserWindow({
     width: 800,
     height: 600
@@ -116,7 +116,7 @@ following code snippet to your menu template:
 Make sure the application menu is added after the [`'ready'`](../api/app.md#event-ready)
 event and not before, or the menu item will be disabled:
 
-```javascript
+```js
 const { app, Menu } = require('electron')
 
 const template = [

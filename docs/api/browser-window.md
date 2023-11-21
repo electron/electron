@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
-```javascript
+```js
 // In the main process.
 const { BrowserWindow } = require('electron')
 
@@ -38,7 +38,7 @@ While loading the page, the `ready-to-show` event will be emitted when the rende
 process has rendered the page for the first time if the window has not been shown yet. Showing
 the window after this event will have no visual flash:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ show: false })
 win.once('ready-to-show', () => {
@@ -59,7 +59,7 @@ For a complex app, the `ready-to-show` event could be emitted too late, making
 the app feel slow. In this case, it is recommended to show the window
 immediately, and use a `backgroundColor` close to your app's background:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ backgroundColor: '#2e2c29' })
@@ -85,7 +85,7 @@ For more information about these color types see valid options in [win.setBackgr
 
 By using `parent` option, you can create child windows:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const top = new BrowserWindow()
@@ -101,7 +101,7 @@ The `child` window will always show on top of the `top` window.
 A modal window is a child window that disables parent window, to create a modal
 window, you have to set both `parent` and `modal` options:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const top = new BrowserWindow()
@@ -188,7 +188,7 @@ window should be closed, which will also be called when the window is
 reloaded. In Electron, returning any value other than `undefined` would cancel the
 close. For example:
 
-```javascript
+```js
 window.onbeforeunload = (e) => {
   console.log('I do not want to be closed')
 
@@ -351,7 +351,7 @@ Commands are lowercased, underscores are replaced with hyphens, and the
 `APPCOMMAND_` prefix is stripped off.
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 win.on('app-command', (e, cmd) => {
@@ -456,7 +456,7 @@ Returns `BrowserWindow | null` - The window with the given `id`.
 
 Objects created with `new BrowserWindow` have the following properties:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 // In this example `win` is our instance
 const win = new BrowserWindow({ width: 800, height: 600 })
@@ -780,7 +780,7 @@ Closes the currently open [Quick Look][quick-look] panel.
 
 Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
@@ -1035,7 +1035,7 @@ Changes the attachment point for sheets on macOS. By default, sheets are
 attached just below the window frame, but you may want to display them beneath
 a HTML-rendered toolbar. For example:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
@@ -1178,7 +1178,7 @@ To ensure that file URLs are properly formatted, it is recommended to use
 Node's [`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject)
 method:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
@@ -1194,7 +1194,7 @@ win.loadURL(url)
 You can load a URL using a `POST` request with URL-encoded data by doing
 the following:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 

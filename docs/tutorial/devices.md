@@ -26,7 +26,7 @@ This example demonstrates an Electron application that automatically selects
 the first available bluetooth device when the `Test Bluetooth` button is
 clicked.
 
-```javascript fiddle='docs/fiddles/features/web-bluetooth'
+```fiddle docs/fiddles/features/web-bluetooth
 
 ```
 
@@ -61,7 +61,7 @@ By default Electron employs the same [blocklist](https://github.com/WICG/webhid/
 used by Chromium.  If you wish to override this behavior, you can do so by
 setting the `disable-hid-blocklist` flag:
 
-```javascript
+```js
 app.commandLine.appendSwitch('disable-hid-blocklist')
 ```
 
@@ -72,7 +72,7 @@ HID devices through [`ses.setDevicePermissionHandler(handler)`](../api/session.m
 and through [`select-hid-device` event on the Session](../api/session.md#event-select-hid-device)
 when the `Test WebHID` button is clicked.
 
-```javascript fiddle='docs/fiddles/features/web-hid'
+```fiddle docs/fiddles/features/web-hid
 
 ```
 
@@ -112,7 +112,7 @@ as well as demonstrating selecting the first available Arduino Uno serial device
 [`select-serial-port` event on the Session](../api/session.md#event-select-serial-port)
 when the `Test Web Serial` button is clicked.
 
-```javascript fiddle='docs/fiddles/features/web-serial'
+```fiddle docs/fiddles/features/web-serial
 
 ```
 
@@ -152,6 +152,6 @@ USB devices (if they are attached) through [`ses.setDevicePermissionHandler(hand
 and through [`select-usb-device` event on the Session](../api/session.md#event-select-usb-device)
 when the `Test WebUSB` button is clicked.
 
-```javascript fiddle='docs/fiddles/features/web-usb'
+```fiddle docs/fiddles/features/web-usb
 
 ```

@@ -200,9 +200,9 @@
     "@octokit/rest" "^19.0.11"
 
 "@electron/lint-roller@^1.9.0":
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.9.0.tgz#784d2b9b7664dc7b696cc57cf6c9e181ea701e76"
-  integrity sha512-DgZJdzSAG19PotTPhWM4Xgt0RDv/nJS1JNKpJdvOUv2AsdU0rIq3kDAzm2AdzIW/AlrOnkpUA1UJNezdIAIA4g==
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.10.0.tgz#278dfb285018869faabd5c3f616c64da7f2b26c1"
+  integrity sha512-dDJDy5MANWNIxv7OqQ0NwPzqwMmgTFYtjR/KKeEEdCQj1k21TT61+Zjdsm+IKbA2LSPujpujsyGKUQtb4oLLCA==
   dependencies:
     "@dsanders11/vscode-markdown-languageservice" "^0.3.0"
     balanced-match "^2.0.0"

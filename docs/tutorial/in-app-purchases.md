@@ -34,7 +34,7 @@ To test In-App Purchase in development with Electron you'll have to change the `
 
 Here is an example that shows how to use In-App Purchases in Electron. You'll have to replace the product ids by the identifiers of the products created with iTunes Connect (the identifier of `com.example.app.product1` is `product1`). Note that you have to listen to the `transactions-updated` event as soon as possible in your app.
 
-```javascript
+```js
 // Main process
 const { inAppPurchase } = require('electron')
 const PRODUCT_IDS = ['id1', 'id2']
