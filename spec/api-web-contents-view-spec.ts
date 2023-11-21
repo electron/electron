@@ -134,7 +134,7 @@ describe('WebContentsView', () => {
       // until the visibility state settles as "visible".
       let visibilityState = await p;
       for (let attempts = 0; visibilityState !== 'visible' && attempts < 10; attempts++) {
-        visibilityState = await v.webContents.executeJavaScript('document.visibilityState');
+        visibilityState = await v.webContents.executeJavaScript('new Promise(resolve => document.visibilityState === "visible" ? resolve("visible") : document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
       }
       expect(visibilityState).to.equal('visible');
     });
