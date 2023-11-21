@@ -8,7 +8,7 @@ _This class is not exported from the `'electron'` module. It is only available a
 Chrome Developer Tools has a [special binding][rdp] available at JavaScript
 runtime that allows interacting with pages and instrumenting them.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 

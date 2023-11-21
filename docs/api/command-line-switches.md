@@ -6,7 +6,7 @@ You can use [app.commandLine.appendSwitch][append-switch] to append them in
 your app's main script before the [ready][ready] event of the [app][app] module
 is emitted:
 
-```javascript
+```js
 const { app } = require('electron')
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
@@ -185,7 +185,7 @@ list of hosts. This flag has an effect only if used in tandem with
 
 For example:
 
-```javascript
+```js
 const { app } = require('electron')
 app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
 ```

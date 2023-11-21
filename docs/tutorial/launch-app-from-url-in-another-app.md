@@ -25,14 +25,14 @@ we will use will be "`electron-fiddle://`".
 First, we will import the required modules from `electron`. These modules help
 control our application lifecycle and create a native browser window.
 
-```javascript
+```js
 const { app, BrowserWindow, shell } = require('electron')
 const path = require('node:path')
 ```
 
 Next, we will proceed to register our application to handle all "`electron-fiddle://`" protocols.
 
-```javascript
+```js
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('electron-fiddle', process.execPath, [path.resolve(process.argv[1])])
@@ -44,7 +44,7 @@ if (process.defaultApp) {
 
 We will now define the function in charge of creating our browser window and load our application's `index.html` file.
 
-```javascript
+```js
 let mainWindow
 
 const createWindow = () => {
@@ -67,7 +67,7 @@ This code will be different in Windows and Linux compared to MacOS. This is due 
 
 #### Windows and Linux code:
 
-```javascript @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
+```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -92,7 +92,7 @@ if (!gotTheLock) {
 
 #### MacOS code:
 
-```javascript @ts-type={createWindow:()=>void}
+```js @ts-type={createWindow:()=>void}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -108,7 +108,7 @@ app.on('open-url', (event, url) => {
 
 Finally, we will add some additional code to handle when someone closes our application.
 
-```javascript
+```js
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
@@ -167,7 +167,7 @@ If you're using Electron Packager's API, adding support for protocol handlers is
 Electron Forge is handled, except
 `protocols` is part of the Packager options passed to the `packager` function.
 
-```javascript @ts-nocheck
+```js @ts-nocheck
 const packager = require('electron-packager')
 
 packager({

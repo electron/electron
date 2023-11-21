@@ -65,7 +65,7 @@ If you encounter this problem, the following articles may prove helpful:
 If you want a quick fix, you can make the variables global by changing your
 code from this:
 
-```javascript
+```js
 const { app, Tray } = require('electron')
 app.whenReady().then(() => {
   const tray = new Tray('/path/to/icon.png')
@@ -75,7 +75,7 @@ app.whenReady().then(() => {
 
 to this:
 
-```javascript
+```js
 const { app, Tray } = require('electron')
 let tray = null
 app.whenReady().then(() => {
@@ -92,7 +92,7 @@ for some libraries since they want to insert the symbols with the same names.
 
 To solve this, you can turn off node integration in Electron:
 
-```javascript
+```js
 // In the main process.
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
@@ -141,7 +141,7 @@ Sub-pixel anti-aliasing needs a non-transparent background of the layer containi
 
 To achieve this goal, set the background in the constructor for [BrowserWindow][browser-window]:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
   backgroundColor: '#fff'
