@@ -90,6 +90,7 @@
   V(electron_common_v8_util)
 
 #define ELECTRON_RENDERER_BINDINGS(V) \
+  V(electron_renderer_web_utils)      \
   V(electron_renderer_context_bridge) \
   V(electron_renderer_crash_reporter) \
   V(electron_renderer_ipc)            \
@@ -249,7 +250,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
   }
 
   // If we get here then we have a node environment, so either a) we're in the
-  // non-rendrer process, or b) we're in the renderer process in a context that
+  // non-renderer process, or b) we're in the renderer process in a context that
   // has both node and blink, i.e. contextIsolation disabled.
 
   // If we're in the renderer with contextIsolation disabled, ask blink first

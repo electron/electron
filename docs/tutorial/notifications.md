@@ -30,16 +30,38 @@ new Notification({
 
 Here's a full example that you can open with Electron Fiddle:
 
-```javascript fiddle='docs/fiddles/features/notifications/main'
-const { Notification } = require('electron')
+```fiddle docs/fiddles/features/notifications/main
+const { app, BrowserWindow, Notification } = require('electron/main')
+
+function createWindow () {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+
+  win.loadFile('index.html')
+}
 
 const NOTIFICATION_TITLE = 'Basic Notification'
 const NOTIFICATION_BODY = 'Notification from the Main process'
 
-new Notification({
-  title: NOTIFICATION_TITLE,
-  body: NOTIFICATION_BODY
-}).show()
+function showNotification () {
+  new Notification({ title: NOTIFICATION_TITLE, body: NOTIFICATION_BODY }).show()
+}
+
+app.whenReady().then(createWindow).then(showNotification)
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+})
 ```
 
 ### Show notifications in the renderer process
@@ -59,14 +81,13 @@ new Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY }).onclick =
 
 Here's a full example that you can open with Electron Fiddle:
 
-```javascript fiddle='docs/fiddles/features/notifications/renderer'
+```fiddle docs/fiddles/features/notifications/renderer|focus=renderer.js
 const NOTIFICATION_TITLE = 'Title'
-const NOTIFICATION_BODY =
-  'Notification from the Renderer process. Click to log to console.'
-const CLICK_MESSAGE = 'Notification clicked'
+const NOTIFICATION_BODY = 'Notification from the Renderer process. Click to log to console.'
+const CLICK_MESSAGE = 'Notification clicked!'
 
-new Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY }).onclick =
-  () => console.log(CLICK_MESSAGE)
+new window.Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY })
+  .onclick = () => { document.getElementById('output').innerText = CLICK_MESSAGE }
 ```
 
 ## Platform considerations

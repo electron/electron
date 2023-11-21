@@ -106,7 +106,7 @@ void UsbChooserController::OnBrowserContextShutdown() {
 }
 
 // Get a list of devices that can be shown in the chooser bubble UI for
-// user to grant permsssion.
+// user to grant permission.
 void UsbChooserController::GotUsbDeviceList(
     std::vector<::device::mojom::UsbDeviceInfoPtr> devices) {
   // Listen to UsbChooserContext for OnDeviceAdded/Removed events after the

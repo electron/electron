@@ -235,7 +235,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
   captured_sources_.clear();
 
   if (capture_window && capture_screen) {
-    // Some capturers like PipeWire suppport a single capturer for both screens
+    // Some capturers like PipeWire support a single capturer for both screens
     // and windows. Use it if possible, treating both as window capture
     std::unique_ptr<webrtc::DesktopCapturer> desktop_capturer =
         webrtc::DesktopCapturer::CreateGenericCapturer(

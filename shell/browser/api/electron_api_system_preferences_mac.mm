@@ -435,7 +435,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
 
   __block gin_helper::Promise<void> p = std::move(promise);
   [context
-      evaluateAccessControl:access_control
+      evaluateAccessControl:access_control.get()
                   operation:LAAccessControlOperationUseKeySign
             localizedReason:[NSString stringWithUTF8String:reason.c_str()]
                       reply:^(BOOL success, NSError* error) {

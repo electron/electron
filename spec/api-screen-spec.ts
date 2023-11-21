@@ -1,6 +1,5 @@
 import { expect } from 'chai';
-import { screen } from 'electron/main';
-import { ifit } from './lib/spec-helpers';
+import { Display, screen } from 'electron/main';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {
@@ -24,62 +23,100 @@ describe('screen module', () => {
   });
 
   describe('screen.getPrimaryDisplay()', () => {
+    let display: Display | null = null;
+
+    beforeEach(() => {
+      display = screen.getPrimaryDisplay();
+    });
+
+    afterEach(() => {
+      display = null;
+    });
+
     it('returns a display object', () => {
-      const display = screen.getPrimaryDisplay();
       expect(display).to.be.an('object');
     });
 
-    ifit(process.platform !== 'linux')('has the correct non-object properties', function () {
-      const display = screen.getPrimaryDisplay();
-
-      expect(display).to.have.property('scaleFactor').that.is.a('number');
-      expect(display).to.have.property('id').that.is.a('number');
-      expect(display).to.have.property('label').that.is.a('string');
-      expect(display).to.have.property('rotation').that.is.a('number');
-      expect(display).to.have.property('touchSupport').that.is.a('string');
+    it('has the correct non-object properties', function () {
       expect(display).to.have.property('accelerometerSupport').that.is.a('string');
-      expect(display).to.have.property('internal').that.is.a('boolean');
-      expect(display).to.have.property('monochrome').that.is.a('boolean');
-      expect(display).to.have.property('depthPerComponent').that.is.a('number');
       expect(display).to.have.property('colorDepth').that.is.a('number');
       expect(display).to.have.property('colorSpace').that.is.a('string');
+      expect(display).to.have.property('depthPerComponent').that.is.a('number');
+      expect(display).to.have.property('detected').that.is.a('boolean');
       expect(display).to.have.property('displayFrequency').that.is.a('number');
+      expect(display).to.have.property('id').that.is.a('number');
+      expect(display).to.have.property('internal').that.is.a('boolean');
+      expect(display).to.have.property('label').that.is.a('string');
+      expect(display).to.have.property('monochrome').that.is.a('boolean');
+      expect(display).to.have.property('scaleFactor').that.is.a('number');
+      expect(display).to.have.property('rotation').that.is.a('number');
+      expect(display).to.have.property('touchSupport').that.is.a('string');
     });
 
-    ifit(process.platform !== 'linux')('has a size object property', function () {
-      const display = screen.getPrimaryDisplay();
+    it('has a maximumCursorSize object property', () => {
+      expect(display).to.have.property('maximumCursorSize').that.is.an('object');
 
+      const { maximumCursorSize } = display!;
+      expect(maximumCursorSize).to.have.property('width').that.is.a('number');
+      expect(maximumCursorSize).to.have.property('height').that.is.a('number');
+    });
+
+    it('has a nativeOrigin object property', () => {
+      expect(display).to.have.property('nativeOrigin').that.is.an('object');
+
+      const { nativeOrigin } = display!;
+      expect(nativeOrigin).to.have.property('x').that.is.a('number');
+      expect(nativeOrigin).to.have.property('y').that.is.a('number');
+    });
+
+    it('has a size object property', () => {
       expect(display).to.have.property('size').that.is.an('object');
-      const size = display.size;
-      expect(size).to.have.property('width').that.is.greaterThan(0);
-      expect(size).to.have.property('height').that.is.greaterThan(0);
+
+      const { size } = display!;
+
+      if (process.platform === 'linux') {
+        expect(size).to.have.property('width').that.is.a('number');
+        expect(size).to.have.property('height').that.is.a('number');
+      } else {
+        expect(size).to.have.property('width').that.is.greaterThan(0);
+        expect(size).to.have.property('height').that.is.greaterThan(0);
+      }
     });
 
-    ifit(process.platform !== 'linux')('has a workAreaSize object property', function () {
-      const display = screen.getPrimaryDisplay();
-
+    it('has a workAreaSize object property', () => {
       expect(display).to.have.property('workAreaSize').that.is.an('object');
-      const workAreaSize = display.workAreaSize;
-      expect(workAreaSize).to.have.property('width').that.is.greaterThan(0);
-      expect(workAreaSize).to.have.property('height').that.is.greaterThan(0);
+
+      const { workAreaSize } = display!;
+
+      if (process.platform === 'linux') {
+        expect(workAreaSize).to.have.property('width').that.is.a('number');
+        expect(workAreaSize).to.have.property('height').that.is.a('number');
+      } else {
+        expect(workAreaSize).to.have.property('width').that.is.greaterThan(0);
+        expect(workAreaSize).to.have.property('height').that.is.greaterThan(0);
+      }
     });
 
-    ifit(process.platform !== 'linux')('has a bounds object property', function () {
-      const display = screen.getPrimaryDisplay();
-
+    it('has a bounds object property', () => {
       expect(display).to.have.property('bounds').that.is.an('object');
-      const bounds = display.bounds;
+
+      const { bounds } = display!;
       expect(bounds).to.have.property('x').that.is.a('number');
       expect(bounds).to.have.property('y').that.is.a('number');
-      expect(bounds).to.have.property('width').that.is.greaterThan(0);
-      expect(bounds).to.have.property('height').that.is.greaterThan(0);
+
+      if (process.platform === 'linux') {
+        expect(bounds).to.have.property('width').that.is.a('number');
+        expect(bounds).to.have.property('height').that.is.a('number');
+      } else {
+        expect(bounds).to.have.property('width').that.is.greaterThan(0);
+        expect(bounds).to.have.property('height').that.is.greaterThan(0);
+      }
     });
 
-    it('has a workArea object property', function () {
-      const display = screen.getPrimaryDisplay();
-
+    it('has a workArea object property', () => {
       expect(display).to.have.property('workArea').that.is.an('object');
-      const workArea = display.workArea;
+
+      const { workArea } = display!;
       expect(workArea).to.have.property('x').that.is.a('number');
       expect(workArea).to.have.property('y').that.is.a('number');
       expect(workArea).to.have.property('width').that.is.greaterThan(0);

@@ -11,7 +11,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
   // Avoid recursive require.
   const { app } = require('electron');
 
-  // Set ID at constructon time so it's accessible after
+  // Set ID at construction time so it's accessible after
   // underlying window destruction.
   const id = this.id;
   Object.defineProperty(this, 'id', {

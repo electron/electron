@@ -9,7 +9,7 @@ It is possible to use Node.js features in Electron's Web Workers, to do
 so the `nodeIntegrationInWorker` option should be set to `true` in
 `webPreferences`.
 
-```javascript
+```js
 const win = new BrowserWindow({
   webPreferences: {
     nodeIntegrationInWorker: true
@@ -42,7 +42,7 @@ safe.
 The only way to load a native module safely for now, is to make sure the app
 loads no native modules after the Web Workers get started.
 
-```javascript @ts-expect-error=[1]
+```js @ts-expect-error=[1]
 process.dlopen = () => {
   throw new Error('Load native module is not safe')
 }

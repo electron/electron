@@ -3,7 +3,7 @@ import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session }
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import * as WebSocket from 'ws';
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen } from './lib/spec-helpers';
@@ -200,7 +200,7 @@ describe('chrome extensions', () => {
 
   it('serializes a loaded extension', async () => {
     const extensionPath = path.join(fixtures, 'extensions', 'red-bg');
-    const manifest = JSON.parse(fs.readFileSync(path.join(extensionPath, 'manifest.json'), 'utf-8'));
+    const manifest = JSON.parse(await fs.readFile(path.join(extensionPath, 'manifest.json'), 'utf-8'));
     const customSession = session.fromPartition(`persist:${uuid.v4()}`);
     const extension = await customSession.loadExtension(extensionPath);
     expect(extension.id).to.be.a('string');
@@ -684,16 +684,15 @@ describe('chrome extensions', () => {
           let server: http.Server;
           let port: number;
           before(async () => {
-            server = http.createServer((_, res) => {
-              fs.readFile(contentPath, (error, content) => {
-                if (error) {
-                  res.writeHead(500);
-                  res.end(`Failed to load ${contentPath} : ${error.code}`);
-                } else {
-                  res.writeHead(200, { 'Content-Type': 'text/html' });
-                  res.end(content, 'utf-8');
-                }
-              });
+            server = http.createServer(async (_, res) => {
+              try {
+                const content = await fs.readFile(contentPath, 'utf-8');
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(content, 'utf-8');
+              } catch (error) {
+                res.writeHead(500);
+                res.end(`Failed to load ${contentPath} : ${(error as NodeJS.ErrnoException).code}`);
+              }
             });
 
             ({ port, url } = await listen(server));
@@ -895,6 +894,65 @@ describe('chrome extensions', () => {
           { language: 'ps', percentage: 100 },
           { language: 'fi', percentage: 100 }
         ]);
+      });
+    });
+
+    // chrome.action is not supported in Electron. These tests only ensure
+    // it does not explode.
+    describe('chrome.action', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-action-fail'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('isEnabled', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'isEnabled' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(false);
+      });
+
+      it('setIcon', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setIcon' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(null);
+      });
+
+      it('getBadgeText', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getBadgeText' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal('');
       });
     });
 

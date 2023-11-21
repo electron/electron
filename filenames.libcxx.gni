@@ -927,6 +927,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/experimental/iterator",
   "//third_party/libc++/src/include/experimental/list",
   "//third_party/libc++/src/include/experimental/map",
+  "//third_party/libc++/src/include/experimental/memory",
   "//third_party/libc++/src/include/experimental/memory_resource",
   "//third_party/libc++/src/include/experimental/propagate_const",
   "//third_party/libc++/src/include/experimental/regex",
