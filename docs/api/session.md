@@ -9,7 +9,7 @@ The `session` module can be used to create new `Session` objects.
 You can also access the `session` of existing pages by using the `session`
 property of [`WebContents`](web-contents.md), or from the `session` module.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 600 })
@@ -75,7 +75,7 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 You can create a `Session` object in the `session` module:
 
-```javascript
+```js
 const { session } = require('electron')
 const ses = session.fromPartition('persist:name')
 console.log(ses.getUserAgent())
@@ -98,7 +98,7 @@ Emitted when Electron is about to download `item` in `webContents`.
 Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
 
-```javascript @ts-expect-error=[4]
+```js @ts-expect-error=[4]
 const { session } = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
@@ -214,7 +214,7 @@ cancel the request.  Additionally, permissioning on `navigator.hid` can
 be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
-```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
+```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -320,7 +320,7 @@ cancel the request.  Additionally, permissioning on `navigator.serial` can
 be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
 with the `serial` permission.
 
-```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
+```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -463,7 +463,7 @@ cancel the request.  Additionally, permissioning on `navigator.usb` can
 be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
-```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)} @ts-type={updateGrantedDevices:(devices:Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)=>void}
+```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)} @ts-type={updateGrantedDevices:(devices:Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)=>void}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -754,7 +754,7 @@ Sets download saving directory. By default, the download directory will be the
 
 Emulates network with the given configuration for the `session`.
 
-```javascript
+```js
 const win = new BrowserWindow()
 
 // To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
@@ -868,7 +868,7 @@ calling `callback(-2)` rejects it.
 Calling `setCertificateVerifyProc(null)` will revert back to default certificate
 verify proc.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
@@ -921,7 +921,7 @@ To clear the handler, call `setPermissionRequestHandler(null)`.  Please note tha
 you must also implement `setPermissionCheckHandler` to get complete permission handling.
 Most web APIs do a permission check and then make a permission request if the check is denied.
 
-```javascript
+```js
 const { session } = require('electron')
 session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
   if (webContents.getURL() === 'some-host' && permission === 'notifications') {
@@ -967,7 +967,7 @@ you must also implement `setPermissionRequestHandler` to get complete permission
 Most web APIs do a permission check and then make a permission request if the check is denied.
 To clear the handler, call `setPermissionCheckHandler(null)`.
 
-```javascript
+```js
 const { session } = require('electron')
 const url = require('url')
 session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
@@ -1012,7 +1012,7 @@ via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 [desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
 
-```javascript
+```js
 const { session, desktopCapturer } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
@@ -1026,7 +1026,7 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
 will capture the video or audio stream from that frame.
 
-```javascript
+```js
 const { session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
@@ -1055,7 +1055,7 @@ Additionally, the default behavior of Electron is to store granted device permis
 If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
 
-```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
+```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1137,7 +1137,7 @@ The return value for the handler is a string array of USB classes which should b
 Returning an empty string array from the handler will allow all USB classes; returning the passed in array will maintain the default list of protected USB classes (this is also the default behavior if a handler is not defined).
 To clear the handler, call `setUSBProtectedClassesHandler(null)`.
 
-```javascript
+```js
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1192,7 +1192,7 @@ that requires additional validation will be automatically cancelled.
 macOS does not require a handler because macOS handles the pairing
 automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
 
-```javascript
+```js
 const { app, BrowserWindow, session } = require('electron')
 const path = require('node:path')
 
@@ -1238,7 +1238,7 @@ Clears the host resolver cache.
 Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
 authentication.
 
-```javascript
+```js
 const { session } = require('electron')
 // consider any url ending with `example.com`, `foobar.com`, `baz`
 // for integrated authentication.
@@ -1543,7 +1543,7 @@ A [`WebRequest`](web-request.md) object for this session.
 
 A [`Protocol`](protocol.md) object for this session.
 
-```javascript
+```js
 const { app, session } = require('electron')
 const path = require('node:path')
 
@@ -1562,7 +1562,7 @@ app.whenReady().then(() => {
 
 A [`NetLog`](net-log.md) object for this session.
 
-```javascript
+```js
 const { app, session } = require('electron')
 
 app.whenReady().then(async () => {
