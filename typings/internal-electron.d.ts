@@ -111,8 +111,6 @@ declare namespace Electron {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
-    // Only applies to webviews
-    transparent?: boolean;
   }
 
   interface Menu {
