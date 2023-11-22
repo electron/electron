@@ -1,3 +1,3 @@
-build_gn.patch
-do_not_export_private_v8_symbols_on_windows.patch
 chore_allow_customizing_microtask_policy_per_context.patch
+build_expose_mksnapshot_to_embedders.patch
+build_correctly_expose_public_symbols_with_v8_expose_symbols.patch
