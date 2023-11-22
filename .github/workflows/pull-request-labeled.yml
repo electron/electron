@@ -8,6 +8,20 @@ permissions:
   contents: read
 
 jobs:
+  pull-request-labeled-backport-requested:
+    name: backport/requested label added
+    if: github.event.label.name == 'backport/requested 🗳'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Slack workflow
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
+        with:
+          payload: |
+            {
+              "url": "${{ github.event.pull_request.html_url }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }}
   pull-request-labeled-deprecation-review-complete:
     name: deprecation-review/complete label added
     if: github.event.label.name == 'deprecation-review/complete ✅'
