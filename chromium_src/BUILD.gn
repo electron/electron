@@ -256,6 +256,8 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/bad_message.cc",
       "//chrome/browser/bad_message.h",
+      "//chrome/browser/printing/prefs_util.cc",
+      "//chrome/browser/printing/prefs_util.h",
       "//chrome/browser/printing/print_job.cc",
       "//chrome/browser/printing/print_job.h",
       "//chrome/browser/printing/print_job_manager.cc",
