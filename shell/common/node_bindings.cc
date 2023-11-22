@@ -279,8 +279,11 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
       while (env->async_hooks()->fields()[node::AsyncHooks::kStackLength]) {
-        node::AsyncWrap::EmitAfter(env, env->execution_async_id());
-        env->async_hooks()->pop_async_context(env->execution_async_id());
+        double id = env->execution_async_id();
+        // Do not call EmitAfter for asyncId 0.
+        if (id != 0)
+          node::AsyncWrap::EmitAfter(env, id);
+        env->async_hooks()->pop_async_context(id);
       }
     }
 
