@@ -797,7 +797,7 @@ describe('<webview> tag', function () {
     after(() => w.close());
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    /* ifit(process.platform === 'darwin' && process.arch === 'x64') */it('is transparent by default', async () => {
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('is transparent by default', async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo'
       });
