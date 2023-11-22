@@ -331,7 +331,7 @@ void RendererClientBase::RenderFrameCreated(
       ->AddInterface<extensions::mojom::MimeHandlerViewContainerManager>(
           base::BindRepeating(
               &extensions::MimeHandlerViewContainerManager::BindReceiver,
-              render_frame->GetRoutingID()));
+              base::Unretained(render_frame)));
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
