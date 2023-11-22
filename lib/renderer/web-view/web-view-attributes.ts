@@ -266,7 +266,6 @@ export function setupWebViewAttributes (self: WebViewImpl) {
     [WEB_VIEW_ATTRIBUTES.PRELOAD, new PreloadAttribute(self)],
     [WEB_VIEW_ATTRIBUTES.BLINKFEATURES, new BlinkFeaturesAttribute(self)],
     [WEB_VIEW_ATTRIBUTES.DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(self)],
-    [WEB_VIEW_ATTRIBUTES.WEBPREFERENCES, new WebPreferencesAttribute(self)],
-    [WEB_VIEW_ATTRIBUTES.OPAQUE, new BooleanAttribute(WEB_VIEW_ATTRIBUTES.OPAQUE, self)]
+    [WEB_VIEW_ATTRIBUTES.WEBPREFERENCES, new WebPreferencesAttribute(self)]
   ]);
 }

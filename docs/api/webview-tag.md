@@ -221,12 +221,20 @@ windows. Popups are disabled by default.
 ```
 
 A `string` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
-The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions).
+The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions)
+in addition to `transparent`.
 
 The string follows the same format as the features string in `window.open`.
 A name by itself is given a `true` boolean value.
 A preference can be set to another value by including an `=`, followed by the value.
 Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are interpreted as `false`.
+
+#### `transparent`
+
+A `boolean` that when set to `true` gives the guest page a transparent background. Default is `true`.
+
+**Note:** When this preference is enabled, the text color of the guest page will change depending on it's
+color scheme but the background will remain transparent.
 
 ### `enableblinkfeatures`
 
@@ -247,18 +255,6 @@ The full list of supported feature strings can be found in the
 A `string` which is a list of strings which specifies the blink features to be disabled separated by `,`.
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
-
-### `opaque`
-
-```html
-<webview src="https://www.github.com/" opaque></webview>
-```
-
-A `boolean`. When this attribute is present the guest page will have an opaque background that changes
-depending on the color scheme of the guest page. The background is transparent by default.
-
-**Note:** When this attribute is not set, the text color of the guest page will change depending on it's
-color scheme but the background will remain transparent.
 
 ## Methods
 

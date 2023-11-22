@@ -822,8 +822,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
-  // Get opaque for guest view
-  options.Get("guestOpaque", &guest_opaque_);
+  // Get transparent for guest view
+  options.Get("transparent", &guest_transparent_);
 
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
@@ -1661,7 +1661,7 @@ void WebContents::HandleNewRenderFrame(
   if (web_preferences) {
     auto maybe_color = web_preferences->GetBackgroundColor();
     bool default_transparent =
-        (IsGuest() && !guest_opaque_) || type_ == Type::kBrowserView;
+        (IsGuest() && guest_transparent_) || type_ == Type::kBrowserView;
 
     // If webPreferences has no color stored we need to explicitly set guest
     // webContents background color to transparent.
