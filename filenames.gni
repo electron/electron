@@ -372,8 +372,6 @@ filenames = {
     "shell/browser/electron_download_manager_delegate.h",
     "shell/browser/electron_gpu_client.cc",
     "shell/browser/electron_gpu_client.h",
-    "shell/browser/electron_javascript_dialog_manager.cc",
-    "shell/browser/electron_javascript_dialog_manager.h",
     "shell/browser/electron_navigation_throttle.cc",
     "shell/browser/electron_navigation_throttle.h",
     "shell/browser/electron_permission_manager.cc",

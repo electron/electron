@@ -86,7 +86,6 @@ class SkRegion;
 namespace electron {
 
 class ElectronBrowserContext;
-class ElectronJavaScriptDialogManager;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
@@ -779,7 +778,6 @@ class WebContents : public ExclusiveAccessContext,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  std::unique_ptr<ElectronJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
 
