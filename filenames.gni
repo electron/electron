@@ -199,6 +199,8 @@ filenames = {
     "shell/common/language_util_mac.mm",
     "shell/common/mac/main_application_bundle.h",
     "shell/common/mac/main_application_bundle.mm",
+    "shell/common/mac/codesign_util.cc",
+    "shell/common/mac/codesign_util.h",
     "shell/common/node_bindings_mac.cc",
     "shell/common/node_bindings_mac.h",
     "shell/common/platform_util_mac.mm",
