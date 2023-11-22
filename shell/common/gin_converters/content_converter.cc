@@ -323,7 +323,7 @@ bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 content::StopFindAction* out) {
   using Val = content::StopFindAction;
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+      base::MakeFixedFlatMap<base::StringPiece, Val>({
           {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
           {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
           {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},

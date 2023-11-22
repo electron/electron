@@ -46,7 +46,7 @@ struct Converter<blink::mojom::AutoplayPolicy> {
                      blink::mojom::AutoplayPolicy* out) {
     using Val = blink::mojom::AutoplayPolicy;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"document-user-activation-required",
              Val::kDocumentUserActivationRequired},
             {"no-user-gesture-required", Val::kNoUserGestureRequired},
@@ -63,7 +63,7 @@ struct Converter<blink::mojom::V8CacheOptions> {
                      blink::mojom::V8CacheOptions* out) {
     using Val = blink::mojom::V8CacheOptions;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"bypassHeatCheck", Val::kCodeWithoutHeatCheck},
             {"bypassHeatCheckAndEagerCompile", Val::kFullCodeWithoutHeatCheck},
             {"code", Val::kCode},

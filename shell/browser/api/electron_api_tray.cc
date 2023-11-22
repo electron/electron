@@ -32,7 +32,7 @@ struct Converter<electron::TrayIcon::IconType> {
                      electron::TrayIcon::IconType* out) {
     using Val = electron::TrayIcon::IconType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"custom", Val::kCustom},
             {"error", Val::kError},
             {"info", Val::kInfo},
