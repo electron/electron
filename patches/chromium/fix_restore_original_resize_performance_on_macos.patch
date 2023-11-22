@@ -8,10 +8,10 @@ fixed a android only regression but in the process regressed electron window
 resize perf wildly on macOS.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 749ee4641462aec1142f75de9f0459d7e7cf322f..4dcee366b8bd43add1f7e1dbedaf73403dd944cd 100644
+index b013e7eaa4a5db79d19378e437d8d3d18dd1b2aa..04b6346c07f3a4cb028328a224a9d41cb233bb4e 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2205,9 +2205,8 @@ RenderWidgetHostImpl::GetWidgetInputHandler() {
+@@ -2201,9 +2201,8 @@ RenderWidgetHostImpl::GetWidgetInputHandler() {
  void RenderWidgetHostImpl::NotifyScreenInfoChanged() {
    // The resize message (which may not happen immediately) will carry with it
    // the screen info as well as the new size (if the screen has changed scale
