@@ -30,6 +30,16 @@ void ElectronDesktopNativeWidgetAura::InitNativeWidget(
   views::DesktopNativeWidgetAura::InitNativeWidget(std::move(params));
 }
 
+#if BUILDFLAG(IS_WIN)
+void ElectronDesktopNativeWidgetAura::OnSizeConstraintsChanged() {
+  views::DesktopNativeWidgetAura::OnSizeConstraintsChanged();
+
+  // OnSizeConstraintsChanged can remove thick frame depending from
+  // resizable state, so add it if needed.
+  native_window_view_->UpdateThickFrame();
+}
+#endif
+
 void ElectronDesktopNativeWidgetAura::Activate() {
   // Activate can cause the focused window to be blurred so only
   // call when the window being activated is visible. This prevents

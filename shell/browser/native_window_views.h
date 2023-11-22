@@ -190,6 +190,8 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
+
+  void UpdateThickFrame();
 #endif
 
  private:
