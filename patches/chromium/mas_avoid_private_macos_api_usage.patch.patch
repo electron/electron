@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5411ac75c9c97dc93d9c0bc47101b6a10fe123da..d7e646a03f7be909c25221e2af9ac8fec394070e 100644
+index 66fdaa456b913cdb2942bf4ffa484ab315ed9d56..9f2362aa1f0182d044c87f5ff056997504b23071 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -431,7 +431,7 @@ index 47afd2553bf76b5b185a4be131196d90cf9cad44..d6f9998890d7a83a8fb221691aa2f1e7
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index b2b7577479bf56a51267dd3a8ce3b0e7982a2b68..35d2990d11dd2160935ca52cb9e682861f376717 100644
+index e420fb03ad76db449b5dddc2155c5b8cc5abd503..0893bebda6abc96d11eb9c9cbbf1f13e60641c69 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -568,10 +568,10 @@ index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddf
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index c144f9e9be74f4ea8e2f2fa5fb861202423f9540..6282b0cb69f3b35a3da55f2b594c6fccccb8568d 100644
+index 308133639fdb5bd7d0de6becc9aabd202532808a..07952e35e3c161f6ddf8d849af0e4c2760ff0dbc 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -185,6 +185,7 @@ source_set("common") {
+@@ -187,6 +187,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -660,10 +660,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index e73b1bc2bb75ca0ab0c95a71011f65f1906d3e16..0f2cb21416ab3da17fd63b4e1d09c28a6350fe6a 100644
+index b97dbb080cd2355f15133c6eb1df0c6b806b791d..046d248fe6ad276a9e3bf14cce1be55a0ed52640 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -484,6 +484,7 @@ static_library("test_support") {
+@@ -478,6 +478,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -671,7 +671,7 @@ index e73b1bc2bb75ca0ab0c95a71011f65f1906d3e16..0f2cb21416ab3da17fd63b4e1d09c28a
    ]
  
    public_deps = [
-@@ -2918,6 +2919,7 @@ test("content_unittests") {
+@@ -2909,6 +2910,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -786,10 +786,10 @@ index f8d4dc33b5687122420af314d597679d16126e00..e187d08374b74314fa817ebb0ba7f28f
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 82061e8b86f4958512d7b00e565a0340f42d6afb..ba221f7b4e77a0300cfac3b7333daf2714bcb764 100644
+index de22000247bd00a98518ac41375087e822a0fe64..16a2ec92e50dcf65fd1ab27712c050cbe2eac06e 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -52,12 +52,16 @@
+@@ -61,12 +61,16 @@
  }  // namespace
  
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL()
@@ -807,7 +807,7 @@ index 82061e8b86f4958512d7b00e565a0340f42d6afb..ba221f7b4e77a0300cfac3b7333daf27
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, !av_disabled_at_command_line);
  
-@@ -78,6 +82,10 @@
+@@ -87,6 +91,10 @@
  #endif
      ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
@@ -818,7 +818,7 @@ index 82061e8b86f4958512d7b00e565a0340f42d6afb..ba221f7b4e77a0300cfac3b7333daf27
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -201,9 +209,13 @@
+@@ -210,9 +218,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -845,7 +845,7 @@ index c07f39acf8a733780b325b17d19718346136712d..c174e10763e8753257c7ebed6eee1fb6
  
    if (is_ios) {
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 34935789d56a6f65926599f053a7bc1b2020ad12..67270c5c75492e9d4c91d33a1eca5caf1cc43ace 100644
+index 55e890125085e81f5dcf3a3c963f95359b496234..3cd4a2f5c30622684aa407a9a6dbbe7d6d680c6f 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -30,19 +30,23 @@

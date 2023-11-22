@@ -561,7 +561,7 @@ index 6714331442d056d337590c0809723fc0636c9b65..d96d6dded4a7d7897591e8362a93db66
  };
  
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 90d8ab9b0f442c1cc74d2a3efd70b0e20530b9df..8af4c54d7deb8566fdf2febf787b5b8b67fa7350 100644
+index da51b2b9c395df5db6915ec1ed401b29191a6d2c..77c987ad21aa4d9a7ae0fb971d7685715a999f12 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -413,8 +413,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
