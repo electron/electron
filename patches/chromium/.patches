@@ -143,3 +143,4 @@ crash_gpu_process_and_clear_shader_cache_when_skia_reports.patch
 cherry-pick-3df423a5b8de.patch
 scale_rects_properly_in_syncgetfirstrectforrange.patch
 cherry-pick-9384cddc7705.patch
+fix_restore_original_resize_performance_on_macos.patch
