@@ -391,6 +391,9 @@ void WebContentsPreferences::SaveLastPreferences() {
            allow_running_insecure_content_);
   dict.Set(options::kExperimentalFeatures, experimental_features_);
   dict.Set(options::kEnableBlinkFeatures, enable_blink_features_.value_or(""));
+  dict.Set("disableDialogs", disable_dialogs_);
+  dict.Set("safeDialogs", safe_dialogs_);
+  dict.Set("safeDialogsMessage", safe_dialogs_message_.value_or(""));
 
   last_web_preferences_ = base::Value(std::move(dict));
 }

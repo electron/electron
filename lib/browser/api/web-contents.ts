@@ -1,5 +1,5 @@
-import { app, ipcMain, session, webFrameMain } from 'electron/main';
-import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
+import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
+import type { BrowserWindowConstructorOptions, LoadURLOptions, MessageBoxOptions, WebFrameMain } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
@@ -727,6 +727,42 @@ WebContents.prototype._init = function () {
       event.preventDefault();
       callback('');
     }
+  });
+
+  const originCounts = new Map();
+  this.on('-run-dialog' as any, async (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => {
+    const originUrl = new URL(info.frame.url);
+    const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
+    if (originCounts.get(origin) < 0) return callback(false, '');
+
+    const prefs = this.getLastWebPreferences();
+    if (!prefs || prefs.disableDialogs) return callback(false, '');
+
+    // We don't support prompt() for some reason :)
+    if (info.dialogType === 'prompt') return callback(false, '');
+
+    originCounts.set(origin, (originCounts.get(origin) ?? 0) + 1);
+
+    // TODO: translate?
+    const checkbox = originCounts.get(origin) > 1 && prefs.safeDialogs ? prefs.safeDialogsMessage || 'Prevent this app from creating additional dialogs' : '';
+    const parent = this.getOwnerBrowserWindow();
+    const options: MessageBoxOptions = {
+      message: info.messageText,
+      checkboxLabel: checkbox,
+      ...(info.dialogType === 'confirm') ? {
+        buttons: ['OK', 'Cancel'],
+        defaultId: 0,
+        cancelId: 1
+      } : {
+        buttons: ['OK'],
+        defaultId: -1, // No default button
+        cancelId: 0
+      }
+    };
+    const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
+    const result = await promise;
+    if (result.checkboxChecked) originCounts.set(origin, -1);
+    return callback(result.response === 0, '');
   });
 
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
