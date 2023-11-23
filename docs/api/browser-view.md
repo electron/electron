@@ -41,8 +41,7 @@ Objects created with `new BrowserView` have the following properties:
 
 #### `view.webContents` _Experimental_
 
-Returns `WebContents | null` - The `WebContents` owned by this view
-or `null` if the contents are [destroyed](web-contents.md#event-destroyed).
+Returns `WebContents | null` - The `WebContents` owned by this view or `null` if the contents are [destroyed](web-contents.md#event-destroyed).
 
 ### Instance Methods
 
