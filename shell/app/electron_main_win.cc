@@ -37,7 +37,6 @@
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
-#include "shell/common/integrity_check_win.h"
 #include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
 
 namespace {
@@ -228,10 +227,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   if (!electron::CheckCommandLineArguments(arguments.argc, arguments.argv))
     return -1;
-
-  if (process_type.empty()) {
-    IntegrityCheck();
-  }
 
   sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
   content::InitializeSandboxInfo(&sandbox_info);
