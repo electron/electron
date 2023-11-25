@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 2dda88c6b6c9be7c37c38bb5ec0dab8ac9076606..d15d5ac6f352a946d3bb6770dc66a8745ceb413e 100644
+index 896190761b3b2d89eed135730f2bc23191f4a396..d15d5ac6f352a946d3bb6770dc66a8745ceb413e 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -566,6 +566,7 @@ void MenuController::Run(Widget* parent,
@@ -47,7 +47,7 @@ index 2dda88c6b6c9be7c37c38bb5ec0dab8ac9076606..d15d5ac6f352a946d3bb6770dc66a874
        const gfx::Point mouse_pos = ConvertFromScreen(
            *item->submenu_,
            display::Screen::GetScreen()->GetCursorScreenPoint());
--      MenuPart part_under_mouse = GetMenuPart(item->submenu_, mouse_pos);
+-      MenuPart part_under_mouse = GetMenuPart(item->submenu_.get(), mouse_pos);
 -      if (part_under_mouse.type != MenuPartType::kNone) {
 -        menu_open_mouse_loc_ =
 -            GetLocationInRootMenu(*item->submenu_, mouse_pos);
@@ -70,10 +70,10 @@ index 55d0bb090d22149aa045515dac874b909fa18f34..7a66ddf13786a88eb19aad346c6588e0
  
    bool for_drop() const { return for_drop_; }
 diff --git a/ui/views/controls/menu/menu_runner.cc b/ui/views/controls/menu/menu_runner.cc
-index acd0612106e008df287465050b4caa3ab8c0698b..82d61fb7fa30af7ecffb64376e6866c53732ebe3 100644
+index d2d1ac027cfca476f3bf6cd5829bba6035547a27..237ea71f27308014a19ce9fc018b3d2760e9e8ea 100644
 --- a/ui/views/controls/menu/menu_runner.cc
 +++ b/ui/views/controls/menu/menu_runner.cc
-@@ -92,7 +92,7 @@ void MenuRunner::RunMenuAt(
+@@ -89,7 +89,7 @@ void MenuRunner::RunMenuAt(
    }
  
    impl_->RunMenuAt(parent, button_controller, bounds, anchor, run_types_,
@@ -116,10 +116,10 @@ index 9b2ac3f475acc009d85eee9eb19c230d72ea708b..00ca9b558f08924110b8cb20d205539d
                   absl::optional<gfx::RoundedCornersF> corners = absl::nullopt,
                   absl::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_adapter.cc b/ui/views/controls/menu/menu_runner_impl_adapter.cc
-index b56ec1d258b584a1e6c4bb90e122b3980bfd2f07..8e0528a9e0c83f9212fe5258700e0ef14f963bbc 100644
+index 8ba01786963e4db87696030a629cc4d84dda8e4a..674dbe7d33bad0c8796c38c59ee0e4f07855170a 100644
 --- a/ui/views/controls/menu/menu_runner_impl_adapter.cc
 +++ b/ui/views/controls/menu/menu_runner_impl_adapter.cc
-@@ -37,11 +37,12 @@ void MenuRunnerImplAdapter::RunMenuAt(
+@@ -35,11 +35,12 @@ void MenuRunnerImplAdapter::RunMenuAt(
      const gfx::Rect& bounds,
      MenuAnchorPosition anchor,
      int32_t types,
