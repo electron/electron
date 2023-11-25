@@ -431,7 +431,7 @@ index 47afd2553bf76b5b185a4be131196d90cf9cad44..d6f9998890d7a83a8fb221691aa2f1e7
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e40588fa02225bdd914b71e4035c33222b3ff478..149c3934963781af0bdd2131354841d2e2d8ce7d 100644
+index a29d5b66e6daba7ba29bb82a9869760539ee52ad..eac8896de7ed9a40036942405d4a53981e2a4947 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 89da463d0ac96b390754f2309740a7ee78d09df5..518d0d35b0d49aca24479b3b0117250f191fc785 100644
+index 3ed642ab9c89b16f0b2fce98e37c7ee5398bb714..0f2ebf6fd1c1d5d4fabf4a2633ea8bac1f178d46 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -476,6 +476,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index 89da463d0ac96b390754f2309740a7ee78d09df5..518d0d35b0d49aca24479b3b0117250f
    ]
  
    public_deps = [
-@@ -2909,6 +2910,7 @@ test("content_unittests") {
+@@ -2910,6 +2911,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
