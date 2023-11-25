@@ -92,7 +92,7 @@ index 00965c253f28bd3947255b2ab77bf3a0bb71f14a..e04a7eef94990dfb0e2fca2e116352fe
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index aaccaa3e3e43497ebd0909d55f471cf98972f27a..52e0692c5ce782d3ac433e9de443c2b63430e2ce 100644
+index 18cca28edc35dadd4eb9173558d1764b1bf85dd5..4cda3b7f2db6be365e4edb9456e1f72244a5158e 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -268,6 +268,7 @@ void PlatformNotificationContextImpl::Shutdown() {
