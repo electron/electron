@@ -4211,12 +4211,11 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
   // Make sure all child webviews quit html fullscreen.
   if (!fullscreen && !IsGuest()) {
     auto* manager = WebViewManager::GetWebViewManager(web_contents());
-    manager->ForEachGuest(
-        web_contents(), base::BindRepeating([](content::WebContents* guest) {
-          WebContents* api_web_contents = WebContents::From(guest);
-          api_web_contents->SetHtmlApiFullscreen(false);
-          return false;
-        }));
+    manager->ForEachGuest(web_contents(), [&](content::WebContents* guest) {
+      WebContents* api_web_contents = WebContents::From(guest);
+      api_web_contents->SetHtmlApiFullscreen(false);
+      return false;
+    });
   }
 }
 
