@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index d26d27fa9e960972aafd5b05b4e90146ce29c333..7033555a4aa4cd9bbabdf0ae5d3868c2feddefad 100644
+index d26d27fa9e960972aafd5b05b4e90146ce29c333..5b67c748ec06432201f4f23ed4f915212c058fa3 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -21,9 +21,11 @@
@@ -79,7 +79,7 @@ index d26d27fa9e960972aafd5b05b4e90146ce29c333..7033555a4aa4cd9bbabdf0ae5d3868c2
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -440,6 +445,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -440,13 +445,17 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -87,8 +87,17 @@ index d26d27fa9e960972aafd5b05b4e90146ce29c333..7033555a4aa4cd9bbabdf0ae5d3868c2
 +  return nullptr;
  }
  
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  PictureInPictureOcclusionTracker*
-@@ -459,7 +466,7 @@ PictureInPictureWindowManager::GetActiveSessionOrigins() {
+ PictureInPictureWindowManager::GetOcclusionTracker() {
+   CreateOcclusionTrackerIfNecessary();
+   return occlusion_tracker_.get();
+ }
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
+ std::vector<url::Origin>
+@@ -459,7 +468,7 @@ PictureInPictureWindowManager::GetActiveSessionOrigins() {
    return active_origins;
  }
  
