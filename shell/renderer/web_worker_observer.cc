@@ -84,8 +84,10 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
 
 void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (env)
+  if (env) {
+    v8::Context::Scope context_scope(env->context());
     gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
+  }
 
   // Destroying the node environment will also run the uv loop,
   // Node.js expects `kExplicit` microtasks policy and will run microtasks
