@@ -138,21 +138,24 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
     v8::Isolate* isolate,
     const display::Display& val) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("id", val.id());
-  dict.Set("label", val.label());
-  dict.Set("bounds", val.bounds());
-  dict.Set("workArea", val.work_area());
   dict.Set("accelerometerSupport", val.accelerometer_support());
-  dict.Set("monochrome", val.is_monochrome());
+  dict.Set("bounds", val.bounds());
   dict.Set("colorDepth", val.color_depth());
   dict.Set("colorSpace", val.GetColorSpaces().GetRasterColorSpace().ToString());
   dict.Set("depthPerComponent", val.depth_per_component());
-  dict.Set("size", val.size());
+  dict.Set("detected", val.detected());
   dict.Set("displayFrequency", val.display_frequency());
-  dict.Set("workAreaSize", val.work_area_size());
-  dict.Set("scaleFactor", val.device_scale_factor());
-  dict.Set("rotation", val.RotationAsDegree());
+  dict.Set("id", val.id());
   dict.Set("internal", val.IsInternal());
+  dict.Set("label", val.label());
+  dict.Set("maximumCursorSize", val.maximum_cursor_size());
+  dict.Set("monochrome", val.is_monochrome());
+  dict.Set("nativeOrigin", val.native_origin());
+  dict.Set("rotation", val.RotationAsDegree());
+  dict.Set("scaleFactor", val.device_scale_factor());
+  dict.Set("size", val.size());
+  dict.Set("workArea", val.work_area());
+  dict.Set("workAreaSize", val.work_area_size());
   dict.Set("touchSupport", val.touch_support());
   return dict.GetHandle();
 }
