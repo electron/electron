@@ -6,10 +6,10 @@ Subject: build: correctly expose public symbols with v8_expose_public_symbols
 Backport: https://chromium-review.googlesource.com/c/v8/v8/+/5052302
 
 diff --git a/BUILD.gn b/BUILD.gn
-index d8183683b25cca540e19bd2550f54311a19ffff3..65e7c7b4a49d093de4dcc827ff3168aa40beac02 100644
+index 206f1084252a264b060239e7218331d88a858764..68633c7cad5d6c6d64eeae51bad44b6bf803c5ea 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -721,6 +721,10 @@ if (v8_enable_single_generation == true) {
+@@ -723,6 +723,10 @@ if (v8_enable_single_generation == true) {
  assert(!v8_enable_snapshot_compression || v8_use_zlib,
         "Snapshot compression requires zlib")
  
@@ -20,7 +20,7 @@ index d8183683b25cca540e19bd2550f54311a19ffff3..65e7c7b4a49d093de4dcc827ff3168aa
  v8_random_seed = "314159265"
  v8_toolset_for_shell = "host"
  
-@@ -756,6 +760,8 @@ config("internal_config") {
+@@ -757,6 +761,8 @@ config("internal_config") {
    ]
  
    if (is_component_build) {
@@ -29,7 +29,7 @@ index d8183683b25cca540e19bd2550f54311a19ffff3..65e7c7b4a49d093de4dcc827ff3168aa
      defines += [ "BUILDING_V8_SHARED" ]
    }
  
-@@ -830,7 +836,10 @@ config("external_config") {
+@@ -827,7 +833,10 @@ config("external_config") {
    configs = [ ":headers_config" ]
    defines = []
    if (is_component_build) {
@@ -79,10 +79,10 @@ index b2cc02ec80d468d5fb6ae55006aa6776901fe099..a72edb4ca320b933525ccaaf7f6bbfe8
    v8_add_configs += [ "//build/config/gcc:symbol_visibility_default" ]
  }
 diff --git a/include/v8config.h b/include/v8config.h
-index 7995cfd35884acae3c9a9c38b6e3405910e2396e..08276ffca9159f13b54541bb8e660bf3b60ea6cd 100644
+index f407c289b1bd984d883a9b2a8670d21ba1eba7aa..ae42abde643f44349d3aecc1ab4e207982aa0d0f 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
-@@ -698,6 +698,11 @@ path. Add it with -I<path> to the command line
+@@ -700,6 +700,11 @@ path. Add it with -I<path> to the command line
  #define V8_CLANG_NO_SANITIZE(what)
  #endif
  
