@@ -396,6 +396,11 @@ void OffScreenRenderWidgetHostView::
   compositor_allocator_.Invalidate(/*also_invalidate_allocation_group=*/true);
 }
 
+void OffScreenRenderWidgetHostView::UpdateFrameSinkIdRegistration() {
+  RenderWidgetHostViewBase::UpdateFrameSinkIdRegistration();
+  GetDelegatedFrameHost()->SetIsFrameSinkIdOwner(is_frame_sink_id_owner());
+}
+
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
   GetDelegatedFrameHost()->ResetFallbackToFirstNavigationSurface();
 }

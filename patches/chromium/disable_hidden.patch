@@ -20,7 +20,7 @@ index 22eccd1647c4ff48e994366527e45154d986d164..b7a3f5643ced5013c38197f654bd616f
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 28001459e1357d9c14b240d6a729484b5a7e4eff..d194945e1f9d30a85d2bcd8482b7094ad1684cef 100644
+index 561bd928028df438e4184d07316ef98d9d9c91c0..1485e8d345adbdb5fdb055e1ff325bcd48121d72 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -911,6 +911,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -33,7 +33,7 @@ index 28001459e1357d9c14b240d6a729484b5a7e4eff..d194945e1f9d30a85d2bcd8482b7094a
    void StartDragging(blink::mojom::DragDataPtr drag_data,
                       const url::Origin& source_origin,
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 40347e87b306953812691977ac028b48f6dac25e..09b5b06dce35ab337708d6a6753b9f096ca6ba63 100644
+index 268533e5bd0ef599dc7ea82bb4d68fd2d814c729..f14a7c55f6db46d9684639fcac3a203af792d65a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -625,7 +625,7 @@ void RenderWidgetHostViewAura::HideImpl() {

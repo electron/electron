@@ -30,8 +30,6 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 }  // namespace
 
-const char MenuBar::kViewClassName[] = "ElectronMenuBar";
-
 MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
     : background_color_(kDefaultColor), window_(window), root_view_(root_view) {
   const ui::NativeTheme* theme = root_view_->GetNativeTheme();
@@ -269,5 +267,8 @@ void MenuBar::UpdateViewColors() {
   }
 #endif
 }
+
+BEGIN_METADATA(MenuBar)
+END_METADATA
 
 }  // namespace electron

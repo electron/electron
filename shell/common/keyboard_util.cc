@@ -27,7 +27,7 @@ constexpr CodeAndShiftedChar KeyboardCodeFromKeyIdentifier(
 #endif
 
   constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, CodeAndShiftedChar>({
+      base::MakeFixedFlatMap<base::StringPiece, CodeAndShiftedChar>({
           {"alt", {ui::VKEY_MENU, {}}},
           {"altgr", {ui::VKEY_ALTGR, {}}},
           {"backspace", {ui::VKEY_BACK, {}}},

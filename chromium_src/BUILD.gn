@@ -31,6 +31,8 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_file_system_indexer.cc",
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/devtools/devtools_settings.h",
+    "//chrome/browser/devtools/visual_logging.cc",
+    "//chrome/browser/devtools/visual_logging.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/icon_loader.cc",
@@ -256,6 +258,8 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/bad_message.cc",
       "//chrome/browser/bad_message.h",
+      "//chrome/browser/printing/prefs_util.cc",
+      "//chrome/browser/printing/prefs_util.h",
       "//chrome/browser/printing/print_job.cc",
       "//chrome/browser/printing/print_job.h",
       "//chrome/browser/printing/print_job_manager.cc",
@@ -333,6 +337,8 @@ static_library("chrome") {
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_frame_util.cc",
         "//chrome/browser/pdf/pdf_frame_util.h",
+        "//chrome/browser/pdf/pdf_viewer_stream_manager.cc",
+        "//chrome/browser/pdf/pdf_viewer_stream_manager.h",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]

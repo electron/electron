@@ -1037,7 +1037,6 @@ blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
-    ukm::SourceIdObj ukm_source_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
@@ -1046,8 +1045,7 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
-          context, ukm_source_id,
-          false /* we don't support extensions::WebViewGuest */));
+          context, false /* we don't support extensions::WebViewGuest */));
 #endif
   // Always allow navigating to file:// URLs.
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);

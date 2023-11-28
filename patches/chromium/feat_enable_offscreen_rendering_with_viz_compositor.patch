@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index b0e2c1932e2d6e8a7d68b45dd2928b3a14e2afca..c5d018ae78b486ef4b3cc86a8091869f62aef534 100644
+index 3e78747afba61506ca616a66b51365bf4117110c..e094d5e310745082a0562183c4b4b59da4b078d6 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -143,6 +143,8 @@ viz_component("service") {
@@ -103,7 +103,7 @@ index b0e2c1932e2d6e8a7d68b45dd2928b3a14e2afca..c5d018ae78b486ef4b3cc86a8091869f
      "display_embedder/software_output_surface.h",
      "display_embedder/vsync_parameter_listener.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider.h b/components/viz/service/display_embedder/output_surface_provider.h
-index 28f44e5df4a3591c8563564a9aba7cec1b023a29..befc5a556a7fd6719d8a1c2eb8e9278465469b37 100644
+index 5789972c7852473c7fb3565416e9de6595c9f291..482d061f76e9c52fc7f084572d834cab9f383834 100644
 --- a/components/viz/service/display_embedder/output_surface_provider.h
 +++ b/components/viz/service/display_embedder/output_surface_provider.h
 @@ -38,7 +38,8 @@ class OutputSurfaceProvider {
@@ -113,14 +113,14 @@ index 28f44e5df4a3591c8563564a9aba7cec1b023a29..befc5a556a7fd6719d8a1c2eb8e92784
 -      const DebugRendererSettings* debug_settings) = 0;
 +      const DebugRendererSettings* debug_settings,
 +      bool offscreen) = 0;
- };
  
- }  // namespace viz
+   virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
+ };
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 0bc450ca4faf2a4a38a93f4c6a60b95a583eec8b..5eaa99698b588edbfe8588aa80ba68457ccf8983 100644
+index d97d8524820457e157b9a8aaa2090e7fde8a8225..a5f7587e7208a51ccb53b07c2ccd7ce880611215 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -23,12 +23,14 @@
+@@ -25,12 +25,14 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -135,7 +135,7 @@ index 0bc450ca4faf2a4a38a93f4c6a60b95a583eec8b..5eaa99698b588edbfe8588aa80ba6845
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -92,7 +94,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -94,7 +96,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -145,7 +145,7 @@ index 0bc450ca4faf2a4a38a93f4c6a60b95a583eec8b..5eaa99698b588edbfe8588aa80ba6845
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -100,7 +103,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -102,7 +105,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      return std::make_unique<SoftwareOutputSurface>(
@@ -154,7 +154,7 @@ index 0bc450ca4faf2a4a38a93f4c6a60b95a583eec8b..5eaa99698b588edbfe8588aa80ba6845
    } else {
      DCHECK(gpu_dependency);
  
-@@ -140,10 +143,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -142,10 +145,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -179,16 +179,18 @@ index 0bc450ca4faf2a4a38a93f4c6a60b95a583eec8b..5eaa99698b588edbfe8588aa80ba6845
    return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
                                         display_client);
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index e82717d5167e13e2926bcaf6c0ad66c1502e66f6..783c4d6ed399120e026bbf18baab40929daf8fc1 100644
+index c7c58705509f46436feefb6b538b95ec9271a53f..b133976ab3c7713ee18c0df3f9d75e4c9be7ff33 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
-@@ -50,12 +50,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
+@@ -50,14 +50,16 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
 -      const DebugRendererSettings* debug_settings) override;
 +      const DebugRendererSettings* debug_settings,
 +      bool offscreen) override;
+ 
+   gpu::SharedImageManager* GetSharedImageManager() override;
  
   private:
    std::unique_ptr<SoftwareOutputDevice> CreateSoftwareOutputDeviceForPlatform(
@@ -517,7 +519,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index ea86c71d440ae6128cde311e0791cf4c7bdc82ce..5f1372aa6386763b54d327d21ca9c85201f999a5 100644
+index 353d262c8208fad17d5a5bf2bc9f26064533efc4..e6ad55511526e6e7b1ceea51493196afcf7fb822 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -101,7 +101,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -531,7 +533,7 @@ index ea86c71d440ae6128cde311e0791cf4c7bdc82ce..5f1372aa6386763b54d327d21ca9c852
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/components/viz/test/test_output_surface_provider.cc b/components/viz/test/test_output_surface_provider.cc
-index 59dd80087ada03e57c4b993dc887f75726789188..f42321d0cc1370d2828550c9899112dad5c0a505 100644
+index d4aa29c627c75d5aef50afa2a7daa257d2b7739f..79c6ce9104bf7be36fd465f409f955541fedd8c1 100644
 --- a/components/viz/test/test_output_surface_provider.cc
 +++ b/components/viz/test/test_output_surface_provider.cc
 @@ -30,7 +30,8 @@ std::unique_ptr<OutputSurface> TestOutputSurfaceProvider::CreateOutputSurface(
@@ -545,7 +547,7 @@ index 59dd80087ada03e57c4b993dc887f75726789188..f42321d0cc1370d2828550c9899112da
      return FakeSkiaOutputSurface::Create3d();
    } else {
 diff --git a/components/viz/test/test_output_surface_provider.h b/components/viz/test/test_output_surface_provider.h
-index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8fdf4d95b 100644
+index 6714331442d056d337590c0809723fc0636c9b65..d96d6dded4a7d7897591e8362a93db6630cb7af0 100644
 --- a/components/viz/test/test_output_surface_provider.h
 +++ b/components/viz/test/test_output_surface_provider.h
 @@ -32,7 +32,8 @@ class TestOutputSurfaceProvider : public OutputSurfaceProvider {
@@ -555,14 +557,14 @@ index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8
 -      const DebugRendererSettings* debug_settings) override;
 +      const DebugRendererSettings* debug_settings,
 +      bool offscreen) override;
+   gpu::SharedImageManager* GetSharedImageManager() override;
  };
  
- }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index e07a065e91ccb1cd1925730c5543f89529bf8d23..07b46588b89d5dfaef954175bccc0fe7451a3eeb 100644
+index da51b2b9c395df5db6915ec1ed401b29191a6d2c..77c987ad21aa4d9a7ae0fb971d7685715a999f12 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -414,8 +414,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -413,8 +413,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

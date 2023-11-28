@@ -12,10 +12,10 @@ should be removed as soon as those have been updated. Patching because
 every instance is a FTBFS that prevents testing any one instance's fix.
 
 diff --git a/base/functional/callback_helpers.h b/base/functional/callback_helpers.h
-index 592e15fac9de34c3b1a36788ff4a36de83bbe7e4..9a1c4733b2b2bb7c1c0e3ca438ab600e9cf372f8 100644
+index be0f7af257d42401bdf44a57d0bcdd7697605807..83e26366fd9487f6eab3b522888713fc0778f707 100644
 --- a/base/functional/callback_helpers.h
 +++ b/base/functional/callback_helpers.h
-@@ -123,6 +123,22 @@ RepeatingCallback<void(Args...)> ForwardRepeatingCallbacks(
+@@ -111,6 +111,22 @@ RepeatingCallback<void(Args...)> ForwardRepeatingCallbacks(
                         std::move(v));
  }
  

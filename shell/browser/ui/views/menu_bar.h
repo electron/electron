@@ -10,6 +10,8 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_delegate.h"
 #include "shell/browser/ui/views/root_view.h"
+#include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/accessible_pane_view.h"
 
 namespace views {
@@ -21,9 +23,9 @@ namespace electron {
 class MenuBar : public views::AccessiblePaneView,
                 public MenuDelegate::Observer,
                 public NativeWindowObserver {
- public:
-  static const char kViewClassName[];
+  METADATA_HEADER(MenuBar, views::AccessiblePaneView)
 
+ public:
   MenuBar(NativeWindow* window, RootView* root_view);
   ~MenuBar() override;
 
