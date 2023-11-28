@@ -13,18 +13,18 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Local<v8::Context> context,
     const char* id,
     std::vector<v8::Local<v8::String>>* parameters,
-    std::vector<v8::Local<v8::Value>>* arguments,
-    node::Environment* optional_env) {
+    std::vector<v8::Local<v8::Value>>* arguments) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::TryCatch try_catch(isolate);
-  thread_local node::builtins::BuiltinLoader builtin_loader;
 
   node::Realm* realm = node::Realm::GetCurrent(context);
   v8::MaybeLocal<v8::Function> compiled =
-      builtin_loader.LookupAndCompile(context, id, parameters, realm);
-  if (compiled.IsEmpty()) {
+      realm->env()->builtin_loader()->LookupAndCompile(context, id, parameters,
+                                                       realm);
+
+  if (compiled.IsEmpty())
     return v8::MaybeLocal<v8::Value>();
-  }
+
   v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(
       context, v8::Null(isolate), arguments->size(), arguments->data());
