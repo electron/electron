@@ -13,7 +13,7 @@ This patch can be removed when Storage Access API cookie support or
 equivalent support is completed upstream.
 
 diff --git a/chrome/browser/about_flags.cc b/chrome/browser/about_flags.cc
-index a74ccb7c263b0..db0f368d92794 100644
+index a74ccb7c263b0dc8d338f459a2bfe16de755f6cc..db0f368d927948b7e9954bd3af6c815807122979 100644
 --- a/chrome/browser/about_flags.cc
 +++ b/chrome/browser/about_flags.cc
 @@ -9001,6 +9001,10 @@ const FeatureEntry kFeatureEntries[] = {
@@ -28,7 +28,7 @@ index a74ccb7c263b0..db0f368d92794 100644
      {"autofill-enable-offers-in-clank-keyboard-accessory",
       flag_descriptions::kAutofillEnableOffersInClankKeyboardAccessoryName,
 diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
-index e79a38b20252c..f6d6543ab0ea1 100644
+index e79a38b20252c0cb30b01ebeeeaf4479722dcc94..f6d6543ab0ea115ab7e4fd35120535ddf7a80980 100644
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
 @@ -7900,8 +7900,7 @@ bool ChromeContentBrowserClient::ShouldDisableOriginAgentClusterDefault(
@@ -53,7 +53,7 @@ index e79a38b20252c..f6d6543ab0ea1 100644
  void ChromeContentBrowserClient::BindVideoEffectsManager(
      const std::string& device_id,
 diff --git a/chrome/browser/chrome_content_browser_client.h b/chrome/browser/chrome_content_browser_client.h
-index 7c47a56574e7a..49f7e434f4514 100644
+index 7c47a56574e7a89d960273a9e08a7959225bf700..49f7e434f451468bbceff87664bc5c05b1a0c25a 100644
 --- a/chrome/browser/chrome_content_browser_client.h
 +++ b/chrome/browser/chrome_content_browser_client.h
 @@ -953,8 +953,6 @@ class ChromeContentBrowserClient : public content::ContentBrowserClient {
@@ -77,7 +77,7 @@ index 7c47a56574e7a..49f7e434f4514 100644
  };
  
 diff --git a/chrome/browser/component_updater/first_party_sets_component_installer.cc b/chrome/browser/component_updater/first_party_sets_component_installer.cc
-index af69cae172317..b0d202ff7047c 100644
+index af69cae172317e657ed069b4fb65162919d9f2d3..b0d202ff7047cc57644e675c46f48d4f5c9465c0 100644
 --- a/chrome/browser/component_updater/first_party_sets_component_installer.cc
 +++ b/chrome/browser/component_updater/first_party_sets_component_installer.cc
 @@ -42,7 +42,7 @@ constexpr uint8_t kFirstPartySetsPublicKeySHA256[32] = {
@@ -116,7 +116,7 @@ index af69cae172317..b0d202ff7047c 100644
              version, std::move(sets_file));
        }));
 diff --git a/chrome/browser/first_party_sets/first_party_sets_policy_service.cc b/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
-index 869638cc9700b..12589a819c216 100644
+index 869638cc9700b7253d574bf7075bd48d7539082a..12589a819c216213ea237f2ff397569420e2cbec 100644
 --- a/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
 +++ b/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
 @@ -131,6 +131,7 @@ void FirstPartySetsPolicyService::Init() {
@@ -159,7 +159,7 @@ index 869638cc9700b..12589a819c216 100644
  
  void FirstPartySetsPolicyService::AddRemoteAccessDelegate(
 diff --git a/chrome/browser/first_party_sets/first_party_sets_policy_service.h b/chrome/browser/first_party_sets/first_party_sets_policy_service.h
-index 9bc786819114d..4a1915904119b 100644
+index 9bc786819114dc1f12e590afa3323f067c785fad..4a1915904119bd2b0a7027ffd5046404123a0311 100644
 --- a/chrome/browser/first_party_sets/first_party_sets_policy_service.h
 +++ b/chrome/browser/first_party_sets/first_party_sets_policy_service.h
 @@ -50,6 +50,7 @@ class FirstPartySetsPolicyService : public KeyedService {
@@ -179,7 +179,7 @@ index 9bc786819114d..4a1915904119b 100644
  
    // Clears the content settings associated with `profile` that were
 diff --git a/chrome/browser/flag-metadata.json b/chrome/browser/flag-metadata.json
-index 5fc47995a8350..8300cd68e5b7a 100644
+index 5fc47995a835018ebf40ff8546fbfacc8adf4aa8..8300cd68e5b7aa3fcbecc827d05137b4ff2a4f0c 100644
 --- a/chrome/browser/flag-metadata.json
 +++ b/chrome/browser/flag-metadata.json
 @@ -2672,6 +2672,11 @@
@@ -195,7 +195,7 @@ index 5fc47995a8350..8300cd68e5b7a 100644
      "name": "enable-follow-IPH-exp-params",
      "owners": [ "sczs@chromium.org", "tinazwang@chromium.org" ],
 diff --git a/chrome/browser/flag_descriptions.cc b/chrome/browser/flag_descriptions.cc
-index 9b0b641d6f839..245b248e5acb3 100644
+index 9b0b641d6f8399acfce951c38edc41709133ac98..245b248e5acb34efef713024af74c055dedb88eb 100644
 --- a/chrome/browser/flag_descriptions.cc
 +++ b/chrome/browser/flag_descriptions.cc
 @@ -386,6 +386,11 @@ const char kUseDnsHttpsSvcbAlpnDescription[] =
@@ -211,7 +211,7 @@ index 9b0b641d6f839..245b248e5acb3 100644
  const char kSHA1ServerSignatureDescription[] =
      "When enabled, Chrome will allow the use of SHA-1 in signatures from the "
 diff --git a/chrome/browser/flag_descriptions.h b/chrome/browser/flag_descriptions.h
-index 094b59d51d4a6..de50979ee8b87 100644
+index 094b59d51d4a617b3f1557fee9d391e2c842d479..de50979ee8b8729c5ae39474d18d2d5fb6d8ff98 100644
 --- a/chrome/browser/flag_descriptions.h
 +++ b/chrome/browser/flag_descriptions.h
 @@ -506,6 +506,9 @@ extern const char kUseDnsHttpsSvcbAlpnDescription[];
@@ -225,7 +225,7 @@ index 094b59d51d4a6..de50979ee8b87 100644
  extern const char kSHA1ServerSignatureDescription[];
  
 diff --git a/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc b/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
-index ce5b56d772a81..be3f50d95024d 100644
+index ce5b56d772a81eb8cbad354bf53c8b53c459239f..be3f50d95024d1ef84857d047f0b1208710e72da 100644
 --- a/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
 +++ b/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
 @@ -298,7 +298,8 @@ void StorageAccessGrantPermissionContext::DecidePermission(
@@ -239,7 +239,7 @@ index ce5b56d772a81..be3f50d95024d 100644
                               CheckForAutoGrantOrAutoDenial,
                           weak_factory_.GetWeakPtr(), std::move(request_data),
 diff --git a/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc b/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc
-index e004114e17b2b..7f157bd3fb974 100644
+index e004114e17b2b8f6ca80c6e1e8711c6d1b15264b..7f157bd3fb974d711ba22fe211c9b2d33a4720e0 100644
 --- a/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc
 +++ b/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc
 @@ -94,7 +94,8 @@ void TopLevelStorageAccessPermissionContext::DecidePermission(
@@ -253,7 +253,7 @@ index e004114e17b2b..7f157bd3fb974 100644
                               CheckForAutoGrantOrAutoDenial,
                           weak_factory_.GetWeakPtr(), std::move(request_data),
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 5b6c92952de30..caa5767ca6d04 100644
+index 5b6c92952de30bb9a80b9595ab57344323484eea..caa5767ca6d042022c562006629d19dc8c3fdaac 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -60,8 +60,6 @@
@@ -282,7 +282,7 @@ index 5b6c92952de30..caa5767ca6d04 100644
      discardable_shared_memory_manager_ =
          std::make_unique<discardable_memory::DiscardableSharedMemoryManager>();
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0757d84fc6da0..713190fa1b037 100644
+index 0757d84fc6da0be30d2497dae36b0170a33808f7..713190fa1b037df00c2f5e9761572873ea1a3538 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -999,9 +999,8 @@ source_set("browser") {
@@ -297,7 +297,7 @@ index 0757d84fc6da0..713190fa1b037 100644
      "first_party_sets/first_party_sets_loader.h",
      "first_party_sets/first_party_sets_site_data_remover.cc",
 diff --git a/content/browser/cookie_store/cookie_change_subscription.cc b/content/browser/cookie_store/cookie_change_subscription.cc
-index dbe3c5b8a6c83..fd51ab0f749b6 100644
+index dbe3c5b8a6c83c5e8d26b109f24e77b4ab2e604e..fd51ab0f749b63fda2a7848594bb616fe6a48730 100644
 --- a/content/browser/cookie_store/cookie_change_subscription.cc
 +++ b/content/browser/cookie_store/cookie_change_subscription.cc
 @@ -9,8 +9,10 @@
@@ -345,7 +345,7 @@ index dbe3c5b8a6c83..fd51ab0f749b6 100644
  }
  
 diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl.h b/content/browser/first_party_sets/first_party_sets_handler_impl.h
-index 9696bbb0281be..aec4e931eb4e2 100644
+index 9696bbb0281be8502c78d19de3ca7b9090f8771c..aec4e931eb4e21a660577432d12488c1316e2f2c 100644
 --- a/content/browser/first_party_sets/first_party_sets_handler_impl.h
 +++ b/content/browser/first_party_sets/first_party_sets_handler_impl.h
 @@ -5,25 +5,64 @@
@@ -601,7 +601,7 @@ index 9696bbb0281be..aec4e931eb4e2 100644
  }  // namespace content
 diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl_instance.cc b/content/browser/first_party_sets/first_party_sets_handler_impl_instance.cc
 deleted file mode 100644
-index 0855f5f8d6d09..0000000000000
+index 0855f5f8d6d092de96e6b1dc7c2e49402351ea5b..0000000000000000000000000000000000000000
 --- a/content/browser/first_party_sets/first_party_sets_handler_impl_instance.cc
 +++ /dev/null
 @@ -1,551 +0,0 @@
@@ -1158,7 +1158,7 @@ index 0855f5f8d6d09..0000000000000
 -}  // namespace content
 diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl_instance.h b/content/browser/first_party_sets/first_party_sets_handler_impl_instance.h
 deleted file mode 100644
-index a4f5090c8dfff..0000000000000
+index a4f5090c8dfffdb8fca5e1e99862b4fa29134557..0000000000000000000000000000000000000000
 --- a/content/browser/first_party_sets/first_party_sets_handler_impl_instance.h
 +++ /dev/null
 @@ -1,221 +0,0 @@
@@ -1385,7 +1385,7 @@ index a4f5090c8dfff..0000000000000
 -#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_HANDLER_IMPL_H_
 diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl_instance_unittest.cc b/content/browser/first_party_sets/first_party_sets_handler_impl_instance_unittest.cc
 deleted file mode 100644
-index 41c4400326de4..0000000000000
+index 41c4400326de46d2fe623aa58c8495c50aff76e7..0000000000000000000000000000000000000000
 --- a/content/browser/first_party_sets/first_party_sets_handler_impl_instance_unittest.cc
 +++ /dev/null
 @@ -1,925 +0,0 @@
@@ -2315,7 +2315,7 @@ index 41c4400326de4..0000000000000
 -
 -}  // namespace content
 diff --git a/content/browser/first_party_sets/first_party_sets_loader.cc b/content/browser/first_party_sets/first_party_sets_loader.cc
-index eecd574ad30bc..ff8299ab75711 100644
+index eecd574ad30bc6e19b33eabbf2609890f72af286..ff8299ab75711411a94b6ecf54a141b1cfd548a0 100644
 --- a/content/browser/first_party_sets/first_party_sets_loader.cc
 +++ b/content/browser/first_party_sets/first_party_sets_loader.cc
 @@ -31,6 +31,19 @@ std::string ReadSetsFile(base::File sets_file) {
@@ -2370,7 +2370,7 @@ index eecd574ad30bc..ff8299ab75711 100644
                                            const std::string& raw_sets) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 diff --git a/content/browser/first_party_sets/first_party_sets_loader.h b/content/browser/first_party_sets/first_party_sets_loader.h
-index 46b50bb18cec8..0c51c9baa6fc0 100644
+index 46b50bb18cec8562427af581f57e525ca48a5f95..0c51c9baa6fc0c43bba60dbb9e5d6df61a615374 100644
 --- a/content/browser/first_party_sets/first_party_sets_loader.h
 +++ b/content/browser/first_party_sets/first_party_sets_loader.h
 @@ -35,7 +35,7 @@ class CONTENT_EXPORT FirstPartySetsLoader {
@@ -2393,7 +2393,7 @@ index 46b50bb18cec8..0c51c9baa6fc0 100644
    // Parses the contents of `raw_sets` as a collection of First-Party Set
    // declarations, and stores the result.
 diff --git a/content/browser/first_party_sets/first_party_sets_loader_unittest.cc b/content/browser/first_party_sets/first_party_sets_loader_unittest.cc
-index dd86cf08266ba..51b9c6b7b82a8 100644
+index dd86cf08266ba537f2443a0188d516419d35d01c..51b9c6b7b82a84bab0a7945caaadd47f697dcd5b 100644
 --- a/content/browser/first_party_sets/first_party_sets_loader_unittest.cc
 +++ b/content/browser/first_party_sets/first_party_sets_loader_unittest.cc
 @@ -162,30 +162,4 @@ TEST_F(FirstPartySetsLoaderTest, SetsManuallySpecified) {
@@ -2428,7 +2428,7 @@ index dd86cf08266ba..51b9c6b7b82a8 100644
 -
  }  // namespace content
 diff --git a/content/browser/media/android/media_resource_getter_impl.cc b/content/browser/media/android/media_resource_getter_impl.cc
-index d169b757c5e53..20fe591ed1f51 100644
+index d169b757c5e531328ba6ed33f6fe36f9b532f633..20fe591ed1f518bf1afc268f1d366bc3358af67d 100644
 --- a/content/browser/media/android/media_resource_getter_impl.cc
 +++ b/content/browser/media/android/media_resource_getter_impl.cc
 @@ -61,7 +61,7 @@ GetRestrictedCookieManagerForContext(
@@ -2441,7 +2441,7 @@ index d169b757c5e53..20fe591ed1f51 100644
    mojo::PendingRemote<network::mojom::RestrictedCookieManager> pipe;
    static_cast<StoragePartitionImpl*>(storage_partition)
 diff --git a/content/browser/renderer_host/cookie_utils.cc b/content/browser/renderer_host/cookie_utils.cc
-index 79bf9ececffae..3d6d0a37926a7 100644
+index 79bf9ececffae5ae45ee7a6c6f57e8856116cfaa..3d6d0a37926a7f5f9f7e1f089f1095c4dc0178ab 100644
 --- a/content/browser/renderer_host/cookie_utils.cc
 +++ b/content/browser/renderer_host/cookie_utils.cc
 @@ -178,6 +178,8 @@ void RecordSchemefulContextDowngradeUKM(
@@ -2512,7 +2512,7 @@ index 79bf9ececffae..3d6d0a37926a7 100644
      GetContentClient()->browser()->LogWebFeatureForCurrentPage(
          rfh, blink::mojom::WebFeature::
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f1510ce378fe9..ade645c625be6 100644
+index f1510ce378fe9aef9d58a943c0ab3173a23ed636..ade645c625be61660bca0c9ed6f20773547bc4b7 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -4123,7 +4123,10 @@ net::IsolationInfo RenderFrameHostImpl::ComputeIsolationInfoInternal(
@@ -2547,7 +2547,7 @@ index f1510ce378fe9..ade645c625be6 100644
  
  absl::optional<base::UnguessableToken> RenderFrameHostImpl::ComputeNonce(
 diff --git a/content/browser/service_worker/service_worker_main_resource_loader_interceptor.cc b/content/browser/service_worker/service_worker_main_resource_loader_interceptor.cc
-index c526f29785e35..e6707d9c23466 100644
+index c526f29785e3523cb173457223a2fecc494cb5df..e6707d9c23466f943abbfa54a9e50c9b05e142c2 100644
 --- a/content/browser/service_worker/service_worker_main_resource_loader_interceptor.cc
 +++ b/content/browser/service_worker/service_worker_main_resource_loader_interceptor.cc
 @@ -217,7 +217,7 @@ void ServiceWorkerMainResourceLoaderInterceptor::MaybeCreateLoader(
@@ -2560,7 +2560,7 @@ index c526f29785e35..e6707d9c23466 100644
    // Attempt to get the storage key from |RenderFrameHostImpl|. This correctly
    // accounts for extension URLs. The absence of this logic was a potential
 diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
-index 1700732bf1a9b..2919285638cf5 100644
+index 1700732bf1a9becc6b4d9613250fccb26403e217..2919285638cf5f46f6d22587fc36e47a06f0fea3 100644
 --- a/content/browser/worker_host/shared_worker_host.cc
 +++ b/content/browser/worker_host/shared_worker_host.cc
 @@ -426,7 +426,14 @@ SharedWorkerHost::CreateNetworkFactoryParamsForSubresources() {
@@ -2580,7 +2580,7 @@ index 1700732bf1a9b..2919285638cf5 100644
            /*url_loader_network_observer=*/mojo::NullRemote(),
            /*devtools_observer=*/mojo::NullRemote(),
 diff --git a/content/browser/worker_host/shared_worker_service_impl.cc b/content/browser/worker_host/shared_worker_service_impl.cc
-index 4aa539bce808a..0ebc898a7e94d 100644
+index 4aa539bce808abef08959f547d02d3aed53959bb..0ebc898a7e94dac56bf1b580e755be6c92b150f5 100644
 --- a/content/browser/worker_host/shared_worker_service_impl.cc
 +++ b/content/browser/worker_host/shared_worker_service_impl.cc
 @@ -370,7 +370,11 @@ SharedWorkerHost* SharedWorkerServiceImpl::CreateWorker(
@@ -2597,7 +2597,7 @@ index 4aa539bce808a..0ebc898a7e94d 100644
        std::move(outside_fetch_client_settings_object),
        network::mojom::RequestDestination::kSharedWorker,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index caeb4874b8bf8..983e423adaff9 100644
+index caeb4874b8bf85f445a5aa2eab4e96916f16de69..983e423adaff9e75e965277a2bd82413e7c54005 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1915,7 +1915,8 @@ class CONTENT_EXPORT ContentBrowserClient {
@@ -2622,7 +2622,7 @@ index caeb4874b8bf8..983e423adaff9 100644
    // Allows the embedder to correlate backend media services with profile-keyed
    // effect settings.
 diff --git a/content/public/browser/first_party_sets_handler.h b/content/public/browser/first_party_sets_handler.h
-index 55dbe0afcfae7..3e531dd05fc22 100644
+index 55dbe0afcfae7df771f17dc5ce56efd096a083a3..3e531dd05fc2268c93cb63f8f0bbaeb36e2371e2 100644
 --- a/content/public/browser/first_party_sets_handler.h
 +++ b/content/public/browser/first_party_sets_handler.h
 @@ -197,6 +197,7 @@ class CONTENT_EXPORT FirstPartySetsHandler {
@@ -2634,7 +2634,7 @@ index 55dbe0afcfae7..3e531dd05fc22 100644
        base::OnceCallback<void(net::FirstPartySetMetadata)> callback) = 0;
  
 diff --git a/net/BUILD.gn b/net/BUILD.gn
-index e745a74d0446e..eeff6d53e392f 100644
+index e745a74d0446ea55c9e22cd7628ae0d6ac8a3982..eeff6d53e392f9ba90521ebcc94f7162cf53a7fa 100644
 --- a/net/BUILD.gn
 +++ b/net/BUILD.gn
 @@ -584,6 +584,8 @@ component("net") {
@@ -2647,7 +2647,7 @@ index e745a74d0446e..eeff6d53e392f 100644
      "http/alternative_service.h",
      "http/bidirectional_stream.cc",
 diff --git a/net/base/features.cc b/net/base/features.cc
-index 3053df9162e31..159f91fc38aad 100644
+index 3053df9162e31c7abeadb6e2f0b634ddda148355..159f91fc38aad31742add00ea5b1e16a0811911c 100644
 --- a/net/base/features.cc
 +++ b/net/base/features.cc
 @@ -243,6 +243,10 @@ BASE_FEATURE(kCookieSameSiteConsidersRedirectChain,
@@ -2662,7 +2662,7 @@ index 3053df9162e31..159f91fc38aad 100644
               "WaitForFirstPartySetsInit",
               base::FEATURE_DISABLED_BY_DEFAULT);
 diff --git a/net/base/features.h b/net/base/features.h
-index af1b135ef9bf4..a951f3a27046f 100644
+index af1b135ef9bf4a0dae6292a4d952187f7c345f70..a951f3a27046fa3737e28eddfe0189b6b82a4aca 100644
 --- a/net/base/features.h
 +++ b/net/base/features.h
 @@ -297,6 +297,12 @@ NET_EXPORT BASE_DECLARE_FEATURE(kUdpSocketPosixAlwaysUpdateBytesReceived);
@@ -2679,7 +2679,7 @@ index af1b135ef9bf4..a951f3a27046f 100644
  // Sets are initialized before issuing requests that use the HTTP cache or
  // cookies.
 diff --git a/net/base/isolation_info.cc b/net/base/isolation_info.cc
-index e337af60aa40b..aac71c1c5d8c5 100644
+index e337af60aa40bd31dd8d7549d963719278298c37..aac71c1c5d8c5892c98ee327198f0276b03e66e5 100644
 --- a/net/base/isolation_info.cc
 +++ b/net/base/isolation_info.cc
 @@ -48,11 +48,13 @@ bool IsConsistent(IsolationInfo::RequestType request_type,
@@ -2882,7 +2882,7 @@ index e337af60aa40b..aac71c1c5d8c5 100644
  
  }  // namespace net
 diff --git a/net/base/isolation_info.h b/net/base/isolation_info.h
-index 8de58d607dcc6..dc45e9354fe02 100644
+index 8de58d607dcc6835027bc8f0295a2f5cc783e5f4..dc45e9354fe024609dc65e84b3c4e8b2cb53b500 100644
 --- a/net/base/isolation_info.h
 +++ b/net/base/isolation_info.h
 @@ -67,8 +67,11 @@ class NET_EXPORT IsolationInfo {
@@ -2986,7 +2986,7 @@ index 8de58d607dcc6..dc45e9354fe02 100644
                                     IsolationInfo>;
  };
 diff --git a/net/base/isolation_info.proto b/net/base/isolation_info.proto
-index 249f7bf414d44..9a769ab079c0f 100644
+index 249f7bf414d44c0345650f72ffdfe99414073a2a..9a769ab079c0f2d632fcc46527d5d1b9b7838fad 100644
 --- a/net/base/isolation_info.proto
 +++ b/net/base/isolation_info.proto
 @@ -14,6 +14,6 @@ message IsolationInfo {
@@ -3000,7 +3000,7 @@ index 249f7bf414d44..9a769ab079c0f 100644
  }
 \ No newline at end of file
 diff --git a/net/base/network_delegate.cc b/net/base/network_delegate.cc
-index 653f2acf2d53f..7b08eecb6d4a0 100644
+index 653f2acf2d53fdc45944271972c6a42cf69329f4..7b08eecb6d4a00797fc2b11ecb7b7d9fee2dbd1c 100644
 --- a/net/base/network_delegate.cc
 +++ b/net/base/network_delegate.cc
 @@ -165,6 +165,16 @@ bool NetworkDelegate::CanUseReportingClient(const url::Origin& origin,
@@ -3021,7 +3021,7 @@ index 653f2acf2d53f..7b08eecb6d4a0 100644
  void NetworkDelegate::ExcludeAllCookies(
      net::CookieInclusionStatus::ExclusionReason reason,
 diff --git a/net/base/network_delegate.h b/net/base/network_delegate.h
-index c9c6cf72a5303..ba2df571f6155 100644
+index c9c6cf72a5303f7d2848e5e09aee2c38cc3c2db4..ba2df571f61556dc1239d557fa7fafcaa6ea110d 100644
 --- a/net/base/network_delegate.h
 +++ b/net/base/network_delegate.h
 @@ -48,6 +48,7 @@ class CookieInclusionStatus;
@@ -3067,7 +3067,7 @@ index c9c6cf72a5303..ba2df571f6155 100644
  
  }  // namespace net
 diff --git a/net/base/network_delegate_impl.cc b/net/base/network_delegate_impl.cc
-index c14f48ddf6357..a8ed45ed263ea 100644
+index c14f48ddf635784492c030a8a0089eacbc83b35c..a8ed45ed263ea1a7592aa48f4cd0081155ead17c 100644
 --- a/net/base/network_delegate_impl.cc
 +++ b/net/base/network_delegate_impl.cc
 @@ -97,4 +97,12 @@ bool NetworkDelegateImpl::OnCanUseReportingClient(const url::Origin& origin,
@@ -3084,7 +3084,7 @@ index c14f48ddf6357..a8ed45ed263ea 100644
 +
  }  // namespace net
 diff --git a/net/base/network_delegate_impl.h b/net/base/network_delegate_impl.h
-index a43507f98641a..9bc72d4ef0ab2 100644
+index a43507f98641a626712ccfa1549512abca908502..9bc72d4ef0ab2cb7d52ddd3cf484c2933829da58 100644
 --- a/net/base/network_delegate_impl.h
 +++ b/net/base/network_delegate_impl.h
 @@ -28,6 +28,7 @@ class Origin;
@@ -3109,7 +3109,7 @@ index a43507f98641a..9bc72d4ef0ab2 100644
  
  }  // namespace net
 diff --git a/net/cookies/canonical_cookie.cc b/net/cookies/canonical_cookie.cc
-index b81e1656003f7..2e34df420cc6a 100644
+index b81e1656003f7676c2f0151612cec9648ebd9cbc..2e34df420cc6aaf59d3e638af7cd0cbcfa99afc3 100644
 --- a/net/cookies/canonical_cookie.cc
 +++ b/net/cookies/canonical_cookie.cc
 @@ -340,9 +340,11 @@ bool HasValidHostPrefixAttributes(const GURL& url,
@@ -3312,7 +3312,7 @@ index b81e1656003f7..2e34df420cc6a 100644
  bool CanonicalCookie::IsCookiePartitionedValid(
      const GURL& url,
 diff --git a/net/cookies/canonical_cookie.h b/net/cookies/canonical_cookie.h
-index 56b919c8e9651..9dbc2a30c85c3 100644
+index 56b919c8e965182e2e5621ee123e8afea3565e36..9dbc2a30c85c3e70e7a995e1bc8336b49e2ed7a8 100644
 --- a/net/cookies/canonical_cookie.h
 +++ b/net/cookies/canonical_cookie.h
 @@ -43,7 +43,8 @@ using CookieAccessResultList = std::vector<CookieWithAccessResult>;
@@ -3352,7 +3352,7 @@ index 56b919c8e9651..9dbc2a30c85c3 100644
    // does not violate the semantics of the Partitioned attribute:
    // - Must have the Secure attribute OR the cookie partition contains a nonce.
 diff --git a/net/cookies/cookie_access_delegate.cc b/net/cookies/cookie_access_delegate.cc
-index 256dd856cce9f..9811f944fff0a 100644
+index 256dd856cce9fb482926f7a0c8bb80676a37e0e7..9811f944fff0a20a1a7b431e214f3578ed30785b 100644
 --- a/net/cookies/cookie_access_delegate.cc
 +++ b/net/cookies/cookie_access_delegate.cc
 @@ -4,7 +4,13 @@
@@ -3371,7 +3371,7 @@ index 256dd856cce9f..9811f944fff0a 100644
  namespace net {
  
 diff --git a/net/cookies/cookie_access_delegate.h b/net/cookies/cookie_access_delegate.h
-index 0eec2486fae7b..ee8e3d0fab27e 100644
+index 0eec2486fae7b793ee522954cd3c05a1047b2776..ee8e3d0fab27ef7f087194ad8fcfb6f17b042592 100644
 --- a/net/cookies/cookie_access_delegate.h
 +++ b/net/cookies/cookie_access_delegate.h
 @@ -5,6 +5,8 @@
@@ -3424,7 +3424,7 @@ index 0eec2486fae7b..ee8e3d0fab27e 100644
    // Returns the entries of a set of sites if the sites are in non-trivial sets.
    // If a given site is not in a non-trivial set, the output does not contain a
 diff --git a/net/cookies/cookie_constants.h b/net/cookies/cookie_constants.h
-index 33dd35c7cc3f4..9d8a2fa9e5255 100644
+index 33dd35c7cc3f4ce03fe359f33afc3f9a3b700476..9d8a2fa9e5255d4dc18fd1e7d5b8bc5e24728a95 100644
 --- a/net/cookies/cookie_constants.h
 +++ b/net/cookies/cookie_constants.h
 @@ -118,6 +118,16 @@ enum class CookieAccessSemantics {
@@ -3445,7 +3445,7 @@ index 33dd35c7cc3f4..9d8a2fa9e5255 100644
  // Do not renumber.
  enum class CookieSourceScheme {
 diff --git a/net/cookies/cookie_inclusion_status.cc b/net/cookies/cookie_inclusion_status.cc
-index 5be4915479538..4fba69d9ea8c9 100644
+index 5be49154795380ee37258a9f2d24256d406af03f..4fba69d9ea8c9e94f8f8c75536584089589cd633 100644
 --- a/net/cookies/cookie_inclusion_status.cc
 +++ b/net/cookies/cookie_inclusion_status.cc
 @@ -244,6 +244,9 @@ std::string CookieInclusionStatus::GetDebugString() const {
@@ -3471,7 +3471,7 @@ index 5be4915479538..4fba69d9ea8c9 100644
    static_assert(
        std::size(warning_reasons) == WarningReason::NUM_WARNING_REASONS,
 diff --git a/net/cookies/cookie_inclusion_status.h b/net/cookies/cookie_inclusion_status.h
-index 1eefc3db602f5..87ad6f7049560 100644
+index 1eefc3db602f5bb419ad3dbcb167dcd9742e1114..87ad6f7049560ac7f17a23047d983e4b17ec5bfa 100644
 --- a/net/cookies/cookie_inclusion_status.h
 +++ b/net/cookies/cookie_inclusion_status.h
 @@ -109,6 +109,12 @@ class NET_EXPORT CookieInclusionStatus {
@@ -3513,7 +3513,7 @@ index 1eefc3db602f5..87ad6f7049560 100644
      NUM_WARNING_REASONS
    };
 diff --git a/net/cookies/cookie_monster.cc b/net/cookies/cookie_monster.cc
-index 0c3ce2e289b59..5c4352bb9fc1f 100644
+index 0c3ce2e289b5944d38315790cca829e851c31e19..5c4352bb9fc1fd85373ee413b59a12967bd02710 100644
 --- a/net/cookies/cookie_monster.cc
 +++ b/net/cookies/cookie_monster.cc
 @@ -377,7 +377,9 @@ CookieMonster::CookieMonster(scoped_refptr<PersistentCookieStore> store,
@@ -3569,7 +3569,7 @@ index 0c3ce2e289b59..5c4352bb9fc1f 100644
  
    const std::string key(GetKey(cc->Domain()));
 diff --git a/net/cookies/cookie_monster.h b/net/cookies/cookie_monster.h
-index 3ca2c691cfd00..6086953c99f55 100644
+index 3ca2c691cfd00acf34f7648dfc6c9f6692be470a..6086953c99f55bd8a1034f0fa33ea77e4af9ec0d 100644
 --- a/net/cookies/cookie_monster.h
 +++ b/net/cookies/cookie_monster.h
 @@ -734,6 +734,8 @@ class NET_EXPORT CookieMonster : public CookieStore {
@@ -3582,7 +3582,7 @@ index 3ca2c691cfd00..6086953c99f55 100644
  
    // Indicates whether the cookie store has been initialized.
 diff --git a/net/cookies/cookie_monster_change_dispatcher.cc b/net/cookies/cookie_monster_change_dispatcher.cc
-index 61bd41e5a273e..34448cfee892b 100644
+index 61bd41e5a273e9d8d467deb587794600257feae6..34448cfee892b93558016c4fba22123c9522f6c4 100644
 --- a/net/cookies/cookie_monster_change_dispatcher.cc
 +++ b/net/cookies/cookie_monster_change_dispatcher.cc
 @@ -37,6 +37,7 @@ CookieMonsterChangeDispatcher::Subscription::Subscription(
@@ -3659,7 +3659,7 @@ index 61bd41e5a273e..34448cfee892b 100644
    LinkSubscription(subscription.get());
    return subscription;
 diff --git a/net/cookies/cookie_monster_change_dispatcher.h b/net/cookies/cookie_monster_change_dispatcher.h
-index d6f449140b024..31ca1e979ce11 100644
+index d6f449140b0244263b0c248e9163eb9940407541..31ca1e979ce1133dd6a78a7d8d09a6aba8f0ee44 100644
 --- a/net/cookies/cookie_monster_change_dispatcher.h
 +++ b/net/cookies/cookie_monster_change_dispatcher.h
 @@ -33,7 +33,8 @@ class CookieMonsterChangeDispatcher : public CookieChangeDispatcher {
@@ -3698,7 +3698,7 @@ index d6f449140b024..31ca1e979ce11 100644
  
    // Vends weak pointers to subscriptions.
 diff --git a/net/cookies/cookie_options.cc b/net/cookies/cookie_options.cc
-index d3e96410b3905..42eb151094e5b 100644
+index d3e96410b39057e3a8d20078d69cbd728f7c8bde..42eb151094e5b26671ea576bf402f8a877e862a3 100644
 --- a/net/cookies/cookie_options.cc
 +++ b/net/cookies/cookie_options.cc
 @@ -8,7 +8,9 @@
@@ -3721,7 +3721,7 @@ index d3e96410b3905..42eb151094e5b 100644
  }
  
 diff --git a/net/cookies/cookie_options.h b/net/cookies/cookie_options.h
-index 183c1f61c1fbe..fc7cddad43a74 100644
+index 183c1f61c1fbe94c8c85dd4f9a27695a04aad816..fc7cddad43a74945d5af6c2100893720f3895734 100644
 --- a/net/cookies/cookie_options.h
 +++ b/net/cookies/cookie_options.h
 @@ -10,8 +10,11 @@
@@ -3785,7 +3785,7 @@ index 183c1f61c1fbe..fc7cddad43a74 100644
  
  NET_EXPORT bool operator==(
 diff --git a/net/cookies/cookie_util.cc b/net/cookies/cookie_util.cc
-index b479ab1deb4c5..e2670576d72bf 100644
+index b479ab1deb4c54d14ccf87c1d923f6ab7fad6876..e2670576d72bfcc2267d8cc9b1865210d8162a4f 100644
 --- a/net/cookies/cookie_util.cc
 +++ b/net/cookies/cookie_util.cc
 @@ -32,7 +32,7 @@
@@ -3857,7 +3857,7 @@ index b479ab1deb4c5..e2670576d72bf 100644
    return cookie_access_result.status.IsInclude();
  }
 diff --git a/net/cookies/cookie_util.h b/net/cookies/cookie_util.h
-index d7072331e89a8..1b81e660ab8e6 100644
+index d7072331e89a898ea2e8940117200274d01424ce..1b81e660ab8e699b326f85ca0bdb653ca3cfc806 100644
 --- a/net/cookies/cookie_util.h
 +++ b/net/cookies/cookie_util.h
 @@ -17,7 +17,6 @@
@@ -3913,7 +3913,7 @@ index d7072331e89a8..1b81e660ab8e6 100644
  // CookieInclusionStatus in CookieAccessResult was set to "include", else
  // returning false.
 diff --git a/net/first_party_sets/first_party_set_metadata.cc b/net/first_party_sets/first_party_set_metadata.cc
-index 75f41ad79ac06..26521fa5f9b4a 100644
+index 75f41ad79ac067f806d4bea8b687a4781778e37a..26521fa5f9b4a93f892212cbd45e77ce41fc0f29 100644
 --- a/net/first_party_sets/first_party_set_metadata.cc
 +++ b/net/first_party_sets/first_party_set_metadata.cc
 @@ -13,9 +13,11 @@ namespace net {
@@ -3951,7 +3951,7 @@ index 75f41ad79ac06..26521fa5f9b4a 100644
    return os;
  }
 diff --git a/net/first_party_sets/first_party_set_metadata.h b/net/first_party_sets/first_party_set_metadata.h
-index b23e52575bc2a..77cf13c755995 100644
+index b23e52575bc2ae0634075890782eb46716116217..77cf13c75599522be3efda658b8685b21532c41c 100644
 --- a/net/first_party_sets/first_party_set_metadata.h
 +++ b/net/first_party_sets/first_party_set_metadata.h
 @@ -7,6 +7,7 @@
@@ -3992,7 +3992,7 @@ index b23e52575bc2a..77cf13c755995 100644
    absl::optional<FirstPartySetEntry> top_frame_entry_ = absl::nullopt;
  };
 diff --git a/net/first_party_sets/global_first_party_sets.cc b/net/first_party_sets/global_first_party_sets.cc
-index 29d34cd442ae1..d90a01fde8f96 100644
+index 29d34cd442ae19006d399b09b766c19dd5b12c76..d90a01fde8f9692825e5b7bb0c90c32b48d60e65 100644
 --- a/net/first_party_sets/global_first_party_sets.cc
 +++ b/net/first_party_sets/global_first_party_sets.cc
 @@ -28,6 +28,13 @@ namespace {
@@ -4107,7 +4107,7 @@ index 29d34cd442ae1..d90a01fde8f96 100644
      const base::flat_map<SchemefulSite, FirstPartySetEntry>& manual_entries) {
    CHECK(manual_config_.empty());
 diff --git a/net/first_party_sets/global_first_party_sets.h b/net/first_party_sets/global_first_party_sets.h
-index f4f4e99189e0f..cc2b42c89deb4 100644
+index f4f4e99189e0f3b8accfa884e136a127d0128bab..cc2b42c89deb47fda879a5bef2c4a7f9989c139d 100644
 --- a/net/first_party_sets/global_first_party_sets.h
 +++ b/net/first_party_sets/global_first_party_sets.h
 @@ -83,6 +83,7 @@ class NET_EXPORT GlobalFirstPartySets {
@@ -4138,7 +4138,7 @@ index f4f4e99189e0f..cc2b42c89deb4 100644
    // omit the `config` argument (i.e. pass nullptr instead of a reference).
    bool ForEachEffectiveSetEntry(
 diff --git a/net/url_request/url_request.cc b/net/url_request/url_request.cc
-index b5e18cf187f1c..d4a5e60a60f37 100644
+index b5e18cf187f1ca0618eaac4b1453fa4ffdb3bb9d..d4a5e60a60f372fccbf54ead93666f9856b972de 100644
 --- a/net/url_request/url_request.cc
 +++ b/net/url_request/url_request.cc
 @@ -1216,7 +1216,7 @@ IsolationInfo URLRequest::CreateIsolationInfoFromNetworkAnonymizationKey(
@@ -4151,7 +4151,7 @@ index b5e18cf187f1c..d4a5e60a60f37 100644
    return isolation_info;
  }
 diff --git a/net/url_request/url_request.h b/net/url_request/url_request.h
-index acd9a595a6c83..9668aed7e3dde 100644
+index acd9a595a6c83bf58153354da91cb1d23e0f7235..9668aed7e3dde807e040ab71b442d81ca7e1c9b7 100644
 --- a/net/url_request/url_request.h
 +++ b/net/url_request/url_request.h
 @@ -315,6 +315,16 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
@@ -4180,7 +4180,7 @@ index acd9a595a6c83..9668aed7e3dde 100644
    CookieSettingOverrides cookie_setting_overrides_;
  
 diff --git a/net/url_request/url_request_http_job.cc b/net/url_request/url_request_http_job.cc
-index fee80f24bbd37..56477b2b5d3d6 100644
+index fee80f24bbd37de2b55dca08e4dc2ea8e5bf113b..56477b2b5d3d6f41a0ef596c865f9e3454ac9e9f 100644
 --- a/net/url_request/url_request_http_job.cc
 +++ b/net/url_request/url_request_http_job.cc
 @@ -63,7 +63,7 @@
@@ -4312,7 +4312,7 @@ index fee80f24bbd37..56477b2b5d3d6 100644
    // Set all cookies, without waiting for them to be set. Any subsequent
    // read will see the combined result of all cookie operation.
 diff --git a/net/url_request/url_request_http_job.h b/net/url_request/url_request_http_job.h
-index a629e89cef367..78c8fbb6bfa39 100644
+index a629e89cef3675c4ffe1ad56e17d4d595a51e3bd..78c8fbb6bfa39535c4fc2ae49dafa5a4ad001cd5 100644
 --- a/net/url_request/url_request_http_job.h
 +++ b/net/url_request/url_request_http_job.h
 @@ -216,7 +216,11 @@ class NET_EXPORT_PRIVATE URLRequestHttpJob : public URLRequestJob {
@@ -4329,7 +4329,7 @@ index a629e89cef367..78c8fbb6bfa39 100644
  
    // Returns true iff this request leg should include the Cookie header. Note
 diff --git a/services/network/cookie_access_delegate_impl.cc b/services/network/cookie_access_delegate_impl.cc
-index 5e0d27953bf8d..9d8c6c16d97fb 100644
+index 5e0d27953bf8d8770ad72559183ea5f56258cfa0..9d8c6c16d97fb1f4e7393656d40907b457d89818 100644
 --- a/services/network/cookie_access_delegate_impl.cc
 +++ b/services/network/cookie_access_delegate_impl.cc
 @@ -13,7 +13,6 @@
@@ -4368,7 +4368,7 @@ index 5e0d27953bf8d..9d8c6c16d97fb 100644
  
  absl::optional<FirstPartySetsAccessDelegate::EntriesResult>
 diff --git a/services/network/cookie_access_delegate_impl.h b/services/network/cookie_access_delegate_impl.h
-index 72a96c033d0c3..50c3a309db86e 100644
+index 72a96c033d0c3eb3555cff718c66d7775cf4800c..50c3a309db86e5f044e2bfc429ca82fc6586d084 100644
 --- a/services/network/cookie_access_delegate_impl.h
 +++ b/services/network/cookie_access_delegate_impl.h
 @@ -5,7 +5,10 @@
@@ -4411,7 +4411,7 @@ index 72a96c033d0c3..50c3a309db86e 100644
    FindFirstPartySetEntries(
        const base::flat_set<net::SchemefulSite>& sites,
 diff --git a/services/network/first_party_sets/first_party_sets_access_delegate.cc b/services/network/first_party_sets/first_party_sets_access_delegate.cc
-index ed35e2dc6f5b0..c07f0dc2d8a14 100644
+index ed35e2dc6f5b0e2867cfdc5fb118e0dd45324a13..c07f0dc2d8a146cf187b204db4f2a9bceca6ceac 100644
 --- a/services/network/first_party_sets/first_party_sets_access_delegate.cc
 +++ b/services/network/first_party_sets/first_party_sets_access_delegate.cc
 @@ -65,24 +65,20 @@ void FirstPartySetsAccessDelegate::SetEnabled(bool enabled) {
@@ -4577,7 +4577,7 @@ index ed35e2dc6f5b0..c07f0dc2d8a14 100644
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
    CHECK(ready_event_.has_value());
 diff --git a/services/network/first_party_sets/first_party_sets_access_delegate.h b/services/network/first_party_sets/first_party_sets_access_delegate.h
-index d8a717465c10e..67df37ef7dfc3 100644
+index d8a717465c10ed97863aec940987c1dd5814ed83..67df37ef7dfc344bff9bb569fdc58c29967aeb22 100644
 --- a/services/network/first_party_sets/first_party_sets_access_delegate.h
 +++ b/services/network/first_party_sets/first_party_sets_access_delegate.h
 @@ -53,22 +53,17 @@ class FirstPartySetsAccessDelegate
@@ -4650,7 +4650,7 @@ index d8a717465c10e..67df37ef7dfc3 100644
    // initialized.
    void InvokePendingQueries();
 diff --git a/services/network/first_party_sets/first_party_sets_manager.cc b/services/network/first_party_sets/first_party_sets_manager.cc
-index 2ffd2a8be03ef..6cbd2bd9e09b6 100644
+index 2ffd2a8be03efcf3900e7bbb4056c722e0dd9130..6cbd2bd9e09b6b7cb4fdb4d853959a1009cbf4a8 100644
 --- a/services/network/first_party_sets/first_party_sets_manager.cc
 +++ b/services/network/first_party_sets/first_party_sets_manager.cc
 @@ -15,6 +15,7 @@
@@ -4725,7 +4725,7 @@ index 2ffd2a8be03ef..6cbd2bd9e09b6 100644
  
  absl::optional<net::FirstPartySetEntry> FirstPartySetsManager::FindEntry(
 diff --git a/services/network/first_party_sets/first_party_sets_manager.h b/services/network/first_party_sets/first_party_sets_manager.h
-index 9754dd5f6b008..b04a98f42fc96 100644
+index 9754dd5f6b0087c6630285b1f592e43cda4ba8d6..b04a98f42fc96a5f2e85cd1bc8ea841fb170e4f2 100644
 --- a/services/network/first_party_sets/first_party_sets_manager.h
 +++ b/services/network/first_party_sets/first_party_sets_manager.h
 @@ -15,6 +15,7 @@
@@ -4761,7 +4761,7 @@ index 9754dd5f6b008..b04a98f42fc96 100644
  
    // Returns `site`'s entry, or `nullopt` if `site` has no entry.
 diff --git a/services/network/network_service_network_delegate.cc b/services/network/network_service_network_delegate.cc
-index 82829ecd40058..f2bdb481687b5 100644
+index 82829ecd4005812b9973fbf4bd1a1fcee7ed5d5e..f2bdb481687b5e37fcaa5f6b12c9d754fb4f653f 100644
 --- a/services/network/network_service_network_delegate.cc
 +++ b/services/network/network_service_network_delegate.cc
 @@ -18,6 +18,7 @@
@@ -4790,7 +4790,7 @@ index 82829ecd40058..f2bdb481687b5 100644
      net::URLRequest* request,
      net::CompletionOnceCallback callback,
 diff --git a/services/network/network_service_network_delegate.h b/services/network/network_service_network_delegate.h
-index cfcd91f7e47e4..ea8be1d29ad4a 100644
+index cfcd91f7e47e4d6869c97ba1eb9dd58e5b69cfff..ea8be1d29ad4ab384df0cf451d155551a6455842 100644
 --- a/services/network/network_service_network_delegate.h
 +++ b/services/network/network_service_network_delegate.h
 @@ -19,6 +19,7 @@
@@ -4814,7 +4814,7 @@ index cfcd91f7e47e4..ea8be1d29ad4a 100644
    int HandleClearSiteDataHeader(
        net::URLRequest* request,
 diff --git a/services/network/public/cpp/cookie_manager_mojom_traits.cc b/services/network/public/cpp/cookie_manager_mojom_traits.cc
-index 5269c91580bc8..2505b01a13c62 100644
+index 5269c91580bc8d9cf93c3323f7b96ac748cd5972..2505b01a13c62f49ce73a539d5d452ea6ae340bd 100644
 --- a/services/network/public/cpp/cookie_manager_mojom_traits.cc
 +++ b/services/network/public/cpp/cookie_manager_mojom_traits.cc
 @@ -586,6 +586,17 @@ bool StructTraits<network::mojom::CookieOptionsDataView, net::CookieOptions>::
@@ -4836,7 +4836,7 @@ index 5269c91580bc8..2505b01a13c62 100644
  }
  
 diff --git a/services/network/public/cpp/cookie_manager_mojom_traits.h b/services/network/public/cpp/cookie_manager_mojom_traits.h
-index 5531222e359de..d562b702b0f5a 100644
+index 5531222e359de032cb45b28e3451b5622a731069..d562b702b0f5a87017268e80d5941585609ccc3b 100644
 --- a/services/network/public/cpp/cookie_manager_mojom_traits.h
 +++ b/services/network/public/cpp/cookie_manager_mojom_traits.h
 @@ -16,6 +16,8 @@
@@ -4868,7 +4868,7 @@ index 5531222e359de..d562b702b0f5a 100644
                     net::CookieOptions* cookie_options);
  };
 diff --git a/services/network/public/cpp/first_party_sets_mojom_traits.cc b/services/network/public/cpp/first_party_sets_mojom_traits.cc
-index 0c20fd9b054b6..4d1e584278722 100644
+index 0c20fd9b054b6bdf989adde7d9c03f4f784215d9..4d1e584278722eb449012ef4f2f8f2162223711f 100644
 --- a/services/network/public/cpp/first_party_sets_mojom_traits.cc
 +++ b/services/network/public/cpp/first_party_sets_mojom_traits.cc
 @@ -18,6 +18,7 @@
@@ -4948,7 +4948,7 @@ index 0c20fd9b054b6..4d1e584278722 100644
    return true;
  }
 diff --git a/services/network/public/cpp/first_party_sets_mojom_traits.h b/services/network/public/cpp/first_party_sets_mojom_traits.h
-index b255f56ead022..644aab23aef7f 100644
+index b255f56ead022bb237296e7560c73f692a7d7ee3..644aab23aef7fb37c573add9e4180b743c755a12 100644
 --- a/services/network/public/cpp/first_party_sets_mojom_traits.h
 +++ b/services/network/public/cpp/first_party_sets_mojom_traits.h
 @@ -16,6 +16,7 @@
@@ -4999,7 +4999,7 @@ index b255f56ead022..644aab23aef7f 100644
        const net::FirstPartySetMetadata& m) {
      return m.frame_entry();
 diff --git a/services/network/public/cpp/isolation_info_mojom_traits.cc b/services/network/public/cpp/isolation_info_mojom_traits.cc
-index cc91befdc7da5..a5a3d0af67c95 100644
+index cc91befdc7da5e88eac6cea0f05eef0707bb4b04..a5a3d0af67c958766bacc8a02cacf490d3c5b5e4 100644
 --- a/services/network/public/cpp/isolation_info_mojom_traits.cc
 +++ b/services/network/public/cpp/isolation_info_mojom_traits.cc
 @@ -53,6 +53,7 @@ bool StructTraits<network::mojom::IsolationInfoDataView, net::IsolationInfo>::
@@ -5037,7 +5037,7 @@ index cc91befdc7da5..a5a3d0af67c95 100644
      network::debug::SetDeserializationCrashKeyString("isolation_inconsistent");
      return false;
 diff --git a/services/network/public/cpp/isolation_info_mojom_traits.h b/services/network/public/cpp/isolation_info_mojom_traits.h
-index 40c5582de6832..1d41304d38061 100644
+index 40c5582de6832132b9e32de65cdffb9d58b99b36..1d41304d38061f7fb1b219a2289af5e41cbd1353 100644
 --- a/services/network/public/cpp/isolation_info_mojom_traits.h
 +++ b/services/network/public/cpp/isolation_info_mojom_traits.h
 @@ -57,6 +57,11 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -5053,7 +5053,7 @@ index 40c5582de6832..1d41304d38061 100644
                     net::IsolationInfo* out);
  };
 diff --git a/services/network/public/mojom/BUILD.gn b/services/network/public/mojom/BUILD.gn
-index 74ef53f30788f..183d9a63935ea 100644
+index 74ef53f30788fbc4a308b189562b3c63ac824d44..183d9a63935ea2cb6b8b53af0f9e97d83dc94218 100644
 --- a/services/network/public/mojom/BUILD.gn
 +++ b/services/network/public/mojom/BUILD.gn
 @@ -1017,6 +1017,14 @@ mojom("mojom_first_party_sets") {
@@ -5072,7 +5072,7 @@ index 74ef53f30788f..183d9a63935ea 100644
                mojom = "network.mojom.FirstPartySetMetadata"
                cpp = "::net::FirstPartySetMetadata"
 diff --git a/services/network/public/mojom/cookie_manager.mojom b/services/network/public/mojom/cookie_manager.mojom
-index 7aa887883985c..ee009f2425455 100644
+index 7aa887883985c86bb6ceda023225a35d1bc07f38..ee009f2425455d4617d21af0be3e47a7b695665d 100644
 --- a/services/network/public/mojom/cookie_manager.mojom
 +++ b/services/network/public/mojom/cookie_manager.mojom
 @@ -165,6 +165,12 @@ struct CookieOptions {
@@ -5089,7 +5089,7 @@ index 7aa887883985c..ee009f2425455 100644
  
  // See net/cookies/canonical_cookie.{h,cc} for documentation.
 diff --git a/services/network/public/mojom/first_party_sets.mojom b/services/network/public/mojom/first_party_sets.mojom
-index 0ea745cd2450c..150fed986ded1 100644
+index 0ea745cd2450c2d92002c3a0113295b0d4bbd40e..150fed986ded1c82ca3b965c0218193dc938d7a1 100644
 --- a/services/network/public/mojom/first_party_sets.mojom
 +++ b/services/network/public/mojom/first_party_sets.mojom
 @@ -27,9 +27,25 @@ struct FirstPartySetEntry {
@@ -5119,7 +5119,7 @@ index 0ea745cd2450c..150fed986ded1 100644
    // First-Party Set.
    FirstPartySetEntry? frame_entry;
 diff --git a/services/network/public/mojom/isolation_info.mojom b/services/network/public/mojom/isolation_info.mojom
-index 60b726cce8f05..407ea92cb2971 100644
+index 60b726cce8f05a8d0a89a310d00b467be519badc..407ea92cb29712fd89f7c40c6bb210900da8987d 100644
 --- a/services/network/public/mojom/isolation_info.mojom
 +++ b/services/network/public/mojom/isolation_info.mojom
 @@ -26,4 +26,5 @@ struct IsolationInfo {
@@ -5129,7 +5129,7 @@ index 60b726cce8f05..407ea92cb2971 100644
 +  array<SchemefulSite>? party_context;
  };
 diff --git a/services/network/restricted_cookie_manager.cc b/services/network/restricted_cookie_manager.cc
-index e6711498c9422..939a1a4313c3b 100644
+index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910cf0d6a952 100644
 --- a/services/network/restricted_cookie_manager.cc
 +++ b/services/network/restricted_cookie_manager.cc
 @@ -38,7 +38,6 @@
@@ -5324,7 +5324,7 @@ index e6711498c9422..939a1a4313c3b 100644
    listener->mojo_listener().set_disconnect_handler(
        base::BindOnce(&RestrictedCookieManager::RemoveChangeListener,
 diff --git a/services/network/restricted_cookie_manager.h b/services/network/restricted_cookie_manager.h
-index b53b63829ab1e..bc59d8162a40a 100644
+index b53b63829ab1e873dbfa4478d6b36ef184baecd9..bc59d8162a40a12d2acfb40af9d840c17c63925e 100644
 --- a/services/network/restricted_cookie_manager.h
 +++ b/services/network/restricted_cookie_manager.h
 @@ -336,6 +336,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) RestrictedCookieManager
@@ -5337,7 +5337,7 @@ index b53b63829ab1e..bc59d8162a40a 100644
    // done with this variable.
    mojo::Receiver<mojom::RestrictedCookieManager> receiver_;
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 5579aaf6a5b04..4072478d969f7 100644
+index 5579aaf6a5b04eb3926fb6dd47b6b363c79dd9bf..4072478d969f754f7ee32676cefc326516dbd1bb 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -286,7 +286,7 @@ bool ShouldNotifyAboutCookie(net::CookieInclusionStatus status) {
@@ -5397,7 +5397,7 @@ index 5579aaf6a5b04..4072478d969f7 100644
    bool coep_allow_credentials = CoepAllowCredentials(url);
  
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index bd3893b29ce68..9038e79547d90 100644
+index bd3893b29ce6808544d17c672b174308d93365af..9038e79547d9081a04f463222ab3d067d0e99d80 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -547,6 +547,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
@@ -5412,7 +5412,7 @@ index bd3893b29ce68..9038e79547d90 100644
    //
    // Helper for `OnConnected()`.
 diff --git a/third_party/blink/common/storage_key/storage_key.cc b/third_party/blink/common/storage_key/storage_key.cc
-index 5b863520514c1..2712538e887b3 100644
+index 5b863520514c1cb5011c6afa08d231a4047282e9..2712538e887b39035ac0b2718a98c5ee812087f9 100644
 --- a/third_party/blink/common/storage_key/storage_key.cc
 +++ b/third_party/blink/common/storage_key/storage_key.cc
 @@ -788,7 +788,8 @@ const net::IsolationInfo StorageKey::ToPartialNetIsolationInfo() const {
