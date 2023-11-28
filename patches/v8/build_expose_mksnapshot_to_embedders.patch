@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Wed, 22 Nov 2023 17:21:29 +0900
+Subject: build: expose mksnapshot to embedders
+
+Backport: https://chromium-review.googlesource.com/c/v8/v8/+/5052522
+
+diff --git a/BUILD.gn b/BUILD.gn
+index e73686bf4d3645c06ae885a3a89efa5ec4d963ba..d8183683b25cca540e19bd2550f54311a19ffff3 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -6905,8 +6905,6 @@ if (current_toolchain == v8_generator_toolchain) {
+ 
+ if (current_toolchain == v8_snapshot_toolchain) {
+   v8_executable("mksnapshot") {
+-    visibility = [ ":*" ]  # Only targets in this file can depend on this.
+-
+     sources = [
+       "src/snapshot/embedded/embedded-empty.cc",
+       "src/snapshot/embedded/embedded-file-writer.cc",
