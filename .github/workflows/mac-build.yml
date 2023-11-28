@@ -1,0 +1,13 @@
+name: Build macOS
+
+on:
+  push
+
+jobs:
+  build:
+    runs-on: macos-13-xlarge
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: get disk info
+      run: df -h

@@ -53,8 +53,8 @@ jobs:
       - path-filtering/set-parameters:
           base-revision: main
           mapping: |
-            ^((?!docs/).)*$ run-build-mac true
-            ^((?!docs/).)*$ run-build-linux true
+            ^((?!docs/).)*$ run-build-mac false
+            ^((?!docs/).)*$ run-build-linux false
             docs/.* run-docs-only true
             ^((?!docs/).)*$ run-docs-only false
       - run:
