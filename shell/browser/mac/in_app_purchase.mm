@@ -26,11 +26,13 @@
   in_app_purchase::InAppPurchaseCallback callback_;
   NSInteger quantity_;
   NSString* username_;
+  in_app_purchase::PaymentDiscount paymentDiscount_;
 }
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-              username:(NSString*)username;
+              username:(NSString*)username
+              paymentDiscount:(in_app_purchase::PaymentDiscount)paymentDiscount;
 
 - (void)purchaseProduct:(NSString*)productID;
 
@@ -48,11 +50,13 @@
  */
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-              username:(NSString*)username {
+              username:(NSString*)username
+              paymentDiscount:(in_app_purchase::PaymentDiscount)paymentDiscount {
   if ((self = [super init])) {
     callback_ = std::move(callback);
     quantity_ = quantity;
     username_ = [username copy];
+    paymentDiscount_ = std::move(paymentDiscount);
   }
 
   return self;

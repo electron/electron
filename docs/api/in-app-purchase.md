@@ -27,6 +27,7 @@ The `inAppPurchase` module has the following methods:
 * `opts` Integer | Object (optional) - If specified as an integer, defines the quantity.
   * `quantity` Integer (optional) - The number of items the user wants to purchase.
   * `username` string (optional) - The string that associates the transaction with a user account on your service (applicationUsername).
+  * `paymentDiscount` Object (optional) - The discount offer object to be applied to the product purchase (paymentDiscount).
 
 Returns `Promise<boolean>` - Returns `true` if the product is valid and added to the payment queue.
 

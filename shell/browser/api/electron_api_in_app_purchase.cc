@@ -172,9 +172,11 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
   args->GetNext(&quantity);
   std::string username = "";
   args->GetNext(&username);
+  absl::optional<PaymentDiscount> paymentDiscount;
+  args->GetNext(&paymentDiscount);
 
   in_app_purchase::PurchaseProduct(
-      product_id, quantity, username,
+      product_id, quantity, username, paymentDiscount,
       base::BindOnce(gin_helper::Promise<bool>::ResolvePromise,
                      std::move(promise)));
 
