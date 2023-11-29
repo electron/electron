@@ -11,7 +11,7 @@ This is a non-ABI breaking solution added by Node.js in v20.x for:
 which are necessary for backporting the vm-related memory fixes in https://github.com/nodejs/node/pull/48510.
 
 diff --git a/include/v8-object.h b/include/v8-object.h
-index 4ab2e52e0c5dcb344e687e808f39a5cd9f4c736a..c6523c5cc818524160bf5b75af1b54656f1cc7c9 100644
+index 6cdf53b19c7d058bb66b9fcbe745874cc48daa99..8d112008c2667db97ed5b5af3f87c40d0ef8466a 100644
 --- a/include/v8-object.h
 +++ b/include/v8-object.h
 @@ -20,6 +20,8 @@ class Function;
@@ -23,9 +23,9 @@ index 4ab2e52e0c5dcb344e687e808f39a5cd9f4c736a..c6523c5cc818524160bf5b75af1b5465
  
  /**
   * A private symbol
-@@ -500,6 +502,21 @@ class V8_EXPORT Object : public Value {
-    */
-   V8_INLINE void* GetAlignedPointerFromInternalField(int index);
+@@ -509,6 +511,21 @@ class V8_EXPORT Object : public Value {
+         index);
+   }
  
 +  /**
 +   * Warning: These are Node.js-specific extentions used to avoid breaking
@@ -42,14 +42,14 @@ index 4ab2e52e0c5dcb344e687e808f39a5cd9f4c736a..c6523c5cc818524160bf5b75af1b5465
 +#endif
 +  void SetInternalFieldForNodeCore(int index, Local<UnboundScript> value);
 +
-   /** Same as above, but works for PersistentBase. */
+   /** Same as above, but works for TracedReference. */
    V8_INLINE static void* GetAlignedPointerFromInternalField(
-       const PersistentBase<Object>& object, int index) {
+       const BasicTracedReference<Object>& object, int index) {
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 3979ae69e897ba4f757b8a5fc3e8f21c21f88137..65997c6c4c0aa256231200092de9fdd2e8b62e6a 100644
+index 694aec891a48337fa0387d60bcc34e05752ff2f0..a4931493e9d1a5cb0d5aded2611729f630819dc5 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -6302,14 +6302,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
+@@ -6318,14 +6318,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
        isolate);
  }
  
@@ -82,6 +82,6 @@ index 3979ae69e897ba4f757b8a5fc3e8f21c21f88137..65997c6c4c0aa256231200092de9fdd2
 +  SetInternalFieldImpl(this, index, value);
 +}
 +
- void* v8::Object::SlowGetAlignedPointerFromInternalField(int index) {
+ void* v8::Object::SlowGetAlignedPointerFromInternalField(v8::Isolate* isolate,
+                                                          int index) {
    auto obj = Utils::OpenDirectHandle(this);
-   const char* location = "v8::Object::GetAlignedPointerFromInternalField()";
