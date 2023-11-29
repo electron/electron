@@ -353,6 +353,31 @@ describe('<webview> tag', function () {
       expect(zoomLevel).to.equal(1);
     });
 
+    it('maintains the zoom level for a given host in the same session after navigation', () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      const zoomPromise = new Promise<void>((resolve) => {
+        ipcMain.on('webview-zoom-persist-level', (_event, values) => {
+          resolve(values);
+        });
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-change-persist-host.html'));
+
+      expect(zoomPromise).to.eventually.deep.equal({
+        initialZoomLevel: 2,
+        switchZoomLevel: 3,
+        finalZoomLevel: 2
+      });
+    });
+
     it('maintains zoom level on navigation', async () => {
       const w = new BrowserWindow({
         show: false,
