@@ -7,7 +7,7 @@ With WCO, allow chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index c72621c0e0fb4be2061ffa75196b6d0b6aa3e019..1247de97981b86f412c8e578b89059966f1554bc 100644
+index a85fa97d213058196e4703166cf974497e89e2d6..39778ad7cdfec863d1acb7eb51438f5070c47318 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -1222,6 +1222,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index bc93caca1744eb97d9d26569f8829b09af80eed6..21ff9b849e2311c797dd862d583907577022e6a0 100644
+index 0631fb86cffdbaf8310a0e5fcb5007ca1fbcfd91..27225315e93c470eb75c74b2410c97f96276fd89 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1030,6 +1030,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -431,7 +431,7 @@ index 47afd2553bf76b5b185a4be131196d90cf9cad44..d6f9998890d7a83a8fb221691aa2f1e7
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a29d5b66e6daba7ba29bb82a9869760539ee52ad..eac8896de7ed9a40036942405d4a53981e2a4947 100644
+index 0f6f693b637e4e7996d2c17ebac460c49d2b44d8..ff52ee2e8ced9639a96cb6bfd2d02202476c125e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -489,7 +489,7 @@ index 5a6706495ed2a8f1cd781da9bde8572318bf6897..afd4d1f728a7f056e49b2ecb006c5a05
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 066c1a8fa873558d90e7eeb84fcc7746c2a695c3..d7024510d39870ec57d51f9f0c6ef7da71cf02f5 100644
+index 347860fdfec383f38cde993a013434887e3b2613..8146225889c8a393740ba052f454f1c01c22b629 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -50,7 +50,9 @@ class ScopedPasswordInputEnabler;
@@ -502,7 +502,7 @@ index 066c1a8fa873558d90e7eeb84fcc7746c2a695c3..d7024510d39870ec57d51f9f0c6ef7da
  @class RenderWidgetHostViewCocoa;
  @class CursorAccessibilityScaleFactorObserver;
  
-@@ -677,9 +679,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -683,9 +685,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -515,7 +515,7 @@ index 066c1a8fa873558d90e7eeb84fcc7746c2a695c3..d7024510d39870ec57d51f9f0c6ef7da
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddfc64d3cea 100644
+index e4fb36797fca9f61c001ad4242417a05a54e0e12..8eb684c857907957a01ce80fe8081570831a2fde 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -529,7 +529,7 @@ index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddf
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1645,8 +1647,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1625,8 +1627,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -540,7 +540,7 @@ index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddf
    return [GetInProcessNSView() window];
  }
  
-@@ -1691,9 +1695,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1671,9 +1675,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -552,7 +552,7 @@ index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddf
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2200,12 +2206,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2180,12 +2186,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -568,7 +568,7 @@ index 404d89f78981c5d63380edfce78ccdff8a7f6037..893cfb4908ab73a3aedca25d056d1ddf
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 308133639fdb5bd7d0de6becc9aabd202532808a..07952e35e3c161f6ddf8d849af0e4c2760ff0dbc 100644
+index 989e06abf398d907d5a2ca88cf3676572410684a..6e299bc053de01dddcd2c680312ba4c0960529b6 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -187,6 +187,7 @@ source_set("common") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3ed642ab9c89b16f0b2fce98e37c7ee5398bb714..0f2ebf6fd1c1d5d4fabf4a2633ea8bac1f178d46 100644
+index 4e5182afac5b2da70806968c69e6799ade5910aa..335d6c25ae67f69543c6672517c63a54084eea43 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -476,6 +476,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index 3ed642ab9c89b16f0b2fce98e37c7ee5398bb714..0f2ebf6fd1c1d5d4fabf4a2633ea8bac
    ]
  
    public_deps = [
-@@ -2910,6 +2911,7 @@ test("content_unittests") {
+@@ -2911,6 +2912,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1262,7 +1262,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index de2ed80fd14737a47d6e32718ec30f540a3fb2a4..451bdd3782c63f7a71896bb2deb0a52fc80b96ef 100644
+index 08131cefc7f900d99498c14d3740142ca9b4aafb..0afa3f266c730ca740a1a2e9a1f063d5a8fee692 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1588,7 +1588,7 @@ index f37c02488e6ba943ebf9b880a04bcfef9afc9d97..b10ed25b5cdf5eb2f314ed72226f71c8
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index efbbc2fcaa96bfe717ab41269d273acddadb4bac..61421ddad4f76667c1e0b5775e4f26284357f64b 100644
+index 71b2c9084e597ef0fff68c42450ac81931da364a..3d2964abd903bbdba5ca07591231a72d859abaae 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -345,7 +345,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,

@@ -15,16 +15,16 @@ at some point be an API to "unfreeze" the flags, or we may be able to refactor
 node initialization to not update flags after V8 initialization.
 
 diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
-index be1f39d4038a80b9d73ae0cb0a6709d280501bd4..d3ae9bcab7e28145c3c196f6c5bba56597c29ee4 100644
+index 0739558b3912221356ed1a4491bab95eca8e7156..613c757eb7366263df2781da16e18266cb2f5ba4 100644
 --- a/content/renderer/render_process_impl.cc
 +++ b/content/renderer/render_process_impl.cc
-@@ -224,6 +224,9 @@ RenderProcessImpl::RenderProcessImpl()
+@@ -229,6 +229,9 @@ RenderProcessImpl::RenderProcessImpl()
      v8::V8::SetFlagsFromString(kSABPerContextFlag, sizeof(kSABPerContextFlag));
    }
  
 +  // Freezing flags after init conflicts with node in the renderer.
 +  v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
 +
- #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(ARCH_CPU_X86_64)
+ #ifdef ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
    if (base::FeatureList::IsEnabled(features::kWebAssemblyTrapHandler)) {
      base::CommandLine* const command_line =

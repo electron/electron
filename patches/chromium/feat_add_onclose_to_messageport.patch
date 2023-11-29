@@ -7,7 +7,7 @@ This adds the 'onclose' event to MessagePort. Can be removed once
 https://bugs.chromium.org/p/chromium/issues/detail?id=1495616 is fixed.
 
 diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
-index 5d7780c48a74fc7d95aeb690c90ab394b1e01a83..15f5f0f6aa05d3b17adae87286c92df9cc26a712 100644
+index 2f2a5b60423af1dbc425c44283cc2f2934bffa18..dbbe04b2447aa0769beca25c60d404b4f2209e43 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.cc
 +++ b/third_party/blink/renderer/core/messaging/message_port.cc
 @@ -195,6 +195,7 @@ void MessagePort::close() {
