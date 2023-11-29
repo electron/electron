@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vignesh Venkatasubramanian <vigneshv@google.com>
+Date: Tue, 21 Nov 2023 00:14:19 +0000
+Subject: Roll src/third_party/libavif/src/ d1c26fa..b2d36b1 (2 commits)
+
+https://chromium.googlesource.com/external/github.com/AOMediaCodec/libavif.git/+log/d1c26fa..b2d36b1
+
+$ git log d1c26fa..b2d36b1 --date=short --no-merges --format='%ad %ae %s'
+2023-11-15 vigneshv@google.com Remove potential out of bound access to alphaItemIndices
+2023-11-15 vigneshv@google.com Do not store potentially invalid pointers
+
+Bug: 1501766, 1501770
+Test: blink_platform_unittests
+Change-Id: I72915b1187ca651e6f47f8d44e946644ebe9fce4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5046038
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Vignesh Venkat <vigneshv@google.com>
+Reviewed-by: Wan-Teh Chang <wtc@google.com>
+Cr-Commit-Position: refs/branch-heads/5993@{#1630}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/DEPS b/DEPS
+index 79011df08eb07e67c1d4261ca324a9fbce042690..8073700e6367cfcd6910aa80f3a749f3cce6cbfa 100644
+--- a/DEPS
++++ b/DEPS
+@@ -469,7 +469,7 @@ vars = {
+   # Three lines of non-changing comments so that
+   # the commit queue can handle CLs rolling libavif
+   # and whatever else without interference from each other.
+-  'libavif_revision': 'd1c26facaf5a8a97919ceee06814d05d10e25622',
++  'libavif_revision': 'b2d36b1c3bfc806694cd4ff0cb188270823fe6d8',
+   # Three lines of non-changing comments so that
+   # the commit queue can handle CLs rolling libavif
+   # and whatever else without interference from each other.
+diff --git a/third_party/libavif/src b/third_party/libavif/src
+index d1c26facaf5a8a97919ceee06814d05d10e25622..b2d36b1c3bfc806694cd4ff0cb188270823fe6d8 160000
+--- a/third_party/libavif/src
++++ b/third_party/libavif/src
+@@ -1 +1 @@
+-Subproject commit d1c26facaf5a8a97919ceee06814d05d10e25622
++Subproject commit b2d36b1c3bfc806694cd4ff0cb188270823fe6d8
