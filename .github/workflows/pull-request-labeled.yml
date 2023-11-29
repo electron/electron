@@ -1,11 +1,10 @@
 name: Pull Request Labeled
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled]
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   pull-request-labeled-backport-requested:
