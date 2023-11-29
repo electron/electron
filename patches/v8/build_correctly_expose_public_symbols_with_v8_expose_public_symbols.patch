@@ -1,0 +1,220 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Mon, 27 Nov 2023 20:02:16 +0900
+Subject: build: correctly expose public symbols with v8_expose_public_symbols
+
+Backport: https://chromium-review.googlesource.com/c/v8/v8/+/5052302
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 206f1084252a264b060239e7218331d88a858764..68633c7cad5d6c6d64eeae51bad44b6bf803c5ea 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -723,6 +723,10 @@ if (v8_enable_single_generation == true) {
+ assert(!v8_enable_snapshot_compression || v8_use_zlib,
+        "Snapshot compression requires zlib")
+ 
++if (v8_expose_public_symbols == "") {
++  v8_expose_public_symbols = v8_expose_symbols
++}
++
+ v8_random_seed = "314159265"
+ v8_toolset_for_shell = "host"
+ 
+@@ -757,6 +761,8 @@ config("internal_config") {
+   ]
+ 
+   if (is_component_build) {
++    defines += [ "BUILDING_V8_SHARED_PRIVATE" ]
++  } else if (v8_expose_public_symbols) {
+     defines += [ "BUILDING_V8_SHARED" ]
+   }
+ 
+@@ -827,7 +833,10 @@ config("external_config") {
+   configs = [ ":headers_config" ]
+   defines = []
+   if (is_component_build) {
+-    defines += [ "USING_V8_SHARED" ]
++    defines += [
++      "USING_V8_SHARED",
++      "USING_V8_SHARED_PRIVATE",
++    ]
+   }
+ 
+   if (current_cpu == "riscv64" || current_cpu == "riscv32") {
+diff --git a/gni/v8.gni b/gni/v8.gni
+index b2cc02ec80d468d5fb6ae55006aa6776901fe099..a72edb4ca320b933525ccaaf7f6bbfe805d509f9 100644
+--- a/gni/v8.gni
++++ b/gni/v8.gni
+@@ -48,7 +48,11 @@ declare_args() {
+   # Enable monolithic static library for embedders.
+   v8_monolithic = false
+ 
+-  # Expose symbols for dynamic linking.
++  # Expose public symbols for native modules of Node.js and Electron. Default
++  # is false.
++  v8_expose_public_symbols = ""
++
++  # Deprecated for v8_expose_public_symbols.
+   v8_expose_symbols = false
+ 
+   # Implement tracing using Perfetto (https://perfetto.dev).
+@@ -86,7 +90,8 @@ declare_args() {
+   # Enable runtime call stats.
+   # TODO(liviurau): Remove old name after Chromium config update
+   # https://crbug.com/1476977.
+-  v8_enable_runtime_call_stats = !(is_on_release_branch || v8_is_on_release_branch)
++  v8_enable_runtime_call_stats =
++      !(is_on_release_branch || v8_is_on_release_branch)
+ 
+   # Add fuzzilli fuzzer support.
+   v8_fuzzilli = false
+@@ -257,8 +262,7 @@ if (v8_symbol_level != symbol_level) {
+   }
+ }
+ 
+-if ((is_posix || is_fuchsia) &&
+-    (v8_enable_backtrace || v8_monolithic || v8_expose_symbols)) {
++if ((is_posix || is_fuchsia) && (v8_enable_backtrace || v8_monolithic)) {
+   v8_remove_configs += [ "//build/config/gcc:symbol_visibility_hidden" ]
+   v8_add_configs += [ "//build/config/gcc:symbol_visibility_default" ]
+ }
+diff --git a/include/v8config.h b/include/v8config.h
+index f407c289b1bd984d883a9b2a8670d21ba1eba7aa..ae42abde643f44349d3aecc1ab4e207982aa0d0f 100644
+--- a/include/v8config.h
++++ b/include/v8config.h
+@@ -700,6 +700,11 @@ path. Add it with -I<path> to the command line
+ #define V8_CLANG_NO_SANITIZE(what)
+ #endif
+ 
++// Exposing private symbols requires exposing public symbols too.
++#ifdef BUILDING_V8_SHARED_PRIVATE
++#define BUILDING_V8_SHARED
++#endif
++
+ #if defined(BUILDING_V8_SHARED) && defined(USING_V8_SHARED)
+ #error Inconsistent build configuration: To build the V8 shared library \
+ set BUILDING_V8_SHARED, to include its headers for linking against the \
+diff --git a/src/base/macros.h b/src/base/macros.h
+index 56ff8736b3000644905f128fd365797424761798..8994d888b508f41f1141c9d9b2f0bbe78919fea7 100644
+--- a/src/base/macros.h
++++ b/src/base/macros.h
+@@ -388,9 +388,9 @@ bool is_inbounds(float_t v) {
+ 
+ // Setup for Windows shared library export.
+ #define V8_EXPORT_ENUM
+-#ifdef BUILDING_V8_SHARED
++#ifdef BUILDING_V8_SHARED_PRIVATE
+ #define V8_EXPORT_PRIVATE __declspec(dllexport)
+-#elif USING_V8_SHARED
++#elif USING_V8_SHARED_PRIVATE
+ #define V8_EXPORT_PRIVATE __declspec(dllimport)
+ #else
+ #define V8_EXPORT_PRIVATE
+@@ -400,7 +400,7 @@ bool is_inbounds(float_t v) {
+ 
+ // Setup for Linux shared library export.
+ #if V8_HAS_ATTRIBUTE_VISIBILITY
+-#ifdef BUILDING_V8_SHARED
++#ifdef BUILDING_V8_SHARED_PRIVATE
+ #define V8_EXPORT_PRIVATE __attribute__((visibility("default")))
+ #define V8_EXPORT_ENUM V8_EXPORT_PRIVATE
+ #else
+diff --git a/src/common/ptr-compr-inl.h b/src/common/ptr-compr-inl.h
+index d5a3d5a55bfa860e19765e62c1b1c77285859d85..4a9ec6f448496daa103bd996729e9db725d68a64 100644
+--- a/src/common/ptr-compr-inl.h
++++ b/src/common/ptr-compr-inl.h
+@@ -44,7 +44,8 @@ Address V8HeapCompressionScheme::GetPtrComprCageBaseAddress(
+ // static
+ void V8HeapCompressionScheme::InitBase(Address base) {
+   CHECK_EQ(base, GetPtrComprCageBaseAddress(base));
+-#if defined(USING_V8_SHARED) && defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
++#if defined(USING_V8_SHARED_PRIVATE) && \
++    defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
+   set_base_non_inlined(base);
+ #else
+   base_ = base;
+@@ -53,7 +54,8 @@ void V8HeapCompressionScheme::InitBase(Address base) {
+ 
+ // static
+ V8_CONST Address V8HeapCompressionScheme::base() {
+-#if defined(USING_V8_SHARED) && defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
++#if defined(USING_V8_SHARED_PRIVATE) && \
++    defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
+   Address base = base_non_inlined();
+ #else
+   Address base = base_;
+@@ -148,7 +150,8 @@ Address ExternalCodeCompressionScheme::GetPtrComprCageBaseAddress(
+ // static
+ void ExternalCodeCompressionScheme::InitBase(Address base) {
+   CHECK_EQ(base, PrepareCageBaseAddress(base));
+-#if defined(USING_V8_SHARED) && defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
++#if defined(USING_V8_SHARED_PRIVATE) && \
++    defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
+   set_base_non_inlined(base);
+ #else
+   base_ = base;
+@@ -157,7 +160,8 @@ void ExternalCodeCompressionScheme::InitBase(Address base) {
+ 
+ // static
+ V8_CONST Address ExternalCodeCompressionScheme::base() {
+-#if defined(USING_V8_SHARED) && defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
++#if defined(USING_V8_SHARED_PRIVATE) && \
++    defined(V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE)
+   Address base = base_non_inlined();
+ #else
+   Address base = base_;
+diff --git a/src/trap-handler/trap-handler.h b/src/trap-handler/trap-handler.h
+index 289a755d3b119cd90b88ee9d76ea13b709fe3a80..674706220c64d63727b8bd461903abd5412fc137 100644
+--- a/src/trap-handler/trap-handler.h
++++ b/src/trap-handler/trap-handler.h
+@@ -58,11 +58,11 @@ namespace trap_handler {
+ #endif
+ 
+ // Setup for shared library export.
+-#if defined(BUILDING_V8_SHARED) && defined(V8_OS_WIN)
++#if defined(BUILDING_V8_SHARED_PRIVATE) && defined(V8_OS_WIN)
+ #define TH_EXPORT_PRIVATE __declspec(dllexport)
+-#elif defined(BUILDING_V8_SHARED)
++#elif defined(BUILDING_V8_SHARED_PRIVATE)
+ #define TH_EXPORT_PRIVATE __attribute__((visibility("default")))
+-#elif defined(USING_V8_SHARED) && defined(V8_OS_WIN)
++#elif defined(USING_V8_SHARED_PRIVATE) && defined(V8_OS_WIN)
+ #define TH_EXPORT_PRIVATE __declspec(dllimport)
+ #else
+ #define TH_EXPORT_PRIVATE
+diff --git a/src/utils/v8dll-main.cc b/src/utils/v8dll-main.cc
+index 9bdd97f365a87994b2648456eb2b9759e58f1109..c153431a7321129c8b52288a65280deac6aad33b 100644
+--- a/src/utils/v8dll-main.cc
++++ b/src/utils/v8dll-main.cc
+@@ -5,6 +5,7 @@
+ // The GYP based build ends up defining USING_V8_SHARED when compiling this
+ // file.
+ #undef USING_V8_SHARED
++#undef USING_V8_SHARED_PRIVATE
+ #include "include/v8config.h"
+ 
+ #if V8_OS_WIN
+diff --git a/third_party/googletest/BUILD.gn b/third_party/googletest/BUILD.gn
+index bc82c635da35c2a98162acad470d8fcc56019255..1cf84b3d8f495128d4d008823b1a7028630cb902 100644
+--- a/third_party/googletest/BUILD.gn
++++ b/third_party/googletest/BUILD.gn
+@@ -94,8 +94,7 @@ source_set("gtest") {
+   # V8-only workaround for http://crbug.com/chromium/1191946. Ensures that
+   # googletest is compiled with the same visibility such as the rest of V8, see
+   # https://source.chromium.org/chromium/chromium/src/+/master:v8/gni/v8.gni
+-  if ((is_posix || is_fuchsia) &&
+-      (v8_enable_backtrace || v8_monolithic || v8_expose_symbols)) {
++  if ((is_posix || is_fuchsia) && (v8_enable_backtrace || v8_monolithic)) {
+     configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
+     configs += [ "//build/config/gcc:symbol_visibility_default" ]
+   }
+@@ -147,8 +146,7 @@ source_set("gmock") {
+   # V8-only workaround for http://crbug.com/chromium/1191946. Ensures that
+   # googletest is compiled with the same visibility such as the rest of V8, see
+   # https://source.chromium.org/chromium/chromium/src/+/master:v8/gni/v8.gni
+-  if ((is_posix || is_fuchsia) &&
+-      (v8_enable_backtrace || v8_monolithic || v8_expose_symbols)) {
++  if ((is_posix || is_fuchsia) && (v8_enable_backtrace || v8_monolithic)) {
+     configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
+     configs += [ "//build/config/gcc:symbol_visibility_default" ]
+   }
