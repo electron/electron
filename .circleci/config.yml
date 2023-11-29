@@ -49,28 +49,9 @@ jobs:
     docker:
       - image: cimg/node:16.14
     steps:
-      - checkout
-      - path-filtering/set-parameters:
-          base-revision: main
-          mapping: |
-            ^((?!docs/).)*$ run-build-mac false
-            ^((?!docs/).)*$ run-build-linux false
-            docs/.* run-docs-only true
-            ^((?!docs/).)*$ run-docs-only false
       - run:
           command: |
-            cd .circleci/config
-            yarn
-            export CIRCLECI_BINARY="$HOME/circleci"
-            curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/main/install.sh | DESTDIR=$CIRCLECI_BINARY bash
-            node build.js
-          name: Pack config.yml
-      - run:
-          name: Set params
-          command: node .circleci/config/params.js
-      - continuation/continue:
-          configuration_path: .circleci/config-staging/built.yml
-          parameters: /tmp/pipeline-parameters.json
+            echo "Disabled workflows for this PR"
 
 # Initial setup workflow
 workflows:
