@@ -4,7 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-```javascript
+```js
 const { systemPreferences } = require('electron')
 console.log(systemPreferences.isAeroGlassEnabled())
 ```
@@ -189,7 +189,7 @@ enabled, and `false` otherwise.
 An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
-```javascript
+```js
 const { BrowserWindow, systemPreferences } = require('electron')
 const browserOptions = { width: 1000, height: 800 }
 
@@ -348,7 +348,7 @@ Returns `boolean` - whether or not this device has the ability to use Touch ID.
 
 Returns `Promise<void>` - resolves if the user has successfully authenticated with Touch ID.
 
-```javascript
+```js
 const { systemPreferences } = require('electron')
 
 systemPreferences.promptTouchID('To get consent for a Security-Gated Thing').then(success => {

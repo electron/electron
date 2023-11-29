@@ -59,7 +59,7 @@ geolocation webservice. To enable this feature, acquire a
 and place the following code in your main process file, before opening any
 browser windows that will make geolocation requests:
 
-```javascript
+```js
 process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
