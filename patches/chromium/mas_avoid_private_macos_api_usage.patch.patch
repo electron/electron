@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0de4fdcdba7dd112faed75e9e8209af18ee1032d..8f1992d5230848ecffbf4e49acb32543dd94cada 100644
+index 0de4fdcdba7dd112faed75e9e8209af18ee1032d..19469ee65a71df3b7628b04dda97b8e3f229c479 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -476,6 +476,7 @@ static_library("test_support") {
@@ -671,7 +671,23 @@ index 0de4fdcdba7dd112faed75e9e8209af18ee1032d..8f1992d5230848ecffbf4e49acb32543
    ]
  
    public_deps = [
-@@ -2912,6 +2913,7 @@ test("content_unittests") {
+@@ -1051,6 +1052,7 @@ static_library("browsertest_support") {
+   }
+ 
+   configs += [ "//v8:external_startup_data" ]
++  configs += ["//electron/build/config:mas_build"]
+ }
+ 
+ mojom("content_test_mojo_bindings") {
+@@ -1674,6 +1676,7 @@ test("content_browsertests") {
+   defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+ 
+   configs += [ "//build/config:precompiled_headers" ]
++  configs += ["//electron/build/config:mas_build"]
+ 
+   public_deps = [
+     ":test_interfaces",
+@@ -2912,6 +2915,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

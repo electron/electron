@@ -513,26 +513,35 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   SetNodeOptions(env.get());
 
   // Parse and set Node.js cli flags.
-  std::vector<std::string> argv = ParseNodeCliFlags();
-  std::vector<std::string> exec_argv;
-  std::vector<std::string> errors;
-  uint64_t process_flags = node::ProcessFlags::kNoFlags;
+  std::vector<std::string> args = ParseNodeCliFlags();
+  uint64_t process_flags =
+      node::ProcessInitializationFlags::kNoInitializeV8 |
+      node::ProcessInitializationFlags::kNoInitializeNodeV8Platform |
+      node::ProcessInitializationFlags::kNoEnableWasmTrapHandler;
+
   // We do not want the child processes spawned from the utility process
   // to inherit the custom stdio handles created for the parent.
   if (browser_env_ != BrowserEnvironment::kUtility)
-    process_flags |= node::ProcessFlags::kEnableStdioInheritance;
+    process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
+
+  if (browser_env_ == BrowserEnvironment::kRenderer)
+    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc |
+                     node::ProcessInitializationFlags::kNoDefaultSignalHandling;
+
   if (!fuses::IsNodeOptionsEnabled())
-    process_flags |= node::ProcessFlags::kDisableNodeOptionsEnv;
+    process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
-  int exit_code = node::InitializeNodeWithArgs(
-      &argv, &exec_argv, &errors,
-      static_cast<node::ProcessFlags::Flags>(process_flags));
+  std::unique_ptr<node::InitializationResult> result =
+      node::InitializeOncePerProcess(
+          args,
+          static_cast<node::ProcessInitializationFlags::Flags>(process_flags));
 
-  for (const std::string& error : errors)
-    fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
+  for (const std::string& error : result->errors()) {
+    fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+  }
 
-  if (exit_code != 0)
-    exit(exit_code);
+  if (result->early_return() != 0)
+    exit(result->exit_code());
 
 #if BUILDFLAG(IS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -605,10 +614,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
                                            static_cast<void*>(isolate_data));
 
   node::Environment* env;
-  uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kHideConsoleWindows |
-                   node::EnvironmentFlags::kNoGlobalSearchPaths |
-                   node::EnvironmentFlags::kNoRegisterESMLoader;
+  uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
+                       node::EnvironmentFlags::kHideConsoleWindows |
+                       node::EnvironmentFlags::kNoGlobalSearchPaths |
+                       node::EnvironmentFlags::kNoRegisterESMLoader;
 
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
@@ -620,21 +629,21 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // for processes that already have these defined by DOM.
     // Check //third_party/electron_node/lib/internal/bootstrap/node.js
     // for the list of overrides on globalThis.
-    flags |= node::EnvironmentFlags::kNoBrowserGlobals |
-             node::EnvironmentFlags::kNoCreateInspector;
+    env_flags |= node::EnvironmentFlags::kNoBrowserGlobals |
+                 node::EnvironmentFlags::kNoCreateInspector;
   }
 
   if (!electron::fuses::IsNodeCliInspectEnabled()) {
     // If --inspect and friends are disabled we also shouldn't listen for
     // SIGUSR1
-    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
+    env_flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
   }
 
   {
     v8::TryCatch try_catch(isolate);
     env = node::CreateEnvironment(
         static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
+        static_cast<node::EnvironmentFlags::Flags>(env_flags));
 
     if (try_catch.HasCaught()) {
       std::string err_msg =

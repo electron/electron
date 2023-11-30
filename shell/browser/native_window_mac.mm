@@ -534,6 +534,8 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
+  set_wants_to_be_visible(true);
+
   // Reattach the window to the parent to actually show it.
   if (parent())
     InternalSetParentWindow(parent(), true);

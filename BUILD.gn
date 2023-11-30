@@ -29,6 +29,7 @@ import("filenames.gni")
 import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
+import("js2c_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -237,6 +238,7 @@ action("electron_js2c") {
     ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
     ":electron_worker_bundle",
+    "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
 
   sources = [
@@ -249,13 +251,17 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
-  inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
+  inputs = sources
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
   script = "build/js2c.py"
-  args = [ rebase_path("//third_party/electron_node") ] +
-         rebase_path(outputs, root_build_dir) +
-         rebase_path(sources, root_build_dir)
+  out_dir =
+      get_label_info(":anything($electron_js2c_toolchain)", "root_out_dir")
+  args = [
+           rebase_path("$out_dir/node_js2c"),
+           rebase_path("$root_gen_dir"),
+         ] + rebase_path(outputs, root_gen_dir) +
+         rebase_path(sources, root_gen_dir)
 }
 
 action("generate_config_gypi") {
