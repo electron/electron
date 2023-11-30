@@ -89,7 +89,7 @@ tuples. So, the even-numbered offsets are key values, and the odd-numbered
 offsets are the associated values. Header names are not lowercased, and
 duplicates are not merged.
 
-```javascript @ts-type={response:Electron.IncomingMessage}
+```js @ts-type={response:Electron.IncomingMessage}
 // Prints something like:
 //
 // [ 'user-agent',

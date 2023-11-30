@@ -12,7 +12,7 @@ shortcuts.
 not have the keyboard focus. This module cannot be used before the `ready`
 event of the app module is emitted.
 
-```javascript
+```js
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {

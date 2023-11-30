@@ -10,7 +10,7 @@ In Electron, for the APIs that take images, you can pass either file paths or
 For example, when creating a tray or setting a window's icon, you can pass an
 image file path as a `string`:
 
-```javascript
+```js
 const { BrowserWindow, Tray } = require('electron')
 
 const appIcon = new Tray('/Users/somebody/images/icon.png')
@@ -20,7 +20,7 @@ console.log(appIcon, win)
 
 Or read the image from the clipboard, which returns a `NativeImage`:
 
-```javascript
+```js
 const { clipboard, Tray } = require('electron')
 const image = clipboard.readImage()
 const appIcon = new Tray(image)
@@ -71,7 +71,7 @@ images/
 └── icon@3x.png
 ```
 
-```javascript
+```js
 const { Tray } = require('electron')
 const appIcon = new Tray('/Users/somebody/images/icon.png')
 console.log(appIcon)
@@ -138,7 +138,7 @@ Creates a new `NativeImage` instance from a file located at `path`. This method
 returns an empty image if the `path` does not exist, cannot be read, or is not
 a valid image.
 
-```javascript
+```js
 const nativeImage = require('electron').nativeImage
 
 const image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
