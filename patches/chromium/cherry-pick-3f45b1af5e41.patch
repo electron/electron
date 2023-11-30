@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Mon, 13 Nov 2023 20:24:24 +0000
+Subject: Check context status before creating new platform destination
+
+RealtimeAudioDestinationHandler::SetSinkDescriptor creates new
+destination platofrm without validating context status. This can
+reactivate the audio rendering thread when AudioContext is already in
+closed state.
+
+(cherry picked from commit 0f9bb9a1083865d4e51059e588f27f729ab32753)
+
+Bug: 1500856
+Change-Id: If1fd531324b56fcdc38d315fd84d4cec577a14bc
+Test: Locally confirmed with ASAN
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5021160
+Reviewed-by: Alvin Ji <alvinji@chromium.org>
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1223168}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5026373
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#607}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+index 2e4757d155800700b7c6a8b7cbf2e02250cfce65..c27eb3ac07f22a4cd1ae2f86da896d255a761292 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+@@ -405,6 +405,17 @@ void RealtimeAudioDestinationHandler::SetSinkDescriptor(
+                   GetCallbackBufferSize()));
+   DCHECK(IsMainThread());
+ 
++  // After the context is closed, `SetSinkDescriptor` request will be ignored
++  // because it will trigger the recreation of the platform destination. This in
++  // turn can activate the audio rendering thread.
++  AudioContext* context = static_cast<AudioContext*>(Context());
++  CHECK(context);
++  if (context->ContextState() == AudioContext::kClosed) {
++    std::move(callback).Run(
++        media::OutputDeviceStatus::OUTPUT_DEVICE_STATUS_ERROR_INTERNAL);
++    return;
++  }
++
+   // Create a pending AudioDestination to replace the current one.
+   scoped_refptr<AudioDestination> pending_platform_destination =
+       AudioDestination::Create(
