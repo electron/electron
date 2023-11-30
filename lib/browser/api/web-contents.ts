@@ -345,12 +345,14 @@ WebContents.prototype.loadURL = function (url, options) {
       removeListeners();
       reject(err);
     };
+    let didFail = false;
     let doFinish = () => resolveAndCleanup();
     const finishListener = () => {
       doFinish();
     };
     const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
-      if (isMainFrame) {
+      if (!didFail && isMainFrame) {
+        didFail = true;
         doFinish = () => rejectAndCleanup(errorCode, errorDescription, validatedURL);
       }
     };
