@@ -137,4 +137,3 @@ scale_rects_properly_in_syncgetfirstrectforrange.patch
 fix_restore_original_resize_performance_on_macos.patch
 cherry-pick-3f45b1af5e41.patch
 cherry-pick-e13061c50998.patch
-cherry-pick-6cc0d9aa5b3f.patch
