@@ -135,5 +135,3 @@ revert_same_party_cookie_attribute_removal.patch
 crash_gpu_process_and_clear_shader_cache_when_skia_reports.patch
 scale_rects_properly_in_syncgetfirstrectforrange.patch
 fix_restore_original_resize_performance_on_macos.patch
-cherry-pick-3f45b1af5e41.patch
-cherry-pick-e13061c50998.patch
