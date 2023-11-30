@@ -131,7 +131,7 @@ const getNoteFromClerk = async (ghKey) => {
     }
   }
 
-  console.log(`WARN: no notes found in ${buildPullURL(ghKey)}`);
+  console.warn(`WARN: no notes found in ${buildPullURL(ghKey)}`);
 };
 
 /**
