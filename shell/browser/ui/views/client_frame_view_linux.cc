@@ -381,7 +381,7 @@ void ClientFrameViewLinux::UpdateButtonImages() {
          state_id++) {
       views::Button::ButtonState state =
           static_cast<views::Button::ButtonState>(state_id);
-      button.button->SetImage(
+      button.button->SetImageModel(
           state, ui::ImageModel::FromImageSkia(nav_button_provider_->GetImage(
                      button.type, ButtonStateToNavButtonProviderState(state))));
     }
