@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vignesh Venkatasubramanian <vigneshv@google.com>
+Date: Mon, 13 Nov 2023 19:39:10 -0800
+Subject: Remove potential out of bound access to alphaItemIndices
+
+It is possible to craft a file that has more alpha auxiliary items
+than color items and trigger an out of bound access into
+alphaItemIndices in the for loop.
+
+Fix is to ensure that each color grid item has exactly one alpha
+grid item. Also, ensure that there are exactly the same number of
+color grids as informed in the grid config before trying to
+find the alpha item.
+
+Also, update a diagnostic error message to cover all cases (i.e.)
+there can be more grids than necessary as well.
+
+diff --git a/src/read.c b/src/read.c
+index e4021898eb120828544afdf0f28cc0e5d4ede876..d8699bb1442645d358f13f1904d7fbb9237bb999 100644
+--- a/src/read.c
++++ b/src/read.c
+@@ -1417,7 +1417,7 @@ static avifBool avifDecoderGenerateImageGridTiles(avifDecoder * decoder, avifIma
+ 
+     if (tilesAvailable != grid->rows * grid->columns) {
+         avifDiagnosticsPrintf(&decoder->diag,
+-                              "Grid image of dimensions %ux%u requires %u tiles, and only %u were found",
++                              "Grid image of dimensions %ux%u requires %u tiles, but %u were found",
+                               grid->columns,
+                               grid->rows,
+                               grid->rows * grid->columns,
+@@ -3641,21 +3641,41 @@ static avifResult avifDecoderDataFindAlphaItem(avifDecoderData * data,
+             maxItemID = item->id;
+         }
+         if (item->dimgForID == colorItem->id) {
++            avifBool seenAlphaForCurrentItem = AVIF_FALSE;
+             for (uint32_t j = 0; j < colorItem->meta->items.count; ++j) {
+                 avifDecoderItem * auxlItem = &colorItem->meta->items.item[j];
+                 if (avifDecoderItemIsAlphaAux(auxlItem, item->id)) {
++                    if (seenAlphaForCurrentItem || auxlItem->dimgForID != 0) {
++                        // One of the following invalid cases:
++                        // * Multiple items are claiming to be the alpha auxiliary of the current item.
++                        // * Alpha auxiliary is dimg for another item.
++                        avifFree(alphaItemIndices);
++                        *isAlphaItemInInput = AVIF_FALSE;
++                        return AVIF_RESULT_INVALID_IMAGE_GRID;
++                    }
+                     alphaItemIndices[alphaItemCount++] = j;
++                    seenAlphaForCurrentItem = AVIF_TRUE;
+                 }
+             }
++            if (!seenAlphaForCurrentItem) {
++                // No alpha auxiliary item was found for the current item. Treat this as an image without alpha.
++                avifFree(alphaItemIndices);
++                *isAlphaItemInInput = AVIF_FALSE;
++                return AVIF_RESULT_OK;
++            }
+         }
+     }
+-    if (alphaItemCount != colorItemCount) {
+-        // Not all the color items had an alpha auxiliary attached to it. Report this case as an image without alpha channel.
+-        avifFree(alphaItemIndices);
+-        *alphaItem = NULL;
+-        *isAlphaItemInInput = AVIF_FALSE;
+-        return AVIF_RESULT_OK;
++    assert(alphaItemCount == colorItemCount);
++
++    int colorItemIndex = -1;
++    for (uint32_t i = 0; i < data->meta->items.count; ++i) {
++        if (colorItem->id == data->meta->items.item[i].id) {
++            colorItemIndex = i;
++            break;
++        }
+     }
++    assert(colorItemIndex >= 0);
++
+     *alphaItem = avifMetaFindItem(colorItem->meta, maxItemID + 1);
+     if (*alphaItem == NULL) {
+         avifFree(alphaItemIndices);

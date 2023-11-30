@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Thu, 16 Nov 2023 23:44:43 +0000
+Subject: Reland: Fix IPC Channel pipe teardown
+
+This is a reland with the new test temporarily disabled on Android
+until it can run without disrupting other tests.
+
+(cherry picked from commit cd4c1f165c16c6d8161b5372ef7f61c715e01a42)
+
+Fixed: 1494461
+Change-Id: If1d83c2dce62020f78dd50abc460973759002a1a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5015115
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1221953}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5037764
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Auto-Submit: Ken Rockot <rockot@google.com>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5993@{#1618}
+Cr-Branched-From: 511350718e646be62331ae9d7213d10ec320d514-refs/heads/main@{#1192594}
+
+diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
+index 2ab03807d102d8f4e2a22119210d5cb669338c3b..5fa17e2ff108909a8987665dd21bc490118f1147 100644
+--- a/ipc/ipc_mojo_bootstrap.cc
++++ b/ipc/ipc_mojo_bootstrap.cc
+@@ -787,13 +787,12 @@ class ChannelAssociatedGroupController
+         // handle.
+         DCHECK(!endpoint->client());
+         DCHECK(endpoint->peer_closed());
+-        MarkClosedAndMaybeRemove(endpoint);
++        MarkClosed(endpoint);
+       } else {
+-        MarkPeerClosedAndMaybeRemove(endpoint);
++        MarkPeerClosed(endpoint);
+       }
+     }
+-
+-    DCHECK(endpoints_.empty());
++    endpoints_.clear();
+ 
+     GetMemoryDumpProvider().RemoveController(this);
+   }
+@@ -838,15 +837,19 @@ class ChannelAssociatedGroupController
+     base::AutoLock locker(lock_);
+     encountered_error_ = true;
+ 
++    std::vector<uint32_t> endpoints_to_remove;
+     std::vector<scoped_refptr<Endpoint>> endpoints_to_notify;
+     for (auto iter = endpoints_.begin(); iter != endpoints_.end();) {
+       Endpoint* endpoint = iter->second.get();
+       ++iter;
+ 
+-      if (endpoint->client())
++      if (endpoint->client()) {
+         endpoints_to_notify.push_back(endpoint);
++      }
+ 
+-      MarkPeerClosedAndMaybeRemove(endpoint);
++      if (MarkPeerClosed(endpoint)) {
++        endpoints_to_remove.push_back(endpoint->id());
++      }
+     }
+ 
+     for (auto& endpoint : endpoints_to_notify) {
+@@ -855,6 +858,10 @@ class ChannelAssociatedGroupController
+       if (endpoint->client())
+         NotifyEndpointOfError(endpoint.get(), false /* force_async */);
+     }
++
++    for (uint32_t id : endpoints_to_remove) {
++      endpoints_.erase(id);
++    }
+   }
+ 
+   void NotifyEndpointOfError(Endpoint* endpoint, bool force_async) {
+@@ -893,19 +900,33 @@ class ChannelAssociatedGroupController
+     NotifyEndpointOfError(endpoint, false /* force_async */);
+   }
+ 
+-  void MarkClosedAndMaybeRemove(Endpoint* endpoint) {
++  // Marks `endpoint` as closed and returns true if and only if its peer was
++  // also already closed.
++  bool MarkClosed(Endpoint* endpoint) {
+     lock_.AssertAcquired();
+     endpoint->set_closed();
+-    if (endpoint->closed() && endpoint->peer_closed())
+-      endpoints_.erase(endpoint->id());
++    return endpoint->peer_closed();
+   }
+ 
+-  void MarkPeerClosedAndMaybeRemove(Endpoint* endpoint) {
++  // Marks `endpoint` as having a closed peer and returns true if and only if
++  // `endpoint` itself was also already closed.
++  bool MarkPeerClosed(Endpoint* endpoint) {
+     lock_.AssertAcquired();
+     endpoint->set_peer_closed();
+     endpoint->SignalSyncMessageEvent();
+-    if (endpoint->closed() && endpoint->peer_closed())
++    return endpoint->closed();
++  }
++
++  void MarkClosedAndMaybeRemove(Endpoint* endpoint) {
++    if (MarkClosed(endpoint)) {
+       endpoints_.erase(endpoint->id());
++    }
++  }
++
++  void MarkPeerClosedAndMaybeRemove(Endpoint* endpoint) {
++    if (MarkPeerClosed(endpoint)) {
++      endpoints_.erase(endpoint->id());
++    }
+   }
+ 
+   Endpoint* FindOrInsertEndpoint(mojo::InterfaceId id, bool* inserted) {
