@@ -13,8 +13,8 @@
 #include "dbus/object_proxy.h"
 #include "shell/common/thread_restrictions.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
-#include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
 
 namespace electron {
