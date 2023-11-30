@@ -104,7 +104,7 @@ index d26d27fa9e960972aafd5b05b4e90146ce29c333..c5e43a94c6ea94ea4f02a83256bec9ba
  void PictureInPictureWindowManager::CreateOcclusionTrackerIfNecessary() {
    if (occlusion_tracker_) {
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index f6010ed93b273f81d1871669edee2d3f60d77f1f..05229703c7415ed2356fbfe4892ca0ff6dfaca8b 100644
+index ff1ccc4bc2c5d365a53cdc85a97208f6f16b1d42..873642dc167251a9bcb932f20d3c1fb2b77d5096 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -12,6 +12,7 @@
@@ -113,9 +113,9 @@ index f6010ed93b273f81d1871669edee2d3f60d77f1f..05229703c7415ed2356fbfe4892ca0ff
  #include "base/observer_list_types.h"
 +#include "build/branding_buildflags.h"
  #include "build/build_config.h"
- #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
-@@ -31,7 +32,9 @@ class Display;
+ #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
+@@ -34,7 +35,9 @@ class Display;
  }  // namespace display
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -125,7 +125,7 @@ index f6010ed93b273f81d1871669edee2d3f60d77f1f..05229703c7415ed2356fbfe4892ca0ff
  class PictureInPictureOcclusionTracker;
  
  namespace views {
-@@ -178,10 +181,11 @@ class PictureInPictureWindowManager {
+@@ -181,10 +184,11 @@ class PictureInPictureWindowManager {
        const gfx::Rect& browser_view_overridden_bounds,
        views::View* anchor_view,
        views::BubbleBorder::Arrow arrow);
@@ -138,7 +138,7 @@ index f6010ed93b273f81d1871669edee2d3f60d77f1f..05229703c7415ed2356fbfe4892ca0ff
  
    // Returns the PictureInPictureOcclusionTracker, which can inform observers
    // when a widget has been occluded by a video or document picture-in-picture
-@@ -245,8 +249,10 @@ class PictureInPictureWindowManager {
+@@ -248,8 +252,10 @@ class PictureInPictureWindowManager {
    static void ExitPictureInPictureSoon();
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -149,7 +149,7 @@ index f6010ed93b273f81d1871669edee2d3f60d77f1f..05229703c7415ed2356fbfe4892ca0ff
  
    // Creates the `occlusion_tracker_` if it does not already exist and should
    // exist.
-@@ -263,7 +269,9 @@ class PictureInPictureWindowManager {
+@@ -266,7 +272,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  

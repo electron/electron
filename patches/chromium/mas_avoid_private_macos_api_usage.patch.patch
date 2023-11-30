@@ -431,7 +431,7 @@ index 47afd2553bf76b5b185a4be131196d90cf9cad44..d6f9998890d7a83a8fb221691aa2f1e7
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0f6f693b637e4e7996d2c17ebac460c49d2b44d8..ff52ee2e8ced9639a96cb6bfd2d02202476c125e 100644
+index 6959df731dc45546115b2116192312e9c5278fa4..66e14789e7c88e6a4816fbc950507df02cabf809 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -568,10 +568,10 @@ index e4fb36797fca9f61c001ad4242417a05a54e0e12..8eb684c857907957a01ce80fe8081570
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 989e06abf398d907d5a2ca88cf3676572410684a..6e299bc053de01dddcd2c680312ba4c0960529b6 100644
+index bf4e98f5962e5415bde1709104a8228809dd9a21..1aab06c1a8e443cdca07cc5acb26850813854c3d 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -187,6 +187,7 @@ source_set("common") {
+@@ -217,6 +217,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4e5182afac5b2da70806968c69e6799ade5910aa..335d6c25ae67f69543c6672517c63a54084eea43 100644
+index 0de4fdcdba7dd112faed75e9e8209af18ee1032d..8f1992d5230848ecffbf4e49acb32543dd94cada 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -476,6 +476,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index 4e5182afac5b2da70806968c69e6799ade5910aa..335d6c25ae67f69543c6672517c63a54
    ]
  
    public_deps = [
-@@ -2911,6 +2912,7 @@ test("content_unittests") {
+@@ -2912,6 +2913,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1262,7 +1262,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 08131cefc7f900d99498c14d3740142ca9b4aafb..0afa3f266c730ca740a1a2e9a1f063d5a8fee692 100644
+index 122735b454f4a59014d43ef62eb6a3f53b41537e..e8167c3508286970a7cfafcb1b11fbc758cc9aac 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1461,10 +1461,10 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 301e8792b1259e7f7c4eb8e75a09a32f0d60e91f..36da16f203b14e872fb8153e8fc10c3f6725280d 100644
+index 88f2c986e7688b4c2f7b94dd6bbd75a7fecc29b4..b2a194f68164d9ce72caa2bf6feb121428ba2bd4 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -68,6 +68,10 @@ component("display") {
+@@ -69,6 +69,10 @@ component("display") {
        "mac/display_link_mac.h",
        "mac/screen_mac.mm",
      ]
@@ -1540,10 +1540,10 @@ index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d147
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 3a43af5407ba963f81b63fc5b1640253d9159edd..2f209280cc6e3c52c93a74ccc4d1fa6894a026af 100644
+index 87f9bbe79b876ef5e6bd012b7a261aee51986791..5285a37944cbe256fd1937db299e69cdd39dc71e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -697,6 +697,7 @@ component("views") {
+@@ -700,6 +700,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1551,7 +1551,7 @@ index 3a43af5407ba963f81b63fc5b1640253d9159edd..2f209280cc6e3c52c93a74ccc4d1fa68
    }
  
    if (is_win) {
-@@ -1125,6 +1126,8 @@ source_set("test_support") {
+@@ -1128,6 +1129,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
