@@ -1,0 +1,142 @@
+From 971d6055e7b78c474e2e734e55a2991fbb7ab665 Mon Sep 17 00:00:00 2001
+From: Jordan Bayles <jophba@chromium.org>
+Date: Mon, 30 Oct 2023 15:10:00 -0700
+Subject: [PATCH] [Cast Streaming] fix heap use-after-free
+
+This patch fixes a use after free, caused by using an iterator
+after it has been invalidated by a call to std::map::erase().
+
+Bug: 1491210
+Change-Id: I0c546eb6474af82f052b89e819a4886a004270f0
+Reviewed-on: https://chromium-review.googlesource.com/c/openscreen/+/4981212
+Reviewed-by: Mark Foltz <mfoltz@chromium.org>
+Commit-Queue: Jordan Bayles <jophba@chromium.org>
+Reviewed-by: Muyao Xu <muyaoxu@google.com>
+---
+
+diff --git a/cast/streaming/statistics_analyzer.cc b/cast/streaming/statistics_analyzer.cc
+index b0658f5..81d10c5 100644
+--- a/cast/streaming/statistics_analyzer.cc
++++ b/cast/streaming/statistics_analyzer.cc
+@@ -144,16 +144,22 @@
+ void StatisticsAnalyzer::RecordFrameLatencies(const FrameEvent& frame_event) {
+   FrameInfoMap& frame_infos = recent_frame_infos_.Get(frame_event.media_type);
+ 
++  // Event is too old, don't bother.
++  const bool map_is_full = frame_infos.size() == kMaxRecentFrameInfoMapSize;
++  if (map_is_full && frame_event.rtp_timestamp <= frame_infos.begin()->first) {
++    return;
++  }
++
+   auto it = frame_infos.find(frame_event.rtp_timestamp);
+   if (it == frame_infos.end()) {
++    if (map_is_full) {
++      frame_infos.erase(frame_infos.begin());
++    }
++
+     auto emplace_result =
+         frame_infos.emplace(frame_event.rtp_timestamp, FrameInfo{});
+     OSP_CHECK(emplace_result.second);
+     it = emplace_result.first;
+-
+-    if (frame_infos.size() >= kMaxRecentFrameInfoMapSize) {
+-      frame_infos.erase(frame_infos.begin());
+-    }
+   }
+ 
+   switch (frame_event.type) {
+diff --git a/cast/streaming/statistics_analyzer_unittest.cc b/cast/streaming/statistics_analyzer_unittest.cc
+index 22313ce..be89474 100644
+--- a/cast/streaming/statistics_analyzer_unittest.cc
++++ b/cast/streaming/statistics_analyzer_unittest.cc
+@@ -635,4 +635,90 @@
+                                    (frame_interval_ms * num_events)));
+ }
+ 
++TEST_F(StatisticsAnalyzerTest, LotsOfEventsStillWorksProperly) {
++  constexpr std::array<StatisticsEventType, 5> kEventsToReport{
++      StatisticsEventType::kFrameCaptureBegin,
++      StatisticsEventType::kFrameCaptureEnd, StatisticsEventType::kFrameEncoded,
++      StatisticsEventType::kFrameAckSent, StatisticsEventType::kFramePlayedOut};
++  constexpr int kNumFrames = 1000;
++  constexpr int kNumEvents = kNumFrames * kEventsToReport.size();
++
++  constexpr std::array<int, 5> kFramePlayoutDelayDeltasMs{10, 14, 3, 40, 1};
++  constexpr std::array<int, 25> kTimestampOffsetsMs{
++      // clang-format off
++      0, 13, 39, 278, 552,   // Frame One.
++      0, 14, 34, 239, 373,   // Frame Two.
++      0, 19, 29, 245, 389,   // Frame Three.
++      0, 17, 37, 261, 390,   // Frame Four.
++      0, 14, 44, 290, 440,   // Frame Five.
++      // clang-format on
++  };
++
++  constexpr std::array<std::pair<StatisticType, double>, 7> kExpectedStats{{
++      {StatisticType::kNumLateFrames, 1000},
++      {StatisticType::kNumFramesCaptured, 1000},
++      {StatisticType::kAvgEndToEndLatencyMs, 428.8},
++      {StatisticType::kAvgCaptureLatencyMs, 15.4},
++      {StatisticType::kAvgFrameLatencyMs, 226},
++      {StatisticType::kAvgEncodeTimeMs, 21.2},
++      {StatisticType::kEnqueueFps, 40},
++  }};
++
++  constexpr std::array<std::pair<HistogramType, std::array<int, 30>>, 4>
++      kExpectedHistograms{
++          {{HistogramType::kCaptureLatencyMs, {0, 1000}},
++           {HistogramType::kEncodeTimeMs, {0, 200, 800}},
++           {HistogramType::kEndToEndLatencyMs,
++            {0, 0, 0, 0, 0,   0,   0, 0, 0,   0, 0, 0, 0, 0,  0,
++             0, 0, 0, 0, 200, 400, 0, 0, 200, 0, 0, 0, 0, 200
++
++            }},
++           {HistogramType::kFrameLatenessMs, {0, 800, 0, 200}}}};
++
++  // We don't check stats the first 49 times, only the last.
++  {
++    testing::InSequence s;
++    EXPECT_CALL(stats_client_, OnStatisticsUpdated(_)).Times(49);
++    EXPECT_CALL(stats_client_, OnStatisticsUpdated(_))
++        .WillOnce(Invoke([&](const SenderStats& stats) {
++          for (const auto& stat_pair : kExpectedStats) {
++            ExpectStatEq(stats.video_statistics, stat_pair.first,
++                         stat_pair.second);
++          }
++          for (const auto& histogram_pair : kExpectedHistograms) {
++            ExpectHistoBuckets(stats.video_histograms, histogram_pair.first,
++                               histogram_pair.second);
++          }
++        }));
++  }
++
++  analyzer_->ScheduleAnalysis();
++  RtpTimeTicks rtp_timestamp;
++  int current_event = 0;
++  for (int frame_id = 0; frame_id < kNumFrames; frame_id++) {
++    for (StatisticsEventType event_type : kEventsToReport) {
++      FrameEvent event(kDefaultFrameEvent);
++      event.type = event_type;
++      event.frame_id = FrameId(frame_id);
++      event.rtp_timestamp = rtp_timestamp;
++      event.timestamp =
++          fake_clock_.now() +
++          milliseconds(
++              kTimestampOffsetsMs[current_event % kTimestampOffsetsMs.size()]);
++      event.delay_delta = milliseconds(
++          kFramePlayoutDelayDeltasMs[frame_id %
++                                     kFramePlayoutDelayDeltasMs.size()]);
++      collector_->CollectFrameEvent(std::move(event));
++
++      current_event++;
++    }
++    fake_clock_.Advance(
++        milliseconds(kDefaultStatIntervalMs * kEventsToReport.size()));
++    rtp_timestamp += RtpTimeDelta::FromTicks(90);
++  }
++
++  fake_clock_.Advance(milliseconds(kDefaultStatsAnalysisIntervalMs -
++                                   (kDefaultStatIntervalMs * kNumEvents)));
++}
++
+ }  // namespace openscreen::cast
