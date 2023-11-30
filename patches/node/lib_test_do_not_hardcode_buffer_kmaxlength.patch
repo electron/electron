@@ -16,11 +16,11 @@ Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 (cherry picked from commit a4fdb1abe0844d86b4cbfcc4051794656e7d746e)
 
 diff --git a/lib/internal/blob.js b/lib/internal/blob.js
-index a25f6cf7df23875a5cefc0a4f92a997494a313af..58d2193195d9523d3bc43054efbbe4eebb0c7b05 100644
+index d0e47c1a4397a875c937d43c3b72dbd1e1de35a7..400d2c5fd21bc962a8befc4d80527216baddd6d5 100644
 --- a/lib/internal/blob.js
 +++ b/lib/internal/blob.js
-@@ -25,6 +25,9 @@ const {
-   FixedSizeBlobCopyJob,
+@@ -24,6 +24,9 @@ const {
+   concat,
    getDataObject,
  } = internalBinding('blob');
 +const {
@@ -29,7 +29,7 @@ index a25f6cf7df23875a5cefc0a4f92a997494a313af..58d2193195d9523d3bc43054efbbe4ee
  
  const {
    TextDecoder,
-@@ -61,7 +64,6 @@ const {
+@@ -62,7 +65,6 @@ const {
  } = require('internal/errors');
  
  const {
@@ -37,7 +37,7 @@ index a25f6cf7df23875a5cefc0a4f92a997494a313af..58d2193195d9523d3bc43054efbbe4ee
    validateDictionary,
  } = require('internal/validators');
  
-@@ -161,8 +163,8 @@ class Blob {
+@@ -158,8 +160,8 @@ class Blob {
        return src;
      });
  
@@ -98,11 +98,11 @@ index c6b728027057ece38c2b7fcc6bf7b18b959125d2..aad9c6bcab69e971c02281928885d94a
  
  const b = Buffer.allocUnsafe(1024);
 diff --git a/test/parallel/test-buffer-over-max-length.js b/test/parallel/test-buffer-over-max-length.js
-index c263633d941cddc7614df7e7ec64ad9aaaa7864b..1167328131fcd59d973ccf38201f458441517636 100644
+index d2df358cc00ca4b238252d6d11bdad3b77fad114..f29d6b62d4aa408fb3a67ffe71b14436fbbff907 100644
 --- a/test/parallel/test-buffer-over-max-length.js
 +++ b/test/parallel/test-buffer-over-max-length.js
-@@ -13,18 +13,8 @@ const bufferMaxSizeMsg = {
-   message: /^The argument 'size' is invalid\. Received [^"]*$/
+@@ -12,18 +12,8 @@ const bufferMaxSizeMsg = {
+   name: 'RangeError',
  };
  
 -assert.throws(() => Buffer((-1 >>> 0) + 2), bufferMaxSizeMsg);
@@ -121,10 +121,10 @@ index c263633d941cddc7614df7e7ec64ad9aaaa7864b..1167328131fcd59d973ccf38201f4584
 -assert.throws(() => Buffer.allocUnsafe(0x100000001), bufferMaxSizeMsg);
 -assert.throws(() => Buffer.allocUnsafe(0xFFFFFFFFF), bufferMaxSizeMsg);
 diff --git a/test/parallel/test-buffer-tostring-rangeerror.js b/test/parallel/test-buffer-tostring-rangeerror.js
-index 4416effb422ac4a000eff1732cbfeeffcc567555..0ebea759b5c42be0c294093256ea3cad7034a98b 100644
+index d2e1e0d6e46438f20d6b8f1196ebd936d4fa3436..0ebea759b5c42be0c294093256ea3cad7034a98b 100644
 --- a/test/parallel/test-buffer-tostring-rangeerror.js
 +++ b/test/parallel/test-buffer-tostring-rangeerror.js
-@@ -1,18 +1,22 @@
+@@ -1,17 +1,22 @@
  'use strict';
  require('../common');
  
@@ -146,9 +146,8 @@ index 4416effb422ac4a000eff1732cbfeeffcc567555..0ebea759b5c42be0c294093256ea3cad
 -const len = 1422561062959;
 +const len = MAX_STRING_LENGTH + 1;
  const message = {
--  code: 'ERR_INVALID_ARG_VALUE',
+-  code: 'ERR_OUT_OF_RANGE',
 -  name: 'RangeError',
--  message: /^The argument 'size' is invalid\. Received [^"]*$/
 +  code: 'ERR_STRING_TOO_LONG',
 +  name: 'Error',
  };

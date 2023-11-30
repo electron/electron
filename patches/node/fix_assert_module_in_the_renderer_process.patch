@@ -13,15 +13,15 @@ if the override has been disabled.
 This will be upstreamed.
 
 diff --git a/lib/assert.js b/lib/assert.js
-index 04c2dd3bfcfdfbb4b8079c306e1d80aa48027787..34658819d09cc20f372798caec79e19c4a36565d 100644
+index b7d7a3da01d520984a5903cb9a0f1c288e0d5fa0..66a60c3726cd57e65db3e4fb57fb85721368c3ce 100644
 --- a/lib/assert.js
 +++ b/lib/assert.js
 @@ -66,6 +66,7 @@ const { inspect } = require('internal/util/inspect');
  const { isPromise, isRegExp } = require('internal/util/types');
  const { EOL } = require('internal/constants');
- const { BuiltinModule } = require('internal/bootstrap/loaders');
+ const { BuiltinModule } = require('internal/bootstrap/realm');
 +const { getEmbedderOptions } = require('internal/options');
- const { isError } = require('internal/util');
+ const { isError, deprecate } = require('internal/util');
  
  const errorCache = new SafeMap();
 @@ -293,8 +294,16 @@ function getErrMessage(message, fn) {
@@ -44,10 +44,10 @@ index 04c2dd3bfcfdfbb4b8079c306e1d80aa48027787..34658819d09cc20f372798caec79e19c
    const filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index d5a03d5e10faaa204b3f9f290fed79be824c78b1..c4caef25af670658965fc740ce03c2d2c4ed3e66 100644
+index c02906eacd90ac27d618e7578d1f928f16a858f7..74b4e15b8230c6380d41e84aa504824bb79b2ee5 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -263,6 +263,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -277,6 +277,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
          s.prepare_stack_trace_callback : PrepareStackTraceCallback;
      isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
@@ -58,10 +58,10 @@ index d5a03d5e10faaa204b3f9f290fed79be824c78b1..c4caef25af670658965fc740ce03c2d2
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 397f9d4a7a8e9a850ae2e13b84d7f893076f724d..365748f046f9d0f232d4f0ebc7b0c7f56bbd74e2 100644
+index f711ac936e76f9c16d15d7db759d0081a9eb018d..6eb2c137e1dd05b05e781820905cf6778107275d 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1215,6 +1215,11 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1239,6 +1239,11 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    Local<Context> context = env->context();
    Local<Object> ret = Object::New(isolate);
  

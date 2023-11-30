@@ -625,7 +625,7 @@ void RendererClientBase::SetupMainWorldOverrides(
       isolated_api.GetHandle()};
 
   util::CompileAndCall(context, "electron/js2c/isolated_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
+                       &isolated_bundle_params, &isolated_bundle_args);
 }
 
 // static
