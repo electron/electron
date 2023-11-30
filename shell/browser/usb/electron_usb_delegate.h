@@ -57,6 +57,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
       content::BrowserContext* browser_context,
       const std::string& guid) override;
   bool HasDevicePermission(content::BrowserContext* browser_context,
+                           content::RenderFrameHost* frame,
                            const url::Origin& origin,
                            const device::mojom::UsbDeviceInfo& device) override;
   void GetDevices(
