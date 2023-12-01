@@ -1007,6 +1007,7 @@ void InspectableWebContents::WebContentsDestroyed() {
   Observe(nullptr);
   Detach();
   embedder_message_dispatcher_.reset();
+  frontend_host_.reset();
 
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
