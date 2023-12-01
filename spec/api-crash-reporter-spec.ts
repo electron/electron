@@ -5,7 +5,6 @@ import * as Busboy from 'busboy';
 import * as path from 'node:path';
 import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
 import { app } from 'electron/main';
-import { crashReporter } from 'electron/common';
 import { EventEmitter } from 'node:events';
 import * as fs from 'node:fs';
 import * as uuid from 'uuid';
@@ -583,16 +582,20 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
   });
 
   describe('start() option validation', () => {
-    it('requires that the submitURL option be specified', () => {
-      expect(() => {
+    it('requires that the submitURL option be specified', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await expect(remotely(() => {
+        const { crashReporter } = require('electron');
         crashReporter.start({} as any);
-      }).to.throw('submitURL must be specified when uploadToServer is true');
+      })).to.be.rejectedWith('submitURL must be specified when uploadToServer is true');
     });
 
-    it('allows the submitURL option to be omitted when uploadToServer is false', () => {
-      expect(() => {
+    it('allows the submitURL option to be omitted when uploadToServer is false', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await expect(remotely(() => {
+        const { crashReporter } = require('electron');
         crashReporter.start({ uploadToServer: false } as any);
-      }).not.to.throw();
+      })).to.be.fulfilled();
     });
 
     it('can be called twice', async () => {
