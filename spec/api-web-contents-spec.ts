@@ -514,6 +514,11 @@ describe('webContents module', () => {
         .and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
       s.close();
     });
+
+    it('subsequent load failures reject each time', async () => {
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+    });
   });
 
   describe('getFocusedWebContents() API', () => {
