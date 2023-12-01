@@ -825,6 +825,14 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
+  bool disable_fd_ownership_enforcement;
+  options.Get("disableFdOwnershipEnforcement",
+              &disable_fd_ownership_enforcement);
+
+  base::subtle::EnableFDOwnershipEnforcement(!disable_fd_ownership_enforcement);
+#endif
+
   // BrowserViews are not attached to a window initially so they should start
   // off as hidden. This is also important for compositor recycling. See:
   // https://github.com/electron/electron/pull/21372
