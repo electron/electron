@@ -9,9 +9,7 @@ child.on('close', (code) => process.exit(code));
 
 const handleTerminationSignal = (signal) =>
   process.on(signal, () => {
-    if (!child.killed) {
-      child.kill(signal);
-    }
+    child.kill(signal);
   });
 
 handleTerminationSignal('SIGINT');
