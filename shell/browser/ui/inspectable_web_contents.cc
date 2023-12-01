@@ -1007,6 +1007,7 @@ void InspectableWebContents::WebContentsDestroyed() {
   Observe(nullptr);
   Detach();
   embedder_message_dispatcher_.reset();
+  frontend_host_.reset();
 
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
@@ -1052,7 +1053,7 @@ void InspectableWebContents::OnWebContentsFocused(
 
 void InspectableWebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame()) {
+  if (navigation_handle->IsInPrimaryMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
             GetDevToolsWebContents()->GetPrimaryMainFrame() &&
         frontend_host_) {
@@ -1069,7 +1070,7 @@ void InspectableWebContents::ReadyToCommitNavigation(
 
 void InspectableWebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame() ||
+  if (navigation_handle->IsInPrimaryMainFrame() ||
       !navigation_handle->GetURL().SchemeIs("chrome-extension") ||
       !navigation_handle->HasCommitted())
     return;
