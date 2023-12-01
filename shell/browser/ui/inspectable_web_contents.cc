@@ -1053,7 +1053,7 @@ void InspectableWebContents::OnWebContentsFocused(
 
 void InspectableWebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame()) {
+  if (navigation_handle->IsInPrimaryMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
             GetDevToolsWebContents()->GetPrimaryMainFrame() &&
         frontend_host_) {
@@ -1070,7 +1070,7 @@ void InspectableWebContents::ReadyToCommitNavigation(
 
 void InspectableWebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame() ||
+  if (navigation_handle->IsInPrimaryMainFrame() ||
       !navigation_handle->GetURL().SchemeIs("chrome-extension") ||
       !navigation_handle->HasCommitted())
     return;
