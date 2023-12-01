@@ -25,6 +25,8 @@
 
   "src/electron/patches/skia": "src/third_party/skia",
 
+  "src/electron/patches/libavif": "src/third_party/libavif/src",
+
   "src/electron/patches/libwebp": "src/third_party/libwebp/src",
 
   "src/electron/patches/libvpx": "src/third_party/libvpx/source/libvpx",

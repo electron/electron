@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Thu, 30 Nov 2023 20:39:28 -0800
+Subject: Do not store potentially invalid pointers
+
+Manual cherry-pick of PR #1757 into the chromium-m118 branch.
+
+diff --git a/src/read.c b/src/read.c
+index 756af390f451eb7e7422248ddc0b3e88e1640a94..5f2c527911f0896f78b26c7313db215671c217dd 100644
+--- a/src/read.c
++++ b/src/read.c
+@@ -752,6 +752,8 @@ static void avifMetaDestroy(avifMeta * meta)
+     avifFree(meta);
+ }
+ 
++// CAUTION: This function could potentially resize the meta->items array thereby invalidating all existing pointers that are being
++// stored locally. So if this function is being called, exercise caution in the caller to not use invalid pointers.
+ static avifDecoderItem * avifMetaFindItem(avifMeta * meta, uint32_t itemID)
+ {
+     if (itemID == 0) {
+@@ -1259,6 +1261,19 @@ static avifResult avifDecoderItemRead(avifDecoderItem * item,
+     return AVIF_RESULT_OK;
+ }
+ 
++// Returns the avifCodecType of the first tile of the gridItem.
++static avifCodecType avifDecoderItemGetGridCodecType(const avifDecoderItem * gridItem)
++{
++    for (uint32_t i = 0; i < gridItem->meta->items.count; ++i) {
++        avifDecoderItem * item = &gridItem->meta->items.item[i];
++        const avifCodecType tileCodecType = avifGetCodecType(item->type);
++        if ((item->dimgForID == gridItem->id) && (tileCodecType != AVIF_CODEC_TYPE_UNKNOWN)) {
++            return tileCodecType;
++        }
++    }
++    return AVIF_CODEC_TYPE_UNKNOWN;
++}
++
+ static avifBool avifDecoderGenerateImageGridTiles(avifDecoder * decoder, avifImageGrid * grid, avifDecoderItem * gridItem, avifBool alpha)
+ {
+     unsigned int tilesRequested = grid->rows * grid->columns;
+@@ -3843,16 +3858,28 @@ avifResult avifDecoderReset(avifDecoder * decoder)
+         avifBool isAlphaItemInInput;
+         avifDecoderItem * alphaItem;
+         AVIF_CHECKRES(avifDecoderDataFindAlphaItem(data, &colorItem, &alphaItem, &isAlphaItemInInput));
+-        if (alphaItem && !memcmp(alphaItem->type, "grid", 4)) {
+-            avifROData readData;
+-            AVIF_CHECKRES(avifDecoderItemRead(alphaItem, decoder->io, &readData, 0, 0, data->diag));
+-            AVIF_CHECKERR(avifParseImageGridBox(&data->alpha.grid,
+-                                                readData.data,
+-                                                readData.size,
+-                                                decoder->imageSizeLimit,
+-                                                decoder->imageDimensionLimit,
+-                                                data->diag),
+-                          AVIF_RESULT_INVALID_IMAGE_GRID);
++        avifCodecType alphaCodecType = AVIF_CODEC_TYPE_UNKNOWN;
++        if (alphaItem) {
++            if (!memcmp(alphaItem->type, "grid", 4)) {
++                if (isAlphaItemInInput) {
++                    avifROData readData;
++                    AVIF_CHECKRES(avifDecoderItemRead(alphaItem, decoder->io, &readData, 0, 0, data->diag));
++                    AVIF_CHECKERR(avifParseImageGridBox(&data->alpha.grid,
++                                                        readData.data,
++                                                        readData.size,
++                                                        decoder->imageSizeLimit,
++                                                        decoder->imageDimensionLimit,
++                                                        data->diag),
++                                  AVIF_RESULT_INVALID_IMAGE_GRID);
++                }
++                alphaCodecType = avifDecoderItemGetGridCodecType(alphaItem);
++                if (alphaCodecType == AVIF_CODEC_TYPE_UNKNOWN) {
++                    return AVIF_RESULT_INVALID_IMAGE_GRID;
++                }
++            } else {
++                alphaCodecType = avifGetCodecType(alphaItem->type);
++                assert(alphaCodecType != AVIF_CODEC_TYPE_UNKNOWN);
++            }
+         }
+ 
+         // Find Exif and/or XMP metadata, if any
