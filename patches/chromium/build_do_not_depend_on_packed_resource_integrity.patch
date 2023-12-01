@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index cc22e9c43562086396509548a4fe7e2f0ae22f80..705b0e067d8b702a5306334ae9d68eef2c11106d 100644
+index 035a3b539c900e7d480488b0b650d565dad974e4..daa59a5e8200e29382b1aff9431bc68f4e8cbd38 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -200,11 +200,16 @@ if (!is_android && !is_mac) {
@@ -33,7 +33,7 @@ index cc22e9c43562086396509548a4fe7e2f0ae22f80..705b0e067d8b702a5306334ae9d68eef
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 8256d792668b1707f9cc4bc0d7378b3b10cdf565..87c397a6aff3562d31d470e1c01c46066b1c4dbd 100644
+index 979638c93db4f9d4fecea6d7270ac198d6642c25..0f0a969d06a13434fc35aab8ea0c2330f27639d5 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4811,7 +4811,7 @@ static_library("browser") {
@@ -46,7 +46,7 @@ index 8256d792668b1707f9cc4bc0d7378b3b10cdf565..87c397a6aff3562d31d470e1c01c4606
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index a01aab8d9ddb469e6107bec1d91348c2a142b753..0f1f57ad05f7fc52c0187fad5b0081042d950d5e 100644
+index 97e34eed359411cd829d17b809cbedf47b669356..a18aae470ee7a4c0507ffae60990d8467c0a767a 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7182,7 +7182,6 @@ test("unit_tests") {
@@ -68,7 +68,7 @@ index a01aab8d9ddb469e6107bec1d91348c2a142b753..0f1f57ad05f7fc52c0187fad5b008104
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -8222,7 +8225,6 @@ test("unit_tests") {
+@@ -8224,7 +8227,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index a01aab8d9ddb469e6107bec1d91348c2a142b753..0f1f57ad05f7fc52c0187fad5b008104
        "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:app_registry_cache_waiter",
-@@ -8314,6 +8316,10 @@ test("unit_tests") {
+@@ -8316,6 +8318,10 @@ test("unit_tests") {
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
  
