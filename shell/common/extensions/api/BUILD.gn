@@ -63,6 +63,7 @@ generated_types("generated_api_types") {
   sources = [
     "resources_private.idl",
     "scripting.idl",
+    "tabs.json",
   ]
 
   if (enable_pdf_viewer) {
