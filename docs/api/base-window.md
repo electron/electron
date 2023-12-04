@@ -45,8 +45,8 @@ The `child` window will always show on top of the `parent` window.
 
 ## Modal windows
 
-A modal window is a child window that disables parent window, to create a modal
-window, you have to set both `parent` and `modal` options:
+A modal window is a child window that disables parent window. To create a modal
+window, you have to set both the `parent` and `modal` options:
 
 ```js
 const { BaseWindow } = require('electron')
@@ -76,30 +76,7 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
 
 ### `new BaseWindow([options])`
 
-* `options` [BrowserWindowConstructorOptions](structures/browser-window-options.md) (optional)
-
-When setting minimum or maximum window size with `minWidth`/`maxWidth`/
-`minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
-passing a size that does not follow size constraints to `setBounds`/`setSize` or
-to the constructor of `BaseWindow`.
-
-The possible values and behaviors of the `type` option are platform dependent.
-Possible values are:
-
-* On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
-  `notification`.
-* On macOS, possible types are `desktop`, `textured`, `panel`.
-  * The `textured` type adds metal gradient appearance
-    (`NSWindowStyleMaskTexturedBackground`).
-  * The `desktop` type places the window at the desktop background window level
-    (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
-    focus, keyboard or mouse events, but you can use `globalShortcut` to receive
-    input sparingly.
-  * The `panel` type enables the window to float on top of full-screened apps
-    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask,normally
-    reserved for NSPanel, at runtime. Also, the window will appear on all
-    spaces (desktops).
-* On Windows, possible type is `toolbar`.
+* `options` [BrowserWindowConstructorOptions](structures/base-window-options.md?inline) (optional)
 
 ### Instance Events
 

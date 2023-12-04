@@ -98,8 +98,8 @@ The `child` window will always show on top of the `top` window.
 
 ## Modal windows
 
-A modal window is a child window that disables parent window, to create a modal
-window, you have to set both `parent` and `modal` options:
+A modal window is a child window that disables parent window. To create a modal
+window, you have to set both the `parent` and `modal` options:
 
 ```js
 const { BrowserWindow } = require('electron')
