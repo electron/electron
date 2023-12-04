@@ -219,10 +219,10 @@
     vscode-languageserver-textdocument "^1.0.8"
     vscode-uri "^3.0.7"
 
-"@electron/typescript-definitions@^8.15.1":
-  version "8.15.1"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.15.1.tgz#9d4ff7361e8a4dee65d353e2884e7733c1c12dad"
-  integrity sha512-R8Kl8J+o+q3Pn1tM4fU4Qan63g1Oyd1meAlHwIPAJ8LfYC/N09SYJcNuwgvaxb/SHFIcr4BWZKHOVa4makuo6A==
+"@electron/typescript-definitions@^8.15.2":
+  version "8.15.2"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.15.2.tgz#1152e3d3731d236b50a3dee5a108176ce43fd703"
+  integrity sha512-6vlWnnNfZrg9QFOGgoLaQZ/nTCg+Y1laz02pUsRRmCJIpJZOY3HnWnIuav7e8g5IIwHMVc8JSohR+YRgiRk/eA==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
