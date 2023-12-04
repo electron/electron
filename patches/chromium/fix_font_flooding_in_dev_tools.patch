@@ -10,10 +10,10 @@ This patch resolves an issue that has been fixed in chromium involving font requ
 This patch can be removed when chromium reaches version 121.0.6157.0.
 
 diff --git a/AUTHORS b/AUTHORS
-index a31f741d472830ec17291e3fad935902e042bca0..0f710af9690e54e2509a9a3abff020322047dbe0 100644
+index dec500d09880d1bbe22af60b1a00d1632b24dbca..bc153bc670f2938bf270e37b24c6243f1aac2493 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -1151,6 +1151,7 @@ Rulong Chen <rulong.crl@alibaba-inc.com>
+@@ -1144,6 +1144,7 @@ Rulong Chen <rulong.crl@alibaba-inc.com>
  Russell Davis <russell.davis@gmail.com>
  Ryan Ackley <ryanackley@gmail.com>
  Ryan Gonzalez <rymg19@gmail.com>
@@ -22,10 +22,10 @@ index a31f741d472830ec17291e3fad935902e042bca0..0f710af9690e54e2509a9a3abff02032
  Ryan Sleevi <ryan-chromium-dev@sleevi.com>
  Ryan Yoakum <ryoakum@skobalt.com>
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 619ccba17514b22ab9def18715047f2cefcde7a2..e0ac0cd89fc5c39cbb001b68c99392d80aff3c51 100644
+index 8345548b0701dbe284b608819a63cef6b8940994..671a04eede5699d7ac28b37ecd681a2dcaa9fad2 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -2010,6 +2010,14 @@ BASE_FEATURE(kUACHOverrideBlank,
+@@ -1961,6 +1961,14 @@ BASE_FEATURE(kUACHOverrideBlank,
               "UACHOverrideBlank",
               base::FEATURE_DISABLED_BY_DEFAULT);
  
@@ -41,10 +41,10 @@ index 619ccba17514b22ab9def18715047f2cefcde7a2..e0ac0cd89fc5c39cbb001b68c99392d8
               "UseBlinkSchedulerTaskRunnerWithCustomDeleter",
               base::FEATURE_ENABLED_BY_DEFAULT);
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index ad716edf68ec5beb50cf833af28bb1b69099af78..76917f9b8ecc9c015477f576894ceae134e8b9b8 100644
+index e611ceb2afaf89bca3f3822fd3816a733e23cc43..67d083a37064ad57d727ffaeaa9f415f4bc0a5e3 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -1348,6 +1348,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kTimedHTMLParserBudget);
+@@ -1292,6 +1292,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kTimedHTMLParserBudget);
  
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kUACHOverrideBlank);
  
