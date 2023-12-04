@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 5 Dec 2023 01:35:12 +0900
+Subject: ci: logging
+
+DO NOT COMMIT!
+
+diff --git a/content/browser/child_process_host_impl.cc b/content/browser/child_process_host_impl.cc
+index b9dad494f9a55c70dab570907259544b3f8ea7f5..b1bf2b6e5503b467c76a94a7ab4d170b348ff6e1 100644
+--- a/content/browser/child_process_host_impl.cc
++++ b/content/browser/child_process_host_impl.cc
+@@ -266,6 +266,7 @@ bool ChildProcessHostImpl::InitChannel() {
+ }
+ 
+ void ChildProcessHostImpl::OnDisconnectedFromChildProcess() {
++  LOG(WARNING) << "ChildProcessHostImpl::OnDisconnectedFromChildProcess";
+   if (channel_) {
+     opening_channel_ = false;
+     delegate_->OnChannelError();
