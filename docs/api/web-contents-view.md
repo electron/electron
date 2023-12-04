@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
-```javascript
+```js
 const { BaseWindow, WebContentsView } = require('electron')
 const win = new BaseWindow({ width: 800, height: 400 })
 
@@ -112,7 +112,7 @@ Objects created with `new WebContentsView` have the following properties:
 A `WebContents` property containing a reference to the displayed `WebContents`.
 Use this to interact with the `WebContents`, for instance to load a URL.
 
-```javascript
+```js
 const { WebContentsView } = require('electron')
 const view = new WebContentsView()
 view.webContents.loadURL('https://electronjs.org/')

@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
-```javascript
+```js
 const { BaseWindow, View } = require('electron')
 const win = new BaseWindow()
 const view = new View()

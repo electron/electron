@@ -12,7 +12,7 @@ Process: [Main](../glossary.md#main-process)
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
-```javascript
+```js
 // In the main process.
 const { BaseWindow, WebContentsView } = require('electron')
 
@@ -34,7 +34,7 @@ rightView.setBounds({ x: 400, y: 0, width: 400, height: 600 })
 
 By using `parent` option, you can create child windows:
 
-```javascript
+```js
 const { BaseWindow } = require('electron')
 
 const parent = new BaseWindow()
@@ -48,7 +48,7 @@ The `child` window will always show on top of the `parent` window.
 A modal window is a child window that disables parent window, to create a modal
 window, you have to set both `parent` and `modal` options:
 
-```javascript
+```js
 const { BaseWindow } = require('electron')
 
 const parent = new BaseWindow()
@@ -123,7 +123,7 @@ window should be closed, which will also be called when the window is
 reloaded. In Electron, returning any value other than `undefined` would cancel the
 close. For example:
 
-```javascript
+```js
 window.onbeforeunload = (e) => {
   console.log('I do not want to be closed')
 
@@ -262,7 +262,7 @@ Commands are lowercased, underscores are replaced with hyphens, and the
 `APPCOMMAND_` prefix is stripped off.
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
-```javascript
+```js
 const { BaseWindow } = require('electron')
 const win = new BaseWindow()
 win.on('app-command', (e, cmd) => {
@@ -354,7 +354,7 @@ Returns `BaseWindow | null` - The window with the given `id`.
 
 Objects created with `new BaseWindow` have the following properties:
 
-```javascript
+```js
 const { BaseWindow } = require('electron')
 // In this example `win` is our instance
 const win = new BaseWindow({ width: 800, height: 600 })
@@ -678,7 +678,7 @@ Closes the currently open [Quick Look][quick-look] panel.
 
 Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
 
-```javascript
+```js
 const { BaseWindow } = require('electron')
 const win = new BaseWindow()
 
@@ -929,7 +929,7 @@ Changes the attachment point for sheets on macOS. By default, sheets are
 attached just below the window frame, but you may want to offset them. For
 example:
 
-```javascript
+```js
 const { BaseWindow } = require('electron')
 const win = new BaseWindow()
 
