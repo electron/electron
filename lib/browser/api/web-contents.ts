@@ -582,6 +582,16 @@ WebContents.prototype._init = function () {
     }
   });
 
+  this.on('-before-unload-fired', (event, proceed) => {
+    const type = this.getType();
+    // These are the "interactive" types, i.e. ones a user might be looking at.
+    // All other types should ignore the "proceed" signal and unload
+    // regardless.
+    if (type === 'window' || type === 'offscreen' || type === 'browserView') {
+      if (proceed) { return event.preventDefault(); }
+    }
+  });
+
   // The devtools requests the webContents to reload.
   this.on('devtools-reload-page', function (this: Electron.WebContents) {
     this.reload();

@@ -1263,12 +1263,11 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen)
-    *proceed_to_fire_unload = proceed;
-  else
-    *proceed_to_fire_unload = true;
   // Note that Chromium does not emit this for navigations.
-  Emit("before-unload-fired", proceed);
+
+  // Emit returns true if preventDefault() was called, so !Emit will be true if
+  // the event should proceed.
+  *proceed_to_fire_unload = !Emit("-before-unload-fired", proceed);
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
