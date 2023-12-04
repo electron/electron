@@ -16,6 +16,8 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_node_data.h"
+#include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
@@ -34,6 +36,8 @@ class AutofillPopup;
 // Child view only for triggering accessibility events. Rendering is handled
 // by |AutofillPopupViewViews|.
 class AutofillPopupChildView : public views::View {
+  METADATA_HEADER(AutofillPopupChildView, views::View)
+
  public:
   explicit AutofillPopupChildView(const std::u16string& suggestion)
       : suggestion_(suggestion) {

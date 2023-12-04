@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Mon, 6 Nov 2023 14:37:50 -0800
+Subject: src: avoid copying string in fs_permission
+
+Ref: https://github.com/nodejs/node/pull/47746/files
+
+diff --git a/src/permission/fs_permission.cc b/src/permission/fs_permission.cc
+index fadf75968c779d5aee8d9d1ee27e7b4abf241240..d407d440d74c66d9dc8ca4d4653096292c5adc4c 100644
+--- a/src/permission/fs_permission.cc
++++ b/src/permission/fs_permission.cc
+@@ -199,18 +199,18 @@ bool FSPermission::RadixTree::Lookup(const std::string_view& s,
+   }
+ }
+ 
+-void FSPermission::RadixTree::Insert(const std::string& path) {
++void FSPermission::RadixTree::Insert(const std::string& path_prefix) {
+   FSPermission::RadixTree::Node* current_node = root_node_;
+ 
+   unsigned int parent_node_prefix_len = current_node->prefix.length();
+-  int path_len = path.length();
++  int path_len = path_prefix.length();
+ 
+   for (int i = 1; i <= path_len; ++i) {
+-    bool is_wildcard_node = path[i - 1] == '*';
++    bool is_wildcard_node = path_prefix[i - 1] == '*';
+     bool is_last_char = i == path_len;
+ 
+     if (is_wildcard_node || is_last_char) {
+-      std::string node_path = path.substr(parent_node_prefix_len, i);
++      std::string node_path = path_prefix.substr(parent_node_prefix_len, i);
+       current_node = current_node->CreateChild(node_path);
+     }
+ 
+@@ -222,7 +222,7 @@ void FSPermission::RadixTree::Insert(const std::string& path) {
+ 
+   if (UNLIKELY(per_process::enabled_debug_list.enabled(
+           DebugCategory::PERMISSION_MODEL))) {
+-    per_process::Debug(DebugCategory::PERMISSION_MODEL, "Inserting %s\n", path);
++    per_process::Debug(DebugCategory::PERMISSION_MODEL, "Inserting %s\n", path_prefix);
+     PrintTree(root_node_);
+   }
+ }
+diff --git a/src/permission/fs_permission.h b/src/permission/fs_permission.h
+index 244e95727ad48757995c6404f457f42a4ba33ccd..4b6aab197333928bfbd5143bea15b3a5abd6d4c0 100644
+--- a/src/permission/fs_permission.h
++++ b/src/permission/fs_permission.h
+@@ -31,16 +31,16 @@ class FSPermission final : public PermissionBase {
+ 
+       Node() : wildcard_child(nullptr), is_leaf(false) {}
+ 
+-      Node* CreateChild(std::string prefix) {
+-        if (prefix.empty() && !is_leaf) {
++      Node* CreateChild(std::string path_prefix) {
++        if (path_prefix.empty() && !is_leaf) {
+           is_leaf = true;
+           return this;
+         }
+-        char label = prefix[0];
++        char label = path_prefix[0];
+ 
+         Node* child = children[label];
+         if (child == nullptr) {
+-          children[label] = new Node(prefix);
++          children[label] = new Node(path_prefix);
+           return children[label];
+         }
+ 
+@@ -48,7 +48,7 @@ class FSPermission final : public PermissionBase {
+         unsigned int i = 0;
+         unsigned int prefix_len = prefix.length();
+         for (; i < child->prefix.length(); ++i) {
+-          if (i > prefix_len || prefix[i] != child->prefix[i]) {
++          if (i > prefix_len || path_prefix[i] != child->prefix[i]) {
+             std::string parent_prefix = child->prefix.substr(0, i);
+             std::string child_prefix = child->prefix.substr(i);
+ 
+@@ -57,11 +57,11 @@ class FSPermission final : public PermissionBase {
+             split_child->children[child_prefix[0]] = child;
+             children[parent_prefix[0]] = split_child;
+ 
+-            return split_child->CreateChild(prefix.substr(i));
++            return split_child->CreateChild(path_prefix.substr(i));
+           }
+         }
+         child->is_leaf = true;
+-        return child->CreateChild(prefix.substr(i));
++        return child->CreateChild(path_prefix.substr(i));
+       }
+ 
+       Node* CreateWildcardChild() {

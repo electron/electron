@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 1c301d00fc74fff81dd1495ac812f1970ace3773..5add3b27b2c1a0af5529cdd5908dfc99dac61e42 100644
+index 8ba0cc2afe6a8bcabecee8f081d0ffd75ae71594..584f008f3e5dc9f6e16f18359773f5c8e53d96cd 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -201,6 +201,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -198,6 +198,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(
@@ -92,7 +92,7 @@ index 00965c253f28bd3947255b2ab77bf3a0bb71f14a..e04a7eef94990dfb0e2fca2e116352fe
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index aaccaa3e3e43497ebd0909d55f471cf98972f27a..52e0692c5ce782d3ac433e9de443c2b63430e2ce 100644
+index 18cca28edc35dadd4eb9173558d1764b1bf85dd5..4cda3b7f2db6be365e4edb9456e1f72244a5158e 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -268,6 +268,7 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -133,7 +133,7 @@ index 9c9e590aab71d5b66cdd2c9a0cfc5f2d34443e84..c461c131d93d592487e319893d531bf4
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 806868220ec9a94e16a1b0085b694881452df612..5bb3378497e8036d8170f951e191c6331a996826 100644
+index 67b608870e591d6a6fcfe1f4883ddb19c3210131..bc0044eee2bd351f5c5ada89cd4b859a79dce619 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2035,7 +2035,7 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -176,7 +176,7 @@ index 82db1db4175fb9f4ee7490d5a163164ef4495ecb..4f51683be14ba6ee657a290c7747969e
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index 6b835ca4d0426d2412f1cff6f0bb962e0f2fd586..a48198747b80929e7d4b290e9b40b6629dbda669 100644
+index 2d3b66e8f1960b46d0e790d803fefb3b85c62603..c8106d1390e75bd74fc38cf138cca37ad08b1486 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(

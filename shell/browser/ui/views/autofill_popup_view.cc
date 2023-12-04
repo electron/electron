@@ -30,6 +30,9 @@ void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
   node_data->SetName(suggestion_);
 }
 
+BEGIN_METADATA(AutofillPopupChildView)
+END_METADATA
+
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
     : popup_(popup), parent_widget_(parent_widget) {

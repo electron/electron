@@ -96,4 +96,7 @@ void SubmenuButton::GetCharacterPosition(const std::u16string& text,
                              &height, 0, 0);
 }
 
+BEGIN_METADATA(SubmenuButton)
+END_METADATA
+
 }  // namespace electron

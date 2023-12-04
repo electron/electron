@@ -54,14 +54,13 @@ namespace {
 // See https://nodejs.org/api/cli.html#cli_options
 void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   // Options that are unilaterally disallowed.
-  static constexpr auto disallowed =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
-          "--enable-fips",
-          "--force-fips",
-          "--openssl-config",
-          "--use-bundled-ca",
-          "--use-openssl-ca",
-      });
+  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+      "--enable-fips",
+      "--force-fips",
+      "--openssl-config",
+      "--use-bundled-ca",
+      "--use-openssl-ca",
+  });
 
   for (const auto& arg : argv) {
     const auto key = base::StringPiece(arg).substr(0, arg.find('='));

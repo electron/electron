@@ -10,7 +10,7 @@ This module does not include a web interface. To view recorded traces, use
 **Note:** You should not use this module until the `ready` event of the app
 module is emitted.
 
-```javascript
+```js
 const { app, contentTracing } = require('electron')
 
 app.whenReady().then(() => {

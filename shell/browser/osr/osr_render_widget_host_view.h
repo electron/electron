@@ -119,6 +119,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   // content::RenderWidgetHostViewBase:
 
+  void UpdateFrameSinkIdRegistration() override;
   void InvalidateLocalSurfaceIdAndAllocationGroup() override;
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* parent_host_view,

@@ -16,16 +16,7 @@ Once Fiddle is installed, you can press on the "Open in Fiddle" button that you
 will find below code samples like the following one:
 
 ```fiddle docs/fiddles/quick-start
-window.addEventListener('DOMContentLoaded', () => {
-  const replaceText = (selector, text) => {
-    const element = document.getElementById(selector)
-    if (element) element.innerText = text
-  }
 
-  for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
-  }
-})
 ```
 
 If there is still something that you do not know how to do, please take a look at the [API][app]

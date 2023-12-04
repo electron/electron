@@ -219,7 +219,7 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
   if (web_contents()->IsFullscreen())
-    web_contents()->ExitFullscreen(true);
+    web_contents()->ExitFullscreen();
 #endif
   BaseWindow::OnWindowLeaveFullScreen();
 }

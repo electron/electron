@@ -256,7 +256,7 @@ The `webview` tag has the following methods:
 
 **Example**
 
-```javascript @ts-expect-error=[3]
+```js @ts-expect-error=[3]
 const webview = document.querySelector('webview')
 webview.addEventListener('dom-ready', () => {
   webview.openDevTools()
@@ -803,7 +803,7 @@ Fired when the guest window logs a console message.
 The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
-```javascript @ts-expect-error=[3]
+```js @ts-expect-error=[3]
 const webview = document.querySelector('webview')
 webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message)
@@ -824,7 +824,7 @@ Returns:
 Fired when a result is available for
 [`webview.findInPage`](#webviewfindinpagetext-options) request.
 
-```javascript @ts-expect-error=[3,6]
+```js @ts-expect-error=[3,6]
 const webview = document.querySelector('webview')
 webview.addEventListener('found-in-page', (e) => {
   webview.stopFindInPage('keepSelection')
@@ -949,7 +949,7 @@ Fired when the guest page attempts to close itself.
 The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
-```javascript @ts-expect-error=[3]
+```js @ts-expect-error=[3]
 const webview = document.querySelector('webview')
 webview.addEventListener('close', () => {
   webview.src = 'about:blank'
@@ -969,7 +969,7 @@ Fired when the guest page has sent an asynchronous message to embedder page.
 With `sendToHost` method and `ipc-message` event you can communicate
 between guest page and embedder page:
 
-```javascript @ts-expect-error=[4,7]
+```js @ts-expect-error=[4,7]
 // In embedder page.
 const webview = document.querySelector('webview')
 webview.addEventListener('ipc-message', (event) => {
@@ -979,7 +979,7 @@ webview.addEventListener('ipc-message', (event) => {
 webview.send('ping')
 ```
 
-```javascript
+```js
 // In guest page.
 const { ipcRenderer } = require('electron')
 ipcRenderer.on('ping', () => {

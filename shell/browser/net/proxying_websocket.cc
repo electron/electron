@@ -44,8 +44,7 @@ ProxyingWebSocket::ProxyingWebSocket(
           /*is_download=*/false,
           /*is_async=*/true,
           /*is_service_worker_script=*/false,
-          /*navigation_id=*/absl::nullopt,
-          /*ukm_source_id=*/ukm::kInvalidSourceIdObj)) {}
+          /*navigation_id=*/absl::nullopt)) {}
 
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {

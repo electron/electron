@@ -276,10 +276,10 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
 }
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
-    const GURL& security_origin,
+    const url::Origin& security_origin,
     blink::mojom::MediaStreamType type) const {
   base::Value::Dict details;
-  details.Set("securityOrigin", security_origin.spec());
+  details.Set("securityOrigin", security_origin.GetURL().spec());
   details.Set("mediaType", MediaStreamTypeToString(type));
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.

@@ -1144,6 +1144,34 @@ describe('BrowserWindow module', () => {
         await shown;
         expect(w.isMaximized()).to.equal(true);
       });
+
+      ifit(process.platform === 'darwin')('should attach child window to parent', async () => {
+        const wShow = once(w, 'show');
+        w.show();
+        await wShow;
+
+        const c = new BrowserWindow({ show: false, parent: w });
+        const cShow = once(c, 'show');
+        c.showInactive();
+        await cShow;
+
+        // verifying by checking that the child tracks the parent's visibility
+        const minimized = once(w, 'minimize');
+        w.minimize();
+        await minimized;
+
+        expect(w.isVisible()).to.be.false('parent is visible');
+        expect(c.isVisible()).to.be.false('child is visible');
+
+        const restored = once(w, 'restore');
+        w.restore();
+        await restored;
+
+        expect(w.isVisible()).to.be.true('parent is visible');
+        expect(c.isVisible()).to.be.true('child is visible');
+
+        closeWindow(c);
+      });
     });
 
     describe('BrowserWindow.focus()', () => {
@@ -5090,6 +5118,55 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getContentSize(), [30, 30]);
         w.setContentSize(10, 10);
         expectBoundsEqual(w.getContentSize(), [10, 10]);
+      });
+
+      ifit(process.platform === 'win32')('do not change window with frame bounds when maximized', () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame: true,
+          thickFrame: true
+        });
+        expect(w.isResizable()).to.be.true('resizable');
+        w.maximize();
+        expect(w.isMaximized()).to.be.true('maximized');
+        const bounds = w.getBounds();
+        w.setResizable(false);
+        expectBoundsEqual(w.getBounds(), bounds);
+        w.setResizable(true);
+        expectBoundsEqual(w.getBounds(), bounds);
+      });
+
+      ifit(process.platform === 'win32')('do not change window without frame bounds when maximized', () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame: false,
+          thickFrame: true
+        });
+        expect(w.isResizable()).to.be.true('resizable');
+        w.maximize();
+        expect(w.isMaximized()).to.be.true('maximized');
+        const bounds = w.getBounds();
+        w.setResizable(false);
+        expectBoundsEqual(w.getBounds(), bounds);
+        w.setResizable(true);
+        expectBoundsEqual(w.getBounds(), bounds);
+      });
+
+      ifit(process.platform === 'win32')('do not change window transparent without frame bounds when maximized', () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame: false,
+          thickFrame: true,
+          transparent: true
+        });
+        expect(w.isResizable()).to.be.true('resizable');
+        w.maximize();
+        expect(w.isMaximized()).to.be.true('maximized');
+        const bounds = w.getBounds();
+        w.setResizable(false);
+        expectBoundsEqual(w.getBounds(), bounds);
+        w.setResizable(true);
+        expectBoundsEqual(w.getBounds(), bounds);
       });
     });
 

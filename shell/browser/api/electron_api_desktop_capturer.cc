@@ -50,11 +50,12 @@
 
 #if BUILDFLAG(IS_LINUX)
 // Private function in ui/base/x/x11_display_util.cc
-std::map<x11::RandR::Output, int> GetMonitors(int version,
-                                              x11::RandR* randr,
-                                              x11::Window window) {
+std::map<x11::RandR::Output, int> GetMonitors(
+    std::pair<uint32_t, uint32_t> version,
+    x11::RandR* randr,
+    x11::Window window) {
   std::map<x11::RandR::Output, int> output_to_monitor;
-  if (version >= 105) {
+  if (version >= std::pair<uint32_t, uint32_t>{1, 5}) {
     if (auto reply = randr->GetMonitors({window}).Sync()) {
       for (size_t monitor = 0; monitor < reply->monitors.size(); monitor++) {
         for (x11::RandR::Output output : reply->monitors[monitor].outputs)
@@ -87,7 +88,6 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   auto* connection = x11::Connection::Get();
   auto& randr = connection->randr();
   auto x_root_window = ui::GetX11RootWindow();
-  int version = ui::GetXrandrVersion();
 
   std::map<int32_t, uint32_t> monitor_atom_to_display;
 
@@ -98,7 +98,7 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   }
 
   std::map<x11::RandR::Output, int> output_to_monitor =
-      GetMonitors(version, &randr, x_root_window);
+      GetMonitors(connection->randr_version(), &randr, x_root_window);
   auto monitors_reply = randr.GetMonitors({x_root_window}).Sync();
 
   for (size_t i = 0; i < resources->outputs.size(); i++) {

@@ -183,7 +183,7 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index ac993ad9d37fd889669be9ea6c77c194973a1703..1db38822f3f91f84fc9dce1784db92938cc43000 100644
+index 6c67113ad9983839366d413ebe42321c0afcbf18..c82d0c73632648f0979b494d2df08bada956324c 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -157,11 +157,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -227,7 +227,7 @@ index ac993ad9d37fd889669be9ea6c77c194973a1703..1db38822f3f91f84fc9dce1784db9293
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -440,9 +460,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -441,9 +461,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX)
  
@@ -367,10 +367,10 @@ index bf65aec1c2a8eb6a91d0d2815979dbedc0e4a09f..4025b4fd7950d40088aa1c1364a7e7aa
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index 49b9f8429ebdd238e0e9ffb00cdf1848bda898a8..f79c7f0298ee76b2faaead195990925350306e49 100644
+index 0e07a9799748f30c5768651f44b5e5aa52c514f3..b1915bcad540f0c90b71677e59083a11461519f2 100644
 --- a/content/browser/utility_sandbox_delegate.h
 +++ b/content/browser/utility_sandbox_delegate.h
-@@ -27,7 +27,9 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -28,7 +28,9 @@ class UtilitySandboxedProcessLauncherDelegate
   public:
    UtilitySandboxedProcessLauncherDelegate(sandbox::mojom::Sandbox sandbox_type,
                                            const base::EnvironmentMap& env,
@@ -381,7 +381,7 @@ index 49b9f8429ebdd238e0e9ffb00cdf1848bda898a8..f79c7f0298ee76b2faaead1959909253
    ~UtilitySandboxedProcessLauncherDelegate() override;
  
    sandbox::mojom::Sandbox GetSandboxType() override;
-@@ -54,18 +56,16 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -55,18 +57,16 @@ class UtilitySandboxedProcessLauncherDelegate
    ZygoteCommunication* GetZygote() override;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -402,8 +402,8 @@ index 49b9f8429ebdd238e0e9ffb00cdf1848bda898a8..f79c7f0298ee76b2faaead1959909253
  
  #if BUILDFLAG(IS_WIN)
    std::vector<base::FilePath> preload_libraries_;
-@@ -76,8 +76,10 @@ class UtilitySandboxedProcessLauncherDelegate
-   absl::optional<raw_ptr<ZygoteCommunication>> zygote_;
+@@ -77,8 +77,10 @@ class UtilitySandboxedProcessLauncherDelegate
+   std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
 +  base::FilePath current_directory_;
@@ -627,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 0aa0cdc434928f00bd722a8c92b772e02f90a1a5..9f1f67b16ddb508831ae635daeaf4d0e21c49041 100644
+index 8a49455376de22710448ee13d069a64ae9168a28..30e547e7ea7660878c00b4c4fc3f7245ee924a57 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -724,11 +724,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -701,7 +701,7 @@ index 0aa0cdc434928f00bd722a8c92b772e02f90a1a5..9f1f67b16ddb508831ae635daeaf4d0e
      return result;
  
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index f45b798eaa154f25e876632fac551ed9f151fe02..24508fb22db700058da039f8644e2ec17d9b5cc3 100644
+index 81698da8fef99a5a4732fea5a4d39380b1f6ce76..d0ccb176a20a472c3e8186b72718c320073d58e7 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
 @@ -52,7 +52,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {

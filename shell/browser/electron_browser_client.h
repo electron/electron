@@ -194,7 +194,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
-      ukm::SourceIdObj ukm_source_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
@@ -249,6 +248,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
   void RegisterAssociatedInterfaceBindersForRenderFrameHost(
       content::RenderFrameHost& render_frame_host,
+      blink::AssociatedInterfaceRegistry& associated_registry) override;
+  void RegisterAssociatedInterfaceBindersForServiceWorker(
+      const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
       blink::AssociatedInterfaceRegistry& associated_registry) override;
 
   bool HandleExternalProtocol(

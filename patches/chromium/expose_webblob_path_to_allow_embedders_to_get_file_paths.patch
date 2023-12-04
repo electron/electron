@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 13 Jun 2023 15:36:04 -0700
+Subject: expose WebBlob::Path to allow embedders to get file paths
+
+Used to replace the File.path augmentation Electron currently implements.  This is safer / more web-standard technique.
+
+diff --git a/third_party/blink/public/web/web_blob.h b/third_party/blink/public/web/web_blob.h
+index 384a59138db11ea38028f844dd67e328ebffbe7b..f153997c2afccef1fa1b64ee5f162c28a2d07e5d 100644
+--- a/third_party/blink/public/web/web_blob.h
++++ b/third_party/blink/public/web/web_blob.h
+@@ -67,6 +67,7 @@ class BLINK_EXPORT WebBlob {
+   void Reset();
+   void Assign(const WebBlob&);
+   WebString Uuid();
++  std::string Path();
+ 
+   bool IsNull() const { return private_.IsNull(); }
+ 
+diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
+index ce7b5e229789d606df5e74461f09e2e1db59fc95..b1bf2affa5b7f10d9b45d062a2ce0479f5a3b80a 100644
+--- a/third_party/blink/renderer/core/exported/web_blob.cc
++++ b/third_party/blink/renderer/core/exported/web_blob.cc
+@@ -40,6 +40,7 @@
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/fileapi/blob.h"
+ #include "third_party/blink/renderer/core/fileapi/file_backed_blob_factory_dispatcher.h"
++#include "third_party/blink/renderer/core/fileapi/file.h"
+ #include "third_party/blink/renderer/platform/blob/blob_data.h"
+ #include "third_party/blink/renderer/platform/file_metadata.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+@@ -83,6 +84,14 @@ WebString WebBlob::Uuid() {
+   return private_->Uuid();
+ }
+ 
++std::string WebBlob::Path() {
++  if (!private_.Get())
++    return "";
++  if (private_->IsFile() && private_->HasBackingFile())
++    return To<File>(private_.Get())->GetPath().Utf8();
++  return "";
++}
++
+ v8::Local<v8::Value> WebBlob::ToV8Value(v8::Isolate* isolate) {
+   if (!private_.Get())
+     return v8::Local<v8::Value>();

@@ -2165,7 +2165,7 @@ jobs:
       <<: *env-ninja-status
       <<: *env-macos-build
       <<: *env-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
     steps:
       - electron-build:
           persist: true

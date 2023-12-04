@@ -211,4 +211,8 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
       return;
   }
 }
+
+BEGIN_METADATA(WinCaptionButton)
+END_METADATA
+
 }  // namespace electron

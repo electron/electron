@@ -45,7 +45,7 @@ electron::UsbChooserContext* GetChooserContext(
 // These extensions can claim the smart card USB class and automatically gain
 // permissions for devices that have an interface with this class.
 constexpr auto kSmartCardPrivilegedExtensionIds =
-    base::MakeFixedFlatSetSorted<base::StringPiece>({
+    base::MakeFixedFlatSet<base::StringPiece>({
         // Smart Card Connector Extension and its Beta version, see
         // crbug.com/1233881.
         "khpfeaanjngmcnplbdlpegiifgpfgdco",

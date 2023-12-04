@@ -188,4 +188,8 @@ void WinCaptionButtonContainer::UpdateButtons() {
 
   InvalidateLayout();
 }
+
+BEGIN_METADATA(WinCaptionButtonContainer)
+END_METADATA
+
 }  // namespace electron
