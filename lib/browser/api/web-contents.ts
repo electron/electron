@@ -582,7 +582,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-before-unload-fired', (event, proceed) => {
+  this.on('-before-unload-fired' as any, function (this: Electron.WebContents, event: Electron.Event, proceed: boolean) {
     const type = this.getType();
     // These are the "interactive" types, i.e. ones a user might be looking at.
     // All other types should ignore the "proceed" signal and unload
