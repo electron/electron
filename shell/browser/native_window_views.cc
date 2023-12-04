@@ -682,11 +682,16 @@ void NativeWindowViews::Unmaximize() {
     if (transparent()) {
       SetBounds(restore_bounds_, false);
       NotifyWindowUnmaximize();
+      UpdateThickFrame();
       return;
     }
 #endif
 
     widget()->Restore();
+
+#if BUILDFLAG(IS_WIN)
+    UpdateThickFrame();
+#endif
   }
 }
 
@@ -719,6 +724,10 @@ void NativeWindowViews::Minimize() {
 
 void NativeWindowViews::Restore() {
   widget()->Restore();
+
+#if BUILDFLAG(IS_WIN)
+  UpdateThickFrame();
+#endif
 }
 
 bool NativeWindowViews::IsMinimized() {
@@ -892,12 +901,13 @@ void NativeWindowViews::SetResizable(bool resizable) {
           extensions::SizeConstraints(content_size, content_size));
     }
   }
-#if BUILDFLAG(IS_WIN)
-  if (has_frame() && thick_frame_)
-    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
-#endif
+
   resizable_ = resizable;
   SetCanResize(resizable_);
+
+#if BUILDFLAG(IS_WIN)
+  UpdateThickFrame();
+#endif
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -1641,6 +1651,22 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   auto* tree_host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
       GetAcceleratedWidget());
   tree_host->SetWindowIcons(icon, {});
+}
+#endif
+
+#if BUILDFLAG(IS_WIN)
+void NativeWindowViews::UpdateThickFrame() {
+  if (!thick_frame_)
+    return;
+
+  if (IsMaximized() && !transparent()) {
+    // For maximized window add thick frame always, otherwise it will be removed
+    // in HWNDMessageHandler::SizeConstraintsChanged() which will result in
+    // maximized window bounds change.
+    FlipWindowStyle(GetAcceleratedWidget(), true, WS_THICKFRAME);
+  } else if (has_frame()) {
+    FlipWindowStyle(GetAcceleratedWidget(), resizable_, WS_THICKFRAME);
+  }
 }
 #endif
 

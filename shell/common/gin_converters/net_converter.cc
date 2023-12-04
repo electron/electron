@@ -691,7 +691,7 @@ bool Converter<net::DnsQueryType>::FromV8(v8::Isolate* isolate,
                                           v8::Local<v8::Value> val,
                                           net::DnsQueryType* out) {
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, net::DnsQueryType>({
+      base::MakeFixedFlatMap<base::StringPiece, net::DnsQueryType>({
           {"A", net::DnsQueryType::A},
           {"AAAA", net::DnsQueryType::AAAA},
       });
@@ -704,7 +704,7 @@ bool Converter<net::HostResolverSource>::FromV8(v8::Isolate* isolate,
                                                 net::HostResolverSource* out) {
   using Val = net::HostResolverSource;
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+      base::MakeFixedFlatMap<base::StringPiece, Val>({
           {"any", Val::ANY},
           {"dns", Val::DNS},
           {"localOnly", Val::LOCAL_ONLY},
@@ -721,7 +721,7 @@ bool Converter<network::mojom::ResolveHostParameters::CacheUsage>::FromV8(
     network::mojom::ResolveHostParameters::CacheUsage* out) {
   using Val = network::mojom::ResolveHostParameters::CacheUsage;
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+      base::MakeFixedFlatMap<base::StringPiece, Val>({
           {"allowed", Val::ALLOWED},
           {"disallowed", Val::DISALLOWED},
           {"staleAllowed", Val::STALE_ALLOWED},
@@ -736,7 +736,7 @@ bool Converter<network::mojom::SecureDnsPolicy>::FromV8(
     network::mojom::SecureDnsPolicy* out) {
   using Val = network::mojom::SecureDnsPolicy;
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+      base::MakeFixedFlatMap<base::StringPiece, Val>({
           {"allow", Val::ALLOW},
           {"disable", Val::DISABLE},
       });

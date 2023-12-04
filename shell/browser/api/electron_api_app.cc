@@ -157,7 +157,7 @@ struct Converter<JumpListItem::Type> {
 
  private:
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListItem::Type>({
+      base::MakeFixedFlatMap<base::StringPiece, JumpListItem::Type>({
           {"file", JumpListItem::Type::kFile},
           {"separator", JumpListItem::Type::kSeparator},
           {"task", JumpListItem::Type::kTask},
@@ -248,7 +248,7 @@ struct Converter<JumpListCategory::Type> {
 
  private:
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListCategory::Type>({
+      base::MakeFixedFlatMap<base::StringPiece, JumpListCategory::Type>({
           {"custom", JumpListCategory::Type::kCustom},
           {"frequent", JumpListCategory::Type::kFrequent},
           {"recent", JumpListCategory::Type::kRecent},
@@ -414,7 +414,7 @@ struct Converter<net::SecureDnsMode> {
                      v8::Local<v8::Value> val,
                      net::SecureDnsMode* out) {
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, net::SecureDnsMode>({
+        base::MakeFixedFlatMap<base::StringPiece, net::SecureDnsMode>({
             {"automatic", net::SecureDnsMode::kAutomatic},
             {"off", net::SecureDnsMode::kOff},
             {"secure", net::SecureDnsMode::kSecure},
@@ -442,7 +442,7 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 // Return the path constant from string.
 int GetPathConstant(base::StringPiece name) {
   // clang-format off
-  constexpr auto Lookup = base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+  constexpr auto Lookup = base::MakeFixedFlatMap<base::StringPiece, int>({
       {"appData", DIR_APP_DATA},
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},

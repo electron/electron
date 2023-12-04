@@ -10,32 +10,37 @@ its own blended handler between Node and Blink.
 
 Not upstreamable.
 
-diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index cbfb6e3620a7e77658c86a4730c50661b8a937f7..ccd48027e3dfebd563fcbe83239174c79c693dd7 100644
---- a/lib/internal/process/pre_execution.js
-+++ b/lib/internal/process/pre_execution.js
-@@ -567,7 +567,7 @@ function initializeESMLoader() {
-   // Create this WeakMap in js-land because V8 has no C++ API for WeakMap.
-   internalBinding('module_wrap').callbackMap = new SafeWeakMap();
- 
--  if (getEmbedderOptions().shouldNotRegisterESMLoader) return;
+diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
+index 985784383024450833a8324d45a7af2fe214a09c..356c10aef57454be3b4607156606784f473042cf 100644
+--- a/lib/internal/modules/esm/utils.js
++++ b/lib/internal/modules/esm/utils.js
+@@ -16,7 +16,7 @@ const {
+   ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
+   ERR_INVALID_ARG_VALUE,
+ } = require('internal/errors').codes;
+-const { getOptionValue } = require('internal/options');
++const { getOptionValue, getEmbedderOptions } = require('internal/options');
+ const {
+   loadPreloadModules,
+   initializeFrozenIntrinsics,
+@@ -148,12 +148,13 @@ async function importModuleDynamicallyCallback(symbol, specifier, assertions) {
+ // the loader worker in internal/main/worker_thread.js.
+ let _isLoaderWorker = false;
+ function initializeESM(isLoaderWorker = false) {
 +  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
- 
-   const {
-     setImportModuleDynamicallyCallback,
-@@ -576,8 +576,8 @@ function initializeESMLoader() {
-   const esm = require('internal/process/esm_loader');
+   _isLoaderWorker = isLoaderWorker;
+   initializeDefaultConditions();
    // Setup per-isolate callbacks that locate data or callbacks that we keep
    // track of for different ESM modules.
--  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject);
--  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback);
-+  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject, shouldSetOnIsolate);
-+  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback, shouldSetOnIsolate);
+-  setInitializeImportMetaObjectCallback(initializeImportMetaObject);
+-  setImportModuleDynamicallyCallback(importModuleDynamicallyCallback);
++  setInitializeImportMetaObjectCallback(initializeImportMetaObject, shouldSetOnIsolate);
++  setImportModuleDynamicallyCallback(importModuleDynamicallyCallback, shouldSetOnIsolate);
+ }
  
-   // Patch the vm module when --experimental-vm-modules is on.
-   // Please update the comments in vm.js when this block changes.
+ function isLoaderWorker() {
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd1048b645dd9 100644
+index a1b0f812391486c5a429398326091a30bbe81692..a316d077f2d2ff38564959345cf8ef29a3ac678f 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -547,7 +547,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
@@ -47,7 +52,7 @@ index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd104
      Local<Context> context,
      Local<v8::Data> host_defined_options,
      Local<Value> resource_name,
-@@ -629,12 +629,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -610,12 +610,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Environment* env = Environment::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -63,7 +68,7 @@ index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd104
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -665,13 +666,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -652,13 +653,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Environment* env = Environment::GetCurrent(args);
    Isolate* isolate = env->isolate();
  
@@ -82,11 +87,11 @@ index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd104
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 58b233d036515c52d9bd5574c776c2ea65d2ecb1..5f7ef75480a76761c6fa62061c8700c812a3fc6f 100644
+index 6435bad40936fe235822c0597310b94ab98082f3..c51eb99ce3eb54bc30ae922e0357b637b09d53c6 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -30,7 +30,14 @@ enum HostDefinedOptions : int {
-   kLength = 10,
+   kLength = 9,
  };
  
 -class ModuleWrap : public BaseObject {
@@ -100,4 +105,4 @@ index 58b233d036515c52d9bd5574c776c2ea65d2ecb1..5f7ef75480a76761c6fa62061c8700c8
 +class NODE_EXTERN ModuleWrap : public BaseObject {
   public:
    enum InternalFields {
-     kModuleWrapBaseField = BaseObject::kInternalFieldCount,
+     kModuleSlot = BaseObject::kInternalFieldCount,

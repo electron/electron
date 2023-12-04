@@ -205,7 +205,7 @@ struct Converter<printing::mojom::MarginType> {
                      printing::mojom::MarginType* out) {
     using Val = printing::mojom::MarginType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"custom", Val::kCustomMargins},
             {"default", Val::kDefaultMargins},
             {"none", Val::kNoMargins},
@@ -222,7 +222,7 @@ struct Converter<printing::mojom::DuplexMode> {
                      printing::mojom::DuplexMode* out) {
     using Val = printing::mojom::DuplexMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"longEdge", Val::kLongEdge},
             {"shortEdge", Val::kShortEdge},
             {"simplex", Val::kSimplex},
@@ -284,7 +284,7 @@ struct Converter<content::SavePageType> {
                      content::SavePageType* out) {
     using Val = content::SavePageType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"htmlcomplete", Val::SAVE_PAGE_TYPE_AS_COMPLETE_HTML},
             {"htmlonly", Val::SAVE_PAGE_TYPE_AS_ONLY_HTML},
             {"mhtml", Val::SAVE_PAGE_TYPE_AS_MHTML},
@@ -329,7 +329,7 @@ struct Converter<electron::api::WebContents::Type> {
                      electron::api::WebContents::Type* out) {
     using Val = electron::api::WebContents::Type;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"backgroundPage", Val::kBackgroundPage},
             {"browserView", Val::kBrowserView},
             {"offscreen", Val::kOffScreen},
@@ -1581,7 +1581,7 @@ void WebContents::CancelKeyboardLockRequest(
 
 bool WebContents::CheckMediaAccessPermission(
     content::RenderFrameHost* render_frame_host,
-    const GURL& security_origin,
+    const url::Origin& security_origin,
     blink::mojom::MediaStreamType type) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
@@ -3135,6 +3135,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
   auto generate_tagged_pdf = settings.GetDict().FindBool("generateTaggedPDF");
+  auto generate_document_outline =
+      settings.GetDict().FindBool("generateDocumentOutline");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
@@ -3143,7 +3145,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
           margin_right, absl::make_optional(header_template),
           absl::make_optional(footer_template), prefer_css_page_size,
-          generate_tagged_pdf);
+          generate_tagged_pdf, generate_document_outline);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
     auto error = absl::get<std::string>(print_pages_params);
@@ -4259,12 +4261,11 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
   // Make sure all child webviews quit html fullscreen.
   if (!fullscreen && !IsGuest()) {
     auto* manager = WebViewManager::GetWebViewManager(web_contents());
-    manager->ForEachGuest(
-        web_contents(), base::BindRepeating([](content::WebContents* guest) {
-          WebContents* api_web_contents = WebContents::From(guest);
-          api_web_contents->SetHtmlApiFullscreen(false);
-          return false;
-        }));
+    manager->ForEachGuest(web_contents(), [&](content::WebContents* guest) {
+      WebContents* api_web_contents = WebContents::From(guest);
+      api_web_contents->SetHtmlApiFullscreen(false);
+      return false;
+    });
   }
 }
 

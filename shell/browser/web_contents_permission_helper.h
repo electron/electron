@@ -57,7 +57,7 @@ class WebContentsPermissionHelper
                                      const GURL& url);
 
   // Synchronous Checks
-  bool CheckMediaAccessPermission(const GURL& security_origin,
+  bool CheckMediaAccessPermission(const url::Origin& security_origin,
                                   blink::mojom::MediaStreamType type) const;
   bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
 

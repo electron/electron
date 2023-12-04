@@ -33,8 +33,8 @@
 #include "shell/common/gin_helper/dictionary.h"
 
 static constexpr auto ResourceTypes =
-    base::MakeFixedFlatMapSorted<base::StringPiece,
-                                 extensions::WebRequestResourceType>({
+    base::MakeFixedFlatMap<base::StringPiece,
+                           extensions::WebRequestResourceType>({
         {"cspReport", extensions::WebRequestResourceType::CSP_REPORT},
         {"font", extensions::WebRequestResourceType::FONT},
         {"image", extensions::WebRequestResourceType::IMAGE},

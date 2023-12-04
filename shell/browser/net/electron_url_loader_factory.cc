@@ -48,7 +48,7 @@ struct Converter<electron::ProtocolType> {
                      electron::ProtocolType* out) {
     using Val = electron::ProtocolType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             // note "free" is internal type, not allowed to be passed from user
             {"buffer", Val::kBuffer},
             {"file", Val::kFile},

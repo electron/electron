@@ -7,11 +7,12 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c18272b70
+index 0000000000000000000000000000000000000000..24c122008e0fc009833cf9189ebf43883207c754
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,358 @@
+@@ -0,0 +1,402 @@
 +import("//v8/gni/v8.gni")
++import("//electron/js2c_toolchain.gni")
 +import("node.gni")
 +
 +declare_args() {
@@ -84,6 +85,11 @@ index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c
 +
 +node_files = read_file("filenames.json", "json")
 +library_files = node_files.library_files
++fs_files = node_files.fs_files
++original_fs_files = []
++foreach(file, fs_files) {
++  original_fs_files += [string_replace(string_replace(file, "internal/fs/", "internal/original-fs/"), "lib/fs.js", "lib/original-fs.js")]
++}
 +
 +copy("node_js2c_inputs") {
 +  sources = library_files
@@ -92,20 +98,34 @@ index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c
 +  ]
 +}
 +
-+chdir_action("node_js2c") {
++action("node_js2c_original_fs") {
++  script = "tools/generate_original_fs.py"
++  inputs = fs_files
++  outputs = []
++  foreach(file, fs_files + original_fs_files) {
++    outputs += ["$target_gen_dir/js2c_inputs/$file"]
++  }
++
++  args = [rebase_path("$target_gen_dir/js2c_inputs")] + fs_files
++}
++
++action("node_js2c_exec") {
 +  deps = [
 +    "//electron:generate_config_gypi",
++    ":node_js2c_original_fs",
 +    ":node_js2c_inputs",
++    ":node_js2c($electron_js2c_toolchain)"
 +  ]
 +  config_gypi = [ "$root_gen_dir/config.gypi" ]
-+  inputs = library_files + config_gypi
++  inputs = library_files + get_target_outputs(":node_js2c_original_fs") + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
 +  ]
 +
-+  cwd = "$target_gen_dir/js2c_inputs"
-+  script = "tools/js2c.py"
-+  args = library_files + rebase_path(config_gypi) + ["--target"] + rebase_path(outputs)
++  script = "//electron/build/run-in-dir.py"
++  out_dir = get_label_info(":anything($electron_js2c_toolchain)", "root_out_dir")
++  args = [ rebase_path("$target_gen_dir/js2c_inputs"), rebase_path("$out_dir/node_js2c") ] +
++         rebase_path(outputs) + library_files + fs_files + original_fs_files + rebase_path(config_gypi)
 +}
 +
 +config("node_features") {
@@ -156,7 +176,7 @@ index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c
 +    "NODE_IMPLEMENTATION",
 +  ]
 +  if (node_module_version != "") {
-+    defines += [ "NODE_MODULE_VERSION=" + node_module_version ]
++    defines += [ "NODE_EMBEDDER_MODULE_VERSION=" + node_module_version ]
 +  }
 +  if (is_component_build) {
 +    defines += [
@@ -216,9 +236,33 @@ index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c
 +  }
 +}
 +
++if (current_toolchain == electron_js2c_toolchain) {
++  executable("node_js2c") {
++    defines = []
++    sources = [
++      "tools/js2c.cc",
++      "tools/executable_wrapper.h"
++    ]
++    include_dirs = [ "tools" ]
++    deps = [
++      "deps/simdutf($electron_js2c_toolchain)",
++      "deps/uv($electron_js2c_toolchain)",
++      "//v8"
++    ]
++
++    if (!is_win) {
++      defines += [ "NODE_JS2C_USE_STRING_LITERALS" ]
++    }
++    if (is_debug) {
++      cflags_cc = [ "-g", "-O0" ]
++      defines += [ "DEBUG" ]
++    }
++  }
++}
++
 +component("node_lib") {
 +  deps = [
-+    ":node_js2c",
++    ":node_js2c_exec",
 +    "deps/googletest:gtest",
 +    "deps/ada",
 +    "deps/base64",
@@ -887,10 +931,10 @@ index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713537c7987
+index 0000000000000000000000000000000000000000..7518168141db7958550c7f5dc1ed17ccdbbe4a60
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,194 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -948,9 +992,9 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +
 +  sources = [
 +    "include/uv.h",
++    "include/uv/tree.h",
 +    "include/uv/errno.h",
 +    "include/uv/threadpool.h",
-+    "include/uv/tree.h",
 +    "include/uv/version.h",
 +    "src/fs-poll.c",
 +    "src/heap-inl.h",
@@ -963,11 +1007,12 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +    "src/strscpy.h",
 +    "src/strtok.c",
 +    "src/strtok.h",
++    "src/thread-common.c",
 +    "src/threadpool.c",
 +    "src/timer.c",
++    "src/uv-data-getter-setters.c",
 +    "src/uv-common.c",
 +    "src/uv-common.h",
-+    "src/uv-data-getter-setters.c",
 +    "src/version.c",
 +  ]
 +
@@ -981,25 +1026,25 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +      "src/win/detect-wakeup.c",
 +      "src/win/dl.c",
 +      "src/win/error.c",
-+      "src/win/fs-event.c",
 +      "src/win/fs.c",
++      "src/win/fs-event.c",
 +      "src/win/getaddrinfo.c",
 +      "src/win/getnameinfo.c",
-+      "src/win/handle-inl.h",
 +      "src/win/handle.c",
++      "src/win/handle-inl.h",
 +      "src/win/internal.h",
 +      "src/win/loop-watcher.c",
 +      "src/win/pipe.c",
++      "src/win/thread.c",
 +      "src/win/poll.c",
-+      "src/win/process-stdio.c",
 +      "src/win/process.c",
++      "src/win/process-stdio.c",
 +      "src/win/req-inl.h",
 +      "src/win/signal.c",
 +      "src/win/snprintf.c",
-+      "src/win/stream-inl.h",
 +      "src/win/stream.c",
++      "src/win/stream-inl.h",
 +      "src/win/tcp.c",
-+      "src/win/thread.c",
 +      "src/win/tty.c",
 +      "src/win/udp.c",
 +      "src/win/util.c",
@@ -1008,6 +1053,7 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +      "src/win/winsock.c",
 +      "src/win/winsock.h",
 +    ]
++
 +    libs += [
 +      "advapi32.lib",
 +      "iphlpapi.lib",
@@ -1019,12 +1065,12 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +    ]
 +  } else {
 +    sources += [
-+      "include/uv/aix.h",
-+      "include/uv/bsd.h",
-+      "include/uv/darwin.h",
++      "include/uv/unix.h",
 +      "include/uv/linux.h",
 +      "include/uv/sunos.h",
-+      "include/uv/unix.h",
++      "include/uv/darwin.h",
++      "include/uv/bsd.h",
++      "include/uv/aix.h",
 +      "src/unix/async.c",
 +      "src/unix/core.c",
 +      "src/unix/dl.c",
@@ -1032,14 +1078,13 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +      "src/unix/getaddrinfo.c",
 +      "src/unix/getnameinfo.c",
 +      "src/unix/internal.h",
-+      "src/unix/loop-watcher.c",
 +      "src/unix/loop.c",
++      "src/unix/loop-watcher.c",
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
 +      "src/unix/random-devurandom.c",
 +      "src/unix/signal.c",
-+      "src/unix/spinlock.h",
 +      "src/unix/stream.c",
 +      "src/unix/tcp.c",
 +      "src/unix/thread.c",
@@ -1067,11 +1112,7 @@ index 0000000000000000000000000000000000000000..29e66144dbb67704bad0d78c4b3f5713
 +  if (is_linux) {
 +    defines += [ "_GNU_SOURCE" ]
 +    sources += [
-+      "src/unix/epoll.c",
-+      "src/unix/linux-core.c",
-+      "src/unix/linux-inotify.c",
-+      "src/unix/linux-syscalls.c",
-+      "src/unix/linux-syscalls.h",
++      "src/unix/linux.c",
 +      "src/unix/procfs-exepath.c",
 +      "src/unix/random-getrandom.c",
 +      "src/unix/random-sysctl-linux.c",
@@ -1134,13 +1175,28 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef24832a7afadb
+index 0000000000000000000000000000000000000000..aa118ab320d83745723a2275efc556555c1e7768
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,664 @@
+@@ -0,0 +1,733 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
++  "fs_files": [
++    "lib/internal/fs/cp/cp-sync.js",
++    "lib/internal/fs/cp/cp.js",
++    "lib/internal/fs/dir.js",
++    "lib/internal/fs/promises.js",
++    "lib/internal/fs/read/context.js",
++    "lib/internal/fs/recursive_watch.js",
++    "lib/internal/fs/rimraf.js",
++    "lib/internal/fs/streams.js",
++    "lib/internal/fs/sync.js",
++    "lib/internal/fs/sync_write_stream.js",
++    "lib/internal/fs/utils.js",
++    "lib/internal/fs/watchers.js",
++    "lib/fs.js"
++  ],
 +  "headers": [
 +    {
 +      "dest_dir": "include/node/",
@@ -1170,14 +1226,11 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +        "//v8/include/v8-exception.h",
 +        "//v8/include/v8-extension.h",
 +        "//v8/include/v8-external.h",
-+        "//v8/include/v8-fast-api-calls.h",
 +        "//v8/include/v8-forward.h",
 +        "//v8/include/v8-function-callback.h",
 +        "//v8/include/v8-function.h",
 +        "//v8/include/v8-handle-base.h",
 +        "//v8/include/v8-initialization.h",
-+        "//v8/include/v8-inspector-protocol.h",
-+        "//v8/include/v8-inspector.h",
 +        "//v8/include/v8-internal.h",
 +        "//v8/include/v8-isolate.h",
 +        "//v8/include/v8-json.h",
@@ -1186,7 +1239,6 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +        "//v8/include/v8-maybe.h",
 +        "//v8/include/v8-memory-span.h",
 +        "//v8/include/v8-message.h",
-+        "//v8/include/v8-metrics.h",
 +        "//v8/include/v8-microtask-queue.h",
 +        "//v8/include/v8-microtask.h",
 +        "//v8/include/v8-object.h",
@@ -1205,16 +1257,10 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +        "//v8/include/v8-template.h",
 +        "//v8/include/v8-traced-handle.h",
 +        "//v8/include/v8-typed-array.h",
-+        "//v8/include/v8-unwinder-state.h",
 +        "//v8/include/v8-unwinder.h",
-+        "//v8/include/v8-util.h",
-+        "//v8/include/v8-value-serializer-version.h",
 +        "//v8/include/v8-value-serializer.h",
 +        "//v8/include/v8-value.h",
-+        "//v8/include/v8-version-string.h",
 +        "//v8/include/v8-version.h",
-+        "//v8/include/v8-wasm-trap-handler-posix.h",
-+        "//v8/include/v8-wasm-trap-handler-win.h",
 +        "//v8/include/v8-wasm.h",
 +        "//v8/include/v8-weak-callback-info.h",
 +        "//v8/include/v8.h",
@@ -1232,7 +1278,53 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    {
 +      "dest_dir": "include/node//cppgc/",
 +      "files": [
-+        "//v8/include/cppgc/common.h"
++        "//v8/include/cppgc/allocation.h",
++        "//v8/include/cppgc/common.h",
++        "//v8/include/cppgc/cross-thread-persistent.h",
++        "//v8/include/cppgc/custom-space.h",
++        "//v8/include/cppgc/default-platform.h",
++        "//v8/include/cppgc/ephemeron-pair.h",
++        "//v8/include/cppgc/explicit-management.h",
++        "//v8/include/cppgc/garbage-collected.h",
++        "//v8/include/cppgc/heap-consistency.h",
++        "//v8/include/cppgc/heap-handle.h",
++        "//v8/include/cppgc/heap-state.h",
++        "//v8/include/cppgc/heap-statistics.h",
++        "//v8/include/cppgc/heap.h",
++        "//v8/include/cppgc/liveness-broker.h",
++        "//v8/include/cppgc/macros.h",
++        "//v8/include/cppgc/member.h",
++        "//v8/include/cppgc/name-provider.h",
++        "//v8/include/cppgc/object-size-trait.h",
++        "//v8/include/cppgc/persistent.h",
++        "//v8/include/cppgc/platform.h",
++        "//v8/include/cppgc/prefinalizer.h",
++        "//v8/include/cppgc/process-heap-statistics.h",
++        "//v8/include/cppgc/sentinel-pointer.h",
++        "//v8/include/cppgc/source-location.h",
++        "//v8/include/cppgc/testing.h",
++        "//v8/include/cppgc/trace-trait.h",
++        "//v8/include/cppgc/type-traits.h",
++        "//v8/include/cppgc/visitor.h"
++      ]
++    },
++    {
++      "dest_dir": "include/node//cppgc/internal/",
++      "files": [
++        "//v8/include/cppgc/internal/api-constants.h",
++        "//v8/include/cppgc/internal/atomic-entry-flag.h",
++        "//v8/include/cppgc/internal/base-page-handle.h",
++        "//v8/include/cppgc/internal/caged-heap-local-data.h",
++        "//v8/include/cppgc/internal/caged-heap.h",
++        "//v8/include/cppgc/internal/compiler-specific.h",
++        "//v8/include/cppgc/internal/finalizer-trait.h",
++        "//v8/include/cppgc/internal/gc-info.h",
++        "//v8/include/cppgc/internal/logging.h",
++        "//v8/include/cppgc/internal/member-storage.h",
++        "//v8/include/cppgc/internal/name-trait.h",
++        "//v8/include/cppgc/internal/persistent-node.h",
++        "//v8/include/cppgc/internal/pointer-policies.h",
++        "//v8/include/cppgc/internal/write-barrier.h"
 +      ]
 +    },
 +    {
@@ -1251,7 +1343,6 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +        "deps/uv/include/uv/linux.h",
 +        "deps/uv/include/uv/os390.h",
 +        "deps/uv/include/uv/posix.h",
-+        "deps/uv/include/uv/stdint-msvc2008.h",
 +        "deps/uv/include/uv/sunos.h",
 +        "deps/uv/include/uv/threadpool.h",
 +        "deps/uv/include/uv/tree.h",
@@ -1291,12 +1382,12 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/dns/promises.js",
 +    "lib/domain.js",
 +    "lib/events.js",
-+    "lib/fs.js",
 +    "lib/fs/promises.js",
 +    "lib/http.js",
 +    "lib/http2.js",
 +    "lib/https.js",
 +    "lib/inspector.js",
++    "lib/inspector/promises.js",
 +    "lib/internal/abort_controller.js",
 +    "lib/internal/assert.js",
 +    "lib/internal/assert/assertion_error.js",
@@ -1304,13 +1395,14 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/async_hooks.js",
 +    "lib/internal/blob.js",
 +    "lib/internal/blocklist.js",
-+    "lib/internal/bootstrap/browser.js",
-+    "lib/internal/bootstrap/loaders.js",
 +    "lib/internal/bootstrap/node.js",
++    "lib/internal/bootstrap/realm.js",
 +    "lib/internal/bootstrap/switches/does_not_own_process_state.js",
 +    "lib/internal/bootstrap/switches/does_own_process_state.js",
 +    "lib/internal/bootstrap/switches/is_main_thread.js",
 +    "lib/internal/bootstrap/switches/is_not_main_thread.js",
++    "lib/internal/bootstrap/web/exposed-wildcard.js",
++    "lib/internal/bootstrap/web/exposed-window-or-worker.js",
 +    "lib/internal/buffer.js",
 +    "lib/internal/child_process.js",
 +    "lib/internal/child_process/serialization.js",
@@ -1352,26 +1444,15 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/dns/callback_resolver.js",
 +    "lib/internal/dns/promises.js",
 +    "lib/internal/dns/utils.js",
-+    "lib/internal/dtrace.js",
 +    "lib/internal/encoding.js",
 +    "lib/internal/error_serdes.js",
 +    "lib/internal/errors.js",
 +    "lib/internal/event_target.js",
++    "lib/internal/events/symbols.js",
 +    "lib/internal/file.js",
 +    "lib/internal/fixed_queue.js",
 +    "lib/internal/freelist.js",
 +    "lib/internal/freeze_intrinsics.js",
-+    "lib/internal/fs/cp/cp-sync.js",
-+    "lib/internal/fs/cp/cp.js",
-+    "lib/internal/fs/dir.js",
-+    "lib/internal/fs/promises.js",
-+    "lib/internal/fs/read_file_context.js",
-+    "lib/internal/fs/recursive_watch.js",
-+    "lib/internal/fs/rimraf.js",
-+    "lib/internal/fs/streams.js",
-+    "lib/internal/fs/sync_write_stream.js",
-+    "lib/internal/fs/utils.js",
-+    "lib/internal/fs/watchers.js",
 +    "lib/internal/heap_utils.js",
 +    "lib/internal/histogram.js",
 +    "lib/internal/http.js",
@@ -1384,7 +1465,7 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/legacy/processbinding.js",
 +    "lib/internal/linkedlist.js",
 +    "lib/internal/main/check_syntax.js",
-+    "lib/internal/main/environment.js",
++    "lib/internal/main/embedding.js",
 +    "lib/internal/main/eval_stdin.js",
 +    "lib/internal/main/eval_string.js",
 +    "lib/internal/main/inspect.js",
@@ -1393,12 +1474,10 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/main/prof_process.js",
 +    "lib/internal/main/repl.js",
 +    "lib/internal/main/run_main_module.js",
-+    "lib/internal/main/single_executable_application.js",
 +    "lib/internal/main/test_runner.js",
 +    "lib/internal/main/watch_mode.js",
 +    "lib/internal/main/worker_thread.js",
 +    "lib/internal/mime.js",
-+    "lib/internal/modules/cjs/helpers.js",
 +    "lib/internal/modules/cjs/loader.js",
 +    "lib/internal/modules/esm/assert.js",
 +    "lib/internal/modules/esm/create_dynamic_module.js",
@@ -1406,6 +1485,7 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/modules/esm/formats.js",
 +    "lib/internal/modules/esm/get_format.js",
 +    "lib/internal/modules/esm/handle_process_exit.js",
++    "lib/internal/modules/esm/hooks.js",
 +    "lib/internal/modules/esm/initialize_import_meta.js",
 +    "lib/internal/modules/esm/load.js",
 +    "lib/internal/modules/esm/loader.js",
@@ -1413,8 +1493,11 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/modules/esm/module_map.js",
 +    "lib/internal/modules/esm/package_config.js",
 +    "lib/internal/modules/esm/resolve.js",
++    "lib/internal/modules/esm/shared_constants.js",
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/modules/esm/utils.js",
++    "lib/internal/modules/esm/worker.js",
++    "lib/internal/modules/helpers.js",
 +    "lib/internal/modules/package_json_reader.js",
 +    "lib/internal/modules/run_main.js",
 +    "lib/internal/net.js",
@@ -1438,6 +1521,7 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/process/esm_loader.js",
 +    "lib/internal/process/execution.js",
 +    "lib/internal/process/per_thread.js",
++    "lib/internal/process/permission.js",
 +    "lib/internal/process/policy.js",
 +    "lib/internal/process/pre_execution.js",
 +    "lib/internal/process/promises.js",
@@ -1486,8 +1570,10 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/test/transfer.js",
 +    "lib/internal/test_runner/coverage.js",
 +    "lib/internal/test_runner/harness.js",
-+    "lib/internal/test_runner/mock.js",
++    "lib/internal/test_runner/mock/mock.js",
++    "lib/internal/test_runner/mock/mock_timers.js",
 +    "lib/internal/test_runner/reporter/dot.js",
++    "lib/internal/test_runner/reporter/junit.js",
 +    "lib/internal/test_runner/reporter/spec.js",
 +    "lib/internal/test_runner/reporter/tap.js",
 +    "lib/internal/test_runner/reporter/v8-serializer.js",
@@ -1505,6 +1591,7 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/internal/util/colors.js",
 +    "lib/internal/util/comparisons.js",
 +    "lib/internal/util/debuglog.js",
++    "lib/internal/util/embedding.js",
 +    "lib/internal/util/inspect.js",
 +    "lib/internal/util/inspector.js",
 +    "lib/internal/util/iterable_weak_map.js",
@@ -1567,17 +1654,17 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "lib/wasi.js",
 +    "lib/worker_threads.js",
 +    "lib/zlib.js",
-+    "//v8/tools/splaytree.mjs",
-+    "//v8/tools/codemap.mjs",
-+    "//v8/tools/consarray.mjs",
-+    "//v8/tools/csvparser.mjs",
-+    "//v8/tools/profile.mjs",
-+    "//v8/tools/profile_view.mjs",
-+    "//v8/tools/logreader.mjs",
-+    "//v8/tools/arguments.mjs",
-+    "//v8/tools/tickprocessor.mjs",
-+    "//v8/tools/sourcemap.mjs",
-+    "//v8/tools/tickprocessor-driver.mjs",
++    "deps/v8/tools/splaytree.mjs",
++    "deps/v8/tools/codemap.mjs",
++    "deps/v8/tools/consarray.mjs",
++    "deps/v8/tools/csvparser.mjs",
++    "deps/v8/tools/profile.mjs",
++    "deps/v8/tools/profile_view.mjs",
++    "deps/v8/tools/logreader.mjs",
++    "deps/v8/tools/arguments.mjs",
++    "deps/v8/tools/tickprocessor.mjs",
++    "deps/v8/tools/sourcemap.mjs",
++    "deps/v8/tools/tickprocessor-driver.mjs",
 +    "deps/acorn/acorn/dist/acorn.js",
 +    "deps/acorn/acorn-walk/dist/walk.js",
 +    "deps/minimatch/index.js",
@@ -1600,7 +1687,9 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/cleanup_queue.cc",
 +    "src/connect_wrap.cc",
 +    "src/connection_wrap.cc",
++    "src/dataqueue/queue.cc",
 +    "src/debug_utils.cc",
++    "src/encoding_binding.cc",
 +    "src/env.cc",
 +    "src/fs_event_wrap.cc",
 +    "src/handle_wrap.cc",
@@ -1614,6 +1703,8 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/js_stream.cc",
 +    "src/json_utils.cc",
 +    "src/js_udp_wrap.cc",
++    "src/json_parser.h",
++    "src/json_parser.cc",
 +    "src/module_wrap.cc",
 +    "src/node.cc",
 +    "src/node_api.cc",
@@ -1626,6 +1717,7 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/node_contextify.cc",
 +    "src/node_credentials.cc",
 +    "src/node_dir.cc",
++    "src/node_dotenv.cc",
 +    "src/node_env_var.cc",
 +    "src/node_errors.cc",
 +    "src/node_external_reference.cc",
@@ -1666,6 +1758,11 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/node_watchdog.cc",
 +    "src/node_worker.cc",
 +    "src/node_zlib.cc",
++    "src/permission/child_process_permission.cc",
++    "src/permission/fs_permission.cc",
++    "src/permission/inspector_permission.cc",
++    "src/permission/permission.cc",
++    "src/permission/worker_permission.cc",
 +    "src/pipe_wrap.cc",
 +    "src/process_wrap.cc",
 +    "src/signal_wrap.cc",
@@ -1688,22 +1785,28 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/util.cc",
 +    "src/uv.cc",
 +    "src/aliased_buffer.h",
++    "src/aliased_buffer-inl.h",
 +    "src/aliased_struct.h",
 +    "src/aliased_struct-inl.h",
 +    "src/async_wrap.h",
 +    "src/async_wrap-inl.h",
 +    "src/base_object.h",
 +    "src/base_object-inl.h",
++    "src/base_object_types.h",
 +    "src/base64.h",
 +    "src/base64-inl.h",
++    "src/blob_serializer_deserializer.h",
++    "src/blob_serializer_deserializer-inl.h",
 +    "src/callback_queue.h",
 +    "src/callback_queue-inl.h",
 +    "src/cleanup_queue.h",
 +    "src/cleanup_queue-inl.h",
 +    "src/connect_wrap.h",
 +    "src/connection_wrap.h",
++    "src/dataqueue/queue.h",
 +    "src/debug_utils.h",
 +    "src/debug_utils-inl.h",
++    "src/encoding_binding.h",
 +    "src/env_properties.h",
 +    "src/env.h",
 +    "src/env-inl.h",
@@ -1728,7 +1831,9 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/node_context_data.h",
 +    "src/node_contextify.h",
 +    "src/node_dir.h",
++    "src/node_dotenv.h",
 +    "src/node_errors.h",
++    "src/node_exit_code.h",
 +    "src/node_external_reference.h",
 +    "src/node_file.h",
 +    "src/node_file-inl.h",
@@ -1766,13 +1871,17 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/node_stat_watcher.h",
 +    "src/node_union_bytes.h",
 +    "src/node_url.h",
-+    "src/node_util.h",
 +    "src/node_version.h",
 +    "src/node_v8.h",
 +    "src/node_v8_platform-inl.h",
 +    "src/node_wasi.h",
 +    "src/node_watchdog.h",
 +    "src/node_worker.h",
++    "src/permission/child_process_permission.h",
++    "src/permission/fs_permission.h",
++    "src/permission/inspector_permission.h",
++    "src/permission/permission.h",
++    "src/permission/worker_permission.h",
 +    "src/pipe_wrap.h",
 +    "src/req_wrap.h",
 +    "src/req_wrap-inl.h",
@@ -1786,6 +1895,7 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +    "src/string_decoder-inl.h",
 +    "src/string_search.h",
 +    "src/tcp_wrap.h",
++    "src/timers.h",
 +    "src/tracing/agent.h",
 +    "src/tracing/node_trace_buffer.h",
 +    "src/tracing/node_trace_writer.h",
@@ -1804,57 +1914,14 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +}
 diff --git a/node.gni b/node.gni
 new file mode 100644
-index 0000000000000000000000000000000000000000..345327e89d71585c558fabcf11970d7c5363cd3a
+index 0000000000000000000000000000000000000000..af9cbada10203b387fb9732b346583b1c4349223
 --- /dev/null
 +++ b/node.gni
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,4 @@
 +declare_args() {
 +  # Allows embedders to override the NODE_MODULE_VERSION define
 +  node_module_version = ""
 +}
-+
-+# Run an action with a given working directory. Behaves identically to the
-+# action() target type, with the exception that it changes directory before
-+# running the script.
-+#
-+# Parameters:
-+#   cwd [required]: Directory to change to before running the script.
-+template("chdir_action") {
-+  action(target_name) {
-+    forward_variables_from(invoker,
-+                           "*",
-+                           [
-+                             "script",
-+                             "args",
-+                           ])
-+    assert(defined(cwd), "Need cwd in $target_name")
-+    script = "//electron/build/run-in-dir.py"
-+    if (defined(sources)) {
-+      sources += [ invoker.script ]
-+    } else {
-+      assert(defined(inputs))
-+      inputs += [ invoker.script ]
-+    }
-+    args = [
-+      rebase_path(cwd),
-+      rebase_path(invoker.script),
-+    ]
-+    args += invoker.args
-+  }
-+}
-diff --git a/node.gyp b/node.gyp
-index 6b554d75d89077f0fcfcaaf1636c8a537478f679..7f88a4466cb4a6b55b91345bb3af6b3600afd47a 100644
---- a/node.gyp
-+++ b/node.gyp
-@@ -688,7 +688,7 @@
-         'src/util-inl.h',
-         # Dependency headers
-         'deps/v8/include/v8.h',
--        'deps/postject/postject-api.h'
-+        'deps/postject/postject-api.h',
-         # javascript files to make for an even more pleasant IDE experience
-         '<@(library_files)',
-         '<@(deps_files)',
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868bd1321be2
@@ -2061,27 +2128,37 @@ index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868b
 +  script = "../../tools/compress_json.py"
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
-diff --git a/src/node_version.h b/src/node_version.h
-index 88cc915177bcf8b86eb8f9f16b215cb6d06b3aa7..8df52c22dd76a850d421075effc44fbfb32307db 100644
---- a/src/node_version.h
-+++ b/src/node_version.h
-@@ -89,7 +89,10 @@
-  * version matching should open a pull request to reserve a number in this
-  * registry.
-  */
-+// Electron sets NODE_MODULE_VERSION in their GN configuration
-+#ifndef NODE_MODULE_VERSION
- #define NODE_MODULE_VERSION 108
-+#endif
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index 84815969b6d1faa7cc3ed177e04248d9cb074596..80b36dc1aefca4d5d4124d7f84b12b9762a8de2c 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -738,6 +738,7 @@ void BuiltinLoader::RegisterExternalReferences(
+   registry->Register(GetNatives);
  
- // The NAPI_VERSION provided by this version of the runtime. This is the version
- // which the Node binary being built supports.
+   RegisterExternalReferencesForInternalizedBuiltinCode(registry);
++  EmbedderRegisterExternalReferencesForInternalizedBuiltinCode(registry);
+ }
+ 
+ }  // namespace builtins
+diff --git a/src/node_builtins.h b/src/node_builtins.h
+index 9f2fbc1e53937448aa27c1f5fe110eabc7edc0df..ea77c7598153bb8a9ba20c89a4ece2c1580b9a25 100644
+--- a/src/node_builtins.h
++++ b/src/node_builtins.h
+@@ -74,6 +74,8 @@ using BuiltinCodeCacheMap =
+ // Generated by tools/js2c.py as node_javascript.cc
+ void RegisterExternalReferencesForInternalizedBuiltinCode(
+     ExternalReferenceRegistry* registry);
++void EmbedderRegisterExternalReferencesForInternalizedBuiltinCode(
++    ExternalReferenceRegistry* registry);
+ 
+ // Handles compilation and caching of built-in JavaScript modules and
+ // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec566a83e42
+index 0000000000000000000000000000000000000000..7848ddb1841b6d4f36e9376c73564eb4ff6d7c08
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,90 @@
 +#!/usr/bin/env python3
 +import json
 +import os
@@ -2123,13 +2200,14 @@ index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec5
 +  node_source_blocklist = {
 +      '<@(library_files)',
 +      '<@(deps_files)',
++      '<@(node_sources)',
 +      'common.gypi',
 +      '<(SHARED_INTERMEDIATE_DIR)/node_javascript.cc',
 +  }
 +
 +  def filter_v8_files(files):
 +    if any(f.startswith('deps/v8/') for f in files):
-+      files = [f.replace('deps/v8/', '//v8/', 1) for f in files]
++      files = [f.replace('deps/v8/', '../../v8/', 1) if f.endswith('js') else f.replace('deps/v8/', '//v8/') for f in files]
 +
 +    if any(f == '<@(node_builtin_shareable_builtins)' for f in files):
 +      files.remove('<@(node_builtin_shareable_builtins)')
@@ -2138,14 +2216,22 @@ index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec5
 +
 +    return files
 +
++  def filter_fs_files(files):
++    return [f for f in files if f.startswith('lib/internal/fs/')] + ['lib/fs.js']
++
 +  lib_files = SearchFiles('lib', 'js')
 +  out['library_files'] = filter_v8_files(lib_files)
 +  out['library_files'] += filter_v8_files(node_gyp['variables']['deps_files'])
++  out['node_sources'] = node_gyp['variables']['node_sources']
++
++  out['fs_files'] = filter_fs_files(out['library_files'])
++  # fs files are handled separately
++  out['library_files'] = [f for f in out['library_files'] if f not in out['fs_files']]
 +
 +  blocklisted_sources = [
 +      f for f in node_lib_target['sources']
 +      if f not in node_source_blocklist]
-+  out['node_sources'] = filter_v8_files(blocklisted_sources)
++  out['node_sources'] += filter_v8_files(blocklisted_sources)
 +
 +  out['headers'] = []
 +  def add_headers(files, dest_dir):
@@ -2163,23 +2249,136 @@ index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec5
 +    f.write(FILENAMES_JSON_HEADER)
 +    f.write(json.dumps(out, sort_keys=True, indent=2, separators=(',', ': ')))
 +    f.write('\n')
+diff --git a/tools/generate_original_fs.py b/tools/generate_original_fs.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..98d569e6ba6d85a29a215a8f9ce3c1f6a9bd655e
+--- /dev/null
++++ b/tools/generate_original_fs.py
+@@ -0,0 +1,18 @@
++import os
++import sys
++
++node_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
++out_dir = sys.argv[1]
++fs_files = sys.argv[2:]
++
++for fs_file in fs_files:
++  with open(os.path.join(node_root_dir, fs_file), 'r') as f:
++    contents = f.read()
++    original_fs_file = fs_file.replace('internal/fs/', 'internal/original-fs/').replace('lib/fs.js', 'lib/original-fs.js')
++
++    with open(os.path.join(out_dir, fs_file), 'w') as original_f:
++      original_f.write(contents)
++
++    with open(os.path.join(out_dir, original_fs_file), 'w') as transformed_f:
++      transformed_contents = contents.replace('internal/fs/', 'internal/original-fs/')
++      transformed_f.write(transformed_contents)
 diff --git a/tools/install.py b/tools/install.py
-index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd4c536570 100755
+index 11616e1bcac5308020eb68fdb811bfb86cb14dd5..74b01f8352021f1105c080dbbf8bb29121a13501 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -202,60 +202,74 @@ def files(action):
- def headers(action):
-   def wanted_v8_headers(files_arg, dest):
+@@ -199,105 +199,108 @@ def headers(action):
      v8_headers = [
+       # The internal cppgc headers are depended on by the public
+       # ones, so they need to be included as well.
+-      'deps/v8/include/cppgc/internal/api-constants.h',
+-      'deps/v8/include/cppgc/internal/atomic-entry-flag.h',
+-      'deps/v8/include/cppgc/internal/base-page-handle.h',
+-      'deps/v8/include/cppgc/internal/caged-heap-local-data.h',
+-      'deps/v8/include/cppgc/internal/caged-heap.h',
+-      'deps/v8/include/cppgc/internal/compiler-specific.h',
+-      'deps/v8/include/cppgc/internal/finalizer-trait.h',
+-      'deps/v8/include/cppgc/internal/gc-info.h',
+-      'deps/v8/include/cppgc/internal/logging.h',
+-      'deps/v8/include/cppgc/internal/member-storage.h',
+-      'deps/v8/include/cppgc/internal/name-trait.h',
+-      'deps/v8/include/cppgc/internal/persistent-node.h',
+-      'deps/v8/include/cppgc/internal/pointer-policies.h',
+-      'deps/v8/include/cppgc/internal/write-barrier.h',
++      '../../v8/include/cppgc/internal/api-constants.h',
++      '../../v8/include/cppgc/internal/atomic-entry-flag.h',
++      '../../v8/include/cppgc/internal/base-page-handle.h',
++      '../../v8/include/cppgc/internal/caged-heap-local-data.h',
++      '../../v8/include/cppgc/internal/caged-heap.h',
++      '../../v8/include/cppgc/internal/compiler-specific.h',
++      '../../v8/include/cppgc/internal/finalizer-trait.h',
++      '../../v8/include/cppgc/internal/gc-info.h',
++      '../../v8/include/cppgc/internal/logging.h',
++      '../../v8/include/cppgc/internal/member-storage.h',
++      '../../v8/include/cppgc/internal/name-trait.h',
++      '../../v8/include/cppgc/internal/persistent-node.h',
++      '../../v8/include/cppgc/internal/pointer-policies.h',
++      '../../v8/include/cppgc/internal/write-barrier.h',
+       # cppgc headers
+-      'deps/v8/include/cppgc/allocation.h',
 -      'deps/v8/include/cppgc/common.h',
--      'deps/v8/include/libplatform/libplatform.h',
+-      'deps/v8/include/cppgc/cross-thread-persistent.h',
+-      'deps/v8/include/cppgc/custom-space.h',
+-      'deps/v8/include/cppgc/default-platform.h',
+-      'deps/v8/include/cppgc/ephemeron-pair.h',
+-      'deps/v8/include/cppgc/explicit-management.h',
+-      'deps/v8/include/cppgc/garbage-collected.h',
+-      'deps/v8/include/cppgc/heap-consistency.h',
+-      'deps/v8/include/cppgc/heap-handle.h',
+-      'deps/v8/include/cppgc/heap-state.h',
+-      'deps/v8/include/cppgc/heap-statistics.h',
+-      'deps/v8/include/cppgc/heap.h',
+-      'deps/v8/include/cppgc/liveness-broker.h',
+-      'deps/v8/include/cppgc/macros.h',
+-      'deps/v8/include/cppgc/member.h',
+-      'deps/v8/include/cppgc/name-provider.h',
+-      'deps/v8/include/cppgc/object-size-trait.h',
+-      'deps/v8/include/cppgc/persistent.h',
+-      'deps/v8/include/cppgc/platform.h',
+-      'deps/v8/include/cppgc/prefinalizer.h',
+-      'deps/v8/include/cppgc/process-heap-statistics.h',
+-      'deps/v8/include/cppgc/sentinel-pointer.h',
+-      'deps/v8/include/cppgc/source-location.h',
+-      'deps/v8/include/cppgc/testing.h',
+-      'deps/v8/include/cppgc/trace-trait.h',
+-      'deps/v8/include/cppgc/type-traits.h',
+-      'deps/v8/include/cppgc/visitor.h',
++      '../../v8/include/cppgc/allocation.h',
++      '../../v8/include/cppgc/common.h',
++      '../../v8/include/cppgc/cross-thread-persistent.h',
++      '../../v8/include/cppgc/custom-space.h',
++      '../../v8/include/cppgc/default-platform.h',
++      '../../v8/include/cppgc/ephemeron-pair.h',
++      '../../v8/include/cppgc/explicit-management.h',
++      '../../v8/include/cppgc/garbage-collected.h',
++      '../../v8/include/cppgc/heap-consistency.h',
++      '../../v8/include/cppgc/heap-handle.h',
++      '../../v8/include/cppgc/heap-state.h',
++      '../../v8/include/cppgc/heap-statistics.h',
++      '../../v8/include/cppgc/heap.h',
++      '../../v8/include/cppgc/liveness-broker.h',
++      '../../v8/include/cppgc/macros.h',
++      '../../v8/include/cppgc/member.h',
++      '../../v8/include/cppgc/name-provider.h',
++      '../../v8/include/cppgc/object-size-trait.h',
++      '../../v8/include/cppgc/persistent.h',
++      '../../v8/include/cppgc/platform.h',
++      '../../v8/include/cppgc/prefinalizer.h',
++      '../../v8/include/cppgc/process-heap-statistics.h',
++      '../../v8/include/cppgc/sentinel-pointer.h',
++      '../../v8/include/cppgc/source-location.h',
++      '../../v8/include/cppgc/testing.h',
++      '../../v8/include/cppgc/trace-trait.h',
++      '../../v8/include/cppgc/type-traits.h',
++      '../../v8/include/cppgc/visitor.h',
+       # libplatform headers
 -      'deps/v8/include/libplatform/libplatform-export.h',
+-      'deps/v8/include/libplatform/libplatform.h',
 -      'deps/v8/include/libplatform/v8-tracing.h',
--      'deps/v8/include/v8.h',
++      '../../v8/include/libplatform/libplatform-export.h',
++      '../../v8/include/libplatform/libplatform.h',
++      '../../v8/include/libplatform/v8-tracing.h',
+       # v8 headers
 -      'deps/v8/include/v8-array-buffer.h',
 -      'deps/v8/include/v8-callbacks.h',
 -      'deps/v8/include/v8-container.h',
 -      'deps/v8/include/v8-context.h',
+-      'deps/v8/include/v8-cppgc.h',
 -      'deps/v8/include/v8-data.h',
 -      'deps/v8/include/v8-date.h',
 -      'deps/v8/include/v8-debug.h',
@@ -2223,11 +2422,8 @@ index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd
 -      'deps/v8/include/v8-version.h',
 -      'deps/v8/include/v8-wasm.h',
 -      'deps/v8/include/v8-weak-callback-info.h',
+-      'deps/v8/include/v8.h',
 -      'deps/v8/include/v8config.h',
-+      '../../v8/include/cppgc/common.h',
-+      '../../v8/include/libplatform/libplatform.h',
-+      '../../v8/include/libplatform/libplatform-export.h',
-+      '../../v8/include/libplatform/v8-tracing.h',
 +      '../../v8/include/v8-array-buffer.h',
 +      '../../v8/include/v8-callbacks.h',
 +      '../../v8/include/v8-container.h',
@@ -2241,14 +2437,11 @@ index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd
 +      '../../v8/include/v8-exception.h',
 +      '../../v8/include/v8-extension.h',
 +      '../../v8/include/v8-external.h',
-+      '../../v8/include/v8-fast-api-calls.h',
 +      '../../v8/include/v8-forward.h',
 +      '../../v8/include/v8-function-callback.h',
 +      '../../v8/include/v8-function.h',
 +      '../../v8/include/v8-handle-base.h',
 +      '../../v8/include/v8-initialization.h',
-+      '../../v8/include/v8-inspector-protocol.h',
-+      '../../v8/include/v8-inspector.h',
 +      '../../v8/include/v8-internal.h',
 +      '../../v8/include/v8-isolate.h',
 +      '../../v8/include/v8-json.h',
@@ -2257,7 +2450,6 @@ index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd
 +      '../../v8/include/v8-maybe.h',
 +      '../../v8/include/v8-memory-span.h',
 +      '../../v8/include/v8-message.h',
-+      '../../v8/include/v8-metrics.h',
 +      '../../v8/include/v8-microtask-queue.h',
 +      '../../v8/include/v8-microtask.h',
 +      '../../v8/include/v8-object.h',
@@ -2276,26 +2468,20 @@ index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd
 +      '../../v8/include/v8-template.h',
 +      '../../v8/include/v8-traced-handle.h',
 +      '../../v8/include/v8-typed-array.h',
-+      '../../v8/include/v8-unwinder-state.h',
 +      '../../v8/include/v8-unwinder.h',
-+      '../../v8/include/v8-util.h',
-+      '../../v8/include/v8-value-serializer-version.h',
 +      '../../v8/include/v8-value-serializer.h',
 +      '../../v8/include/v8-value.h',
-+      '../../v8/include/v8-version-string.h',
 +      '../../v8/include/v8-version.h',
-+      '../../v8/include/v8-wasm-trap-handler-posix.h',
-+      '../../v8/include/v8-wasm-trap-handler-win.h',
 +      '../../v8/include/v8-wasm.h',
 +      '../../v8/include/v8-weak-callback-info.h',
 +      '../../v8/include/v8.h',
-+      '../../v8/include/v8config.h'
++      '../../v8/include/v8config.h',
      ]
 +    v8_headers = [h.replace('deps/', '../../') for h in v8_headers]
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
  
-@@ -282,7 +296,7 @@ def headers(action):
+@@ -324,7 +327,7 @@ def headers(action):
    if sys.platform.startswith('aix') or sys.platform == "os400":
      action(['out/Release/node.exp'], 'include/node/')
  
@@ -2304,22 +2490,156 @@ index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd
  
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
-diff --git a/tools/js2c.py b/tools/js2c.py
-index 54c7dfce3631001e108570b19d34966edafd624f..077bba1572f05f1aa16553894703b12abc19a985 100755
---- a/tools/js2c.py
-+++ b/tools/js2c.py
-@@ -131,6 +131,14 @@ def NormalizeFileName(filename):
-     split = split[1:]
-   if len(split):
-     filename = '/'.join(split)
-+
-+  # Electron-specific: when driving the node build from Electron, we generate
-+  # config.gypi in a separate directory and pass the absolute path to js2c.
-+  # This overrides the absolute path so that the variable names in the
-+  # generated C are as if it was in the root node directory.
-+  if filename.endswith("/config.gypi"):
-+    filename = "config.gypi"
-+
-   return os.path.splitext(filename)[0]
+diff --git a/tools/js2c.cc b/tools/js2c.cc
+old mode 100644
+new mode 100755
+index 904fb6fa44d4f56fb67476e937edcbb797d78fe7..129cd4b2c12b58464fbab8355afa0c26721d1413
+--- a/tools/js2c.cc
++++ b/tools/js2c.cc
+@@ -29,6 +29,7 @@ namespace js2c {
+ int Main(int argc, char* argv[]);
  
+ static bool is_verbose = false;
++static bool only_js = false;
  
+ void Debug(const char* format, ...) {
+   va_list arguments;
+@@ -195,6 +196,7 @@ const char* kTemplate = R"(
+ #include "node_builtins.h"
+ #include "node_external_reference.h"
+ #include "node_internals.h"
++#include "node_threadsafe_cow-inl.h"
+ 
+ namespace node {
+ 
+@@ -210,7 +212,11 @@ const ThreadsafeCopyOnWrite<BuiltinSourceMap> global_source_map {
+ }  // anonymous namespace
+ 
+ void BuiltinLoader::LoadJavaScriptSource() {
+-  source_ = global_source_map;
++  BuiltinSourceMap map = *source_.read();
++  BuiltinSourceMap new_map = *global_source_map.read();
++
++  map.merge(new_map);
++  source_ = ThreadsafeCopyOnWrite<BuiltinSourceMap>(map);
+ }
+ 
+ void RegisterExternalReferencesForInternalizedBuiltinCode(
+@@ -227,6 +233,45 @@ UnionBytes BuiltinLoader::GetConfig() {
+ }  // namespace node
+ )";
+ 
++const char* kEmbedderTemplate = R"(
++#include "env-inl.h"
++#include "node_builtins.h"
++#include "node_external_reference.h"
++#include "node_internals.h"
++#include "node_threadsafe_cow-inl.h"
++
++namespace node {
++
++namespace builtins {
++
++%.*s
++namespace {
++const ThreadsafeCopyOnWrite<BuiltinSourceMap> global_source_map {
++  BuiltinSourceMap {
++%.*s
++  }  // BuiltinSourceMap
++
++};  // ThreadsafeCopyOnWrite
++}  // anonymous namespace
++
++void BuiltinLoader::LoadEmbedderJavaScriptSource() {
++  BuiltinSourceMap map = *source_.read();
++  BuiltinSourceMap new_map = *global_source_map.read();
++
++  map.merge(new_map);
++  source_ = ThreadsafeCopyOnWrite<BuiltinSourceMap>(map);
++}
++
++void EmbedderRegisterExternalReferencesForInternalizedBuiltinCode(
++  ExternalReferenceRegistry* registry) {
++%.*s
++}
++
++}  // namespace builtins
++
++}  // namespace node
++)";
++
+ Fragment Format(const Fragments& definitions,
+                 const Fragments& initializers,
+                 const Fragments& registrations) {
+@@ -236,13 +281,12 @@ Fragment Format(const Fragments& definitions,
+   size_t init_size = init_buf.size();
+   std::vector<char> reg_buf = Join(registrations, "\n");
+   size_t reg_size = reg_buf.size();
+-
+-  size_t result_size =
+-      def_size + init_size + reg_size + strlen(kTemplate) + 100;
++  size_t result_size = def_size + init_size + reg_size +
++          strlen(only_js ? kEmbedderTemplate: kTemplate) + 300;
+   std::vector<char> result(result_size, 0);
+   int r = snprintf(result.data(),
+                    result_size,
+-                   kTemplate,
++                   only_js ? kEmbedderTemplate: kTemplate,
+                    static_cast<int>(def_buf.size()),
+                    def_buf.data(),
+                    static_cast<int>(init_buf.size()),
+@@ -711,12 +755,15 @@ int JS2C(const FileList& js_files,
+     }
+   }
+ 
++  if (!only_js) {
+   assert(FilenameIsConfigGypi(config));
+   // "config.gypi" -> config_raw.
+   int r = AddGypi("config", config, &definitions);
+   if (r != 0) {
+     return r;
+   }
++  }
++
+   Fragment out = Format(definitions, initializers, registrations);
+   return WriteIfChanged(out, dest);
+ }
+@@ -742,6 +789,8 @@ int Main(int argc, char* argv[]) {
+     std::string arg(argv[i]);
+     if (arg == "--verbose") {
+       is_verbose = true;
++    } else if (arg == "--only-js") {
++      only_js = true;
+     } else if (arg == "--root") {
+       if (i == argc - 1) {
+         fprintf(stderr, "--root must be followed by a path\n");
+@@ -790,6 +839,14 @@ int Main(int argc, char* argv[]) {
+     }
+   }
+ 
++  if (only_js) {
++    auto js_it = file_map.find(".js");
++
++    assert(file_map.size() == 1);
++    assert(js_it != file_map.end());
++
++    return JS2C(js_it->second, FileList(), std::string(), output);
++  } else {
+   // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
+   assert(file_map.size() == 3);
+   auto gypi_it = file_map.find(".gypi");
+@@ -809,6 +866,7 @@ int Main(int argc, char* argv[]) {
+   std::sort(mjs_it->second.begin(), mjs_it->second.end());
+ 
+   return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
++  }
+ }
+ }  // namespace js2c
+ }  // namespace node
+@@ -817,4 +875,4 @@ NODE_MAIN(int argc, node::argv_type raw_argv[]) {
+   char** argv;
+   node::FixupMain(argc, raw_argv, &argv);
+   return node::js2c::Main(argc, argv);
+-}
++}
+\ No newline at end of file

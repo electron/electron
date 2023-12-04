@@ -24,10 +24,10 @@ index 9f5340c223902c5ff61def05e8a4f470b4f328e8..d6dbfa482f9ebff3f99fb810e072cf9a
  }
  
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index be4d82086199855a10108528b3dacc663b839454..10c33bacc0529e12f52aaf1baf6d42489b2a75a7 100644
+index 4460042d7bfbb8286a9b2abcbfb9e44f21b5d944..027a2de1878d5f09dc5d44b1b21af7163ea1b999 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -108,6 +108,7 @@ port.on('message', (message) => {
+@@ -112,6 +112,7 @@ port.on('message', (message) => {
  
      require('internal/worker').assignEnvironmentData(environmentData);
  

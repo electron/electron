@@ -14,6 +14,7 @@
     "allowJs": true,
     "noUnusedLocals": true,
     "outDir": "ts-gen",
+    "typeRoots" : ["./node_modules/@types"],
     "paths": {
       "@electron/internal/*": ["lib/*"]
     }

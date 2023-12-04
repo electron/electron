@@ -204,3 +204,16 @@ index 3270fecaeae81ff98995268613cbe4f834195b53..9b8156a8e188f97647288c96d664a2d7
   public:
    explicit PepperHelper(content::RenderFrame* render_frame);
  
+diff --git a/ppapi/buildflags/buildflags.gni b/ppapi/buildflags/buildflags.gni
+index 0bc0e153dff7ef5c093dce4f73b709ac36024d63..fba1a83be000ed58170ff800be1b43862f7d3359 100644
+--- a/ppapi/buildflags/buildflags.gni
++++ b/ppapi/buildflags/buildflags.gni
+@@ -19,7 +19,7 @@ declare_args() {
+   # Enables Pepper API (PPAPI) plugin support.
+   # The only remaining PPAPI plugin supported is NaCl and if is disabled
+   # we can disable PPAPI.
+-  enable_ppapi = enable_plugins && enable_nacl && !is_fuchsia
++  enable_ppapi = enable_plugins && !is_fuchsia
+ }
+ 
+ assert(enable_plugins || !enable_ppapi)

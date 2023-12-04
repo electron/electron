@@ -8,7 +8,7 @@ permissions: {}
 jobs:
   release-branch-created:
     name: Release Branch Created
-    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') }}
+    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller') }}
     permissions:
       contents: read
       pull-requests: write
@@ -87,6 +87,7 @@ jobs:
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/copy-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0
+        id: create-release-board
         with:
           drafts: true
           project-number: 64
@@ -96,6 +97,11 @@ jobs:
           template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
           title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
+      - name: Dump Release Project Board Contents
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        run: gh project item-list ${{ steps.create-release-board.outputs.number }} --owner electron --format json | jq
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/find-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0

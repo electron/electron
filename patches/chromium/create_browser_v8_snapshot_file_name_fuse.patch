@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 5f25a4b71b7b2a9cf9d91b655d9976b5a32b1c9e..24798bf2a35ffd4a42fe8956a27b00756e6f5c00 100644
+index 83da453659ed0007d2be4079e1b102245cc27268..79c2bbc0c8c3345fd58b6e18408062eeed94c85e 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -48,7 +48,7 @@ index 5f25a4b71b7b2a9cf9d91b655d9976b5a32b1c9e..24798bf2a35ffd4a42fe8956a27b0075
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -963,7 +970,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -965,7 +972,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -102,10 +102,10 @@ index c891c5649a6ae76c9f0f988359649ece0e8ac1d9..54e30c4dd82042c283e36cae767dcdd7
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 72b0fa664dcce92d3a5d11053726a6850bcf4b43..22221c36e31cc28e1c11dc5d4df03cc186071e57 100644
+index 7cd74afcf678b90314120ee252decc381f90271a..3fe71efd30b945da209a5074d3cc9c718fc12381 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -549,8 +549,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -556,8 +556,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index 72b0fa664dcce92d3a5d11053726a6850bcf4b43..22221c36e31cc28e1c11dc5d4df03cc1
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -559,10 +558,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -566,10 +565,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =

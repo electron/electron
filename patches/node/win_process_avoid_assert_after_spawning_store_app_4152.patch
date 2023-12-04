@@ -18,10 +18,10 @@ as launch more jobs or exit).
 Fixes: https://github.com/JuliaLang/julia/issues/51461
 
 diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
-index 24c633393fd15dcf87726b174d6b027a969e0f0d..4ad9fec900fa66b0e8c6894701e94f420de903a8 100644
+index 3e451e2291d6ed200ec258e874becbbea22bbc27..a71a08bdd60166ef1d4ef490ff3e083b44188852 100644
 --- a/deps/uv/src/win/process.c
 +++ b/deps/uv/src/win/process.c
-@@ -102,6 +102,21 @@ static void uv__init_global_job_handle(void) {
+@@ -105,6 +105,21 @@ static void uv__init_global_job_handle(void) {
                                 &info,
                                 sizeof info))
      uv_fatal_error(GetLastError(), "SetInformationJobObject");
@@ -43,7 +43,7 @@ index 24c633393fd15dcf87726b174d6b027a969e0f0d..4ad9fec900fa66b0e8c6894701e94f42
  }
  
  
-@@ -1098,6 +1113,7 @@ int uv_spawn(uv_loop_t* loop,
+@@ -1102,6 +1117,7 @@ int uv_spawn(uv_loop_t* loop,
       * breakaway.
       */
      process_flags |= DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
@@ -51,7 +51,7 @@ index 24c633393fd15dcf87726b174d6b027a969e0f0d..4ad9fec900fa66b0e8c6894701e94f42
    }
  
    if (!CreateProcessW(application_path,
-@@ -1115,11 +1131,6 @@ int uv_spawn(uv_loop_t* loop,
+@@ -1119,11 +1135,6 @@ int uv_spawn(uv_loop_t* loop,
      goto done;
    }
  
@@ -63,7 +63,7 @@ index 24c633393fd15dcf87726b174d6b027a969e0f0d..4ad9fec900fa66b0e8c6894701e94f42
    /* If the process isn't spawned as detached, assign to the global job object
     * so windows will kill it when the parent process dies. */
    if (!(options->flags & UV_PROCESS_DETACHED)) {
-@@ -1142,6 +1153,19 @@ int uv_spawn(uv_loop_t* loop,
+@@ -1146,6 +1157,19 @@ int uv_spawn(uv_loop_t* loop,
      }
    }
  

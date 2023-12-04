@@ -21,10 +21,10 @@ index 606a6f5caa3b11b6d2a9068ed2fd65800530a5eb..080dcce21da05ccea398d8a856deb397
  typedef void (*FreeCallback)(char* data, void* hint);
  
 diff --git a/src/node_errors.h b/src/node_errors.h
-index 1687eed35717ae385aedad952c03ebab4f0f3bf7..4cd96bf9dd721ec24dd5f23086da5b72be58d0a9 100644
+index 569dafe82df83db02d93b0e58231ef804eb54be8..c6b8c3b5b36ea25a31bdf3c6a48ef20f3c1b6577 100644
 --- a/src/node_errors.h
 +++ b/src/node_errors.h
-@@ -208,7 +208,7 @@ inline v8::Local<v8::Value> ERR_BUFFER_TOO_LARGE(v8::Isolate* isolate) {
+@@ -218,7 +218,7 @@ inline v8::Local<v8::Value> ERR_BUFFER_TOO_LARGE(v8::Isolate* isolate) {
    char message[128];
    snprintf(message, sizeof(message),
        "Cannot create a Buffer larger than 0x%zx bytes",
