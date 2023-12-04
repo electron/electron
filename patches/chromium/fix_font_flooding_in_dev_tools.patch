@@ -5,7 +5,7 @@ Subject: fix font flooding in dev tools
 
 Added in this CL: https://chromium-review.googlesource.com/c/chromium/src/+/5033885
 
-This patch makes the mksnapshot fix available sooner.
+This patch resolves an issue that has been fixed in chromium involving font requests being sent multiple times to DevTools for a single request.
 
 This patch can be removed when chromium reaches version 121.0.6157.0.
 
