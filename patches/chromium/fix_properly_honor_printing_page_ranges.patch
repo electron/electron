@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index c9a13aee1e64f359cd1d5c2e440b4df204420997..7790c311400fc84bfda6c99e1ebd8da728031a77 100644
+index 0b21e7034392efa28d69c0d092086ae9bd1c43c4..c5824bdbdfbfab1c221f6bca3517d5404e0286d5 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -84,6 +84,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
@@ -25,7 +25,7 @@ index c9a13aee1e64f359cd1d5c2e440b4df204420997..7790c311400fc84bfda6c99e1ebd8da7
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index fab1e04e754cb63ab7335a45dce25c130c638a04..612a74964adaf7c2d82ca0bb846cb33a6449db98 100644
+index b051381ebf164fe5b88db6c39152b65c98a625ed..d02db9e0b8295be6f397215fc447acd96baf6e0c 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -486,7 +486,8 @@ void ApplySystemPrintDialogData(
@@ -62,10 +62,10 @@ index fab1e04e754cb63ab7335a45dce25c130c638a04..612a74964adaf7c2d82ca0bb846cb33a
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index 8a7d9c115cf5cca8d203cc71c5c83f06df2c6bee..d808b78d57ea2f29e0ed2248304fa720e3deede2 100644
+index 391397cc4fb5748caa174fb061c7c128d079200d..3179af2283390849b5d6ff945f9f658e4e9bdb54 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -75,14 +75,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+@@ -72,14 +72,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32];
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {
@@ -100,7 +100,7 @@ index 8a7d9c115cf5cca8d203cc71c5c83f06df2c6bee..d808b78d57ea2f29e0ed2248304fa720
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 525df2cef7d1740ec488c88fd4f6c06314b45fbb..01b2e50d4537ed27916f978a9110b49a49bdcb32 100644
+index 9d9147427a99804c4ba071b27948c06caac4c477..e047f4a88612172d58802b3529f04061bf90a939 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -241,6 +241,24 @@ void PrintDialogGtk::UpdateSettings(

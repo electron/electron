@@ -4163,7 +4163,7 @@ index acd9a595a6c83bf58153354da91cb1d23e0f7235..9668aed7e3dde807e040ab71b442d81c
    CookieSettingOverrides cookie_setting_overrides_;
  
 diff --git a/net/url_request/url_request_http_job.cc b/net/url_request/url_request_http_job.cc
-index fee80f24bbd37de2b55dca08e4dc2ea8e5bf113b..56477b2b5d3d6f41a0ef596c865f9e3454ac9e9f 100644
+index fcb821c562aa1ff431565705b22791076fd9429b..624e78829ca0af70bba8681c18e032e0c08ed691 100644
 --- a/net/url_request/url_request_http_job.cc
 +++ b/net/url_request/url_request_http_job.cc
 @@ -63,7 +63,7 @@
@@ -4281,7 +4281,7 @@ index fee80f24bbd37de2b55dca08e4dc2ea8e5bf113b..56477b2b5d3d6f41a0ef596c865f9e34
  
    cookie_store->GetCookieListWithOptionsAsync(
        request_->url(), options,
-@@ -975,7 +1010,11 @@ void URLRequestHttpJob::SaveCookiesAndNotifyHeadersComplete(int result) {
+@@ -938,7 +973,11 @@ void URLRequestHttpJob::SaveCookiesAndNotifyHeadersComplete(int result) {
            request_->initiator(), is_main_frame_navigation,
            force_ignore_site_for_cookies);
  
@@ -5112,7 +5112,7 @@ index 60b726cce8f05a8d0a89a310d00b467be519badc..407ea92cb29712fd89f7c40c6bb21090
 +  array<SchemefulSite>? party_context;
  };
 diff --git a/services/network/restricted_cookie_manager.cc b/services/network/restricted_cookie_manager.cc
-index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910cf0d6a952 100644
+index e12ebed92ffb4018f5ea3bb0a2da6e32aeb5ce5c..0f1816c1a7912829433fa6063fb3b69bd81aeda0 100644
 --- a/services/network/restricted_cookie_manager.cc
 +++ b/services/network/restricted_cookie_manager.cc
 @@ -38,7 +38,6 @@
@@ -5120,10 +5120,10 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
  #include "net/cookies/site_for_cookies.h"
  #include "net/first_party_sets/first_party_set_metadata.h"
 -#include "net/first_party_sets/first_party_sets_cache_filter.h"
+ #include "services/network/ad_heuristic_cookie_overrides.h"
  #include "services/network/cookie_settings.h"
  #include "services/network/public/cpp/features.h"
- #include "services/network/public/mojom/cookie_manager.mojom.h"
-@@ -105,11 +104,20 @@ constexpr base::TimeDelta kCookiesAccessedTimeout = base::Milliseconds(100);
+@@ -106,11 +105,20 @@ constexpr base::TimeDelta kCookiesAccessedTimeout = base::Milliseconds(100);
  constexpr size_t kMaxCookieCacheCount = 32u;
  constexpr size_t kIncreasedMaxCookieCacheCount = 100u;
  
@@ -5145,7 +5145,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
    net::CookieOptions options;
    bool force_ignore_site_for_cookies =
        cookie_settings.ShouldIgnoreSameSiteRestrictions(url, site_for_cookies);
-@@ -125,6 +133,14 @@ net::CookieOptions MakeOptionsForSet(
+@@ -126,6 +134,14 @@ net::CookieOptions MakeOptionsForSet(
          net::cookie_util::ComputeSameSiteContextForSubresource(
              url, site_for_cookies, force_ignore_site_for_cookies));
    }
@@ -5160,7 +5160,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
  
    return options;
  }
-@@ -133,7 +149,9 @@ net::CookieOptions MakeOptionsForGet(
+@@ -134,7 +150,9 @@ net::CookieOptions MakeOptionsForGet(
      mojom::RestrictedCookieManagerRole role,
      const GURL& url,
      const net::SiteForCookies& site_for_cookies,
@@ -5171,7 +5171,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
    // TODO(https://crbug.com/925311): Wire initiator here.
    net::CookieOptions options;
    bool force_ignore_site_for_cookies =
-@@ -151,6 +169,14 @@ net::CookieOptions MakeOptionsForGet(
+@@ -152,6 +170,14 @@ net::CookieOptions MakeOptionsForGet(
          net::cookie_util::ComputeSameSiteContextForSubresource(
              url, site_for_cookies, force_ignore_site_for_cookies));
    }
@@ -5186,7 +5186,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
  
    return options;
  }
-@@ -169,21 +195,13 @@ void RestrictedCookieManager::ComputeFirstPartySetMetadata(
+@@ -170,21 +196,13 @@ void RestrictedCookieManager::ComputeFirstPartySetMetadata(
    std::pair<base::OnceCallback<void(net::FirstPartySetMetadata)>,
              base::OnceCallback<void(net::FirstPartySetMetadata)>>
        callbacks = base::SplitOnceCallback(std::move(callback));
@@ -5215,7 +5215,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
  }
  
  bool CookieWithAccessResultComparer::operator()(
-@@ -315,7 +333,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -316,7 +334,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
             bool has_storage_access,
             const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
             net::CookieOptions options,
@@ -5225,7 +5225,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
        : cookie_store_(cookie_store),
          restricted_cookie_manager_(restricted_cookie_manager),
          url_(url),
-@@ -323,7 +342,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -324,7 +343,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
          top_frame_origin_(top_frame_origin),
          has_storage_access_(has_storage_access),
          options_(options),
@@ -5235,7 +5235,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
      // TODO(pwnall): add a constructor w/options to net::CookieChangeDispatcher.
      cookie_store_subscription_ =
          cookie_store->GetChangeDispatcher().AddCallbackForUrl(
-@@ -359,11 +379,16 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -360,11 +380,16 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
  
      // CookieChangeDispatcher doesn't check for inclusion against `options_`, so
      // we need to double-check that.
@@ -5253,7 +5253,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
               .status.IsInclude()) {
        return;
      }
-@@ -414,6 +439,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -415,6 +440,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
  
    mojo::Remote<mojom::CookieChangeListener> mojo_listener_;
  
@@ -5262,7 +5262,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
    SEQUENCE_CHECKER(sequence_checker_);
  };
  
-@@ -440,6 +467,8 @@ RestrictedCookieManager::RestrictedCookieManager(
+@@ -441,6 +468,8 @@ RestrictedCookieManager::RestrictedCookieManager(
        cookie_partition_key_collection_(
            net::CookiePartitionKeyCollection::FromOptional(
                cookie_partition_key_)),
@@ -5271,7 +5271,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
        receiver_(this),
        metrics_updater_(metrics_updater),
        max_cookie_cache_count_(
-@@ -566,7 +595,8 @@ void RestrictedCookieManager::GetAllForUrl(
+@@ -567,7 +596,8 @@ void RestrictedCookieManager::GetAllForUrl(
    // TODO(morlovich): Try to validate site_for_cookies as well.
  
    net::CookieOptions net_options =
@@ -5281,7 +5281,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
    // TODO(https://crbug.com/977040): remove set_return_excluded_cookies() once
    // removing deprecation warnings.
    net_options.set_return_excluded_cookies();
-@@ -836,7 +866,8 @@ void RestrictedCookieManager::SetCanonicalCookie(
+@@ -839,7 +869,8 @@ void RestrictedCookieManager::SetCanonicalCookie(
  
    net::CanonicalCookie cookie_copy = *sanitized_cookie;
    net::CookieOptions options =
@@ -5291,7 +5291,7 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
  
    net::CookieAccessResult cookie_access_result(status);
    cookie_store_->SetCanonicalCookieAsync(
-@@ -894,11 +925,12 @@ void RestrictedCookieManager::AddChangeListener(
+@@ -897,11 +928,12 @@ void RestrictedCookieManager::AddChangeListener(
    }
  
    net::CookieOptions net_options =
@@ -5307,10 +5307,10 @@ index e6711498c9422babeb95f5c5c0831b65d47c3af8..939a1a4313c3b65b094e94f70211910c
    listener->mojo_listener().set_disconnect_handler(
        base::BindOnce(&RestrictedCookieManager::RemoveChangeListener,
 diff --git a/services/network/restricted_cookie_manager.h b/services/network/restricted_cookie_manager.h
-index b53b63829ab1e873dbfa4478d6b36ef184baecd9..bc59d8162a40a12d2acfb40af9d840c17c63925e 100644
+index 6e32b7e8c32e03fc5de0c6ddba9e8e65ccc790f9..b0e3bdd3246e2ee64781f44679c98e9989a88df4 100644
 --- a/services/network/restricted_cookie_manager.h
 +++ b/services/network/restricted_cookie_manager.h
-@@ -336,6 +336,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) RestrictedCookieManager
+@@ -337,6 +337,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) RestrictedCookieManager
    // update filtering.
    CookieAccessesByURLAndSite recent_cookie_accesses_;
  
@@ -5320,10 +5320,10 @@ index b53b63829ab1e873dbfa4478d6b36ef184baecd9..bc59d8162a40a12d2acfb40af9d840c1
    // done with this variable.
    mojo::Receiver<mojom::RestrictedCookieManager> receiver_;
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 5579aaf6a5b04eb3926fb6dd47b6b363c79dd9bf..4072478d969f754f7ee32676cefc326516dbd1bb 100644
+index dd5bcfc92d8ffa85d9c70ece32b82c8458633e5b..d21cb3348878e4b60fd03deb01066e51e92111be 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -286,7 +286,7 @@ bool ShouldNotifyAboutCookie(net::CookieInclusionStatus status) {
+@@ -287,7 +287,7 @@ bool ShouldNotifyAboutCookie(net::CookieInclusionStatus status) {
           status.HasExclusionReason(
               net::CookieInclusionStatus::EXCLUDE_USER_PREFERENCES) ||
           status.HasExclusionReason(
@@ -5332,7 +5332,7 @@ index 5579aaf6a5b04eb3926fb6dd47b6b363c79dd9bf..4072478d969f754f7ee32676cefc3265
           status.HasExclusionReason(
               net::CookieInclusionStatus::EXCLUDE_DOMAIN_NON_ASCII);
  }
-@@ -587,6 +587,9 @@ URLLoader::URLLoader(
+@@ -588,6 +588,9 @@ URLLoader::URLLoader(
      DCHECK(!url_request_->isolation_info().IsEmpty());
    }
  
@@ -5342,7 +5342,7 @@ index 5579aaf6a5b04eb3926fb6dd47b6b363c79dd9bf..4072478d969f754f7ee32676cefc3265
    // When a service worker forwards a navigation request it uses the
    // service worker's IsolationInfo.  This causes the cookie code to fail
    // to send SameSite=Lax cookies for main-frame navigations passed through
-@@ -2698,6 +2701,36 @@ bool URLLoader::ShouldForceIgnoreSiteForCookies(
+@@ -2702,6 +2705,36 @@ bool URLLoader::ShouldForceIgnoreSiteForCookies(
    return false;
  }
  
