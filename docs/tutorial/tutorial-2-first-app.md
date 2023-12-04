@@ -243,11 +243,11 @@ const { app, BrowserWindow } = require('electron/main')
 For more information, see the [Process Model docs](../tutorial/process-model.md#process-specific-module-aliases-typescript).
 </details>
 
-:::warning ES Modules in Electron
+:::info ES Modules in Electron
 
 [ECMAScript modules](https://nodejs.org/api/esm.html) (i.e. using `import` to load a module)
-are currently not directly supported in Electron. You can find more information about the
-state of ESM in Electron in [electron/electron#21457](https://github.com/electron/electron/issues/21457).
+are supported in Electron as of Electron 28. You can find more information about the
+state of ESM in Electron and how to use them in our app in [our ESM guide](../tutorial/esm.md).
 
 :::
 
