@@ -729,11 +729,12 @@ WebContents.prototype._init = function () {
     }
   });
 
-  const originCounts = new Map();
+  const originCounts = new Map<string, number>();
+  const openDialogs = new Set<AbortController>();
   this.on('-run-dialog' as any, async (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => {
     const originUrl = new URL(info.frame.url);
     const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
-    if (originCounts.get(origin) < 0) return callback(false, '');
+    if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
 
     const prefs = this.getLastWebPreferences();
     if (!prefs || prefs.disableDialogs) return callback(false, '');
@@ -744,11 +745,13 @@ WebContents.prototype._init = function () {
     originCounts.set(origin, (originCounts.get(origin) ?? 0) + 1);
 
     // TODO: translate?
-    const checkbox = originCounts.get(origin) > 1 && prefs.safeDialogs ? prefs.safeDialogsMessage || 'Prevent this app from creating additional dialogs' : '';
+    const checkbox = originCounts.get(origin)! > 1 && prefs.safeDialogs ? prefs.safeDialogsMessage || 'Prevent this app from creating additional dialogs' : '';
     const parent = this.getOwnerBrowserWindow();
+    const abortController = new AbortController();
     const options: MessageBoxOptions = {
       message: info.messageText,
       checkboxLabel: checkbox,
+      signal: abortController.signal,
       ...(info.dialogType === 'confirm') ? {
         buttons: ['OK', 'Cancel'],
         defaultId: 0,
@@ -759,10 +762,21 @@ WebContents.prototype._init = function () {
         cancelId: 0
       }
     };
+    openDialogs.add(abortController);
     const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
-    const result = await promise;
-    if (result.checkboxChecked) originCounts.set(origin, -1);
-    return callback(result.response === 0, '');
+    try {
+      const result = await promise;
+      if (abortController.signal.aborted) return;
+      if (result.checkboxChecked) originCounts.set(origin, -1);
+      return callback(result.response === 0, '');
+    } finally {
+      openDialogs.delete(abortController);
+    }
+  });
+
+  this.on('-cancel-dialogs' as any, () => {
+    for (const controller of openDialogs) { controller.abort(); }
+    openDialogs.clear();
   });
 
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
