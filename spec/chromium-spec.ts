@@ -2445,6 +2445,7 @@ describe('chromium features', () => {
       afterEach(() => {
         dialog.showMessageBox = originalShowMessageBox;
         if (protocol.isProtocolHandled('https')) protocol.unhandle('https');
+        if (protocol.isProtocolHandled('file')) protocol.unhandle('file');
       });
       it('does not show the checkbox if not enabled', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: false } });
