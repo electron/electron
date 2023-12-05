@@ -588,7 +588,7 @@ WebContents.prototype._init = function () {
     // All other types should ignore the "proceed" signal and unload
     // regardless.
     if (type === 'window' || type === 'offscreen' || type === 'browserView') {
-      if (proceed) { return event.preventDefault(); }
+      if (!proceed) { return event.preventDefault(); }
     }
   });
 
