@@ -13,10 +13,10 @@ This patch can be removed when Storage Access API cookie support or
 equivalent support is completed upstream.
 
 diff --git a/chrome/browser/about_flags.cc b/chrome/browser/about_flags.cc
-index a74ccb7c263b0dc8d338f459a2bfe16de755f6cc..db0f368d927948b7e9954bd3af6c815807122979 100644
+index 8736a91998f6b42e7fd30dbf1fa01a2249832fe5..41ea76a26292937d5f5a20f48bf261e081934ff3 100644
 --- a/chrome/browser/about_flags.cc
 +++ b/chrome/browser/about_flags.cc
-@@ -9001,6 +9001,10 @@ const FeatureEntry kFeatureEntries[] = {
+@@ -9009,6 +9009,10 @@ const FeatureEntry kFeatureEntries[] = {
       flag_descriptions::kChromeRefresh2023TopChromeFontDescription, kOsDesktop,
       FEATURE_VALUE_TYPE(features::kChromeRefresh2023TopChromeFont)},
  
@@ -28,7 +28,7 @@ index a74ccb7c263b0dc8d338f459a2bfe16de755f6cc..db0f368d927948b7e9954bd3af6c8158
      {"autofill-enable-offers-in-clank-keyboard-accessory",
       flag_descriptions::kAutofillEnableOffersInClankKeyboardAccessoryName,
 diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
-index e79a38b20252c0cb30b01ebeeeaf4479722dcc94..f6d6543ab0ea115ab7e4fd35120535ddf7a80980 100644
+index d9c675c8aca73a6a8411735a6c6a350795fa308f..36716e675892fa7aea585a1f5e0c2bb408454466 100644
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
 @@ -7900,8 +7900,7 @@ bool ChromeContentBrowserClient::ShouldDisableOriginAgentClusterDefault(
@@ -179,10 +179,10 @@ index 9bc786819114dc1f12e590afa3323f067c785fad..4a1915904119bd2b0a7027ffd5046404
  
    // Clears the content settings associated with `profile` that were
 diff --git a/chrome/browser/flag-metadata.json b/chrome/browser/flag-metadata.json
-index 5fc47995a835018ebf40ff8546fbfacc8adf4aa8..8300cd68e5b7aa3fcbecc827d05137b4ff2a4f0c 100644
+index 400505f9d64e64d762b0d6de67e7ca970391ec12..7ede5b8cd7576c77195897772baf7b30a4565dda 100644
 --- a/chrome/browser/flag-metadata.json
 +++ b/chrome/browser/flag-metadata.json
-@@ -2672,6 +2672,11 @@
+@@ -2677,6 +2677,11 @@
      "owners": [ "chromeos-dlp@google.com", "accorsi@chromium.org" ],
      "expiry_milestone": 130
    },
@@ -195,7 +195,7 @@ index 5fc47995a835018ebf40ff8546fbfacc8adf4aa8..8300cd68e5b7aa3fcbecc827d05137b4
      "name": "enable-follow-IPH-exp-params",
      "owners": [ "sczs@chromium.org", "tinazwang@chromium.org" ],
 diff --git a/chrome/browser/flag_descriptions.cc b/chrome/browser/flag_descriptions.cc
-index 9b0b641d6f8399acfce951c38edc41709133ac98..245b248e5acb34efef713024af74c055dedb88eb 100644
+index f92c5df0fc6001dc1bbba183ff9c520b1bec1ab1..b8077e0e8b9d90fcfa6ed1262b438db7a91a892d 100644
 --- a/chrome/browser/flag_descriptions.cc
 +++ b/chrome/browser/flag_descriptions.cc
 @@ -386,6 +386,11 @@ const char kUseDnsHttpsSvcbAlpnDescription[] =
@@ -211,7 +211,7 @@ index 9b0b641d6f8399acfce951c38edc41709133ac98..245b248e5acb34efef713024af74c055
  const char kSHA1ServerSignatureDescription[] =
      "When enabled, Chrome will allow the use of SHA-1 in signatures from the "
 diff --git a/chrome/browser/flag_descriptions.h b/chrome/browser/flag_descriptions.h
-index 094b59d51d4a617b3f1557fee9d391e2c842d479..de50979ee8b8729c5ae39474d18d2d5fb6d8ff98 100644
+index 71eae84724eabc70afd1be087495f0f21b2b21b9..73f70d9df8697714f8fb58c0c66cef9d0bf234b9 100644
 --- a/chrome/browser/flag_descriptions.h
 +++ b/chrome/browser/flag_descriptions.h
 @@ -506,6 +506,9 @@ extern const char kUseDnsHttpsSvcbAlpnDescription[];
