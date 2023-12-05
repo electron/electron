@@ -22,10 +22,10 @@ index dec500d09880d1bbe22af60b1a00d1632b24dbca..bc153bc670f2938bf270e37b24c6243f
  Ryan Sleevi <ryan-chromium-dev@sleevi.com>
  Ryan Yoakum <ryoakum@skobalt.com>
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 8345548b0701dbe284b608819a63cef6b8940994..671a04eede5699d7ac28b37ecd681a2dcaa9fad2 100644
+index 77c4faab7db8505a0d4a235c674cacd7f421274c..14bb013ac82efbc7b0cb813686ae1616d68b9321 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -1961,6 +1961,14 @@ BASE_FEATURE(kUACHOverrideBlank,
+@@ -1965,6 +1965,14 @@ BASE_FEATURE(kUACHOverrideBlank,
               "UACHOverrideBlank",
               base::FEATURE_DISABLED_BY_DEFAULT);
  
@@ -41,10 +41,10 @@ index 8345548b0701dbe284b608819a63cef6b8940994..671a04eede5699d7ac28b37ecd681a2d
               "UseBlinkSchedulerTaskRunnerWithCustomDeleter",
               base::FEATURE_ENABLED_BY_DEFAULT);
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index e611ceb2afaf89bca3f3822fd3816a733e23cc43..67d083a37064ad57d727ffaeaa9f415f4bc0a5e3 100644
+index 325ab89d12a1c0a37919867415a038e7bb05769a..f2f52c3be10773730c40d161a798a5b13102b49b 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -1292,6 +1292,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kTimedHTMLParserBudget);
+@@ -1295,6 +1295,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kTimedHTMLParserBudget);
  
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kUACHOverrideBlank);
  
