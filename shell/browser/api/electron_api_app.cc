@@ -1478,6 +1478,24 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
+// TODO: This is a rough mockup/psuedocode for allowing same-site=lax cookies
+// from 1) related web sets and 2) from an app that has third-party cookies
+// blocked to use the requestStoreAccessFor API to grant the same permissions
+// for both (more than 2?) of the provided sites of the same origin. If it
+// merges with this comment in place, we're having a bad time.
+void App::RequestStorageAccessFor() {
+  if (electron::fuses::IsSameSiteOriginCookiesEnabled()) {
+    // TODO: How tf are these sets formatted
+    void requestStorageAccessFor(USVString requestedOrigin) {
+      // void requestStorageAccessFor(std::string raw_sets) {
+      // apply this logic if the fuse is enabled and third party cookies are
+    }
+  } else {
+    CHECK(false) << "request_storage_access_for fuse is disabled";
+    return 1;
+  }
+}
+
 #if BUILDFLAG(IS_WIN)
 bool App::IsRunningUnderARM64Translation() const {
   return base::win::OSInfo::IsRunningEmulatedOnArm64();

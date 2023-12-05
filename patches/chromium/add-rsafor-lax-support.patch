@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Wed, 6 Dec 2023 16:20:01 -0800
+Subject: chore: patch in rsafor
+
+This sucks but lets try it
+
+diff --git a/content/browser/cookie_store/cookie_change_subscription.cc b/content/browser/cookie_store/cookie_change_subscription.cc
+index dbe3c5b8a6c83c5e8d26b109f24e77b4ab2e604e..aaa6301de776e4bb6bc9608f8b4596acefe0f77d 100644
+--- a/content/browser/cookie_store/cookie_change_subscription.cc
++++ b/content/browser/cookie_store/cookie_change_subscription.cc
+@@ -175,11 +175,21 @@ bool CookieChangeSubscription::ShouldObserveChangeTo(
+       net::CookieOptions::SameSiteCookieContext::MakeInclusive());
+ 
+   return cookie
+-      .IncludeForRequestURL(url_, net_options,
+-                            net::CookieAccessParams{
+-                                access_semantics,
+-                                network::IsUrlPotentiallyTrustworthy(url_),
+-                            })
++      // .IncludeForRequestURL(url_, net_options,
++      //                       net::CookieAccessParams{
++      //                           access_semantics,
++      //                           network::IsUrlPotentiallyTrustworthy(url_),
++      //                       })
++      .IncludeForRequestURL(
++          url_, net_options,
++          net::CookieAccessParams{
++              access_semantics,
++              network::IsUrlPotentiallyTrustworthy(url_),
++              net::cookie_util::GetSamePartyStatus(
++                  cookie, net_options,
++                  base::FeatureList::IsEnabled(
++                      net::features::kSamePartyAttributeEnabled)),
++          })
+       .status.IsInclude();
+ }
+ 

@@ -74,6 +74,23 @@ The extra privileges granted to the `file://` protocol by this fuse are incomple
 * `file://` protocol pages can use service workers
 * `file://` protocol pages have universal access granted to child frames also running on `file://` protocols regardless of sandbox settings
 
+### `sameSiteStorageAPI`
+
+**Default:** Disabled
+**@electron/fuses:** `FuseV1Options.EnableSameSiteStorageAPI`
+
+This {better-name} fuse changes how {top-level site, requested origin} pair permissions are granted.
+
+When this fuse is enabled, we request permission via the permissions API. This would allow implementation-defined acceptance or rejection steps, inherited from Chrome; if any are triggered, reject the requestStorageAccessFor call or skip to the permission-saving step. If acceptance is returned, save a permission for the pair {top-level site, requested origin}. Note that the permission would be separate from the permission granted by requestStorageAccess.
+
+See more information here: https://github.com/privacycg/requestStorageAccessFor?tab=readme-ov-file#proposed-draft-spec-addition
+
+At request time, if the request is cross-site and the appropriate permission for {top-level site, requested origin} exists, attach cookies only if all of the below checks are met:
+1. The request is made by the top-level frame and is for a subresource on the requested origin (i.e., not a navigation), and the request is CORS-enabled. In other words, a plain <img> or <script> without the appropriate crossorigin attribute would not have cross-site SameSite=None cookies attached, regardless of whether access had been granted. Similarly, a fetch or XHR request would omit cross-site SameSite=None cookies unless CORS was enabled. This is recommended in a recent security analysis.
+2. The cookies to be included must be marked SameSite=None. In other words, the cookies must have been explicitly opted in by the requested domain. Cookies with any other SameSite option are ignored and not sent, regardless of whether a grant exists.
+  - This specific behavior is what we want to change
+3. NOTE: requests from <iframe> elements would need to invoke and be granted requestStorageAccess for SameSite=None cookies to be sent. This ensures the per-frame semantics of requestStorageAccess are respected.
+
 ## How do I flip the fuses?
 
 ### The easy way
