@@ -867,22 +867,23 @@ describe('node feature', () => {
   });
 
   it('performs microtask checkpoint correctly', (done) => {
+    let timer : NodeJS.Timeout;
+    const listener = () => {
+      done(new Error('catch block is delayed to next tick'));
+    };
+
     const f3 = async () => {
       return new Promise((resolve, reject) => {
+        timer = setTimeout(listener);
         reject(new Error('oops'));
       });
     };
 
-    let called = false;
-    process.once('unhandledRejection', () => {
-      if (called) return;
-
-      done(new Error('catch block is delayed to next tick'));
-      called = true;
-    });
-
     setTimeout(() => {
-      f3().catch(() => done());
+      f3().catch(() => {
+        clearTimeout(timer);
+        done();
+      });
     });
   });
 });
