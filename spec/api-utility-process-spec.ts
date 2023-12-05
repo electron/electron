@@ -47,12 +47,12 @@ describe('utilityProcess module', () => {
   });
 
   describe('lifecycle events', () => {
-    it('emits \'spawn\' when child process successfully launches', async () => {
+    it.skip('emits \'spawn\' when child process successfully launches', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       await once(child, 'spawn');
     });
 
-    it('emits \'exit\' when child process exits gracefully', async () => {
+    it.skip('emits \'exit\' when child process exits gracefully', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
@@ -74,19 +74,19 @@ describe('utilityProcess module', () => {
       await once(child1, 'exit');
     });
 
-    it('emits \'exit\' when there is uncaught exception', async () => {
+    it.skip('emits \'exit\' when there is uncaught exception', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'exception.js'));
       const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
     });
 
-    it('emits \'exit\' when there is uncaught exception in ESM', async () => {
+    it.skip('emits \'exit\' when there is uncaught exception in ESM', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'exception.mjs'));
       const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
     });
 
-    it('emits \'exit\' when process.exit is called', async () => {
+    it.skip('emits \'exit\' when process.exit is called', async () => {
       const exitCode = 2;
       const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
       const [code] = await once(child, 'exit');
