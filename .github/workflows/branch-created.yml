@@ -93,7 +93,9 @@ jobs:
           project-number: 64
           # TODO - Set to public once GitHub fixes their GraphQL bug
           # public: true
-          link-to-repository: electron/electron
+          # TODO - Enable once GitHub doesn't require overly broad, read
+          #        and write permission for repo "Contents" to link
+          # link-to-repository: electron/electron
           template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
           title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
