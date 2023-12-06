@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
+import * as fs from 'fs-extra';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { copyApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn, withTempDirectory } from './lib/codesign-helpers';
 import { webContents } from 'electron/main';
 import { EventEmitter } from 'node:stream';
 import { once } from 'node:events';
@@ -656,6 +657,66 @@ describe('node feature', () => {
       const child = childProcess.spawn(process.execPath, [appPath], { env });
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
+    });
+  });
+
+  ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', function () {
+    let identity = '';
+
+    beforeEach(function () {
+      const result = getCodesignIdentity();
+      if (result === null) {
+        this.skip();
+      } else {
+        identity = result;
+      }
+    });
+
+    const script = path.join(fixtures, 'api', 'fork-with-node-options.js');
+    const nodeOptionsWarning = 'NODE_OPTIONS is disabled because this process is invoked by other apps';
+
+    it('is disabled when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copyApp(dir);
+        await signApp(appPath, identity);
+        // Invoke Electron by using the system node binary as middle layer, so
+        // the check of NODE_OPTIONS will think the process is started by other
+        // apps.
+        const { code, out } = await spawn('node', [script, path.join(appPath, 'Contents/MacOS/Electron')]);
+        expect(code).to.equal(0);
+        expect(out).to.include(nodeOptionsWarning);
+      });
+    });
+
+    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async function () {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copyApp(dir);
+        await signApp(appPath, identity);
+        // Find system node and copy it to app bundle.
+        const nodePath = process.env.PATH?.split(path.delimiter).find(dir => fs.existsSync(path.join(dir, 'node')));
+        if (!nodePath) {
+          this.skip();
+          return;
+        }
+        const alienBinary = path.join(appPath, 'Contents/MacOS/node');
+        await fs.copy(path.join(nodePath, 'node'), alienBinary);
+        // Try to execute electron app from the alien node in app bundle.
+        const { code, out } = await spawn(alienBinary, [script, path.join(appPath, 'Contents/MacOS/Electron')]);
+        expect(code).to.equal(0);
+        expect(out).to.include(nodeOptionsWarning);
+      });
+    });
+
+    it('is respected when invoked from self', async () => {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copyApp(dir, null);
+        await signApp(appPath, identity);
+        const appExePath = path.join(appPath, 'Contents/MacOS/Electron');
+        const { code, out } = await spawn(appExePath, [script, appExePath]);
+        expect(code).to.equal(1);
+        expect(out).to.not.include(nodeOptionsWarning);
+        expect(out).to.include('NODE_OPTIONS passed to child');
+      });
     });
   });
 
