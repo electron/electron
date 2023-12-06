@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
 #include "base/no_destructor.h"
+#include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
@@ -118,13 +119,17 @@ gin::Handle<WebContentsView> WebContentsView::Create(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& web_preferences) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Value> arg = gin::ConvertToV8(isolate, web_preferences);
-  v8::Local<v8::Object> obj;
+  v8::Local<v8::Value> arg = gin::DataObjectBuilder(isolate)
+                                 .Set("webPreferences", web_preferences)
+                                 .Build();
   if (!web_preferences.Has(options::kShow))
     gin::Dictionary(isolate, arg.As<v8::Object>()).Set(options::kShow, true);
-  if (GetConstructor(isolate)->NewInstance(context, 1, &arg).ToLocal(&obj)) {
+  v8::Local<v8::Object> web_contents_view_obj;
+  if (GetConstructor(isolate)
+          ->NewInstance(context, 1, &arg)
+          .ToLocal(&web_contents_view_obj)) {
     gin::Handle<WebContentsView> web_contents_view;
-    if (gin::ConvertFromV8(isolate, obj, &web_contents_view))
+    if (gin::ConvertFromV8(isolate, web_contents_view_obj, &web_contents_view))
       return web_contents_view;
   }
   return gin::Handle<WebContentsView>();
