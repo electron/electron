@@ -276,6 +276,13 @@ void RendererClientBase::RenderThreadStarted() {
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
+  std::vector<std::string> code_cache_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);
+  for (const auto& scheme : code_cache_schemes_list) {
+    blink::WebSecurityPolicy::RegisterURLSchemeAsCodeCacheWithHashing(
+        blink::WebString::FromASCII(scheme));
+  }
+
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
   if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {
