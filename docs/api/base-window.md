@@ -76,7 +76,7 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
 
 ### `new BaseWindow([options])`
 
-* `options` [BrowserWindowConstructorOptions](structures/base-window-options.md?inline) (optional)
+* `options` [BaseWindowConstructorOptions](structures/base-window-options.md?inline) (optional)
 
 ### Instance Events
 

@@ -37,7 +37,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       const baseWindow = new BaseWindow({
         ...options
       });
-      const wcv = new WebContentsView({ ...(options.webPreferences ?? {}), nodeIntegration: true, contextIsolation: false });
+      const wcv = new WebContentsView({ webPreferences: { ...(options.webPreferences ?? {}), nodeIntegration: true, contextIsolation: false } });
       baseWindow.contentView = wcv;
       w = Object.assign(baseWindow, { webContents: wcv.webContents });
       await Promise.resolve(fn.apply(this, args));

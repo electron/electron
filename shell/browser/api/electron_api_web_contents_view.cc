@@ -143,9 +143,27 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 
 // static
 gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
-  gin_helper::Dictionary web_preferences =
-      gin::Dictionary::CreateEmpty(args->isolate());
-  args->GetNext(&web_preferences);
+  gin_helper::Dictionary web_preferences;
+  {
+    v8::Local<v8::Value> options_value;
+    if (args->GetNext(&options_value)) {
+      gin_helper::Dictionary options;
+      if (!gin::ConvertFromV8(args->isolate(), options_value, &options)) {
+        args->ThrowError("options must be an object");
+        return nullptr;
+      }
+      v8::Local<v8::Value> web_preferences_value;
+      if (options.Get("webPreferences", &web_preferences_value)) {
+        if (!gin::ConvertFromV8(args->isolate(), web_preferences_value,
+                                &web_preferences)) {
+          args->ThrowError("options.webPreferences must be an object");
+          return nullptr;
+        }
+      }
+    }
+  }
+  if (web_preferences.IsEmpty())
+    web_preferences = gin_helper::Dictionary::CreateEmpty(args->isolate());
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, false);
   auto web_contents =

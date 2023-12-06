@@ -7,15 +7,25 @@ import { once } from 'node:events';
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
 
+  it('can be instantiated with no arguments', () => {
+    // eslint-disable-next-line no-new
+    new WebContentsView();
+  });
+
+  it('can be instantiated with no webPreferences', () => {
+    // eslint-disable-next-line no-new
+    new WebContentsView({});
+  });
+
   it('can be used as content view', () => {
     const w = new BaseWindow({ show: false });
-    w.setContentView(new WebContentsView({}));
+    w.setContentView(new WebContentsView());
   });
 
   it('can be removed after a close', async () => {
     const w = new BaseWindow({ show: false });
     const v = new View();
-    const wcv = new WebContentsView({});
+    const wcv = new WebContentsView();
     w.setContentView(v);
     v.addChildView(wcv);
     await wcv.webContents.loadURL('about:blank');
@@ -36,7 +46,7 @@ describe('WebContentsView', () => {
 
   it('doesn\'t crash when GCed during allocation', (done) => {
     // eslint-disable-next-line no-new
-    new WebContentsView({});
+    new WebContentsView();
     setTimeout(() => {
       // NB. the crash we're testing for is the lack of a current `v8::Context`
       // when emitting an event in WebContents's destructor. V8 is inconsistent
