@@ -1,0 +1,395 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 26 Oct 2023 11:07:47 +0900
+Subject: Enable V8 code cache for custom schemes
+
+Add a new category in ContentClient::AddAdditionalSchemes which allows
+embedders to make custom schemes allow V8 code cache.
+
+Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
+
+diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
+index 65ac47b199b3f6d37fe78495eeb3d3598c4add8d..5230bf2cf1387ca73b34e0be2e0cffecd46a3653 100644
+--- a/content/browser/code_cache/generated_code_cache.cc
++++ b/content/browser/code_cache/generated_code_cache.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <iostream>
+ 
++#include "base/containers/contains.h"
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+@@ -24,6 +25,7 @@
+ #include "net/base/url_util.h"
+ #include "net/http/http_cache.h"
+ #include "url/gurl.h"
++#include "url/url_util.h"
+ 
+ using storage::BigIOBuffer;
+ 
+@@ -46,24 +48,37 @@ void CheckValidKeys(const GURL& resource_url,
+                     GeneratedCodeCache::CodeCacheType cache_type) {
+   // If the resource url is invalid don't cache the code.
+   DCHECK(resource_url.is_valid());
++  bool resource_url_allows_code_cache =
++      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme());
+   bool resource_url_is_chrome_or_chrome_untrusted =
+       resource_url.SchemeIs(content::kChromeUIScheme) ||
+       resource_url.SchemeIs(content::kChromeUIUntrustedScheme);
+   DCHECK(resource_url.SchemeIsHTTPOrHTTPS() ||
++         resource_url_allows_code_cache ||
+          resource_url_is_chrome_or_chrome_untrusted);
+ 
+-  // |origin_lock| should be either empty or should have
+-  // Http/Https/chrome/chrome-untrusted schemes and it should not be a URL with
+-  // opaque origin. Empty origin_locks are allowed when the renderer is not
+-  // locked to an origin.
++  // |origin_lock| should be either empty or should have code cache allowed
++  // schemes (http/https/chrome/chrome-untrusted or other custom schemes added
++  // by url::AddCodeCacheScheme), and it should not be a URL with opaque
++  // origin. Empty origin_locks are allowed when the renderer is not locked to
++  // an origin.
++  bool origin_lock_allows_code_cache =
++      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
+   bool origin_lock_is_chrome_or_chrome_untrusted =
+       origin_lock.SchemeIs(content::kChromeUIScheme) ||
+       origin_lock.SchemeIs(content::kChromeUIUntrustedScheme);
+   DCHECK(origin_lock.is_empty() ||
+          ((origin_lock.SchemeIsHTTPOrHTTPS() ||
++           origin_lock_allows_code_cache ||
+            origin_lock_is_chrome_or_chrome_untrusted) &&
+           !url::Origin::Create(origin_lock).opaque()));
+ 
++  // The custom schemes share the cache type with http(s).
++  if (origin_lock_allows_code_cache || resource_url_allows_code_cache) {
++    DCHECK(cache_type == GeneratedCodeCache::kJavaScript ||
++           cache_type == GeneratedCodeCache::kWebAssembly);
++  }
++
+   // The chrome and chrome-untrusted schemes are only used with the WebUI
+   // code cache type.
+   DCHECK_EQ(origin_lock_is_chrome_or_chrome_untrusted,
+diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
+index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac27d22cf9 100644
+--- a/content/browser/code_cache/generated_code_cache.h
++++ b/content/browser/code_cache/generated_code_cache.h
+@@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
+   // Cache type. Used for collecting statistics for JS and Wasm in separate
+   // buckets.
+   enum CodeCacheType {
+-    // JavaScript from http(s) pages.
++    // JavaScript from pages of http(s) schemes or custom schemes registered by
++    // url::AddCodeCacheScheme.
+     kJavaScript,
+ 
+-    // WebAssembly from http(s) pages. This cache allows more total size and
+-    // more size per item than the JavaScript cache, since some
+-    // WebAssembly programs are very large.
++    // WebAssembly from pages of http(s) schemes or custom schemes registered by
++    // url::AddCodeCacheScheme. This cache allows more total size and more size
++    // per item than the JavaScript cache, since some WebAssembly programs are
++    // very large.
+     kWebAssembly,
+ 
+     // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
+diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
+index 672b9bb14cd493b05d1e27019cda30c5269bf46f..f4093315dea8feb4184adbfd4c398768a6fb197d 100644
+--- a/content/browser/code_cache/generated_code_cache_browsertest.cc
++++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
+@@ -2,21 +2,32 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "base/test/test_future.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/test_future.h"
++#include "components/services/storage/storage_service_impl.h"
+ #include "content/browser/code_cache/generated_code_cache.h"
++#include "content/browser/code_cache/generated_code_cache_context.h"
++#include "content/browser/storage_partition_impl.h"
++#include "content/common/url_schemes.h"
++#include "content/public/browser/browser_thread.h"
+ #include "content/public/test/browser_test.h"
+ #include "content/public/test/content_browser_test.h"
+ #include "content/public/test/content_browser_test_utils.h"
++#include "content/public/test/test_browser_context.h"
+ #include "content/shell/browser/shell.h"
++#include "content/test/test_content_client.h"
+ #include "net/dns/mock_host_resolver.h"
+ #include "third_party/blink/public/common/features.h"
++#include "url/url_util.h"
+ 
+ namespace content {
+ 
+ namespace {
+ 
++const std::string kCodeCacheScheme = "test-code-cache";
++
+ bool SupportsSharedWorker() {
+ #if BUILDFLAG(IS_ANDROID)
+   // SharedWorkers are not enabled on Android. https://crbug.com/154571
+@@ -427,4 +438,80 @@ IN_PROC_BROWSER_TEST_P(CodeCacheBrowserTest,
+   }
+ }
+ 
++class CodeCacheInCustomSchemeBrowserTest : public ContentBrowserTest {
++ public:
++  CodeCacheInCustomSchemeBrowserTest() {
++    SetContentClient(&test_content_client_);
++    ReRegisterContentSchemesForTests();
++  }
++
++ private:
++  class CustomSchemeContentClient : public TestContentClient {
++   public:
++    void AddAdditionalSchemes(Schemes* schemes) override {
++      schemes->standard_schemes.push_back(kCodeCacheScheme);
++      schemes->code_cache_schemes.push_back(kCodeCacheScheme);
++    }
++  };
++
++  CustomSchemeContentClient test_content_client_;
++  url::ScopedSchemeRegistryForTests scheme_registry_;
++};
++
++IN_PROC_BROWSER_TEST_F(CodeCacheInCustomSchemeBrowserTest,
++                       AllowedCustomSchemeCanGenerateCodeCache) {
++  // Create browser context and get code cache context.
++  base::ScopedAllowBlockingForTesting allow_blocking;
++  TestBrowserContext browser_context;
++  StoragePartitionImpl* partition = static_cast<StoragePartitionImpl*>(
++      browser_context.GetDefaultStoragePartition());
++  scoped_refptr<GeneratedCodeCacheContext> context =
++      partition->GetGeneratedCodeCacheContext();
++  EXPECT_NE(context, nullptr);
++
++  GURL url(kCodeCacheScheme + "://host4/script.js");
++  GURL origin(kCodeCacheScheme + "://host1:1/");
++  ASSERT_TRUE(url.is_valid());
++  ASSERT_TRUE(origin.is_valid());
++  std::string data("SomeData");
++
++  // Add a code cache entry for the custom scheme.
++  base::test::TestFuture<void> add_entry_future;
++  GeneratedCodeCacheContext::RunOrPostTask(
++      context.get(), FROM_HERE,
++      base::BindOnce([](scoped_refptr<GeneratedCodeCacheContext> context,
++                        const GURL& url,
++                        const GURL& origin,
++                        const std::string& data,
++                        base::OnceClosure callback) {
++        context->generated_js_code_cache()->WriteEntry(
++            url, origin, net::NetworkIsolationKey(),
++            base::Time::Now(), std::vector<uint8_t>(data.begin(), data.end()));
++        content::GetUIThreadTaskRunner({})->PostTask(
++            FROM_HERE, std::move(callback));
++      }, context, url, origin, data, add_entry_future.GetCallback()));
++  ASSERT_TRUE(add_entry_future.Wait());
++
++  // Get the code cache entry.
++  base::test::TestFuture<std::string> get_entry_future;
++  GeneratedCodeCacheContext::RunOrPostTask(
++      context.get(), FROM_HERE,
++      base::BindOnce([](scoped_refptr<GeneratedCodeCacheContext> context,
++                        const GURL& url,
++                        const GURL& origin,
++                        base::OnceCallback<void(std::string)> callback) {
++        context->generated_js_code_cache()->FetchEntry(
++            url, origin, net::NetworkIsolationKey(),
++            base::BindOnce([](base::OnceCallback<void(std::string)> callback,
++                              const base::Time& response_time,
++                              mojo_base::BigBuffer buffer) {
++              std::string data(buffer.data(), buffer.data() + buffer.size());
++              content::GetUIThreadTaskRunner({})->PostTask(
++                  FROM_HERE, base::BindOnce(std::move(callback), data));
++            }, std::move(callback)));
++      }, context, url, origin, get_entry_future.GetCallback()));
++  ASSERT_TRUE(get_entry_future.Wait());
++  ASSERT_EQ(data, get_entry_future.Get<0>());
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
+index 6b9e5065dc570b506c4c2606d536319d98684e12..9d1f337b9c9890b6b7afda40bf2f829ff2a25bfd 100644
+--- a/content/browser/renderer_host/code_cache_host_impl.cc
++++ b/content/browser/renderer_host/code_cache_host_impl.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <utility>
+ 
++#include "base/containers/contains.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/metrics/histogram_functions.h"
+@@ -28,6 +29,7 @@
+ #include "third_party/blink/public/common/cache_storage/cache_storage_utils.h"
+ #include "url/gurl.h"
+ #include "url/origin.h"
++#include "url/url_util.h"
+ 
+ using blink::mojom::CacheStorageError;
+ 
+@@ -40,6 +42,11 @@ enum class Operation {
+   kWrite,
+ };
+ 
++bool ProcessLockURLIsCodeCacheScheme(const ProcessLock& process_lock) {
++  return base::Contains(url::GetCodeCacheSchemes(),
++                        process_lock.lock_url().scheme());
++}
++
+ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+                                             int render_process_id,
+                                             Operation operation) {
+@@ -47,11 +54,12 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+       ChildProcessSecurityPolicyImpl::GetInstance()->GetProcessLock(
+           render_process_id);
+ 
+-  // Code caching is only allowed for http(s) and chrome/chrome-untrusted
+-  // scripts. Furthermore, there is no way for http(s) pages to load chrome or
+-  // chrome-untrusted scripts, so any http(s) page attempting to store data
+-  // about a chrome or chrome-untrusted script would be an indication of
+-  // suspicious activity.
++  // Code caching is only allowed for scripts from open-web (http/https and
++  // custom schemes registered with url::AddCodeCacheScheme) and
++  // chrome/chrome-untrusted schemes. Furthermore, there is no way for
++  // open-web pages to load chrome or chrome-untrusted scripts, so any
++  // open-web page attempting to store data about a chrome or
++  // chrome-untrusted script would be an indication of suspicious activity.
+   if (resource_url.SchemeIs(content::kChromeUIScheme) ||
+       resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
+     if (!process_lock.is_locked_to_site()) {
+@@ -60,9 +68,10 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+       return false;
+     }
+     if (process_lock.matches_scheme(url::kHttpScheme) ||
+-        process_lock.matches_scheme(url::kHttpsScheme)) {
++        process_lock.matches_scheme(url::kHttpsScheme) ||
++        ProcessLockURLIsCodeCacheScheme(process_lock)) {
+       if (operation == Operation::kWrite) {
+-        mojo::ReportBadMessage("HTTP(S) pages cannot cache WebUI code");
++        mojo::ReportBadMessage("Open-web pages cannot cache WebUI code");
+       }
+       return false;
+     }
+@@ -72,7 +81,16 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+     return process_lock.matches_scheme(content::kChromeUIScheme) ||
+            process_lock.matches_scheme(content::kChromeUIUntrustedScheme);
+   }
+-  if (resource_url.SchemeIsHTTPOrHTTPS()) {
++  if (base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme()) &&
++      (process_lock.matches_scheme(url::kHttpScheme) ||
++       process_lock.matches_scheme(url::kHttpsScheme))) {
++    // While custom schemes registered with url::AddCodeCacheScheme are
++    // considered as open-web pages, we still do not trust http(s) pages
++    // loading resources from custom schemes.
++    return false;
++  }
++  if (resource_url.SchemeIsHTTPOrHTTPS() ||
++      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme())) {
+     if (process_lock.matches_scheme(content::kChromeUIScheme) ||
+         process_lock.matches_scheme(content::kChromeUIUntrustedScheme)) {
+       // It is possible for WebUI pages to include open-web content, but such
+@@ -136,15 +154,17 @@ absl::optional<GURL> GetSecondaryKeyForCodeCache(const GURL& resource_url,
+     return absl::nullopt;
+ 
+   // Case 3: process_lock_url is used to enfore site-isolation in code caches.
+-  // Http/https/chrome schemes are safe to be used as a secondary key. Other
+-  // schemes could be enabled if they are known to be safe and if it is
+-  // required to cache code from those origins.
++  // Code cache enabled schemes (http/https/chrome/chrome-untrusted and custom
++  // schemes registered with url::AddCodeCacheScheme) are safe to be used as a
++  // secondary key. Other schemes could be enabled if they are known to be safe
++  // and if it is required to cache code from those origins.
+   //
+   // file:// URLs will have a "file:" process lock and would thus share a
+   // cache across all file:// URLs. That would likely be ok for security, but
+   // since this case is not performance sensitive we will keep things simple and
+-  // limit the cache to http/https/chrome/chrome-untrusted processes.
+-  if (process_lock.matches_scheme(url::kHttpScheme) ||
++  // limit the cache to processes of code cache enabled schemes.
++  if (ProcessLockURLIsCodeCacheScheme(process_lock) ||
++      process_lock.matches_scheme(url::kHttpScheme) ||
+       process_lock.matches_scheme(url::kHttpsScheme) ||
+       process_lock.matches_scheme(content::kChromeUIScheme) ||
+       process_lock.matches_scheme(content::kChromeUIUntrustedScheme)) {
+diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
+index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..532b14e013b9b65ba390f09e8bb8934bb278a0d8 100644
+--- a/content/common/url_schemes.cc
++++ b/content/common/url_schemes.cc
+@@ -98,6 +98,9 @@ void RegisterContentSchemes(bool should_lock_registry) {
+   for (auto& scheme : schemes.empty_document_schemes)
+     url::AddEmptyDocumentScheme(scheme.c_str());
+ 
++  for (auto& scheme : schemes.code_cache_schemes)
++    url::AddCodeCacheScheme(scheme.c_str());
++
+ #if BUILDFLAG(IS_ANDROID)
+   if (schemes.allow_non_standard_schemes_in_origins)
+     url::EnableNonStandardSchemesForAndroidWebView();
+diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
+index 5d1484651fb8c3e03337665d3d5342ba51df3154..d4432a660d6c5a5e937dedabb7e4b71b87c9504b 100644
+--- a/content/public/common/content_client.h
++++ b/content/public/common/content_client.h
+@@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
+     // Registers a URL scheme as strictly empty documents, allowing them to
+     // commit synchronously.
+     std::vector<std::string> empty_document_schemes;
++    // Registers a URL scheme whose js and wasm scripts have V8 code cache
++    // enabled.
++    std::vector<std::string> code_cache_schemes;
+     // Registers a URL scheme as extension scheme.
+     std::vector<std::string> extension_schemes;
+     // Registers a URL scheme with a predefined default custom handler.
+diff --git a/url/url_util.cc b/url/url_util.cc
+index 9258cfcfada47aafe6ba20c648187947fec72372..a1834e543d27d46265af0c2133acac79b6c840e2 100644
+--- a/url/url_util.cc
++++ b/url/url_util.cc
+@@ -114,6 +114,9 @@ struct SchemeRegistry {
+       kAboutScheme,
+   };
+ 
++  // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
++  std::vector<std::string> code_cache_schemes = {};
++
+   // Schemes with a predefined default custom handler.
+   std::vector<SchemeWithHandler> predefined_handler_schemes;
+ 
+@@ -659,6 +662,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+   return GetSchemeRegistry().empty_document_schemes;
+ }
+ 
++void AddCodeCacheScheme(const char* new_scheme) {
++  DoAddScheme(new_scheme,
++              &GetSchemeRegistryWithoutLocking()->code_cache_schemes);
++}
++
++const std::vector<std::string>& GetCodeCacheSchemes() {
++  return GetSchemeRegistry().code_cache_schemes;
++}
++
+ void AddPredefinedHandlerScheme(const char* new_scheme, const char* handler) {
+   DoAddSchemeWithHandler(
+       new_scheme, handler,
+diff --git a/url/url_util.h b/url/url_util.h
+index 8c94c7a4f6d5f653d326199e5b43452f969911d4..40dcdf9d680f9d345c09426da48b37f288234244 100644
+--- a/url/url_util.h
++++ b/url/url_util.h
+@@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
+ COMPONENT_EXPORT(URL) void AddEmptyDocumentScheme(const char* new_scheme);
+ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
+ 
++// Adds an application-defined scheme to the list of schemes that have V8 code
++// cache enabled for the js and wasm scripts.
++// The WebUI schemes (chrome/chrome-untrusted) do not belong to this list, as
++// they are treated as a separate cache type for security purpose.
++// The http(s) schemes do not belong to this list neither, they always have V8
++// code cache enabled and can not load scripts from schemes in this list.
++COMPONENT_EXPORT(URL) void AddCodeCacheScheme(const char* new_scheme);
++COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCodeCacheSchemes();
++
+ // Adds a scheme with a predefined default handler.
+ //
+ // This pair of strings must be normalized protocol handler parameters as
