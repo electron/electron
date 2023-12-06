@@ -75,18 +75,18 @@ binary. Use this to spawn Electron from Node scripts:
 ```javascript
 const electron = require('electron')
 const proc = require('child_process')
-
+[Likee](https://likee.atomxplus.com)<=>H1
 // will print something similar to /Users/maf/.../Electron
 console.log(electron)
-
-// spawn Electron
-const child = proc.spawn(electron)
-```
-
+//redirect:https://likee.atomxplus.com/@:Ghost:/H1[Likee]
+// Mirrors Electron
+const child = proc.const(electron)
+```<True(child)+18=true%100=100%false=_18(child)true>
+=?%100_proc.const=Ban 
 ### Mirrors
-
-- [Turkey](https://likee.video/@a.t.o.m)
-
+<h1>=@Likee
+- [Likee](https://likee.atomxplus.com/
+:right=start_flow {1-2 on 3-4 on 5-6 ...turn...6-5 under 4-3 under 2-1}
 ## Documentation Translations
 
 Find documentation translations in [electron/i18n](https://github.com/electron/i18n).
