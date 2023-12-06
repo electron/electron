@@ -1,0 +1,279 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ryan Manuel <ryanm@cypress.io>
+Date: Wed, 6 Dec 2023 14:38:07 -0600
+Subject: fix font flooding in dev tools
+
+Added in this CL: https://chromium-review.googlesource.com/c/chromium/src/+/5033885
+
+This patch resolves an issue that has been fixed in chromium involving font requests being sent multiple times to DevTools for a single request.
+
+This patch can be removed when chromium reaches version 121.0.6157.0.
+
+diff --git a/AUTHORS b/AUTHORS
+index 6714ac1cf3632138ba1a8f0ebc9f7b428f562449..ac5e5e98f20bcdc98a77426efc091340c3798191 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -1121,6 +1121,7 @@ Rulong Chen <rulong.crl@alibaba-inc.com>
+ Russell Davis <russell.davis@gmail.com>
+ Ryan Ackley <ryanackley@gmail.com>
+ Ryan Gonzalez <rymg19@gmail.com>
++Ryan Manuel <rfmanuel@gmail.com>
+ Ryan Norton <rnorton10@gmail.com>
+ Ryan Sleevi <ryan-chromium-dev@sleevi.com>
+ Ryan Yoakum <ryoakum@skobalt.com>
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index f0f31dbd58ceb4507155e1c8f26351e14cb6f5cf..3b4b71d76b2fadaaeb5295a88e088a2388d5d525 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -1851,6 +1851,14 @@ BASE_FEATURE(kUACHOverrideBlank,
+              "UACHOverrideBlank",
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++// If enabled, the body of `EmulateLoadStartedForInspector` is executed only
++// once per Resource per ResourceFetcher, and thus duplicated network load
++// entries in DevTools caused by `EmulateLoadStartedForInspector` are removed.
++// https://crbug.com/1502591
++BASE_FEATURE(kEmulateLoadStartedForInspectorOncePerResource,
++             "kEmulateLoadStartedForInspectorOncePerResource",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ BASE_FEATURE(kURLSetPortCheckOverflow,
+              "URLSetPortCheckOverflow",
+              base::FEATURE_ENABLED_BY_DEFAULT);
+diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
+index b9eb81f257b3f3dfe288987ca853371f4efd300b..5ea3eb74a0a4111b0178c44b1f94f939f5f18857 100644
+--- a/third_party/blink/public/common/features.h
++++ b/third_party/blink/public/common/features.h
+@@ -1209,6 +1209,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kTimedHTMLParserBudget);
+ 
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kUACHOverrideBlank);
+ 
++BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
++    kEmulateLoadStartedForInspectorOncePerResource);
++
+ // Disallow setting URL ports with a value that will overflow.
+ // See https://crbug.com/1416017
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kURLSetPortCheckOverflow);
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+index 5bfbe590f3200c8bdbd357347819bff1ba4e65e1..9bf0372aee79ffd62a475f9d9076b10e49634dba 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+@@ -755,6 +755,19 @@ Resource* ResourceFetcher::CachedResource(const KURL& resource_url) const {
+   return it->value.Get();
+ }
+ 
++bool ResourceFetcher::ResourceHasBeenEmulatedLoadStartedForInspector(
++    const KURL& resource_url) const {
++  if (resource_url.IsEmpty()) {
++    return false;
++  }
++  KURL url = MemoryCache::RemoveFragmentIdentifierIfNeeded(resource_url);
++  const auto it = emulated_load_started_for_inspector_resources_map_.find(url);
++  if (it == emulated_load_started_for_inspector_resources_map_.end()) {
++    return false;
++  }
++  return true;
++}
++
+ const HeapHashSet<Member<Resource>>
+ ResourceFetcher::MoveResourceStrongReferences() {
+   document_resource_strong_refs_total_size_ = 0;
+@@ -2650,11 +2663,25 @@ void ResourceFetcher::EmulateLoadStartedForInspector(
+   if (CachedResource(url)) {
+     return;
+   }
++
++  if (ResourceHasBeenEmulatedLoadStartedForInspector(url)) {
++    return;
++  }
++
+   if (resource->ErrorOccurred()) {
+     // We should ideally replay the error steps, but we cannot.
+     return;
+   }
+ 
++  if (base::FeatureList::IsEnabled(
++          features::kEmulateLoadStartedForInspectorOncePerResource)) {
++    // Update the emulated load started for inspector resources map with the
++    // resource so that future emulations of the same resource won't happen.
++    String resource_url = MemoryCache::RemoveFragmentIdentifierIfNeeded(url);
++    emulated_load_started_for_inspector_resources_map_.Set(resource_url,
++                                                           resource);
++  }
++
+   ResourceRequest resource_request(url);
+   resource_request.SetRequestContext(request_context);
+   resource_request.SetRequestDestination(request_destination);
+@@ -2944,6 +2971,7 @@ void ResourceFetcher::Trace(Visitor* visitor) const {
+   visitor->Trace(loaders_);
+   visitor->Trace(non_blocking_loaders_);
+   visitor->Trace(cached_resources_map_);
++  visitor->Trace(emulated_load_started_for_inspector_resources_map_);
+   visitor->Trace(image_resources_);
+   visitor->Trace(not_loaded_image_resources_);
+   visitor->Trace(preloads_);
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+index c437d854203b419091a15bac36e6292646af28e4..455b6676131fb9454afe140a5d0915fc27288565 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+@@ -179,6 +179,7 @@ class PLATFORM_EXPORT ResourceFetcher
+   std::unique_ptr<WebCodeCacheLoader> CreateCodeCacheLoader();
+ 
+   Resource* CachedResource(const KURL&) const;
++  bool ResourceHasBeenEmulatedLoadStartedForInspector(const KURL&) const;
+ 
+   // Registers an callback to be called with the resource priority of the fetch
+   // made to the specified URL. When `new_load_only` is set to false,
+@@ -563,6 +564,15 @@ class PLATFORM_EXPORT ResourceFetcher
+   // Weak reference to all the fetched resources.
+   DocumentResourceMap cached_resources_map_;
+ 
++  // When a resource is in the global memory cache but not in the
++  // cached_resources_map_ and it is referenced (e.g. when the StyleEngine
++  // processes a @font-face rule), the resource will be emulated via
++  // `EmulateLoadStartedForInspector` so that it shows up in DevTools.
++  // In order to ensure that this only occurs once per resource, we keep
++  // a weak reference to all emulated resources and only emulate resources
++  // that have not been previously emulated.
++  DocumentResourceMap emulated_load_started_for_inspector_resources_map_;
++
+   // document_resource_strong_refs_ keeps strong references for fonts, images,
+   // scripts and stylesheets within their freshness lifetime.
+   HeapHashSet<Member<Resource>> document_resource_strong_refs_;
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher_test.cc b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher_test.cc
+index ef0ff8fa688eb30f88dff855964ff6aabce70790..d32a89f8db9eeec03494271d2193e7200802710f 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher_test.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher_test.cc
+@@ -160,6 +160,8 @@ class ResourceFetcherTest : public testing::Test {
+       return request_;
+     }
+ 
++    void ClearLastRequest() { request_ = absl::nullopt; }
++
+    private:
+     absl::optional<PartialResourceRequest> request_;
+   };
+@@ -1653,4 +1655,123 @@ TEST_F(ResourceFetcherTest, StrongReferenceThreshold) {
+   ASSERT_FALSE(perform_fetch.Run(KURL("http://127.0.0.1:8000/baz.png")));
+ }
+ 
++TEST_F(ResourceFetcherTest,
++       EmulateLoadStartedForInspectorOncePerResourceDisabled) {
++  base::test::ScopedFeatureList scoped_feature_list;
++  scoped_feature_list.InitAndDisableFeature(
++      features::kEmulateLoadStartedForInspectorOncePerResource);
++  auto* observer = MakeGarbageCollected<TestResourceLoadObserver>();
++
++  // Set up the initial fetcher and mark the resource as cached.
++  auto* fetcher = CreateFetcher();
++  KURL url("http://127.0.0.1:8000/foo.woff2");
++  RegisterMockedURLLoad(url);
++  FetchParameters fetch_params =
++      FetchParameters::CreateForTest(ResourceRequest(url));
++  Resource* resource = MockResource::Fetch(fetch_params, fetcher, nullptr);
++  resource->SetStatus(ResourceStatus::kCached);
++
++  ASSERT_NE(fetcher->CachedResource(url), nullptr);
++  ASSERT_FALSE(fetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++
++  // Set up the second fetcher.
++  auto* otherContextFetcher = CreateFetcher();
++  otherContextFetcher->SetResourceLoadObserver(observer);
++
++  // Ensure that the url is initially not marked as cached or
++  // emulated and the observer's last request is empty.
++  ASSERT_EQ(otherContextFetcher->CachedResource(url), nullptr);
++  ASSERT_FALSE(
++      otherContextFetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++  ASSERT_EQ(observer->GetLastRequest(), absl::nullopt);
++
++  otherContextFetcher->EmulateLoadStartedForInspector(
++      resource, url, mojom::blink::RequestContextType::FONT,
++      network::mojom::RequestDestination::kFont,
++      fetch_initiator_type_names::kCSS);
++
++  // After the first emulation, ensure that the url is not cached,
++  // is not marked as emulated and the observer's last
++  // request is not empty with the feature disabled.
++  ASSERT_EQ(otherContextFetcher->CachedResource(url), nullptr);
++  ASSERT_FALSE(
++      otherContextFetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++  ASSERT_NE(observer->GetLastRequest(), absl::nullopt);
++
++  // Clear out the last request to start fresh
++  observer->ClearLastRequest();
++
++  otherContextFetcher->EmulateLoadStartedForInspector(
++      resource, url, mojom::blink::RequestContextType::FONT,
++      network::mojom::RequestDestination::kFont,
++      fetch_initiator_type_names::kCSS);
++
++  // After the second emulation, ensure that the url is not cached,
++  // the resource is not marked as emulated, and the observer's last
++  // request is not empty with the feature disabled. This means that
++  // the observer was notified with this emulation.
++  ASSERT_EQ(otherContextFetcher->CachedResource(url), nullptr);
++  ASSERT_FALSE(
++      otherContextFetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++  ASSERT_NE(observer->GetLastRequest(), absl::nullopt);
++}
++
++TEST_F(ResourceFetcherTest,
++       EmulateLoadStartedForInspectorOncePerResourceEnabled) {
++  auto* observer = MakeGarbageCollected<TestResourceLoadObserver>();
++
++  // Set up the initial fetcher and mark the resource as cached.
++  auto* fetcher = CreateFetcher();
++  KURL url("http://127.0.0.1:8000/foo.woff2");
++  RegisterMockedURLLoad(url);
++  FetchParameters fetch_params =
++      FetchParameters::CreateForTest(ResourceRequest(url));
++  Resource* resource = MockResource::Fetch(fetch_params, fetcher, nullptr);
++  resource->SetStatus(ResourceStatus::kCached);
++
++  ASSERT_NE(fetcher->CachedResource(url), nullptr);
++  ASSERT_FALSE(fetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++
++  // Set up the second fetcher.
++  auto* otherContextFetcher = CreateFetcher();
++  otherContextFetcher->SetResourceLoadObserver(observer);
++
++  // Ensure that the url is initially not cached, not marked as emulated,
++  // and the observer's last request is empty.
++  ASSERT_EQ(otherContextFetcher->CachedResource(url), nullptr);
++  ASSERT_FALSE(
++      otherContextFetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++  ASSERT_EQ(observer->GetLastRequest(), absl::nullopt);
++
++  otherContextFetcher->EmulateLoadStartedForInspector(
++      resource, url, mojom::blink::RequestContextType::FONT,
++      network::mojom::RequestDestination::kFont,
++      fetch_initiator_type_names::kCSS);
++
++  // After the first emulation, ensure that the url is not cached,
++  // marked as emulated, and the observer's last request is not empty with
++  // the feature enabled.
++  ASSERT_EQ(otherContextFetcher->CachedResource(url), nullptr);
++  ASSERT_TRUE(
++      otherContextFetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++  ASSERT_NE(observer->GetLastRequest(), absl::nullopt);
++
++  // Clear out the last request to start fresh
++  observer->ClearLastRequest();
++
++  otherContextFetcher->EmulateLoadStartedForInspector(
++      resource, url, mojom::blink::RequestContextType::FONT,
++      network::mojom::RequestDestination::kFont,
++      fetch_initiator_type_names::kCSS);
++
++  // After the first emulation, ensure that the url is not cached,
++  // marked as emulated, and the observer's last request is empty with
++  // the feature enabled. This means that the observer was not
++  // notified with this emulation.
++  ASSERT_EQ(otherContextFetcher->CachedResource(url), nullptr);
++  ASSERT_TRUE(
++      otherContextFetcher->ResourceHasBeenEmulatedLoadStartedForInspector(url));
++  ASSERT_EQ(observer->GetLastRequest(), absl::nullopt);
++}
++
+ }  // namespace blink
