@@ -23,6 +23,7 @@
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
@@ -85,7 +86,6 @@ class SkRegion;
 namespace electron {
 
 class ElectronBrowserContext;
-class ElectronJavaScriptDialogManager;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
@@ -107,6 +107,7 @@ class WebContents : public ExclusiveAccessContext,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
                     public content::RenderWidgetHost::InputEventObserver,
+                    public content::JavaScriptDialogManager,
                     public InspectableWebContentsDelegate,
                     public InspectableWebContentsViewDelegate,
                     public BackgroundThrottlingSource {
@@ -453,6 +454,21 @@ class WebContents : public ExclusiveAccessContext,
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
 
+  // content::JavaScriptDialogManager:
+  void RunJavaScriptDialog(content::WebContents* web_contents,
+                           content::RenderFrameHost* rfh,
+                           content::JavaScriptDialogType dialog_type,
+                           const std::u16string& message_text,
+                           const std::u16string& default_prompt_text,
+                           DialogClosedCallback callback,
+                           bool* did_suppress_message) override;
+  void RunBeforeUnloadDialog(content::WebContents* web_contents,
+                             content::RenderFrameHost* rfh,
+                             bool is_reload,
+                             DialogClosedCallback callback) override;
+  void CancelDialogs(content::WebContents* web_contents,
+                     bool reset_state) override;
+
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();
   }
@@ -762,7 +778,6 @@ class WebContents : public ExclusiveAccessContext,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  std::unique_ptr<ElectronJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
 
