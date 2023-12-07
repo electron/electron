@@ -35,19 +35,17 @@ jobs:
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
     - run: echo "$PWD/depot_tools" >> $GITHUB_PATH
-    # - run: echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $GITHUB_ENV
     - run: echo "$PATH"
     # step-gclient-sync, L287
     - name: Gclient Sync
       run: |
         # If we did not restore a complete sync then we need to sync for realz
-        echo "$PATH second"
         if [ ! -s "src/electron/.circle-sync-done" ]; then
           gclient config \
             --name "src/electron" \
             --unmanaged \
             $GCLIENT_EXTRA_ARGS \
-            "$GITHUB_ACTION_REPOSITORY"
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
           ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
           if [ "$IS_RELEASE" != "true" ]; then
