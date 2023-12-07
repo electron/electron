@@ -1,7 +1,7 @@
-From 5fde415e06f9ad10b2ae7a20563bfa9d2ce37ad2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
 Date: Fri, 10 Nov 2023 20:46:57 +0000
-Subject: [PATCH] [BreakoutBox] Use KeepAlive to prevent lifetime race with audio delivery
+Subject: Use KeepAlive to prevent lifetime race with audio delivery
 
 (cherry picked from commit 186dad16ae69183f02730fb26d84e1d53f9f1b04)
 
@@ -15,13 +15,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5018212
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/6099@{#500}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
-index f68c265..a53053b 100644
+index f68c265271b48f92ff67a752cf2bedac183bd2fc..a53053b12925b6aaa4fb201e7de2c00d4203bb2a 100644
 --- a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
 +++ b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
-@@ -142,12 +142,12 @@
+@@ -142,12 +142,12 @@ bool MediaStreamAudioTrackUnderlyingSource::StartFrameDelivery() {
      return false;
    }
  
@@ -36,7 +35,7 @@ index f68c265..a53053b 100644
    return true;
  }
  
-@@ -159,7 +159,7 @@
+@@ -159,7 +159,7 @@ void MediaStreamAudioTrackUnderlyingSource::DisconnectFromTrack() {
  
    WebMediaStreamAudioSink::RemoveFromAudioTrack(this,
                                                  WebMediaStreamTrack(track_));
@@ -46,7 +45,7 @@ index f68c265..a53053b 100644
  }
  
 diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
-index 334da29..4e7d229 100644
+index 334da29c2b210f92e9ee191275651406487601c3..4e7d22959dc8947c12d9ee2bb7acd814cc4db6b3 100644
 --- a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
 +++ b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
 @@ -13,6 +13,7 @@
@@ -57,7 +56,7 @@ index 334da29..4e7d229 100644
  
  namespace blink {
  
-@@ -80,10 +81,13 @@
+@@ -80,10 +81,13 @@ class MODULES_EXPORT MediaStreamAudioTrackUnderlyingSource
    const Member<ScriptWrappable> media_stream_track_processor_;
  
    Member<MediaStreamComponent> track_;
