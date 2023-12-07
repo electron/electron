@@ -1,0 +1,74 @@
+From 5fde415e06f9ad10b2ae7a20563bfa9d2ce37ad2 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Fri, 10 Nov 2023 20:46:57 +0000
+Subject: [PATCH] [BreakoutBox] Use KeepAlive to prevent lifetime race with audio delivery
+
+(cherry picked from commit 186dad16ae69183f02730fb26d84e1d53f9f1b04)
+
+Bug: 1497984
+Change-Id: Ic22729b2ef9690203bbb09555d32238959e93a0f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5009864
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1221614}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5018212
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6099@{#500}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+---
+
+diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
+index f68c265..a53053b 100644
+--- a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
++++ b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
+@@ -142,12 +142,12 @@
+     return false;
+   }
+ 
+-  if (added_to_track_) {
++  if (is_connected_to_track_) {
+     return true;
+   }
+ 
+   WebMediaStreamAudioSink::AddToAudioTrack(this, WebMediaStreamTrack(track_));
+-  added_to_track_ = true;
++  is_connected_to_track_ = this;
+   return true;
+ }
+ 
+@@ -159,7 +159,7 @@
+ 
+   WebMediaStreamAudioSink::RemoveFromAudioTrack(this,
+                                                 WebMediaStreamTrack(track_));
+-  added_to_track_ = false;
++  is_connected_to_track_.Clear();
+   track_.Clear();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
+index 334da29..4e7d229 100644
+--- a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
++++ b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
+@@ -13,6 +13,7 @@
+ #include "third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.h"
+ #include "third_party/blink/renderer/modules/modules_export.h"
+ #include "third_party/blink/renderer/platform/heap/prefinalizer.h"
++#include "third_party/blink/renderer/platform/heap/self_keep_alive.h"
+ 
+ namespace blink {
+ 
+@@ -80,10 +81,13 @@
+   const Member<ScriptWrappable> media_stream_track_processor_;
+ 
+   Member<MediaStreamComponent> track_;
+-  bool added_to_track_ = false;
+ 
+   std::unique_ptr<AudioBufferPool> buffer_pool_;
+ 
++  // This prevents collection of this object while it is still connected to a
++  // platform MediaStreamTrack.
++  SelfKeepAlive<MediaStreamAudioTrackUnderlyingSource> is_connected_to_track_;
++
+   SEQUENCE_CHECKER(sequence_checker_);
+ };
+ 
