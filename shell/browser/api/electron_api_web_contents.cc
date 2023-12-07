@@ -1582,9 +1582,53 @@ void WebContents::RequestMediaAccessPermission(
   permission_helper->RequestMediaAccessPermission(request, std::move(callback));
 }
 
+const void* const kJavaScriptDialogManagerKey = &kJavaScriptDialogManagerKey;
+
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
-  return this;
+  // Indirect these delegate methods through a helper object whose lifetime is
+  // bound to that of the content::WebContents. This prevents the
+  // content::WebContents from calling methods on the Electron WebContents in
+  // the event that the Electron one is destroyed before the content one, as
+  // happens sometimes during shutdown or when webviews are involved.
+  class JSDialogManagerHelper : public content::JavaScriptDialogManager,
+                                public base::SupportsUserData::Data {
+   public:
+    void RunJavaScriptDialog(content::WebContents* web_contents,
+                             content::RenderFrameHost* rfh,
+                             content::JavaScriptDialogType dialog_type,
+                             const std::u16string& message_text,
+                             const std::u16string& default_prompt_text,
+                             DialogClosedCallback callback,
+                             bool* did_suppress_message) override {
+      auto* wc = WebContents::From(web_contents);
+      if (wc)
+        wc->RunJavaScriptDialog(web_contents, rfh, dialog_type, message_text,
+                                default_prompt_text, std::move(callback),
+                                did_suppress_message);
+    }
+    void RunBeforeUnloadDialog(content::WebContents* web_contents,
+                               content::RenderFrameHost* rfh,
+                               bool is_reload,
+                               DialogClosedCallback callback) override {
+      auto* wc = WebContents::From(web_contents);
+      if (wc)
+        wc->RunBeforeUnloadDialog(web_contents, rfh, is_reload,
+                                  std::move(callback));
+    }
+    void CancelDialogs(content::WebContents* web_contents,
+                       bool reset_state) override {
+      auto* wc = WebContents::From(web_contents);
+      if (wc)
+        wc->CancelDialogs(web_contents, reset_state);
+    }
+  };
+  if (!source->GetUserData(kJavaScriptDialogManagerKey))
+    source->SetUserData(kJavaScriptDialogManagerKey,
+                        std::make_unique<JSDialogManagerHelper>());
+
+  return static_cast<JSDialogManagerHelper*>(
+      source->GetUserData(kJavaScriptDialogManagerKey));
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {
