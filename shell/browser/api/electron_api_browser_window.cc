@@ -69,6 +69,9 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.SetHidden("webContents", value);
   }
 
+  if (!web_preferences.Has(options::kShow))
+    web_preferences.Set(options::kShow, true);
+
   // Creates the WebContentsView.
   gin::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);

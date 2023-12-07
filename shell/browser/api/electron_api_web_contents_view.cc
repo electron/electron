@@ -122,8 +122,6 @@ gin::Handle<WebContentsView> WebContentsView::Create(
   v8::Local<v8::Value> arg = gin::DataObjectBuilder(isolate)
                                  .Set("webPreferences", web_preferences)
                                  .Build();
-  if (!web_preferences.Has(options::kShow))
-    gin::Dictionary(isolate, arg.As<v8::Object>()).Set(options::kShow, true);
   v8::Local<v8::Object> web_contents_view_obj;
   if (GetConstructor(isolate)
           ->NewInstance(context, 1, &arg)
