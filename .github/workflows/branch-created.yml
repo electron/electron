@@ -1,6 +1,12 @@
 name: Branch Created
 
 on:
+  workflow_dispatch:
+    inputs:
+      branch-name:
+        description: Branch name (e.g. `29-x-y`)
+        required: true
+        type: string
   create:
 
 permissions: {}
@@ -8,7 +14,7 @@ permissions: {}
 jobs:
   release-branch-created:
     name: Release Branch Created
-    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller')) }}
     permissions:
       contents: read
       pull-requests: write
@@ -18,10 +24,10 @@ jobs:
       - name: Determine Major Version
         id: check-major-version
         run: |
-          if [[ ${{ github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
+          if [[ ${{ github.event.inputs.branch-name || github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
             echo "MAJOR=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
-            echo "Not a release branch: ${{ github.event.ref }}"
+            echo "Not a release branch: ${{ github.event.inputs.branch-name || github.event.ref }}"
           fi
       - name: New Release Branch Tasks
         if: ${{ steps.check-major-version.outputs.MAJOR }}
@@ -93,7 +99,9 @@ jobs:
           project-number: 64
           # TODO - Set to public once GitHub fixes their GraphQL bug
           # public: true
-          link-to-repository: electron/electron
+          # TODO - Enable once GitHub doesn't require overly broad, read
+          #        and write permission for repo "Contents" to link
+          # link-to-repository: electron/electron
           template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
           title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
