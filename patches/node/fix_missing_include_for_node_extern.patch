@@ -13,7 +13,7 @@ causing the following error:
 This should be upstreamed.
 
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index c51eb99ce3eb54bc30ae922e0357b637b09d53c6..55317ced78ee9ceaa13f7e00477c59370eb335fa 100644
+index 23a0d7aee1dfa0ebe26e0507e31eacb0b4d137ed..0733017d8e1ac6e60589082b402bd44a98ddc312 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -7,6 +7,7 @@

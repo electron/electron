@@ -6,7 +6,7 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 917ba90a1c..66dfd7c1e5 100644
+index 917ba90a1c8bbbff5d86e5f2079d1ce67237280e..66dfd7c1e521f38691e4656ac7ab0572a2fe75da 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -67,6 +67,8 @@ function prepareWorkerThreadExecution() {

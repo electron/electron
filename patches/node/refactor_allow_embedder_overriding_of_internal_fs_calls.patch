@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 7a773d5208..45e38ca0a1 100644
+index 7a773d5208e250abd8b0efb6dde66c45060bbee4..45e38ca0a122e3b1c5d8d59865f9610c19bdbd54 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -134,6 +134,10 @@ process.domain = null;
@@ -22,7 +22,7 @@ index 7a773d5208..45e38ca0a1 100644
  const binding = internalBinding('builtins');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index f408d6c152..ea3b411a78 100644
+index f408d6c152d6acabea5ff3e262fe344909046595..ea3b411a78495d0414b1956503b86cbd5f0ed765 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -96,6 +96,7 @@ const assert = require('internal/assert');
@@ -43,7 +43,7 @@ index f408d6c152..ea3b411a78 100644
      // Only set cache when `internalModuleStat(filename)` succeeds.
      statCache.set(filename, result);
 diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
-index 88c079d10d..146e2e49dc 100644
+index 88c079d10d116107aa34dc9281f64c799c48c0b5..146e2e49dc46c7f5302638f75cca4af548509d77 100644
 --- a/lib/internal/modules/package_json_reader.js
 +++ b/lib/internal/modules/package_json_reader.js
 @@ -13,6 +13,7 @@ const {

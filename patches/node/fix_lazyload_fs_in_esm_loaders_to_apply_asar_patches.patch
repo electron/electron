@@ -38,7 +38,7 @@ index f108b567a910805ff86f0baf75fa1a6102ad28d6..8406e8ca319533d6186c5d457e951b7a
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index acfcc1f1f92548117ded857fa8d4dd140e07ab2b..ce8092b96aee8d09ff382110db4be62dcd760cce 100644
+index 2d077cc182b40e0bdce2d71d0471e96e6d30222a..34fd6613fa24d628fc026ac11e5be7217a20fff4 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {
@@ -50,7 +50,7 @@ index acfcc1f1f92548117ded857fa8d4dd140e07ab2b..ce8092b96aee8d09ff382110db4be62d
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
-@@ -235,7 +235,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -257,7 +257,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {

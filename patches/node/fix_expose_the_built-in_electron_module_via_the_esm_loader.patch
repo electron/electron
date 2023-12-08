@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 1931688e85..afccc24392 100644
+index 1931688e85d05ee2da4f88efb05d635cb43be233..afccc24392abff9eef2b9953fcffeb79ee71ad15 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -30,6 +30,7 @@ const protocolHandlers = {
@@ -18,7 +18,7 @@ index 1931688e85..afccc24392 100644
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 6f9b73abd8..f108b567a9 100644
+index 6f9b73abd8a76191714f12d68c01a881653d8d4a..f108b567a910805ff86f0baf75fa1a6102ad28d6 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -140,7 +140,7 @@ async function defaultLoad(url, context = kEmptyObject) {
@@ -48,7 +48,7 @@ index 6f9b73abd8..f108b567a9 100644
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 58e7df07ca..2d077cc182 100644
+index 58e7df07ca5275e3a684f30c3d0a3f901d000fb8..2d077cc182b40e0bdce2d71d0471e96e6d30222a 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -731,6 +731,8 @@ function packageImportsResolve(name, base, conditions) {
@@ -73,7 +73,7 @@ index 58e7df07ca..2d077cc182 100644
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 7a62615cfe..bda102b266 100644
+index 7a62615cfe4210c9fd83c6bfa3b5da19eec5fff2..bda102b266b17936efc453d039213517c4ef921c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -280,7 +280,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
@@ -108,7 +108,7 @@ index 7a62615cfe..bda102b266 100644
  // or as the initial entry point when the ESM loader handles a CommonJS entry.
  translators.set('commonjs', async function commonjsStrategy(url, source,
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index a58f96aee7..ae618cdeac 100644
+index a58f96aee7cc424ce18fe647afff8724f8a179a0..ae618cdeac1dfa1fd0ddcceb9edc83e06c59fc4b 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -1389,6 +1389,8 @@ function fileURLToPath(path) {
