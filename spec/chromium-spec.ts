@@ -2415,6 +2415,7 @@ describe('chromium features', () => {
         w.webContents.executeJavaScript('alert("hello")', true);
         await p;
         w.webContents.close();
+        await setTimeout();
       });
     });
 

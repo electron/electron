@@ -294,6 +294,7 @@ for:
     test_script:
       # Workaround for https://github.com/appveyor/ci/issues/2420
       - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
+      - set "CRASH_DUMP_PATH=%cd%\crashes"
       - ps: |
           cd src
           New-Item .\out\Default\gen\node_headers\Release -Type directory
@@ -312,6 +313,8 @@ for:
       - echo "Done verifying mksnapshot"
       - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
+    after_test:
+      - "appveyor-retry appveyor PushArtifact crashes"
 
     on_finish:
       # Uncomment these lines to enable RDP
