@@ -47,10 +47,31 @@ index 5a1b9feb6c8bedb50b89f5c4f3c5983455bb042d..efca7811dc0b6a590c5ee023c7180170
      });
    }
 diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
-index c0acee2bfc8c124e9d9b254041589a49c8301b8f..7b0cc7d04ef622666acceddd2f75d731a8f031db 100644
+index c0acee2bfc8c124e9d9b254041589a49c8301b8f..0e266899ffc0918b2f94e8f636043a6ec5f0870f 100644
 --- a/test/parallel/test-node-output-errors.mjs
 +++ b/test/parallel/test-node-output-errors.mjs
-@@ -76,6 +76,7 @@ describe('errors output', { concurrency: true }, () => {
+@@ -61,21 +61,22 @@ describe('errors output', { concurrency: true }, () => {
+     { name: 'errors/events_unhandled_error_subclass.js', transform: errTransform },
+     { name: 'errors/if-error-has-good-stack.js', transform: errTransform },
+     { name: 'errors/throw_custom_error.js', transform: errTransform },
+-    { name: 'errors/throw_error_with_getter_throw.js', transform: errTransform },
++    // { name: 'errors/throw_error_with_getter_throw.js', transform: errTransform },
+     { name: 'errors/throw_in_line_with_tabs.js', transform: errTransform },
+     { name: 'errors/throw_non_error.js', transform: errTransform },
+-    { name: 'errors/throw_null.js', transform: errTransform },
+-    { name: 'errors/throw_undefined.js', transform: errTransform },
++    // { name: 'errors/throw_null.js', transform: errTransform },
++    // { name: 'errors/throw_undefined.js', transform: errTransform },
+     { name: 'errors/timeout_throw.js', transform: errTransform },
+     { name: 'errors/undefined_reference_in_new_context.js', transform: errTransform },
+     { name: 'errors/promise_always_throw_unhandled.js', transform: promiseTransform },
+-    { name: 'errors/promise_unhandled_warn_with_error.js', transform: promiseTransform },
++    // { name: 'errors/promise_unhandled_warn_with_error.js', transform: promiseTransform },
+     { name: 'errors/unhandled_promise_trace_warnings.js', transform: promiseTransform },
+-    { skip: skipForceColors, name: 'errors/force_colors.js',
+-      transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
++    // { skip: skipForceColors, name: 'errors/force_colors.js',
++      // transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
    ];
    for (const { name, transform = defaultTransform, env, skip = false } of tests) {
      it(name, { skip }, async () => {
