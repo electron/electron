@@ -35,6 +35,10 @@ class TrayIconCocoa : public TrayIcon {
   void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
   gfx::Rect GetBounds() override;
 
+  base::WeakPtr<TrayIconCocoa> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   // Electron custom view for NSStatusItem.
   StatusItemView* __strong status_item_view_;

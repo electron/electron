@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 3e7608703c8e7ab212a283a5db512ec7e6bdc1e6..75a8ae51753b183bd3cdefb0ae41bb9e18da1157 100644
+index 85fa160062d503fcd2a3000ef263c6b85cebc12a..823ed64b3793b5c030bde100540b15a8c439ea9e 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1880,6 +1880,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 0e5ecb97bff85e0775a840f205893b5d6d12f38e..986f9a6f3de813feb16711d65d03dc8200215e27 100644
+index ab5742a30a9d8319ec4596bb99313ea05841e316..5ffc2a38f66f3ab2c82102e996f8e9314da1286e 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@
@@ -159,7 +159,7 @@ index 0e5ecb97bff85e0775a840f205893b5d6d12f38e..986f9a6f3de813feb16711d65d03dc82
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -342,6 +343,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -266,6 +267,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -170,7 +170,7 @@ index 0e5ecb97bff85e0775a840f205893b5d6d12f38e..986f9a6f3de813feb16711d65d03dc82
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2f2eb750b71e6a219af9f8601c6053a9799a0044..9d4daa0d5d2df9c55caad9881ee462e20beff2b9 100644
+index 8a4e2f567831f5a295346062302470d2705ad9a4..2f9d13f03fc943342c156b676a7244348943d85f 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -21,6 +21,7 @@
@@ -196,7 +196,7 @@ index 2f2eb750b71e6a219af9f8601c6053a9799a0044..9d4daa0d5d2df9c55caad9881ee462e2
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -340,6 +349,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
+@@ -342,6 +351,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
