@@ -34,7 +34,7 @@ index afe67d2237ae6933de44dd1141cf388e9a48cee3..87df6e1f32e584aa0c6ae21856299fff
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index f0b4cc43c864aee1fab8e073ea110ea108c653ab..6d12e27b955fb9fddab24d846e563c969bb48ae7 100644
+index de372400fd9cedb0a724ce434c8944760dd2d078..58eb4befb94a68aa8f27c11665e9d7b32fe472be 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -707,8 +707,10 @@ bool Agent::Start(const std::string& path,
@@ -51,10 +51,10 @@ index f0b4cc43c864aee1fab8e073ea110ea108c653ab..6d12e27b955fb9fddab24d846e563c96
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index dcce529664e1d126115545d6ba7f5b8492b0e921..99d2e1384df4000d4e1f1ffeafa83d29a152054b 100644
+index 74a097279d3e5dc3ee6c5e609fd35cf44e5002f5..868366f6d3e35d0fe543c89efd7d5e313a831a96 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -654,7 +654,11 @@ enum Flags : uint64_t {
+@@ -656,7 +656,11 @@ enum Flags : uint64_t {
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where one has already been created,
    // e.g. Blink's in Chromium.

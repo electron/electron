@@ -6,12 +6,12 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 14d5236d0ead946acf9a2f63bf979e7193bfbf56..74136abfb9aae1fc8ab746908be752056b6d7c5a 100644
+index f108b567a910805ff86f0baf75fa1a6102ad28d6..8406e8ca319533d6186c5d457e951b7a845b6b72 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const { kEmptyObject } = require('internal/util');
  const { defaultGetFormat } = require('internal/modules/esm/get_format');
- const { validateAssertions } = require('internal/modules/esm/assert');
+ const { validateAttributes, emitImportAssertionWarning } = require('internal/modules/esm/assert');
  const { getOptionValue } = require('internal/options');
 -const { readFileSync } = require('fs');
 +const fs = require('fs');
@@ -38,7 +38,7 @@ index 14d5236d0ead946acf9a2f63bf979e7193bfbf56..74136abfb9aae1fc8ab746908be75205
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index acfcc1f1f92548117ded857fa8d4dd140e07ab2b..ce8092b96aee8d09ff382110db4be62dcd760cce 100644
+index 2d077cc182b40e0bdce2d71d0471e96e6d30222a..34fd6613fa24d628fc026ac11e5be7217a20fff4 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {
@@ -50,7 +50,7 @@ index acfcc1f1f92548117ded857fa8d4dd140e07ab2b..ce8092b96aee8d09ff382110db4be62d
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
-@@ -235,7 +235,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -257,7 +257,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -60,28 +60,19 @@ index acfcc1f1f92548117ded857fa8d4dd140e07ab2b..ce8092b96aee8d09ff382110db4be62d
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 178f362b2869173d51b2e97a8d35a16ab4ed4962..4c3a0d8c484a402fe419a0bd45c7e2b1d717cb4a 100644
+index bda102b266b17936efc453d039213517c4ef921c..dbbe37474c70addfbf8cf805c29732dcd38c74f6 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -25,7 +25,7 @@ function lazyTypes() {
- }
+@@ -32,7 +32,7 @@ function lazyTypes() {
  
+ const { containsModuleSyntax } = internalBinding('contextify');
  const assert = require('internal/assert');
 -const { readFileSync } = require('fs');
 +const fs = require('fs');
  const { dirname, extname, isAbsolute } = require('path');
  const {
-   hasEsmSyntax,
-@@ -132,7 +132,7 @@ translators.set('module', async function moduleStrategy(url, source, isMain) {
-  */
- function enrichCJSError(err, content, filename) {
-   if (err != null && ObjectGetPrototypeOf(err) === SyntaxErrorPrototype &&
--      hasEsmSyntax(content || readFileSync(filename, 'utf-8'))) {
-+      hasEsmSyntax(content || fs.readFileSync(filename, 'utf-8'))) {
-     // Emit the warning synchronously because we are in the middle of handling
-     // a SyntaxError that will throw and likely terminate the process before an
-     // asynchronous warning would be emitted.
-@@ -294,7 +294,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+   loadBuiltinModule,
+@@ -355,7 +355,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
  
    try {
      // We still need to read the FS to detect the exports.
@@ -90,12 +81,12 @@ index 178f362b2869173d51b2e97a8d35a16ab4ed4962..4c3a0d8c484a402fe419a0bd45c7e2b1
    } catch {
      // Continue regardless of error.
    }
-@@ -357,7 +357,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -424,7 +424,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).
 -        const source = readFileSync(resolved, 'utf-8');
 +        const source = fs.readFileSync(resolved, 'utf-8');
          const { exportNames: reexportNames } = cjsPreparseModuleExports(resolved, source);
-         for (const name of reexportNames)
+         for (const name of reexportNames) {
            exportNames.add(name);

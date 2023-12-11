@@ -104,7 +104,7 @@ index c6120a655ec853aef11c66ed37d7ca0ffb957dd3..a52ca15cb0ab592d4196d4bd0f113324
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 3876adf7d72211d8d8c5a94564168094ecfc660b..ccd166d9439a821328d2ad35352488960206f65e 100644
+index 6e5bbe07d0c337b36f3157c2e6404fdc91849fd1..7ec682833213de9054a8c30751436d12baaea235 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -63,7 +63,7 @@ inline X509_STORE* GetOrCreateRootCertStore() {
@@ -240,6 +240,28 @@ index 3fa4a415dc911a13afd90dfb31c1ed4ad0fd268f..fa48dffc31342c44a1c1207b9d4c3dc7
    if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
      return EVPKeyCtxPointer();
  
+diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
+index c5dd2fb8fce40f2bf6f9a8543047ffb50cc08084..d850af9257cc194ee385130ce3cd2c0101b2455f 100644
+--- a/src/crypto/crypto_keys.cc
++++ b/src/crypto/crypto_keys.cc
+@@ -1241,6 +1241,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+ }
+ 
+ bool KeyObjectHandle::CheckEcKeyData() const {
++#ifndef OPENSSL_IS_BORINGSSL
+   MarkPopErrorOnReturn mark_pop_error_on_return;
+ 
+   const ManagedEVPPKey& key = data_->GetAsymmetricKey();
+@@ -1259,6 +1260,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+ #else
+   return EVP_PKEY_public_check(ctx.get()) == 1;
+ #endif
++#else
++  return true;
++#endif
+ }
+ 
+ void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
 index 245f352918696413f8f0f7cec94dbcec687685af..35c1c1ce9f0e3d59b75e3966d485bf70b846de5b 100644
 --- a/src/crypto/crypto_random.cc
@@ -254,10 +276,10 @@ index 245f352918696413f8f0f7cec94dbcec687685af..35c1c1ce9f0e3d59b75e3966d485bf70
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 3f8499457cf10765fa55e5018a26580f2c5ef15d..31647423be528949db744cbea43586ece5243bac 100644
+index f222ab9cf5ccbc5dd3399b18d7688efda6672c93..349abd4d06e7f624a071b994271dedc31dc9229a 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -610,10 +610,11 @@ Maybe<bool> GetRsaKeyDetail(
+@@ -616,10 +616,11 @@ Maybe<bool> GetRsaKeyDetail(
        }
  
        if (params->saltLength != nullptr) {
@@ -361,7 +383,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index b544f1209143c0d4a01b1df3257e5b2ba1d5bfee..f711ac936e76f9c16d15d7db759d0081a9eb018d 100644
+index 29cb7fc6b29b89946856990032645ad4edb8529c..faca807e31daaadb0103556001a16629a3822c1f 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -374,7 +396,7 @@ index b544f1209143c0d4a01b1df3257e5b2ba1d5bfee..f711ac936e76f9c16d15d7db759d0081
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index bc18a45e681a3cd8d26ea94862d7a6eb3a6631fc..08141c540c0c3fe4f2a4fe66bf75557a71a1d8e6 100644
+index 30955c779714ce5ad9b79f11e4cfefbcada7fa05..f02c07cd418fa2e3c64221bd37acd380a130f608 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

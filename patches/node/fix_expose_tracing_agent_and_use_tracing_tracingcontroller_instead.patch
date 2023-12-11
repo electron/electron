@@ -22,7 +22,7 @@ index 6a6164b6d294430b6f2fe826cdcef5a9cc3f9660..035f495687856b0cfbcc4e87ba6e90d5
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index ca01c42e8af484def476ba27cb270a0cc90226c9..dcce529664e1d126115545d6ba7f5b8492b0e921 100644
+index f2740116a4710be31d8c8d3a03f9ea3925301b31..74a097279d3e5dc3ee6c5e609fd35cf44e5002f5 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -132,6 +132,7 @@ struct SnapshotData;
@@ -33,7 +33,7 @@ index ca01c42e8af484def476ba27cb270a0cc90226c9..dcce529664e1d126115545d6ba7f5b84
  class TracingController;
  
  }
-@@ -772,6 +773,8 @@ NODE_EXTERN void GetNodeReport(Environment* env,
+@@ -774,6 +775,8 @@ NODE_EXTERN void GetNodeReport(Environment* env,
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(Environment* env);
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env);
  

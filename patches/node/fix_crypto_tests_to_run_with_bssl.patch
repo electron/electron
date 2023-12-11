@@ -381,7 +381,7 @@ index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af5
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index abbe1abe7e53d7bd113afb68b0e9af1e814c70bd..086a8e38021ed1a87be22246cdb4f5ceb56eee4c 100644
+index 3b738b7f47ec59ba718a92e3a0024fed45a9c87c..fabf5775a263804f5974b10cf73c6886d59bf1fa 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -55,18 +55,17 @@ const crypto = require('crypto');
@@ -411,7 +411,7 @@ index abbe1abe7e53d7bd113afb68b0e9af1e814c70bd..086a8e38021ed1a87be22246cdb4f5ce
      };
    }
  
-@@ -95,10 +94,16 @@ const crypto = require('crypto');
+@@ -99,10 +98,16 @@ const crypto = require('crypto');
  // Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
  {
    const g = 0;

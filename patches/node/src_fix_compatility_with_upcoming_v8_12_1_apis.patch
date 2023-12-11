@@ -55,10 +55,10 @@ index c9a455be8c395a2f231f56e0a54211466362aa1d..448075e354c760a2dbd1dd763f40b7a6
    void UntrackContext(v8::Local<v8::Context> context);
  
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 92f765eb0a99f92eac3ce77011e0ec787ccfcb8d..7e77c4692b4d9c4c5daa6ba01878a2219646eb62 100644
+index f08294a26a43923cfb47dde080e42b5cde0803a5..8d48105cb4822dde19982ce1c132f521ff8b27c9 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
-@@ -925,11 +925,8 @@ napi_define_class(napi_env env,
+@@ -961,11 +961,8 @@ napi_define_class(napi_env env,
              env, p->setter, p->data, &setter_tpl));
        }
  

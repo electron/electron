@@ -22,21 +22,20 @@ index 7a773d5208e250abd8b0efb6dde66c45060bbee4..45e38ca0a122e3b1c5d8d59865f9610c
  const binding = internalBinding('builtins');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 3161afa33889f1682a1689e76fbcadc397f4b01c..84fea979d482d3d5cacfad4b09237e6345675cad 100644
+index f408d6c152d6acabea5ff3e262fe344909046595..ea3b411a78495d0414b1956503b86cbd5f0ed765 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -91,7 +91,7 @@ const fs = require('fs');
- const internalFS = require('internal/fs/utils');
+@@ -96,6 +96,7 @@ const assert = require('internal/assert');
+ const fs = require('fs');
  const path = require('path');
- const { sep } = path;
--const { internalModuleStat } = internalBinding('fs');
+ const { internalModuleStat } = internalBinding('fs');
 +const internalFsBinding = internalBinding('fs');
  const { safeGetenv } = internalBinding('credentials');
  const {
    privateSymbols: {
-@@ -182,7 +182,7 @@ function stat(filename) {
+@@ -195,7 +196,7 @@ function stat(filename) {
      const result = statCache.get(filename);
-     if (result !== undefined) return result;
+     if (result !== undefined) { return result; }
    }
 -  const result = internalModuleStat(filename);
 +  const result = internalFsBinding.internalModuleStat(filename);
@@ -44,19 +43,18 @@ index 3161afa33889f1682a1689e76fbcadc397f4b01c..84fea979d482d3d5cacfad4b09237e63
      // Only set cache when `internalModuleStat(filename)` succeeds.
      statCache.set(filename, result);
 diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
-index c6377faae6f5a827fc9b5c271ebc85f2df2f7177..8143e83ee39a03871642cfd6e7b8671fc4c3454d 100644
+index 88c079d10d116107aa34dc9281f64c799c48c0b5..146e2e49dc46c7f5302638f75cca4af548509d77 100644
 --- a/lib/internal/modules/package_json_reader.js
 +++ b/lib/internal/modules/package_json_reader.js
-@@ -8,7 +8,7 @@ const {
- const {
+@@ -13,6 +13,7 @@ const {
    ERR_INVALID_PACKAGE_CONFIG,
  } = require('internal/errors').codes;
--const { internalModuleReadJSON } = internalBinding('fs');
+ const { internalModuleReadJSON } = internalBinding('fs');
 +const internalFsBinding = internalBinding('fs');
- const { toNamespacedPath } = require('path');
+ const { resolve, sep, toNamespacedPath } = require('path');
+ const permission = require('internal/process/permission');
  const { kEmptyObject } = require('internal/util');
- 
-@@ -48,7 +48,7 @@ function read(jsonPath, { base, specifier, isESM } = kEmptyObject) {
+@@ -53,7 +54,7 @@ function read(jsonPath, { base, specifier, isESM } = kEmptyObject) {
    const {
      0: string,
      1: containsKeys,

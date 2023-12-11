@@ -8,10 +8,10 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 84fea979d482d3d5cacfad4b09237e6345675cad..678ed0a7b43c30c5dd6102d83f490e23c95090ce 100644
+index ea3b411a78495d0414b1956503b86cbd5f0ed765..ad4946a6d121d38f413878a3dcc360012d568ef6 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1215,6 +1215,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1351,6 +1351,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -26,22 +26,24 @@ index 84fea979d482d3d5cacfad4b09237e6345675cad..678ed0a7b43c30c5dd6102d83f490e23
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 0dc769846b4e6fe84438cd6d8024c4a89eb90a9b..bff9bdc7ad58183e9eb04ee45b76592b4240952a 100644
+index 66dfd7c1e521f38691e4656ac7ab0572a2fe75da..5db54daaa9e7066561d1621f2f0a01032ca7ff22 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -204,11 +204,13 @@ function patchProcessObject(expandArgv1) {
+@@ -218,12 +218,14 @@ function patchProcessObject(expandArgv1) {
    if (expandArgv1 && process.argv[1] &&
        !StringPrototypeStartsWith(process.argv[1], '-')) {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {
--      process.argv[1] = path.resolve(process.argv[1]);
+-      mainEntry = path.resolve(process.argv[1]);
+-      process.argv[1] = mainEntry;
 -    } catch {
 -      // Continue regardless of error.
 +    if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
 +      const path = require('path');
 +      try {
-+        process.argv[1] = path.resolve(process.argv[1]);
++        mainEntry = path.resolve(process.argv[1]);
++        process.argv[1] = mainEntry;
 +      } catch {
 +        // Continue regardless of error.
 +      }
