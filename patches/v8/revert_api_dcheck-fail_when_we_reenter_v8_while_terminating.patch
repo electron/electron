@@ -10,6 +10,9 @@ This change causes Electron to crash. :(
 This patch is meant to be temporary and should be removed after more
 investigation and potentially a refactor.
 
+Xref: https://chromium-review.googlesource.com/c/v8/v8/+/5075293
+Xref: https://github.com/electron/electron/issues/40741
+
 diff --git a/src/api/api-macros.h b/src/api/api-macros.h
 index fa272148c4553a2cbfe2438b2770d2fe5cde9a38..08fa9f799b217eb1565d28aa4f86eb5e0001422e 100644
 --- a/src/api/api-macros.h
@@ -36,107 +39,3 @@ index fa272148c4553a2cbfe2438b2770d2fe5cde9a38..08fa9f799b217eb1565d28aa4f86eb5e
    InternalEscapableScope handle_scope(i_isolate);                              \
    CallDepthScope<false> call_depth_scope(i_isolate, v8::Local<v8::Context>()); \
    i::VMState<v8::OTHER> __state__((i_isolate));                                \
-diff --git a/test/unittests/execution/thread-termination-unittest.cc b/test/unittests/execution/thread-termination-unittest.cc
-index cce3969a127355643f2d872f45adbe5007062a2c..4c7c23c304f4d5b3c1833de73ca04ccf21892077 100644
---- a/test/unittests/execution/thread-termination-unittest.cc
-+++ b/test/unittests/execution/thread-termination-unittest.cc
-@@ -372,6 +372,99 @@ TEST_F(ThreadTerminationTest, TerminateLoadICException) {
- Persistent<String> reenter_script_1;
- Persistent<String> reenter_script_2;
- 
-+void ReenterAfterTermination(const FunctionCallbackInfo<Value>& info) {
-+  CHECK(i::ValidateCallbackInfo(info));
-+  TryCatch try_catch(info.GetIsolate());
-+  Isolate* isolate = info.GetIsolate();
-+  CHECK(!isolate->IsExecutionTerminating());
-+  Local<String> script = Local<String>::New(isolate, reenter_script_1);
-+  MaybeLocal<Value> result =
-+      CompileRun(Isolate::GetCurrent()->GetCurrentContext(), script);
-+  CHECK(result.IsEmpty());
-+  CHECK(try_catch.HasCaught());
-+  CHECK(try_catch.Exception()->IsNull());
-+  CHECK(try_catch.Message().IsEmpty());
-+  CHECK(!try_catch.CanContinue());
-+  CHECK(try_catch.HasTerminated());
-+  CHECK(isolate->IsExecutionTerminating());
-+  script = Local<String>::New(isolate, reenter_script_2);
-+  MaybeLocal<Script> compiled_script =
-+      Script::Compile(isolate->GetCurrentContext(), script);
-+  CHECK(compiled_script.IsEmpty());
-+}
-+
-+// Test that reentry into V8 while the termination exception is still pending
-+// (has not yet unwound the 0-level JS frame) does not crash.
-+TEST_F(ThreadTerminationTest, TerminateAndReenterFromThreadItself) {
-+  HandleScope scope(isolate());
-+  Local<ObjectTemplate> global = CreateGlobalTemplate(
-+      isolate(), TerminateCurrentThread, ReenterAfterTermination);
-+  Local<Context> context = Context::New(isolate(), nullptr, global);
-+  Context::Scope context_scope(context);
-+  CHECK(!isolate()->IsExecutionTerminating());
-+  // Create script strings upfront as it won't work when terminating.
-+  reenter_script_1.Reset(isolate(), NewString("function f() {"
-+                                              "  var term = true;"
-+                                              "  try {"
-+                                              "    while(true) {"
-+                                              "      if (term) terminate();"
-+                                              "      term = false;"
-+                                              "    }"
-+                                              "    fail();"
-+                                              "  } catch(e) {"
-+                                              "    fail();"
-+                                              "  }"
-+                                              "}"
-+                                              "f()"));
-+  reenter_script_2.Reset(isolate(), NewString("function f() { fail(); } f()"));
-+  TryRunJS("try { loop(); fail(); } catch(e) { fail(); }");
-+  CHECK(!isolate()->IsExecutionTerminating());
-+  // Check we can run JS again after termination.
-+  CHECK(RunJS("function f() { return true; } f()")->IsTrue());
-+  reenter_script_1.Reset();
-+  reenter_script_2.Reset();
-+}
-+
-+TEST_F(ThreadTerminationTest,
-+       TerminateAndReenterFromThreadItselfWithOuterTryCatch) {
-+  HandleScope scope(isolate());
-+  Local<ObjectTemplate> global = CreateGlobalTemplate(
-+      isolate(), TerminateCurrentThread, ReenterAfterTermination);
-+  Local<Context> context = Context::New(isolate(), nullptr, global);
-+  Context::Scope context_scope(context);
-+  CHECK(!isolate()->IsExecutionTerminating());
-+  // Create script strings upfront as it won't work when terminating.
-+  reenter_script_1.Reset(isolate(), NewString("function f() {"
-+                                              "  var term = true;"
-+                                              "  try {"
-+                                              "    while(true) {"
-+                                              "      if (term) terminate();"
-+                                              "      term = false;"
-+                                              "    }"
-+                                              "    fail();"
-+                                              "  } catch(e) {"
-+                                              "    fail();"
-+                                              "  }"
-+                                              "}"
-+                                              "f()"));
-+  reenter_script_2.Reset(isolate(), NewString("function f() { fail(); } f()"));
-+  {
-+    TryCatch try_catch(isolate());
-+    TryRunJS("try { loop(); fail(); } catch(e) { fail(); }");
-+    CHECK(try_catch.HasCaught());
-+    CHECK(try_catch.Exception()->IsNull());
-+    CHECK(try_catch.Message().IsEmpty());
-+    CHECK(!try_catch.CanContinue());
-+    CHECK(try_catch.HasTerminated());
-+    CHECK(isolate()->IsExecutionTerminating());
-+  }
-+  CHECK(!isolate()->IsExecutionTerminating());
-+  // Check we can run JS again after termination.
-+  CHECK(RunJS("function f() { return true; } f()")->IsTrue());
-+  reenter_script_1.Reset();
-+  reenter_script_2.Reset();
-+}
-+
- void DoLoopCancelTerminate(const FunctionCallbackInfo<Value>& info) {
-   CHECK(i::ValidateCallbackInfo(info));
-   Isolate* isolate = info.GetIsolate();
