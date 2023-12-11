@@ -12,12 +12,7 @@ process.on('uncaughtException', (err) => {
 process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
-const { app, protocol, crashReporter } = require('electron');
-
-if (process.env.CRASH_DUMP_PATH) {
-  app.setPath('crashDumps', process.env.CRASH_DUMP_PATH);
-  crashReporter.start({ uploadToServer: false });
-}
+const { app, protocol } = require('electron');
 
 // Some Linux machines have broken hardware acceleration support.
 if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
