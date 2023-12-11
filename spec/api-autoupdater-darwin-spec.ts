@@ -3,95 +3,32 @@ import * as cp from 'node:child_process';
 import * as http from 'node:http';
 import * as express from 'express';
 import * as fs from 'fs-extra';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import * as psList from 'ps-list';
 import { AddressInfo } from 'node:net';
 import { ifdescribe, ifit } from './lib/spec-helpers';
+import { copyApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn, withTempDirectory } from './lib/codesign-helpers';
 import * as uuid from 'uuid';
 import { autoUpdater, systemPreferences } from 'electron';
 
-const features = process._linkedBinding('electron_common_features');
-
-const fixturesPath = path.resolve(__dirname, 'fixtures');
-
 // We can only test the auto updater on darwin non-component builds
-ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
+ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
 
   beforeEach(function () {
-    const result = cp.spawnSync(path.resolve(__dirname, '../script/codesign/get-trusted-identity.sh'));
-    if (result.status !== 0 || result.stdout.toString().trim().length === 0) {
-      // Per https://circleci.com/docs/2.0/env-vars:
-      // CIRCLE_PR_NUMBER is only present on forked PRs
-      if (process.env.CI && !process.env.CIRCLE_PR_NUMBER) {
-        throw new Error('No valid signing identity available to run autoUpdater specs');
-      }
-
+    const result = getCodesignIdentity();
+    if (result === null) {
       this.skip();
     } else {
-      identity = result.stdout.toString().trim();
+      identity = result;
     }
   });
 
   it('should have a valid code signing identity', () => {
     expect(identity).to.be.a('string').with.lengthOf.at.least(1);
   });
-
-  const copyApp = async (newDir: string, fixture = 'initial') => {
-    const appBundlePath = path.resolve(process.execPath, '../../..');
-    const newPath = path.resolve(newDir, 'Electron.app');
-    cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
-    const appDir = path.resolve(newPath, 'Contents/Resources/app');
-    await fs.mkdirp(appDir);
-    await fs.copy(path.resolve(fixturesPath, 'auto-update', fixture), appDir);
-    const plistPath = path.resolve(newPath, 'Contents', 'Info.plist');
-    await fs.writeFile(
-      plistPath,
-      (await fs.readFile(plistPath, 'utf8')).replace('<key>BuildMachineOSBuild</key>', `<key>NSAppTransportSecurity</key>
-      <dict>
-          <key>NSAllowsArbitraryLoads</key>
-          <true/>
-          <key>NSExceptionDomains</key>
-          <dict>
-              <key>localhost</key>
-              <dict>
-                  <key>NSExceptionAllowsInsecureHTTPLoads</key>
-                  <true/>
-                  <key>NSIncludesSubdomains</key>
-                  <true/>
-              </dict>
-          </dict>
-      </dict><key>BuildMachineOSBuild</key>`)
-    );
-    return newPath;
-  };
-
-  const spawn = (cmd: string, args: string[], opts: any = {}) => {
-    let out = '';
-    const child = cp.spawn(cmd, args, opts);
-    child.stdout.on('data', (chunk: Buffer) => {
-      out += chunk.toString();
-    });
-    child.stderr.on('data', (chunk: Buffer) => {
-      out += chunk.toString();
-    });
-    return new Promise<{ code: number, out: string }>((resolve) => {
-      child.on('exit', (code, signal) => {
-        expect(signal).to.equal(null);
-        resolve({
-          code: code!,
-          out
-        });
-      });
-    });
-  };
-
-  const signApp = (appPath: string) => {
-    return spawn('codesign', ['-s', identity, '--deep', '--force', appPath]);
-  };
 
   const launchApp = (appPath: string, args: string[] = []) => {
     return spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
@@ -105,17 +42,6 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
     const processes = await psList();
     const activeShipIts = processes.filter(p => p.cmd?.includes('Squirrel.framework/Resources/ShipIt com.github.Electron.ShipIt') && p.cmd!.startsWith(appPath));
     return activeShipIts;
-  };
-
-  const withTempDirectory = async (fn: (dir: string) => Promise<void>, autoCleanUp = true) => {
-    const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
-    try {
-      await fn(dir);
-    } finally {
-      if (autoCleanUp) {
-        cp.spawnSync('rm', ['-r', dir]);
-      }
-    }
   };
 
   const logOnError = (what: any, fn: () => void) => {
@@ -151,7 +77,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
           (await fs.readFile(infoPath, 'utf8')).replace(/(<key>CFBundleShortVersionString<\/key>\s+<string>)[^<]+/g, `$1${version}`)
         );
         await mutateAppPreSign?.mutate(secondAppPath);
-        await signApp(secondAppPath);
+        await signApp(secondAppPath, identity);
         await mutateAppPostSign?.mutate(secondAppPath);
         updateZipPath = path.resolve(dir, 'update.zip');
         await spawn('zip', ['-0', '-r', '--symlinks', updateZipPath, './'], {
@@ -183,7 +109,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
   it('should cleanly set the feed URL when the app is signed', async () => {
     await withTempDirectory(async (dir) => {
       const appPath = await copyApp(dir);
-      await signApp(appPath);
+      await signApp(appPath, identity);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
       expect(launchResult.code).to.equal(0);
       expect(launchResult.out).to.include('Feed URL Set: http://myupdate');
@@ -224,7 +150,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
     it('should hit the update endpoint when checkForUpdates is called', async () => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyApp(dir, 'check');
-        await signApp(appPath);
+        await signApp(appPath, identity);
         server.get('/update-check', (req, res) => {
           res.status(204).send();
         });
@@ -241,7 +167,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
     it('should hit the update endpoint with customer headers when checkForUpdates is called', async () => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyApp(dir, 'check-with-headers');
-        await signApp(appPath);
+        await signApp(appPath, identity);
         server.get('/update-check', (req, res) => {
           res.status(204).send();
         });
@@ -258,7 +184,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
     it('should hit the download endpoint when an update is available and error if the file is bad', async () => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyApp(dir, 'update');
-        await signApp(appPath);
+        await signApp(appPath, identity);
         server.get('/update-file', (req, res) => {
           res.status(500).send('This is not a file');
         });
@@ -298,7 +224,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
           infoPath,
           (await fs.readFile(infoPath, 'utf8')).replace(/(<key>CFBundleShortVersionString<\/key>\s+<string>)[^<]+/g, '$11.0.0')
         );
-        await signApp(appPath);
+        await signApp(appPath, identity);
 
         const updateZipPath = await getOrCreateUpdateZipPath(opts.nextVersion, opts.endFixture, opts.mutateAppPreSign, opts.mutateAppPostSign);
 
