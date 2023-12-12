@@ -333,24 +333,31 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
+type LoadError = { errorCode: number, errorDescription: string, url: string };
+
 WebContents.prototype.loadURL = function (url, options) {
   const p = new Promise<void>((resolve, reject) => {
     const resolveAndCleanup = () => {
       removeListeners();
       resolve();
     };
-    const rejectAndCleanup = (errorCode: number, errorDescription: string, url: string) => {
+    let error: LoadError | undefined;
+    const rejectAndCleanup = ({ errorCode, errorDescription, url }: LoadError) => {
       const err = new Error(`${errorDescription} (${errorCode}) loading '${typeof url === 'string' ? url.substr(0, 2048) : url}'`);
       Object.assign(err, { errno: errorCode, code: errorDescription, url });
       removeListeners();
       reject(err);
     };
     const finishListener = () => {
-      resolveAndCleanup();
+      if (error) {
+        rejectAndCleanup(error);
+      } else {
+        resolveAndCleanup();
+      }
     };
     const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
-      if (isMainFrame) {
-        rejectAndCleanup(errorCode, errorDescription, validatedURL);
+      if (!error && isMainFrame) {
+        error = { errorCode, errorDescription, url: validatedURL };
       }
     };
 
@@ -368,7 +375,7 @@ WebContents.prototype.loadURL = function (url, options) {
           // considered navigation events but are triggered with isSameDocument.
           // We can ignore these to allow virtual routing on page load as long
           // as the routing does not leave the document
-          return rejectAndCleanup(-3, 'ERR_ABORTED', url);
+          return rejectAndCleanup({ errorCode: -3, errorDescription: 'ERR_ABORTED', url });
         }
         browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
@@ -383,7 +390,10 @@ WebContents.prototype.loadURL = function (url, options) {
       // TODO(jeremy): enumerate all the cases in which this can happen. If
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
-      rejectAndCleanup(-2, 'ERR_FAILED', url);
+      if (!error) {
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: url };
+      }
+      finishListener();
     };
     const finishListenerWhenUserInitiatedNavigation = () => {
       if (!browserInitiatedInPageNavigation) {
