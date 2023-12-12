@@ -158,7 +158,7 @@ int NodeMain(int argc, char* argv[]) {
 
     // Initialize feature list.
     auto feature_list = std::make_unique<base::FeatureList>();
-    feature_list->InitializeFromCommandLine("", "");
+    feature_list->InitFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
     // Explicitly register electron's builtin bindings.
