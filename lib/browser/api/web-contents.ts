@@ -776,7 +776,7 @@ WebContents.prototype._init = function () {
     const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
     try {
       const result = await promise;
-      if (abortController.signal.aborted) return;
+      if (abortController.signal.aborted || this.isDestroyed()) return;
       if (result.checkboxChecked) originCounts.set(origin, -1);
       return callback(result.response === 0, '');
     } finally {
