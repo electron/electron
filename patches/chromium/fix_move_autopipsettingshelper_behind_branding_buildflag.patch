@@ -167,3 +167,21 @@ index ff1ccc4bc2c5d365a53cdc85a97208f6f16b1d42..844dd798593fad4e16b03af26bbc7c65
  #endif  //! BUILDFLAG(IS_ANDROID)
  
    raw_ptr<content::PictureInPictureWindowController, DanglingUntriaged>
+diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
+index 9c878b85a1ac1e163d46d77ddc5e6ab0fafb52c4..269702a56e6bea17ef7a46e29d3f20a8199c5b36 100644
+--- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
++++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
+@@ -309,11 +309,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+   }
+ #endif  // BUILDFLAG(IS_WIN)
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   PictureInPictureOcclusionTracker* tracker =
+       PictureInPictureWindowManager::GetInstance()->GetOcclusionTracker();
+   if (tracker) {
+     tracker->OnPictureInPictureWidgetOpened(overlay_window.get());
+   }
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+   return overlay_window;
+ }
