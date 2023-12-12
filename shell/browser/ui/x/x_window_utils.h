@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/strings/string_piece.h"
 #include "ui/gfx/x/xproto.h"
 
 namespace electron {
@@ -16,7 +17,7 @@ namespace electron {
 void SetWMSpecState(x11::Window window, bool enabled, x11::Atom state);
 
 // Sets the _NET_WM_WINDOW_TYPE of window.
-void SetWindowType(x11::Window window, const std::string& type);
+void SetWindowType(x11::Window window, base::StringPiece type);
 
 // Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
 bool ShouldUseGlobalMenuBar();

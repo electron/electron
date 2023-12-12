@@ -6,15 +6,17 @@
 
 #include <memory>
 
+#include "base/containers/span.h"
 #include "base/environment.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
 #include "shell/common/thread_restrictions.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
-#include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
 
 namespace electron {
@@ -26,9 +28,9 @@ void SetWMSpecState(x11::Window window, bool enabled, x11::Atom state) {
        static_cast<uint32_t>(x11::Window::None), 1, 0});
 }
 
-void SetWindowType(x11::Window window, const std::string& type) {
-  std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
-  x11::Atom window_type = x11::GetAtom(type_prefix + base::ToUpperASCII(type));
+void SetWindowType(x11::Window window, const base::StringPiece type) {
+  const std::string type_name = base::StrCat({ "_NET_WM_WINDOW_TYPE_", base::ToUpperASCII(type) });
+  const x11::Atom window_type = x11::GetAtom(type_name.c_str());
   auto* connection = x11::Connection::Get();
   connection->SetProperty(window, x11::GetAtom("_NET_WM_WINDOW_TYPE"),
                           x11::Atom::ATOM, window_type);
