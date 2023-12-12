@@ -1,5 +1,4 @@
 build_gn.patch
-dcheck.patch
 accelerator.patch
 blink_file_path.patch
 blink_local_frame.patch
