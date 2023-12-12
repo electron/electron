@@ -20,7 +20,7 @@ namespace electron {
 SubmenuButton::SubmenuButton(PressedCallback callback,
                              const std::u16string& title,
                              const SkColor& background_color)
-    : views::MenuButton(callback, gfx::RemoveAccelerator(title)),
+    : views::MenuButton(std::move(callback), gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
 #if BUILDFLAG(IS_LINUX)
   // Dont' use native style border.
