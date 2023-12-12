@@ -14,6 +14,7 @@
 #include "shell/browser/ui/views/frameless_view.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/models/image_model.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/font_list.h"
 #include "ui/gfx/geometry/insets.h"
@@ -378,11 +379,12 @@ void ClientFrameViewLinux::UpdateButtonImages() {
 
     for (size_t state_id = 0; state_id < views::Button::STATE_COUNT;
          state_id++) {
-      views::Button::ButtonState state =
-          static_cast<views::Button::ButtonState>(state_id);
-      button.button->SetImage(
-          state, nav_button_provider_->GetImage(
-                     button.type, ButtonStateToNavButtonProviderState(state)));
+      auto button_state = static_cast<views::Button::ButtonState>(state_id);
+      auto provider_state = ButtonStateToNavButtonProviderState(button_state);
+      auto image_skia =
+          nav_button_provider_->GetImage(button.type, provider_state);
+      auto image_model = ui::ImageModel::FromImageSkia(image_skia);
+      button.button->SetImageModel(button_state, image_model);
     }
   }
 }
