@@ -202,6 +202,7 @@ const device::mojom::UsbDeviceInfo* ElectronUsbDelegate::GetDeviceInfo(
 
 bool ElectronUsbDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame,
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device) {
   if (IsDevicePermissionAutoGranted(origin, device))

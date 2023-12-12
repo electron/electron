@@ -113,18 +113,18 @@ index 18cca28edc35dadd4eb9173558d1764b1bf85dd5..4cda3b7f2db6be365e4edb9456e1f722
  }
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 9c9e590aab71d5b66cdd2c9a0cfc5f2d34443e84..c461c131d93d592487e319893d531bf4bdf14e39 100644
+index 1dc5478b8d0787a1cc82dc9fcb0227fed3f583c2..9a76f675ccdd4b173afa65aa05b733d456f30cff 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
-@@ -45,6 +45,7 @@ struct NotificationDatabaseData;
- class PlatformNotificationServiceProxy;
+@@ -46,6 +46,7 @@ class PlatformNotificationServiceProxy;
  class RenderProcessHost;
  class ServiceWorkerContextWrapper;
+ class WeakDocumentPtr;
 +class RenderFrameHost;
  
  // Implementation of the Web Notification storage context. The public methods
  // defined in this interface must only be called on the UI thread.
-@@ -78,6 +79,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
+@@ -79,6 +80,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
    // service is created by a dedicated worker, or is `nullptr` otherwise.
    void CreateService(
        RenderProcessHost* render_process_host,
