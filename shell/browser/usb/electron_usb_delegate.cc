@@ -8,9 +8,12 @@
 
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
+#include "base/feature_list.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "base/scoped_observation.h"
+#include "chrome/browser/usb/usb_blocklist.h"
+#include "content/public/browser/isolated_context_util.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
@@ -20,6 +23,7 @@
 #include "shell/browser/usb/usb_chooser_context_factory.h"
 #include "shell/browser/usb/usb_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "third_party/blink/public/common/features_generated.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/containers/fixed_flat_set.h"
@@ -202,13 +206,28 @@ const device::mojom::UsbDeviceInfo* ElectronUsbDelegate::GetDeviceInfo(
 
 bool ElectronUsbDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame,
     const url::Origin& origin,
-    const device::mojom::UsbDeviceInfo& device) {
-  if (IsDevicePermissionAutoGranted(origin, device))
+    const device::mojom::UsbDeviceInfo& device_info) {
+  if (IsDevicePermissionAutoGranted(origin, device_info))
     return true;
 
+  // Isolated context with permission to access the policy-controlled feature
+  // "usb-unrestricted" can bypass the USB blocklist.
+  bool is_usb_unrestricted = false;
+  if (base::FeatureList::IsEnabled(blink::features::kUnrestrictedUsb)) {
+    is_usb_unrestricted =
+        frame &&
+        frame->IsFeatureEnabled(
+            blink::mojom::PermissionsPolicyFeature::kUsbUnrestricted) &&
+        content::HasIsolatedContextCapability(frame);
+  }
+  if (!is_usb_unrestricted && UsbBlocklist::Get().IsExcluded(device_info)) {
+    return false;
+  }
+
   return GetChooserContext(browser_context)
-      ->HasDevicePermission(origin, device);
+      ->HasDevicePermission(origin, device_info);
 }
 
 void ElectronUsbDelegate::GetDevices(
