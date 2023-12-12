@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <clavin@DESKTOP-QVNUS47.fastel.com>
+Date: Thu, 7 Dec 2023 16:11:40 -0500
+Subject: Revert "[api] DCHECK-fail when we reenter V8 while terminating"
+
+This reverts commit 3eed17c6a12a0f33639aa5cffb822ebe42931ec8.
+
+This change causes Electron to crash. :(
+
+This patch is meant to be temporary and should be removed after more
+investigation and potentially a refactor.
+
+Xref: https://chromium-review.googlesource.com/c/v8/v8/+/5075293
+Xref: https://github.com/electron/electron/issues/40741
+
+diff --git a/src/api/api-macros.h b/src/api/api-macros.h
+index fa272148c4553a2cbfe2438b2770d2fe5cde9a38..08fa9f799b217eb1565d28aa4f86eb5e0001422e 100644
+--- a/src/api/api-macros.h
++++ b/src/api/api-macros.h
+@@ -48,7 +48,9 @@
+ #define ENTER_V8_HELPER_INTERNAL(i_isolate, context, class_name,    \
+                                  function_name, bailout_value,      \
+                                  HandleScopeClass, do_callback)     \
+-  DCHECK(!i_isolate->is_execution_terminating());                   \
++  if (i_isolate->is_execution_terminating()) {                      \
++    return bailout_value;                                           \
++  }                                                                 \
+   HandleScopeClass handle_scope(i_isolate);                         \
+   CallDepthScope<do_callback> call_depth_scope(i_isolate, context); \
+   API_RCS_SCOPE(i_isolate, class_name, function_name);              \
+@@ -56,7 +58,9 @@
+   bool has_pending_exception = false
+ 
+ #define PREPARE_FOR_DEBUG_INTERFACE_EXECUTION_WITH_ISOLATE(i_isolate, T)       \
+-  DCHECK(!i_isolate->is_execution_terminating());                              \
++  if (i_isolate->is_execution_terminating()) {                                 \
++    return MaybeLocal<T>();                                                    \
++  }                                                                            \
+   InternalEscapableScope handle_scope(i_isolate);                              \
+   CallDepthScope<false> call_depth_scope(i_isolate, v8::Local<v8::Context>()); \
+   i::VMState<v8::OTHER> __state__((i_isolate));                                \

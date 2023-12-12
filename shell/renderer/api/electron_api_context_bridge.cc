@@ -391,8 +391,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       blink::WebElement::FromV8Value(destination_context->GetIsolate(), value);
   if (!elem.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
-    return v8::MaybeLocal<v8::Value>(elem.ToV8Value(
-        destination_context->Global(), destination_context->GetIsolate()));
+    return v8::MaybeLocal<v8::Value>(
+        elem.ToV8Value(destination_context->GetIsolate()));
   }
 
   // Custom logic to "clone" Blob references

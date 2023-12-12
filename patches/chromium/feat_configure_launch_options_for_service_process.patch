@@ -183,7 +183,7 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 6c67113ad9983839366d413ebe42321c0afcbf18..c82d0c73632648f0979b494d2df08bada956324c 100644
+index 91ce1772691cb41c11685e5f1ab29db5ac01b58c..631070d54bd3a4362c240e914aa61cc915393a45 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -157,11 +157,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -227,7 +227,7 @@ index 6c67113ad9983839366d413ebe42321c0afcbf18..c82d0c73632648f0979b494d2df08bad
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -441,9 +461,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -440,9 +460,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX)
  
@@ -323,7 +323,7 @@ index 012069cada2220f6c1976107bc2e4ca6dcb7d7ca..a52a197eb51f8c00d7321f03ccb436ec
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index bf65aec1c2a8eb6a91d0d2815979dbedc0e4a09f..4025b4fd7950d40088aa1c1364a7e7aa16bc325e 100644
+index 2f3977d62535e299ef3b5954b9d67291afae2a57..edc825c691f7b55cd38fa31a9229fdf02bb5ff24 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -627,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 8a49455376de22710448ee13d069a64ae9168a28..30e547e7ea7660878c00b4c4fc3f7245ee924a57 100644
+index 322f0e4b0f944f220b4d700b2e508b445f1eb2c6..32566452055d66d4e7fe50c77105b679a4807440 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -724,11 +724,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -701,10 +701,10 @@ index 8a49455376de22710448ee13d069a64ae9168a28..30e547e7ea7660878c00b4c4fc3f7245
      return result;
  
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index 81698da8fef99a5a4732fea5a4d39380b1f6ce76..d0ccb176a20a472c3e8186b72718c320073d58e7 100644
+index 53b719a5724a06abd45cca25aa6f0c9ffb082523..2a3ca8c86c46f0b3d1722dcd289c343fe5838440 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
-@@ -52,7 +52,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
+@@ -53,7 +53,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
    static ResultCode StartSandboxedProcess(
        const base::CommandLine& cmd_line,
        const std::string& process_type,
@@ -713,7 +713,7 @@ index 81698da8fef99a5a4732fea5a4d39380b1f6ce76..d0ccb176a20a472c3e8186b72718c320
        SandboxDelegate* delegate,
        base::Process* process);
  
-@@ -66,7 +66,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
+@@ -67,7 +67,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
    static ResultCode GeneratePolicyForSandboxedProcess(
        const base::CommandLine& cmd_line,
        const std::string& process_type,
