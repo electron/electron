@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index d26d27fa9e960..5b67c748ec064 100644
+index d26d27fa9e960972aafd5b05b4e90146ce29c333..5b67c748ec06432201f4f23ed4f915212c058fa3 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -21,9 +21,11 @@
@@ -107,7 +107,7 @@ index d26d27fa9e960..5b67c748ec064 100644
    // Because we have to defer creating this until after the tab helper finds out
    // about pip, we don't care if there's already a helper.  Just use it.
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index ff1ccc4bc2c5d..844dd798593fa 100644
+index ff1ccc4bc2c5d365a53cdc85a97208f6f16b1d42..844dd798593fad4e16b03af26bbc7c6595ebbccd 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -12,6 +12,7 @@

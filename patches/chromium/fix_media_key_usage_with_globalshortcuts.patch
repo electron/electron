@@ -11,7 +11,7 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index fa5be7e4dbddd..1b3c65359bff4 100644
+index fa5be7e4dbddd8333263c412b84a1d93b2d5046a..1b3c65359bff41a96ff27aef6e979ac7e6e8518d 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
 @@ -7,6 +7,7 @@
@@ -46,7 +46,7 @@ index fa5be7e4dbddd..1b3c65359bff4 100644
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
    if (IsShortcutHandlingSuspended())
 diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index f96af14cb915c..2556abe433493 100644
+index f96af14cb915c8ab92b314ac15b6dffcdd6ec607..2556abe433493251ebd48d4aeddaa6d4f553208f 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.h
 +++ b/chrome/browser/extensions/global_shortcut_listener.h
 @@ -33,6 +33,8 @@ class GlobalShortcutListener {
@@ -59,7 +59,7 @@ index f96af14cb915c..2556abe433493 100644
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index cae4282d1f2ff..80ee4f64f1427 100644
+index cae4282d1f2ffdc55989ce118eaf154fc49082d7..80ee4f64f14275207e948336938e30d2efae2943 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -86,7 +86,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
