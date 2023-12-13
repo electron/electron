@@ -24,6 +24,7 @@
 #include "services/service_manager/public/cpp/local_interface_provider.h"
 
 class SpellCheck;
+class SpellCheckProvider;
 #endif
 
 namespace blink {
@@ -85,6 +86,7 @@ class RendererClientBase : public content::ContentRendererClient
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellCheck* GetSpellCheck() { return spellcheck_.get(); }
+  SpellCheckProvider* GetSpellCheckProvider(content::RenderFrame* render_frame);
 #endif
 
  protected:
