@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 27d84a5d61f39dc039608b8a1e84bca47cb8d5d3..5a9bdc6593a9262bdcf6d9ad007f6e9388892086 100644
+index c47b16044d29ff535d84404e3746135014c428d0..26403ff21388210eb36bc4b4d3bdfa4ba8b3622a 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -141,6 +141,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -146,6 +146,8 @@ class CONTENT_EXPORT RenderFrameObserver
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 27d84a5d61f39dc039608b8a1e84bca47cb8d5d3..5a9bdc6593a9262bdcf6d9ad007f6e93
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 7f9d758df761b1d7946d80900e35dec833dea48e..1443c3cbc7ad79fba2a3f42a172a97422a470170 100644
+index 4f41043e2fe4f3398bffb9c78d8f3d29b6a8484f..7f5f5254449bc32524a9725705f57af8a84f73b1 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4573,6 +4573,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4577,6 +4577,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -53,7 +53,7 @@ index 05c969e5ae96170ed9cf99bba6bb52ef11f9d158..16c4e4ef47d928bb3abf8650dd8af17c
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index bc8e5ac55bd663ecd95b7d61e899a13ae7e0c5bd..f7ca98a8b04fec36b3ccd1a75068e41787b21431 100644
+index 798e257fc160cc05e0c110e8cbf8fca98eb2d4d9..eb0f568f55a95959881c4cf62dc794eeaa666572 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -634,6 +634,9 @@ class BLINK_EXPORT WebLocalFrameClient {

@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8ee3c35ba55091d87ac633073123d081a9f95929..206b28406f0386816588f8a5de5610b417e529ab 100644
+index 5ee4d6381a206ce8fd85fd6f3e88dc47953c68d9..60d7878eeed06cf619a618164110ab2df10461de 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -143,6 +143,8 @@ viz_component("service") {
@@ -562,10 +562,10 @@ index febb2718cb34ea4d9f411f068d8c01a89c7db888..be8bd51cb61c20ef3df8552972a0ac2f
    gpu::SyncPointManager* GetSyncPointManager() override;
  };
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index da51b2b9c395df5db6915ec1ed401b29191a6d2c..77c987ad21aa4d9a7ae0fb971d7685715a999f12 100644
+index d149ead2520ed05c975119b81cc7b86701e1404f..4532417a34c6b24df2cd4bb96a0e0a463959dccf 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -413,8 +413,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -408,8 +408,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -618,10 +618,10 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index d2d3757f75a6b9bc1d08cf682644599cca5ddb68..efee0ac27ca9cf4f86a2558c3a98bc6d98520f6f 100644
+index 30f2e29532c5e781d7a329f8265193023a00b1d8..ae38020ebd9525795f53d4751b225cc30ac02d19 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -93,6 +93,7 @@ class DisplayPrivate;
+@@ -90,6 +90,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -629,7 +629,7 @@ index d2d3757f75a6b9bc1d08cf682644599cca5ddb68..efee0ac27ca9cf4f86a2558c3a98bc6d
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -149,6 +150,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -146,6 +147,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -646,7 +646,7 @@ index d2d3757f75a6b9bc1d08cf682644599cca5ddb68..efee0ac27ca9cf4f86a2558c3a98bc6d
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -192,6 +203,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -189,6 +200,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -656,7 +656,7 @@ index d2d3757f75a6b9bc1d08cf682644599cca5ddb68..efee0ac27ca9cf4f86a2558c3a98bc6d
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -543,6 +557,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -539,6 +553,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

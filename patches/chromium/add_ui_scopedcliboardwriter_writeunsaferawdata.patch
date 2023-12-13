@@ -8,7 +8,7 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index e27df1c5b234490a2679fc3428e59b92970f1ec0..54a0be1dde7d059f5102ead4a77b828eff1eeadb 100644
+index 5f28fee3f6d5e25a318e352f237cea2666671845..9bd5250012249ef0ac7b4013b448acc747dc9736 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
 @@ -239,6 +239,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
