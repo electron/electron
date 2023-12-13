@@ -61,8 +61,9 @@ The `protocol` module has the following methods:
 module gets emitted and can be called only once.
 
 Registers the `scheme` as standard, secure, bypasses content security policy for
-resources, allows registering ServiceWorker, supports fetch API, and streaming
-video/audio. Specify a privilege with the value of `true` to enable the capability.
+resources, allows registering ServiceWorker, supports fetch API, streaming
+video/audio, and V8 code cache. Specify a privilege with the value of `true` to
+enable the capability.
 
 An example of registering a privileged scheme, that bypasses Content Security
 Policy:

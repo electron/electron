@@ -114,6 +114,7 @@ extern const char kBypassCSPSchemes[];
 extern const char kFetchSchemes[];
 extern const char kCORSSchemes[];
 extern const char kStreamingSchemes[];
+extern const char kCodeCacheSchemes[];
 extern const char kAppUserModelId[];
 extern const char kAppPath[];
 
