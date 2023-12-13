@@ -1,1 +1,2 @@
 fix_expose_globals_to_allow_patching_devtools_dock.patch
+fix_active_trace_index_when_updating_models.patch
