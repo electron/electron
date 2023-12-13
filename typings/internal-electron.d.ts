@@ -41,6 +41,13 @@ declare namespace Electron {
     frameName: string;
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+
+    _browserViews: BrowserView[];
+  }
+
+  interface BrowserView {
+    ownerWindow: BrowserWindow | null
+    webContentsView: WebContentsView
   }
 
   interface BrowserWindowConstructorOptions {
@@ -87,6 +94,7 @@ declare namespace Electron {
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
     viewInstanceId: number;
+    _setOwnerWindow(w: BaseWindow | null): void;
   }
 
   interface WebFrameMain {
@@ -155,21 +163,6 @@ declare namespace Electron {
     _replyChannel: ReplyChannel;
   }
 
-  class View {}
-
-  // Experimental views API
-  class BaseWindow {
-    constructor(args: {show: boolean})
-    setContentView(view: View): void
-    static fromId(id: number): BaseWindow;
-    static getAllWindows(): BaseWindow[];
-    isFocused(): boolean;
-    static getFocusedWindow(): BaseWindow | undefined;
-    setMenu(menu: Menu): void;
-  }
-  class WebContentsView {
-    constructor(options: BrowserWindowConstructorOptions)
-  }
 
   // Deprecated / undocumented BrowserWindow methods
   interface BrowserWindow {
@@ -190,12 +183,6 @@ declare namespace Electron {
   interface Protocol {
     registerProtocol(scheme: string, handler: any): boolean;
     interceptProtocol(scheme: string, handler: any): boolean;
-  }
-
-  namespace Main {
-    class BaseWindow extends Electron.BaseWindow {}
-    class View extends Electron.View {}
-    class WebContentsView extends Electron.WebContentsView {}
   }
 }
 

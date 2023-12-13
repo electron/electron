@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import { BrowserWindow } from 'electron/main';
+import { BaseWindow, BrowserWindow } from 'electron/main';
 import { once } from 'node:events';
 
-async function ensureWindowIsClosed (window: BrowserWindow | null) {
+async function ensureWindowIsClosed (window: BaseWindow | null) {
   if (window && !window.isDestroyed()) {
-    if (window.webContents && !window.webContents.isDestroyed()) {
+    if (window instanceof BrowserWindow && window.webContents && !window.webContents.isDestroyed()) {
       // If a window isn't destroyed already, and it has non-destroyed WebContents,
       // then calling destroy() won't immediately destroy it, as it may have
       // <webview> children which need to be destroyed first. In that case, we
@@ -23,13 +23,13 @@ async function ensureWindowIsClosed (window: BrowserWindow | null) {
 }
 
 export const closeWindow = async (
-  window: BrowserWindow | null = null,
+  window: BaseWindow | null = null,
   { assertNotWindows } = { assertNotWindows: true }
 ) => {
   await ensureWindowIsClosed(window);
 
   if (assertNotWindows) {
-    const windows = BrowserWindow.getAllWindows();
+    const windows = BaseWindow.getAllWindows();
     try {
       expect(windows).to.have.lengthOf(0);
     } finally {
@@ -41,7 +41,7 @@ export const closeWindow = async (
 };
 
 export async function closeAllWindows () {
-  for (const w of BrowserWindow.getAllWindows()) {
+  for (const w of BaseWindow.getAllWindows()) {
     await closeWindow(w, { assertNotWindows: false });
   }
 }

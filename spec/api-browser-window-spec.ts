@@ -149,7 +149,7 @@ describe('BrowserWindow module', () => {
     it('should emit beforeunload handler', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
     });
 
     it('should not crash when keyboard event is sent before closing', async () => {
@@ -241,7 +241,7 @@ describe('BrowserWindow module', () => {
     it('should emit beforeunload event', async function () {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
     });
   });
 
@@ -4052,14 +4052,14 @@ describe('BrowserWindow module', () => {
     it('returning false would prevent close', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
-      const [, proceed] = await once(w.webContents, 'before-unload-fired');
+      const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('returning empty string would prevent close', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
       w.close();
-      const [, proceed] = await once(w.webContents, 'before-unload-fired');
+      const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
@@ -4075,9 +4075,9 @@ describe('BrowserWindow module', () => {
       // the SuddenTerminationStatus message have been flushed.
       await once(w.webContents, 'console-message');
       w.close();
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
       w.close();
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
 
       w.webContents.removeListener('destroyed', destroyListener);
       const wait = once(w, 'closed');
@@ -4097,7 +4097,7 @@ describe('BrowserWindow module', () => {
       // the SuddenTerminationStatus message have been flushed.
       await once(w.webContents, 'console-message');
       w.reload();
-      // Chromium does not emit 'before-unload-fired' on WebContents for
+      // Chromium does not emit '-before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
       // is fired.
       await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
@@ -4121,7 +4121,7 @@ describe('BrowserWindow module', () => {
       // the SuddenTerminationStatus message have been flushed.
       await once(w.webContents, 'console-message');
       w.loadURL('about:blank');
-      // Chromium does not emit 'before-unload-fired' on WebContents for
+      // Chromium does not emit '-before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
       // is fired.
       await emittedUntil(w.webContents, 'console-message', isBeforeUnload);

@@ -42,16 +42,15 @@ Compared to an `<iframe>`, `<webview>` tends to be slightly slower but offers
 much greater control in loading and communicating with the third-party content
 and handling various events.
 
-### BrowserViews
+### WebContentsView
 
-[BrowserViews](../api/browser-view.md) are not a part of the DOM - instead,
-they are created in and controlled by your Main process. They are simply
-another layer of web content on top of your existing window. This means
-that they are completely separate from your own `BrowserWindow` content and
-their position is not controlled by the DOM or CSS. Instead, it is controlled
-by setting the bounds in the Main process.
+[`WebContentsView`](../api/web-contents-view.md)s are not a part of the
+DOM—instead, they are created, controlled, positioned, and sized by your
+Main process. Using `WebContentsView`, you can combine and layer many pages
+together in the same [`BaseWindow`](../api/base-window.md).
 
-`BrowserViews` offer the greatest control over their contents, since they
-implement the `webContents` similarly to how the `BrowserWindow` does it.
-However, as `BrowserViews` are not a part of your DOM, but are rather overlaid
-on top of them, you will have to manage their position manually.
+`WebContentsView`s offer the greatest control over their contents, since they
+implement the `webContents` similarly to how `BrowserWindow` does it. However,
+as `WebContentsView`s are not elements inside the DOM, positioning them
+accurately with respect to DOM content requires coordination between the
+Main and Renderer processes.

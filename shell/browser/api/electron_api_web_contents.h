@@ -97,6 +97,8 @@ class OffScreenWebContentsView;
 
 namespace api {
 
+class BaseWindow;
+
 // Wrapper around the content::WebContents.
 class WebContents : public ExclusiveAccessContext,
                     public gin::Wrappable<WebContents>,
@@ -115,7 +117,9 @@ class WebContents : public ExclusiveAccessContext,
   enum class Type {
     kBackgroundPage,  // An extension background page.
     kBrowserWindow,   // Used by BrowserWindow.
-    kBrowserView,     // Used by BrowserView.
+    kBrowserView,     // Used by the JS implementation of BrowserView for
+                      // backwards compatibility. Otherwise identical to
+                      // kBrowserWindow.
     kRemote,          // Thin wrap around an existing WebContents.
     kWebView,         // Used by <webview>.
     kOffScreen,       // Used for offscreen rendering
@@ -399,6 +403,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetOwnerWindow(NativeWindow* owner_window);
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
+  void SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
@@ -468,6 +473,8 @@ class WebContents : public ExclusiveAccessContext,
                              DialogClosedCallback callback) override;
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
+
+  void SetBackgroundColor(absl::optional<SkColor> color);
 
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();

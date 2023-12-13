@@ -1,7 +1,5 @@
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
-declare const ENABLE_VIEWS_API: boolean;
-
 declare namespace NodeJS {
   interface ModuleInternal extends NodeJS.Module {
     new(id: string, parent?: NodeJS.Module | null): NodeJS.Module;
@@ -18,7 +16,6 @@ declare namespace NodeJS {
     isBuiltinSpellCheckerEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
-    isViewApiEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
@@ -216,7 +213,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
-    _linkedBinding(name: 'electron_browser_browser_view'): { BrowserView: typeof Electron.BrowserView };
     _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer; };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void; };
