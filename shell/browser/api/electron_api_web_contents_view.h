@@ -36,6 +36,7 @@ class WebContentsView : public View,
 
   // Public APIs.
   gin::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+  void SetBackgroundColor(absl::optional<WrappedSkColor> color);
 
   int NonClientHitTest(const gfx::Point& point) override;
 
@@ -47,10 +48,12 @@ class WebContentsView : public View,
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
 
+  // views::ViewObserver
+  void OnViewAddedToWidget(views::View* view) override;
+  void OnViewRemovedFromWidget(views::View* view) override;
+
  private:
-  static gin_helper::WrappableBase* New(
-      gin_helper::Arguments* args,
-      const gin_helper::Dictionary& web_preferences);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;

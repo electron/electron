@@ -4,22 +4,19 @@
 
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 
+#include <memory>
+
 #include "shell/browser/native_window.h"
+#include "ui/views/layout/fill_layout.h"
 
 namespace electron {
 
 RootViewMac::RootViewMac(NativeWindow* window) : window_(window) {
   set_owned_by_client();
+  SetLayoutManager(std::make_unique<views::FillLayout>());
 }
 
 RootViewMac::~RootViewMac() = default;
-
-void RootViewMac::Layout() {
-  if (!window_->content_view())  // Not ready yet.
-    return;
-
-  window_->content_view()->SetBoundsRect(gfx::Rect(gfx::Point(), size()));
-}
 
 gfx::Size RootViewMac::GetMinimumSize() const {
   return window_->GetMinimumSize();
