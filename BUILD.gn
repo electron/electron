@@ -692,13 +692,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_views_api) {
-    sources += [
-      "shell/browser/api/views/electron_api_image_view.cc",
-      "shell/browser/api/views/electron_api_image_view.h",
-    ]
-  }
-
   if (enable_printing) {
     sources += [
       "shell/browser/printing/print_view_manager_electron.cc",

@@ -24,7 +24,6 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 #include "shell/browser/ui/cocoa/electron_ns_window_delegate.h"
@@ -206,14 +205,6 @@ void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
   }
 }
 
-NSView* GetNativeNSView(NativeBrowserView* view) {
-  if (auto* inspectable = view->GetInspectableWebContentsView()) {
-    return inspectable->GetNativeView().GetNativeNSView();
-  } else {
-    return nullptr;
-  }
-}
-
 }  // namespace
 
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
@@ -296,6 +287,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
+  widget()->SetNativeWindowProperty(kElectronNativeWindowKey, this);
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
@@ -1283,64 +1275,6 @@ void NativeWindowMac::SetFocusable(bool focusable) {
 
 bool NativeWindowMac::IsFocusable() {
   return ![window_ disableKeyOrMainWindow];
-}
-
-void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  add_browser_view(view);
-  if (auto* native_view = GetNativeNSView(view)) {
-    [[window_ contentView] addSubview:native_view
-                           positioned:NSWindowAbove
-                           relativeTo:nil];
-    native_view.hidden = NO;
-  }
-
-  [CATransaction commit];
-}
-
-void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  if (auto* native_view = GetNativeNSView(view)) {
-    [native_view removeFromSuperview];
-  }
-  remove_browser_view(view);
-
-  [CATransaction commit];
-}
-
-void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  remove_browser_view(view);
-  add_browser_view(view);
-  if (auto* native_view = GetNativeNSView(view)) {
-    [[window_ contentView] addSubview:native_view
-                           positioned:NSWindowAbove
-                           relativeTo:nil];
-    native_view.hidden = NO;
-  }
-
-  [CATransaction commit];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
