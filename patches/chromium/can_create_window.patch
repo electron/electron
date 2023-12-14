@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6377dafc2eeac1db9c81c455c2fc712f9a75a269..badd296e6b6dcc51ddb0e2f2bb2acccc38328ebb 100644
+index 17683fab4f4d8132c6a3d6741d3996c371aa77a7..a2048f14d1d57989d16ebcf41ca6e0ee7ffe24f1 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8194,6 +8194,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8218,6 +8218,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
