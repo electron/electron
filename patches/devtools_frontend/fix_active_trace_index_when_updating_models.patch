@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 13 Dec 2023 19:14:56 +0900
+Subject: fix: active trace index when updating models
+
+https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/4660282 introduced
+an index variant for tracking current active trace. When trace recording finishes
+TimelinePanel.loadingComplete will update the active index via TimelinePanel.setModel,
+however it also installs an event listener for resolving names from the PerformanceModel
+which eventually calls TimelinePanel.updateModelAndFlameChart and this function updated
+the models current active trace to default index of -1 leading to broken save functionality.
+The issue got addressed in M119 and higher via https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/4871439
+in an unrelated feature CL.
+
+This patch isolates the change required to address the save functionality and is only needed for M118 branch.
+
+diff --git a/front_end/panels/timeline/TimelinePanel.ts b/front_end/panels/timeline/TimelinePanel.ts
+index c10c4d02c716f68b8c6cdcb422bc7fb21a67d923..d5343b73605239b0948fae19570a9a6a8965a89f 100644
+--- a/front_end/panels/timeline/TimelinePanel.ts
++++ b/front_end/panels/timeline/TimelinePanel.ts
+@@ -1256,7 +1256,7 @@ export class TimelinePanel extends UI.Panel.Panel implements Client, TimelineMod
+     if (!this.performanceModel) {
+       return;
+     }
+-    this.setModel(this.performanceModel);
++    this.setModel(this.performanceModel, null, this.#traceEngineActiveTraceIndex);
+     this.flameChart.updateColorMapper();
+   }
+ 
