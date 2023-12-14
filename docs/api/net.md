@@ -119,6 +119,9 @@ protocol.handle('https', (req) => {
 })
 ```
 
+Note: in the [utility process](../glossary.md#utility-process) custom protocols
+are not supported.
+
 ### `net.isOnline()`
 
 Returns `boolean` - Whether there is currently internet connection.
@@ -167,6 +170,9 @@ Returns [`Promise<ResolvedHost>`](structures/resolved-host.md) - Resolves with t
 This method will resolve hosts from the [default
 session](session.md#sessiondefaultsession). To resolve a host from
 another session, use [ses.resolveHost()](session.md#sesresolvehosthost-options).
+
+Note: `net.resolveHost` is not available in the
+[utility process](../glossary.md#utility-process).
 
 ## Properties
 
