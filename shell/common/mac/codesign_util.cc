@@ -5,13 +5,58 @@
 
 #include "shell/common/mac/codesign_util.h"
 
+#include "base/apple/foundation_util.h"
 #include "base/apple/osstatus_logging.h"
 #include "base/apple/scoped_cftyperef.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
 
 namespace electron {
+
+absl::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
+  base::apple::ScopedCFTypeRef<SecStaticCodeRef> static_code;
+  OSStatus status = SecCodeCopyStaticCode(code, kSecCSDefaultFlags,
+                                          static_code.InitializeInto());
+  if (status == errSecCSUnsigned) {
+    return true;
+  }
+  if (status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCopyStaticCode";
+    return absl::optional<bool>();
+  }
+  // Copy the signing info from the SecStaticCodeRef.
+  base::apple::ScopedCFTypeRef<CFDictionaryRef> signing_info;
+  status =
+      SecCodeCopySigningInformation(static_code.get(), kSecCSSigningInformation,
+                                    signing_info.InitializeInto());
+  if (status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCopySigningInformation";
+    return absl::optional<bool>();
+  }
+  // Look up the code signing flags. If the flags are absent treat this as
+  // unsigned. This decision is consistent with the StaticCode source:
+  // https://github.com/apple-oss-distributions/Security/blob/Security-60157.40.30.0.1/OSX/libsecurity_codesigning/lib/StaticCode.cpp#L2270
+  CFNumberRef signing_info_flags =
+      base::apple::GetValueFromDictionary<CFNumberRef>(signing_info.get(),
+                                                       kSecCodeInfoFlags);
+  if (!signing_info_flags) {
+    return true;
+  }
+  // Using a long long to extract the value from the CFNumberRef to be
+  // consistent with how it was packed by Security.framework.
+  // https://github.com/apple-oss-distributions/Security/blob/Security-60157.40.30.0.1/OSX/libsecurity_utilities/lib/cfutilities.h#L262
+  long long flags;
+  if (!CFNumberGetValue(signing_info_flags, kCFNumberLongLongType, &flags)) {
+    LOG(ERROR) << "CFNumberGetValue";
+    return absl::optional<bool>();
+  }
+  if (static_cast<uint32_t>(flags) & kSecCodeSignatureAdhoc) {
+    return true;
+  }
+  return false;
+}
 
 bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
   // Get and check the code signature of current app.
@@ -22,8 +67,12 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyGuestWithAttributes";
     return false;
   }
-  status = SecCodeCheckValidity(self_code.get(), kSecCSDefaultFlags, nullptr);
-  if (status != errSecSuccess) {
+  absl::optional<bool> not_signed = IsUnsignedOrAdHocSigned(self_code.get());
+  if (!not_signed.has_value()) {
+    // Error happened.
+    return false;
+  }
+  if (not_signed.value()) {
     // Current app is not signed.
     return true;
   }
