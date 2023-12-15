@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 297e37c11cc69..6244f27cacbdd 100644
+index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a2279083173a5b 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -21,8 +21,10 @@
@@ -104,7 +104,7 @@ index 297e37c11cc69..6244f27cacbdd 100644
  void PictureInPictureWindowManager::CreateOcclusionTrackerIfNecessary() {
    if (occlusion_tracker_) {
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 5b3deb74d3e1c..8ca4f8d8fd635 100644
+index 5b3deb74d3e1cceebfd86a8f4bacf81a10967ade..8ca4f8d8fd6353177ae203e3c4c0810a11640b7c 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -11,6 +11,7 @@
@@ -160,7 +160,7 @@ index 5b3deb74d3e1c..8ca4f8d8fd635 100644
    std::unique_ptr<PictureInPictureOcclusionTracker> occlusion_tracker_;
  #endif  //! BUILDFLAG(IS_ANDROID)
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 9c878b85a1ac1..60f241c2d3234 100644
+index 9c878b85a1ac1e163d46d77ddc5e6ab0fafb52c4..60f241c2d3234446b514860377209920691098c5 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -309,11 +309,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(

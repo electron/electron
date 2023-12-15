@@ -344,7 +344,7 @@ index 5d1484651fb8c3e03337665d3d5342ba51df3154..d4432a660d6c5a5e937dedabb7e4b71b
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 9258cfcfada47aafe6ba20c648187947fec72372..a1834e543d27d46265af0c2133acac79b6c840e2 100644
+index 6f83f33c01c6ba61a180dd663f619a7a6a3cdd8b..95aad6e0c247b60874cd8907a4bb2cf63be48478 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -114,6 +114,9 @@ struct SchemeRegistry {
@@ -357,7 +357,7 @@ index 9258cfcfada47aafe6ba20c648187947fec72372..a1834e543d27d46265af0c2133acac79
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -659,6 +662,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -658,6 +661,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
