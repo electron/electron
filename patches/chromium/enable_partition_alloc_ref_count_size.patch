@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Wed, 13 Dec 2023 12:53:11 -0800
+Subject: fix: enable partition alloc ref count size for MacOS 13+
+
+Modifies an existing check to check for all versions of MacOS 13
+or higher, including MacOS 14 and potential beta versions.
+
+This patch is currently being added upstream, and can be removed
+when we integrate the upstream changes into Electron.
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h b/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h
+index 230b8cc455b5381b61441eb8853d7ce9a630ce68..547c18aac790e564513ec695ab25ef5cf7c9d8ac 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h
++++ b/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h
+@@ -32,7 +32,7 @@ namespace partition_alloc::internal {
+ 
+ // Aligns up (on 8B boundary) and returns `ref_count_size` if needed.
+ // *  Known to be needed on MacOS 13: https://crbug.com/1378822.
+-// *  Thought to be needed on MacOS 14: https://crbug.com/1457756.
++// *  Thought to be needed on MacOS 14 and higher: https://crbug.com/1457756.
+ // *  No-op everywhere else.
+ //
+ // Placed outside `BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)`
+@@ -40,8 +40,7 @@ namespace partition_alloc::internal {
+ // this gating.
+ PA_ALWAYS_INLINE size_t AlignUpRefCountSizeForMac(size_t ref_count_size) {
+ #if BUILDFLAG(IS_MAC)
+-  if (internal::base::mac::MacOSMajorVersion() == 13 ||
+-      internal::base::mac::MacOSMajorVersion() == 14) {
++  if (internal::base::mac::MacOSMajorVersion() >= 13) {
+     return internal::base::bits::AlignUp<size_t>(ref_count_size, 8);
+   }
+ #endif  // BUILDFLAG(IS_MAC)
