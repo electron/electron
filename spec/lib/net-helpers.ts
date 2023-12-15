@@ -1,7 +1,28 @@
 import { expect } from 'chai';
+import * as dns from 'node:dns';
 import * as http from 'node:http';
 import { Socket } from 'node:net';
 import { defer, listen } from './spec-helpers';
+
+// See https://github.com/nodejs/node/issues/40702.
+dns.setDefaultResultOrder('ipv4first');
+
+export const kOneKiloByte = 1024;
+export const kOneMegaByte = kOneKiloByte * kOneKiloByte;
+
+export function randomBuffer (size: number, start: number = 0, end: number = 255) {
+  const range = 1 + end - start;
+  const buffer = Buffer.allocUnsafe(size);
+  for (let i = 0; i < size; ++i) {
+    buffer[i] = start + Math.floor(Math.random() * range);
+  }
+  return buffer;
+}
+
+export function randomString (length: number) {
+  const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0));
+  return buffer.toString();
+}
 
 export async function getResponse (urlRequest: Electron.ClientRequest) {
   return new Promise<Electron.IncomingMessage>((resolve, reject) => {
