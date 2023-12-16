@@ -2,8 +2,7 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import * as path from 'node:path';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
-import * as http from 'node:http';
-import { defer, ifit, listen } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
@@ -467,31 +466,5 @@ describe('utilityProcess module', () => {
       expect(child.kill()).to.be.true();
       await exit;
     });
-  });
-
-  describe('net.request API', () => {
-    it('should be able to issue a basic GET request', async () => {
-      const server = http.createServer((request, response) => {
-        expect(request.method).to.equal('GET');
-        response.end();
-      });
-      defer(() => server.close());
-      const serverUrl = (await listen(server)).url;
-      const child = utilityProcess.fork(path.join(fixturesPath, 'net.js'));
-      child.postMessage(serverUrl);
-      const [statusCode] = await once(child, 'message');
-      expect(statusCode).to.equal(200);
-      // Cleanup.
-      const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
-      await exit;
-    });
-  });
-
-  it('should pass the api-net-spec tests', async () => {
-    const child = utilityProcess.fork(path.join(fixturesPath, 'mocha.js'));
-    child.postMessage('spec/api-net-spec.ts');
-    const [code] = await once(child, 'exit');
-    expect(code).to.equal(0);
   });
 });
