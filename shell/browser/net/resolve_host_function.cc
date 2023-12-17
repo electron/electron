@@ -15,7 +15,10 @@
 #include "net/base/net_errors.h"
 #include "net/base/network_isolation_key.h"
 #include "net/dns/public/resolve_error_info.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/common/process_util.h"
+#include "shell/services/node/node_service.h"
 #include "url/origin.h"
 
 using content::BrowserThread;
@@ -33,12 +36,12 @@ ResolveHostFunction::ResolveHostFunction(
       callback_(std::move(callback)) {}
 
 ResolveHostFunction::~ResolveHostFunction() {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!receiver_.is_bound());
 }
 
 void ResolveHostFunction::Run() {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!receiver_.is_bound());
 
   // Start the request.
@@ -50,12 +53,21 @@ void ResolveHostFunction::Run() {
       net::ResolveErrorInfo(net::ERR_FAILED),
       /*resolved_addresses=*/absl::nullopt,
       /*endpoint_results_with_metadata=*/absl::nullopt));
-  browser_context_->GetDefaultStoragePartition()
-      ->GetNetworkContext()
-      ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
-                        std::move(host_port_pair)),
-                    net::NetworkAnonymizationKey(), std::move(params_),
-                    std::move(resolve_host_client));
+  if (electron::IsUtilityProcess()) {
+    URLLoaderBundle::GetInstance()->GetHostResolver()->ResolveHost(
+        network::mojom::HostResolverHost::NewHostPortPair(
+            std::move(host_port_pair)),
+        net::NetworkAnonymizationKey(), std::move(params_),
+        std::move(resolve_host_client));
+  } else {
+    DCHECK_CURRENTLY_ON(BrowserThread::UI);
+    browser_context_->GetDefaultStoragePartition()
+        ->GetNetworkContext()
+        ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
+                          std::move(host_port_pair)),
+                      net::NetworkAnonymizationKey(), std::move(params_),
+                      std::move(resolve_host_client));
+  }
 }
 
 void ResolveHostFunction::OnComplete(
@@ -64,7 +76,7 @@ void ResolveHostFunction::OnComplete(
     const absl::optional<net::AddressList>& resolved_addresses,
     const absl::optional<net::HostResolverEndpointResults>&
         endpoint_results_with_metadata) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   // Ensure that we outlive the `receiver_.reset()` call.
   scoped_refptr<ResolveHostFunction> self(this);

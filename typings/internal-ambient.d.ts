@@ -101,6 +101,7 @@ declare namespace NodeJS {
     Net: any;
     net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
+    resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
   }
 
   interface NotificationBinding {

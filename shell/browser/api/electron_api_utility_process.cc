@@ -200,13 +200,16 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   loader_params->process_id = pid_;
   loader_params->is_corb_enabled = false;
   loader_params->is_trusted = true;
-  g_browser_process->system_network_context_manager()
-      ->GetContext()
-      ->CreateURLLoaderFactory(
-          url_loader_factory.InitWithNewPipeAndPassReceiver(),
-          std::move(loader_params));
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
+  network_context->CreateURLLoaderFactory(
+      url_loader_factory.InitWithNewPipeAndPassReceiver(),
+      std::move(loader_params));
   params->url_loader_factory = std::move(url_loader_factory);
-
+  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
+  network_context->CreateHostResolver(
+      {}, host_resolver.InitWithNewPipeAndPassReceiver());
+  params->host_resolver = std::move(host_resolver);
   node_service_remote_->Initialize(std::move(params));
 }
 

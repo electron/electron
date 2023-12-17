@@ -10,6 +10,8 @@
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "services/network/public/mojom/host_resolver.mojom.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -30,15 +32,22 @@ URLLoaderBundle* URLLoaderBundle::GetInstance() {
 }
 
 void URLLoaderBundle::SetURLLoaderFactory(
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_factory) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_factory,
+    mojo::Remote<network::mojom::HostResolver> host_resolver) {
   factory_ = network::SharedURLLoaderFactory::Create(
       std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
           std::move(pending_factory)));
+  host_resolver_ = std::move(host_resolver);
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
 URLLoaderBundle::GetSharedURLLoaderFactory() {
   return factory_;
+}
+
+network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
+  DCHECK(host_resolver_);
+  return host_resolver_.get();
 }
 
 NodeService::NodeService(
@@ -66,7 +75,8 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
   URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
-      std::move(params->url_loader_factory));
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)));
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
