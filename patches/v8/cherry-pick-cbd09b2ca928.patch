@@ -1,0 +1,72 @@
+From cbd09b2ca928f1fd929ef52e173aa81213e38cb8 Mon Sep 17 00:00:00 2001
+From: Marja Hölttä <marja@chromium.org>
+Date: Tue, 14 Nov 2023 14:45:27 +0100
+Subject: [PATCH] Merged: [promises, async stack traces] Fix the case when the closure has run
+
+We were using the closure pointing to NativeContext as a marker that the
+closure has run, but async stack trace code was confused about it.
+
+(cherry picked from commit bde3d360097607f36cd1d17cbe8412b84eae0a7f)
+
+Bug: chromium:1501326
+Change-Id: I30d438f3b2e3fdd7562ea9a79dde4561ce9b0083
+Cr-Original-Commit-Position: refs/heads/main@{#90949}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5110982
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Shu-yu Guo <syg@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.0@{#18}
+Cr-Branched-From: ed7b4caf1fb8184ad9e24346c84424055d4d430a-refs/heads/12.0.267@{#1}
+Cr-Branched-From: 210e75b19db4352c9b78dce0bae11c2dc3077df4-refs/heads/main@{#90651}
+---
+
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 378d9dd..8eab851 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -1043,7 +1043,13 @@
+                                     isolate);
+       builder->AppendPromiseCombinatorFrame(function, combinator);
+ 
+-      // Now peak into the Promise.all() resolve element context to
++      if (IsNativeContext(*context)) {
++        // NativeContext is used as a marker that the closure was already
++        // called. We can't access the reject element context any more.
++        return;
++      }
++
++      // Now peek into the Promise.all() resolve element context to
+       // find the promise capability that's being resolved when all
+       // the concurrent promises resolve.
+       int const index =
+@@ -1062,7 +1068,13 @@
+           context->native_context()->promise_all_settled(), isolate);
+       builder->AppendPromiseCombinatorFrame(function, combinator);
+ 
+-      // Now peak into the Promise.allSettled() resolve element context to
++      if (IsNativeContext(*context)) {
++        // NativeContext is used as a marker that the closure was already
++        // called. We can't access the reject element context any more.
++        return;
++      }
++
++      // Now peek into the Promise.allSettled() resolve element context to
+       // find the promise capability that's being resolved when all
+       // the concurrent promises resolve.
+       int const index =
+@@ -1080,7 +1092,13 @@
+                                     isolate);
+       builder->AppendPromiseCombinatorFrame(function, combinator);
+ 
+-      // Now peak into the Promise.any() reject element context to
++      if (IsNativeContext(*context)) {
++        // NativeContext is used as a marker that the closure was already
++        // called. We can't access the reject element context any more.
++        return;
++      }
++
++      // Now peek into the Promise.any() reject element context to
+       // find the promise capability that's being resolved when any of
+       // the concurrent promises resolve.
+       int const index = PromiseBuiltins::kPromiseAnyRejectElementCapabilitySlot;

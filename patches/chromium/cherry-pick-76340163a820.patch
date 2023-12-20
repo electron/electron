@@ -1,0 +1,38 @@
+From 76340163a820d608214be06807e24bcc326a97fb Mon Sep 17 00:00:00 2001
+From: Paul Semel <paulsemel@chromium.org>
+Date: Wed, 06 Dec 2023 15:52:56 +0000
+Subject: [PATCH] [M120] ImageBitmapFactory: fix empty context dcheck
+
+Approved by:
+https://bugs.chromium.org/p/chromium/issues/detail?id=1502102#c34
+
+(cherry picked from commit c4d2f15b8f97076c8fd0f9aa5814b94db698b75c)
+
+Fixed: 1502102
+Change-Id: Ib42d2897d62136ae835561bcf56884b5624060a5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5071252
+Commit-Queue: Paul Semel <paulsemel@chromium.org>
+Reviewed-by: Jean-Philippe Gravel <jpgravel@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1230617}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5088373
+Auto-Submit: Arthur Sonzogni <arthursonzogni@google.com>
+Reviewed-by: Paul Semel <paulsemel@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1416}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+---
+
+diff --git a/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc b/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc
+index 8ddc44f5..665217c1 100644
+--- a/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc
++++ b/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc
+@@ -155,7 +155,9 @@
+     ImageBitmapSource* bitmap_source,
+     absl::optional<gfx::Rect> crop_rect,
+     const ImageBitmapOptions* options) {
+-  DCHECK(script_state->ContextIsValid());
++  if (!script_state->ContextIsValid()) {
++    return ScriptPromise();
++  }
+ 
+   // imageOrientation: 'from-image' will be used to replace imageOrientation:
+   // 'none'. Adding a deprecation warning when 'none' is called in
