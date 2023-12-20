@@ -171,9 +171,6 @@ This method will resolve hosts from the [default
 session](session.md#sessiondefaultsession). To resolve a host from
 another session, use [ses.resolveHost()](session.md#sesresolvehosthost-options).
 
-Note: `net.resolveHost` is not available in the
-[utility process](../glossary.md#utility-process).
-
 ## Properties
 
 ### `net.online` _Readonly_
