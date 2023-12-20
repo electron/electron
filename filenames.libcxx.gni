@@ -23,6 +23,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__algorithm/find_first_of.h",
   "//third_party/libc++/src/include/__algorithm/find_if.h",
   "//third_party/libc++/src/include/__algorithm/find_if_not.h",
+  "//third_party/libc++/src/include/__algorithm/find_segment_if.h",
   "//third_party/libc++/src/include/__algorithm/for_each.h",
   "//third_party/libc++/src/include/__algorithm/for_each_n.h",
   "//third_party/libc++/src/include/__algorithm/for_each_segment.h",
