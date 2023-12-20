@@ -370,7 +370,7 @@ index 053b8a2182778b469941116eab3acd5fd6fd8099..d085258d5970b37215fe0d5591e6c030
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 49974cf02b7402265c1568b7cb37118f89b1c875..5ee4d6381a206ce8fd85fd6f3e88dc47953c68d9 100644
+index 12f99e2640142c922944d7101633a4e75baa4a92..27b8d9c767ca3f4dede7f79d6295ec8cc06eaffe 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -335,6 +335,7 @@ viz_component("service") {
@@ -405,10 +405,10 @@ index 76be676717e62c429319338c6115be89f2dfa424..18a5fd3c87b08c95d668b70c9b8f7a76
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 47afd2553bf76b5b185a4be131196d90cf9cad44..d6f9998890d7a83a8fb221691aa2f1e761461d52 100644
+index 14a52ca1254d4b583b44c20336cce1637b91f88c..618b9a6d680a2bfaf26ad3c7303a95081ccdb75b 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -2019,15 +2019,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2020,15 +2020,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 29d87af9727de4e271cde3ad6f31b45b943a620b..635838110e0d30114192f292037744b56c591c77 100644
+index a19857ade673092db3741f1e8f385d418246b580..d523a23793e4f28112af6500eb6ea1043b83516d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -474,6 +474,7 @@ static_library("test_support") {
@@ -861,7 +861,7 @@ index 6ab4e755d5d7a82685424118c21ded35924c611c..65022e5613c275883b6578662492a9f7
  
    if (is_ios) {
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 5b5af3dd26c358da106c60f14112470120bf1853..61b50093944a8ccfa5851daaec13112c918562d9 100644
+index cb1fda282600555b57b3e135434ceaaeed863a6e..c26ec863c15f9dbe441b05ea74349f19cbcaccec 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -889,10 +889,10 @@ index 5b5af3dd26c358da106c60f14112470120bf1853..61b50093944a8ccfa5851daaec13112c
  
  }  // namespace
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index cfbd2f19695c37fec61da549d9193f51d3421920..a4489fbb8cba858925c4240fdbb471280981d86a 100644
+index 7f079995d4161796b7208348c43c39a2569b0fc1..1d8fc87f2c420bb809f4925eaa3902ca89453c13 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -991,7 +991,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -970,7 +970,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 5cecc1d8d25a3daa6efb6aa5608e0ad1e7a9ba63..b68b917f21804afe89d7ba7a972122c208e947e1 100644
+index c1974a6726285a5311727f026f62f90c1187130f..f050022227720283135e2c3d85c5992f193d7e1e 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1514,7 +1514,7 @@ index a771c1c03fd1afe3a5e563b4421721a5ddc2eb93..a6cbdfcbeff30508d921d4637aac543d
    // Query the display's refresh rate.
    {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c6f4185225b1c52b9f9bd01531618fd7fc710131..8393c62dbc4e818ba0aa4c9ae38b22cad511caff 100644
+index 3702eefa91a9dd22752b3d06d531885928a4d7a6..a78fd474d63d709a703f9c530c687305ddebcea0 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
