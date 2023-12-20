@@ -80,7 +80,7 @@ class NativeWindowMac : public NativeWindow,
                       const std::string& level,
                       int relative_level) override;
   std::string GetAlwaysOnTopLevel() const override;
-  ui::ZOrderLevel GetZOrderLevel() override;
+  ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
   void SetTitle(const std::string& title) override;

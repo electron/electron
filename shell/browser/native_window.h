@@ -142,7 +142,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                               const std::string& level = "floating",
                               int relativeLevel = 0) = 0;
-  virtual ui::ZOrderLevel GetZOrderLevel() = 0;
+  virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;

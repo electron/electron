@@ -1066,7 +1066,7 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
     NativeWindow::NotifyWindowAlwaysOnTopChanged();
 }
 
-ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() {
+ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
   return widget()->GetZOrderLevel();
 }
 
