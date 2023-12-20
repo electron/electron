@@ -83,33 +83,33 @@ class NativeWindow : public base::SupportsUserData,
   virtual void CloseImmediately() = 0;
   virtual bool IsClosed() const;
   virtual void Focus(bool focus) = 0;
-  virtual bool IsFocused() = 0;
+  virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
   virtual void ShowInactive() = 0;
   virtual void Hide() = 0;
-  virtual bool IsVisible() = 0;
-  virtual bool IsEnabled() = 0;
+  virtual bool IsVisible() const = 0;
+  virtual bool IsEnabled() const = 0;
   virtual void SetEnabled(bool enable) = 0;
   virtual void Maximize() = 0;
   virtual void Unmaximize() = 0;
-  virtual bool IsMaximized() = 0;
+  virtual bool IsMaximized() const = 0;
   virtual void Minimize() = 0;
   virtual void Restore() = 0;
-  virtual bool IsMinimized() = 0;
+  virtual bool IsMinimized() const = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
   virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
-  virtual gfx::Rect GetBounds() = 0;
+  virtual gfx::Rect GetBounds() const = 0;
   virtual void SetSize(const gfx::Size& size, bool animate = false);
-  virtual gfx::Size GetSize();
+  virtual gfx::Size GetSize() const;
   virtual void SetPosition(const gfx::Point& position, bool animate = false);
-  virtual gfx::Point GetPosition();
+  virtual gfx::Point GetPosition() const;
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
-  virtual gfx::Size GetContentSize();
+  virtual gfx::Size GetContentSize() const;
   virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
-  virtual gfx::Rect GetContentBounds();
-  virtual bool IsNormal();
-  virtual gfx::Rect GetNormalBounds() = 0;
+  virtual gfx::Rect GetContentBounds() const;
+  virtual bool IsNormal() const;
+  virtual gfx::Rect GetNormalBounds() const = 0;
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& window_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints() const;
@@ -123,22 +123,22 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetContentMinimumSize() const;
   virtual gfx::Size GetContentMaximumSize() const;
   virtual void SetSheetOffset(const double offsetX, const double offsetY);
-  virtual double GetSheetOffsetX();
-  virtual double GetSheetOffsetY();
+  virtual double GetSheetOffsetX() const;
+  virtual double GetSheetOffsetY() const;
   virtual void SetResizable(bool resizable) = 0;
   virtual bool MoveAbove(const std::string& sourceId) = 0;
   virtual void MoveTop() = 0;
-  virtual bool IsResizable() = 0;
+  virtual bool IsResizable() const = 0;
   virtual void SetMovable(bool movable) = 0;
-  virtual bool IsMovable() = 0;
+  virtual bool IsMovable() const = 0;
   virtual void SetMinimizable(bool minimizable) = 0;
-  virtual bool IsMinimizable() = 0;
+  virtual bool IsMinimizable() const = 0;
   virtual void SetMaximizable(bool maximizable) = 0;
-  virtual bool IsMaximizable() = 0;
+  virtual bool IsMaximizable() const = 0;
   virtual void SetFullScreenable(bool fullscreenable) = 0;
-  virtual bool IsFullScreenable() = 0;
+  virtual bool IsFullScreenable() const = 0;
   virtual void SetClosable(bool closable) = 0;
-  virtual bool IsClosable() = 0;
+  virtual bool IsClosable() const = 0;
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                               const std::string& level = "floating",
                               int relativeLevel = 0) = 0;
@@ -146,9 +146,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
-  virtual std::string GetTitle() = 0;
+  virtual std::string GetTitle() const = 0;
 #if BUILDFLAG(IS_MAC)
-  virtual std::string GetAlwaysOnTopLevel() = 0;
+  virtual std::string GetAlwaysOnTopLevel() const = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
   virtual void RemoveChildFromParentWindow() = 0;
@@ -164,27 +164,27 @@ class NativeWindow : public base::SupportsUserData,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetExcludedFromShownWindowsMenu(bool excluded) = 0;
-  virtual bool IsExcludedFromShownWindowsMenu() = 0;
+  virtual bool IsExcludedFromShownWindowsMenu() const = 0;
   virtual void SetSimpleFullScreen(bool simple_fullscreen) = 0;
-  virtual bool IsSimpleFullScreen() = 0;
+  virtual bool IsSimpleFullScreen() const = 0;
   virtual void SetKiosk(bool kiosk) = 0;
-  virtual bool IsKiosk() = 0;
+  virtual bool IsKiosk() const = 0;
   virtual bool IsTabletMode() const;
   virtual void SetBackgroundColor(SkColor color) = 0;
-  virtual SkColor GetBackgroundColor() = 0;
+  virtual SkColor GetBackgroundColor() const = 0;
   virtual void InvalidateShadow();
   virtual void SetHasShadow(bool has_shadow) = 0;
-  virtual bool HasShadow() = 0;
+  virtual bool HasShadow() const = 0;
   virtual void SetOpacity(const double opacity) = 0;
-  virtual double GetOpacity() = 0;
+  virtual double GetOpacity() const = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
-  virtual std::string GetRepresentedFilename();
+  virtual std::string GetRepresentedFilename() const;
   virtual void SetDocumentEdited(bool edited);
-  virtual bool IsDocumentEdited();
+  virtual bool IsDocumentEdited() const;
   virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
-  virtual bool IsFocusable();
+  virtual bool IsFocusable() const;
   virtual void SetMenu(ElectronMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
   virtual content::DesktopMediaID GetDesktopMediaID() const = 0;
@@ -212,7 +212,7 @@ class NativeWindow : public base::SupportsUserData,
       bool visibleOnFullScreen = false,
       bool skipTransformProcessType = false) = 0;
 
-  virtual bool IsVisibleOnAllWorkspaces() = 0;
+  virtual bool IsVisibleOnAllWorkspaces() const = 0;
 
   virtual void SetAutoHideCursor(bool auto_hide);
 
@@ -237,7 +237,7 @@ class NativeWindow : public base::SupportsUserData,
 
 // whether windows should be ignored by mission control
 #if BUILDFLAG(IS_MAC)
-  virtual bool IsHiddenInMissionControl() = 0;
+  virtual bool IsHiddenInMissionControl() const = 0;
   virtual void SetHiddenInMissionControl(bool hidden) = 0;
 #endif
 
@@ -258,13 +258,13 @@ class NativeWindow : public base::SupportsUserData,
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
-  virtual bool IsMenuBarAutoHide();
+  virtual bool IsMenuBarAutoHide() const;
   virtual void SetMenuBarVisibility(bool visible);
-  virtual bool IsMenuBarVisible();
+  virtual bool IsMenuBarVisible() const;
 
   // Set the aspect ratio when resizing window.
-  double GetAspectRatio();
-  gfx::Size GetAspectRatioExtraSize();
+  double GetAspectRatio() const;
+  gfx::Size GetAspectRatioExtraSize() const;
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
   // File preview APIs.

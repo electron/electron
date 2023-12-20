@@ -332,7 +332,7 @@ void BaseWindow::Blur() {
   window_->Focus(false);
 }
 
-bool BaseWindow::IsFocused() {
+bool BaseWindow::IsFocused() const {
   return window_->IsFocused();
 }
 
@@ -351,11 +351,11 @@ void BaseWindow::Hide() {
   window_->Hide();
 }
 
-bool BaseWindow::IsVisible() {
+bool BaseWindow::IsVisible() const {
   return window_->IsVisible();
 }
 
-bool BaseWindow::IsEnabled() {
+bool BaseWindow::IsEnabled() const {
   return window_->IsEnabled();
 }
 
@@ -371,7 +371,7 @@ void BaseWindow::Unmaximize() {
   window_->Unmaximize();
 }
 
-bool BaseWindow::IsMaximized() {
+bool BaseWindow::IsMaximized() const {
   return window_->IsMaximized();
 }
 
@@ -383,7 +383,7 @@ void BaseWindow::Restore() {
   window_->Restore();
 }
 
-bool BaseWindow::IsMinimized() {
+bool BaseWindow::IsMinimized() const {
   return window_->IsMinimized();
 }
 
@@ -391,7 +391,7 @@ void BaseWindow::SetFullScreen(bool fullscreen) {
   window_->SetFullScreen(fullscreen);
 }
 
-bool BaseWindow::IsFullscreen() {
+bool BaseWindow::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
@@ -402,15 +402,15 @@ void BaseWindow::SetBounds(const gfx::Rect& bounds,
   window_->SetBounds(bounds, animate);
 }
 
-gfx::Rect BaseWindow::GetBounds() {
+gfx::Rect BaseWindow::GetBounds() const {
   return window_->GetBounds();
 }
 
-bool BaseWindow::IsNormal() {
+bool BaseWindow::IsNormal() const {
   return window_->IsNormal();
 }
 
-gfx::Rect BaseWindow::GetNormalBounds() {
+gfx::Rect BaseWindow::GetNormalBounds() const {
   return window_->GetNormalBounds();
 }
 
@@ -421,7 +421,7 @@ void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
   window_->SetContentBounds(bounds, animate);
 }
 
-gfx::Rect BaseWindow::GetContentBounds() {
+gfx::Rect BaseWindow::GetContentBounds() const {
   return window_->GetContentBounds();
 }
 
@@ -433,7 +433,7 @@ void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
   window_->SetSize(size, animate);
 }
 
-std::vector<int> BaseWindow::GetSize() {
+std::vector<int> BaseWindow::GetSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetSize();
   result[0] = size.width();
@@ -449,7 +449,7 @@ void BaseWindow::SetContentSize(int width,
   window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
-std::vector<int> BaseWindow::GetContentSize() {
+std::vector<int> BaseWindow::GetContentSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetContentSize();
   result[0] = size.width();
@@ -461,7 +461,7 @@ void BaseWindow::SetMinimumSize(int width, int height) {
   window_->SetMinimumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMinimumSize() {
+std::vector<int> BaseWindow::GetMinimumSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetMinimumSize();
   result[0] = size.width();
@@ -473,7 +473,7 @@ void BaseWindow::SetMaximumSize(int width, int height) {
   window_->SetMaximumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMaximumSize() {
+std::vector<int> BaseWindow::GetMaximumSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetMaximumSize();
   result[0] = size.width();
@@ -491,7 +491,7 @@ void BaseWindow::SetResizable(bool resizable) {
   window_->SetResizable(resizable);
 }
 
-bool BaseWindow::IsResizable() {
+bool BaseWindow::IsResizable() const {
   return window_->IsResizable();
 }
 
@@ -499,7 +499,7 @@ void BaseWindow::SetMovable(bool movable) {
   window_->SetMovable(movable);
 }
 
-bool BaseWindow::IsMovable() {
+bool BaseWindow::IsMovable() const {
   return window_->IsMovable();
 }
 
@@ -507,7 +507,7 @@ void BaseWindow::SetMinimizable(bool minimizable) {
   window_->SetMinimizable(minimizable);
 }
 
-bool BaseWindow::IsMinimizable() {
+bool BaseWindow::IsMinimizable() const {
   return window_->IsMinimizable();
 }
 
@@ -515,7 +515,7 @@ void BaseWindow::SetMaximizable(bool maximizable) {
   window_->SetMaximizable(maximizable);
 }
 
-bool BaseWindow::IsMaximizable() {
+bool BaseWindow::IsMaximizable() const {
   return window_->IsMaximizable();
 }
 
@@ -523,7 +523,7 @@ void BaseWindow::SetFullScreenable(bool fullscreenable) {
   window_->SetFullScreenable(fullscreenable);
 }
 
-bool BaseWindow::IsFullScreenable() {
+bool BaseWindow::IsFullScreenable() const {
   return window_->IsFullScreenable();
 }
 
@@ -531,7 +531,7 @@ void BaseWindow::SetClosable(bool closable) {
   window_->SetClosable(closable);
 }
 
-bool BaseWindow::IsClosable() {
+bool BaseWindow::IsClosable() const {
   return window_->IsClosable();
 }
 
@@ -546,7 +546,7 @@ void BaseWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
   window_->SetAlwaysOnTop(z_order, level, relative_level);
 }
 
-bool BaseWindow::IsAlwaysOnTop() {
+bool BaseWindow::IsAlwaysOnTop() const {
   return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
 }
 
@@ -560,7 +560,7 @@ void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
   window_->SetPosition(gfx::Point(x, y), animate);
 }
 
-std::vector<int> BaseWindow::GetPosition() {
+std::vector<int> BaseWindow::GetPosition() const {
   std::vector<int> result(2);
   gfx::Point pos = window_->GetPosition();
   result[0] = pos.x();
@@ -581,7 +581,7 @@ void BaseWindow::SetTitle(const std::string& title) {
   window_->SetTitle(title);
 }
 
-std::string BaseWindow::GetTitle() {
+std::string BaseWindow::GetTitle() const {
   return window_->GetTitle();
 }
 
@@ -589,7 +589,7 @@ void BaseWindow::SetAccessibleTitle(const std::string& title) {
   window_->SetAccessibleTitle(title);
 }
 
-std::string BaseWindow::GetAccessibleTitle() {
+std::string BaseWindow::GetAccessibleTitle() const {
   return window_->GetAccessibleTitle();
 }
 
@@ -605,7 +605,7 @@ void BaseWindow::SetExcludedFromShownWindowsMenu(bool excluded) {
   window_->SetExcludedFromShownWindowsMenu(excluded);
 }
 
-bool BaseWindow::IsExcludedFromShownWindowsMenu() {
+bool BaseWindow::IsExcludedFromShownWindowsMenu() const {
   return window_->IsExcludedFromShownWindowsMenu();
 }
 
@@ -613,7 +613,7 @@ void BaseWindow::SetSimpleFullScreen(bool simple_fullscreen) {
   window_->SetSimpleFullScreen(simple_fullscreen);
 }
 
-bool BaseWindow::IsSimpleFullScreen() {
+bool BaseWindow::IsSimpleFullScreen() const {
   return window_->IsSimpleFullScreen();
 }
 
@@ -621,7 +621,7 @@ void BaseWindow::SetKiosk(bool kiosk) {
   window_->SetKiosk(kiosk);
 }
 
-bool BaseWindow::IsKiosk() {
+bool BaseWindow::IsKiosk() const {
   return window_->IsKiosk();
 }
 
@@ -634,7 +634,7 @@ void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color);
 }
 
-std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
+std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) const {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
@@ -646,7 +646,7 @@ void BaseWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
 
-bool BaseWindow::HasShadow() {
+bool BaseWindow::HasShadow() const {
   return window_->HasShadow();
 }
 
@@ -654,7 +654,7 @@ void BaseWindow::SetOpacity(const double opacity) {
   window_->SetOpacity(opacity);
 }
 
-double BaseWindow::GetOpacity() {
+double BaseWindow::GetOpacity() const {
   return window_->GetOpacity();
 }
 
@@ -666,7 +666,7 @@ void BaseWindow::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
 
-std::string BaseWindow::GetRepresentedFilename() {
+std::string BaseWindow::GetRepresentedFilename() const {
   return window_->GetRepresentedFilename();
 }
 
@@ -674,7 +674,7 @@ void BaseWindow::SetDocumentEdited(bool edited) {
   window_->SetDocumentEdited(edited);
 }
 
-bool BaseWindow::IsDocumentEdited() {
+bool BaseWindow::IsDocumentEdited() const {
   return window_->IsDocumentEdited();
 }
 
@@ -694,7 +694,7 @@ void BaseWindow::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
 
-bool BaseWindow::IsFocusable() {
+bool BaseWindow::IsFocusable() const {
   return window_->IsFocusable();
 }
 
@@ -796,7 +796,7 @@ void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
                                             skipTransformProcessType);
 }
 
-bool BaseWindow::IsVisibleOnAllWorkspaces() {
+bool BaseWindow::IsVisibleOnAllWorkspaces() const {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
@@ -814,7 +814,7 @@ void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
 }
 
 #if BUILDFLAG(IS_MAC)
-std::string BaseWindow::GetAlwaysOnTopLevel() {
+std::string BaseWindow::GetAlwaysOnTopLevel() const {
   return window_->GetAlwaysOnTopLevel();
 }
 
@@ -900,7 +900,7 @@ void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
 
-bool BaseWindow::IsMenuBarAutoHide() {
+bool BaseWindow::IsMenuBarAutoHide() const {
   return window_->IsMenuBarAutoHide();
 }
 
@@ -908,7 +908,7 @@ void BaseWindow::SetMenuBarVisibility(bool visible) {
   window_->SetMenuBarVisibility(visible);
 }
 
-bool BaseWindow::IsMenuBarVisible() {
+bool BaseWindow::IsMenuBarVisible() const {
   return window_->IsMenuBarVisible();
 }
 

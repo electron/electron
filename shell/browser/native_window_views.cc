@@ -90,7 +90,8 @@ namespace electron {
 
 #if BUILDFLAG(IS_WIN)
 
-DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
+DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(
+    const std::string& material) const {
   if (material == "none") {
     return DWMSBT_NONE;
   } else if (material == "acrylic") {
@@ -502,7 +503,7 @@ void NativeWindowViews::Focus(bool focus) {
   }
 }
 
-bool NativeWindowViews::IsFocused() {
+bool NativeWindowViews::IsFocused() const {
   return widget()->IsActive();
 }
 
@@ -562,7 +563,7 @@ void NativeWindowViews::Hide() {
 #endif
 }
 
-bool NativeWindowViews::IsVisible() {
+bool NativeWindowViews::IsVisible() const {
 #if BUILDFLAG(IS_WIN)
   // widget()->IsVisible() calls ::IsWindowVisible, which returns non-zero if a
   // window or any of its parent windows are visible. We want to only check the
@@ -576,7 +577,7 @@ bool NativeWindowViews::IsVisible() {
 #endif
 }
 
-bool NativeWindowViews::IsEnabled() {
+bool NativeWindowViews::IsEnabled() const {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
@@ -606,7 +607,7 @@ void NativeWindowViews::SetEnabled(bool enable) {
   }
 }
 
-bool NativeWindowViews::ShouldBeEnabled() {
+bool NativeWindowViews::ShouldBeEnabled() const {
   return is_enabled_ && (num_modal_children_ == 0);
 }
 
@@ -666,7 +667,7 @@ void NativeWindowViews::Unmaximize() {
   }
 }
 
-bool NativeWindowViews::IsMaximized() {
+bool NativeWindowViews::IsMaximized() const {
   if (widget()->IsMaximized()) {
     return true;
   } else {
@@ -701,7 +702,7 @@ void NativeWindowViews::Restore() {
 #endif
 }
 
-bool NativeWindowViews::IsMinimized() {
+bool NativeWindowViews::IsMinimized() const {
   return widget()->IsMinimized();
 }
 
@@ -787,7 +788,7 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
   widget()->SetBounds(bounds);
 }
 
-gfx::Rect NativeWindowViews::GetBounds() {
+gfx::Rect NativeWindowViews::GetBounds() const {
 #if BUILDFLAG(IS_WIN)
   if (IsMinimized())
     return widget()->GetRestoredBounds();
@@ -796,11 +797,11 @@ gfx::Rect NativeWindowViews::GetBounds() {
   return widget()->GetWindowBoundsInScreen();
 }
 
-gfx::Rect NativeWindowViews::GetContentBounds() {
+gfx::Rect NativeWindowViews::GetContentBounds() const {
   return content_view() ? content_view()->GetBoundsInScreen() : gfx::Rect();
 }
 
-gfx::Size NativeWindowViews::GetContentSize() {
+gfx::Size NativeWindowViews::GetContentSize() const {
 #if BUILDFLAG(IS_WIN)
   if (IsMinimized())
     return NativeWindow::GetContentSize();
@@ -809,7 +810,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
   return content_view() ? content_view()->size() : gfx::Size();
 }
 
-gfx::Rect NativeWindowViews::GetNormalBounds() {
+gfx::Rect NativeWindowViews::GetNormalBounds() const {
 #if BUILDFLAG(IS_WIN)
   if (IsMaximized() && transparent())
     return restore_bounds_;
@@ -923,7 +924,7 @@ void NativeWindowViews::MoveTop() {
 #endif
 }
 
-bool NativeWindowViews::IsResizable() {
+bool NativeWindowViews::IsResizable() const {
 #if BUILDFLAG(IS_WIN)
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
@@ -945,7 +946,7 @@ void NativeWindowViews::SetMovable(bool movable) {
   movable_ = movable;
 }
 
-bool NativeWindowViews::IsMovable() {
+bool NativeWindowViews::IsMovable() const {
 #if BUILDFLAG(IS_WIN)
   return movable_;
 #else
@@ -965,7 +966,7 @@ void NativeWindowViews::SetMinimizable(bool minimizable) {
   minimizable_ = minimizable;
 }
 
-bool NativeWindowViews::IsMinimizable() {
+bool NativeWindowViews::IsMinimizable() const {
 #if BUILDFLAG(IS_WIN)
   return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MINIMIZEBOX;
 #else
@@ -985,7 +986,7 @@ void NativeWindowViews::SetMaximizable(bool maximizable) {
   maximizable_ = maximizable;
 }
 
-bool NativeWindowViews::IsMaximizable() {
+bool NativeWindowViews::IsMaximizable() const {
 #if BUILDFLAG(IS_WIN)
   return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MAXIMIZEBOX;
 #else
@@ -995,7 +996,7 @@ bool NativeWindowViews::IsMaximizable() {
 
 void NativeWindowViews::SetExcludedFromShownWindowsMenu(bool excluded) {}
 
-bool NativeWindowViews::IsExcludedFromShownWindowsMenu() {
+bool NativeWindowViews::IsExcludedFromShownWindowsMenu() const {
   // return false on unsupported platforms
   return false;
 }
@@ -1004,7 +1005,7 @@ void NativeWindowViews::SetFullScreenable(bool fullscreenable) {
   fullscreenable_ = fullscreenable;
 }
 
-bool NativeWindowViews::IsFullScreenable() {
+bool NativeWindowViews::IsFullScreenable() const {
   return fullscreenable_;
 }
 
@@ -1024,7 +1025,7 @@ void NativeWindowViews::SetClosable(bool closable) {
 #endif
 }
 
-bool NativeWindowViews::IsClosable() {
+bool NativeWindowViews::IsClosable() const {
 #if BUILDFLAG(IS_WIN)
   HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
   MENUITEMINFO info;
@@ -1082,7 +1083,7 @@ void NativeWindowViews::SetTitle(const std::string& title) {
   widget()->UpdateWindowTitle();
 }
 
-std::string NativeWindowViews::GetTitle() {
+std::string NativeWindowViews::GetTitle() const {
   return title_;
 }
 
@@ -1123,7 +1124,7 @@ void NativeWindowViews::SetSimpleFullScreen(bool simple_fullscreen) {
   SetFullScreen(simple_fullscreen);
 }
 
-bool NativeWindowViews::IsSimpleFullScreen() {
+bool NativeWindowViews::IsSimpleFullScreen() const {
   return IsFullscreen();
 }
 
@@ -1131,7 +1132,7 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
   SetFullScreen(kiosk);
 }
 
-bool NativeWindowViews::IsKiosk() {
+bool NativeWindowViews::IsKiosk() const {
   return IsFullscreen();
 }
 
@@ -1143,7 +1144,7 @@ bool NativeWindowViews::IsTabletMode() const {
 #endif
 }
 
-SkColor NativeWindowViews::GetBackgroundColor() {
+SkColor NativeWindowViews::GetBackgroundColor() const {
   auto* background = root_view_.background();
   if (!background)
     return SK_ColorTRANSPARENT;
@@ -1172,7 +1173,7 @@ void NativeWindowViews::SetHasShadow(bool has_shadow) {
                                     : wm::kShadowElevationNone);
 }
 
-bool NativeWindowViews::HasShadow() {
+bool NativeWindowViews::HasShadow() const {
   return GetNativeWindow()->GetProperty(wm::kShadowElevationKey) !=
          wm::kShadowElevationNone;
 }
@@ -1194,7 +1195,7 @@ void NativeWindowViews::SetOpacity(const double opacity) {
 #endif
 }
 
-double NativeWindowViews::GetOpacity() {
+double NativeWindowViews::GetOpacity() const {
   return opacity_;
 }
 
@@ -1271,7 +1272,7 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
-bool NativeWindowViews::IsFocusable() {
+bool NativeWindowViews::IsFocusable() const {
   bool can_activate = widget()->widget_delegate()->CanActivate();
 #if BUILDFLAG(IS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
@@ -1404,7 +1405,7 @@ void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
   root_view_.SetAutoHideMenuBar(auto_hide);
 }
 
-bool NativeWindowViews::IsMenuBarAutoHide() {
+bool NativeWindowViews::IsMenuBarAutoHide() const {
   return root_view_.IsMenuBarAutoHide();
 }
 
@@ -1412,7 +1413,7 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
   root_view_.SetMenuBarVisibility(visible);
 }
 
-bool NativeWindowViews::IsMenuBarVisible() {
+bool NativeWindowViews::IsMenuBarVisible() const {
   return root_view_.IsMenuBarVisible();
 }
 
@@ -1454,7 +1455,7 @@ void NativeWindowViews::SetVisibleOnAllWorkspaces(
   widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
-bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
+bool NativeWindowViews::IsVisibleOnAllWorkspaces() const {
 #if BUILDFLAG(IS_LINUX)
   if (IsX11()) {
     // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
