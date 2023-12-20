@@ -33,15 +33,17 @@ ResolveHostFunction::ResolveHostFunction(
     : browser_context_(browser_context),
       host_(std::move(host)),
       params_(std::move(params)),
-      callback_(std::move(callback)) {}
+      callback_(std::move(callback)) {
+  DETACH_FROM_SEQUENCE(sequence_checker_);
+}
 
 ResolveHostFunction::~ResolveHostFunction() {
-  // DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK(!receiver_.is_bound());
 }
 
 void ResolveHostFunction::Run() {
-  // DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK(!receiver_.is_bound());
 
   // Start the request.
@@ -76,7 +78,7 @@ void ResolveHostFunction::OnComplete(
     const absl::optional<net::AddressList>& resolved_addresses,
     const absl::optional<net::HostResolverEndpointResults>&
         endpoint_results_with_metadata) {
-  // DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   // Ensure that we outlive the `receiver_.reset()` call.
   scoped_refptr<ResolveHostFunction> self(this);
