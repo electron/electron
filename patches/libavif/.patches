@@ -1,2 +1,3 @@
 remove_potential_out_of_bound_access_to_alphaitemindices.patch
 do_not_store_potentially_invalid_pointers.patch
+do_not_store_colorproperties_until_alpha_item_is_found.patch

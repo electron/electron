@@ -1,0 +1,44 @@
+From 4ca62c7a8b88d3343f4ab743bbb939d6d19fb736 Mon Sep 17 00:00:00 2001
+From: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Date: Thu, 07 Dec 2023 16:56:57 +0000
+Subject: [PATCH] Check for slugs count before deserializing Slugs in DrawSlugOp
+
+Count is part of serialized data and while we never serialize values
+less then 1, it can be any value when coming over IPC, we should check
+that it's positive before substacting one.
+
+(cherry picked from commit 0527e0d5b08a13d63f4f1eeefa1b86ecfd0cb63b)
+
+Bug: 1506726
+Change-Id: I244f50a682f2e852b22ba88f1e9cddddb0fdfcb9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5078779
+Reviewed-by: Peng Huang <penghuang@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1232013}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5096809
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6099@{#1428}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+---
+
+diff --git a/cc/paint/paint_op.cc b/cc/paint/paint_op.cc
+index fa753ce..d82e97a 100644
+--- a/cc/paint/paint_op.cc
++++ b/cc/paint/paint_op.cc
+@@ -971,10 +971,12 @@
+   reader.Read(&op->flags);
+   unsigned int count = 0;
+   reader.Read(&count);
+-  reader.Read(&op->slug);
+-  op->extra_slugs.resize(count - 1);
+-  for (auto& extra_slug : op->extra_slugs) {
+-    reader.Read(&extra_slug);
++  if (count > 0) {
++    reader.Read(&op->slug);
++    op->extra_slugs.resize(count - 1);
++    for (auto& extra_slug : op->extra_slugs) {
++      reader.Read(&extra_slug);
++    }
+   }
+   return op;
+ }

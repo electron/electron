@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vignesh Venkatasubramanian <vigneshv@google.com>
+Date: Tue, 28 Nov 2023 08:44:22 -0800
+Subject: Do not store colorproperties until alpha item is found
+
+colorProperties could be pointing to a dangling pointer if
+findAlphaItem() resizes the meta.items array.
+
+Manual cherry-pick of PR #1808 into the chromium-m118 branch.
+
+diff --git a/src/read.c b/src/read.c
+index 73aa68eb0ad377e95038280fea1523dd909b6e87..ab490f6ddbd983321af8fae94cdf34dd32058160 100644
+--- a/src/read.c
++++ b/src/read.c
+@@ -3918,7 +3918,6 @@ avifResult avifDecoderReset(avifDecoder * decoder)
+             avifDiagnosticsPrintf(&decoder->diag, "Primary item not found");
+             return AVIF_RESULT_MISSING_IMAGE_ITEM;
+         }
+-        colorProperties = &colorItem->properties;
+         if (!memcmp(colorItem->type, "grid", 4)) {
+             avifROData readData;
+             AVIF_CHECKRES(avifDecoderItemRead(colorItem, decoder->io, &readData, 0, 0, data->diag));
+@@ -3965,6 +3964,8 @@ avifResult avifDecoderReset(avifDecoder * decoder)
+             }
+         }
+ 
++        colorProperties = &colorItem->properties;
++
+         // Find Exif and/or XMP metadata, if any
+         AVIF_CHECKRES(avifDecoderFindMetadata(decoder, data->meta, decoder->image, colorItem->id));
+ 
