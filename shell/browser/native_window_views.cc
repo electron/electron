@@ -159,13 +159,7 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-bool CreateGlobalMenuBar() {
-  return ui::OzonePlatform::GetInstance()
-      ->GetPlatformProperties()
-      .supports_global_application_menus;
-}
-
-bool IsX11() {
+[[maybe_unused]] bool IsX11() {
   return ui::OzonePlatform::GetInstance()
       ->GetPlatformProperties()
       .electron_can_call_x11;
@@ -1292,7 +1286,10 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   // Use global application menu bar when possible.
-  if (CreateGlobalMenuBar() && ShouldUseGlobalMenuBar()) {
+  bool can_use_global_menus = ui::OzonePlatform::GetInstance()
+                                  ->GetPlatformProperties()
+                                  .supports_global_application_menus;
+  if (can_use_global_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
     if (global_menu_bar_->IsServerStarted()) {
