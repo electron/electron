@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gustaf Ullberg <gustaf@chromium.org>
+Date: Wed, 20 Dec 2023 16:59:29 +0000
+Subject: WebRtcAudioSink: Stop on invalid configuration
+
+(cherry picked from commit 340b7e300d380460a039a07b90f62d1febae9da5)
+
+Bug: 1513170
+Change-Id: Ia4ca55e9eafb81789b28b8b8c54e615ac28df633
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5136295
+Reviewed-by: Harald Alvestrand <hta@chromium.org>
+Commit-Queue: Gustaf Ullberg <gustaf@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1239233}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5136708
+Owners-Override: Krishna Govind <govind@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1566}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc b/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc
+index cd5b8b83ce3904f0d13152627602a57b2af116cf..de4a661d6322220ed04c471a14570e91f3f76896 100644
+--- a/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc
++++ b/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc
+@@ -121,7 +121,7 @@ void WebRtcAudioSink::OnData(const media::AudioBus& audio_bus,
+ }
+ 
+ void WebRtcAudioSink::OnSetFormat(const media::AudioParameters& params) {
+-  DCHECK(params.IsValid());
++  CHECK(params.IsValid());
+   SendLogMessage(base::StringPrintf("OnSetFormat([label=%s] {params=[%s]})",
+                                     adapter_->label().c_str(),
+                                     params.AsHumanReadableString().c_str()));
