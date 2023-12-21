@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Mon, 4 Dec 2023 23:00:41 +0000
+Subject: Drop frames received on the wrong task runner
+
+It can happen during transfer that a frame is posted from the
+background media thread to the task runner of the old execution
+context, which can lead to races and UAF.
+
+This CL makes underlying sources drop frames received on the
+wrong task runner to avoid the problem.
+
+(cherry picked from commit 9d042e0d498356185fe9eb33c53b69fab33d06bf)
+
+Bug: 1505708
+Change-Id: I686228d88cb1c48bdf8c0b6bf85edd280a54300a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5077845
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Tony Herre <toprice@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1231802}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5082444
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1370}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
+index b5a2f71bae81bba6e61d8f303d24a9df874ae885..4c7b0b982e3d314749e39178eb0fca706d11bd85 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
+@@ -58,7 +58,15 @@ void RTCEncodedAudioUnderlyingSource::Trace(Visitor* visitor) const {
+ 
+ void RTCEncodedAudioUnderlyingSource::OnFrameFromSource(
+     std::unique_ptr<webrtc::TransformableAudioFrameInterface> webrtc_frame) {
+-  DCHECK(task_runner_->BelongsToCurrentThread());
++  // It can happen that a frame is posted to the task runner of the old
++  // execution context during a stream transfer to a new context.
++  // TODO(https://crbug.com/1506631): Make the state updates related to the
++  // transfer atomic and turn this into a DCHECK.
++  if (!task_runner_->BelongsToCurrentThread()) {
++    DVLOG(1) << "Dropped frame posted to incorrect task runner. This can "
++                "happen during transfer.";
++    return;
++  }
+   // If the source is canceled or there are too many queued frames,
+   // drop the new frame.
+   if (!disconnect_callback_ || !GetExecutionContext()) {
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
+index 54ca7d1529b1772200c3691b56e847acc42d086d..8fb1d8460e289cd5e6764271f79dada7f121cb1b 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
+@@ -58,7 +58,15 @@ void RTCEncodedVideoUnderlyingSource::Trace(Visitor* visitor) const {
+ 
+ void RTCEncodedVideoUnderlyingSource::OnFrameFromSource(
+     std::unique_ptr<webrtc::TransformableVideoFrameInterface> webrtc_frame) {
+-  DCHECK(task_runner_->BelongsToCurrentThread());
++  // It can happen that a frame is posted to the task runner of the old
++  // execution context during a stream transfer to a new context.
++  // TODO(https://crbug.com/1506631): Make the state updates related to the
++  // transfer atomic and turn this into a DCHECK.
++  if (!task_runner_->BelongsToCurrentThread()) {
++    DVLOG(1) << "Dropped frame posted to incorrect task runner. This can "
++                "happen during transfer.";
++    return;
++  }
+   // If the source is canceled or there are too many queued frames,
+   // drop the new frame.
+   if (!disconnect_callback_ || !GetExecutionContext()) {
