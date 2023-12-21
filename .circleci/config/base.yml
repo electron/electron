@@ -1671,6 +1671,12 @@ commands:
             fi
       - store_test_results:
           path: src/junit
+      - run:
+          name: Send Test Results to Datadog
+          when: always
+          command: |
+            curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/usr/local/bin/datadog-ci" && chmod +x "/usr/local/bin/datadog-ci"
+            DD_ENV=ci datadog-ci junit upload --service electron src/junit
 
       - *step-verify-mksnapshot
       - *step-verify-chromedriver
