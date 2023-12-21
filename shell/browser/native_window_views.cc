@@ -90,8 +90,7 @@ namespace electron {
 
 #if BUILDFLAG(IS_WIN)
 
-DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(
-    const std::string& material) const {
+DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
   if (material == "none") {
     return DWMSBT_NONE;
   } else if (material == "acrylic") {
