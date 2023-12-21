@@ -1,7 +1,7 @@
-From 8d607d3921b8274982dc9e3b0ff6ddcc069254cc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Gustaf Ullberg <gustaf@chromium.org>
 Date: Wed, 20 Dec 2023 16:59:29 +0000
-Subject: [PATCH] WebRtcAudioSink: Stop on invalid configuration
+Subject: WebRtcAudioSink: Stop on invalid configuration
 
 (cherry picked from commit 340b7e300d380460a039a07b90f62d1febae9da5)
 
@@ -17,13 +17,12 @@ Commit-Queue: Krishna Govind <govind@chromium.org>
 Reviewed-by: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#1566}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc b/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc
-index cd5b8b83..de4a661 100644
+index cd5b8b83ce3904f0d13152627602a57b2af116cf..de4a661d6322220ed04c471a14570e91f3f76896 100644
 --- a/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc
 +++ b/third_party/blink/renderer/platform/peerconnection/webrtc_audio_sink.cc
-@@ -121,7 +121,7 @@
+@@ -121,7 +121,7 @@ void WebRtcAudioSink::OnData(const media::AudioBus& audio_bus,
  }
  
  void WebRtcAudioSink::OnSetFormat(const media::AudioParameters& params) {
