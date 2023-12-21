@@ -138,3 +138,4 @@ fix_restore_original_resize_performance_on_macos.patch
 feat_allow_code_cache_in_custom_schemes.patch
 fix_font_flooding_in_dev_tools.patch
 cherry-pick-5fde415e06f9.patch
+cherry-pick-8d607d3921b8.patch
