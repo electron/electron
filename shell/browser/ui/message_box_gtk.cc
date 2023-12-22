@@ -4,9 +4,8 @@
 
 #include "shell/browser/ui/message_box.h"
 
-#include <map>
-
 #include "base/containers/contains.h"
+#include "base/containers/flat_map.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
@@ -43,8 +42,8 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<int, GtkWidget*>& GetDialogsMap() {
-  static base::NoDestructor<std::map<int, GtkWidget*>> dialogs;
+base::flat_map<int, GtkWidget*>& GetDialogsMap() {
+  static base::NoDestructor<base::flat_map<int, GtkWidget*>> dialogs;
   return *dialogs;
 }
 

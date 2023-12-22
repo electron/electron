@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/containers/contains.h"
+#include "base/containers/flat_map.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -41,8 +42,8 @@ struct DialogResult {
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
 // will be passed between threads and we need to ensure the memory of HWND is
 // not changed while dialogs map is modified.
-std::map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
-  static base::NoDestructor<std::map<int, std::unique_ptr<HWND>>> dialogs;
+std::flat_map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
+  static base::NoDestructor<std::flat_map<int, std::unique_ptr<HWND>>> dialogs;
   return *dialogs;
 }
 
