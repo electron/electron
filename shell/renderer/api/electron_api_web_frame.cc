@@ -109,15 +109,16 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 
   RendererClientBase* client = RendererClientBase::Get();
 
-  SpellCheckProvider* spell_check_provider =
-      client->GetSpellCheckProvider(render_frame);
-  if (spell_check_provider == nullptr)
-    return true;
+  mojo::Remote<spellcheck::mojom::SpellCheckHost> spellcheck_host;
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
+      spellcheck_host.BindNewPipeAndPassReceiver());
+  if (!spellcheck_host.is_bound())
+    return false;
 
   std::u16string w = base::UTF8ToUTF16(word);
-  return client->GetSpellCheck()->SpellCheckWord(
-      w.c_str(), 0, word.size(), spell_check_provider->GetSpellCheckHost(),
-      &start, &length, optional_suggestions);
+  return client->GetSpellCheck()->SpellCheckWord(w.c_str(), 0, word.size(),
+                                                 *spellcheck_host.get(), &start,
+                                                 &length, optional_suggestions);
 }
 
 #endif
