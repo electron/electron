@@ -6,13 +6,12 @@
 #define ELECTRON_SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/containers/flat_map.h"
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
@@ -274,11 +273,11 @@ class ProxyingURLLoaderFactory
 
   // Mapping from our own internally generated request ID to an
   // InProgressRequest instance.
-  std::map<uint64_t, std::unique_ptr<InProgressRequest>> requests_;
+  base::flat_map<uint64_t, std::unique_ptr<InProgressRequest>> requests_;
 
   // A mapping from the network stack's notion of request ID to our own
   // internally generated request ID for the same request.
-  std::map<int32_t, uint64_t> network_request_id_to_web_request_id_;
+  base::flat_map<int32_t, uint64_t> network_request_id_to_web_request_id_;
 
   std::vector<std::string> ignore_connections_limit_domains_;
 };
