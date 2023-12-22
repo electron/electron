@@ -1591,6 +1591,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
       &content::KeyboardLockServiceImpl::CreateMojoService));
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  map->Add<spellcheck::mojom::SpellCheckHost>(base::BindRepeating(
+      [](content::RenderFrameHost* frame_host,
+         mojo::PendingReceiver<spellcheck::mojom::SpellCheckHost> receiver) {
+        SpellCheckHostChromeImpl::Create(frame_host->GetProcess()->GetID(),
+                                         std::move(receiver));
+      }));
+#endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));
@@ -1616,14 +1624,6 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
   extensions::ExtensionsBrowserClient::Get()
       ->RegisterBrowserInterfaceBindersForFrame(map, render_frame_host,
                                                 extension);
-#endif
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  map->Add<spellcheck::mojom::SpellCheckHost>(base::BindRepeating(
-      [](content::RenderFrameHost* frame_host,
-         mojo::PendingReceiver<spellcheck::mojom::SpellCheckHost> receiver) {
-        SpellCheckHostChromeImpl::Create(frame_host->GetProcess()->GetID(),
-                                         std::move(receiver));
-      }));
 #endif
 }
 
