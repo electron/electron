@@ -2,6 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+// FIXME(ckerr) this incorrect #include order is a temporary
+// fix to unblock the roll. Will fix in an upgrade followup.
+#include "ui/base/ozone_buildflags.h"
+#if BUILDFLAG(IS_OZONE_X11)
+#include "ui/base/x/x11_util.h"
+#endif
+
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -59,7 +66,6 @@
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
-#include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/shape.h"
