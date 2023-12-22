@@ -4,11 +4,11 @@
 
 #include "shell/browser/api/electron_api_desktop_capturer.h"
 
-#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
@@ -42,11 +42,11 @@
 
 #if BUILDFLAG(IS_LINUX)
 // Private function in ui/base/x/x11_display_util.cc
-std::map<x11::RandR::Output, int> GetMonitors(
+base::flat_map<x11::RandR::Output, int> GetMonitors(
     std::pair<uint32_t, uint32_t> version,
     x11::RandR* randr,
     x11::Window window) {
-  std::map<x11::RandR::Output, int> output_to_monitor;
+  base::flat_map<x11::RandR::Output, int> output_to_monitor;
   if (version >= std::pair<uint32_t, uint32_t>{1, 5}) {
     if (auto reply = randr->GetMonitors({window}).Sync()) {
       for (size_t monitor = 0; monitor < reply->monitors.size(); monitor++) {
@@ -76,12 +76,12 @@ std::vector<uint8_t> GetEDIDProperty(x11::RandR* randr,
 // Find the mapping from monitor name atom to the display identifier
 // that the screen API uses. Based on the logic in BuildDisplaysFromXRandRInfo
 // in ui/base/x/x11_display_util.cc
-std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
+base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   auto* connection = x11::Connection::Get();
   auto& randr = connection->randr();
   auto x_root_window = ui::GetX11RootWindow();
 
-  std::map<int32_t, uint32_t> monitor_atom_to_display;
+  base::flat_map<int32_t, uint32_t> monitor_atom_to_display;
 
   auto resources = randr.GetScreenResourcesCurrent({x_root_window}).Sync();
   if (!resources) {
@@ -89,7 +89,7 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
     return monitor_atom_to_display;
   }
 
-  std::map<x11::RandR::Output, int> output_to_monitor =
+  const auto output_to_monitor =
       GetMonitors(connection->randr_version(), &randr, x_root_window);
   auto monitors_reply = randr.GetMonitors({x_root_window}).Sync();
 
@@ -385,8 +385,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     // display name atom and the display id is either the EDID or the
     // loop index when that display was found (see
     // BuildDisplaysFromXRandRInfo in ui/base/x/x11_display_util.cc)
-    std::map<int32_t, uint32_t> monitor_atom_to_display_id =
-        MonitorAtomIdToDisplayId();
+    const auto monitor_atom_to_display_id = MonitorAtomIdToDisplayId();
     for (auto& source : screen_sources) {
       auto display_id_iter =
           monitor_atom_to_display_id.find(source.media_list_source.id.id);
