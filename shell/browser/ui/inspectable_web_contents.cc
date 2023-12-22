@@ -203,11 +203,10 @@ class InspectableWebContents::NetworkResourceLoader
                      URLLoaderFactoryHolder url_loader_factory,
                      DispatchCallback callback,
                      base::TimeDelta retry_delay = base::TimeDelta()) {
-    auto resource_loader =
+    bindings->loaders_.insert(
         std::make_unique<InspectableWebContents::NetworkResourceLoader>(
             stream_id, bindings, resource_request, traffic_annotation,
-            std::move(url_loader_factory), std::move(callback), retry_delay);
-    bindings->loaders_.insert(std::move(resource_loader));
+            std::move(url_loader_factory), std::move(callback), retry_delay));
   }
 
   NetworkResourceLoader(
@@ -308,7 +307,7 @@ class InspectableWebContents::NetworkResourceLoader
       std::move(callback_).Run(&response);
     }
 
-    bindings_->loaders_.erase(bindings_->loaders_.find(this));
+    bindings_->loaders_.erase(this);
   }
 
   void OnRetry(base::OnceClosure start_retry) override {}
