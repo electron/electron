@@ -5,12 +5,12 @@
 #ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
 #define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
 
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/synchronization/lock.h"
@@ -313,9 +313,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool IsRendererSubFrame(int process_id) const;
 
   // pending_render_process => web contents.
-  std::map<int, content::WebContents*> pending_processes_;
+  base::flat_map<int, content::WebContents*> pending_processes_;
 
-  std::set<int> renderer_is_subframe_;
+  base::flat_set<int> renderer_is_subframe_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
