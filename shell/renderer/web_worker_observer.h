@@ -6,8 +6,8 @@
 #define ELECTRON_SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
 
 #include <memory>
-#include <set>
 
+#include "base/containers/flat_set.h"
 #include "v8/include/v8.h"
 
 namespace node {
@@ -42,7 +42,7 @@ class WebWorkerObserver {
  private:
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;
-  std::set<std::shared_ptr<node::Environment>> environments_;
+  base::flat_set<std::shared_ptr<node::Environment>> environments_;
 };
 
 }  // namespace electron
