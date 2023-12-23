@@ -29,7 +29,7 @@ Electron apps, and how to test them.
 
 The simplest way to get signing certificates is to use Xcode:
 
-1. Open Xcode and open "Accounts" preferences;
+1. Open Xcode and open "Accounts" settings;
 2. Sign in with your Apple account;
 3. Select a team and click "Manage Certificates";
 4. In the lower-left corner of the signing certificates sheet, click the Add
