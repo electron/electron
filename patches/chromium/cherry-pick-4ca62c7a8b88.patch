@@ -1,7 +1,7 @@
-From 4ca62c7a8b88d3343f4ab743bbb939d6d19fb736 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Vasiliy Telezhnikov <vasilyt@chromium.org>
-Date: Thu, 07 Dec 2023 16:56:57 +0000
-Subject: [PATCH] Check for slugs count before deserializing Slugs in DrawSlugOp
+Date: Thu, 7 Dec 2023 16:56:57 +0000
+Subject: Check for slugs count before deserializing Slugs in DrawSlugOp
 
 Count is part of serialized data and while we never serialize values
 less then 1, it can be any value when coming over IPC, we should check
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5096809
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/6099@{#1428}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/cc/paint/paint_op.cc b/cc/paint/paint_op.cc
-index fa753ce..d82e97a 100644
+index bd39210efa9a4da6f3888dd25ef465a1d0a4cc70..4c88eaa1e57ddae2c7fb0ba94d66b843ab8f63f2 100644
 --- a/cc/paint/paint_op.cc
 +++ b/cc/paint/paint_op.cc
-@@ -971,10 +971,12 @@
+@@ -976,10 +976,12 @@ PaintOp* DrawSlugOp::Deserialize(PaintOpReader& reader, void* output) {
    reader.Read(&op->flags);
    unsigned int count = 0;
    reader.Read(&count);

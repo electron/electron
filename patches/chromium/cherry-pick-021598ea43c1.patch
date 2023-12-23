@@ -1,7 +1,7 @@
-From 021598ea43c1cbcd6317432858c0f61929c51b1b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
-Date: Mon, 04 Dec 2023 23:00:41 +0000
-Subject: [PATCH] [InsertableStreams] Drop frames received on the wrong task runner
+Date: Mon, 4 Dec 2023 23:00:41 +0000
+Subject: Drop frames received on the wrong task runner
 
 It can happen during transfer that a frame is posted from the
 background media thread to the task runner of the old execution
@@ -24,13 +24,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Auto-Submit: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#1370}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
-index a934e800..5556158 100644
+index b5a2f71bae81bba6e61d8f303d24a9df874ae885..4c7b0b982e3d314749e39178eb0fca706d11bd85 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
-@@ -60,7 +60,15 @@
+@@ -58,7 +58,15 @@ void RTCEncodedAudioUnderlyingSource::Trace(Visitor* visitor) const {
  
  void RTCEncodedAudioUnderlyingSource::OnFrameFromSource(
      std::unique_ptr<webrtc::TransformableAudioFrameInterface> webrtc_frame) {
@@ -48,10 +47,10 @@ index a934e800..5556158 100644
    // drop the new frame.
    if (!disconnect_callback_ || !GetExecutionContext()) {
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
-index 5655f36..71c1801 100644
+index 54ca7d1529b1772200c3691b56e847acc42d086d..8fb1d8460e289cd5e6764271f79dada7f121cb1b 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
-@@ -60,7 +60,15 @@
+@@ -58,7 +58,15 @@ void RTCEncodedVideoUnderlyingSource::Trace(Visitor* visitor) const {
  
  void RTCEncodedVideoUnderlyingSource::OnFrameFromSource(
      std::unique_ptr<webrtc::TransformableVideoFrameInterface> webrtc_frame) {

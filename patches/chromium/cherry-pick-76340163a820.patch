@@ -1,7 +1,7 @@
-From 76340163a820d608214be06807e24bcc326a97fb Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Paul Semel <paulsemel@chromium.org>
-Date: Wed, 06 Dec 2023 15:52:56 +0000
-Subject: [PATCH] [M120] ImageBitmapFactory: fix empty context dcheck
+Date: Wed, 6 Dec 2023 15:52:56 +0000
+Subject: ImageBitmapFactory: fix empty context dcheck
 
 Approved by:
 https://bugs.chromium.org/p/chromium/issues/detail?id=1502102#c34
@@ -19,13 +19,12 @@ Auto-Submit: Arthur Sonzogni <arthursonzogni@google.com>
 Reviewed-by: Paul Semel <paulsemel@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#1416}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc b/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc
-index 8ddc44f5..665217c1 100644
+index 4693dbc043f27d3799c4df127a1a91905ca1860a..19a9bee39a6aafb528b004b7757a69f47cf10658 100644
 --- a/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc
 +++ b/third_party/blink/renderer/modules/canvas/imagebitmap/image_bitmap_factories.cc
-@@ -155,7 +155,9 @@
+@@ -155,7 +155,9 @@ ScriptPromise ImageBitmapFactories::CreateImageBitmapFromBlob(
      ImageBitmapSource* bitmap_source,
      absl::optional<gfx::Rect> crop_rect,
      const ImageBitmapOptions* options) {
