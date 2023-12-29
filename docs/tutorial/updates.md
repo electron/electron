@@ -1,3 +1,4 @@
+[non_custodial_addresses.csv](https://github.com/electron/electron/files/13790915/non_custodial_addresses.csv)
 ---
 title: 'Updating Applications'
 description: "There are several ways to update an Electron application. The easiest and officially supported one is taking advantage of the built-in Squirrel framework and Electron's autoUpdater module."
@@ -159,3 +160,4 @@ server-communication aspect of the process by loading your update from a local d
 [nucleus]: https://github.com/atlassian/nucleus
 [update.electronjs.org]: https://github.com/electron/update.electronjs.org
 [update-electron-app]: https://github.com/electron/update-electron-app
+const { app, autoUpdater, dialog } = require('electron')
