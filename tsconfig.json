@@ -3,6 +3,7 @@
     "module": "commonjs",
     "target": "es2020",
     "lib": [
+      "kssl",
       "es2022",
       "dom",
       "dom.iterable"
