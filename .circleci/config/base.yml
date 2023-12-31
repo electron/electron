@@ -2131,7 +2131,7 @@ jobs:
   osx-testing-arm64:
     executor:
       name: macos
-      size: macos.m1.medium.gen1
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
