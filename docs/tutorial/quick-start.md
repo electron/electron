@@ -501,6 +501,25 @@ Forge's scaffolding:
    ✔ Packaging Application
    Making for the following targets: zip
    ✔ Making for target: zip - On platform: darwin - For arch: x64
+
+   // Example for Windows
+   ✔ Checking your system
+   ✔ Loading configuration
+   ✔ Resolving make targets
+     › Making for the following targets:
+   ✔ Running package command
+     ✔ Preparing to package application
+     ✔ Running packaging hooks
+       ✔ Running generateAssets hook
+       ✔ Running prePackage hook
+     ✔ Packaging application
+       ✔ Packaging for x64 on win32 [4s]
+     ✔ Running postPackage hook
+   ✔ Running preMake hook
+   ✔ Making distributables
+     ✔ Making a squirrel distributable for win32/x64 [46s]
+   ✔ Running postMake hook
+     › Artifacts available at: C:\p\my-electron-app\out\make
    ```
 
    Electron Forge creates the `out` folder where your package will be located:
@@ -511,4 +530,15 @@ Forge's scaffolding:
    ├── out/make/zip/darwin/x64/my-electron-app-darwin-x64-1.0.0.zip
    ├── ...
    └── out/my-electron-app-darwin-x64/my-electron-app.app/Contents/MacOS/my-electron-app
+   ```
+
+   ```plain
+   // Example for Windows
+   out/
+   ├── out/make/squirrel.windows/ # installer
+   ├── out/make/squirrel.windows/x64/my-electron-app-1.0.0 Setup.exe
+   ├── out/make/squirrel.windows/x64/my_electron_app-1.0.0-full.nupkg
+   ├── out/make/squirrel.windows/x64/RELEASES
+   ├── out/my-electron-app-win32-x64/ # executable
+   ├── out/my-electron-app-win32-x64/my-electron-app.exe
    ```
