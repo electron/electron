@@ -532,10 +532,12 @@ step-fix-sync: &step-fix-sync
         cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
 
         # Fix reclient (wrong binary)
-        echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
+        # echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
+        echo 'infra/rbe/client/${platform}' 're_client_version:0.125.0.f3883c2-gomaip' > gn_ensure_file
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
         sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
         cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
+        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
 
         # Fix dsymutil (wrong binary)
         if  [ "$TARGET_ARCH" == "arm64" ]; then

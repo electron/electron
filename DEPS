@@ -18,6 +18,7 @@ vars = {
 
   # Temporarily override reclient version to be new enough to use credential helpers
   # Remove this override once we've rolled past this version upstream
+  # Also remove the hardcode in base.yml
   'reclient_version': 're_client_version:0.125.0.f3883c2-gomaip',
 
   'pyyaml_version': '3.12',
