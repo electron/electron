@@ -32,6 +32,13 @@ extern const volatile char kFuseWire[];
 
 TEMPLATE_CC = """
 #include "electron/fuses.h"
+#include "base/dcheck_is_on.h"
+
+#if DCHECK_IS_ON()
+#include "base/command_line.h"
+#include "base/strings/string_util.h"
+#include <string>
+#endif
 
 namespace electron::fuses {
 
@@ -66,9 +73,20 @@ for fuse in fuses:
   getters_h += "FUSE_EXPORT bool Is{name}Enabled();\n".replace("{name}", name)
   getters_cc += """
 bool Is{name}Enabled() {
+#if DCHECK_IS_ON()
+  // RunAsNode is checked so early that base::CommandLine isn't yet
+  // initialized, so guard here to avoid a CHECK.
+  if (base::CommandLine::InitializedForCurrentProcess()) {
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    if (command_line->HasSwitch("{switch_name}")) {
+      std::string switch_value = command_line->GetSwitchValueASCII("{switch_name}");
+      return switch_value == "1";
+    }
+  }
+#endif
   return kFuseWire[{index}] == '1';
 }
-""".replace("{name}", name).replace("{index}", str(index))
+""".replace("{name}", name).replace("{switch_name}", f"set-fuse-{fuse.lower()}").replace("{index}", str(index))
 
 def c_hex(n):
   s = hex(n)[2:]
