@@ -6,9 +6,11 @@ on:
       - gh-mac-runner
   workflow_dispatch:
     inputs:
-        branch:
-          description: 'branch'
-          required: true
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled'
+        required: false
+        default: false
 
 env:
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
@@ -32,6 +34,12 @@ jobs:
         node-version: 18.18.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
+    - name: Enable ssh debugging
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      with:
+        detached: true
+        limit-access-to-actor: true
     - run: |
         cd src/electron
         node script/yarn install
