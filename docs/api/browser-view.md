@@ -49,7 +49,7 @@ Objects created with `new BrowserView` have the following properties:
 
 #### `view.webContents` _Experimental_ _Deprecated_
 
-A [`WebContents`](web-contents.md) `| undefined` object owned by this view.
+A [`WebContents`](web-contents.md) `| null` object owned by this view.
 
 ### Instance Methods
 
