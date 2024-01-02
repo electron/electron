@@ -17,6 +17,7 @@ export default class BrowserView {
     }
     webPreferences.type = 'browserView';
     this.#webContentsView = new WebContentsView({ webPreferences });
+    this.#webContentsView.setBackgroundColor('#00000000');
   }
 
   get webContents () {
