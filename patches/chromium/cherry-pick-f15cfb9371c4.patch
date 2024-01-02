@@ -1,0 +1,181 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Thu, 7 Dec 2023 14:31:32 +0000
+Subject: Fix reinit order in
+ ContextProviderCommandBuffer::BindToCurrentSequence
+
+See comments for explanation.
+
+(cherry picked from commit 7d8400ceb56db5fd97249f787251fe8b3928e6fd)
+
+Bug: 1505632
+Change-Id: I0f43821a9708af91303048332e9fae5e100deee5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5069480
+Reviewed-by: Saifuddin Hitawala <hitawala@chromium.org>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Brendon Tiszka <tiszka@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1230735}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5095795
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Saifuddin Hitawala <hitawala@chromium.org>
+Auto-Submit: Kai Ninomiya <kainino@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1424}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/services/viz/public/cpp/gpu/context_provider_command_buffer.cc b/services/viz/public/cpp/gpu/context_provider_command_buffer.cc
+index 4d516f50bf2270c7fcf152dad5a11795a3e02232..da496e51d04af6699058cea36de0da65a01cdc3a 100644
+--- a/services/viz/public/cpp/gpu/context_provider_command_buffer.cc
++++ b/services/viz/public/cpp/gpu/context_provider_command_buffer.cc
+@@ -169,13 +169,13 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+     }
+ 
+     // The transfer buffer is used to serialize Dawn commands
+-    transfer_buffer_ =
++    auto transfer_buffer =
+         std::make_unique<gpu::TransferBuffer>(webgpu_helper.get());
+ 
+     // The WebGPUImplementation exposes the WebGPUInterface, as well as the
+     // gpu::ContextSupport interface.
+     auto webgpu_impl = std::make_unique<gpu::webgpu::WebGPUImplementation>(
+-        webgpu_helper.get(), transfer_buffer_.get(), command_buffer_.get());
++        webgpu_helper.get(), transfer_buffer.get(), command_buffer_.get());
+     bind_result_ = webgpu_impl->Initialize(memory_limits_);
+     if (bind_result_ != gpu::ContextResult::kSuccess) {
+       DLOG(ERROR) << "Failed to initialize WebGPUImplementation.";
+@@ -187,8 +187,11 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+     std::string unique_context_name =
+         base::StringPrintf("%s-%p", type_name.c_str(), webgpu_impl.get());
+ 
++    // IMPORTANT: These hold raw_ptrs to each other, so must be set together.
++    // See note in the header (and keep it up to date if things change).
+     impl_ = webgpu_impl.get();
+     webgpu_interface_ = std::move(webgpu_impl);
++    transfer_buffer_ = std::move(transfer_buffer);
+     helper_ = std::move(webgpu_helper);
+   } else if (attributes_.enable_raster_interface &&
+              !attributes_.enable_gles2_interface &&
+@@ -206,14 +209,14 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+     }
+     // The transfer buffer is used to copy resources between the client
+     // process and the GPU process.
+-    transfer_buffer_ =
++    auto transfer_buffer =
+         std::make_unique<gpu::TransferBuffer>(raster_helper.get());
+ 
+     // The RasterImplementation exposes the RasterInterface, as well as the
+     // gpu::ContextSupport interface.
+     DCHECK(channel_);
+     auto raster_impl = std::make_unique<gpu::raster::RasterImplementation>(
+-        raster_helper.get(), transfer_buffer_.get(),
++        raster_helper.get(), transfer_buffer.get(),
+         attributes_.bind_generates_resource,
+         attributes_.lose_context_when_out_of_memory, command_buffer_.get(),
+         channel_->image_decode_accelerator_proxy());
+@@ -230,8 +233,11 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+     raster_impl->TraceBeginCHROMIUM("gpu_toplevel",
+                                     unique_context_name.c_str());
+ 
++    // IMPORTANT: These hold raw_ptrs to each other, so must be set together.
++    // See note in the header (and keep it up to date if things change).
+     impl_ = raster_impl.get();
+     raster_interface_ = std::move(raster_impl);
++    transfer_buffer_ = std::move(transfer_buffer);
+     helper_ = std::move(raster_helper);
+   } else {
+     // The GLES2 helper writes the command buffer protocol.
+@@ -246,7 +252,7 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+ 
+     // The transfer buffer is used to copy resources between the client
+     // process and the GPU process.
+-    transfer_buffer_ =
++    auto transfer_buffer =
+         std::make_unique<gpu::TransferBuffer>(gles2_helper.get());
+ 
+     // The GLES2Implementation exposes the OpenGLES2 API, as well as the
+@@ -259,13 +265,13 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+       // we only use it if grcontext_support was requested.
+       gles2_impl = std::make_unique<
+           skia_bindings::GLES2ImplementationWithGrContextSupport>(
+-          gles2_helper.get(), /*share_group=*/nullptr, transfer_buffer_.get(),
++          gles2_helper.get(), /*share_group=*/nullptr, transfer_buffer.get(),
+           attributes_.bind_generates_resource,
+           attributes_.lose_context_when_out_of_memory,
+           support_client_side_arrays, command_buffer_.get());
+     } else {
+       gles2_impl = std::make_unique<gpu::gles2::GLES2Implementation>(
+-          gles2_helper.get(), /*share_group=*/nullptr, transfer_buffer_.get(),
++          gles2_helper.get(), /*share_group=*/nullptr, transfer_buffer.get(),
+           attributes_.bind_generates_resource,
+           attributes_.lose_context_when_out_of_memory,
+           support_client_side_arrays, command_buffer_.get());
+@@ -276,8 +282,11 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+       return bind_result_;
+     }
+ 
++    // IMPORTANT: These hold raw_ptrs to each other, so must be set together.
++    // See note in the header (and keep it up to date if things change).
+     impl_ = gles2_impl.get();
+     gles2_impl_ = std::move(gles2_impl);
++    transfer_buffer_ = std::move(transfer_buffer);
+     helper_ = std::move(gles2_helper);
+   }
+ 
+@@ -311,6 +320,7 @@ gpu::ContextResult ContextProviderCommandBuffer::BindToCurrentSequence() {
+             switches::kEnableGpuClientTracing)) {
+       // This wraps the real GLES2Implementation and we should always use this
+       // instead when it's present.
++      // IMPORTANT: This holds a raw_ptr to gles2_impl_.
+       trace_impl_ = std::make_unique<gpu::gles2::GLES2TraceImplementation>(
+           gles2_impl_.get());
+       gl = trace_impl_.get();
+diff --git a/services/viz/public/cpp/gpu/context_provider_command_buffer.h b/services/viz/public/cpp/gpu/context_provider_command_buffer.h
+index c5fdc66539ed7b0535e0ba84ac2858d7a95a4bb1..47600f1754a79a349ed48896bd8bab91b4634376 100644
+--- a/services/viz/public/cpp/gpu/context_provider_command_buffer.h
++++ b/services/viz/public/cpp/gpu/context_provider_command_buffer.h
+@@ -156,19 +156,42 @@ class ContextProviderCommandBuffer
+   // associated shared images are destroyed.
+   std::unique_ptr<gpu::ClientSharedImageInterface> shared_image_interface_;
+ 
+-  base::Lock context_lock_;  // Referenced by command_buffer_.
++  //////////////////////////////////////////////////////////////////////////////
++  // IMPORTANT NOTE: All of the objects in this block are part of a complex   //
++  // graph of raw pointers (holder or pointee of various raw_ptrs). They are  //
++  // defined in topological order: only later items point to earlier items.   //
++  // - When writing any member, always ensure its pointers to earlier members
++  //   are guaranteed to stay alive.
++  // - When clearing OR overwriting any member, always ensure objects that
++  //   point to it have already been cleared.
++  //     - The topological order of definitions guarantees that the
++  //       destructors will be called in the correct order (bottom to top).
++  //     - When overwriting multiple members, similarly do so in reverse order.
++  //
++  // Please note these comments are likely not to stay perfectly up-to-date.
++
++  base::Lock context_lock_;
++  // Points to the context_lock_ field of `this`.
+   std::unique_ptr<gpu::CommandBufferProxyImpl> command_buffer_;
++
++  // Points to command_buffer_.
+   std::unique_ptr<gpu::CommandBufferHelper> helper_;
++  // Points to helper_.
+   std::unique_ptr<gpu::TransferBuffer> transfer_buffer_;
+ 
++  // Points to transfer_buffer_, helper_, and command_buffer_.
+   std::unique_ptr<gpu::gles2::GLES2Implementation> gles2_impl_;
++  // Points to gles2_impl_.
+   std::unique_ptr<gpu::gles2::GLES2TraceImplementation> trace_impl_;
++  // Points to transfer_buffer_, helper_, and command_buffer_.
+   std::unique_ptr<gpu::raster::RasterInterface> raster_interface_;
++  // Points to transfer_buffer_, helper_, and command_buffer_.
+   std::unique_ptr<gpu::webgpu::WebGPUInterface> webgpu_interface_;
++  // This is an alias for gles2_impl_, raster_interface_, or webgpu_interface_.
++  raw_ptr<gpu::ImplementationBase> impl_ = nullptr;
+ 
+-  // Owned by one of gles2_impl_, raster_interface_, or webgpu_interface_. It
+-  // must be declared last and cleared first.
+-  raw_ptr<gpu::ImplementationBase> impl_;
++  // END IMPORTANT NOTE                                                       //
++  //////////////////////////////////////////////////////////////////////////////
+ 
+   std::unique_ptr<skia_bindings::GrContextForGLES2Interface> gr_context_;
+ 

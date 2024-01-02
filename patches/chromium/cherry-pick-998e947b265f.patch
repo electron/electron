@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yi Gu <yigu@chromium.org>
+Date: Fri, 1 Dec 2023 00:10:37 +0000
+Subject: Check API permission before showing accounts UI
+
+The accounts fetch could be delayed for legitimate reasons. A user may be
+able to disable FedCM API (e.g. via settings or dismissing another FedCM
+UI on the same RP origin) before the browser receives the accounts
+response.
+
+This patch checks the API permission before showing the accounts UI.
+
+(cherry picked from commit 98676a2f66c4b4b802316eef70f4aab77e631f85)
+
+Change-Id: Idbbe88912941113ec3f54d7f222845cd774dc897
+Bug: 1500921
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5064052
+Commit-Queue: Yi Gu <yigu@chromium.org>
+Reviewed-by: Christian Biesinger <cbiesinger@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1229912}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5074630
+Auto-Submit: Yi Gu <yigu@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1255}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/content/browser/webid/federated_auth_request_impl.cc b/content/browser/webid/federated_auth_request_impl.cc
+index b2717870cd40ec50fb8c6d22fab5fae89f5c9a20..5c8431c19e376f493fbb22bfdf626188e1fdaf20 100644
+--- a/content/browser/webid/federated_auth_request_impl.cc
++++ b/content/browser/webid/federated_auth_request_impl.cc
+@@ -685,9 +685,7 @@ void FederatedAuthRequestImpl::RequestToken(
+   request_dialog_controller_ = CreateDialogController();
+   start_time_ = base::TimeTicks::Now();
+ 
+-  FederatedApiPermissionStatus permission_status =
+-      GetApiPermissionStatus(url::Origin::Create(
+-          idp_get_params_ptrs[0]->providers[0]->get_federated()->config_url));
++  FederatedApiPermissionStatus permission_status = GetApiPermissionStatus();
+ 
+   absl::optional<TokenStatus> error_token_status;
+   FederatedAuthRequestResult request_result =
+@@ -896,8 +894,7 @@ void FederatedAuthRequestImpl::LogoutRps(
+     return;
+   }
+ 
+-  if (GetApiPermissionStatus(origin()) !=
+-      FederatedApiPermissionStatus::GRANTED) {
++  if (GetApiPermissionStatus() != FederatedApiPermissionStatus::GRANTED) {
+     CompleteLogoutRequest(LogoutRpsStatus::kError);
+     return;
+   }
+@@ -1181,6 +1178,18 @@ void FederatedAuthRequestImpl::MaybeShowAccountsDialog() {
+     return;
+   }
+ 
++  // The accounts fetch could be delayed for legitimate reasons. A user may be
++  // able to disable FedCM API (e.g. via settings or dismissing another FedCM UI
++  // on the same RP origin) before the browser receives the accounts response.
++  // We should exit early without showing any UI.
++  if (GetApiPermissionStatus() != FederatedApiPermissionStatus::GRANTED) {
++    CompleteRequestWithError(
++        FederatedAuthRequestResult::kErrorDisabledInSettings,
++        TokenStatus::kDisabledInSettings,
++        /*should_delay_callback=*/true);
++    return;
++  }
++
+   // The RenderFrameHost may be alive but not visible in the following
+   // situations:
+   // Situation #1: User switched tabs
+@@ -1619,9 +1628,7 @@ void FederatedAuthRequestImpl::OnAccountSelected(const GURL& idp_config_url,
+   // settings are changed while an existing FedCM UI is displayed. Ideally, we
+   // should enforce this check before all requests but users typically won't
+   // have time to disable the FedCM API in other types of requests.
+-  url::Origin idp_origin = url::Origin::Create(idp_config_url);
+-  if (GetApiPermissionStatus(idp_origin) !=
+-      FederatedApiPermissionStatus::GRANTED) {
++  if (GetApiPermissionStatus() != FederatedApiPermissionStatus::GRANTED) {
+     CompleteRequestWithError(
+         FederatedAuthRequestResult::kErrorDisabledInSettings,
+         TokenStatus::kDisabledInSettings,
+@@ -2262,8 +2269,8 @@ void FederatedAuthRequestImpl::OnRejectRequest() {
+   }
+ }
+ 
+-FederatedApiPermissionStatus FederatedAuthRequestImpl::GetApiPermissionStatus(
+-    const url::Origin& idp_origin) {
++FederatedApiPermissionStatus
++FederatedAuthRequestImpl::GetApiPermissionStatus() {
+   DCHECK(api_permission_delegate_);
+   FederatedApiPermissionStatus status =
+       api_permission_delegate_->GetApiPermissionStatus(GetEmbeddingOrigin());
+@@ -2271,7 +2278,7 @@ FederatedApiPermissionStatus FederatedAuthRequestImpl::GetApiPermissionStatus(
+   // status API is enabled, in general or through OT.
+   if (status ==
+           FederatedApiPermissionStatus::BLOCKED_THIRD_PARTY_COOKIES_BLOCKED &&
+-      webid::GetIdpSigninStatusMode(render_frame_host(), idp_origin) ==
++      webid::GetIdpSigninStatusMode(render_frame_host(), url::Origin()) ==
+           FedCmIdpSigninStatusMode::ENABLED) {
+     status = FederatedApiPermissionStatus::GRANTED;
+   }
+diff --git a/content/browser/webid/federated_auth_request_impl.h b/content/browser/webid/federated_auth_request_impl.h
+index aaf21e3f443ae26d4918602943117d695c0e54ff..d7117ee9c1424107b168a45edc21b4182a27cbd8 100644
+--- a/content/browser/webid/federated_auth_request_impl.h
++++ b/content/browser/webid/federated_auth_request_impl.h
+@@ -109,10 +109,9 @@ class CONTENT_EXPORT FederatedAuthRequestImpl
+   // Rejects the pending request if it has not been resolved naturally yet.
+   void OnRejectRequest();
+ 
+-  // This wrapper around FederatedIdentityApiPermissionContextDelegate ensures
+-  // that we handle BLOCKED_THIRD_PARTY_COOKIES_BLOCKED correctly.
++  // Returns whether the API is enabled or not.
+   FederatedIdentityApiPermissionContextDelegate::PermissionStatus
+-  GetApiPermissionStatus(const url::Origin& idp_origin);
++  GetApiPermissionStatus();
+ 
+   struct IdentityProviderGetInfo {
+     IdentityProviderGetInfo(blink::mojom::IdentityProviderConfigPtr,
+diff --git a/content/browser/webid/federated_auth_request_impl_unittest.cc b/content/browser/webid/federated_auth_request_impl_unittest.cc
+index 347fc6a19609c88313ccbbe7fda7841c7ff8268d..ea886ed50780007ec0f2a7babc9caeaa58cb1bb8 100644
+--- a/content/browser/webid/federated_auth_request_impl_unittest.cc
++++ b/content/browser/webid/federated_auth_request_impl_unittest.cc
+@@ -711,15 +711,28 @@ class TestDialogController
+ 
+ class TestApiPermissionDelegate : public MockApiPermissionDelegate {
+  public:
+-  std::pair<url::Origin, ApiPermissionStatus> permission_override_ =
++  using PermissionOverride = std::pair<url::Origin, ApiPermissionStatus>;
++  PermissionOverride permission_override_ =
+       std::make_pair(url::Origin(), ApiPermissionStatus::GRANTED);
++  absl::optional<std::pair<size_t, PermissionOverride>>
++      permission_override_for_nth_;
+   std::set<url::Origin> embargoed_origins_;
++  size_t api_invocation_counter{0};
+ 
+   ApiPermissionStatus GetApiPermissionStatus(
+       const url::Origin& origin) override {
++    ++api_invocation_counter;
++
+     if (embargoed_origins_.count(origin))
+       return ApiPermissionStatus::BLOCKED_EMBARGO;
+ 
++    if (permission_override_for_nth_ &&
++        permission_override_for_nth_->first == api_invocation_counter) {
++      return (origin == permission_override_for_nth_->second.first)
++                 ? permission_override_for_nth_->second.second
++                 : ApiPermissionStatus::GRANTED;
++    }
++
+     return (origin == permission_override_.first)
+                ? permission_override_.second
+                : ApiPermissionStatus::GRANTED;
+@@ -4991,4 +5004,23 @@ TEST_F(FederatedAuthRequestImplTest, InvalidResponseErrorDialogDisabled) {
+   EXPECT_FALSE(dialog_controller_state_.did_show_error_dialog);
+ }
+ 
++// Test that the account UI is not displayed if FedCM is disabled after accounts
++// fetch.
++TEST_F(FederatedAuthRequestImplTest,
++       AccountUiNotDisplayedIfFedCmDisabledAfterAccountsFetch) {
++  test_api_permission_delegate_->permission_override_for_nth_ = std::make_pair(
++      /*override the nth invocation=*/2,
++      std::make_pair(main_test_rfh()->GetLastCommittedOrigin(),
++                     ApiPermissionStatus::BLOCKED_EMBARGO));
++
++  RequestExpectations expectations = {
++      RequestTokenStatus::kError,
++      FederatedAuthRequestResult::kErrorDisabledInSettings,
++      /*standalone_console_message=*/absl::nullopt,
++      /*selected_idp_config_url=*/absl::nullopt};
++  RunAuthTest(kDefaultRequestParameters, expectations, kConfigurationValid);
++  EXPECT_TRUE(DidFetch(FetchedEndpoint::ACCOUNTS));
++  EXPECT_FALSE(did_show_accounts_dialog());
++}
++
+ }  // namespace content
