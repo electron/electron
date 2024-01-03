@@ -183,7 +183,7 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 5b66cb052f6b39a50f00c0b10d80de339cae19f7..4e596fbac9654555804f00f3de83283ad797a86d 100644
+index b9ddc82c767c5641b0d8b0166fa181148aea4de7..c6f8418eeddfe8f95927afbe6e034511e3df1011 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -157,11 +157,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -227,9 +227,9 @@ index 5b66cb052f6b39a50f00c0b10d80de339cae19f7..4e596fbac9654555804f00f3de83283a
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -439,9 +459,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -445,9 +465,22 @@ bool UtilityProcessHost::StartProcess() {
      }
- #endif  // BUILDFLAG(IS_LINUX)
+ #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH)
  
 +#if BUILDFLAG(IS_WIN)
 +    file_data_->stdout_handle = std::move(stdout_handle_);
@@ -252,7 +252,7 @@ index 5b66cb052f6b39a50f00c0b10d80de339cae19f7..4e596fbac9654555804f00f3de83283a
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 012069cada2220f6c1976107bc2e4ca6dcb7d7ca..a52a197eb51f8c00d7321f03ccb436ec7d009d47 100644
+index 33d7e3613801085630735b49a5789d2a9bf2aed3..b0b6efc9c9acdd2aac6a9c90640f4fbc638b1761 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@
