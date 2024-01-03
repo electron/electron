@@ -345,9 +345,6 @@ step-setup-rbe-for-build: &step-setup-rbe-for-build
         echo 'ulimit -n 10000' >> $BASH_ENV
         echo 'sudo launchctl limit maxfiles 65536 200000' >> $BASH_ENV
       fi
-      if [ ! -z "$ELECTRON_RBE_JWT" ]; then
-        echo $ELECTRON_RBE_JWT > ~/.electron_rbe_token
-      fi
       git clone https://github.com/electron/build-tools.git
       cd build-tools
       git checkout reclient
@@ -356,7 +353,7 @@ step-setup-rbe-for-build: &step-setup-rbe-for-build
       # Pull down credential helper and print status
       node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
       HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
-      $HELPER status
+      $HELPER login
       echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $BASH_ENV
       echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $BASH_ENV
 
