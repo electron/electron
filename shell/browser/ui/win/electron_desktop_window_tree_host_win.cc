@@ -135,12 +135,12 @@ void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(
 
 bool ElectronDesktopWindowTreeHostWin::ShouldWindowContentsBeTransparent()
     const {
-  // Window should be marked as opaque if no transparency setting has been set,
-  // otherwise videos rendered in the window will trigger a DirectComposition
-  // redraw for every frame.
+  // Window should be marked as opaque if no transparency setting has been
+  // set, otherwise animations or videos rendered in the window will trigger a
+  // DirectComposition redraw for every frame.
   // https://github.com/electron/electron/pull/39895
   return native_window_view_->GetOpacity() < 1.0 ||
-         native_window_view_->transparent();
+         native_window_view_->IsTranslucent();
 }
 
 }  // namespace electron
