@@ -14,7 +14,7 @@ Xref: https://chromium-review.googlesource.com/c/v8/v8/+/5075293
 Xref: https://github.com/electron/electron/issues/40741
 
 diff --git a/src/api/api-macros.h b/src/api/api-macros.h
-index a300e2fd324e41e01787eef9a98dd57d52248ce2..8ab1520a20d9c0389ed3dc571974781c41eff31d 100644
+index 193dceb74683a256b4ac723fec01187836a4134b..e9bb790ba9c9f7de53404549d48ceb9c1c6d8f60 100644
 --- a/src/api/api-macros.h
 +++ b/src/api/api-macros.h
 @@ -41,7 +41,6 @@
