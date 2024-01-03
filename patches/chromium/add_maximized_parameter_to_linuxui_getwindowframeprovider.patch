@@ -53,10 +53,10 @@ index 38c1297588f30cc81d48cfd2321845815bb93ea5..0f4141d2146c38f054b060ddfa06a9f6
    // Objects to notify when the window frame button order changes.
    base::ObserverList<ui::WindowButtonOrderObserver>::Unchecked
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc9dec6800 100644
+index a739dbab82f4b5b221f27364ccaa5daf2161a059..e2c47d50b64c2e994b3e63a3fc671504ce928964 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
-@@ -40,17 +40,20 @@ std::string GetThemeName() {
+@@ -41,17 +41,20 @@ std::string GetThemeName() {
    return theme_string;
  }
  
@@ -80,7 +80,7 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
    // GTK4 renders the decoration directly on the window.
    if (!GtkCheckVersion(4)) {
      context = AppendCssNodeToStyleContext(context, "decoration");
-@@ -69,8 +72,8 @@ GtkCssContext DecorationContext(bool solid_frame, bool focused) {
+@@ -70,8 +73,8 @@ GtkCssContext DecorationContext(bool solid_frame, bool focused) {
    return context;
  }
  
@@ -91,7 +91,7 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
    context =
        AppendCssNodeToStyleContext(context, "headerbar.header-bar.titlebar");
    if (!focused) {
-@@ -129,8 +132,8 @@ int ComputeTopCornerRadius() {
+@@ -128,8 +131,8 @@ int ComputeTopCornerRadius() {
    // need to experimentally determine the corner radius by rendering a sample.
    // Additionally, in GTK4, the headerbar corners get clipped by the window
    // rather than the headerbar having its own rounded corners.
@@ -122,7 +122,7 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
  
  WindowFrameProviderGtk::~WindowFrameProviderGtk() = default;
  
-@@ -329,7 +332,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(
+@@ -330,7 +333,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(
    const int top_area_height_px = top_area_bottom_px - client_bounds_px.y();
  
    auto header = PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
@@ -131,7 +131,7 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
    image = gfx::ImageSkia::CreateFrom1xBitmap(header);
    // In GTK4, the headerbar gets clipped by the window.
    if (GtkCheckVersion(4)) {
-@@ -362,7 +365,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -363,7 +366,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
  
    gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
                               2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
@@ -140,7 +140,7 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
    frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
    frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
    gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
-@@ -371,7 +371,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -371,7 +374,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
                                       focused_context, scale);
    asset.unfocused_bitmap =
        PaintBitmap(bitmap_size, gfx::RectF(frame_bounds_dip),
