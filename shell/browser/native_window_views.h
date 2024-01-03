@@ -20,7 +20,6 @@
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/win/taskbar_host.h"
-
 #endif
 
 namespace electron {

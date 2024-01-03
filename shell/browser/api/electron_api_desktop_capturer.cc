@@ -25,28 +25,20 @@
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
-
-#if defined(USE_OZONE)
-#include "ui/ozone/buildflags.h"
-#if BUILDFLAG(OZONE_PLATFORM_X11)
-#define USE_OZONE_PLATFORM_X11
-#endif
-#endif
+#include "ui/base/ozone_buildflags.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
-#elif BUILDFLAG(IS_LINUX)
-#if defined(USE_OZONE_PLATFORM_X11)
+#elif BUILDFLAG(IS_OZONE_X11)
 #include "base/logging.h"
 #include "ui/base/x/x11_display_util.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/display/util/edid_parser.h"  // nogncheck
 #include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/randr.h"
-#endif  // defined(USE_OZONE_PLATFORM_X11)
-#endif  // BUILDFLAG(IS_WIN)
+#endif
 
 #if BUILDFLAG(IS_LINUX)
 // Private function in ui/base/x/x11_display_util.cc
@@ -388,8 +380,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
-#elif BUILDFLAG(IS_LINUX)
-#if defined(USE_OZONE_PLATFORM_X11)
+#elif BUILDFLAG(IS_OZONE_X11)
     // On Linux, with X11, the source id is the numeric value of the
     // display name atom and the display id is either the EDID or the
     // loop index when that display was found (see
@@ -402,8 +393,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       if (display_id_iter != monitor_atom_to_display_id.end())
         source.display_id = base::NumberToString(display_id_iter->second);
     }
-#endif  // defined(USE_OZONE_PLATFORM_X11)
-#endif  // BUILDFLAG(IS_WIN)
+#endif
     std::move(screen_sources.begin(), screen_sources.end(),
               std::back_inserter(captured_sources_));
   }
