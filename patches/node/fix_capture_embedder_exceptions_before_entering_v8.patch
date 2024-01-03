@@ -9,6 +9,20 @@ The patch only addresses the callsites that triggered failing DCHECKS
 in the nodejs test suite. Need to be followed-up with upstream
 on the broader change as there maybe other callsites.
 
+diff --git a/src/handle_wrap.cc b/src/handle_wrap.cc
+index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c201f6326a 100644
+--- a/src/handle_wrap.cc
++++ b/src/handle_wrap.cc
+@@ -148,6 +148,9 @@ void HandleWrap::OnClose(uv_handle_t* handle) {
+   wrap->OnClose();
+   wrap->handle_wrap_queue_.Remove();
+ 
++  if (env->isolate()->IsExecutionTerminating())
++    return;
++
+   if (!wrap->persistent().IsEmpty() &&
+       wrap->object()->Has(env->context(), env->handle_onclose_symbol())
+       .FromMaybe(false)) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
 index 64860d7e56d2bf68034d613d06bd0e36ca935ef6..af66f25c79b274838e308f8227fa463f31ae8658 100644
 --- a/src/node_contextify.cc
