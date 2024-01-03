@@ -11,22 +11,27 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 963034afd6203884a7f2a43d03179156ed4e65ae..4f8d61ed898ef31898114dc1e606462da73c97b4 100644
+index 963034afd6203884a7f2a43d03179156ed4e65ae..b31f3ad2bf7f253214341e028061e55f52ed81a4 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -200,6 +200,12 @@ if (!is_android && !is_mac) {
+@@ -200,11 +200,16 @@ if (!is_android && !is_mac) {
            "common/crash_keys.h",
          ]
  
 +        if (!is_electron_build) {
 +          deps = [
-+            ":packed_resources_integrity",
++            ":packed_resources_integrity_header",
 +          ]
 +        }
 +
          deps += [
            ":chrome_dll",
            ":chrome_exe_version",
+           ":copy_first_run",
+-          ":packed_resources_integrity_header",
+           ":visual_elements_resources",
+           "//base",
+           "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
 index a188528a9e262b21ff433e6bfacaa07c40ef37a3..7542e1109799d4decd45585cdf0475c7a612a4e0 100644
 --- a/chrome/browser/BUILD.gn
