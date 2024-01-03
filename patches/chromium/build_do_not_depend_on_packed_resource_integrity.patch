@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 963034afd6203884a7f2a43d03179156ed4e65ae..b31f3ad2bf7f253214341e028061e55f52ed81a4 100644
+index 4b4545013d6de..36b8ac1ee5690 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -200,11 +200,16 @@ if (!is_android && !is_mac) {
+@@ -200,11 +200,16 @@ if (!is_android && !is_mac && !is_fuchsia) {
            "common/crash_keys.h",
          ]
  
@@ -33,10 +33,10 @@ index 963034afd6203884a7f2a43d03179156ed4e65ae..b31f3ad2bf7f253214341e028061e55f
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index a188528a9e262b21ff433e6bfacaa07c40ef37a3..7542e1109799d4decd45585cdf0475c7a612a4e0 100644
+index 7ca5480c202b3..87da451712066 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4760,7 +4760,7 @@ static_library("browser") {
+@@ -4751,7 +4751,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,44 +46,44 @@ index a188528a9e262b21ff433e6bfacaa07c40ef37a3..7542e1109799d4decd45585cdf0475c7
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 53c14770b499bd64e8a7dc6221bc42ce5c010acd..cdd399c99890abbdd09eff3f9e27bd2dadc975ce 100644
+index cc8e87f7c0fa6..3950f3d152db2 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7178,7 +7178,6 @@ test("unit_tests") {
+@@ -7184,7 +7184,6 @@ if (!is_fuchsia) {
  
-     deps += [
-       "//chrome:other_version",
--      "//chrome:packed_resources_integrity_header",
-       "//chrome//services/util_win:unit_tests",
-       "//chrome/app:chrome_dll_resources",
-       "//chrome/app:win_unit_tests",
-@@ -7199,6 +7198,10 @@ test("unit_tests") {
-       "//ui/resources",
-     ]
+       deps += [
+         "//chrome:other_version",
+-        "//chrome:packed_resources_integrity_header",
+         "//chrome//services/util_win:unit_tests",
+         "//chrome/app:chrome_dll_resources",
+         "//chrome/app:win_unit_tests",
+@@ -7205,6 +7204,10 @@ if (!is_fuchsia) {
+         "//ui/resources",
+       ]
  
-+    if (!is_electron_build) {
-+      deps += [ "//chrome:packed_resources_integrity" ]
-+    }
++      if (!is_electron_build) {
++        deps += [ "//chrome:packed_resources_integrity_header" ]
++      }
 +
-     ldflags = [
-       "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
-       "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -8224,7 +8227,6 @@ test("unit_tests") {
-     }
+       ldflags = [
+         "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
+         "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
+@@ -8227,7 +8230,6 @@ if (!is_fuchsia) {
+       }
  
-     deps += [
--      "//chrome:packed_resources_integrity_header",
-       "//chrome/browser/apps:icon_standardizer",
-       "//chrome/browser/apps/app_service",
-       "//chrome/browser/apps/app_service:app_registry_cache_waiter",
-@@ -8316,6 +8318,10 @@ test("unit_tests") {
-       "//ui/webui/resources/js/browser_command:mojo_bindings",
-     ]
+       deps += [
+-        "//chrome:packed_resources_integrity_header",
+         "//chrome/browser/apps:icon_standardizer",
+         "//chrome/browser/apps/app_service",
+         "//chrome/browser/apps/app_service:app_registry_cache_waiter",
+@@ -8319,6 +8321,10 @@ if (!is_fuchsia) {
+         "//ui/webui/resources/js/browser_command:mojo_bindings",
+       ]
  
-+    if (!is_electron_build) {
-+      deps += [ "//chrome:packed_resources_integrity_hash" ]
-+    }
++      if (!is_electron_build) {
++        deps += [ "//chrome:packed_resources_integrity_header" ]
++      }
 +
-     data += [ "//ash/components/arc/test/data/icons/" ]
+       data += [ "//ash/components/arc/test/data/icons/" ]
  
-     if (include_js2gtest_tests && is_chromeos_ash) {
+       if (include_js2gtest_tests && is_chromeos_ash) {
