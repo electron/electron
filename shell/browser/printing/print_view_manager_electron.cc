@@ -107,7 +107,7 @@ void PrintViewManagerElectron::ScriptedPrint(
   auto default_param = printing::mojom::PrintPagesParams::New();
   default_param->params = printing::mojom::PrintParams::New();
   LOG(ERROR) << "Scripted print is not supported";
-  std::move(callback).Run(std::move(default_param), /*cancelled*/ false);
+  std::move(callback).Run(std::move(default_param));
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)

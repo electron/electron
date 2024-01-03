@@ -252,6 +252,10 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "display-capture");
     case blink::PermissionType::TOP_LEVEL_STORAGE_ACCESS:
       return StringToV8(isolate, "top-level-storage-access");
+    case blink::PermissionType::CAPTURED_SURFACE_CONTROL:
+      return StringToV8(isolate, "captured-surface-control");
+    case blink::PermissionType::SMART_CARD:
+      return StringToV8(isolate, "smart-card");
     case blink::PermissionType::NUM:
       break;
   }

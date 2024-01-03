@@ -10,7 +10,7 @@ This patch is currently being added upstream, and can be removed
 when we integrate the upstream changes into Electron.
 
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h b/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h
-index 230b8cc455b5381b61441eb8853d7ce9a630ce68..547c18aac790e564513ec695ab25ef5cf7c9d8ac 100644
+index adc3160a0bb52af8d8ddecd05eeff63ae1f67fd3..2dc40cc55fb5d5d6724d8114718c0bf1bc044564 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h
 +++ b/base/allocator/partition_allocator/src/partition_alloc/partition_ref_count.h
 @@ -32,7 +32,7 @@ namespace partition_alloc::internal {

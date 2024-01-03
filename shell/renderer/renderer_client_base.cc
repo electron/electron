@@ -342,8 +342,9 @@ void RendererClientBase::RenderFrameCreated(
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (render_frame->GetBlinkPreferences().enable_spellcheck)
-    new SpellCheckProvider(render_frame, spellcheck_.get(), this);
+  if (render_frame->GetBlinkPreferences().enable_spellcheck) {
+    new SpellCheckProvider(render_frame, spellcheck_.get());
+  }
 #endif
 }
 

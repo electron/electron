@@ -12,6 +12,16 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (30.0)
+
+### Behavior Changed: cross-origin iframes now use Permission Policy to access features
+
+Cross-origin iframes must now specify features available to a given `iframe` via the `allow`
+attribute in order to access them.
+
+See [documentation](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#allow) for
+more information.
+
 ## Planned Breaking API Changes (29.0)
 
 ### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`

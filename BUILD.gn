@@ -492,6 +492,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
     "//ui/events:dom_keycode_converter",

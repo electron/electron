@@ -76,8 +76,18 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
   }
 #endif
 
-  auto handle = gin::CreateHandle(args->isolate(),
-                                  new Tray(args->isolate(), image, guid));
+  // Error thrown by us will be dropped when entering V8.
+  // Make sure to abort early and propagate the error to JS.
+  // Refs https://chromium-review.googlesource.com/c/v8/v8/+/5050065
+  v8::TryCatch try_catch(args->isolate());
+  auto* tray = new Tray(args->isolate(), image, guid);
+  if (try_catch.HasCaught()) {
+    delete tray;
+    try_catch.ReThrow();
+    return gin::Handle<Tray>();
+  }
+
+  auto handle = gin::CreateHandle(args->isolate(), tray);
   handle->Pin(args->isolate());
   return handle;
 }
