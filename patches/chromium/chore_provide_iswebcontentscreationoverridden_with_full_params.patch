@@ -80,10 +80,10 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index e8310edc4c783976f9cb1a6624084812676d1f5c..45aedec3b34103f734415413241849054b5b0aed 100644
+index d611c512dfe0307a99b0fdaec23a2f3dbbb9d905..b5f1a098471cd726117b3dde146444d6d186fae1 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1885,12 +1885,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1884,12 +1884,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,7 +99,7 @@ index e8310edc4c783976f9cb1a6624084812676d1f5c..45aedec3b34103f73441541324184905
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 456bdd201ed3f4a136857d84d0f5b9889c857980..7ee6a0b58d5e435cdca5dfb4e10858527e8f4658 100644
+index 626a509aa34e6ec5f2ed30b4f9e6d4144f723134..956d1094180f2af239d32c3226fcd43b1826dd3d 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -890,8 +890,7 @@ class Browser : public TabStripModelObserver,
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b057b66c99a7f91b40b803f51e9b1c225e4bba4a..81c2ea6d3266068593388211043c670bbdffe006 100644
+index b105731ae674c17a2200a1407ddc7c0c0d079481..f613979626d88506c28e66a48165d9efc1f0f63c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4396,8 +4396,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4402,8 +4402,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
