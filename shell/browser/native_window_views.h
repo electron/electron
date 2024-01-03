@@ -13,15 +13,9 @@
 
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/views/root_view.h"
+#include "ui/base/ozone_buildflags.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
-
-#if defined(USE_OZONE)
-#include "ui/ozone/buildflags.h"
-#if BUILDFLAG(OZONE_PLATFORM_X11)
-#define USE_OZONE_PLATFORM_X11
-#endif
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
@@ -34,7 +28,7 @@ namespace electron {
 class GlobalMenuBarX11;
 class WindowStateWatcher;
 
-#if defined(USE_OZONE_PLATFORM_X11)
+#if BUILDFLAG(IS_OZONE_X11)
 class EventDisabler;
 #endif
 
@@ -262,13 +256,9 @@ class NativeWindowViews : public NativeWindow,
   // resizable again. This is also used on Windows, to keep taskbar resize
   // events from resizing the window.
   extensions::SizeConstraints old_size_constraints_;
-
-#if defined(USE_OZONE)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 
-#endif
-
-#if defined(USE_OZONE_PLATFORM_X11)
+#if BUILDFLAG(IS_OZONE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
