@@ -9,6 +9,15 @@
 
 #include "third_party/skia/include/core/SkColor.h"
 
+// SkColor is a typedef for uint32_t, this wrapper is to tag an SkColor for
+// ease of use in gin converters.
+struct WrappedSkColor {
+  WrappedSkColor() {}
+  WrappedSkColor(SkColor c) : value(c) {}  // NOLINT(runtime/explicit)
+  SkColor value;
+  operator SkColor() const { return value; }
+};
+
 namespace electron {
 
 // Parses a CSS-style color string from hex, rgb(), rgba(),

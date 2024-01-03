@@ -13,28 +13,22 @@
 
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/views/root_view.h"
+#include "ui/base/ozone_buildflags.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
-
-#if defined(USE_OZONE)
-#include "ui/ozone/buildflags.h"
-#if BUILDFLAG(OZONE_PLATFORM_X11)
-#define USE_OZONE_PLATFORM_X11
-#endif
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/win/taskbar_host.h"
-
 #endif
 
 namespace electron {
 
+#if BUILDFLAG(IS_LINUX)
 class GlobalMenuBarX11;
-class WindowStateWatcher;
+#endif
 
-#if defined(USE_OZONE_PLATFORM_X11)
+#if BUILDFLAG(IS_OZONE_X11)
 class EventDisabler;
 #endif
 
@@ -124,9 +118,6 @@ class NativeWindowViews : public NativeWindow,
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
   void SetMenu(ElectronMenuModel* menu_model) override;
-  void AddBrowserView(NativeBrowserView* browser_view) override;
-  void RemoveBrowserView(NativeBrowserView* browser_view) override;
-  void SetTopBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
@@ -190,6 +181,8 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
+
+  void UpdateThickFrame();
 #endif
 
  private:
@@ -261,12 +254,11 @@ class NativeWindowViews : public NativeWindow,
   // events from resizing the window.
   extensions::SizeConstraints old_size_constraints_;
 
-#if defined(USE_OZONE)
+#if BUILDFLAG(IS_LINUX)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
-
 #endif
 
-#if defined(USE_OZONE_PLATFORM_X11)
+#if BUILDFLAG(IS_OZONE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif

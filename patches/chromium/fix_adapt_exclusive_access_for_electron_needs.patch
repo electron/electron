@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 3d9ccff4a6a70e97d90f461a92c204af9a8e0a4f..e2a5a1751a6496a0ed7854737056564c2046d436 100644
+index e108057665773bcbbbc48de995b8001a700b4368..0b751ec1c1455890f12e517beb3967544bbacb9d 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -68,17 +68,17 @@ index 3d9ccff4a6a70e97d90f461a92c204af9a8e0a4f..e2a5a1751a6496a0ed7854737056564c
      content::WebContents* opener,
      content::WebContents* popup) {
 +#if 0
-   if (popunder_preventer_) {
-     DCHECK_EQ(exclusive_access_tab(), opener);
-     popunder_preventer_->AddPotentialPopunder(popup);
-   } else {
-     DCHECK(IsFullscreenWithinTab(opener));
+   if (!popunder_preventer_) {
+     return;
    }
+ 
+   DCHECK_EQ(exclusive_access_tab(), opener);
+   popunder_preventer_->AddPotentialPopunder(popup);
 +#endif
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -474,18 +484,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -480,18 +490,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -102,7 +102,7 @@ index 3d9ccff4a6a70e97d90f461a92c204af9a8e0a4f..e2a5a1751a6496a0ed7854737056564c
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -518,6 +527,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -524,6 +533,7 @@ void FullscreenController::EnterFullscreenModeInternal(
      if (!extension_caused_fullscreen_.is_empty())
        url = extension_caused_fullscreen_;
    }
@@ -110,7 +110,7 @@ index 3d9ccff4a6a70e97d90f461a92c204af9a8e0a4f..e2a5a1751a6496a0ed7854737056564c
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
-@@ -538,12 +548,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -544,12 +554,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
  
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;
@@ -127,7 +127,7 @@ index 3d9ccff4a6a70e97d90f461a92c204af9a8e0a4f..e2a5a1751a6496a0ed7854737056564c
    extension_caused_fullscreen_ = GURL();
  
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 8e78c52e83e6fc96e97d45970cff12b062d63ad8..6c9c4b439101ca4870c1d682e1b899fb82f836a8 100644
+index 2d94e0bf404d7f2503098184af3439fae39c44fb..a0eb673521a118dfb7037b20a7d98f2ceeb1d273 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 @@ -243,10 +243,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {

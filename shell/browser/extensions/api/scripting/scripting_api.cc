@@ -975,12 +975,12 @@ ExtensionFunction::ResponseAction ScriptingUpdateContentScriptsFunction::Run() {
   }
 
   std::u16string parse_error;
-  auto parsed_scripts = std::make_unique<UserScriptList>();
+  UserScriptList parsed_scripts;
   std::set<std::string> updated_script_ids_to_persist;
   std::set<std::string> persistent_script_ids =
       loader->GetPersistentDynamicScriptIDs();
 
-  parsed_scripts->reserve(scripts.size());
+  parsed_scripts.reserve(scripts.size());
   for (size_t i = 0; i < scripts.size(); ++i) {
     api::scripting::RegisteredContentScript& update_delta = scripts[i];
     DCHECK(base::Contains(loaded_scripts_metadata, update_delta.id));
@@ -1028,7 +1028,7 @@ ExtensionFunction::ResponseAction ScriptingUpdateContentScriptsFunction::Run() {
       updated_script_ids_to_persist.insert(update_delta.id);
     }
 
-    parsed_scripts->push_back(std::move(user_script));
+    parsed_scripts.push_back(std::move(user_script));
   }
 
   // Add new script IDs now in case another call with the same script IDs is
@@ -1069,7 +1069,7 @@ void ScriptingRegisterContentScriptsFunction::OnContentScriptFilesValidated(
 
   if (error.has_value()) {
     std::set<std::string> ids_to_remove;
-    for (const auto& script : *scripts) {
+    for (const auto& script : scripts) {
       ids_to_remove.insert(script->id());
     }
 
@@ -1246,10 +1246,10 @@ ScriptingRegisterContentScriptsFunction::Run() {
 
   // Parse content scripts.
   std::u16string parse_error;
-  auto parsed_scripts = std::make_unique<UserScriptList>();
+  UserScriptList parsed_scripts;
   std::set<std::string> persistent_script_ids;
 
-  parsed_scripts->reserve(scripts.size());
+  parsed_scripts.reserve(scripts.size());
   for (auto& script : scripts) {
     if (!script.matches) {
       std::string error_script_id =
@@ -1271,7 +1271,7 @@ ScriptingRegisterContentScriptsFunction::Run() {
     if (persist_across_sessions) {
       persistent_script_ids.insert(user_script->id());
     }
-    parsed_scripts->push_back(std::move(user_script));
+    parsed_scripts.push_back(std::move(user_script));
   }
   // The contents of `scripts` have all been std::move()'d.
   scripts.clear();
@@ -1313,7 +1313,7 @@ void ScriptingUpdateContentScriptsFunction::OnContentScriptFilesValidated(
           ->GetUserScriptLoaderForExtension(extension()->id());
 
   std::set<std::string> script_ids;
-  for (const auto& script : *scripts)
+  for (const auto& script : scripts)
     script_ids.insert(script->id());
 
   if (error.has_value()) {

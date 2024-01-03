@@ -137,6 +137,7 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spell_check_host_chrome_impl.h"  // nogncheck
+#include "chrome/browser/spellchecker/spell_check_initialization_host_impl.h"  // nogncheck
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
 #endif
 
@@ -526,7 +527,8 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         switches::kStandardSchemes,      switches::kEnableSandbox,
         switches::kSecureSchemes,        switches::kBypassCSPSchemes,
         switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kStreamingSchemes};
+        switches::kServiceWorkerSchemes, switches::kStreamingSchemes,
+        switches::kCodeCacheSchemes};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames);
     if (process_type == ::switches::kUtilityProcess ||
@@ -694,7 +696,7 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
 
 void ElectronBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
-  auto schemes_list = api::GetStandardSchemes();
+  const auto& schemes_list = api::GetStandardSchemes();
   if (!schemes_list.empty())
     additional_schemes->insert(additional_schemes->end(), schemes_list.begin(),
                                schemes_list.end());
@@ -1037,7 +1039,6 @@ blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
-    ukm::SourceIdObj ukm_source_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
@@ -1046,8 +1047,7 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
-          context, ukm_source_id,
-          false /* we don't support extensions::WebViewGuest */));
+          context, false /* we don't support extensions::WebViewGuest */));
 #endif
   // Always allow navigating to file:// URLs.
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
@@ -1531,9 +1531,10 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
-    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
-                                     std::move(host_receiver));
+  if (auto host_receiver =
+          receiver.As<spellcheck::mojom::SpellCheckInitializationHost>()) {
+    SpellCheckInitializationHostImpl::Create(render_process_host->GetID(),
+                                             std::move(host_receiver));
     return;
   }
 #endif
@@ -1590,6 +1591,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
       &content::KeyboardLockServiceImpl::CreateMojoService));
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  map->Add<spellcheck::mojom::SpellCheckHost>(base::BindRepeating(
+      [](content::RenderFrameHost* frame_host,
+         mojo::PendingReceiver<spellcheck::mojom::SpellCheckHost> receiver) {
+        SpellCheckHostChromeImpl::Create(frame_host->GetProcess()->GetID(),
+                                         std::move(receiver));
+      }));
+#endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));

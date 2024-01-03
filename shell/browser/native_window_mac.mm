@@ -24,7 +24,6 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 #include "shell/browser/ui/cocoa/electron_ns_window_delegate.h"
@@ -127,6 +126,10 @@ bool IsFramelessWindow(NSView* view) {
   return window && !window->has_frame();
 }
 
+bool IsPanel(NSWindow* window) {
+  return [window isKindOfClass:[NSPanel class]];
+}
+
 IMP original_set_frame_size = nullptr;
 IMP original_view_did_move_to_superview = nullptr;
 
@@ -199,14 +202,6 @@ void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
       [parent addChildWindow:other_window ordered:NSWindowAbove];
       [parent addChildWindow:child_window ordered:NSWindowAbove];
     }
-  }
-}
-
-NSView* GetNativeNSView(NativeBrowserView* view) {
-  if (auto* inspectable = view->GetInspectableWebContentsView()) {
-    return inspectable->GetNativeView().GetNativeNSView();
-  } else {
-    return nullptr;
   }
 }
 
@@ -292,6 +287,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
+  widget()->SetNativeWindowProperty(kElectronNativeWindowKey, this);
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
@@ -469,16 +465,28 @@ void NativeWindowMac::Focus(bool focus) {
     return;
 
   if (focus) {
+    // If we're a panel window, we do not want to activate the app,
+    // which enables Electron-apps to build Spotlight-like experiences.
+    //
     // On macOS < Sonoma, "activateIgnoringOtherApps:NO" would not
     // activate apps if focusing a window that is inActive. That
-    // changed with macOS Sonoma.
+    // changed with macOS Sonoma, which also deprecated
+    // "activateIgnoringOtherApps". For the panel-specific usecase,
+    // we can simply replace "activateIgnoringOtherApps:NO" with
+    // "activate". For details on why we cannot replace all calls 1:1,
+    // please see
+    // https://github.com/electron/electron/pull/40307#issuecomment-1801976591.
     //
     // There's a slim chance we should have never called
     // activateIgnoringOtherApps, but we tried that many years ago
     // and saw weird focus bugs on other macOS versions. So, to make
     // this safe, we're gating by versions.
     if (@available(macOS 14.0, *)) {
-      [[NSApplication sharedApplication] activate];
+      if (!IsPanel(window_)) {
+        [[NSApplication sharedApplication] activate];
+      } else {
+        [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
+      }
     } else {
       [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
     }
@@ -518,6 +526,8 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
+  set_wants_to_be_visible(true);
+
   // Reattach the window to the parent to actually show it.
   if (parent())
     InternalSetParentWindow(parent(), true);
@@ -1265,64 +1275,6 @@ void NativeWindowMac::SetFocusable(bool focusable) {
 
 bool NativeWindowMac::IsFocusable() {
   return ![window_ disableKeyOrMainWindow];
-}
-
-void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  add_browser_view(view);
-  if (auto* native_view = GetNativeNSView(view)) {
-    [[window_ contentView] addSubview:native_view
-                           positioned:NSWindowAbove
-                           relativeTo:nil];
-    native_view.hidden = NO;
-  }
-
-  [CATransaction commit];
-}
-
-void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  if (auto* native_view = GetNativeNSView(view)) {
-    [native_view removeFromSuperview];
-  }
-  remove_browser_view(view);
-
-  [CATransaction commit];
-}
-
-void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  remove_browser_view(view);
-  add_browser_view(view);
-  if (auto* native_view = GetNativeNSView(view)) {
-    [[window_ contentView] addSubview:native_view
-                           positioned:NSWindowAbove
-                           relativeTo:nil];
-    native_view.hidden = NO;
-  }
-
-  [CATransaction commit];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {

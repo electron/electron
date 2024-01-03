@@ -46,7 +46,6 @@ class BrowserWindow : public BaseWindow,
   void WebContentsDestroyed() override;
 
   // ExtendedWebContentsObserver:
-  void OnCloseContents() override;
   void OnSetContentBounds(const gfx::Rect& rect) override;
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
@@ -66,8 +65,6 @@ class BrowserWindow : public BaseWindow,
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
-  void SetBrowserView(
-      absl::optional<gin::Handle<BrowserView>> browser_view) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 

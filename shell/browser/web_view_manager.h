@@ -30,7 +30,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
   // content::BrowserPluginGuestManager:
   bool ForEachGuest(content::WebContents* embedder,
-                    const GuestCallback& callback) override;
+                    base::FunctionRef<bool(content::WebContents*)> fn) override;
 
  private:
   struct WebContentsWithEmbedder {

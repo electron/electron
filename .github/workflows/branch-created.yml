@@ -1,6 +1,12 @@
 name: Branch Created
 
 on:
+  workflow_dispatch:
+    inputs:
+      branch-name:
+        description: Branch name (e.g. `29-x-y`)
+        required: true
+        type: string
   create:
 
 permissions: {}
@@ -8,7 +14,7 @@ permissions: {}
 jobs:
   release-branch-created:
     name: Release Branch Created
-    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller')) }}
     permissions:
       contents: read
       pull-requests: write
@@ -18,10 +24,10 @@ jobs:
       - name: Determine Major Version
         id: check-major-version
         run: |
-          if [[ ${{ github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
+          if [[ ${{ github.event.inputs.branch-name || github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
             echo "MAJOR=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
-            echo "Not a release branch: ${{ github.event.ref }}"
+            echo "Not a release branch: ${{ github.event.inputs.branch-name || github.event.ref }}"
           fi
       - name: New Release Branch Tasks
         if: ${{ steps.check-major-version.outputs.MAJOR }}
@@ -87,15 +93,23 @@ jobs:
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/copy-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0
+        id: create-release-board
         with:
           drafts: true
           project-number: 64
           # TODO - Set to public once GitHub fixes their GraphQL bug
           # public: true
-          link-to-repository: electron/electron
+          # TODO - Enable once GitHub doesn't require overly broad, read
+          #        and write permission for repo "Contents" to link
+          # link-to-repository: electron/electron
           template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
           title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
+      - name: Dump Release Project Board Contents
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        run: gh project item-list ${{ steps.create-release-board.outputs.number }} --owner electron --format json | jq
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/find-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0

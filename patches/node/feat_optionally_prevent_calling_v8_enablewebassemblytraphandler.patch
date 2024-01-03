@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 16 Nov 2023 16:48:10 +0100
+Subject: feat: optionally prevent calling V8::EnableWebAssemblyTrapHandler
+
+V8::EnableWebAssemblyTrapHandler can be called only once or it will
+hard crash. We need to prevent Node.js calling it in the event it has
+already been called.
+
+This should be upstreamed.
+
+diff --git a/src/node.cc b/src/node.cc
+index a9336a14304fc673c02ae5b7e5ca82aec9fa6697..7a6a9cdddf00c91612c2bcabf40a5c4af16424df 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -605,6 +605,7 @@ static void PlatformInit(ProcessInitializationFlags::Flags flags) {
+ #endif
+     }
+ #endif  // defined(_WIN32)
++  if (!(flags & ProcessInitializationFlags::kNoEnableWasmTrapHandler))
+     V8::EnableWebAssemblyTrapHandler(false);
+ #endif  // NODE_USE_V8_WASM_TRAP_HANDLER
+   }
+diff --git a/src/node.h b/src/node.h
+index a512d2228e0afcfff765c3fe845e1f22073047d0..36da93a7b41ea450a5f288ec17b61adae46ae178 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -274,6 +274,10 @@ enum Flags : uint32_t {
+   kNoInitializeCppgc = 1 << 13,
+   // Initialize the process for predictable snapshot generation.
+   kGeneratePredictableSnapshot = 1 << 14,
++  // Do not initialize the Web Assembly trap handler. This is used by
++  // embedders to account for the case where it may already have been
++  // initialized - calling it more than once will hard crash.
++  kNoEnableWasmTrapHandler = 1 << 15,
+ 
+   // Emulate the behavior of InitializeNodeWithArgs() when passing
+   // a flags argument to the InitializeOncePerProcess() replacement

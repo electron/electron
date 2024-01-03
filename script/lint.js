@@ -95,7 +95,7 @@ function isObjCHeader (filename) {
 }
 
 const LINTERS = [{
-  key: 'c++',
+  key: 'cpp',
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
@@ -136,7 +136,9 @@ const LINTERS = [{
       cache: !process.env.CI,
       cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
       extensions: ['.js', '.ts'],
-      fix: opts.fix
+      fix: opts.fix,
+      overrideConfigFile: path.join(ELECTRON_ROOT, '.eslintrc.json'),
+      resolvePluginsRelativeTo: ELECTRON_ROOT
     });
     const formatter = await eslint.loadFormatter();
     let successCount = 0;
@@ -363,16 +365,37 @@ const LINTERS = [{
 
 function parseCommandLine () {
   let help;
+  const langs = ['cpp', 'objc', 'javascript', 'python', 'gn', 'patches', 'markdown'];
+  const langRoots = langs.map(lang => lang + '-roots');
+  const langIgnoreRoots = langs.map(lang => lang + '-ignore-roots');
   const opts = minimist(process.argv.slice(2), {
-    boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'markdown', 'help', 'changed', 'fix', 'verbose', 'only'],
-    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', markdown: 'md', changed: 'c', help: 'h', verbose: 'v' },
+    boolean: [...langs, 'help', 'changed', 'fix', 'verbose', 'only'],
+    alias: { cpp: ['c++', 'cc', 'cxx'], javascript: ['js', 'es'], python: 'py', markdown: 'md', changed: 'c', help: 'h', verbose: 'v' },
+    string: [...langRoots, ...langIgnoreRoots],
     unknown: () => { help = true; }
   });
   if (help || opts.help) {
-    console.log('Usage: script/lint.js [--cc] [--js] [--py] [--md] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]');
+    const langFlags = langs.map(lang => `[--${lang}]`).join(' ');
+    console.log(`Usage: script/lint.js ${langFlags} [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]`);
     process.exit(0);
   }
   return opts;
+}
+
+function populateLinterWithArgs (linter, opts) {
+  const extraRoots = opts[`${linter.key}-roots`];
+  if (extraRoots) {
+    linter.roots.push(...extraRoots.split(','));
+  }
+  const extraIgnoreRoots = opts[`${linter.key}-ignore-roots`];
+  if (extraIgnoreRoots) {
+    const list = extraIgnoreRoots.split(',');
+    if (linter.ignoreRoots) {
+      linter.ignoreRoots.push(...list);
+    } else {
+      linter.ignoreRoots = list;
+    }
+  }
 }
 
 async function findChangedFiles (top) {
@@ -432,13 +455,14 @@ async function main () {
   const opts = parseCommandLine();
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches && !opts.markdown) {
-    opts['c++'] = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = opts.markdown = true;
+  if (!opts.cpp && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches && !opts.markdown) {
+    opts.cpp = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = opts.markdown = true;
   }
 
   const linters = LINTERS.filter(x => opts[x.key]);
 
   for (const linter of linters) {
+    populateLinterWithArgs(linter, opts);
     const filenames = await findFiles(opts, linter);
     if (filenames.length) {
       if (opts.verbose) { console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`); }

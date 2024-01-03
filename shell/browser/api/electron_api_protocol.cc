@@ -32,6 +32,9 @@ std::vector<std::string> g_standard_schemes;
 // List of registered custom streaming schemes.
 std::vector<std::string> g_streaming_schemes;
 
+// Schemes that support V8 code cache.
+std::vector<std::string> g_code_cache_schemes;
+
 struct SchemeOptions {
   bool standard = false;
   bool secure = false;
@@ -40,6 +43,7 @@ struct SchemeOptions {
   bool supportFetchAPI = false;
   bool corsEnabled = false;
   bool stream = false;
+  bool codeCache = false;
 };
 
 struct CustomScheme {
@@ -71,6 +75,7 @@ struct Converter<CustomScheme> {
       opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("corsEnabled", &(out->options.corsEnabled));
       opt.Get("stream", &(out->options.stream));
+      opt.Get("codeCache", &(out->options.codeCache));
     }
     return true;
   }
@@ -82,8 +87,12 @@ namespace electron::api {
 
 gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-std::vector<std::string> GetStandardSchemes() {
+const std::vector<std::string>& GetStandardSchemes() {
   return g_standard_schemes;
+}
+
+const std::vector<std::string>& GetCodeCacheSchemes() {
+  return g_code_cache_schemes;
 }
 
 void AddServiceWorkerScheme(const std::string& scheme) {
@@ -102,6 +111,15 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   if (!gin::ConvertFromV8(thrower.isolate(), val, &custom_schemes)) {
     thrower.ThrowError("Argument must be an array of custom schemes.");
     return;
+  }
+
+  for (const auto& custom_scheme : custom_schemes) {
+    if (custom_scheme.options.codeCache && !custom_scheme.options.standard) {
+      thrower.ThrowError(
+          "Code cache can only be enabled when the custom scheme is registered "
+          "as standard scheme.");
+      return;
+    }
   }
 
   std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
@@ -137,10 +155,16 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     if (custom_scheme.options.stream) {
       g_streaming_schemes.push_back(custom_scheme.scheme);
     }
+    if (custom_scheme.options.codeCache) {
+      g_code_cache_schemes.push_back(custom_scheme.scheme);
+      url::AddCodeCacheScheme(custom_scheme.scheme.c_str());
+    }
   }
 
   const auto AppendSchemesToCmdLine = [](const char* switch_name,
                                          std::vector<std::string> schemes) {
+    if (schemes.empty())
+      return;
     // Add the schemes to command line switches, so child processes can also
     // register them.
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
@@ -158,6 +182,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                          g_standard_schemes);
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
                          g_streaming_schemes);
+  AppendSchemesToCmdLine(electron::switches::kCodeCacheSchemes,
+                         g_code_cache_schemes);
 }
 
 namespace {

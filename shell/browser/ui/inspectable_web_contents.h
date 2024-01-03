@@ -128,8 +128,6 @@ class InspectableWebContents
       bool network_discovery_enabled,
       const std::string& network_discovery_config) override;
   void SetDevicesUpdatesEnabled(bool enabled) override;
-  void PerformActionOnRemotePage(const std::string& page_id,
-                                 const std::string& action) override;
   void OpenRemotePage(const std::string& browser_id,
                       const std::string& url) override;
   void OpenNodeFrontend() override;
@@ -167,6 +165,8 @@ class InspectableWebContents
   void RecordUserMetricsAction(const std::string& name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
+  void RecordHover(const HoverEvent& event) override {}
+  void RecordDrag(const DragEvent& event) override {}
   void RecordChange(const ChangeEvent& event) override {}
   void RecordKeyDown(const KeyDownEvent& event) override {}
   void ShowSurvey(DispatchCallback callback,

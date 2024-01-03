@@ -1,19 +1,23 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: clavin <clavin@electronjs.org>
-Date: Wed, 30 Aug 2023 18:15:36 -0700
+Date: Mon, 11 Dec 2023 20:43:34 -0300
 Subject: fix: activate background material on windows
 
 This patch adds a condition to the HWND message handler to allow windows
 with translucent background materials to become activated.
 
+It also ensures the lParam of WM_NCACTIVATE is set to -1 so as to not repaint
+the client area, which can lead to a title bar incorrectly being displayed in
+frameless windows.
+
 This patch likely can't be upstreamed as-is, as Chromium doesn't have
 this use case in mind currently.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index f233b50629796be30962977f1b53f54cace4f783..7ba18759b1fc4ff1727a603d470db4ae70d9e9c4 100644
+index 23905a6b7f739ff3c6f391f984527ef5d2ed0bd9..aed8894a5514fddfc8d15b8fb4ae611fa4493b6f 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -900,7 +900,7 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -901,13 +901,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
@@ -22,3 +26,34 @@ index f233b50629796be30962977f1b53f54cace4f783..7ba18759b1fc4ff1727a603d470db4ae
        (delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN)) {
      return;
    }
+ 
+   DefWindowProcWithRedrawLock(WM_NCACTIVATE, delegate_->ShouldPaintAsActive(),
+-                              0);
++                              delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
+@@ -2254,17 +2254,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+   if (IsVisible())
+     delegate_->SchedulePaint();
+ 
+-  // Calling DefWindowProc is only necessary if there's a system frame being
+-  // drawn. Otherwise it can draw an incorrect title bar and cause visual
+-  // corruption.
+-  if (!delegate_->HasFrame() ||
++  // If the window is translucent, it may have the Mica background.
++  // In that case, it's necessary to call |DefWindowProc|, but we can
++  // pass -1 in the lParam to prevent any non-client area elements from
++  // being displayed.
++  if ((!delegate_->HasFrame() && !is_translucent_) ||
+       delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN) {
+     SetMsgHandled(TRUE);
+     return TRUE;
+   }
+ 
+   return DefWindowProcWithRedrawLock(WM_NCACTIVATE, paint_as_active || active,
+-                                     0);
++                                     delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ LRESULT HWNDMessageHandler::OnNCCalcSize(BOOL mode, LPARAM l_param) {

@@ -1,4 +1,4 @@
-import { BaseWindow, WebContents, BrowserView, TouchBar } from 'electron/main';
+import { BaseWindow, WebContents, TouchBar, BrowserView } from 'electron/main';
 import type { BrowserWindow as BWT } from 'electron/main';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
@@ -6,7 +6,7 @@ Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
 BrowserWindow.prototype._init = function (this: BWT) {
   // Call parent class's _init.
-  BaseWindow.prototype._init.call(this);
+  (BaseWindow.prototype as any)._init.call(this);
 
   // Avoid recursive require.
   const { app } = require('electron');
@@ -74,6 +74,12 @@ BrowserWindow.prototype._init = function (this: BWT) {
   for (const event of visibilityEvents) {
     this.on(event as any, visibilityChanged);
   }
+
+  this._browserViews = [];
+
+  this.on('close', () => {
+    this._browserViews.forEach(b => b.webContents?.close({ waitForBeforeUnload: true }));
+  });
 
   // Notify the creation of the window.
   app.emit('browser-window-created', { preventDefault () {} }, this);
@@ -189,6 +195,44 @@ BrowserWindow.prototype.getBackgroundThrottling = function () {
 
 BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
   return this.webContents.setBackgroundThrottling(allowed);
+};
+
+BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
+  if (browserView.ownerWindow) { browserView.ownerWindow.removeBrowserView(browserView); }
+  this.contentView.addChildView(browserView.webContentsView);
+  browserView.ownerWindow = this;
+  browserView.webContents._setOwnerWindow(this);
+  this._browserViews.push(browserView);
+};
+
+BrowserWindow.prototype.setBrowserView = function (browserView: BrowserView) {
+  this._browserViews.forEach(bv => {
+    this.removeBrowserView(bv);
+  });
+  if (browserView) { this.addBrowserView(browserView); }
+};
+
+BrowserWindow.prototype.removeBrowserView = function (browserView: BrowserView) {
+  const idx = this._browserViews.indexOf(browserView);
+  if (idx >= 0) {
+    this.contentView.removeChildView(browserView.webContentsView);
+    browserView.ownerWindow = null;
+    this._browserViews.splice(idx, 1);
+  }
+};
+
+BrowserWindow.prototype.getBrowserView = function () {
+  if (this._browserViews.length > 1) { throw new Error('This BrowserWindow has multiple BrowserViews, use getBrowserViews() instead'); }
+  return this._browserViews[0] ?? null;
+};
+
+BrowserWindow.prototype.getBrowserViews = function () {
+  return [...this._browserViews];
+};
+
+BrowserWindow.prototype.setTopBrowserView = function (browserView: BrowserView) {
+  if (browserView.ownerWindow !== this) { throw new Error('Given BrowserView is not attached to the window'); }
+  this.addBrowserView(browserView);
 };
 
 module.exports = BrowserWindow;

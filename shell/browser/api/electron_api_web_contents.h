@@ -23,6 +23,7 @@
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
@@ -85,7 +86,6 @@ class SkRegion;
 namespace electron {
 
 class ElectronBrowserContext;
-class ElectronJavaScriptDialogManager;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
@@ -97,6 +97,8 @@ class OffScreenWebContentsView;
 
 namespace api {
 
+class BaseWindow;
+
 // Wrapper around the content::WebContents.
 class WebContents : public ExclusiveAccessContext,
                     public gin::Wrappable<WebContents>,
@@ -107,6 +109,7 @@ class WebContents : public ExclusiveAccessContext,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
                     public content::RenderWidgetHost::InputEventObserver,
+                    public content::JavaScriptDialogManager,
                     public InspectableWebContentsDelegate,
                     public InspectableWebContentsViewDelegate,
                     public BackgroundThrottlingSource {
@@ -114,7 +117,9 @@ class WebContents : public ExclusiveAccessContext,
   enum class Type {
     kBackgroundPage,  // An extension background page.
     kBrowserWindow,   // Used by BrowserWindow.
-    kBrowserView,     // Used by BrowserView.
+    kBrowserView,     // Used by the JS implementation of BrowserView for
+                      // backwards compatibility. Otherwise identical to
+                      // kBrowserWindow.
     kRemote,          // Thin wrap around an existing WebContents.
     kWebView,         // Used by <webview>.
     kOffScreen,       // Used for offscreen rendering
@@ -398,6 +403,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetOwnerWindow(NativeWindow* owner_window);
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
+  void SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
@@ -452,6 +458,23 @@ class WebContents : public ExclusiveAccessContext,
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
+
+  // content::JavaScriptDialogManager:
+  void RunJavaScriptDialog(content::WebContents* web_contents,
+                           content::RenderFrameHost* rfh,
+                           content::JavaScriptDialogType dialog_type,
+                           const std::u16string& message_text,
+                           const std::u16string& default_prompt_text,
+                           DialogClosedCallback callback,
+                           bool* did_suppress_message) override;
+  void RunBeforeUnloadDialog(content::WebContents* web_contents,
+                             content::RenderFrameHost* rfh,
+                             bool is_reload,
+                             DialogClosedCallback callback) override;
+  void CancelDialogs(content::WebContents* web_contents,
+                     bool reset_state) override;
+
+  void SetBackgroundColor(absl::optional<SkColor> color);
 
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();
@@ -583,7 +606,7 @@ class WebContents : public ExclusiveAccessContext,
                            bool esc_key_locked) override;
   void CancelKeyboardLockRequest(content::WebContents* web_contents) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
-                                  const GURL& security_origin,
+                                  const url::Origin& security_origin,
                                   blink::mojom::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
@@ -762,7 +785,6 @@ class WebContents : public ExclusiveAccessContext,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  std::unique_ptr<ElectronJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
 

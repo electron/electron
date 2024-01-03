@@ -11,16 +11,16 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 0594fc8f8122b5f66457c262890ea93be3a579d8..19f045d14c6072c1b0b8fb6a50bf4cafa563f7cb 100644
+index 4b4545013d6de396a660b234ded3f16f8bb0e983..36b8ac1ee569041d7687f457320aa8f6e4b26f85 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -200,11 +200,16 @@ if (!is_android && !is_mac) {
+@@ -200,11 +200,16 @@ if (!is_android && !is_mac && !is_fuchsia) {
            "common/crash_keys.h",
          ]
  
 +        if (!is_electron_build) {
 +          deps = [
-+            ":packed_resources_integrity",
++            ":packed_resources_integrity_header",
 +          ]
 +        }
 +
@@ -28,62 +28,62 @@ index 0594fc8f8122b5f66457c262890ea93be3a579d8..19f045d14c6072c1b0b8fb6a50bf4caf
            ":chrome_dll",
            ":chrome_exe_version",
            ":copy_first_run",
--          ":packed_resources_integrity",
+-          ":packed_resources_integrity_header",
            ":visual_elements_resources",
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index ed81d39db6133ee457eadd96d8ecfb5cdb23eee5..2da48b632cf006f2884fa36b433f476537db0dab 100644
+index ea574b1863e186401094d9e9d55c08c10424b671..b7cdbd3f650c37c798e6d95f4f3721ead3ad1fbf 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4819,7 +4819,7 @@ static_library("browser") {
+@@ -4750,7 +4750,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
 -    if (!is_win) {
 +    if (!is_win && !is_electron_build) {
-       deps += [ "//chrome:packed_resources_integrity" ]
+       deps += [ "//chrome:packed_resources_integrity_header" ]
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index b976af4b6d90cb374233914ac7d178773c21fbd7..63f2d8bbc336804293007fef8f12ea3c058d5f2f 100644
+index 09cf5b94c26c978d4a41b7e634a394a946783a4d..188755a0031c98be54fc58e232f0e6066f7e7931 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7088,7 +7088,6 @@ test("unit_tests") {
+@@ -7179,7 +7179,6 @@ if (!is_fuchsia) {
  
-     deps += [
-       "//chrome:other_version",
--      "//chrome:packed_resources_integrity",
-       "//chrome//services/util_win:unit_tests",
-       "//chrome/app:chrome_dll_resources",
-       "//chrome/app:win_unit_tests",
-@@ -7109,6 +7108,10 @@ test("unit_tests") {
-       "//ui/resources",
-     ]
+       deps += [
+         "//chrome:other_version",
+-        "//chrome:packed_resources_integrity_header",
+         "//chrome//services/util_win:unit_tests",
+         "//chrome/app:chrome_dll_resources",
+         "//chrome/app:win_unit_tests",
+@@ -7200,6 +7199,10 @@ if (!is_fuchsia) {
+         "//ui/resources",
+       ]
  
-+    if (!is_electron_build) {
-+      deps += [ "//chrome:packed_resources_integrity" ]
-+    }
++      if (!is_electron_build) {
++        deps += [ "//chrome:packed_resources_integrity_header" ]
++      }
 +
-     ldflags = [
-       "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
-       "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -8101,7 +8104,6 @@ test("unit_tests") {
-     }
+       ldflags = [
+         "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
+         "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
+@@ -8223,7 +8226,6 @@ if (!is_fuchsia) {
+       }
  
-     deps += [
--      "//chrome:packed_resources_integrity_hash",
-       "//chrome/browser/apps:icon_standardizer",
-       "//chrome/browser/apps/app_service",
-       "//chrome/browser/apps/app_service:app_registry_cache_waiter",
-@@ -8191,6 +8193,10 @@ test("unit_tests") {
-       "//ui/webui/resources/js/browser_command:mojo_bindings",
-     ]
+       deps += [
+-        "//chrome:packed_resources_integrity_header",
+         "//chrome/browser/apps:icon_standardizer",
+         "//chrome/browser/apps/app_service",
+         "//chrome/browser/apps/app_service:app_registry_cache_waiter",
+@@ -8316,6 +8318,10 @@ if (!is_fuchsia) {
+         "//ui/webui/resources/js/browser_command:mojo_bindings",
+       ]
  
-+    if (!is_electron_build) {
-+      deps += [ "//chrome:packed_resources_integrity_hash" ]
-+    }
++      if (!is_electron_build) {
++        deps += [ "//chrome:packed_resources_integrity_header" ]
++      }
 +
-     data += [ "//ash/components/arc/test/data/icons/" ]
+       data += [ "//ash/components/arc/test/data/icons/" ]
  
-     if (include_js2gtest_tests && is_chromeos_ash) {
+       if (include_js2gtest_tests && is_chromeos_ash) {

@@ -13,19 +13,21 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Local<v8::Context> context,
     const char* id,
     std::vector<v8::Local<v8::String>>* parameters,
-    std::vector<v8::Local<v8::Value>>* arguments,
-    node::Environment* optional_env) {
+    std::vector<v8::Local<v8::Value>>* arguments) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::TryCatch try_catch(isolate);
-  v8::MaybeLocal<v8::Function> compiled =
-      node::builtins::BuiltinLoader::LookupAndCompile(context, id, parameters,
-                                                      optional_env);
-  if (compiled.IsEmpty()) {
+
+  thread_local node::builtins::BuiltinLoader builtin_loader;
+  v8::MaybeLocal<v8::Function> compiled = builtin_loader.LookupAndCompile(
+      context, id, parameters, node::Realm::GetCurrent(context));
+
+  if (compiled.IsEmpty())
     return v8::MaybeLocal<v8::Value>();
-  }
+
   v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(
       context, v8::Null(isolate), arguments->size(), arguments->data());
+
   // This will only be caught when something has gone terrible wrong as all
   // electron scripts are wrapped in a try {} catch {} by webpack
   if (try_catch.HasCaught()) {

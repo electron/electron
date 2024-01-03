@@ -155,7 +155,7 @@ need two Electron modules:
   windows.
 
 Because the main process runs Node.js, you can import these as [CommonJS][commonjs]
-modules at the top of your file:
+modules at the top of your `main.js` file:
 
 ```js
 const { app, BrowserWindow } = require('electron')

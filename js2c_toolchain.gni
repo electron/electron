@@ -1,0 +1,71 @@
+# Copyright (c) 2023 Microsoft, GmbH
+# Use of this source code is governed by the MIT license that can be
+# found in the LICENSE file.
+
+declare_args() {
+  electron_js2c_toolchain = ""
+}
+
+if (electron_js2c_toolchain == "") {
+  if (current_os == host_os && current_cpu == host_cpu) {
+    # This is not a cross-compile, so build the snapshot with the current
+    # toolchain.
+    electron_js2c_toolchain = current_toolchain
+  } else if (current_os == host_os && current_cpu == "x86" &&
+             host_cpu == "x64") {
+    # This is an x64 -> x86 cross-compile, but x64 hosts can usually run x86
+    # binaries built for the same OS, so build the snapshot with the current
+    # toolchain here, too.
+    electron_js2c_toolchain = current_toolchain
+  } else if (current_os == host_os && host_cpu == "arm64" &&
+             current_cpu == "arm") {
+    # Trying to compile 32-bit arm on arm64. Good luck!
+    electron_js2c_toolchain = current_toolchain
+  } else if (host_cpu == current_cpu) {
+    # Cross-build from same ISA on one OS to another. For example:
+    # * targeting win/x64 on a linux/x64 host
+    # * targeting win/arm64 on a mac/arm64 host
+    electron_js2c_toolchain = host_toolchain
+  } else if (host_cpu == "arm64" && current_cpu == "x64") {
+    # Cross-build from arm64 to intel (likely on an Apple Silicon mac).
+    electron_js2c_toolchain =
+        "//build/toolchain/${host_os}:clang_arm64_v8_$current_cpu"
+  } else if (host_cpu == "x64") {
+    # This is a cross-compile from an x64 host to either a non-Intel target
+    # cpu or to 32-bit x86 on a different target OS.
+
+    assert(current_cpu != "x64", "handled by host_cpu == current_cpu branch")
+    if (current_cpu == "x86") {
+      _cpus = current_cpu
+    } else if (current_cpu == "arm64") {
+      if (is_win) {
+        # set _cpus to blank for Windows ARM64 so host_toolchain could be
+        # selected as snapshot toolchain later.
+        _cpus = ""
+      } else {
+        _cpus = "x64_v8_${current_cpu}"
+      }
+    } else if (current_cpu == "arm") {
+      _cpus = "x86_v8_${current_cpu}"
+    } else {
+      # This branch should not be reached; leave _cpus blank so the assert
+      # below will fail.
+      _cpus = ""
+    }
+
+    if (_cpus != "") {
+      electron_js2c_toolchain = "//build/toolchain/${host_os}:clang_${_cpus}"
+    } else if (is_win && current_cpu == "arm64") {
+      # cross compile Windows arm64 with host toolchain.
+      electron_js2c_toolchain = host_toolchain
+    }
+  } else if (host_cpu == "arm64" && current_cpu == "arm64" &&
+             host_os == "mac") {
+    # cross compile iOS arm64 with host_toolchain
+    electron_js2c_toolchain = host_toolchain
+  }
+}
+
+assert(electron_js2c_toolchain != "",
+       "Do not know how to build js2c for $current_toolchain " +
+           "on $host_os $host_cpu")

@@ -13,7 +13,6 @@
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/native_browser_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -70,6 +69,9 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.SetHidden("webContents", value);
   }
 
+  if (!web_preferences.Has(options::kShow))
+    web_preferences.Set(options::kShow, true);
+
   // Creates the WebContentsView.
   gin::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
@@ -101,8 +103,6 @@ BrowserWindow::~BrowserWindow() {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
     api_web_contents_->RemoveObserver(this);
-    // Destroy the WebContents.
-    OnCloseContents();
     api_web_contents_->Destroy();
   }
 }
@@ -114,10 +114,6 @@ void BrowserWindow::BeforeUnloadDialogCancelled() {
 void BrowserWindow::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   CloseImmediately();
-}
-
-void BrowserWindow::OnCloseContents() {
-  BaseWindow::ResetBrowserViews();
 }
 
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
@@ -161,26 +157,6 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 
   // Required to make beforeunload handler work.
   api_web_contents_->NotifyUserActivation();
-
-  // Trigger beforeunload events for associated BrowserViews.
-  for (NativeBrowserView* view : window_->browser_views()) {
-    auto* iwc = view->GetInspectableWebContents();
-    if (!iwc)
-      continue;
-
-    auto* vwc = iwc->GetWebContents();
-    auto* api_web_contents = api::WebContents::From(vwc);
-
-    // Required to make beforeunload handler work.
-    if (api_web_contents)
-      api_web_contents->NotifyUserActivation();
-
-    if (vwc) {
-      if (vwc->NeedToFireBeforeUnloadOrUnloadEvents()) {
-        vwc->DispatchBeforeUnload(false /* auto_cancel */);
-      }
-    }
-  }
 
   if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
@@ -260,29 +236,16 @@ void BrowserWindow::Blur() {
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
   SkColor color = ParseCSSColor(color_name);
-  web_contents()->SetPageBaseBackgroundColor(color);
-  auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv) {
-    rwhv->SetBackgroundColor(color);
-    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
-        ->SetContentBackgroundColor(color);
-  }
-  // Also update the web preferences object otherwise the view will be reset on
-  // the next load URL call
   if (api_web_contents_) {
+    api_web_contents_->SetBackgroundColor(color);
+    // Also update the web preferences object otherwise the view will be reset
+    // on the next load URL call
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
       web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
     }
   }
-}
-
-void BrowserWindow::SetBrowserView(
-    absl::optional<gin::Handle<BrowserView>> browser_view) {
-  BaseWindow::ResetBrowserViews();
-  if (browser_view)
-    BaseWindow::AddBrowserView(*browser_view);
 }
 
 void BrowserWindow::FocusOnWebView() {

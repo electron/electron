@@ -514,6 +514,11 @@ describe('webContents module', () => {
         .and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
       s.close();
     });
+
+    it('subsequent load failures reject each time', async () => {
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+    });
   });
 
   describe('getFocusedWebContents() API', () => {
@@ -638,6 +643,24 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false, title: 'myTitle' });
       await devtoolsOpened;
       expect(w.webContents.getDevToolsTitle()).to.equal('myTitle');
+    });
+
+    it('can re-open devtools', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: true });
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await devtoolsClosed;
+      expect(w.webContents.isDevToolsOpened()).to.be.false();
+
+      const devtoolsOpened2 = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: true });
+      await devtoolsOpened2;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
   });
 

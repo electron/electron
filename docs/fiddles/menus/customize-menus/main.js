@@ -102,7 +102,7 @@ const template = [
         })(),
         click: (item, focusedWindow) => {
           if (focusedWindow) {
-            focusedWindow.toggleDevTools()
+            focusedWindow.webContents.toggleDevTools()
           }
         }
       },

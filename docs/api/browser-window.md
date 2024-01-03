@@ -98,8 +98,8 @@ The `child` window will always show on top of the `top` window.
 
 ## Modal windows
 
-A modal window is a child window that disables parent window, to create a modal
-window, you have to set both `parent` and `modal` options:
+A modal window is a child window that disables parent window. To create a modal
+window, you have to set both the `parent` and `modal` options:
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -140,7 +140,7 @@ state is `hidden` in order to minimize power consumption.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
 
-## Class: BrowserWindow
+## Class: BrowserWindow extends `BaseWindow`
 
 > Create and control browser windows.
 
@@ -440,9 +440,13 @@ Returns `BrowserWindow | null` - The window that is focused in this application,
 Returns `BrowserWindow | null` - The window that owns the given `webContents`
 or `null` if the contents are not owned by a window.
 
-#### `BrowserWindow.fromBrowserView(browserView)`
+#### `BrowserWindow.fromBrowserView(browserView)` _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
 
 Returns `BrowserWindow | null` - The window that owns the given `browserView`. If the given view is not attached to any window, returns `null`.
 
@@ -1580,41 +1584,62 @@ machine has a touch bar.
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
 
-#### `win.setBrowserView(browserView)` _Experimental_
+#### `win.setBrowserView(browserView)` _Experimental_ _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md) | null - Attach `browserView` to `win`.
 If there are other `BrowserView`s attached, they will be removed from
 this window.
 
-#### `win.getBrowserView()` _Experimental_
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.getBrowserView()` _Experimental_ _Deprecated_
 
 Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
 if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
-#### `win.addBrowserView(browserView)` _Experimental_
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.addBrowserView(browserView)` _Experimental_ _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
 
 Replacement API for setBrowserView supporting work with multi browser views.
 
-#### `win.removeBrowserView(browserView)` _Experimental_
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.removeBrowserView(browserView)` _Experimental_ _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
 
-#### `win.setTopBrowserView(browserView)` _Experimental_
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.setTopBrowserView(browserView)` _Experimental_ _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
 
 Raises `browserView` above other `BrowserView`s attached to `win`.
 Throws an error if `browserView` is not attached to `win`.
 
-#### `win.getBrowserViews()` _Experimental_
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.getBrowserViews()` _Experimental_ _Deprecated_
 
 Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
 with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
 
-**Note:** The BrowserView API is currently experimental and may change or be
-removed in future Electron releases.
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
 
 #### `win.setTitleBarOverlay(options)` _Windows_
 

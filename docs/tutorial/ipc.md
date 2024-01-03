@@ -280,8 +280,8 @@ selected file path in the `#filePath` element.
 ### Note: legacy approaches
 
 The `ipcRenderer.invoke` API was added in Electron 7 as a developer-friendly way to tackle two-way
-IPC from the renderer process. However, there exist a couple alternative approaches to this IPC
-pattern.
+IPC from the renderer process. However, a couple of alternative approaches to this IPC pattern
+exist.
 
 :::warning Avoid legacy approaches if possible
 We recommend using `ipcRenderer.invoke` whenever possible. The following two-way renderer-to-main

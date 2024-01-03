@@ -46,13 +46,13 @@
 #define ELECTRON_BROWSER_BINDINGS(V)     \
   V(electron_browser_app)                \
   V(electron_browser_auto_updater)       \
-  V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
   V(electron_browser_desktop_capturer)   \
   V(electron_browser_dialog)             \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
+  V(electron_browser_image_view)         \
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
@@ -98,8 +98,6 @@
 
 #define ELECTRON_UTILITY_BINDINGS(V) V(electron_utility_parent_port)
 
-#define ELECTRON_VIEWS_BINDINGS(V) V(electron_browser_image_view)
-
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
 
 // This is used to load built-in bindings. Instead of using
@@ -112,9 +110,6 @@ ELECTRON_BROWSER_BINDINGS(V)
 ELECTRON_COMMON_BINDINGS(V)
 ELECTRON_RENDERER_BINDINGS(V)
 ELECTRON_UTILITY_BINDINGS(V)
-#if BUILDFLAG(ENABLE_VIEWS_API)
-ELECTRON_VIEWS_BINDINGS(V)
-#endif
 #if DCHECK_IS_ON()
 ELECTRON_TESTING_BINDINGS(V)
 #endif
@@ -279,8 +274,11 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
       while (env->async_hooks()->fields()[node::AsyncHooks::kStackLength]) {
-        node::AsyncWrap::EmitAfter(env, env->execution_async_id());
-        env->async_hooks()->pop_async_context(env->execution_async_id());
+        double id = env->execution_async_id();
+        // Do not call EmitAfter for asyncId 0.
+        if (id != 0)
+          node::AsyncWrap::EmitAfter(env, id);
+        env->async_hooks()->pop_async_context(id);
       }
     }
 
@@ -294,7 +292,7 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
 // If node CLI inspect support is disabled, allow no debug options.
 bool IsAllowedOption(base::StringPiece option) {
   static constexpr auto debug_options =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
+      base::MakeFixedFlatSet<base::StringPiece>({
           "--debug",
           "--debug-brk",
           "--debug-port",
@@ -306,14 +304,13 @@ bool IsAllowedOption(base::StringPiece option) {
       });
 
   // This should be aligned with what's possible to set via the process object.
-  static constexpr auto options =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
-          "--dns-result-order",
-          "--no-deprecation",
-          "--throw-deprecation",
-          "--trace-deprecation",
-          "--trace-warnings",
-      });
+  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
+      "--dns-result-order",
+      "--no-deprecation",
+      "--throw-deprecation",
+      "--trace-deprecation",
+      "--trace-warnings",
+  });
 
   if (debug_options.contains(option))
     return electron::fuses::IsNodeCliInspectEnabled();
@@ -325,21 +322,19 @@ bool IsAllowedOption(base::StringPiece option) {
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
-  static constexpr auto disallowed =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
-          "--enable-fips",
-          "--experimental-policy",
-          "--force-fips",
-          "--openssl-config",
-          "--use-bundled-ca",
-          "--use-openssl-ca",
-      });
+  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+      "--enable-fips",
+      "--experimental-policy",
+      "--force-fips",
+      "--openssl-config",
+      "--use-bundled-ca",
+      "--use-openssl-ca",
+  });
 
-  static constexpr auto pkg_opts =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
-          "--http-parser",
-          "--max-http-header-size",
-      });
+  static constexpr auto pkg_opts = base::MakeFixedFlatSet<base::StringPiece>({
+      "--http-parser",
+      "--max-http-header-size",
+  });
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
@@ -441,9 +436,6 @@ void NodeBindings::RegisterBuiltinBindings() {
 #define V(modname) _register_##modname();
   if (IsBrowserProcess()) {
     ELECTRON_BROWSER_BINDINGS(V)
-#if BUILDFLAG(ENABLE_VIEWS_API)
-    ELECTRON_VIEWS_BINDINGS(V)
-#endif
   }
   ELECTRON_COMMON_BINDINGS(V)
   if (IsRendererProcess()) {
@@ -513,26 +505,35 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   SetNodeOptions(env.get());
 
   // Parse and set Node.js cli flags.
-  std::vector<std::string> argv = ParseNodeCliFlags();
-  std::vector<std::string> exec_argv;
-  std::vector<std::string> errors;
-  uint64_t process_flags = node::ProcessFlags::kNoFlags;
+  std::vector<std::string> args = ParseNodeCliFlags();
+  uint64_t process_flags =
+      node::ProcessInitializationFlags::kNoInitializeV8 |
+      node::ProcessInitializationFlags::kNoInitializeNodeV8Platform |
+      node::ProcessInitializationFlags::kNoEnableWasmTrapHandler;
+
   // We do not want the child processes spawned from the utility process
   // to inherit the custom stdio handles created for the parent.
   if (browser_env_ != BrowserEnvironment::kUtility)
-    process_flags |= node::ProcessFlags::kEnableStdioInheritance;
+    process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
+
+  if (browser_env_ == BrowserEnvironment::kRenderer)
+    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc |
+                     node::ProcessInitializationFlags::kNoDefaultSignalHandling;
+
   if (!fuses::IsNodeOptionsEnabled())
-    process_flags |= node::ProcessFlags::kDisableNodeOptionsEnv;
+    process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
-  int exit_code = node::InitializeNodeWithArgs(
-      &argv, &exec_argv, &errors,
-      static_cast<node::ProcessFlags::Flags>(process_flags));
+  std::unique_ptr<node::InitializationResult> result =
+      node::InitializeOncePerProcess(
+          args,
+          static_cast<node::ProcessInitializationFlags::Flags>(process_flags));
 
-  for (const std::string& error : errors)
-    fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
+  for (const std::string& error : result->errors()) {
+    fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+  }
 
-  if (exit_code != 0)
-    exit(exit_code);
+  if (result->early_return() != 0)
+    exit(result->exit_code());
 
 #if BUILDFLAG(IS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -605,10 +606,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
                                            static_cast<void*>(isolate_data));
 
   node::Environment* env;
-  uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kHideConsoleWindows |
-                   node::EnvironmentFlags::kNoGlobalSearchPaths |
-                   node::EnvironmentFlags::kNoRegisterESMLoader;
+  uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
+                       node::EnvironmentFlags::kHideConsoleWindows |
+                       node::EnvironmentFlags::kNoGlobalSearchPaths |
+                       node::EnvironmentFlags::kNoRegisterESMLoader;
 
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
@@ -620,21 +621,21 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // for processes that already have these defined by DOM.
     // Check //third_party/electron_node/lib/internal/bootstrap/node.js
     // for the list of overrides on globalThis.
-    flags |= node::EnvironmentFlags::kNoBrowserGlobals |
-             node::EnvironmentFlags::kNoCreateInspector;
+    env_flags |= node::EnvironmentFlags::kNoBrowserGlobals |
+                 node::EnvironmentFlags::kNoCreateInspector;
   }
 
   if (!electron::fuses::IsNodeCliInspectEnabled()) {
     // If --inspect and friends are disabled we also shouldn't listen for
     // SIGUSR1
-    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
+    env_flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
   }
 
   {
     v8::TryCatch try_catch(isolate);
     env = node::CreateEnvironment(
         static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
+        static_cast<node::EnvironmentFlags::Flags>(env_flags));
 
     if (try_catch.HasCaught()) {
       std::string err_msg =

@@ -23,14 +23,15 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
   web_contents_embedder_map_.erase(guest_instance_id);
 }
 
-bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
-                                  const GuestCallback& callback) {
+bool WebViewManager::ForEachGuest(
+    content::WebContents* embedder_web_contents,
+    base::FunctionRef<bool(content::WebContents*)> fn) {
   for (auto& item : web_contents_embedder_map_) {
     if (item.second.embedder != embedder_web_contents)
       continue;
 
     content::WebContents* guest_web_contents = item.second.web_contents;
-    if (guest_web_contents && callback.Run(guest_web_contents))
+    if (guest_web_contents && fn(guest_web_contents))
       return true;
   }
   return false;

@@ -135,7 +135,7 @@ struct Converter<blink::WebMouseEvent::Button> {
                      blink::WebMouseEvent::Button* out) {
     using Val = blink::WebMouseEvent::Button;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"left", Val::kLeft},
             {"middle", Val::kMiddle},
             {"right", Val::kRight},
@@ -148,7 +148,7 @@ struct Converter<blink::WebMouseEvent::Button> {
 
 // these are the modifier names we both accept and return
 static constexpr auto Modifiers =
-    base::MakeFixedFlatMapSorted<base::StringPiece, blink::WebInputEvent::Modifiers>({
+    base::MakeFixedFlatMap<base::StringPiece, blink::WebInputEvent::Modifiers>({
         {"alt", blink::WebInputEvent::Modifiers::kAltKey},
         {"capslock", blink::WebInputEvent::Modifiers::kCapsLockOn},
         {"control", blink::WebInputEvent::Modifiers::kControlKey},
@@ -167,14 +167,14 @@ static constexpr auto Modifiers =
 
 // these are the modifier names we accept but do not return
 static constexpr auto ModifierAliases =
-    base::MakeFixedFlatMapSorted<base::StringPiece, blink::WebInputEvent::Modifiers>({
+    base::MakeFixedFlatMap<base::StringPiece, blink::WebInputEvent::Modifiers>({
         {"cmd", blink::WebInputEvent::Modifiers::kMetaKey},
         {"command", blink::WebInputEvent::Modifiers::kMetaKey},
         {"ctrl", blink::WebInputEvent::Modifiers::kControlKey},
 });
 
 static constexpr auto ReferrerPolicies =
-    base::MakeFixedFlatMapSorted<base::StringPiece, network::mojom::ReferrerPolicy>({
+    base::MakeFixedFlatMap<base::StringPiece, network::mojom::ReferrerPolicy>({
         {"default", network::mojom::ReferrerPolicy::kDefault},
         {"no-referrer", network::mojom::ReferrerPolicy::kNever},
         {"no-referrer-when-downgrade", network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade},

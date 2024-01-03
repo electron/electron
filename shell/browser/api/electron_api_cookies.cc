@@ -306,9 +306,6 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   }
   bool secure = details.FindBool("secure").value_or(
       same_site == net::CookieSameSite::NO_RESTRICTION);
-  bool same_party =
-      details.FindBool("sameParty")
-          .value_or(secure && same_site != net::CookieSameSite::STRICT_MODE);
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
@@ -324,8 +321,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       path ? *path : "", ParseTimeProperty(details.FindDouble("creationDate")),
       ParseTimeProperty(details.FindDouble("expirationDate")),
       ParseTimeProperty(details.FindDouble("lastAccessDate")), secure,
-      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party,
-      absl::nullopt, &status);
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, absl::nullopt,
+      &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(InclusionStatusToString(

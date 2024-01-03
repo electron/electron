@@ -6,10 +6,10 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index b4a24bbffb6c43638d13063e85b6cfba5c0cc9c7..fcbd9ee1af002bc176937e6bb5af55791b2f64b2 100644
+index 917ba90a1c8bbbff5d86e5f2079d1ce67237280e..66dfd7c1e521f38691e4656ac7ab0572a2fe75da 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -52,6 +52,8 @@ function prepareWorkerThreadExecution() {
+@@ -67,6 +67,8 @@ function prepareWorkerThreadExecution() {
    });
  }
  
@@ -18,7 +18,7 @@ index b4a24bbffb6c43638d13063e85b6cfba5c0cc9c7..fcbd9ee1af002bc176937e6bb5af5579
  function prepareExecution(options) {
    const { expandArgv1, initializeModules, isMainThread } = options;
  
-@@ -130,12 +132,17 @@ function setupUserModules() {
+@@ -172,12 +174,17 @@ function setupUserModules(isLoaderWorker = false) {
    loadPreloadModules();
    // Need to be done after --require setup.
    initializeFrozenIntrinsics();
@@ -33,6 +33,6 @@ index b4a24bbffb6c43638d13063e85b6cfba5c0cc9c7..fcbd9ee1af002bc176937e6bb5af5579
 +  processLinkedBinding('electron_common_asar').initAsarSupport(require);
 +}
 +
- function patchProcessObject(expandArgv1) {
-   const binding = internalBinding('process_methods');
-   binding.patchProcessObject(process);
+ /**
+  * Patch the process object with legacy properties and normalizations.
+  * Replace `process.argv[0]` with `process.execPath`, preserving the original `argv[0]` value as `process.argv0`.

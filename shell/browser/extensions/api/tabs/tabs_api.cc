@@ -50,20 +50,20 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
   DCHECK(zoom_settings);
   switch (zoom_mode) {
     case WebContentsZoomController::ZOOM_MODE_DEFAULT:
-      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
-      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN;
+      zoom_settings->mode = api::tabs::ZoomSettingsMode::kAutomatic;
+      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerOrigin;
       break;
     case WebContentsZoomController::ZOOM_MODE_ISOLATED:
-      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
-      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
+      zoom_settings->mode = api::tabs::ZoomSettingsMode::kAutomatic;
+      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerTab;
       break;
     case WebContentsZoomController::ZOOM_MODE_MANUAL:
-      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_MANUAL;
-      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
+      zoom_settings->mode = api::tabs::ZoomSettingsMode::kManual;
+      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerTab;
       break;
     case WebContentsZoomController::ZOOM_MODE_DISABLED:
-      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_DISABLED;
-      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
+      zoom_settings->mode = api::tabs::ZoomSettingsMode::kDisabled;
+      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerTab;
       break;
   }
 }
@@ -79,7 +79,7 @@ api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   DCHECK(contents);
   api::tabs::MutedInfo info;
   info.muted = contents->IsAudioMuted();
-  info.reason = api::tabs::MUTED_INFO_REASON_USER;
+  info.reason = api::tabs::MutedInfoReason::kUser;
   return info;
 }
 
@@ -111,8 +111,8 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   const base::Value& details_value = args()[1];
   if (!details_value.is_dict())
     return set_init_result(VALIDATION_FAILURE);
-  std::unique_ptr<InjectDetails> details(new InjectDetails());
-  if (!InjectDetails::Populate(details_value.GetDict(), *details)) {
+  auto details = InjectDetails::FromValue(details_value.GetDict());
+  if (!details) {
     return set_init_result(VALIDATION_FAILURE);
   }
 
@@ -432,9 +432,9 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
     return RespondNow(Error(error));
 
   // "per-origin" scope is only available in "automatic" mode.
-  if (params->zoom_settings.scope == tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN &&
-      params->zoom_settings.mode != tabs::ZOOM_SETTINGS_MODE_AUTOMATIC &&
-      params->zoom_settings.mode != tabs::ZOOM_SETTINGS_MODE_NONE) {
+  if (params->zoom_settings.scope == tabs::ZoomSettingsScope::kPerOrigin &&
+      params->zoom_settings.mode != tabs::ZoomSettingsMode::kAutomatic &&
+      params->zoom_settings.mode != tabs::ZoomSettingsMode::kNone) {
     return RespondNow(Error(kPerOriginOnlyInAutomaticError));
   }
 
@@ -443,21 +443,21 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   WebContentsZoomController::ZoomMode zoom_mode =
       WebContentsZoomController::ZOOM_MODE_DEFAULT;
   switch (params->zoom_settings.mode) {
-    case tabs::ZOOM_SETTINGS_MODE_NONE:
-    case tabs::ZOOM_SETTINGS_MODE_AUTOMATIC:
+    case tabs::ZoomSettingsMode::kNone:
+    case tabs::ZoomSettingsMode::kAutomatic:
       switch (params->zoom_settings.scope) {
-        case tabs::ZOOM_SETTINGS_SCOPE_NONE:
-        case tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN:
+        case tabs::ZoomSettingsScope::kNone:
+        case tabs::ZoomSettingsScope::kPerOrigin:
           zoom_mode = WebContentsZoomController::ZOOM_MODE_DEFAULT;
           break;
-        case tabs::ZOOM_SETTINGS_SCOPE_PER_TAB:
+        case tabs::ZoomSettingsScope::kPerTab:
           zoom_mode = WebContentsZoomController::ZOOM_MODE_ISOLATED;
       }
       break;
-    case tabs::ZOOM_SETTINGS_MODE_MANUAL:
+    case tabs::ZoomSettingsMode::kManual:
       zoom_mode = WebContentsZoomController::ZOOM_MODE_MANUAL;
       break;
-    case tabs::ZOOM_SETTINGS_MODE_DISABLED:
+    case tabs::ZoomSettingsMode::kDisabled:
       zoom_mode = WebContentsZoomController::ZOOM_MODE_DISABLED;
   }
 

@@ -59,11 +59,11 @@ index f96af14cb915c8ab92b314ac15b6dffcdd6ec607..2556abe433493251ebd48d4aeddaa6d4
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index fd95c8c5b62a447542e38bf69acc86303be8fd9a..e50d17d9ce7c8c844f4a8409ca0eef67e7c4003d 100644
+index aa21320061131a051f1393e2a71181fd49d1d938..6be700f632e9f8732bee726b8c4c3d39787fca60 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -56,7 +56,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
-                                CanActiveMediaSessionControllerReceiveEvents();
+@@ -86,7 +86,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+       CanActiveMediaSessionControllerReceiveEvents();
  
    // Tell the underlying MediaKeysListener to listen for the key.
 -  if (should_start_watching && media_keys_listener_ &&
@@ -75,18 +75,11 @@ index fd95c8c5b62a447542e38bf69acc86303be8fd9a..e50d17d9ce7c8c844f4a8409ca0eef67
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -258,6 +262,7 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
- #endif
- 
-   if (system_media_controls_) {
-+    // This is required for proper functioning of MediaMetadata.
-     system_media_controls_->AddObserver(this);
-     system_media_controls_notifier_ =
-         std::make_unique<SystemMediaControlsNotifier>(
-@@ -270,6 +275,19 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -320,6 +324,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+         this, ui::MediaKeysListener::Scope::kGlobal);
      DCHECK(media_keys_listener_);
    }
- 
++
 +#if BUILDFLAG(IS_MAC)
 +  // Chromium's implementation of SystemMediaControls falls
 +  // down into MPRemoteCommandCenter, which makes it such that an app will not

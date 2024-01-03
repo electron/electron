@@ -43,7 +43,7 @@ bool GetPreferredLanguagesUsingGlobalization(
     HSTRING hstr;
     hr = langs->GetAt(i, &hstr);
     if (SUCCEEDED(hr)) {
-      base::WStringPiece str = base::win::ScopedHString(hstr).Get();
+      std::wstring_view str = base::win::ScopedHString(hstr).Get();
       languages->emplace_back(str.data(), str.size());
     }
   }

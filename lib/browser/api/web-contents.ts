@@ -1,5 +1,5 @@
-import { app, ipcMain, session, webFrameMain } from 'electron/main';
-import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
+import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
+import type { BrowserWindowConstructorOptions, LoadURLOptions, MessageBoxOptions, WebFrameMain } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
@@ -333,24 +333,31 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
+type LoadError = { errorCode: number, errorDescription: string, url: string };
+
 WebContents.prototype.loadURL = function (url, options) {
   const p = new Promise<void>((resolve, reject) => {
     const resolveAndCleanup = () => {
       removeListeners();
       resolve();
     };
-    const rejectAndCleanup = (errorCode: number, errorDescription: string, url: string) => {
+    let error: LoadError | undefined;
+    const rejectAndCleanup = ({ errorCode, errorDescription, url }: LoadError) => {
       const err = new Error(`${errorDescription} (${errorCode}) loading '${typeof url === 'string' ? url.substr(0, 2048) : url}'`);
       Object.assign(err, { errno: errorCode, code: errorDescription, url });
       removeListeners();
       reject(err);
     };
     const finishListener = () => {
-      resolveAndCleanup();
+      if (error) {
+        rejectAndCleanup(error);
+      } else {
+        resolveAndCleanup();
+      }
     };
     const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
-      if (isMainFrame) {
-        rejectAndCleanup(errorCode, errorDescription, validatedURL);
+      if (!error && isMainFrame) {
+        error = { errorCode, errorDescription, url: validatedURL };
       }
     };
 
@@ -368,7 +375,7 @@ WebContents.prototype.loadURL = function (url, options) {
           // considered navigation events but are triggered with isSameDocument.
           // We can ignore these to allow virtual routing on page load as long
           // as the routing does not leave the document
-          return rejectAndCleanup(-3, 'ERR_ABORTED', url);
+          return rejectAndCleanup({ errorCode: -3, errorDescription: 'ERR_ABORTED', url });
         }
         browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
@@ -383,7 +390,10 @@ WebContents.prototype.loadURL = function (url, options) {
       // TODO(jeremy): enumerate all the cases in which this can happen. If
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
-      rejectAndCleanup(-2, 'ERR_FAILED', url);
+      if (!error) {
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: url };
+      }
+      finishListener();
     };
     const finishListenerWhenUserInitiatedNavigation = () => {
       if (!browserInitiatedInPageNavigation) {
@@ -582,6 +592,16 @@ WebContents.prototype._init = function () {
     }
   });
 
+  this.on('-before-unload-fired' as any, function (this: Electron.WebContents, event: Electron.Event, proceed: boolean) {
+    const type = this.getType();
+    // These are the "interactive" types, i.e. ones a user might be looking at.
+    // All other types should ignore the "proceed" signal and unload
+    // regardless.
+    if (type === 'window' || type === 'offscreen' || type === 'browserView') {
+      if (!proceed) { return event.preventDefault(); }
+    }
+  });
+
   // The devtools requests the webContents to reload.
   this.on('devtools-reload-page', function (this: Electron.WebContents) {
     this.reload();
@@ -727,6 +747,56 @@ WebContents.prototype._init = function () {
       event.preventDefault();
       callback('');
     }
+  });
+
+  const originCounts = new Map<string, number>();
+  const openDialogs = new Set<AbortController>();
+  this.on('-run-dialog' as any, async (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => {
+    const originUrl = new URL(info.frame.url);
+    const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
+    if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
+
+    const prefs = this.getLastWebPreferences();
+    if (!prefs || prefs.disableDialogs) return callback(false, '');
+
+    // We don't support prompt() for some reason :)
+    if (info.dialogType === 'prompt') return callback(false, '');
+
+    originCounts.set(origin, (originCounts.get(origin) ?? 0) + 1);
+
+    // TODO: translate?
+    const checkbox = originCounts.get(origin)! > 1 && prefs.safeDialogs ? prefs.safeDialogsMessage || 'Prevent this app from creating additional dialogs' : '';
+    const parent = this.getOwnerBrowserWindow();
+    const abortController = new AbortController();
+    const options: MessageBoxOptions = {
+      message: info.messageText,
+      checkboxLabel: checkbox,
+      signal: abortController.signal,
+      ...(info.dialogType === 'confirm') ? {
+        buttons: ['OK', 'Cancel'],
+        defaultId: 0,
+        cancelId: 1
+      } : {
+        buttons: ['OK'],
+        defaultId: -1, // No default button
+        cancelId: 0
+      }
+    };
+    openDialogs.add(abortController);
+    const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
+    try {
+      const result = await promise;
+      if (abortController.signal.aborted || this.isDestroyed()) return;
+      if (result.checkboxChecked) originCounts.set(origin, -1);
+      return callback(result.response === 0, '');
+    } finally {
+      openDialogs.delete(abortController);
+    }
+  });
+
+  this.on('-cancel-dialogs' as any, () => {
+    for (const controller of openDialogs) { controller.abort(); }
+    openDialogs.clear();
   });
 
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);

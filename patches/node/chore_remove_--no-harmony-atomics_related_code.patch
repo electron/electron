@@ -9,7 +9,7 @@ This patch can be removed when Node.js upgrades to a version of V8 containing
 the above CL.
 
 diff --git a/lib/.eslintrc.yaml b/lib/.eslintrc.yaml
-index 3b406703ce9f981411cd9de5379f8574384e170a..bc439ce0aa072a778a22ba860eed35263740a1cd 100644
+index 942d7cc1305eb4cf327de5666551435802f0dbac..991c65215488b9526758b9aca96842ad17fc018e 100644
 --- a/lib/.eslintrc.yaml
 +++ b/lib/.eslintrc.yaml
 @@ -33,10 +33,6 @@ rules:
@@ -24,10 +24,10 @@ index 3b406703ce9f981411cd9de5379f8574384e170a..bc439ce0aa072a778a22ba860eed3526
        message: Use `const { Blob } = require('buffer');` instead of the global.
      - name: BroadcastChannel
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 7fbfb64984c290a1d71c99c92084975c31ce18fe..be4d82086199855a10108528b3dacc663b839454 100644
+index 12ae4a9b23212d3f8ff1566a1c2b815a47d3838a..4460042d7bfbb8286a9b2abcbfb9e44f21b5d944 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -108,7 +108,7 @@ port.on('message', (message) => {
+@@ -112,7 +112,7 @@ port.on('message', (message) => {
  
      require('internal/worker').assignEnvironmentData(environmentData);
  
@@ -37,10 +37,10 @@ index 7fbfb64984c290a1d71c99c92084975c31ce18fe..be4d82086199855a10108528b3dacc66
        // not to workers created by other workers.
        let cachedCwd = '';
 diff --git a/lib/internal/worker.js b/lib/internal/worker.js
-index 3d828d2f6f2b19554f7fc01ea880c0c144d8837d..78fcaec8d694580798783c83c3282ec1aaac4aa7 100644
+index 401bc43550ea7f19847dfd588e3fba0507243905..560f69c6c2de2bd976bcd62cd7ac9c770b838446 100644
 --- a/lib/internal/worker.js
 +++ b/lib/internal/worker.js
-@@ -93,8 +93,7 @@ let cwdCounter;
+@@ -101,8 +101,7 @@ let cwdCounter;
  const environmentData = new SafeMap();
  
  // SharedArrayBuffers can be disabled with --no-harmony-sharedarraybuffer.

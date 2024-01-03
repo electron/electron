@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents } from 'electron/main';
+import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import * as https from 'node:https';
 import * as http from 'node:http';
@@ -2396,6 +2396,26 @@ describe('chromium features', () => {
           window.alert({ toString: null });
         }).to.throw('Cannot convert object to primitive value');
       });
+
+      it('shows a message box', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('about:blank');
+        const p = once(w.webContents, '-run-dialog');
+        w.webContents.executeJavaScript('alert("hello")', true);
+        const [info] = await p;
+        expect(info.frame).to.equal(w.webContents.mainFrame);
+        expect(info.messageText).to.equal('hello');
+        expect(info.dialogType).to.equal('alert');
+      });
+
+      it('does not crash if a webContents is destroyed while an alert is showing', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('about:blank');
+        const p = once(w.webContents, '-run-dialog');
+        w.webContents.executeJavaScript('alert("hello")', true);
+        await p;
+        w.webContents.close();
+      });
     });
 
     describe('window.confirm(message, title)', () => {
@@ -2403,6 +2423,160 @@ describe('chromium features', () => {
         expect(() => {
           (window.confirm as any)({ toString: null }, 'title');
         }).to.throw('Cannot convert object to primitive value');
+      });
+
+      it('shows a message box', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('about:blank');
+        const p = once(w.webContents, '-run-dialog');
+        const resultPromise = w.webContents.executeJavaScript('confirm("hello")', true);
+        const [info, cb] = await p;
+        expect(info.frame).to.equal(w.webContents.mainFrame);
+        expect(info.messageText).to.equal('hello');
+        expect(info.dialogType).to.equal('confirm');
+        cb(true, '');
+        const result = await resultPromise;
+        expect(result).to.be.true();
+      });
+    });
+
+    describe('safeDialogs web preference', () => {
+      const originalShowMessageBox = dialog.showMessageBox;
+      afterEach(() => {
+        dialog.showMessageBox = originalShowMessageBox;
+        if (protocol.isProtocolHandled('https')) protocol.unhandle('https');
+        if (protocol.isProtocolHandled('file')) protocol.unhandle('file');
+      });
+      it('does not show the checkbox if not enabled', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: false } });
+        w.loadURL('about:blank');
+        // 1. The first alert() doesn't show the safeDialogs message.
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: false });
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        let recordedOpts: MessageBoxOptions | undefined;
+        dialog.showMessageBox = (bw, opts?: MessageBoxOptions) => {
+          recordedOpts = opts;
+          return Promise.resolve({ response: 0, checkboxChecked: false });
+        };
+        await w.webContents.executeJavaScript('alert("hi")');
+        expect(recordedOpts?.checkboxLabel).to.equal('');
+      });
+
+      it('is respected', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: true } });
+        w.loadURL('about:blank');
+        // 1. The first alert() doesn't show the safeDialogs message.
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: false });
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        // 2. The second alert() shows the message with a checkbox. Respond that we checked it.
+        let recordedOpts: MessageBoxOptions | undefined;
+        dialog.showMessageBox = (bw, opts?: MessageBoxOptions) => {
+          recordedOpts = opts;
+          return Promise.resolve({ response: 0, checkboxChecked: true });
+        };
+        await w.webContents.executeJavaScript('alert("hi")');
+        expect(recordedOpts?.checkboxLabel).to.be.a('string').with.length.above(0);
+
+        // 3. The third alert() shouldn't show a dialog.
+        dialog.showMessageBox = () => Promise.reject(new Error('unexpected showMessageBox'));
+        await w.webContents.executeJavaScript('alert("hi")');
+      });
+
+      it('shows the safeDialogMessage', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: true, safeDialogsMessage: 'foo bar' } });
+        w.loadURL('about:blank');
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: false });
+        await w.webContents.executeJavaScript('alert("hi")');
+        let recordedOpts: MessageBoxOptions | undefined;
+        dialog.showMessageBox = (bw, opts?: MessageBoxOptions) => {
+          recordedOpts = opts;
+          return Promise.resolve({ response: 0, checkboxChecked: true });
+        };
+        await w.webContents.executeJavaScript('alert("hi")');
+        expect(recordedOpts?.checkboxLabel).to.equal('foo bar');
+      });
+
+      it('has persistent state across navigations', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: true } });
+        w.loadURL('about:blank');
+        // 1. The first alert() doesn't show the safeDialogs message.
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: false });
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        // 2. The second alert() shows the message with a checkbox. Respond that we checked it.
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: true });
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        // 3. The third alert() shouldn't show a dialog.
+        dialog.showMessageBox = () => Promise.reject(new Error('unexpected showMessageBox'));
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        // 4. After navigating to the same origin, message boxes should still be hidden.
+        w.loadURL('about:blank');
+        await w.webContents.executeJavaScript('alert("hi")');
+      });
+
+      it('is separated by origin', async () => {
+        protocol.handle('https', () => new Response(''));
+        const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: true } });
+        w.loadURL('https://example1');
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: false });
+        await w.webContents.executeJavaScript('alert("hi")');
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: true });
+        await w.webContents.executeJavaScript('alert("hi")');
+        dialog.showMessageBox = () => Promise.reject(new Error('unexpected showMessageBox'));
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        // A different origin is allowed to show message boxes after navigation.
+        w.loadURL('https://example2');
+        let dialogWasShown = false;
+        dialog.showMessageBox = () => {
+          dialogWasShown = true;
+          return Promise.resolve({ response: 0, checkboxChecked: false });
+        };
+        await w.webContents.executeJavaScript('alert("hi")');
+        expect(dialogWasShown).to.be.true();
+
+        // Navigating back to the first origin means alerts are blocked again.
+        w.loadURL('https://example1');
+        dialog.showMessageBox = () => Promise.reject(new Error('unexpected showMessageBox'));
+        await w.webContents.executeJavaScript('alert("hi")');
+      });
+
+      it('treats different file: paths as different origins', async () => {
+        protocol.handle('file', () => new Response(''));
+        const w = new BrowserWindow({ show: false, webPreferences: { safeDialogs: true } });
+        w.loadURL('file:///path/1');
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: false });
+        await w.webContents.executeJavaScript('alert("hi")');
+        dialog.showMessageBox = () => Promise.resolve({ response: 0, checkboxChecked: true });
+        await w.webContents.executeJavaScript('alert("hi")');
+        dialog.showMessageBox = () => Promise.reject(new Error('unexpected showMessageBox'));
+        await w.webContents.executeJavaScript('alert("hi")');
+
+        w.loadURL('file:///path/2');
+        let dialogWasShown = false;
+        dialog.showMessageBox = () => {
+          dialogWasShown = true;
+          return Promise.resolve({ response: 0, checkboxChecked: false });
+        };
+        await w.webContents.executeJavaScript('alert("hi")');
+        expect(dialogWasShown).to.be.true();
+      });
+    });
+    describe('disableDialogs web preference', () => {
+      const originalShowMessageBox = dialog.showMessageBox;
+      afterEach(() => {
+        dialog.showMessageBox = originalShowMessageBox;
+        if (protocol.isProtocolHandled('https')) protocol.unhandle('https');
+      });
+      it('is respected', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { disableDialogs: true } });
+        w.loadURL('about:blank');
+        dialog.showMessageBox = () => Promise.reject(new Error('unexpected message box'));
+        await w.webContents.executeJavaScript('alert("hi")');
       });
     });
   });

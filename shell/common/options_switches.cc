@@ -227,6 +227,9 @@ const char kCORSSchemes[] = "cors-schemes";
 // Register schemes as streaming responses.
 const char kStreamingSchemes[] = "streaming-schemes";
 
+// Register schemes as supporting V8 code cache.
+const char kCodeCacheSchemes[] = "code-cache-schemes";
+
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 

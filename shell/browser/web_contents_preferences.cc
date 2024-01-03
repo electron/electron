@@ -46,7 +46,7 @@ struct Converter<blink::mojom::AutoplayPolicy> {
                      blink::mojom::AutoplayPolicy* out) {
     using Val = blink::mojom::AutoplayPolicy;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"document-user-activation-required",
              Val::kDocumentUserActivationRequired},
             {"no-user-gesture-required", Val::kNoUserGestureRequired},
@@ -63,7 +63,7 @@ struct Converter<blink::mojom::V8CacheOptions> {
                      blink::mojom::V8CacheOptions* out) {
     using Val = blink::mojom::V8CacheOptions;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"bypassHeatCheck", Val::kCodeWithoutHeatCheck},
             {"bypassHeatCheckAndEagerCompile", Val::kFullCodeWithoutHeatCheck},
             {"code", Val::kCode},
@@ -391,6 +391,9 @@ void WebContentsPreferences::SaveLastPreferences() {
            allow_running_insecure_content_);
   dict.Set(options::kExperimentalFeatures, experimental_features_);
   dict.Set(options::kEnableBlinkFeatures, enable_blink_features_.value_or(""));
+  dict.Set("disableDialogs", disable_dialogs_);
+  dict.Set("safeDialogs", safe_dialogs_);
+  dict.Set("safeDialogsMessage", safe_dialogs_message_.value_or(""));
 
   last_web_preferences_ = base::Value(std::move(dict));
 }

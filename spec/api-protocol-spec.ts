@@ -1090,6 +1090,33 @@ describe('protocol module', () => {
     }
   });
 
+  describe('protocol.registerSchemesAsPrivileged codeCache', function () {
+    const temp = require('temp').track();
+    const appPath = path.join(fixturesPath, 'apps', 'refresh-page');
+
+    let w: BrowserWindow;
+    let codeCachePath: string;
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      codeCachePath = temp.path();
+    });
+
+    afterEach(async () => {
+      await closeWindow(w);
+      w = null as unknown as BrowserWindow;
+    });
+
+    it('code cache in custom protocol is disabled by default', async () => {
+      ChildProcess.spawnSync(process.execPath, [appPath, 'false', codeCachePath]);
+      expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.equal(2);
+    });
+
+    it('codeCache:true enables codeCache in custom protocol', async () => {
+      ChildProcess.spawnSync(process.execPath, [appPath, 'true', codeCachePath]);
+      expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.above(2);
+    });
+  });
+
   describe('handle', () => {
     afterEach(closeAllWindows);
 
