@@ -79,10 +79,10 @@ index e7cc73f375ada7ee8715d331c3d372e0f59a0cdf..c0a142bea4a9a30c10dbb30c72fedce9
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 00965c253f28bd3947255b2ab77bf3a0bb71f14a..e04a7eef94990dfb0e2fca2e116352fe80965303 100644
+index 15525538284b202acdcd3bacdd2b55db16cf6cb7..454e0307bd374a443d3e2f2dbb4ffa330d22d04f 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -136,7 +136,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -130,7 +130,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,
@@ -133,7 +133,7 @@ index 1dc5478b8d0787a1cc82dc9fcb0227fed3f583c2..9a76f675ccdd4b173afa65aa05b733d4
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 67b608870e591d6a6fcfe1f4883ddb19c3210131..bc0044eee2bd351f5c5ada89cd4b859a79dce619 100644
+index c66c7eb585915b63806266122deb658830f0ed88..046ab7dcc7f420aaba03a0152ad4a7a7ed7a09f2 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2035,7 +2035,7 @@ void RenderProcessHostImpl::CreateNotificationService(
