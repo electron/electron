@@ -36,7 +36,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
     app.emit('browser-window-focus', event, this);
   });
 
-  let unresponsiveEvent: NodeJS.Timer | null = null;
+  let unresponsiveEvent: NodeJS.Timeout | null = null;
   const emitUnresponsiveEvent = () => {
     unresponsiveEvent = null;
     if (!this.isDestroyed() && this.isEnabled()) { this.emit('unresponsive'); }
