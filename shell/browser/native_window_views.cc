@@ -35,6 +35,7 @@
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
+#include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/native_widget_private.h"
@@ -52,7 +53,6 @@
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/common/platform_util.h"
-#include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 

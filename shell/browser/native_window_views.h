@@ -25,8 +25,9 @@
 
 namespace electron {
 
+#if BUILDFLAG(IS_LINUX)
 class GlobalMenuBarX11;
-class WindowStateWatcher;
+#endif
 
 #if BUILDFLAG(IS_OZONE_X11)
 class EventDisabler;
@@ -256,7 +257,10 @@ class NativeWindowViews : public NativeWindow,
   // resizable again. This is also used on Windows, to keep taskbar resize
   // events from resizing the window.
   extensions::SizeConstraints old_size_constraints_;
+
+#if BUILDFLAG(IS_LINUX)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
+#endif
 
 #if BUILDFLAG(IS_OZONE_X11)
   // To disable the mouse events.
