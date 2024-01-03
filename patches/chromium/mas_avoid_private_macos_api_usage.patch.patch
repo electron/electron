@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8ffc1ad95a27d2fcf90d5d817e1705819d04411a..c8cde4d9ecc13987c39b68e4327f25d02eae3225 100644
+index e54d9ff43f3ab09e007fea77344482f9884ce404..3d395e8feeeb2f6d0fc460b19235dfdbae00437a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1032,6 +1032,7 @@ component("base") {
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f3d367c7796f405fb33454bb0dc70e59ef63b534..dddf8648a33da4289325bacc8e75d74d9452f3fc 100644
+index a6ed7ad1e1a0de965ec326768ca0f5ef9bdfa87a..f00e91d3a1a0617a0c8eca6b802e9c89891e6be9 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1290,7 +1290,7 @@ index f3d367c7796f405fb33454bb0dc70e59ef63b534..dddf8648a33da4289325bacc8e75d74d
    public_deps = [
      ":core_generated",
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 38c03341d4bbb65477f481bfa7a199007d7af893..63f84ce1b7041cc1223f3d256140582623196b5a 100644
+index 16bc33b36fa860214a6b4647d69939080df1b556..3c170e36fbeaddee2790f79039d81c0ef958572f 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
 @@ -354,10 +354,14 @@ blink_core_sources_editing = [
@@ -1556,7 +1556,7 @@ index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d147
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 44f8ecdbd6b6fd9b9e1706d654c6fed75e4860a1..6d46c5fd9938da1355ad71e8eb3ae402e2ab764b 100644
+index b9d7fa0a32d7487d93918d87f0903fa663271d1f..5dbda740b1dd7c119ad9b0d2ce70050a2db735c7 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -701,6 +701,7 @@ component("views") {
