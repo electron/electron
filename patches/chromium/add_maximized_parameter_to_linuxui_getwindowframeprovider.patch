@@ -123,7 +123,7 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
  WindowFrameProviderGtk::~WindowFrameProviderGtk() = default;
  
 @@ -329,7 +332,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(
-       top_area_height_dip * scale - effective_frame_thickness_px.top();
+   const int top_area_height_px = top_area_bottom_px - client_bounds_px.y();
  
    auto header = PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
 -                               HeaderContext(solid_frame_, focused), scale);
@@ -140,10 +140,10 @@ index d3d9b34851a90716facd75208313133460461d5a..29dbb9b592103991ed15653f7a4b72bc
    frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
    frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
    gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
-@@ -370,7 +373,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
-       PaintBitmap(bitmap_size, frame_bounds_dip, focused_context, scale);
+@@ -371,7 +371,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+                                      focused_context, scale);
    asset.unfocused_bitmap =
-       PaintBitmap(bitmap_size, frame_bounds_dip,
+       PaintBitmap(bitmap_size, gfx::RectF(frame_bounds_dip),
 -                  DecorationContext(solid_frame_, false), scale);
 +                  DecorationContext(solid_frame_, maximized_, false), scale);
  
