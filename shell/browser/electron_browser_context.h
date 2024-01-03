@@ -146,7 +146,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   // content::BrowserContext:
   base::FilePath GetPath() override;
   bool IsOffTheRecord() override;
-  content::ResourceContext* GetResourceContext() override;
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
   content::PushMessagingService* GetPushMessagingService() override;
@@ -241,7 +240,6 @@ class ElectronBrowserContext : public content::BrowserContext {
                        blink::PermissionType permission_type);
 
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
-  std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<ElectronDownloadManagerDelegate> download_manager_delegate_;
