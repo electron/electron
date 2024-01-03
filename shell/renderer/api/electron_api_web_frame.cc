@@ -55,6 +55,11 @@
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/renderer/spellcheck.h"
+#include "components/spellcheck/renderer/spellcheck_provider.h"
+#endif
+
 namespace gin {
 
 template <>
@@ -104,10 +109,15 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 
   RendererClientBase* client = RendererClientBase::Get();
 
+  SpellCheckProvider* spell_check_provider =
+      client->GetSpellCheckProvider(render_frame);
+  if (spell_check_provider == nullptr)
+    return true;
+
   std::u16string w = base::UTF8ToUTF16(word);
-  int id = render_frame->GetRoutingID();
   return client->GetSpellCheck()->SpellCheckWord(
-      w.c_str(), 0, word.size(), id, &start, &length, optional_suggestions);
+      w.c_str(), 0, word.size(), spell_check_provider->GetSpellCheckHost(),
+      &start, &length, optional_suggestions);
 }
 
 #endif
