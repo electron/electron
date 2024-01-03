@@ -41,7 +41,7 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 :::info Official support dates may change
 
 Electron's official support policy is the latest 3 stable releases. Our stable
-release and end of life dates are determined by Chromium, and may be subject to
+release and end-of-life dates are determined by Chromium, and may be subject to
 change. While we try to keep our planned release and end-of-life dates frequently
 updated here, future dates may change if affected by upstream scheduling changes,
 and may not always be accurately reflected.
