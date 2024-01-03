@@ -183,7 +183,7 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index be11389687c59a70a44b63cfab2ad4b9fa074baa..50aa1115baaeab193a91b15aa119337817572284 100644
+index 5b66cb052f6b39a50f00c0b10d80de339cae19f7..4e596fbac9654555804f00f3de83283ad797a86d 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -157,11 +157,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -227,7 +227,7 @@ index be11389687c59a70a44b63cfab2ad4b9fa074baa..50aa1115baaeab193a91b15aa1193378
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -435,9 +455,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -439,9 +459,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX)
  
