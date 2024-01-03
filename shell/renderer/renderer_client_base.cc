@@ -62,7 +62,6 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "base/supports_user_data.h"
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/renderer/spellcheck_provider.h"
 #endif
@@ -148,18 +147,6 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
       "chrome-extension");
 }
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-class SpellCheckProviderUserData : public base::SupportsUserData::Data {
- public:
-  SpellCheckProviderUserData(content::RenderFrame* render_frame,
-                             SpellCheck* spellcheck)
-      : spellcheck_provider_{render_frame, spellcheck} {}
-
-  SpellCheckProvider spellcheck_provider_;
-};
-
-const char kSpellCheckProviderKey[] = "SpellCheckProviderKey";
-#endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
@@ -356,27 +343,12 @@ void RendererClientBase::RenderFrameCreated(
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (render_frame->GetBlinkPreferences().enable_spellcheck) {
-    render_frame->SetUserData(kSpellCheckProviderKey,
-                              std::make_unique<SpellCheckProviderUserData>(
-                                  render_frame, GetSpellCheck()));
+    new SpellCheckProvider(render_frame, spellcheck_.get());
   }
 #endif
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-SpellCheckProvider* RendererClientBase::GetSpellCheckProvider(
-    content::RenderFrame* render_frame) {
-  if (render_frame == nullptr)
-    return nullptr;
-
-  auto* spud = static_cast<SpellCheckProviderUserData*>(
-      render_frame->GetUserData(kSpellCheckProviderKey));
-  if (spud == nullptr)
-    return nullptr;
-
-  return &spud->spellcheck_provider_;
-}
-
 void RendererClientBase::GetInterface(
     const std::string& interface_name,
     mojo::ScopedMessagePipeHandle interface_pipe) {
