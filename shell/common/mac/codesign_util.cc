@@ -13,7 +13,7 @@
 
 namespace electron {
 
-bool ProcessBelongToCurrentApp(pid_t pid) {
+bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
   // Get and check the code signature of current app.
   base::apple::ScopedCFTypeRef<SecCodeRef> self_code;
   OSStatus status =
@@ -21,6 +21,11 @@ bool ProcessBelongToCurrentApp(pid_t pid) {
   if (status != errSecSuccess) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyGuestWithAttributes";
     return false;
+  }
+  status = SecCodeCheckValidity(self_code.get(), kSecCSDefaultFlags, nullptr);
+  if (status != errSecSuccess) {
+    // Current app is not signed.
+    return true;
   }
   // Get the code signature of process.
   base::apple::ScopedCFTypeRef<CFNumberRef> process_cf(
@@ -46,9 +51,14 @@ bool ProcessBelongToCurrentApp(pid_t pid) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyDesignatedRequirement";
     return false;
   }
+  DCHECK(self_requirement.get());
   // Check whether the process meets the signature requirement of current app.
   status = SecCodeCheckValidity(process_code.get(), kSecCSDefaultFlags,
                                 self_requirement.get());
+  if (status != errSecSuccess && status != errSecCSReqFailed) {
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCheckValidity";
+    return false;
+  }
   return status == errSecSuccess;
 }
 
