@@ -13,6 +13,7 @@
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
+#include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
@@ -22,6 +23,7 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -192,6 +194,22 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   connector_->set_connection_error_handler(base::BindOnce(
       &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
 
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+  network::mojom::URLLoaderFactoryParamsPtr loader_params =
+      network::mojom::URLLoaderFactoryParams::New();
+  loader_params->process_id = pid_;
+  loader_params->is_corb_enabled = false;
+  loader_params->is_trusted = true;
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
+  network_context->CreateURLLoaderFactory(
+      url_loader_factory.InitWithNewPipeAndPassReceiver(),
+      std::move(loader_params));
+  params->url_loader_factory = std::move(url_loader_factory);
+  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
+  network_context->CreateHostResolver(
+      {}, host_resolver.InitWithNewPipeAndPassReceiver());
+  params->host_resolver = std::move(host_resolver);
   node_service_remote_->Initialize(std::move(params));
 }
 
