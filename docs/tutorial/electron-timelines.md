@@ -38,6 +38,19 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 | 3.0.0 | -- | 2018-Jun-21 | 2018-Sep-18 | 2019-Jul-30 | M66 | v10.2 | 🚫 |
 | 2.0.0 | -- | 2018-Feb-21 | 2018-May-01 | 2019-Apr-23 | M61 | v8.9 | 🚫 |
 
+:::info Official support dates may change
+
+Electron's official support policy is the latest 3 stable releases. Our stable
+release and end of life dates are determined by Chromium, and may be subject to
+change. While we try to keep our planned release and end-of-life dates frequently
+updated here, future dates may change if affected by upstream scheduling changes,
+and may not always be accurately reflected.
+
+ See [Chromium's public release schedule](https://chromiumdash.appspot.com/schedule) for
+ definitive information about Chromium's scheduled release dates.
+
+ :::
+
 **Notes:**
 
 * The `-alpha.1`, `-beta.1`, and `stable` dates are our solid release dates.
@@ -49,19 +62,9 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 * Since Electron 5, Electron has been publicizing its release dates ([see blog post](https://www.electronjs.org/blog/electron-5-0-timeline)).
 * Since Electron 6, Electron major versions have been targeting every other Chromium major version. Each Electron stable should happen on the same day as Chrome stable ([see blog post](https://www.electronjs.org/blog/12-week-cadence)).
 * Since Electron 16, Electron has been releasing major versions on an 8-week cadence in accordance to Chrome's change to a 4-week release cadence ([see blog post](https://www.electronjs.org/blog/8-week-cadence)).
+* Electron temporarily extended support for Electron 22 until October 10, 2023, to support an extended end-of-life for Windows 7/8/8.1
 
 ## Version support policy
-
-:::info
-
-The Electron team will temporarily support Electron 22 until October 10, 2023.
-This extended support is intended to help Electron developers who still need
-support for Windows 7/8/8.1, which ended support in Electron 23. The October
-support date follows the extended support dates from both Chromium and Microsoft.
-On October 11, the Electron team will drop support back to the latest three
-stable major versions.
-
-:::
 
 The latest three _stable_ major versions are supported by the Electron team.
 For example, if the latest release is 6.1.x, then the 5.0.x as well
