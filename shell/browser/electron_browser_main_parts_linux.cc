@@ -6,9 +6,10 @@
 
 #include "base/command_line.h"
 #include "base/environment.h"
+#include "ui/base/ozone_buildflags.h"
 #include "ui/ozone/public/ozone_switches.h"
 
-#if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#if BUILDFLAG(IS_OZONE_WAYLAND)
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/nix/xdg_util.h"
@@ -18,7 +19,7 @@
 constexpr base::StringPiece kElectronOzonePlatformHint(
     "ELECTRON_OZONE_PLATFORM_HINT");
 
-#if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#if BUILDFLAG(IS_OZONE_WAYLAND)
 
 constexpr char kPlatformWayland[] = "wayland";
 
@@ -46,9 +47,9 @@ bool HasWaylandDisplay(base::Environment* env) {
   return false;
 }
 
-#endif  // BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#endif  // BUILDFLAG(IS_OZONE_WAYLAND)
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if BUILDFLAG(IS_OZONE_X11)
 constexpr char kPlatformX11[] = "x11";
 #endif
 
@@ -64,7 +65,7 @@ namespace {
 // returns "x11" if it is not.
 // See https://crbug.com/1246928.
 std::string MaybeFixPlatformName(const std::string& ozone_platform_hint) {
-#if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#if BUILDFLAG(IS_OZONE_WAYLAND)
   // Wayland is selected if both conditions below are true:
   // 1. The user selected either 'wayland' or 'auto'.
   // 2. The XDG session type is 'wayland', OR the user has selected 'wayland'
@@ -85,13 +86,13 @@ std::string MaybeFixPlatformName(const std::string& ozone_platform_hint) {
       return kPlatformWayland;
     }
   }
-#endif  // BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#endif  // BUILDFLAG(IS_OZONE_WAYLAND)
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if BUILDFLAG(IS_OZONE_X11)
   if (ozone_platform_hint == kPlatformX11) {
     return kPlatformX11;
   }
-#if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#if BUILDFLAG(IS_OZONE_WAYLAND)
   if (ozone_platform_hint == kPlatformWayland ||
       ozone_platform_hint == "auto") {
     // We are here if:
@@ -109,7 +110,7 @@ std::string MaybeFixPlatformName(const std::string& ozone_platform_hint) {
     }
     return kPlatformX11;
   }
-#endif  // BUILDFLAG(OZONE_PLATFORM_WAYLAND)
+#endif  // BUILDFLAG(IS_OZONE_WAYLAND)
 #endif  // BUILDFLAG(OZONE_PLATFORM_X11)
 
   return ozone_platform_hint;

@@ -853,10 +853,6 @@ void InspectableWebContents::SetDevicesDiscoveryConfig(
 
 void InspectableWebContents::SetDevicesUpdatesEnabled(bool enabled) {}
 
-void InspectableWebContents::PerformActionOnRemotePage(
-    const std::string& page_id,
-    const std::string& action) {}
-
 void InspectableWebContents::OpenRemotePage(const std::string& browser_id,
                                             const std::string& url) {}
 

@@ -452,6 +452,8 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/profiles/profile_selections.h",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
+      "//chrome/browser/spellchecker/spell_check_initialization_host_impl.cc",
+      "//chrome/browser/spellchecker/spell_check_initialization_host_impl.h",
       "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
       "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
       "//chrome/browser/spellchecker/spellcheck_factory.cc",
