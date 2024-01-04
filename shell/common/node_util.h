@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "build/build_config.h"
 #include "v8/include/v8.h"
 
 namespace node {
@@ -26,6 +27,12 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     std::vector<v8::Local<v8::String>>* parameters,
     std::vector<v8::Local<v8::Value>>* arguments,
     node::Environment* optional_env);
+
+#if BUILDFLAG(IS_MAC)
+// Unset all environment variables that start with NODE_. Return false if there
+// is no node env at all.
+bool UnsetAllNodeEnvs();
+#endif
 
 }  // namespace electron::util
 
