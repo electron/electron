@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ee7e9dd96052fab076e2675ec07e8061662321f7..e2519929397c31c7449691c02673dd9a7f7ac8c9 100644
+index ff71625d3745fe7a667642bb06579febb5ea4a6b..0f7bab84e53a5b9a5c9e6b312806d90d84c10069 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1037,6 +1037,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -777,7 +777,7 @@ index e321b406a8375986b41d64342919bb0e8c5e58eb..8081d53adab80a6fccfdb4cd6f608c3b
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index f8d4dc33b5687122420af314d597679d16126e00..e187d08374b74314fa817ebb0ba7f28f6f6764b9 100644
+index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e76cdc5d2 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -23,7 +23,9 @@
@@ -802,10 +802,10 @@ index f8d4dc33b5687122420af314d597679d16126e00..e187d08374b74314fa817ebb0ba7f28f
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21fafad7c1ec4 100644
+index 9c4e8e2536819610648aa5b3d11eaa5d2da24a9c..0b3660e51b0a15102b7b1726e17b34d582b3576e 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -67,12 +67,16 @@
+@@ -72,12 +72,16 @@
  }  // namespace
  
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL()
@@ -823,7 +823,7 @@ index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21faf
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, !av_disabled_at_command_line);
  
-@@ -93,6 +97,10 @@
+@@ -98,6 +102,10 @@
  #endif
      ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
@@ -834,7 +834,7 @@ index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21faf
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -221,9 +229,13 @@
+@@ -235,9 +243,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());

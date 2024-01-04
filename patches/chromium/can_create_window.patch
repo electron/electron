@@ -21,10 +21,10 @@ index 2b61af0a7453bced2fc476ca835f8924304a90d6..b16b3aabb38b5d992de01d5a6d0ab713
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1eb685859edce97ca0d45702aaf5cf0effa3c190..0140932cdaf89e22afc82360d279e64d17fd7571 100644
+index fa99e2512acb61f786a6def0d59efd7f058bddfb..5117c1e2ed6c6232f98577ed10710abce91abe76 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4511,6 +4511,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4497,6 +4497,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 1eb685859edce97ca0d45702aaf5cf0effa3c190..0140932cdaf89e22afc82360d279e64d
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4552,12 +4558,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4538,12 +4544,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -148,10 +148,10 @@ index 4b32bf8ccc4ed370e2d1a218ae1fd69a98e23636..b9168a2488f5c4977eba5856882b561e
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2f0ea25dab58f9750749f8c25b3acd60ec2c655e..760adefe3056e628a551218526529ccaa60049e7 100644
+index 65d6ae137bafb073476aad0e536c66cc95184251..5f303065e7e14925e21b6491da61682c1450dd8d 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6551,6 +6551,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6555,6 +6555,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
