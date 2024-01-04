@@ -3778,15 +3778,17 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
 }
 
 void WebContents::SetBackgroundColor(absl::optional<SkColor> maybe_color) {
-  web_contents()->SetPageBaseBackgroundColor(maybe_color);
+  SkColor color = maybe_color.value_or(type_ == Type::kWebView ||
+                                               type_ == Type::kBrowserView
+                                           ? SK_ColorTRANSPARENT
+                                           : SK_ColorWHITE);
+  web_contents()->SetPageBaseBackgroundColor(color);
 
   content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)
     return;
   content::RenderWidgetHostView* rwhv = rfh->GetView();
   if (rwhv) {
-    SkColor color =
-        maybe_color.value_or(IsGuest() ? SK_ColorTRANSPARENT : SK_ColorWHITE);
     rwhv->SetBackgroundColor(color);
     static_cast<content::RenderWidgetHostViewBase*>(rwhv)
         ->SetContentBackgroundColor(color);
