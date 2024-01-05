@@ -141,5 +141,4 @@ revert_same_party_cookie_attribute_removal.patch
 fix_restore_original_resize_performance_on_macos.patch
 fix_font_flooding_in_dev_tools.patch
 feat_allow_code_cache_in_custom_schemes.patch
-cherry-pick-8d607d3921b8.patch
 enable_partition_alloc_ref_count_size.patch
