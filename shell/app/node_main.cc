@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -107,8 +108,12 @@ int NodeMain(int argc, char* argv[]) {
 
   auto os_env = base::Environment::Create();
   bool node_options_enabled = electron::fuses::IsNodeOptionsEnabled();
+  if (!node_options_enabled) {
+    os_env->UnSetVar("NODE_OPTIONS");
+  }
+
 #if BUILDFLAG(IS_MAC)
-  if (node_options_enabled && os_env->HasVar("NODE_OPTIONS")) {
+  if (!ProcessSignatureIsSameWithCurrentApp(getppid())) {
     // On macOS, it is forbidden to run sandboxed app with custom arguments
     // from another app, i.e. args are discarded in following call:
     //   exec("Sandboxed.app", ["--custom-args-will-be-discarded"])
@@ -117,18 +122,14 @@ int NodeMain(int argc, char* argv[]) {
     //   exec("Electron.app", {env: {ELECTRON_RUN_AS_NODE: "1",
     //                               NODE_OPTIONS: "--require 'bad.js'"}})
     // To prevent Electron apps from being used to work around macOS security
-    // restrictions, when NODE_OPTIONS is passed it will be checked whether
-    // this process is invoked by its own app.
-    if (!ProcessBelongToCurrentApp(getppid())) {
-      LOG(ERROR) << "NODE_OPTIONS is disabled because this process is invoked "
-                    "by other apps.";
-      node_options_enabled = false;
+    // restrictions, when the parent process is not part of the app bundle, all
+    // environment variables starting with NODE_ will be removed.
+    if (util::UnsetAllNodeEnvs()) {
+      LOG(ERROR) << "Node.js environment variables are disabled because this "
+                    "process is invoked by other apps.";
     }
   }
 #endif  // BUILDFLAG(IS_MAC)
-  if (!node_options_enabled) {
-    os_env->UnSetVar("NODE_OPTIONS");
-  }
 
 #if BUILDFLAG(IS_WIN)
   v8_crashpad_support::SetUp();

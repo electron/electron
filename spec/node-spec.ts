@@ -674,7 +674,7 @@ describe('node feature', () => {
     });
 
     const script = path.join(fixtures, 'api', 'fork-with-node-options.js');
-    const nodeOptionsWarning = 'NODE_OPTIONS is disabled because this process is invoked by other apps';
+    const nodeOptionsWarning = 'Node.js environment variables are disabled because this process is invoked by other apps';
 
     it('is disabled when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
       await withTempDirectory(async (dir) => {
