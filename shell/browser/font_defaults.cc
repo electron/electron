@@ -4,11 +4,12 @@
 
 #include "shell/browser/font_defaults.h"
 
+#include <array>
 #include <string>
-#include <unordered_map>
+#include <string_view>
 
 #include "base/stl_util.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/platform_locale_settings.h"
@@ -106,53 +107,76 @@ const FontDefault kFontDefaults[] = {
 
 // ^^^^^ DO NOT EDIT ^^^^^
 
-std::string GetDefaultFontForPref(const char* pref_name) {
-  for (auto pref : kFontDefaults) {
-    if (strcmp(pref.pref_name, pref_name) == 0) {
+// Get `kFontDefault`'s default fontname for [font family, script].
+// e.g. ("webkit.webprefs.fonts.fixed", "Zyyy") -> "Monospace"
+std::string GetDefaultFont(const std::string_view family_name,
+                           const std::string_view script_name) {
+  const std::string pref_name = base::StrCat({family_name, ".", script_name});
+
+  for (const FontDefault& pref : kFontDefaults) {
+    if (pref_name == pref.pref_name) {
       return l10n_util::GetStringUTF8(pref.resource_id);
     }
   }
-  return std::string();
+
+  return std::string{};
 }
 
-// Map from script to font.
-// Key comparison uses pointer equality.
-using ScriptFontMap = std::unordered_map<const char*, std::u16string>;
+// Each font family has kWebKitScriptsForFontFamilyMapsLength scripts.
+// This is a lookup array for script_index -> fontname
+using PerFamilyFonts =
+    std::array<std::u16string, prefs::kWebKitScriptsForFontFamilyMapsLength>;
 
-// Map from font family to ScriptFontMap.
-// Key comparison uses pointer equality.
-using FontFamilyMap = std::unordered_map<const char*, ScriptFontMap>;
-
-// A lookup table mapping (font-family, script) -> font-name
-// e.g. ("sans-serif", "Zyyy") -> "Arial"
-FontFamilyMap g_font_cache;
-
-std::u16string FetchFont(const char* script, const char* map_name) {
-  FontFamilyMap::const_iterator it = g_font_cache.find(map_name);
-  if (it != g_font_cache.end()) {
-    ScriptFontMap::const_iterator it2 = it->second.find(script);
-    if (it2 != it->second.end())
-      return it2->second;
-  }
-
-  std::string pref_name = base::StringPrintf("%s.%s", map_name, script);
-  std::string font = GetDefaultFontForPref(pref_name.c_str());
-  std::u16string font16 = base::UTF8ToUTF16(font);
-
-  ScriptFontMap& map = g_font_cache[map_name];
-  map[script] = font16;
-  return font16;
-}
-
-void FillFontFamilyMap(const char* map_name,
-                       blink::web_pref::ScriptFontFamilyMap* map) {
+PerFamilyFonts MakeCacheForFamily(const std::string_view family_name) {
+  PerFamilyFonts ret;
   for (size_t i = 0; i < prefs::kWebKitScriptsForFontFamilyMapsLength; ++i) {
-    const char* script = prefs::kWebKitScriptsForFontFamilyMaps[i];
-    std::u16string result = FetchFont(script, map_name);
-    if (!result.empty()) {
-      (*map)[script] = result;
+    const char* script_name = prefs::kWebKitScriptsForFontFamilyMaps[i];
+    ret[i] = base::UTF8ToUTF16(GetDefaultFont(family_name, script_name));
+  }
+  return ret;
+}
+
+void FillFontFamilyMap(const PerFamilyFonts& cache,
+                       blink::web_pref::ScriptFontFamilyMap& font_family_map) {
+  for (size_t i = 0; i < prefs::kWebKitScriptsForFontFamilyMapsLength; ++i) {
+    if (const std::u16string& fontname = cache[i]; !fontname.empty()) {
+      char const* const script_name = prefs::kWebKitScriptsForFontFamilyMaps[i];
+      font_family_map[script_name] = fontname;
     }
   }
+}
+
+struct FamilyCache {
+  std::string_view family_name;
+
+  // where to find the font_family_map in a WebPreferences instance
+  blink::web_pref::ScriptFontFamilyMap blink::web_pref::WebPreferences::*
+      map_offset;
+
+  PerFamilyFonts fonts = {};
+};
+
+static auto MakeCache() {
+  // the font families whose defaults we want to cache
+  std::array<FamilyCache, 5> cache{{
+      {prefs::kWebKitStandardFontFamilyMap,
+       &blink::web_pref::WebPreferences::standard_font_family_map},
+      {prefs::kWebKitFixedFontFamilyMap,
+       &blink::web_pref::WebPreferences::fixed_font_family_map},
+      {prefs::kWebKitSerifFontFamilyMap,
+       &blink::web_pref::WebPreferences::serif_font_family_map},
+      {prefs::kWebKitSansSerifFontFamilyMap,
+       &blink::web_pref::WebPreferences::sans_serif_font_family_map},
+      {prefs::kWebKitCursiveFontFamilyMap,
+       &blink::web_pref::WebPreferences::cursive_font_family_map},
+  }};
+
+  // populate the cache
+  for (FamilyCache& row : cache) {
+    row.fonts = MakeCacheForFamily(row.family_name);
+  }
+
+  return cache;
 }
 
 }  // namespace
@@ -160,16 +184,11 @@ void FillFontFamilyMap(const char* map_name,
 namespace electron {
 
 void SetFontDefaults(blink::web_pref::WebPreferences* prefs) {
-  FillFontFamilyMap(prefs::kWebKitStandardFontFamilyMap,
-                    &prefs->standard_font_family_map);
-  FillFontFamilyMap(prefs::kWebKitFixedFontFamilyMap,
-                    &prefs->fixed_font_family_map);
-  FillFontFamilyMap(prefs::kWebKitSerifFontFamilyMap,
-                    &prefs->serif_font_family_map);
-  FillFontFamilyMap(prefs::kWebKitSansSerifFontFamilyMap,
-                    &prefs->sans_serif_font_family_map);
-  FillFontFamilyMap(prefs::kWebKitCursiveFontFamilyMap,
-                    &prefs->cursive_font_family_map);
+  static auto const cache = MakeCache();
+
+  for (FamilyCache const& row : cache) {
+    FillFontFamilyMap(row.fonts, prefs->*row.map_offset);
+  }
 }
 
 }  // namespace electron
