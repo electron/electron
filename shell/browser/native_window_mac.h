@@ -235,6 +235,8 @@ class NativeWindowMac : public NativeWindow,
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
 
+  void UpdateZoomButton();
+
   ElectronNSWindow* window_;  // Weak ref, managed by widget_.
 
   ElectronNSWindowDelegate* __strong window_delegate_;
