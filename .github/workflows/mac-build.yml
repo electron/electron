@@ -15,6 +15,9 @@ on:
 env:
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
   IS_RELEASE: false
+  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
 
 jobs:
   install-dependencies:
@@ -98,10 +101,7 @@ jobs:
     #         fi
     #       fi
     #     fi
-    #       # step-gclient-sync, L976
-    # - name: Generate DEPS Hash
-    #   run: |
-    #     node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+    #   # step-gclient-sync, L976
     # - name: Minimize the size of the cache
     #   run: |
     #     cd src
@@ -109,12 +109,33 @@ jobs:
     #     rm -rf src/ios/chrome
     #     rm -rf src/third_party/blink/web_tests
     #     rm -rf src/third_party/blink/perf_tests
-    #     rm -rf third_party/electron_node/deps/openssl
-    #     rm -rf third_party/electron_node/deps/v8
-    #     rm -rf chrome/test/data/xr/webvr_info
+    #     rm -rf src/third_party/electron_node/deps/openssl
+    #     rm -rf src/third_party/electron_node/deps/v8
+    #     rm -rf src/chrome/test/data/xr/webvr_info
     #     rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
     #     rm -rf src/third_party/swift-toolchain
     #     rm -rf src/third_party/swiftshader/tests/regres/testlists
-    # - name: Generate & Upload Azure CLI Blob
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+    - name: Zip Src
+      run: |
+        echo src/electron/.depshash-target
+        zip -r src-121.0.6116.0-01052024.zip src
+    - name: Generate & Upload Azure Blob Src Cache
+      run: |
+        az storage blob upload \
+        --account-name $AZURE_STORAGE_ACCOUNT \
+        --account-key $AZURE_STORAGE_KEY \
+        --container-name $AZURE_STORAGE_CONTAINER_NAME \
+        --file src-121.0.6116.0-01052024.zip \
+        --name src-121.0.6116.0-01052024_test \
+        --debug
+    # - name: Download Azure Blob Src Cache
     #   run: |
-    #     # sudo code
+    #     az storage blob upload \
+    #     --account-name AZURE_STORAGE_NAME \
+    #     --account-key AZURE_STORAGE_KEY \
+    #     --container-name AZURE_CONTAINER_NAME \
+    #     --file /path/to/file.zip \
+    #     --name source_zip_test
