@@ -142,7 +142,7 @@ bool FormatCommandLineString(std::wstring* exe,
 
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StrCat({*exe, base::AsWStringView(joined_launch_args)});
+    *exe = base::StrCat({*exe, L" ", base::AsWStringView(joined_launch_args)});
   }
 
   return true;
