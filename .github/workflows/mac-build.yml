@@ -129,6 +129,10 @@ jobs:
         --file src-121.0.6116.0-01052024.zip \
         --name src-121.0.6116.0-01052024_test \
         --debug
+    
+    # TODO(vertedinde): This assumes the happy path that a cache exists
+    # TODO(vertedinde): Also handle the path of a cache not existing and needing a full sync
+    # Follows https://github.com/electron/electron/blob/main/.circleci/config/base.yml#L1310
     # - name: Download Azure Blob Src Cache
     #   run: |
     #     az storage blob upload \
@@ -137,3 +141,9 @@ jobs:
     #     --container-name AZURE_CONTAINER_NAME \
     #     --file /path/to/file.zip \
     #     --name source_zip_test
+    # - name: Wipe Electron Folder
+    #   run: |
+    #     rm -rf src/electron
+    # - name: Run Electron Only Hooks
+    #   run: |
+    #     gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
