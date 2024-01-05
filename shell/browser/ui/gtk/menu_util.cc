@@ -7,9 +7,9 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
-#include <map>
 #include <string>
 
+#include "base/containers/flat_map.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/app/chrome_command_ids.h"
 #include "shell/browser/ui/gtk_util.h"
@@ -150,7 +150,7 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
                            MenuActivatedCallback item_activated_cb,
                            bool* block_activation,
                            std::vector<ScopedGSignal>* signals) {
-  std::map<int, GtkWidget*> radio_groups;
+  base::flat_map<int, GtkWidget*> radio_groups;
   GtkWidget* menu_item = nullptr;
   for (size_t i = 0; i < model->GetItemCount(); ++i) {
     std::string label = ui::ConvertAcceleratorsFromWindowsStyle(

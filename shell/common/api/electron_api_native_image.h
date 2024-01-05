@@ -5,10 +5,10 @@
 #ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
 #define ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
 
-#include <map>
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "gin/handle.h"
@@ -130,7 +130,9 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
 #if BUILDFLAG(IS_WIN)
   base::FilePath hicon_path_;
-  std::map<int, base::win::ScopedHICON> hicons_;
+
+  // size -> hicon
+  base::flat_map<int, base::win::ScopedHICON> hicons_;
 #endif
 
   gfx::Image image_;
