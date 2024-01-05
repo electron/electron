@@ -801,6 +801,9 @@ class WebContents : public ExclusiveAccessContext,
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
+  // Weather the guest view should be transparent
+  bool guest_transparent_ = true;
+
   int32_t id_;
 
   // Request id used for findInPage request.

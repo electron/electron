@@ -822,6 +822,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
+  // Get transparent for guest view
+  options.Get("transparent", &guest_transparent_);
+
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::kOffScreen;
@@ -3778,7 +3781,7 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
 }
 
 void WebContents::SetBackgroundColor(absl::optional<SkColor> maybe_color) {
-  SkColor color = maybe_color.value_or(type_ == Type::kWebView ||
+  SkColor color = maybe_color.value_or((IsGuest() && guest_transparent_) ||
                                                type_ == Type::kBrowserView
                                            ? SK_ColorTRANSPARENT
                                            : SK_ColorWHITE);
