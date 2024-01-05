@@ -93,7 +93,7 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
   const { webContents } = browserView;
   if (!webContents) return null;
-  return BrowserWindow.fromWebContents(browserView.webContents);
+  return BrowserWindow.fromWebContents(webContents);
 };
 
 BrowserWindow.prototype.setTouchBar = function (touchBar) {
