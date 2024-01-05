@@ -70,10 +70,9 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty()) {
     std::wstring joined_args = base::JoinString(launch_args, L"\" \"");
-    *exe = base::StrCat(
-        {L"\"", exe->c_str(), L"\" \"", joined_args.c_str(), L"\" \"%1\""});
+    *exe = base::StrCat({L"\"", *exe, L"\" \"", joined_args, L"\" \"%1\""});
   } else {
-    *exe = base::StrCat({L"\"", exe->c_str(), L"\" \"%1\""});
+    *exe = base::StrCat({L"\"", *exe, L"\" \"%1\""});
   }
 
   return true;
@@ -143,7 +142,7 @@ bool FormatCommandLineString(std::wstring* exe,
 
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StrCat({exe->c_str(), base::as_wcstr(joined_launch_args)});
+    *exe = base::StrCat({*exe, base::AsWStringView(joined_launch_args)});
   }
 
   return true;
