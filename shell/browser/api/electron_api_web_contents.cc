@@ -1658,18 +1658,8 @@ void WebContents::HandleNewRenderFrame(
 
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences) {
-    auto maybe_color = web_preferences->GetBackgroundColor();
-    bool default_transparent =
-        (IsGuest() && guest_transparent_) || type_ == Type::kBrowserView;
-
-    // If webPreferences has no color stored we need to explicitly set guest
-    // webContents background color to transparent.
-    auto bg_color = maybe_color.value_or(
-        default_transparent ? SK_ColorTRANSPARENT : SK_ColorWHITE);
-    web_contents()->SetPageBaseBackgroundColor(bg_color);
-    SetBackgroundColor(rwhv, bg_color);
-  }
+  if (web_preferences)
+    SetBackgroundColor(web_preferences->GetBackgroundColor());
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
@@ -3791,9 +3781,10 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
 }
 
 void WebContents::SetBackgroundColor(absl::optional<SkColor> maybe_color) {
-  SkColor color = maybe_color.value_or(
-      (IsGuest() && guest_transparent_) || type_ == Type::kBrowserView
-          ? SK_ColorTRANSPARENT : SK_ColorWHITE);
+  SkColor color = maybe_color.value_or((IsGuest() && guest_transparent_) ||
+                                               type_ == Type::kBrowserView
+                                           ? SK_ColorTRANSPARENT
+                                           : SK_ColorWHITE);
   web_contents()->SetPageBaseBackgroundColor(color);
 
   content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
