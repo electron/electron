@@ -15,27 +15,27 @@ ErrorThrower::ErrorThrower(v8::Isolate* isolate) : isolate_(isolate) {}
 // costly to invoke
 ErrorThrower::ErrorThrower() : isolate_(v8::Isolate::GetCurrent()) {}
 
-void ErrorThrower::ThrowError(base::StringPiece err_msg) const {
+void ErrorThrower::ThrowError(std::string_view err_msg) const {
   Throw(v8::Exception::Error, err_msg);
 }
 
-void ErrorThrower::ThrowTypeError(base::StringPiece err_msg) const {
+void ErrorThrower::ThrowTypeError(std::string_view err_msg) const {
   Throw(v8::Exception::TypeError, err_msg);
 }
 
-void ErrorThrower::ThrowRangeError(base::StringPiece err_msg) const {
+void ErrorThrower::ThrowRangeError(std::string_view err_msg) const {
   Throw(v8::Exception::RangeError, err_msg);
 }
 
-void ErrorThrower::ThrowReferenceError(base::StringPiece err_msg) const {
+void ErrorThrower::ThrowReferenceError(std::string_view err_msg) const {
   Throw(v8::Exception::ReferenceError, err_msg);
 }
 
-void ErrorThrower::ThrowSyntaxError(base::StringPiece err_msg) const {
+void ErrorThrower::ThrowSyntaxError(std::string_view err_msg) const {
   Throw(v8::Exception::SyntaxError, err_msg);
 }
 
-void ErrorThrower::Throw(ErrorGenerator gen, base::StringPiece err_msg) const {
+void ErrorThrower::Throw(ErrorGenerator gen, std::string_view err_msg) const {
   v8::Local<v8::Value> exception = gen(gin::StringToV8(isolate_, err_msg), {});
   if (!isolate_->IsExecutionTerminating())
     isolate_->ThrowException(exception);
