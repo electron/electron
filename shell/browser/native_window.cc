@@ -297,7 +297,7 @@ void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
 
-gfx::Size NativeWindow::GetSize() {
+gfx::Size NativeWindow::GetSize() const {
   return GetBounds().size();
 }
 
@@ -305,7 +305,7 @@ void NativeWindow::SetPosition(const gfx::Point& position, bool animate) {
   SetBounds(gfx::Rect(position, GetSize()), animate);
 }
 
-gfx::Point NativeWindow::GetPosition() {
+gfx::Point NativeWindow::GetPosition() const {
   return GetBounds().origin();
 }
 
@@ -313,7 +313,7 @@ void NativeWindow::SetContentSize(const gfx::Size& size, bool animate) {
   SetSize(ContentBoundsToWindowBounds(gfx::Rect(size)).size(), animate);
 }
 
-gfx::Size NativeWindow::GetContentSize() {
+gfx::Size NativeWindow::GetContentSize() const {
   return GetContentBounds().size();
 }
 
@@ -321,11 +321,11 @@ void NativeWindow::SetContentBounds(const gfx::Rect& bounds, bool animate) {
   SetBounds(ContentBoundsToWindowBounds(bounds), animate);
 }
 
-gfx::Rect NativeWindow::GetContentBounds() {
+gfx::Rect NativeWindow::GetContentBounds() const {
   return WindowBoundsToContentBounds(GetBounds());
 }
 
-bool NativeWindow::IsNormal() {
+bool NativeWindow::IsNormal() const {
   return !IsMinimized() && !IsMaximized() && !IsFullscreen();
 }
 
@@ -432,11 +432,11 @@ void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
   sheet_offset_y_ = offsetY;
 }
 
-double NativeWindow::GetSheetOffsetX() {
+double NativeWindow::GetSheetOffsetX() const {
   return sheet_offset_x_;
 }
 
-double NativeWindow::GetSheetOffsetY() {
+double NativeWindow::GetSheetOffsetY() const {
   return sheet_offset_y_;
 }
 
@@ -446,19 +446,19 @@ bool NativeWindow::IsTabletMode() const {
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {}
 
-std::string NativeWindow::GetRepresentedFilename() {
+std::string NativeWindow::GetRepresentedFilename() const {
   return "";
 }
 
 void NativeWindow::SetDocumentEdited(bool edited) {}
 
-bool NativeWindow::IsDocumentEdited() {
+bool NativeWindow::IsDocumentEdited() const {
   return false;
 }
 
 void NativeWindow::SetFocusable(bool focusable) {}
 
-bool NativeWindow::IsFocusable() {
+bool NativeWindow::IsFocusable() const {
   return false;
 }
 
@@ -510,21 +510,21 @@ void NativeWindow::SetEscapeTouchBarItem(
 
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {}
 
-bool NativeWindow::IsMenuBarAutoHide() {
+bool NativeWindow::IsMenuBarAutoHide() const {
   return false;
 }
 
 void NativeWindow::SetMenuBarVisibility(bool visible) {}
 
-bool NativeWindow::IsMenuBarVisible() {
+bool NativeWindow::IsMenuBarVisible() const {
   return true;
 }
 
-double NativeWindow::GetAspectRatio() {
+double NativeWindow::GetAspectRatio() const {
   return aspect_ratio_;
 }
 
-gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+gfx::Size NativeWindow::GetAspectRatioExtraSize() const {
   return aspect_ratio_extraSize_;
 }
 

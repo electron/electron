@@ -415,10 +415,10 @@ index 0000000000000000000000000000000000000000..24c122008e0fc009833cf9189ebf4388
 +}
 diff --git a/deps/ada/BUILD.gn b/deps/ada/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..a564653c3f05608d59fed5aa071d63b81f4e0e42
+index 0000000000000000000000000000000000000000..1ce69e9deba1a9b191e8d95f4c82e0ec1f7b50ca
 --- /dev/null
 +++ b/deps/ada/BUILD.gn
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,12 @@
 +import("//v8/gni/v8.gni")
 +
 +config("ada_config") {
@@ -430,22 +430,6 @@ index 0000000000000000000000000000000000000000..a564653c3f05608d59fed5aa071d63b8
 +  sources = [ "ada.cpp" ]
 +
 +  public_configs = [ ":ada_config" ]
-+
-+  defines = []
-+  deps = []
-+
-+  if (v8_enable_i18n_support) {
-+    deps += [
-+      "//third_party/icu:icui18n",
-+      "//third_party/icu:icuuc",
-+    ]
-+
-+    if (is_win) {
-+      deps += [ "//third_party/icu:icudata" ]
-+    }
-+  } else {
-+    defines += [ "ADA_HAS_ICU=0" ]
-+  }
 +}
 diff --git a/deps/base64/BUILD.gn b/deps/base64/BUILD.gn
 new file mode 100644

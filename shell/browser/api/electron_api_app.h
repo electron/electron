@@ -5,11 +5,11 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
@@ -259,9 +259,8 @@ class App : public ElectronBrowserClient::Delegate,
 
   base::FilePath app_path_;
 
-  using ProcessMetricMap =
-      std::map<int, std::unique_ptr<electron::ProcessMetric>>;
-  ProcessMetricMap app_metrics_;
+  // pid -> electron::ProcessMetric
+  base::flat_map<int, std::unique_ptr<electron::ProcessMetric>> app_metrics_;
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;

@@ -5,10 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_
 #define ELECTRON_SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_
 
-#include <map>
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
@@ -119,9 +119,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   absl::optional<SharingItem> sharing_item_;
 #endif
 
-  std::map<int, std::u16string> toolTips_;   // command id -> tooltip
-  std::map<int, std::u16string> roles_;      // command id -> role
-  std::map<int, std::u16string> sublabels_;  // command id -> sublabel
+  base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
+  base::flat_map<int, std::u16string> roles_;      // command id -> role
+  base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};

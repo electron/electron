@@ -6,11 +6,11 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 
+#include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/raw_ptr.h"
@@ -128,8 +128,6 @@ class InspectableWebContents
       bool network_discovery_enabled,
       const std::string& network_discovery_config) override;
   void SetDevicesUpdatesEnabled(bool enabled) override;
-  void PerformActionOnRemotePage(const std::string& page_id,
-                                 const std::string& action) override;
   void OpenRemotePage(const std::string& browser_id,
                       const std::string& url) override;
   void OpenNodeFrontend() override;
@@ -243,11 +241,12 @@ class InspectableWebContents
       embedder_message_dispatcher_;
 
   class NetworkResourceLoader;
-  std::set<std::unique_ptr<NetworkResourceLoader>, base::UniquePtrComparator>
+  base::flat_set<std::unique_ptr<NetworkResourceLoader>,
+                 base::UniquePtrComparator>
       loaders_;
 
-  using ExtensionsAPIs = std::map<std::string, std::string>;
-  ExtensionsAPIs extensions_api_;
+  // origin -> script
+  base::flat_map<std::string, std::string> extensions_api_;
 
   // Contains the set of synced settings.
   // The DevTools frontend *must* call `Register` for each setting prior to

@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/message_box.h"
 
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,6 +11,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/containers/contains.h"
+#include "base/containers/flat_map.h"
 #include "base/functional/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
@@ -31,8 +31,8 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<int, NSAlert*>& GetDialogsMap() {
-  static base::NoDestructor<std::map<int, NSAlert*>> dialogs;
+base::flat_map<int, NSAlert*>& GetDialogsMap() {
+  static base::NoDestructor<base::flat_map<int, NSAlert*>> dialogs;
   return *dialogs;
 }
 

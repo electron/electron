@@ -51,10 +51,10 @@ index afd5368ffd7c7ef5db6e30b7468554d8ec07c77a..1b0c498edd71987f004bc20e9d7957cc
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index f14a7c55f6db46d9684639fcac3a203af792d65a..8cb43ab350c24d8193ccdbf3f2596d926ff552b1 100644
+index a967365095f3ca4c1b57b0dcbfa8b148a5e1e683..54ae10307c6ceea27046b9bd7b1a1322b331d954 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -564,8 +564,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -563,8 +563,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -104,7 +104,7 @@ index ed73a6fe6d146eac904f0aa0d88facf055df503e..4bbc792068db75739a7ceb8ad01c85f9
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 6219eadefa976145469ec8be2fd312af1a955c7a..fdb76579679e1f4c5f43b934d4edaa2c6e32d43a 100644
+index 2ba868f0efb2ee082d452bb011409f1b4c5c5e1e..6caab2df3cfc367c63839b7ac635d8d072ef8a57 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
 @@ -378,6 +378,7 @@ class BLINK_EXPORT WebView {
@@ -116,7 +116,7 @@ index 6219eadefa976145469ec8be2fd312af1a955c7a..fdb76579679e1f4c5f43b934d4edaa2c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index adb1c7ca2fcdf69d991f1355057adbd172c3989c..64228ce3fb2134b28ac153a6088c26049c6f203c 100644
+index 81a6dbe0c3efc859cdd6124f2ff328b424e297c5..5a70b02f2217cf3c0e8d9a2cca8e2d565b6057bc 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2421,6 +2421,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -155,10 +155,10 @@ index adb1c7ca2fcdf69d991f1355057adbd172c3989c..64228ce3fb2134b28ac153a6088c2604
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 5a9992141dbbf6955beeb295145044a66fcaf754..42d57fd374ed307b5640dc57ed78d588e5ee5c65 100644
+index 3aeffb166b2b8680fe226aec40febc928c272661..e9bac30aae75901dd07f1e28110289915d8d789e 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -452,6 +452,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -453,6 +453,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -166,7 +166,7 @@ index 5a9992141dbbf6955beeb295145044a66fcaf754..42d57fd374ed307b5640dc57ed78d588
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -917,6 +918,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -918,6 +919,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
