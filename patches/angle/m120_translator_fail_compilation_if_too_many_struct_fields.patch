@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 30 Nov 2023 14:12:42 -0500
+Subject: M120: Translator: Fail compilation if too many struct fields
+
+If there are too many struct fields, SPIR-V cannot be produced (as it
+has a hard limit of 16383 fields).  The Nvidia GL driver has also been
+observed to fail when there are too many fields.
+
+Bug: chromium:1505009
+Change-Id: I29fd61d180175e89e7db9ca8ba49ab07585b5f9a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5143827
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 7c90ea4f1d23a8af0cab1d44124eea021a27a16d..e174725beb764407185e471a9916ffd164493cd8 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -4726,6 +4726,8 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
+     const TVector<unsigned int> *arraySizes,
+     const TSourceLoc &arraySizesLine)
+ {
++    checkDoesNotHaveTooManyFields(blockName, fieldList, nameLine);
++
+     // Ensure there are no duplicate field names
+     checkDoesNotHaveDuplicateFieldNames(fieldList, nameLine);
+ 
+@@ -6289,6 +6291,21 @@ void TParseContext::checkDoesNotHaveDuplicateFieldNames(const TFieldList *fields
+     }
+ }
+ 
++void TParseContext::checkDoesNotHaveTooManyFields(const ImmutableString &name,
++                                                  const TFieldList *fields,
++                                                  const TSourceLoc &location)
++{
++    // Check that there are not too many fields.  SPIR-V has a limit of 16383 fields, and it would
++    // be reasonable to apply that limit to all outputs.  For example, it was observed that 32768
++    // fields cause the Nvidia GL driver to fail compilation, so such a limit is not too specific to
++    // SPIR-V.
++    constexpr size_t kMaxFieldCount = 16383;
++    if (fields->size() > kMaxFieldCount)
++    {
++        error(location, "Too many fields in the struct (limit is 16383)", name);
++    }
++}
++
+ TFieldList *TParseContext::addStructFieldList(TFieldList *fields, const TSourceLoc &location)
+ {
+     return fields;
+@@ -6392,6 +6409,8 @@ TTypeSpecifierNonArray TParseContext::addStructure(const TSourceLoc &structLine,
+         }
+     }
+ 
++    checkDoesNotHaveTooManyFields(structName, fieldList, structLine);
++
+     // Ensure there are no duplicate field names
+     checkDoesNotHaveDuplicateFieldNames(fieldList, structLine);
+ 
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index b63dbbadd146d1a004513823de72c89240a31929..c83b73271b557ed122668d7e655deae5aa23bc48 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -355,6 +355,9 @@ class TParseContext : angle::NonCopyable
+                                             const TVector<unsigned int> *arraySizes);
+ 
+     void checkDoesNotHaveDuplicateFieldNames(const TFieldList *fields, const TSourceLoc &location);
++    void checkDoesNotHaveTooManyFields(const ImmutableString &name,
++                                       const TFieldList *fields,
++                                       const TSourceLoc &location);
+     TFieldList *addStructFieldList(TFieldList *fields, const TSourceLoc &location);
+     TFieldList *combineStructFieldLists(TFieldList *processedFields,
+                                         const TFieldList *newlyAddedFields,
+diff --git a/src/tests/compiler_tests/ExpressionLimit_test.cpp b/src/tests/compiler_tests/ExpressionLimit_test.cpp
+index d399e1792d97edb76d5e0247e4166e094cecb7e5..e17eace1b4b9a4185d6833fb7895f5fd49ae7679 100644
+--- a/src/tests/compiler_tests/ExpressionLimit_test.cpp
++++ b/src/tests/compiler_tests/ExpressionLimit_test.cpp
+@@ -16,12 +16,6 @@ class ExpressionLimitTest : public testing::Test
+     static const int kMaxExpressionComplexity = 16;
+     static const int kMaxCallStackDepth       = 16;
+     static const int kMaxFunctionParameters   = 16;
+-    static const char *kExpressionTooComplex;
+-    static const char *kCallStackTooDeep;
+-    static const char *kHasRecursion;
+-    static const char *kTooManyParameters;
+-    static const char *kTooComplexSwitch;
+-    static const char *kGlobalVariableInit;
+ 
+     virtual void SetUp()
+     {
+@@ -125,9 +119,7 @@ class ExpressionLimitTest : public testing::Test
+ 
+         GenerateDeepFunctionStack(length, &ss);
+ 
+-        ss << "void main() {\n"
+-           << "  gl_FragColor = function" << length << "();\n"
+-           << "}";
++        ss << "void main() {\n" << "  gl_FragColor = function" << length << "();\n" << "}";
+ 
+         return ss.str();
+     }
+@@ -138,9 +130,7 @@ class ExpressionLimitTest : public testing::Test
+ 
+         GenerateDeepFunctionStack(length, &ss);
+ 
+-        ss << "void main() {\n"
+-           << "  gl_FragColor = vec4(0,0,0,0);\n"
+-           << "}";
++        ss << "void main() {\n" << "  gl_FragColor = vec4(0,0,0,0);\n" << "}";
+ 
+         return ss.str();
+     }
+@@ -149,9 +139,7 @@ class ExpressionLimitTest : public testing::Test
+     {
+         std::stringstream ss;
+ 
+-        ss << "precision mediump float;\n"
+-           << "\n"
+-           << "float foo(";
++        ss << "precision mediump float;\n" << "\n" << "float foo(";
+         for (int i = 0; i < parameters; ++i)
+         {
+             ss << "float f" << i;
+@@ -244,15 +232,13 @@ class ExpressionLimitTest : public testing::Test
+     ShBuiltInResources resources;
+ };
+ 
+-const char *ExpressionLimitTest::kExpressionTooComplex = "Expression too complex";
+-const char *ExpressionLimitTest::kCallStackTooDeep     = "Call stack too deep";
+-const char *ExpressionLimitTest::kHasRecursion =
+-    "Recursive function call in the following call chain";
+-const char *ExpressionLimitTest::kTooManyParameters = "Function has too many parameters";
+-const char *ExpressionLimitTest::kTooComplexSwitch =
+-    "too complex expressions inside a switch statement";
+-const char *ExpressionLimitTest::kGlobalVariableInit =
+-    "global variable initializers must be constant expressions";
++constexpr char kExpressionTooComplex[] = "Expression too complex";
++constexpr char kCallStackTooDeep[]     = "Call stack too deep";
++constexpr char kHasRecursion[]         = "Recursive function call in the following call chain";
++constexpr char kTooManyParameters[]    = "Function has too many parameters";
++constexpr char kTooComplexSwitch[]     = "too complex expressions inside a switch statement";
++constexpr char kGlobalVariableInit[] = "global variable initializers must be constant expressions";
++constexpr char kTooManyFields[]      = "Too many fields in the struct";
+ 
+ TEST_F(ExpressionLimitTest, ExpressionComplexity)
+ {
+@@ -632,3 +618,31 @@ TEST_F(ExpressionLimitTest, NestingInsideGlobalInitializer)
+         compileOptions, nullptr));
+     sh::Destruct(compiler);
+ }
++
++TEST_F(ExpressionLimitTest, TooManyStructFields)
++{
++    ShShaderSpec spec     = SH_WEBGL2_SPEC;
++    ShShaderOutput output = SH_ESSL_OUTPUT;
++    ShHandle compiler     = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
++    ShCompileOptions compileOptions = {};
++
++    std::ostringstream fs;
++    fs << R"(#version 300 es
++precision highp float;
++struct TooManyFields
++{
++)";
++    for (uint32_t i = 0; i < (1 << 16); ++i)
++    {
++        fs << "    float field" << i << ";\n";
++    }
++    fs << R"(};
++uniform B { TooManyFields s; };
++out vec4 color;
++void main() {
++    color = vec4(s.field0, 0.0, 0.0, 1.0);
++})";
++
++    EXPECT_TRUE(CheckShaderCompilation(compiler, fs.str().c_str(), compileOptions, kTooManyFields));
++    sh::Destruct(compiler);
++}
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 9b42b6d9221366e9bc7b6263bf8e14b77ca7694d..46f8645e5a56e527223ea4657d14dbc8619cb631 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -18064,6 +18064,33 @@ void main() {
+     ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), fs.str().c_str());
+ }
+ 
++// Test that structs with too many fields are rejected.  In SPIR-V, the instruction that defines the
++// struct lists the fields which means the length of the instruction is a function of the field
++// count.  Since SPIR-V instruction sizes are limited to 16 bits, structs with more fields cannot be
++// represented.
++TEST_P(GLSLTest_ES3, TooManyFieldsInStruct)
++{
++    std::ostringstream fs;
++    fs << R"(#version 300 es
++precision highp float;
++struct TooManyFields
++{
++)";
++    for (uint32_t i = 0; i < (1 << 16); ++i)
++    {
++        fs << "    float field" << i << ";\n";
++    }
++    fs << R"(};
++uniform B { TooManyFields s; };
++out vec4 color;
++void main() {
++    color = vec4(s.field0, 0.0, 0.0, 1.0);
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, fs.str().c_str());
++    EXPECT_EQ(0u, shader);
++}
++
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(GLSLTest);

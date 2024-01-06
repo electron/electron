@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 30 Nov 2023 13:53:00 -0500
+Subject: M120: Translator: Optimize field-name-collision check
+
+As each field of the struct was encountered, its name was linearly
+checked against previously added fields.  That's O(n^2).
+
+The name collision check is now moved to when the struct is completely
+defined, and is done with an unordered_map.
+
+Bug: chromium:1505009
+Change-Id: I3fbc23493e5a03e61b631af615cffaf9995fd566
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5143826
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 28ac378cab6cb3812a43b6064733d7354ee694bc..7c90ea4f1d23a8af0cab1d44124eea021a27a16d 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -4726,6 +4726,9 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
+     const TVector<unsigned int> *arraySizes,
+     const TSourceLoc &arraySizesLine)
+ {
++    // Ensure there are no duplicate field names
++    checkDoesNotHaveDuplicateFieldNames(fieldList, nameLine);
++
+     const bool isGLPerVertex = blockName == "gl_PerVertex";
+     // gl_PerVertex is allowed to be redefined and therefore not reserved
+     if (!isGLPerVertex)
+@@ -6269,28 +6272,25 @@ TDeclarator *TParseContext::parseStructArrayDeclarator(const ImmutableString &id
+     return new TDeclarator(identifier, arraySizes, loc);
+ }
+ 
+-void TParseContext::checkDoesNotHaveDuplicateFieldName(const TFieldList::const_iterator begin,
+-                                                       const TFieldList::const_iterator end,
+-                                                       const ImmutableString &name,
+-                                                       const TSourceLoc &location)
++void TParseContext::checkDoesNotHaveDuplicateFieldNames(const TFieldList *fields,
++                                                        const TSourceLoc &location)
+ {
+-    for (auto fieldIter = begin; fieldIter != end; ++fieldIter)
++    TUnorderedMap<ImmutableString, uint32_t, ImmutableString::FowlerNollVoHash<sizeof(size_t)>>
++        fieldNames;
++    for (TField *field : *fields)
+     {
+-        if ((*fieldIter)->name() == name)
++        // Note: operator[] adds this name to the map if it doesn't already exist, and initializes
++        // its value to 0.
++        uint32_t count = ++fieldNames[field->name()];
++        if (count != 1)
+         {
+-            error(location, "duplicate field name in structure", name);
++            error(location, "Duplicate field name in structure", field->name());
+         }
+     }
+ }
+ 
+ TFieldList *TParseContext::addStructFieldList(TFieldList *fields, const TSourceLoc &location)
+ {
+-    for (TFieldList::const_iterator fieldIter = fields->begin(); fieldIter != fields->end();
+-         ++fieldIter)
+-    {
+-        checkDoesNotHaveDuplicateFieldName(fields->begin(), fieldIter, (*fieldIter)->name(),
+-                                           location);
+-    }
+     return fields;
+ }
+ 
+@@ -6298,12 +6298,8 @@ TFieldList *TParseContext::combineStructFieldLists(TFieldList *processedFields,
+                                                    const TFieldList *newlyAddedFields,
+                                                    const TSourceLoc &location)
+ {
+-    for (TField *field : *newlyAddedFields)
+-    {
+-        checkDoesNotHaveDuplicateFieldName(processedFields->begin(), processedFields->end(),
+-                                           field->name(), location);
+-        processedFields->push_back(field);
+-    }
++    processedFields->insert(processedFields->end(), newlyAddedFields->begin(),
++                            newlyAddedFields->end());
+     return processedFields;
+ }
+ 
+@@ -6396,7 +6392,10 @@ TTypeSpecifierNonArray TParseContext::addStructure(const TSourceLoc &structLine,
+         }
+     }
+ 
+-    // ensure we do not specify any storage qualifiers on the struct members
++    // Ensure there are no duplicate field names
++    checkDoesNotHaveDuplicateFieldNames(fieldList, structLine);
++
++    // Ensure we do not specify any storage qualifiers on the struct members
+     for (unsigned int typeListIndex = 0; typeListIndex < fieldList->size(); typeListIndex++)
+     {
+         TField &field              = *(*fieldList)[typeListIndex];
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index 9e1354ef816705fb512b40b329794e0282129807..b63dbbadd146d1a004513823de72c89240a31929 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -354,10 +354,7 @@ class TParseContext : angle::NonCopyable
+                                             const TSourceLoc &loc,
+                                             const TVector<unsigned int> *arraySizes);
+ 
+-    void checkDoesNotHaveDuplicateFieldName(const TFieldList::const_iterator begin,
+-                                            const TFieldList::const_iterator end,
+-                                            const ImmutableString &name,
+-                                            const TSourceLoc &location);
++    void checkDoesNotHaveDuplicateFieldNames(const TFieldList *fields, const TSourceLoc &location);
+     TFieldList *addStructFieldList(TFieldList *fields, const TSourceLoc &location);
+     TFieldList *combineStructFieldLists(TFieldList *processedFields,
+                                         const TFieldList *newlyAddedFields,
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index cadf4afaed84c10040b87c8936c4a0ebbfd6d514..3d356609031820b92c230ac7ff836327b78ec834 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -1045,6 +1045,8 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* =
+ 7389 SWIFTSHADER : Texture2DTest.ManySupersedingTextureUpdates/* = SKIP
+ 7389 MAC OPENGL : Texture2DTest.ManySupersedingTextureUpdates/* = SKIP
+ 
++8437 MAC OPENGL : GLSLTest_ES3.LotsOfFieldsInStruct/* = SKIP
++
+ // GL, GLES run into issues with cleanup
+ 7495 WIN OpenGL : EGLMultiContextTest.ReuseUnterminatedDisplay/* = SKIP
+ 7495 WIN GLES : EGLMultiContextTest.ReuseUnterminatedDisplay/* = SKIP
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 0d0d3b5468019b897af2487d72112fab829f47da..9b42b6d9221366e9bc7b6263bf8e14b77ca7694d 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -18020,6 +18020,50 @@ TEST_P(GLSLTest_ES31, ESSL31ExtensionMacros)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test that Metal compiler doesn't inline non-const globals
++TEST_P(WebGLGLSLTest, InvalidGlobalsNotInlined)
++{
++    constexpr char kFS[] = R"(#version 100
++  precision highp float;
++  float v1 = 0.5;
++  float v2 = v1;
++
++  float f1() {
++    return v2;
++  }
++
++  void main() {
++    gl_FragColor = vec4(v1 + f1(),0.0,0.0, 1.0);
++  })";
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that a struct can have lots of fields.  Regression test for an inefficient O(n^2) check for
++// fields having unique names.
++TEST_P(GLSLTest_ES3, LotsOfFieldsInStruct)
++{
++    std::ostringstream fs;
++    fs << R"(#version 300 es
++precision highp float;
++struct LotsOfFields
++{
++)";
++    // Note: 16383 is the SPIR-V limit for struct member count.
++    for (uint32_t i = 0; i < 16383; ++i)
++    {
++        fs << "    float field" << i << ";\n";
++    }
++    fs << R"(};
++uniform B { LotsOfFields s; };
++out vec4 color;
++void main() {
++    color = vec4(s.field0, 0.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), fs.str().c_str());
++}
++
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(GLSLTest);
