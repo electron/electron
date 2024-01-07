@@ -233,6 +233,18 @@ systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
 nativeTheme.on('updated', () => { /* ... */ })
 ```
 
+### Removed: Some `window.setVibrancy` options on macOS
+
+The following vibrancy options have been removed:
+
+* 'light'
+* 'medium-light'
+* 'dark'
+* 'ultra-dark'
+* 'appearance-based'
+
+These were previously deprecated and have been removed by Apple in 10.15.
+
 ### Removed: `webContents.getPrinters`
 
 The `webContents.getPrinters` method has been removed. Use
