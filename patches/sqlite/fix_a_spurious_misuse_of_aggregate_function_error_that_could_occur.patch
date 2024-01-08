@@ -244,7 +244,7 @@ index 2c893770b04e06932b9c4405ff9b41a13aff68d0..ab94b56c638724a9de8ea2da49c944fb
  };
  
 diff --git a/test/aggnested.test b/test/aggnested.test
-index 1b8b608803912d5d8b7a7562dd31ec4a46627da4..4e74d75f35c78742327b3491902a295651846b63 100644
+index 1b8b608803912d5d8b7a7562dd31ec4a46627da4..6599fbf90940e49ce3467c67b7c8800aa90b17c0 100644
 --- a/test/aggnested.test
 +++ b/test/aggnested.test
 @@ -358,6 +358,60 @@ do_execsql_test 6.2.2 {
