@@ -69,11 +69,7 @@ class Dictionary : public gin::Dictionary {
 
   // Like normal Get but put result in an std::optional.
   template <typename T>
-<<<<<<< HEAD
-  bool GetOptional(base::StringPiece key, std::optional<T>* out) const {
-=======
-  bool GetOptional(std::string_view key, absl::optional<T>* out) const {
->>>>>>> efa582a2dc (chore: migrate from base::StringPiece to std::string_view in gin_helper/dictionary.h)
+  bool GetOptional(const std::string_view key, std::optional<T>* out) const {
     T ret;
     if (Get(key, &ret)) {
       out->emplace(std::move(ret));

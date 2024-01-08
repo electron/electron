@@ -5,6 +5,7 @@
 #include "shell/browser/ui/file_dialog.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -441,7 +442,7 @@ void SaveDialogCompletion(int chosen,
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
 #if IS_MAS_BUILD()
-    dict.Set("bookmark", base::StringPiece());
+    dict.Set("bookmark", std::string_view{});
 #endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);

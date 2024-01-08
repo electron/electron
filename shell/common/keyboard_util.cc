@@ -18,7 +18,7 @@ namespace {
 using CodeAndShiftedChar = std::pair<ui::KeyboardCode, std::optional<char16_t>>;
 
 constexpr CodeAndShiftedChar KeyboardCodeFromKeyIdentifier(
-    std::string_view str) {
+    const std::string_view str) {
 #if BUILDFLAG(IS_MAC)
   constexpr auto CommandOrControl = ui::VKEY_COMMAND;
 #else

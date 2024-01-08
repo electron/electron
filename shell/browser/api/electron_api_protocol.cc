@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
+#include <string_view>
 #include <vector>
 
 #include "base/command_line.h"
@@ -193,7 +194,7 @@ const char* const kBuiltinSchemes[] = {
 };
 
 // Convert error code to string.
-constexpr base::StringPiece ErrorCodeToString(ProtocolError error) {
+constexpr std::string_view ErrorCodeToString(ProtocolError error) {
   switch (error) {
     case ProtocolError::kRegistered:
       return "The scheme has been registered";
