@@ -887,8 +887,7 @@ void NativeWindowMac::SetResizable(bool resizable) {
   // the maximize button and ensure fullscreenability matches user setting.
   SetCanResize(resizable);
   SetFullScreenable(was_fullscreenable);
-  [[window_ standardWindowButton:NSWindowZoomButton]
-      setEnabled:resizable ? was_fullscreenable : false];
+  UpdateZoomButton();
 }
 
 bool NativeWindowMac::IsResizable() const {
@@ -916,11 +915,16 @@ bool NativeWindowMac::IsMinimizable() const {
 
 void NativeWindowMac::SetMaximizable(bool maximizable) {
   maximizable_ = maximizable;
-  [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:maximizable];
+  UpdateZoomButton();
 }
 
 bool NativeWindowMac::IsMaximizable() const {
   return [[window_ standardWindowButton:NSWindowZoomButton] isEnabled];
+}
+
+void NativeWindowMac::UpdateZoomButton() {
+  [[window_ standardWindowButton:NSWindowZoomButton]
+      setEnabled:IsResizable() && (CanMaximize() || IsFullScreenable())];
 }
 
 void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
@@ -929,6 +933,8 @@ void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
   // On EL Capitan this flag is required to hide fullscreen button.
   SetCollectionBehavior(!fullscreenable,
                         NSWindowCollectionBehaviorFullScreenAuxiliary);
+
+  UpdateZoomButton();
 }
 
 bool NativeWindowMac::IsFullScreenable() const {
