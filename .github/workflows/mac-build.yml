@@ -31,19 +31,20 @@ jobs:
     - name: Install Azure CLI
       run: |
         brew update && brew install azure-cli
-    - name: Setup Node/NPM
+    - name: Setup Node.js/npm
       uses: actions/setup-node@v3
       with:
         node-version: 18.18.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
-    - name: Enable ssh debugging
+    - name: Enable ssh Debugging
       uses: mxschmitt/action-tmate@v3
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       with:
         detached: true
         limit-access-to-actor: true
-    - run: |
+    - name: Install Dependencies
+      run: |
         cd src/electron
         node script/yarn install
     # step-depot-tools-get, L248
@@ -55,12 +56,56 @@ jobs:
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
-    - run: echo "$PWD/depot_tools" >> $GITHUB_PATH
-    # step-gclient-sync, L287
+    - name: Add Depot Tools to PATH
+      run: echo "$PWD/depot_tools" >> $GITHUB_PATH
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+    - name: Check If Cache Exists
+      id: check-cache
+      run: |
+        local exists=$(az storage blob exists \
+        --account-name $AZURE_STORAGE_ACCOUNT \
+        --account-key $AZURE_STORAGE_KEY \
+        --container-name $AZURE_STORAGE_CONTAINER_NAME \
+        --name src-121.0.6116.0-01052024_test)
+        echo ::set-output name=cache-exists::${{fromJson(exists).exists}}
+    - name: Download Cache
+      run: |
+        az storage blob download \
+        --account-name $AZURE_STORAGE_ACCOUNT \
+        --account-key $AZURE_STORAGE_KEY \
+        --container-name $AZURE_STORAGE_CONTAINER_NAME \
+        --name src-121.0.6116.0-01052024_test \
+        --file src-121.0.6116.0-01052024_test.zip \
+      if: steps.check-cache.outputs.cache-exists == 'true'
+    - name: Unzip and Ensure Cache
+      run: |
+        mkdir temp-cache
+        unzip -q src-121.0.6116.0-01052024_test.zip -d temp-cache
+        if [ -d "temp-cache/src" ]; then
+          echo "Relocating Cache"
+          rm -rf src
+          mv temp-cache/src src
+        fi
+
+        if [ ! -d "src/third_party/blink" ]; then
+          echo "Cache was not correctly restored - exiting"
+          exit 1
+        fi
+
+        echo "Wiping Electron Directory"
+        rm -rf src/electron
+
+        echo "Running Electron Only Hooks"
+        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+      if: steps.check-cache.outputs.cache-exists == 'true'
+
+      # step-gclient-sync, L287
     - name: Gclient Sync
       run: |
         # If we did not restore a complete sync then we need to sync for realz
-        if [ ! -s "src/electron/.circle-sync-done" ]; then
+        if [ ! -s "src/electron/.gha-sync-done" ]; then
           gclient config \
             --name "src/electron" \
             --unmanaged \
@@ -99,6 +144,7 @@ jobs:
             # fi
           fi
         fi
+      if: steps.check-cache.outputs.cache-exists == 'false'
       # step-gclient-sync, L976
     - name: Minimize the size of the cache
       run: |
@@ -200,9 +246,6 @@ jobs:
       run: |
         cd src
         ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
-    - name: Generate DEPS Hash
-      run: |
-        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
     - name: Zip Src
       run: |
         echo src/electron/.depshash-target
@@ -216,21 +259,3 @@ jobs:
         --file src-121.0.6116.0-01052024.zip \
         --name src-121.0.6116.0-01052024_test \
         --debug
-    
-    # TODO(vertedinde): This assumes the happy path that a cache exists
-    # Also handle the path of a cache not existing and needing a full sync
-    # Follows https://github.com/electron/electron/blob/main/.circleci/config/base.yml#L1310
-    # - name: Download Azure Blob Src Cache
-    #   run: |
-    #     az storage blob upload \
-    #     --account-name AZURE_STORAGE_NAME \
-    #     --account-key AZURE_STORAGE_KEY \
-    #     --container-name AZURE_CONTAINER_NAME \
-    #     --file /path/to/file.zip \
-    #     --name source_zip_test
-    # - name: Wipe Electron Folder
-    #   run: |
-    #     rm -rf src/electron
-    # - name: Run Electron Only Hooks
-    #   run: |
-    #     gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
