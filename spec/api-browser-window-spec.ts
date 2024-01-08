@@ -5622,6 +5622,19 @@ describe('BrowserWindow module', () => {
         expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
         expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
       });
+
+      it('does not disable maximize button if window is resizable', () => {
+        const w = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        expect(w.isMaximizable()).to.be.true('isMaximizable');
+
+        w.setResizable(false);
+
+        expect(w.isMaximizable()).to.be.false('isMaximizable');
+      });
     });
 
     ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
