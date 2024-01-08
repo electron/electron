@@ -187,7 +187,7 @@ Returns:
 
 Emitted when the mouse clicks the tray icon.
 
-#### Event: 'mouse-enter' _macOS_ _Windows_
+#### Event: 'mouse-enter' _macOS_
 
 Returns:
 
@@ -196,7 +196,7 @@ Returns:
 
 Emitted when the mouse enters the tray icon.
 
-#### Event: 'mouse-leave' _macOS_ _Windows_
+#### Event: 'mouse-leave' _macOS_
 
 Returns:
 
