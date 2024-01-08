@@ -1,7 +1,4 @@
-cherry-pick-285c7712c506.patch
-cherry-pick-2bf945775fe6.patch
-cherry-pick-cafe56b591ed.patch
+m120_translator_optimize_field-name-collision_check.patch
 m120_translator_fail_compilation_if_too_many_struct_fields.patch
 m120_translator_limit_private_variable_size_to_64kb.patch
-m120_translator_optimize_field-name-collision_check.patch
 m120_vulkan_don_t_crash_when_glcopyteximage2d_redefines_itself.patch
