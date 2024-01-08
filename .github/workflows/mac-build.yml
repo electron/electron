@@ -64,23 +64,27 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
+        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
+
         exists_json=$(az storage blob exists \
-        --account-name $AZURE_STORAGE_ACCOUNT \
-        --account-key $AZURE_STORAGE_KEY \
-        --container-name $AZURE_STORAGE_CONTAINER_NAME \
-        --name src-121.0.6116.0-01052024_test)
+          --account-name $AZURE_STORAGE_ACCOUNT \
+          --account-key $AZURE_STORAGE_KEY \
+          --container-name $AZURE_STORAGE_CONTAINER_NAME \
+          --name $depshash)
+
         exists=$(echo $exists_json | jq -r '.exists')
         echo "Cache Exists: $exists"
-        echo ::set-output name=cache-exists::$exists
+        echo "SRC_CACHE_EXISTS=$exists" >> "$GITHUB_OUTPUT"
     - name: Download Cache
       run: |
+        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
         az storage blob download \
-        --account-name $AZURE_STORAGE_ACCOUNT \
-        --account-key $AZURE_STORAGE_KEY \
-        --container-name $AZURE_STORAGE_CONTAINER_NAME \
-        --name src-121.0.6116.0-01052024_test \
-        --file src-121.0.6116.0-01052024_test.zip \
-      if: steps.check-cache.outputs.cache-exists == 'true'
+          --account-name $AZURE_STORAGE_ACCOUNT \
+          --account-key $AZURE_STORAGE_KEY \
+          --container-name $AZURE_STORAGE_CONTAINER_NAME \
+          --name $depshash \
+          --file $depshash.zip \
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Unzip and Ensure Cache
       run: |
         mkdir temp-cache
@@ -98,12 +102,25 @@ jobs:
 
         echo "Wiping Electron Directory"
         rm -rf src/electron
-
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
+    - name: Checkout Electron
+      uses: actions/checkout@v4
+      with:
+        path: src/electron
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
+    - name: Run Electron Only Hooks
+      run: |
         echo "Running Electron Only Hooks"
         gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
-      if: steps.check-cache.outputs.cache-exists == 'true'
-
-      # step-gclient-sync, L287
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
+    - name: Regenerate DEPS Hash
+      run: |
+        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
+    - name: Touch Sync Done
+      run: |
+        touch src/electron/.gha-sync-done
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Gclient Sync
       run: |
         # If we did not restore a complete sync then we need to sync for realz
@@ -146,7 +163,7 @@ jobs:
             # fi
           fi
         fi
-      if: steps.check-cache.outputs.cache-exists == 'false'
+      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'false'
       # step-gclient-sync, L976
     - name: Minimize the size of the cache
       run: |
@@ -250,14 +267,15 @@ jobs:
         ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
     - name: Zip Src
       run: |
-        echo src/electron/.depshash-target
-        zip -r src-121.0.6116.0-01052024.zip src
+        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
+        zip -r $depshash.zip src
     - name: Generate & Upload Azure Blob Src Cache
       run: |
+        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
         az storage blob upload \
-        --account-name $AZURE_STORAGE_ACCOUNT \
-        --account-key $AZURE_STORAGE_KEY \
-        --container-name $AZURE_STORAGE_CONTAINER_NAME \
-        --file src-121.0.6116.0-01052024.zip \
-        --name src-121.0.6116.0-01052024_test \
-        --debug
+          --account-name $AZURE_STORAGE_ACCOUNT \
+          --account-key $AZURE_STORAGE_KEY \
+          --container-name $AZURE_STORAGE_CONTAINER_NAME \
+          --file $depshash.zip \
+          --name $depshash \
+          --debug
