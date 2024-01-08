@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Tue, 12 Dec 2023 02:34:29 +0000
+Subject: Clamp the input value correctly before scheduling an AudioParam event
+
+When the AudioParam value is set via the setter, it internally calls
+the setValueAtTime() function to schedule the change. However, the
+current code does not correctly clamp the value within the nominal
+range. This CL fixes the problem.
+
+(cherry picked from commit c97b506c1e32951dd39e11e453e1ecc29cc0b35c)
+
+Bug: 1505086
+Test: Locally confirmed with both negative and positive param values.
+Change-Id: Ibb0aae168161af9ea95c5e11a929b3aa2c621c73
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5100625
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1235028}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5112838
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1497}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param.cc b/third_party/blink/renderer/modules/webaudio/audio_param.cc
+index 8c7b9d07bb68ec51d21ea2132cc5ecbc39e5cd95..95a40d39c9214fd6555523bd7e7bd91e36d2c6c0 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_param.cc
+@@ -120,12 +120,15 @@ void AudioParam::setValue(float value) {
+ void AudioParam::setValue(float value, ExceptionState& exception_state) {
+   WarnIfOutsideRange("value", value);
+ 
+-  // This is to signal any errors, if necessary, about conflicting
+-  // automations.
+-  setValueAtTime(value, Context()->currentTime(), exception_state);
+-  // This is to change the value so that an immediate query for the
+-  // value returns the expected values.
++  // Change the intrinsic value so that an immediate query for the value
++  // returns the value that the user code provided. It also clamps the value
++  // to the nominal range.
+   Handler().SetValue(value);
++
++  // Use the intrinsic value (after clamping) to schedule the actual
++  // automation event.
++  setValueAtTime(Handler().IntrinsicValue(), Context()->currentTime(),
++                 exception_state);
+ }
+ 
+ float AudioParam::defaultValue() const {
+diff --git a/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt b/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt
+index 7bb2d0aec7feaed69424f209a2e3e031c7a9e512..ebe05a2c239d35be4729cc187aa77de6a44f5a41 100644
+--- a/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt
++++ b/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt
+@@ -1,5 +1,4 @@
+ CONSOLE WARNING: AudioWorkletNode("noise-generator").amplitude.value 99 outside nominal range [0, 1]; value will be clamped.
+-CONSOLE WARNING: AudioWorkletNode("noise-generator").amplitude.setValueAtTime value 99 outside nominal range [0, 1]; value will be clamped.
+ CONSOLE WARNING: AudioWorkletNode("noise-generator").amplitude.setValueAtTime value -1 outside nominal range [0, 1]; value will be clamped.
+ CONSOLE WARNING: AudioWorkletNode("noise-generator").amplitude.linearRampToValueAtTime value 5 outside nominal range [0, 1]; value will be clamped.
+ This is a testharness.js-based test.

@@ -1,0 +1,323 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: dan <Dan Kennedy>
+Date: Thu, 2 Nov 2023 21:02:53 +0000
+Subject: Fix a spurious "misuse of aggregate function" error that could occur
+ when an aggregate function was used within the FROM clause of a sub-select of
+ the select that owns the aggregate. e.g. "SELECT (SELECT x FROM (SELECT
+ sum(t1.a) AS x)) FROM t1". [forum:/forumpost/c9970a37ed | Forum post
+ c9970a37ed].
+
+FossilOrigin-Name: 4470f657d2069972d02a00983252dec1f814d90c0d8d0906e320e955111e8c11
+(cherry picked from commit 5e4233a9e48b124d4d342b757b34e4ae849f5cf8)
+
+diff --git a/amalgamation/rename_exports.h b/amalgamation/rename_exports.h
+index 1dd9873cd698b9708c1e0897e6f270b5dd4e20c1..3b9835c71a5117dfeb249f30d930047c8722962c 100644
+--- a/amalgamation/rename_exports.h
++++ b/amalgamation/rename_exports.h
+@@ -1,4 +1,4 @@
+-// Copyright 2023 The Chromium Authors. All rights reserved.
++// Copyright 2024 The Chromium Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index 19637a9234893df86d3d7b12b16617bca56f36e4..3b0548b328bc750665c7d0a67302c5f6097fde4e 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -458,7 +458,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.42.0"
+ #define SQLITE_VERSION_NUMBER 3042000
+-#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 ec7dafdf189a95ffcd452db5e3b5370d8f7007c56a7dee464cc700fdd1027368"
++#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 19c0cc92aaff58e70789b761d7dcd23bc81869624e3aafea35673b5c3939a6ff"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -18921,6 +18921,7 @@ struct NameContext {
+   int nRef;            /* Number of names resolved by this context */
+   int nNcErr;          /* Number of errors encountered while resolving names */
+   int ncFlags;         /* Zero or more NC_* flags defined below */
++  int nNestedSelect;   /* Number of nested selects using this NC */
+   Select *pWinSelect;  /* SELECT statement for any window functions */
+ };
+ 
+@@ -105274,11 +105275,12 @@ static int resolveExprStep(Walker *pWalker, Expr *pExpr){
+           while( pNC2
+               && sqlite3ReferencesSrcList(pParse, pExpr, pNC2->pSrcList)==0
+           ){
+-            pExpr->op2++;
++            pExpr->op2 += (1 + pNC2->nNestedSelect);
+             pNC2 = pNC2->pNext;
+           }
+           assert( pDef!=0 || IN_RENAME_OBJECT );
+           if( pNC2 && pDef ){
++            pExpr->op2 += pNC2->nNestedSelect;
+             assert( SQLITE_FUNC_MINMAX==NC_MinMaxAgg );
+             assert( SQLITE_FUNC_ANYORDER==NC_OrderAgg );
+             testcase( (pDef->funcFlags & SQLITE_FUNC_MINMAX)!=0 );
+@@ -105839,6 +105841,7 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
+ 
+     /* Recursively resolve names in all subqueries in the FROM clause
+     */
++    if( pOuterNC ) pOuterNC->nNestedSelect++;
+     for(i=0; i<p->pSrc->nSrc; i++){
+       SrcItem *pItem = &p->pSrc->a[i];
+       if( pItem->pSelect && (pItem->pSelect->selFlags & SF_Resolved)==0 ){
+@@ -105863,6 +105866,7 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
+         }
+       }
+     }
++    if( pOuterNC ) pOuterNC->nNestedSelect--;
+ 
+     /* Set up the local name-context to pass to sqlite3ResolveExprNames() to
+     ** resolve the result-set expression list.
+diff --git a/amalgamation/sqlite3.h b/amalgamation/sqlite3.h
+index 820dbeeb157b79d3380e089f1fdd5862a4cab087..c3738817186bbfd60aa7d19a3327d6a4ca118bc3 100644
+--- a/amalgamation/sqlite3.h
++++ b/amalgamation/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.42.0"
+ #define SQLITE_VERSION_NUMBER 3042000
+-#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 ec7dafdf189a95ffcd452db5e3b5370d8f7007c56a7dee464cc700fdd1027368"
++#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 19c0cc92aaff58e70789b761d7dcd23bc81869624e3aafea35673b5c3939a6ff"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/amalgamation_dev/rename_exports.h b/amalgamation_dev/rename_exports.h
+index 1dd9873cd698b9708c1e0897e6f270b5dd4e20c1..3b9835c71a5117dfeb249f30d930047c8722962c 100644
+--- a/amalgamation_dev/rename_exports.h
++++ b/amalgamation_dev/rename_exports.h
+@@ -1,4 +1,4 @@
+-// Copyright 2023 The Chromium Authors. All rights reserved.
++// Copyright 2024 The Chromium Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index 36a6a8306fffaf38ff6d2feb6541c0eccd8df8fc..b10707a5fb419fc64694de2642371e43899022b8 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -458,7 +458,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.42.0"
+ #define SQLITE_VERSION_NUMBER 3042000
+-#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 ec7dafdf189a95ffcd452db5e3b5370d8f7007c56a7dee464cc700fdd1027368"
++#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 19c0cc92aaff58e70789b761d7dcd23bc81869624e3aafea35673b5c3939a6ff"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -18934,6 +18934,7 @@ struct NameContext {
+   int nRef;            /* Number of names resolved by this context */
+   int nNcErr;          /* Number of errors encountered while resolving names */
+   int ncFlags;         /* Zero or more NC_* flags defined below */
++  int nNestedSelect;   /* Number of nested selects using this NC */
+   Select *pWinSelect;  /* SELECT statement for any window functions */
+ };
+ 
+@@ -105287,11 +105288,12 @@ static int resolveExprStep(Walker *pWalker, Expr *pExpr){
+           while( pNC2
+               && sqlite3ReferencesSrcList(pParse, pExpr, pNC2->pSrcList)==0
+           ){
+-            pExpr->op2++;
++            pExpr->op2 += (1 + pNC2->nNestedSelect);
+             pNC2 = pNC2->pNext;
+           }
+           assert( pDef!=0 || IN_RENAME_OBJECT );
+           if( pNC2 && pDef ){
++            pExpr->op2 += pNC2->nNestedSelect;
+             assert( SQLITE_FUNC_MINMAX==NC_MinMaxAgg );
+             assert( SQLITE_FUNC_ANYORDER==NC_OrderAgg );
+             testcase( (pDef->funcFlags & SQLITE_FUNC_MINMAX)!=0 );
+@@ -105852,6 +105854,7 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
+ 
+     /* Recursively resolve names in all subqueries in the FROM clause
+     */
++    if( pOuterNC ) pOuterNC->nNestedSelect++;
+     for(i=0; i<p->pSrc->nSrc; i++){
+       SrcItem *pItem = &p->pSrc->a[i];
+       if( pItem->pSelect && (pItem->pSelect->selFlags & SF_Resolved)==0 ){
+@@ -105876,6 +105879,7 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
+         }
+       }
+     }
++    if( pOuterNC ) pOuterNC->nNestedSelect--;
+ 
+     /* Set up the local name-context to pass to sqlite3ResolveExprNames() to
+     ** resolve the result-set expression list.
+diff --git a/amalgamation_dev/sqlite3.h b/amalgamation_dev/sqlite3.h
+index 820dbeeb157b79d3380e089f1fdd5862a4cab087..c3738817186bbfd60aa7d19a3327d6a4ca118bc3 100644
+--- a/amalgamation_dev/sqlite3.h
++++ b/amalgamation_dev/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.42.0"
+ #define SQLITE_VERSION_NUMBER 3042000
+-#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 ec7dafdf189a95ffcd452db5e3b5370d8f7007c56a7dee464cc700fdd1027368"
++#define SQLITE_SOURCE_ID      "2023-05-16 12:36:15 19c0cc92aaff58e70789b761d7dcd23bc81869624e3aafea35673b5c3939a6ff"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/manifest b/manifest
+index 0841fab32a918f21970cf1806a984261f1aaccfb..e7b2f86954fa8078cb3211b5e5cfcb319b50b6dc 100644
+--- a/manifest
++++ b/manifest
+@@ -634,14 +634,14 @@ F src/pragma.h e690a356c18e98414d2e870ea791c1be1545a714ba623719deb63f7f226d8bb7
+ F src/prepare.c 6350675966bd0e7ac3a464af9dbfe26db6f0d4237f4e1f1acdb17b12ad371e6e
+ F src/printf.c b9320cdbeca0b336c3f139fd36dd121e4167dd62b35fbe9ccaa9bab44c0af38d
+ F src/random.c 606b00941a1d7dd09c381d3279a058d771f406c5213c9932bbd93d5587be4b9c
+-F src/resolve.c 3e53e02ce87c9582bd7e7d22f13f4094a271678d9dc72820fa257a2abb5e4032
++F src/resolve.c 9bcc9021a5b849ba8ccd2103147b75a3a98d885e00212b48672fe1ed8356338b
+ F src/rowset.c ba9515a922af32abe1f7d39406b9d35730ed65efab9443dc5702693b60854c92
+ F src/select.c 738c3a3d6929f8be66c319bad17f6b297bd60a4eb14006075c48a28487dc7786
+ F src/shell.c.in a8971a2ae4adee5f0a73d7a6c095026e8a2958ff3e9f56887a014df07733ca0c
+ F src/sqlite.h.in c14a4471fcd897a03631ac7ad3d05505e895e7b6419ec5b96cae9bc4df7a9fc6
+ F src/sqlite3.rc 5121c9e10c3964d5755191c80dd1180c122fc3a8
+ F src/sqlite3ext.h da473ce2b3d0ae407a6300c4a164589b9a6bfdbec9462688a8593ff16f3bb6e4
+-F src/sqliteInt.h a3ced8b9ebc573189c87b69f24bf10d2b9cd3cefefaae52623a2fa79e6fdd408
++F src/sqliteInt.h 522f19804d86e193dbfd966cd0dd033e0f6ec092e60c3812ae066657fe152653
+ F src/sqliteLimit.h d7323ffea5208c6af2734574bae933ca8ed2ab728083caa117c9738581a31657
+ F src/status.c 160c445d7d28c984a0eae38c144f6419311ed3eace59b44ac6dafc20db4af749
+ F src/table.c 0f141b58a16de7e2fbe81c308379e7279f4c6b50eb08efeec5892794a0ba30d1
+@@ -731,7 +731,7 @@ F test/affinity2.test ce1aafc86e110685b324e9a763eab4f2a73f737842ec3b687bd965867d
+ F test/affinity3.test f094773025eddf31135c7ad4cde722b7696f8eb07b97511f98585addf2a510a9
+ F test/aggerror.test a867e273ef9e3d7919f03ef4f0e8c0d2767944f2
+ F test/aggfault.test 777f269d0da5b0c2524c7ff6d99ae9a93db4f1b1839a914dd2a12e3035c29829
+-F test/aggnested.test 7269d07ac879fce161cb26c8fabe65cba5715742fac8a1fccac570dcdaf28f00
++F test/aggnested.test e1977bdc0a154b99c139b879b78c46030aa6ee97fb06bf65d6784a536e25b743
+ F test/alias.test 4529fbc152f190268a15f9384a5651bbbabc9d87
+ F test/all.test 2ecb8bbd52416642e41c9081182a8df05d42c75637afd4488aace78cc4b69e13
+ F test/alter.test 313073774ab5c3f2ef1d3f0d03757c9d3a81284ae7e1b4a6ca34db088f886896
+@@ -1920,7 +1920,7 @@ F test/win32heap.test 10fd891266bd00af68671e702317726375e5407561d859be1aa04696f2
+ F test/win32lock.test e0924eb8daac02bf80e9da88930747bd44dd9b230b7759fed927b1655b467c9c
+ F test/win32longpath.test 4baffc3acb2e5188a5e3a895b2b543ed09e62f7c72d713c1feebf76222fe9976
+ F test/win32nolock.test ac4f08811a562e45a5755e661f45ca85892bdbbc
+-F test/window1.test 5ba48e9d33231e6ef16f21426bade9ccc52abf65a10587bff90a6c14fe174594
++F test/window1.test 95d0d3e43a54600beba759f9a9f4f4bf546a596b1a8cc3f70dd26bf22ce7e41a
+ F test/window2.tcl 492c125fa550cda1dd3555768a2303b3effbeceee215293adf8871efc25f1476
+ F test/window2.test e466a88bd626d66edc3d352d7d7e1d5531e0079b549ba44efb029d1fbff9fd3c
+ F test/window3.tcl acea6e86a4324a210fd608d06741010ca83ded9fde438341cb978c49928faf03
+diff --git a/src/resolve.c b/src/resolve.c
+index adfcc8dbe9cf41581a23cfc42a6d699bf86d384f..b453a5b456ea1e0db814e1bd13c3fbe706a19a38 100644
+--- a/src/resolve.c
++++ b/src/resolve.c
+@@ -1212,11 +1212,12 @@ static int resolveExprStep(Walker *pWalker, Expr *pExpr){
+           while( pNC2 
+               && sqlite3ReferencesSrcList(pParse, pExpr, pNC2->pSrcList)==0
+           ){
+-            pExpr->op2++;
++            pExpr->op2 += (1 + pNC2->nNestedSelect);
+             pNC2 = pNC2->pNext;
+           }
+           assert( pDef!=0 || IN_RENAME_OBJECT );
+           if( pNC2 && pDef ){
++            pExpr->op2 += pNC2->nNestedSelect;
+             assert( SQLITE_FUNC_MINMAX==NC_MinMaxAgg );
+             assert( SQLITE_FUNC_ANYORDER==NC_OrderAgg );
+             testcase( (pDef->funcFlags & SQLITE_FUNC_MINMAX)!=0 );
+@@ -1777,6 +1778,7 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
+   
+     /* Recursively resolve names in all subqueries in the FROM clause
+     */
++    if( pOuterNC ) pOuterNC->nNestedSelect++;
+     for(i=0; i<p->pSrc->nSrc; i++){
+       SrcItem *pItem = &p->pSrc->a[i];
+       if( pItem->pSelect && (pItem->pSelect->selFlags & SF_Resolved)==0 ){
+@@ -1801,6 +1803,7 @@ static int resolveSelectStep(Walker *pWalker, Select *p){
+         }
+       }
+     }
++    if( pOuterNC ) pOuterNC->nNestedSelect--;
+   
+     /* Set up the local name-context to pass to sqlite3ResolveExprNames() to
+     ** resolve the result-set expression list.
+diff --git a/src/sqliteInt.h b/src/sqliteInt.h
+index 2c893770b04e06932b9c4405ff9b41a13aff68d0..ab94b56c638724a9de8ea2da49c944fb85a1923f 100644
+--- a/src/sqliteInt.h
++++ b/src/sqliteInt.h
+@@ -3332,6 +3332,7 @@ struct NameContext {
+   int nRef;            /* Number of names resolved by this context */
+   int nNcErr;          /* Number of errors encountered while resolving names */
+   int ncFlags;         /* Zero or more NC_* flags defined below */
++  int nNestedSelect;   /* Number of nested selects using this NC */
+   Select *pWinSelect;  /* SELECT statement for any window functions */
+ };
+ 
+diff --git a/test/aggnested.test b/test/aggnested.test
+index 1b8b608803912d5d8b7a7562dd31ec4a46627da4..6599fbf90940e49ce3467c67b7c8800aa90b17c0 100644
+--- a/test/aggnested.test
++++ b/test/aggnested.test
+@@ -358,6 +358,60 @@ do_execsql_test 6.2.2 {
+   FROM t2 GROUP BY 'constant_string';
+ } {{}}
+ 
++#-------------------------------------------------------------------------
++reset_db
++
++do_execsql_test 7.0 {
++  CREATE TABLE invoice (
++      id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
++      amount DOUBLE PRECISION DEFAULT NULL,
++      name VARCHAR(100) DEFAULT NULL
++  );
++
++  INSERT INTO invoice (amount, name) VALUES
++      (4.0, 'Michael'), (15.0, 'Bara'), (4.0, 'Michael'), (6.0, 'John');
++}
++
++do_execsql_test 7.1 {
++  SELECT sum(amount), name
++    from invoice
++  group by name
++  having (select v > 6 from (select sum(amount) v) t)
++} {
++  15.0 Bara
++  8.0 Michael
++}
++
++do_execsql_test 7.2 {
++  SELECT (select 1 from (select sum(amount))) FROM invoice
++} {1}
++
++do_execsql_test 8.0 {
++  CREATE TABLE t1(x INT);
++  INSERT INTO t1 VALUES(100);
++  INSERT INTO t1 VALUES(20);
++  INSERT INTO t1 VALUES(3);
++  SELECT (SELECT y FROM (SELECT sum(x) AS y) AS t2 ) FROM t1;
++} {123}
++
++do_execsql_test 8.1 {
++  SELECT (
++    SELECT y FROM (
++      SELECT z AS y FROM (SELECT sum(x) AS z) AS t2
++    )
++  ) FROM t1;
++} {123}
++
++do_execsql_test 8.2 {
++  SELECT (
++    SELECT a FROM (
++      SELECT y AS a FROM (
++        SELECT z AS y FROM (SELECT sum(x) AS z) AS t2
++      )
++    )
++  ) FROM t1;
++} {123}
++
+ 
+ 
+  
+diff --git a/test/window1.test b/test/window1.test
+index 783a739e3f1428f107932319a53e9cde91e79557..8044d43547718bb54b301c185adf60bf70ab1ae8 100644
+--- a/test/window1.test
++++ b/test/window1.test
+@@ -1881,7 +1881,7 @@ do_catchsql_test 57.3 {
+     SELECT max(y) OVER( ORDER BY (SELECT x FROM (SELECT sum(y) AS x FROM t1)))
+   )
+   FROM t3;
+-} {1 {misuse of aggregate: sum()}}
++} {0 5}
+ 
+ # 2020-06-06 ticket 1f6f353b684fc708
+ reset_db

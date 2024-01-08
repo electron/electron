@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pedro Pontes <pepontes@microsoft.com>
+Date: Fri, 5 Jan 2024 05:04:35 -0800
+Subject: Fix StructuralOptimization because of ignored side-effects
+
+Side-effects in the 1st else block were not taken into account.
+
+Drive-by: minor cleanups to StructuralOptimizationReducer.
+
+Bug: v8:12783
+Change-Id: I9666bae56c1e9f026567e8e3f0fcbad3836e8297
+Fixed: chromium:1509576
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5104648
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#91432}
+
+diff --git a/src/compiler/turboshaft/structural-optimization-reducer.h b/src/compiler/turboshaft/structural-optimization-reducer.h
+index bf5a49361d884367cb3048005cbe599b59a1af2d..364e5adbbfe9ec56d03e0cb0e04c8ce6f9d3f4f1 100644
+--- a/src/compiler/turboshaft/structural-optimization-reducer.h
++++ b/src/compiler/turboshaft/structural-optimization-reducer.h
+@@ -80,7 +80,7 @@ namespace v8::internal::compiler::turboshaft {
+ template <class Next>
+ class StructuralOptimizationReducer : public Next {
+  public:
+-  using Next::Asm;
++  TURBOSHAFT_REDUCER_BOILERPLATE()
+ 
+   OpIndex ReduceInputGraphBranch(OpIndex input_index, const BranchOp& branch) {
+     LABEL_BLOCK(no_change) {
+@@ -100,6 +100,13 @@ class StructuralOptimizationReducer : public Next {
+ 
+     OpIndex switch_var = OpIndex::Invalid();
+     while (true) {
++      // The "false" destination will be inlined before the switch is emitted,
++      // so it should only contain pure operations.
++      if (!ContainsOnlyPureOps(current_branch->if_false, Asm().input_graph())) {
++        TRACE("\t [break] End of only-pure-ops cascade reached.\n");
++        break;
++      }
++
+       // If we encounter a condition that is not equality, we can't turn it
+       // into a switch case.
+       const EqualOp* equal = Asm()
+@@ -164,13 +171,6 @@ class StructuralOptimizationReducer : public Next {
+ 
+       // Iterate to the next if_false block in the cascade.
+       current_branch = &maybe_branch.template Cast<BranchOp>();
+-
+-      // As long as the else blocks contain only pure ops, we can keep
+-      // traversing the if-else cascade.
+-      if (!ContainsOnlyPureOps(current_branch->if_false, Asm().input_graph())) {
+-        TRACE("\t [break] End of only-pure-ops cascade reached.\n");
+-        break;
+-      }
+     }
+ 
+     // Probably better to keep short if-else cascades as they are.
+@@ -186,7 +186,7 @@ class StructuralOptimizationReducer : public Next {
+       InlineAllOperationsWithoutLast(block);
+     }
+ 
+-    TRACE("[reduce] Successfully emit a Switch with %z cases.", cases.size());
++    TRACE("[reduce] Successfully emit a Switch with %zu cases.", cases.size());
+ 
+     // The last current_if_true block that ends the cascade becomes the default
+     // case.
+diff --git a/test/mjsunit/compiler/regress-crbug-1509576.js b/test/mjsunit/compiler/regress-crbug-1509576.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f538296edc4dd1c430a2cec6f88fda82273b10e8
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-crbug-1509576.js
+@@ -0,0 +1,39 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function escape(s) { }
++
++function f(i) {
++  let str = "";
++  escape(str);
++
++  // This "if (i == 3)" should not be merged into the subsequent switch, because
++  // there is a side-effect in between.
++  if (i == 3) {
++    // This will trigger a deopt
++    str += "("
++  }
++
++  str += "function";
++
++  switch (i) {
++    case -10:
++      escape(str);
++    case 1:
++    case 3:
++  }
++
++  // This `eval` creates some kind of closure of the function inside the
++  // function, not sure how that works exactly, but it's needed to repro :D
++  eval();
++
++  return str;
++}
++
++%PrepareFunctionForOptimization(f);
++assertEquals(f(0), "function");
++%OptimizeFunctionOnNextCall(f);
++assertEquals(f(3), "(function");
