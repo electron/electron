@@ -19,8 +19,8 @@
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/strings/strcat_win.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
@@ -68,13 +68,14 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
 
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
-  if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::UTF8ToWide(
-        base::StringPrintf("\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
-                           base::JoinString(launch_args, L"\"  \"").c_str()));
-  else
-    *exe =
-        base::UTF8ToWide(base::StringPrintf("\"%ls\" \"%%1\"", exe->c_str()));
+  if (args->GetNext(&launch_args) && !launch_args.empty()) {
+    std::wstring joined_args = base::JoinString(launch_args, L"\" \"");
+    *exe = base::StrCat(
+        {L"\"", exe->c_str(), L"\" \"", joined_args.c_str(), L"\" \"%1\""});
+  } else {
+    *exe = base::StrCat({L"\"", exe->c_str(), L"\" \"%1\""});
+  }
+
   return true;
 }
 
@@ -142,8 +143,7 @@ bool FormatCommandLineString(std::wstring* exe,
 
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::UTF8ToWide(base::StringPrintf(
-        "%ls %ls", exe->c_str(), base::as_wcstr(joined_launch_args)));
+    *exe = base::StrCat({exe->c_str(), base::as_wcstr(joined_launch_args)});
   }
 
   return true;
