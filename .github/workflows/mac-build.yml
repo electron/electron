@@ -64,12 +64,14 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        local exists=$(az storage blob exists \
+        exists_json=$(az storage blob exists \
         --account-name $AZURE_STORAGE_ACCOUNT \
         --account-key $AZURE_STORAGE_KEY \
         --container-name $AZURE_STORAGE_CONTAINER_NAME \
         --name src-121.0.6116.0-01052024_test)
-        echo ::set-output name=cache-exists::${{fromJson(exists).exists}}
+        exists=$(echo $exists_json | jq -r '.exists')
+        echo "Cache Exists: $exists"
+        echo ::set-output name=cache-exists::$exists
     - name: Download Cache
       run: |
         az storage blob download \
