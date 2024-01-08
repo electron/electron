@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Eng <enga@chromium.org>
+Date: Tue, 19 Dec 2023 17:25:51 +0000
+Subject: Use cross thread handles to bind args for async webgpu context
+ creation
+
+(cherry picked from commit 542b278a0c1de7202f4bf5e3e5cbdc2dd6c337d4)
+
+Fixed: 1506923
+Change-Id: I174703cbd993471e3afb39c0cfa4cce2770755f7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5113019
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Austin Eng <enga@chromium.org>
+Reviewed-by: Stephen White <senorblanco@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1237179}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5133239
+Cr-Commit-Position: refs/branch-heads/6099@{#1551}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu.cc b/third_party/blink/renderer/modules/webgpu/gpu.cc
+index f2f4e8be0cc73f5b569fd3345bd3b64f4539041d..5752c80fbbfc91d492f497c87f181d3211c71d86 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu.cc
++++ b/third_party/blink/renderer/modules/webgpu/gpu.cc
+@@ -39,11 +39,13 @@
+ #include "third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h"
+ #include "third_party/blink/renderer/platform/graphics/gpu/webgpu_callback.h"
+ #include "third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h"
++#include "third_party/blink/renderer/platform/heap/cross_thread_handle.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/thread_state.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/privacy_budget/identifiability_digest_helpers.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ 
+ namespace blink {
+ 
+@@ -300,9 +302,19 @@ void GPU::RequestAdapterImpl(ScriptState* script_state,
+     CreateWebGPUGraphicsContext3DProviderAsync(
+         execution_context->Url(),
+         execution_context->GetTaskRunner(TaskType::kWebGPU),
+-        WTF::BindOnce(
+-            [](GPU* gpu, ExecutionContext* execution_context,
++        CrossThreadBindOnce(
++            [](CrossThreadHandle<GPU> gpu_handle,
++               CrossThreadHandle<ExecutionContext> execution_context_handle,
+                std::unique_ptr<WebGraphicsContext3DProvider> context_provider) {
++              auto unwrap_gpu = MakeUnwrappingCrossThreadHandle(gpu_handle);
++              auto unwrap_execution_context =
++                  MakeUnwrappingCrossThreadHandle(execution_context_handle);
++              if (!unwrap_gpu || !unwrap_execution_context) {
++                return;
++              }
++              auto* gpu = unwrap_gpu.GetOnCreationThread();
++              auto* execution_context =
++                  unwrap_execution_context.GetOnCreationThread();
+               const KURL& url = execution_context->Url();
+               context_provider =
+                   CheckContextProvider(url, std::move(context_provider));
+@@ -324,7 +336,8 @@ void GPU::RequestAdapterImpl(ScriptState* script_state,
+                 std::move(callback).Run();
+               }
+             },
+-            WrapPersistent(this), WrapPersistent(execution_context)));
++            MakeCrossThreadHandle(this),
++            MakeCrossThreadHandle(execution_context)));
+     return;
+   }
+ 
+diff --git a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc
+index f859f3e62c54d26453a145321f697c5116c13348..3d9890b9b4a58a30a11e501fdb9297f4a57b601b 100644
+--- a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc
++++ b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc
+@@ -121,8 +121,8 @@ CreateWebGPUGraphicsContext3DProvider(const KURL& url) {
+ void CreateWebGPUGraphicsContext3DProviderAsync(
+     const KURL& url,
+     scoped_refptr<base::SingleThreadTaskRunner> current_thread_task_runner,
+-    base::OnceCallback<void(std::unique_ptr<WebGraphicsContext3DProvider>)>
+-        callback) {
++    WTF::CrossThreadOnceFunction<
++        void(std::unique_ptr<WebGraphicsContext3DProvider>)> callback) {
+   if (IsMainThread()) {
+     std::move(callback).Run(
+         Platform::Current()->CreateWebGPUGraphicsContext3DProvider(url));
+@@ -140,8 +140,7 @@ void CreateWebGPUGraphicsContext3DProviderAsync(
+             AccessMainThreadForWebGraphicsContext3DProvider()),
+         FROM_HERE,
+         CrossThreadBindOnce(&CreateWebGPUGraphicsContextOnMainThreadAsync, url,
+-                            current_thread_task_runner,
+-                            CrossThreadBindOnce(std::move(callback))));
++                            current_thread_task_runner, std::move(callback)));
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h
+index 8fcab24bfec2c9b2e9edf9885b66de4f99949b35..8b785cc30acdfffed0f59eb53b073d0cdedc2151 100644
+--- a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h
++++ b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h
+@@ -10,6 +10,7 @@
+ #include "third_party/blink/public/platform/web_graphics_context_3d_provider.h"
+ #include "third_party/blink/renderer/platform/platform_export.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/wtf/functional.h"
+ 
+ namespace blink {
+ 
+@@ -42,8 +43,8 @@ CreateWebGPUGraphicsContext3DProvider(const KURL& url);
+ PLATFORM_EXPORT void CreateWebGPUGraphicsContext3DProviderAsync(
+     const KURL& url,
+     scoped_refptr<base::SingleThreadTaskRunner> current_thread_task_runner,
+-    base::OnceCallback<void(std::unique_ptr<WebGraphicsContext3DProvider>)>
+-        callback);
++    WTF::CrossThreadOnceFunction<
++        void(std::unique_ptr<WebGraphicsContext3DProvider>)> callback);
+ 
+ }  // namespace blink
+ 

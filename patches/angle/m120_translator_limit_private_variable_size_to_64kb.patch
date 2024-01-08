@@ -1,0 +1,416 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 30 Nov 2023 15:42:32 -0500
+Subject: M120: Translator: Limit private variable size to 64KB
+
+This is indirectly fixing an issue where passing large arrays in SPIR-V
+such that an internal cast is needed (such as array inside interface
+block copied to local varaible) causes an overflow of the instruction
+length limit (in the absence of OpCopyLogical).
+
+By limiting the size of private variables to 32KB, this limitation is
+indirectly enforced.  It was observed that all the test shaders added in
+this CL fail on the Nvidia OpenGL drivers, so such a limit seems to be
+reasonble.
+
+Bug: chromium:1505009
+Change-Id: I75a1e40a538120ffc69ae7edafbdba5830c6b0bb
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5143828
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index 1f3a4d52f2f45e7ed10b9b5512f2f92a06877256..c70c419631a1c4d382bcc8ba36c35d0ba06c2c5d 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -771,11 +771,6 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+         return false;
+     }
+ 
+-    if (shouldLimitTypeSizes() && !ValidateTypeSizeLimitations(root, &mSymbolTable, &mDiagnostics))
+-    {
+-        return false;
+-    }
+-
+     if (!ValidateFragColorAndFragData(mShaderType, mShaderVersion, mSymbolTable, &mDiagnostics))
+     {
+         return false;
+@@ -1056,6 +1051,13 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+         return false;
+     }
+ 
++    // Run after RemoveUnreferencedVariables, validate that the shader does not have excessively
++    // large variables.
++    if (shouldLimitTypeSizes() && !ValidateTypeSizeLimitations(root, &mSymbolTable, &mDiagnostics))
++    {
++        return false;
++    }
++
+     // Built-in function emulation needs to happen after validateLimitations pass.
+     GetGlobalPoolAllocator()->lock();
+     initBuiltInFunctionEmulator(&mBuiltInFunctionEmulator, compileOptions);
+diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+index f0ff9cb11ac39e62672285300c8f41641f12c617..8f02c65b5ec5fd20b8bcee2bc595cfb278f758b4 100644
+--- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
++++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+@@ -24,10 +24,11 @@ namespace
+ // Arbitrarily enforce that all types declared with a size in bytes of over 2 GB will cause
+ // compilation failure.
+ //
+-// For local and global variables, the limit is much lower (16MB) as that much memory won't fit in
++// For local and global variables, the limit is much lower (64KB) as that much memory won't fit in
+ // the GPU registers anyway.
+-constexpr size_t kMaxVariableSizeInBytes        = static_cast<size_t>(2) * 1024 * 1024 * 1024;
+-constexpr size_t kMaxPrivateVariableSizeInBytes = static_cast<size_t>(16) * 1024 * 1024;
++constexpr size_t kMaxVariableSizeInBytes             = static_cast<size_t>(2) * 1024 * 1024 * 1024;
++constexpr size_t kMaxPrivateVariableSizeInBytes      = static_cast<size_t>(64) * 1024;
++constexpr size_t kMaxTotalPrivateVariableSizeInBytes = static_cast<size_t>(16) * 1024 * 1024;
+ 
+ // Traverses intermediate tree to ensure that the shader does not
+ // exceed certain implementation-defined limits on the sizes of types.
+@@ -70,43 +71,115 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+                 continue;
+             }
+ 
+-            const TType &variableType = asSymbol->getType();
+-
+-            // Create a ShaderVariable from which to compute
+-            // (conservative) sizing information.
+-            ShaderVariable shaderVar;
+-            setCommonVariableProperties(variableType, variable, &shaderVar);
+-
+-            // Compute the std140 layout of this variable, assuming
+-            // it's a member of a block (which it might not be).
+-            Std140BlockEncoder layoutEncoder;
+-            BlockEncoderVisitor visitor("", "", &layoutEncoder);
+-            // Since the size limit's arbitrary, it doesn't matter
+-            // whether the row-major layout is correctly determined.
+-            bool isRowMajorLayout = false;
+-            TraverseShaderVariable(shaderVar, isRowMajorLayout, &visitor);
+-            if (layoutEncoder.getCurrentOffset() > kMaxVariableSizeInBytes)
++            if (!validateVariableSize(variable, asSymbol->getLine()))
+             {
+-                error(asSymbol->getLine(),
+-                      "Size of declared variable exceeds implementation-defined limit",
+-                      asSymbol->getName());
+                 return false;
+             }
++        }
++
++        return true;
++    }
++
++    void visitFunctionPrototype(TIntermFunctionPrototype *node) override
++    {
++        const TFunction *function = node->getFunction();
++        const size_t paramCount   = function->getParamCount();
++
++        for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex)
++        {
++            validateVariableSize(*function->getParam(paramIndex), node->getLine());
++        }
++    }
++
++    bool validateVariableSize(const TVariable &variable, const TSourceLoc &location)
++    {
++        const TType &variableType = variable.getType();
++
++        // Create a ShaderVariable from which to compute
++        // (conservative) sizing information.
++        ShaderVariable shaderVar;
++        setCommonVariableProperties(variableType, variable, &shaderVar);
++
++        // Compute the std140 layout of this variable, assuming
++        // it's a member of a block (which it might not be).
++        Std140BlockEncoder layoutEncoder;
++        BlockEncoderVisitor visitor("", "", &layoutEncoder);
++        // Since the size limit's arbitrary, it doesn't matter
++        // whether the row-major layout is correctly determined.
++        bool isRowMajorLayout = false;
++        TraverseShaderVariable(shaderVar, isRowMajorLayout, &visitor);
++        if (layoutEncoder.getCurrentOffset() > kMaxVariableSizeInBytes)
++        {
++            error(location, "Size of declared variable exceeds implementation-defined limit",
++                  variable.name());
++            return false;
++        }
++
++        // Skip over struct declarations.  As long as they are not used (or if they are used later
++        // in a less-restricted context (such as a UBO or SSBO)), they can be larger than
++        // kMaxPrivateVariableSizeInBytes.
++        if (variable.symbolType() == SymbolType::Empty && variableType.isStructSpecifier())
++        {
++            return true;
++        }
++
++        switch (variableType.getQualifier())
++        {
++            // List of all types that need to be limited (for example because they cause overflows
++            // in drivers, or create trouble for the SPIR-V gen as the number of an instruction's
++            // arguments cannot be more than 64KB (see OutputSPIRVTraverser::cast)).
++
++            // Local/global variables
++            case EvqTemporary:
++            case EvqGlobal:
++            case EvqConst:
++
++            // Function arguments
++            case EvqParamIn:
++            case EvqParamOut:
++            case EvqParamInOut:
++            case EvqParamConst:
++
++            // Varyings
++            case EvqVaryingIn:
++            case EvqVaryingOut:
++            case EvqSmoothOut:
++            case EvqFlatOut:
++            case EvqNoPerspectiveOut:
++            case EvqCentroidOut:
++            case EvqSampleOut:
++            case EvqNoPerspectiveCentroidOut:
++            case EvqNoPerspectiveSampleOut:
++            case EvqSmoothIn:
++            case EvqFlatIn:
++            case EvqNoPerspectiveIn:
++            case EvqCentroidIn:
++            case EvqNoPerspectiveCentroidIn:
++            case EvqNoPerspectiveSampleIn:
++            case EvqVertexOut:
++            case EvqFragmentIn:
++            case EvqGeometryIn:
++            case EvqGeometryOut:
++            case EvqPerVertexIn:
++            case EvqPerVertexOut:
++            case EvqPatchIn:
++            case EvqPatchOut:
++            case EvqTessControlIn:
++            case EvqTessControlOut:
++            case EvqTessEvaluationIn:
++            case EvqTessEvaluationOut:
+ 
+-            const bool isPrivate = variableType.getQualifier() == EvqTemporary ||
+-                                   variableType.getQualifier() == EvqGlobal ||
+-                                   variableType.getQualifier() == EvqConst;
+-            if (isPrivate)
+-            {
+                 if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes)
+                 {
+-                    error(asSymbol->getLine(),
++                    error(location,
+                           "Size of declared private variable exceeds implementation-defined limit",
+-                          asSymbol->getName());
++                          variable.name());
+                     return false;
+                 }
+                 mTotalPrivateVariablesSize += layoutEncoder.getCurrentOffset();
+-            }
++                break;
++            default:
++                break;
+         }
+ 
+         return true;
+@@ -115,7 +188,7 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+     void validateTotalPrivateVariableSize()
+     {
+         if (mTotalPrivateVariablesSize.ValueOrDefault(std::numeric_limits<size_t>::max()) >
+-            kMaxPrivateVariableSizeInBytes)
++            kMaxTotalPrivateVariableSizeInBytes)
+         {
+             mDiagnostics->error(
+                 TSourceLoc{},
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 91233461298150dff48e4d044eb8535e1bcfb7b6..f1343f8e8ad65b6fa292c630214c66aaf3ff5a64 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -110,6 +110,8 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* =
+ 7872 WIN INTEL OPENGL : VertexAttributeTest.AliasingMatrixAttribLocations/ES2_OpenGL = SKIP
+ 7872 WIN INTEL OPENGL : VertexAttributeTest.ShortUnnormalized/ES2_OpenGL = SKIP
+ 7872 WIN INTEL OPENGL : ViewportTest.DoubleWindowCentered/ES2_OpenGL = SKIP
++8441 WIN INTEL OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
++8441 WIN INTEL OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
+ 
+ // Linux
+ 6065 LINUX INTEL VULKAN : SimpleStateChangeTestES31.DrawThenUpdateUBOThenDrawThenDrawIndexed/* = SKIP
+@@ -146,6 +148,10 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* =
+ 6977 LINUX NVIDIA OpenGL : MipmapTestES31.GenerateLowerMipsWithDraw/* = SKIP
+ 7301 LINUX NVIDIA OpenGL : CopyTexImageTest.RGBAToRGB/ES2_OpenGL_EmulateCopyTexImage2DFromRenderbuffers/* = SKIP
+ 7371 LINUX NVIDIA OpenGL : FramebufferTest_ES3.SurfaceDimensionsChangeAndFragCoord/* = SKIP
++8441 NVIDIA OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
++8441 NVIDIA OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
++8441 NVIDIA GLES : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
++8441 NVIDIA GLES : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
+ 
+ // Nvidia Vulkan
+ 7236 NVIDIA VULKAN : GLSLTest_ES31.TessellationControlShaderMatrixCopyBug/* = SKIP
+@@ -1055,6 +1061,8 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* =
+ 7389 MAC OPENGL : Texture2DTest.ManySupersedingTextureUpdates/* = SKIP
+ 
+ 8437 MAC OPENGL : GLSLTest_ES3.LotsOfFieldsInStruct/* = SKIP
++8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
++8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
+ 
+ // GL, GLES run into issues with cleanup
+ 7495 WIN OpenGL : EGLMultiContextTest.ReuseUnterminatedDisplay/* = SKIP
+diff --git a/src/tests/compiler_tests/RecordConstantPrecision_test.cpp b/src/tests/compiler_tests/RecordConstantPrecision_test.cpp
+index 07923f991423f4ec1ff8cbe81fb822c2b526d149..9446576ac797c0e5db8f9c63d79adff744ea488e 100644
+--- a/src/tests/compiler_tests/RecordConstantPrecision_test.cpp
++++ b/src/tests/compiler_tests/RecordConstantPrecision_test.cpp
+@@ -141,11 +141,11 @@ TEST_F(RecordConstantPrecisionTest, HigherPrecisionConstantInIndex)
+ uniform mediump float u;
+ void main()
+ {
+-    const highp int a = 33000;
+-    mediump float b[34000];
++    const highp int a = 330;
++    mediump float b[340];
+     gl_FragColor = vec4(b[a]);
+ })";
+     compile(shaderString);
+     ASSERT_FALSE(foundInCode("const highp int s"));
+-    ASSERT_TRUE(foundInCode("b[33000]"));
++    ASSERT_TRUE(foundInCode("b[330]"));
+ }
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index d7eb48eacfe58fc128fc2d24088ac18ea5196c05..f4b7ce6222ff4a29cb20b75bc102e2c8ae478189 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -18195,6 +18195,138 @@ void main() {
+     EXPECT_EQ(0u, shader);
+ }
+ 
++// Test that passing large arrays to functions are compiled correctly.  Regression test for the
++// SPIR-V generator that made a copy of the array to pass to the function, by decomposing and
++// reconstructing it (in the absence of OpCopyLogical), but the reconstruction instruction has a
++// length higher than can fit in SPIR-V.
++TEST_P(GLSLTest_ES3, LargeInterfaceBlockArrayPassedToFunction)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform Large { float a[65536]; };
++float f(float b[65536])
++{
++    b[0] = 1.0;
++    return b[0] + b[1];
++}
++out vec4 color;
++void main() {
++    color = vec4(f(a), 0.0, 0.0, 1.0);
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_EQ(0u, shader);
++}
++
++// Make sure the shader in LargeInterfaceBlockArrayPassedToFunction works if the large local is
++// avoided.
++TEST_P(GLSLTest_ES3, LargeInterfaceBlockArray)
++{
++    int maxUniformBlockSize = 0;
++    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
++    ANGLE_SKIP_TEST_IF(maxUniformBlockSize < 16384 * 4);
++
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform Large { float a[16384]; };
++out vec4 color;
++void main() {
++    color = vec4(a[0], 0.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++}
++
++// Similar to LargeInterfaceBlockArrayPassedToFunction, but the array is nested in a struct.
++TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArrayPassedToFunction)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++struct S { float a[65536]; };
++uniform Large { S s; };
++float f(float b[65536])
++{
++    b[0] = 1.0;
++    return b[0] + b[1];
++}
++out vec4 color;
++void main() {
++    color = vec4(f(s.a), 0.0, 0.0, 1.0);
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_EQ(0u, shader);
++}
++
++// Make sure the shader in LargeInterfaceBlockNestedArrayPassedToFunction works if the large local
++// is avoided.
++TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArray)
++{
++    int maxUniformBlockSize = 0;
++    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
++    ANGLE_SKIP_TEST_IF(maxUniformBlockSize < 16384 * 4);
++
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++struct S { float a[16384]; };
++uniform Large { S s; };
++out vec4 color;
++void main() {
++    color = vec4(s.a[0], 0.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++}
++
++// Similar to LargeInterfaceBlockArrayPassedToFunction, but the large array is copied to a local
++// variable instead.
++TEST_P(GLSLTest_ES3, LargeInterfaceBlockArrayCopiedToLocal)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform Large { float a[65536]; };
++out vec4 color;
++void main() {
++    float b[65536] = a;
++    color = vec4(b[0], 0.0, 0.0, 1.0);
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_EQ(0u, shader);
++}
++
++// Similar to LargeInterfaceBlockArrayCopiedToLocal, but the array is nested in a struct
++TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArrayCopiedToLocal)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++struct S { float a[65536]; };
++uniform Large { S s; };
++out vec4 color;
++void main() {
++    S s2 = s;
++    color = vec4(s2.a[0], 0.0, 0.0, 1.0);
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_EQ(0u, shader);
++}
++
++// Test that too large varyings are rejected.
++TEST_P(GLSLTest_ES3, LargeArrayVarying)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++in float a[65536];
++out vec4 color;
++void main() {
++    color = vec4(a[0], 0.0, 0.0, 1.0);
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_EQ(0u, shader);
++}
++
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(GLSLTest);

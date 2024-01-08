@@ -23,5 +23,9 @@
 
   "src/electron/patches/webrtc": "src/third_party/webrtc",
 
-  "src/electron/patches/libavif": "src/third_party/libavif/src"
+  "src/electron/patches/libavif": "src/third_party/libavif/src",
+
+  "src/electron/patches/angle": "src/third_party/angle",
+
+  "src/electron/patches/sqlite": "src/third_party/sqlite/src"
 }

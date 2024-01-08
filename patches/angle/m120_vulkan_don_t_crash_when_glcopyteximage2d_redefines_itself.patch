@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 5 Dec 2023 13:36:53 -0500
+Subject: M120: Vulkan: Don't crash when glCopyTexImage2D redefines itself
+
+The Vulkan backend marks a level being redefined as such before doing
+the copy.  If a single-level texture was being redefined, it releases it
+so it can be immediately reallocated.  If the source of the copy is the
+same texture, this causes a crash.
+
+This can be properly supported by using a temp image to do the copy, but
+that is not implemented in this change.
+
+Bug: chromium:1501798
+Change-Id: I3a902b1e9eec41afd385d9c75a8c95dc986070a8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5143829
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 54d1184518e1cc6e83157b901a37e4ce1e9b58a5..98f66a1d4b02f78dcb3bdae673d21f4bd087fea7 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -879,8 +879,28 @@ angle::Result TextureVk::copyImage(const gl::Context *context,
+         gl::GetInternalFormatInfo(internalFormat, GL_UNSIGNED_BYTE);
+     const vk::Format &vkFormat = renderer->getFormat(internalFormatInfo.sizedInternalFormat);
+ 
++    // The texture level being redefined might be the same as the one bound to the framebuffer.
++    // This _could_ be supported by using a temp image before redefining the level (and potentially
++    // discarding the image).  However, this is currently unimplemented.
++    FramebufferVk *framebufferVk = vk::GetImpl(source);
++    RenderTargetVk *colorReadRT  = framebufferVk->getColorReadRenderTarget();
++    vk::ImageHelper *srcImage    = &colorReadRT->getImageForCopy();
++    const bool isCubeMap         = index.getType() == gl::TextureType::CubeMap;
++    gl::LevelIndex levelIndex(getNativeImageIndex(index).getLevelIndex());
++    const uint32_t layerIndex    = index.hasLayer() ? index.getLayerIndex() : 0;
++    const uint32_t redefinedFace = isCubeMap ? layerIndex : 0;
++    const uint32_t sourceFace    = isCubeMap ? colorReadRT->getLayerIndex() : 0;
++    const bool isSelfCopy = mImage == srcImage && levelIndex == colorReadRT->getLevelIndex() &&
++                            redefinedFace == sourceFace;
++
+     ANGLE_TRY(redefineLevel(context, index, vkFormat, newImageSize));
+ 
++    if (isSelfCopy)
++    {
++        UNIMPLEMENTED();
++        return angle::Result::Continue;
++    }
++
+     return copySubImageImpl(context, index, gl::Offset(0, 0, 0), sourceArea, internalFormatInfo,
+                             source);
+ }
+@@ -1949,7 +1969,8 @@ angle::Result TextureVk::redefineLevel(const gl::Context *context,
+                 mImage->getLevelCount() == 1 && mImage->getFirstAllocatedLevel() == levelIndexGL;
+ 
+             // If incompatible, and redefining the single-level image, release it so it can be
+-            // recreated immediately.  This is an optimization to avoid an extra copy.
++            // recreated immediately.  This is needed so that the texture can be reallocated with
++            // the correct format/size.
+             if (!isCompatibleRedefinition && isUpdateToSingleLevelImage)
+             {
+                 releaseImage(contextVk);
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index f1343f8e8ad65b6fa292c630214c66aaf3ff5a64..e60ea8f9970d14a551128528d18e7be3bc08efcc 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -29,6 +29,8 @@
+ 6989 GLES : BlitFramebufferTestES31.OOBResolve/* = SKIP
+ 7881 VULKAN : MultithreadingTestES3.UnsynchronizedTextureReads/* = SKIP
+ 7881 VULKAN : MultithreadingTestES3.UnsynchronizedTextureReads2/* = SKIP
++// Incorrectly handled pretty much in all backends
++8446 : CopyTexImageTestES3.RedefineSameLevel/* = SKIP
+ 
+ 6743 OPENGL : SimpleStateChangeTestES3.RespecifyBufferAfterBeginTransformFeedback/* = SKIP
+ 6743 GLES : SimpleStateChangeTestES3.RespecifyBufferAfterBeginTransformFeedback/* = SKIP
+diff --git a/src/tests/gl_tests/CopyTexImageTest.cpp b/src/tests/gl_tests/CopyTexImageTest.cpp
+index 3d0cf40ab244a5463c2e4b3d53470d6f932e357b..d6949280ed301fc918e397dad26b9efec1c32f23 100644
+--- a/src/tests/gl_tests/CopyTexImageTest.cpp
++++ b/src/tests/gl_tests/CopyTexImageTest.cpp
+@@ -1262,6 +1262,56 @@ TEST_P(CopyTexImageTestES3, 3DSubImageDrawMismatchedTextureTypes)
+     glBindTexture(GL_TEXTURE_3D, 0);
+ }
+ 
++// Make sure a single-level texture can be redefined through glCopyTexImage2D from a framebuffer
++// bound to the same texture.  Regression test for a bug in the Vulkan backend where the texture was
++// released before the copy.
++TEST_P(CopyTexImageTestES3, RedefineSameLevel)
++{
++    constexpr GLsizei kSize     = 32;
++    constexpr GLsizei kHalfSize = kSize / 2;
++
++    // Create a single-level texture with four colors in different regions.
++    std::vector<GLColor> initData(kSize * kSize);
++    for (GLsizei y = 0; y < kSize; ++y)
++    {
++        const bool isTop = y < kHalfSize;
++        for (GLsizei x = 0; x < kSize; ++x)
++        {
++            const bool isLeft = x < kHalfSize;
++
++            GLColor color           = isLeft && isTop    ? GLColor::red
++                                      : isLeft && !isTop ? GLColor::green
++                                      : !isLeft && isTop ? GLColor::blue
++                                                         : GLColor::yellow;
++            color.A                 = 123;
++            initData[y * kSize + x] = color;
++        }
++    }
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 initData.data());
++
++    // Bind the framebuffer to the same texture
++    GLFramebuffer framebuffer;
++    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++
++    // Redefine the texture
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, kHalfSize / 2, kHalfSize / 2, kHalfSize, kHalfSize,
++                     0);
++
++    // Verify copy is done correctly.
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kHalfSize / 2, kHalfSize / 2, GLColor::red);
++    EXPECT_PIXEL_RECT_EQ(kHalfSize / 2, 0, kHalfSize / 2, kHalfSize / 2, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(0, kHalfSize / 2, kHalfSize / 2, kHalfSize / 2, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(kHalfSize / 2, kHalfSize / 2, kHalfSize / 2, kHalfSize / 2,
++                         GLColor::yellow);
++}
++
+ ANGLE_INSTANTIATE_TEST(CopyTexImageTest,
+                        ANGLE_ALL_TEST_PLATFORMS_ES2,
+                        ES2_D3D11_PRESENT_PATH_FAST(),

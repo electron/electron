@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius M <dmercadier@chromium.org>
+Date: Fri, 8 Dec 2023 14:15:46 +0100
+Subject: Merged: [turboshaft] Fix StructuralOptimization because of ignored
+ side-effects
+
+Side-effects in the 1st else block were not taken into account.
+
+Drive-by: minor cleanups to StructuralOptimizationReducer.
+
+Bug: v8:12783, chromium:1509576
+(cherry picked from commit 4a664b390577de3d3572010da0dc1138d78ab2c4)
+
+Change-Id: Id4e230ee0fd408c821747d3350d688c8b0098ae3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5114883
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.0@{#20}
+Cr-Branched-From: ed7b4caf1fb8184ad9e24346c84424055d4d430a-refs/heads/12.0.267@{#1}
+Cr-Branched-From: 210e75b19db4352c9b78dce0bae11c2dc3077df4-refs/heads/main@{#90651}
+
+diff --git a/src/compiler/turboshaft/structural-optimization-reducer.h b/src/compiler/turboshaft/structural-optimization-reducer.h
+index bf5a49361d884367cb3048005cbe599b59a1af2d..7745a8bd2fd037282dcc370862b3a9b8d6809adf 100644
+--- a/src/compiler/turboshaft/structural-optimization-reducer.h
++++ b/src/compiler/turboshaft/structural-optimization-reducer.h
+@@ -80,7 +80,7 @@ namespace v8::internal::compiler::turboshaft {
+ template <class Next>
+ class StructuralOptimizationReducer : public Next {
+  public:
+-  using Next::Asm;
++  TURBOSHAFT_REDUCER_BOILERPLATE()
+ 
+   OpIndex ReduceInputGraphBranch(OpIndex input_index, const BranchOp& branch) {
+     LABEL_BLOCK(no_change) {
+@@ -100,6 +100,13 @@ class StructuralOptimizationReducer : public Next {
+ 
+     OpIndex switch_var = OpIndex::Invalid();
+     while (true) {
++      // The "false" destination will be inlined before the switch is emitted,
++      // so it should only contain pure operations.
++      if (!ContainsOnlyPureOps(current_branch->if_false, Asm().input_graph())) {
++        TRACE("\t [break] End of only-pure-ops cascade reached.\n");
++        break;
++      }
++
+       // If we encounter a condition that is not equality, we can't turn it
+       // into a switch case.
+       const EqualOp* equal = Asm()
+@@ -116,17 +123,11 @@ class StructuralOptimizationReducer : public Next {
+       // MachineOptimizationReducer should normalize equality to put constants
+       // right.
+       const Operation& right_op = Asm().input_graph().Get(equal->right());
+-      if (!right_op.Is<ConstantOp>()) {
+-        TRACE("\t [bailout] No constant on the right side of Equal.\n");
++      if (!right_op.Is<Opmask::kWord32Constant>()) {
++        TRACE("\t [bailout] No Word32 constant on the right side of Equal.\n");
+         break;
+       }
+-
+-      // We can only turn Word32 constant equals to switch cases.
+       const ConstantOp& const_op = right_op.Cast<ConstantOp>();
+-      if (const_op.kind != ConstantOp::Kind::kWord32) {
+-        TRACE("\t [bailout] Constant is not of type Word32.\n");
+-        break;
+-      }
+ 
+       // If we encounter equal to a different value, we can't introduce
+       // a switch.
+@@ -164,13 +165,6 @@ class StructuralOptimizationReducer : public Next {
+ 
+       // Iterate to the next if_false block in the cascade.
+       current_branch = &maybe_branch.template Cast<BranchOp>();
+-
+-      // As long as the else blocks contain only pure ops, we can keep
+-      // traversing the if-else cascade.
+-      if (!ContainsOnlyPureOps(current_branch->if_false, Asm().input_graph())) {
+-        TRACE("\t [break] End of only-pure-ops cascade reached.\n");
+-        break;
+-      }
+     }
+ 
+     // Probably better to keep short if-else cascades as they are.
+@@ -186,7 +180,7 @@ class StructuralOptimizationReducer : public Next {
+       InlineAllOperationsWithoutLast(block);
+     }
+ 
+-    TRACE("[reduce] Successfully emit a Switch with %z cases.", cases.size());
++    TRACE("[reduce] Successfully emit a Switch with %zu cases.", cases.size());
+ 
+     // The last current_if_true block that ends the cascade becomes the default
+     // case.
+diff --git a/test/mjsunit/compiler/regress-crbug-1509576.js b/test/mjsunit/compiler/regress-crbug-1509576.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f538296edc4dd1c430a2cec6f88fda82273b10e8
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-crbug-1509576.js
+@@ -0,0 +1,39 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function escape(s) { }
++
++function f(i) {
++  let str = "";
++  escape(str);
++
++  // This "if (i == 3)" should not be merged into the subsequent switch, because
++  // there is a side-effect in between.
++  if (i == 3) {
++    // This will trigger a deopt
++    str += "("
++  }
++
++  str += "function";
++
++  switch (i) {
++    case -10:
++      escape(str);
++    case 1:
++    case 3:
++  }
++
++  // This `eval` creates some kind of closure of the function inside the
++  // function, not sure how that works exactly, but it's needed to repro :D
++  eval();
++
++  return str;
++}
++
++%PrepareFunctionForOptimization(f);
++assertEquals(f(0), "function");
++%OptimizeFunctionOnNextCall(f);
++assertEquals(f(3), "(function");
