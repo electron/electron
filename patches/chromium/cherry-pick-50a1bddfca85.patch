@@ -1,7 +1,8 @@
-From 50a1bddfca85046282797f0361c35c92f9eacf6a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Eng <enga@chromium.org>
 Date: Tue, 19 Dec 2023 17:25:51 +0000
-Subject: [PATCH] Use cross thread handles to bind args for async webgpu context creation
+Subject: Use cross thread handles to bind args for async webgpu context
+ creation
 
 (cherry picked from commit 542b278a0c1de7202f4bf5e3e5cbdc2dd6c337d4)
 
@@ -15,10 +16,9 @@ Cr-Original-Commit-Position: refs/heads/main@{#1237179}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5133239
 Cr-Commit-Position: refs/branch-heads/6099@{#1551}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/webgpu/gpu.cc b/third_party/blink/renderer/modules/webgpu/gpu.cc
-index 3067c9a..92c0428f 100644
+index dbe8ab27798ca1a9aa80f34cbfc88f52adfe3b84..9627347a3b495dffa20f3aa0cfbcaa524eced686 100644
 --- a/third_party/blink/renderer/modules/webgpu/gpu.cc
 +++ b/third_party/blink/renderer/modules/webgpu/gpu.cc
 @@ -39,11 +39,13 @@
@@ -35,7 +35,7 @@ index 3067c9a..92c0428f 100644
  
  namespace blink {
  
-@@ -300,9 +302,19 @@
+@@ -300,9 +302,19 @@ void GPU::RequestAdapterImpl(ScriptState* script_state,
      CreateWebGPUGraphicsContext3DProviderAsync(
          execution_context->Url(),
          execution_context->GetTaskRunner(TaskType::kWebGPU),
@@ -57,7 +57,7 @@ index 3067c9a..92c0428f 100644
                const KURL& url = execution_context->Url();
                context_provider =
                    CheckContextProvider(url, std::move(context_provider));
-@@ -324,7 +336,8 @@
+@@ -324,7 +336,8 @@ void GPU::RequestAdapterImpl(ScriptState* script_state,
                  std::move(callback).Run();
                }
              },
@@ -68,10 +68,10 @@ index 3067c9a..92c0428f 100644
    }
  
 diff --git a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc
-index e981c2d..29569d4 100644
+index f859f3e62c54d26453a145321f697c5116c13348..3d9890b9b4a58a30a11e501fdb9297f4a57b601b 100644
 --- a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc
 +++ b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.cc
-@@ -122,8 +122,8 @@
+@@ -121,8 +121,8 @@ CreateWebGPUGraphicsContext3DProvider(const KURL& url) {
  void CreateWebGPUGraphicsContext3DProviderAsync(
      const KURL& url,
      scoped_refptr<base::SingleThreadTaskRunner> current_thread_task_runner,
@@ -82,7 +82,7 @@ index e981c2d..29569d4 100644
    if (IsMainThread()) {
      std::move(callback).Run(
          Platform::Current()->CreateWebGPUGraphicsContext3DProvider(url));
-@@ -141,8 +141,7 @@
+@@ -140,8 +140,7 @@ void CreateWebGPUGraphicsContext3DProviderAsync(
              AccessMainThreadForWebGraphicsContext3DProvider()),
          FROM_HERE,
          CrossThreadBindOnce(&CreateWebGPUGraphicsContextOnMainThreadAsync, url,
@@ -93,7 +93,7 @@ index e981c2d..29569d4 100644
  }
  
 diff --git a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h
-index 8fcab24b..8b785cc3 100644
+index 8fcab24bfec2c9b2e9edf9885b66de4f99949b35..8b785cc30acdfffed0f59eb53b073d0cdedc2151 100644
 --- a/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h
 +++ b/third_party/blink/renderer/platform/graphics/web_graphics_context_3d_provider_util.h
 @@ -10,6 +10,7 @@
@@ -104,7 +104,7 @@ index 8fcab24b..8b785cc3 100644
  
  namespace blink {
  
-@@ -42,8 +43,8 @@
+@@ -42,8 +43,8 @@ CreateWebGPUGraphicsContext3DProvider(const KURL& url);
  PLATFORM_EXPORT void CreateWebGPUGraphicsContext3DProviderAsync(
      const KURL& url,
      scoped_refptr<base::SingleThreadTaskRunner> current_thread_task_runner,

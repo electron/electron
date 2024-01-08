@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Pedro Pontes <pepontes@microsoft.com>
 Date: Fri, 5 Jan 2024 05:04:35 -0800
-Subject: [turboshaft] Fix StructuralOptimization because of ignored
- side-effects
+Subject: Fix StructuralOptimization because of ignored side-effects
 
 Side-effects in the 1st else block were not taken into account.
 

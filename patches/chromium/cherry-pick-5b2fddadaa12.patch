@@ -1,7 +1,7 @@
-From 5b2fddadaa12e4f4aa8166de13446db5e339c4fa Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Tue, 12 Dec 2023 02:34:29 +0000
-Subject: [PATCH] Clamp the input value correctly before scheduling an AudioParam event
+Subject: Clamp the input value correctly before scheduling an AudioParam event
 
 When the AudioParam value is set via the setter, it internally calls
 the setValueAtTime() function to schedule the change. However, the
@@ -23,13 +23,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Auto-Submit: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#1497}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_param.cc b/third_party/blink/renderer/modules/webaudio/audio_param.cc
-index 8c7b9d0..95a40d3 100644
+index 8c7b9d07bb68ec51d21ea2132cc5ecbc39e5cd95..95a40d39c9214fd6555523bd7e7bd91e36d2c6c0 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_param.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_param.cc
-@@ -120,12 +120,15 @@
+@@ -120,12 +120,15 @@ void AudioParam::setValue(float value) {
  void AudioParam::setValue(float value, ExceptionState& exception_state) {
    WarnIfOutsideRange("value", value);
  
@@ -51,7 +50,7 @@ index 8c7b9d0..95a40d3 100644
  
  float AudioParam::defaultValue() const {
 diff --git a/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt b/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt
-index 86586c24..c88dd11 100644
+index 7bb2d0aec7feaed69424f209a2e3e031c7a9e512..ebe05a2c239d35be4729cc187aa77de6a44f5a41 100644
 --- a/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt
 +++ b/third_party/blink/web_tests/webaudio/AudioParam/worklet-warnings-expected.txt
 @@ -1,5 +1,4 @@
