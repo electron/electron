@@ -21,9 +21,6 @@ env:
 
 jobs:
   checkout:
-    # Checkout 
-    # Install Azure CLI
-    # Generate DEPS Hash
     runs-on: LargeLinuxRunner
     steps:
     - name: Checkout Electron
@@ -46,8 +43,32 @@ jobs:
     - name: Get Depot Tools 
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        # TODO: figure out what we need here still
+        # if [ "`uname`" == "Darwin" ]; then
+        #   # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+        #   sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        # else
+        #   sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        #   # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+        #   cd depot_tools
+        #   cat > gclient.diff \<< 'EOF'
+        # diff --git a/gclient.py b/gclient.py
+        # index c305c248..e6e0fbdc 100755
+        # --- a/gclient.py
+        # +++ b/gclient.py
+        # @@ -735,7 +735,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+ 
+        #             if dep_type == 'cipd':
+        #                 cipd_root = self.GetCipdRoot()
+        # -                for package in dep_value.get('packages', []):
+        # +                packages = dep_value.get('packages', [])
+        # +                for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
+        #                     deps_to_add.append(
+        #                         CipdDependency(parent=self,
+        #                                         name=name,
+        # EOF
+        #   git apply --3way gclient.diff
+        # fi
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -60,17 +81,22 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        exists=$(az storage blob exists \
+        exists_json=$(az storage blob exists \
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
           --name $DEPSHASH)
 
-        if (echo $exists | jq -r '.exists'); then
+        cache_exists=$(echo $exists_json | jq -r '.exists')
+        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
+
+        if (test "$cache_exists" = "true"); then
           echo "Cache Exists for $DEPSHASH"
-          exit 0
+        else
+          echo "Cache Does Not Exist for $DEPSHASH"
         fi
     - name: Gclient Sync
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         # If there is no existing src cache, we need to do a full gclient sync
         gclient config \
@@ -111,6 +137,7 @@ jobs:
           # fi
         fi
     - name: Minimize Cache Size for Upload
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         rm -rf src/android_webview
         rm -rf src/ios/chrome
@@ -123,10 +150,12 @@ jobs:
         rm -rf src/third_party/swift-toolchain
         rm -rf src/third_party/swiftshader/tests/regres/testlists
     - name: Compress Src Directory
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         zip -r $DEPSHASH.zip src
-        echo "Compres src to $(du -sh $DEPSHASH.zip | cut -f1)"
+        echo "Compressed src to $(du -sh $DEPSHASH.zip | cut -f1 -d' ')"
     - name: Upload Compressed Src Cache to Azure
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         az storage blob upload \
           --account-name $AZURE_STORAGE_ACCOUNT \
