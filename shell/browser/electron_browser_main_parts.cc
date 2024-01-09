@@ -82,7 +82,7 @@
 #include "chrome/browser/ui/views/dark_mode_manager_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
-#include "device/bluetooth/dbus/bluez_dbus_thread_manager.h"
+#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #include "electron/electron_gtk_stubs.h"
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
@@ -384,8 +384,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 #endif
 #if BUILDFLAG(IS_LINUX)
   device::BluetoothAdapterFactory::Shutdown();
-  bluez::BluezDBusManager::Shutdown();
-  bluez::BluezDBusThreadManager::Shutdown();
+  bluez::DBusBluezManagerWrapperLinux::Shutdown();
 #endif
   fake_browser_process_->PostDestroyThreads();
 }
@@ -508,7 +507,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
       std::move(shutdown_cb),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
   if (!bluez::BluezDBusManager::IsInitialized())
-    bluez::BluezDBusManager::Initialize(nullptr /* system_bus */);
+    bluez::DBusBluezManagerWrapperLinux::Initialize();
 
   // Set up crypt config. This needs to be done before anything starts the
   // network service, as the raw encryption key needs to be shared with the
