@@ -29,6 +29,7 @@ jobs:
       with:
         path: src/electron
     - name: Enable ssh Debugging
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       uses: mxschmitt/action-tmate@v3
       with:
         detached: true
@@ -159,6 +160,7 @@ jobs:
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable ssh Debugging
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       uses: mxschmitt/action-tmate@v3
       with:
         detached: true
@@ -187,7 +189,7 @@ jobs:
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+        echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Download Src Cache
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
@@ -199,9 +201,9 @@ jobs:
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
           --name $DEPSHASH \
           --file $DEPSHASH.tar.gz \
-        echo "Downloaded cache is $(du -sh $DEPSHASH.tar.gz | cut -f1)"
     - name: Unzip and Ensure Src Cache
       run: |
+        echo "Downloaded cache is $(du -sh $DEPSHASH.tar.gz | cut -f1)"
         mkdir temp-cache
         tar -xzvf $DEPSHASH.tar.gz -d temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
