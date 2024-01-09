@@ -84,9 +84,10 @@ jobs:
           echo "Cache Does Not Exist for $DEPSHASH"
         fi
     - name: Gclient Sync
+      # If there is no existing src cache, we need to do a full gclient sync.
+      # TODO(codebytere): Add stale patch handling for non-release builds.
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
-        # If there is no existing src cache, we need to do a full gclient sync
         gclient config \
           --name "src/electron" \
           --unmanaged \
@@ -94,36 +95,6 @@ jobs:
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
-        if [ "$IS_RELEASE" != "true" ]; then
-          # Re-export all the patches to check if there were changes.
-          python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
-          cd src/electron
-          git update-index --refresh || true
-          # TODO(vertedinde): Let's not stress on patchup right now, just sync it
-          # if ! git diff-index --quiet HEAD --; then
-          #   # There are changes to the patches. Make a git commit with the updated patches
-          #   git add patches
-          #   GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
-          #   # Export it
-          #   mkdir -p ../../patches
-          #   git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
-          #   if (node ./script/push-patch.js 2> /dev/null > /dev/null); then
-          #     echo
-          #     echo "======================================================================"
-          #     echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
-          #     echo "A new CI job will kick off shortly"
-          #     echo "======================================================================"
-          #     exit 1
-          #   else
-          #     echo
-          #     echo "======================================================================"
-          #     echo "There were changes to the patches when applying."
-          #     echo "Check the CI artifacts for a patch you can apply to fix it."
-          #     echo "======================================================================"
-          #     exit 1
-          #   fi
-          # fi
-        fi
     - name: Minimize Cache Size for Upload
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
@@ -200,8 +171,10 @@ jobs:
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Download Src Cache
+      # The cache will always exist here as a result of the checkout job
+      # Either it was uploaded to Azure in the checkout job for this commit
+      # or it was uploaded in the checkout job for a previous commit.
       run: |
-        # The cache will always exist here as a result of the checkout job
         az storage blob download \
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
@@ -243,6 +216,9 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Setup Environment Variables
+      run: |
+        echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $GITHUB_ENV
     - name: Fix Sync
       run : |
         echo "TODO: Fix Sync" 
