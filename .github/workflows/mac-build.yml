@@ -61,38 +61,42 @@ jobs:
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
-
         exists_json=$(az storage blob exists \
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $depshash)
+          --name $DEPSHASH)
 
         exists=$(echo $exists_json | jq -r '.exists')
         echo "Cache Exists: $exists"
         echo "SRC_CACHE_EXISTS=$exists" >> "$GITHUB_OUTPUT"
     - name: Download Cache
       run: |
-        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
         az storage blob download \
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $depshash \
-          --file $depshash.zip \
+          --name $DEPSHASH \
+          --file $DEPSHASH.zip \
+        echo "Downloaded cache is $(du -sh $DEPSHASH.zip | cut -f1)"
       if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Unzip and Ensure Cache
       run: |
         mkdir temp-cache
-        unzip -q src-121.0.6116.0-01052024_test.zip -d temp-cache
+        unzip -q $DEPSHASH.zip -d temp-cache
+        echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
+
         if [ -d "temp-cache/src" ]; then
           echo "Relocating Cache"
           rm -rf src
           mv temp-cache/src src
+
+          echo "Deleting zip file"
+          rm -rf $DEPSHASH.zip
         fi
 
         if [ ! -d "src/third_party/blink" ]; then
@@ -116,6 +120,7 @@ jobs:
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
       if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Touch Sync Done
       run: |
@@ -254,28 +259,20 @@ jobs:
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-    # On macOS delete all .git directories under src/ except for
-    # third_party/angle/ and third_party/dawn/ because of build time generation of files
-    # gen/angle/commit.h depends on third_party/angle/.git/HEAD
-    # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
-    # and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
-    # https://dawn-review.googlesource.com/c/dawn/+/83901
-    # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
     - name: Delete all .git directories under src on MacOS to free space
       run: |
         cd src
         ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
     - name: Zip Src
       run: |
-        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
-        zip -r $depshash.zip src
+        zip -r $DEPSHASH.zip src
+        echo "Zipped src to $(du -sh $DEPSHASH.zip | cut -f1)"
     - name: Generate & Upload Azure Blob Src Cache
       run: |
-        depshash=$(shasum src/electron/.depshash | cut -f1 -d' ')
         az storage blob upload \
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $depshash.zip \
-          --name $depshash \
+          --file $DEPSHASH.zip \
+          --name $DEPSHASH \
           --debug
