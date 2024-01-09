@@ -27,6 +27,11 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: src/electron
+    - name: Enable ssh Debugging
+      uses: mxschmitt/action-tmate@v3
+      with:
+        detached: true
+        limit-access-to-actor: true
     - name: Install Azure CLI
       run: |
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
@@ -43,32 +48,15 @@ jobs:
     - name: Get Depot Tools 
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        # TODO: figure out what we need here still
-        # if [ "`uname`" == "Darwin" ]; then
-        #   # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        #   sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        # else
-        #   sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        #   # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-        #   cd depot_tools
-        #   cat > gclient.diff \<< 'EOF'
-        # diff --git a/gclient.py b/gclient.py
-        # index c305c248..e6e0fbdc 100755
-        # --- a/gclient.py
-        # +++ b/gclient.py
-        # @@ -735,7 +735,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
- 
-        #             if dep_type == 'cipd':
-        #                 cipd_root = self.GetCipdRoot()
-        # -                for package in dep_value.get('packages', []):
-        # +                packages = dep_value.get('packages', [])
-        # +                for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
-        #                     deps_to_add.append(
-        #                         CipdDependency(parent=self,
-        #                                         name=name,
-        # EOF
-        #   git apply --3way gclient.diff
-        # fi
+        if [ "`uname`" == "Darwin" ]; then
+          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        else
+          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+          cd depot_tools
+          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        fi
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -183,7 +171,6 @@ jobs:
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable ssh Debugging
       uses: mxschmitt/action-tmate@v3
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       with:
         detached: true
         limit-access-to-actor: true
@@ -194,8 +181,31 @@ jobs:
     - name: Get Depot Tools 
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        if [ "`uname`" == "Darwin" ]; then
+          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        else
+          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+          cd depot_tools
+          cat > gclient.diff \<< 'EOF'
+        diff --git a/gclient.py b/gclient.py
+        index c305c248..e6e0fbdc 100755
+        --- a/gclient.py
+        +++ b/gclient.py
+        @@ -735,7 +735,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+ 
+                    if dep_type == 'cipd':
+                        cipd_root = self.GetCipdRoot()
+        -                for package in dep_value.get('packages', []):
+        +                packages = dep_value.get('packages', [])
+        +                for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
+                            deps_to_add.append(
+                                CipdDependency(parent=self,
+                                                name=name,
+        EOF
+          git apply --3way gclient.diff
+        fi
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
