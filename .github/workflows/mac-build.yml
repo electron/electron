@@ -95,6 +95,17 @@ jobs:
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
+    # delete all .git directories under src/ except for
+    # third_party/angle/ and third_party/dawn/ because of build time generation of files
+    # gen/angle/commit.h depends on third_party/angle/.git/HEAD
+    # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
+    # and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
+    # https://dawn-review.googlesource.com/c/dawn/+/83901
+    # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
+    - name: Delete .git directories under src to free space
+      run: |
+        cd src
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
     - name: Minimize Cache Size for Upload
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
@@ -108,11 +119,13 @@ jobs:
         rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
         rm -rf src/third_party/swift-toolchain
         rm -rf src/third_party/swiftshader/tests/regres/testlists
+        rm -rf src/electron
     - name: Compress Src Directory
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
-        zip -r $DEPSHASH.zip src
-        echo "Compressed src to $(du -sh $DEPSHASH.zip | cut -f1 -d' ')"
+        echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
+        tar -czvf $DEPSHASH.tar.gz src
+        echo "Compressed src to $(du -sh $DEPSHASH.tar.gz | cut -f1 -d' ')"
     - name: Upload Compressed Src Cache to Azure
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
@@ -120,7 +133,7 @@ jobs:
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $DEPSHASH.zip \
+          --file $DEPSHASH.tar.gz \
           --name $DEPSHASH \
           --debug
   build:
@@ -180,12 +193,12 @@ jobs:
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
           --name $DEPSHASH \
-          --file $DEPSHASH.zip \
-        echo "Downloaded cache is $(du -sh $DEPSHASH.zip | cut -f1)"
+          --file $DEPSHASH.tar.gz \
+        echo "Downloaded cache is $(du -sh $DEPSHASH.tar.gz | cut -f1)"
     - name: Unzip and Ensure Src Cache
       run: |
         mkdir temp-cache
-        unzip -q $DEPSHASH.zip -d temp-cache
+        tar -xzvf $DEPSHASH.tar.gz -d temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
         if [ -d "temp-cache/src" ]; then
@@ -194,7 +207,7 @@ jobs:
           mv temp-cache/src src
 
           echo "Deleting zip file"
-          rm -rf $DEPSHASH.zip
+          rm -rf $DEPSHASH.tar.gz
         fi
 
         if [ ! -d "src/third_party/blink" ]; then
