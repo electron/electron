@@ -20,9 +20,124 @@ env:
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
 
 jobs:
-  install-dependencies:
-    runs-on: macos-13-xlarge
+  checkout:
+    # Checkout 
+    # Install Azure CLI
+    # Generate DEPS Hash
+    runs-on: LargeLinuxRunner
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@v4
+      with:
+        path: src/electron
+    - name: Install Azure CLI
+      run: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+    - name: Setup Node.js/npm
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.18.x
+        cache: yarn
+        cache-dependency-path: src/electron/yarn.lock
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Get Depot Tools 
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$PWD/depot_tools" >> $GITHUB_PATH
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Check If Cache Exists
+      id: check-cache
+      run: |
+        exists=$(az storage blob exists \
+          --account-name $AZURE_STORAGE_ACCOUNT \
+          --account-key $AZURE_STORAGE_KEY \
+          --container-name $AZURE_STORAGE_CONTAINER_NAME \
+          --name $DEPSHASH)
 
+        if (echo $exists | jq -r '.exists'); then
+          echo "Cache Exists for $DEPSHASH"
+          exit 0
+        fi
+    - name: Gclient Sync
+      run: |
+        # If there is no existing src cache, we need to do a full gclient sync
+        gclient config \
+          --name "src/electron" \
+          --unmanaged \
+          $GCLIENT_EXTRA_ARGS \
+          "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+
+        ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
+        if [ "$IS_RELEASE" != "true" ]; then
+          # Re-export all the patches to check if there were changes.
+          python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
+          cd src/electron
+          git update-index --refresh || true
+          # TODO(vertedinde): Let's not stress on patchup right now, just sync it
+          # if ! git diff-index --quiet HEAD --; then
+          #   # There are changes to the patches. Make a git commit with the updated patches
+          #   git add patches
+          #   GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
+          #   # Export it
+          #   mkdir -p ../../patches
+          #   git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
+          #   if (node ./script/push-patch.js 2> /dev/null > /dev/null); then
+          #     echo
+          #     echo "======================================================================"
+          #     echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
+          #     echo "A new CI job will kick off shortly"
+          #     echo "======================================================================"
+          #     exit 1
+          #   else
+          #     echo
+          #     echo "======================================================================"
+          #     echo "There were changes to the patches when applying."
+          #     echo "Check the CI artifacts for a patch you can apply to fix it."
+          #     echo "======================================================================"
+          #     exit 1
+          #   fi
+          # fi
+        fi
+    - name: Minimize Cache Size for Upload
+      run: |
+        rm -rf src/android_webview
+        rm -rf src/ios/chrome
+        rm -rf src/third_party/blink/web_tests
+        rm -rf src/third_party/blink/perf_tests
+        rm -rf src/third_party/electron_node/deps/openssl
+        rm -rf src/third_party/electron_node/deps/v8
+        rm -rf src/chrome/test/data/xr/webvr_info
+        rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
+        rm -rf src/third_party/swift-toolchain
+        rm -rf src/third_party/swiftshader/tests/regres/testlists
+    - name: Compress Src Directory
+      run: |
+        zip -r $DEPSHASH.zip src
+        echo "Compres src to $(du -sh $DEPSHASH.zip | cut -f1)"
+    - name: Upload Compressed Src Cache to Azure
+      run: |
+        az storage blob upload \
+          --account-name $AZURE_STORAGE_ACCOUNT \
+          --account-key $AZURE_STORAGE_KEY \
+          --container-name $AZURE_STORAGE_CONTAINER_NAME \
+          --file $DEPSHASH.zip \
+          --name $DEPSHASH \
+          --debug
+  build:
+    runs-on: macos-13-xlarge
+    needs: checkout
     steps:
     - name: Checkout Electron
       uses: actions/checkout@v4
@@ -47,7 +162,6 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install
-    # step-depot-tools-get, L248
     - name: Get Depot Tools 
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -62,20 +176,9 @@ jobs:
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-    - name: Check If Cache Exists
-      id: check-cache
+    - name: Download Src Cache
       run: |
-        exists_json=$(az storage blob exists \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $DEPSHASH)
-
-        exists=$(echo $exists_json | jq -r '.exists')
-        echo "Cache Exists: $exists"
-        echo "SRC_CACHE_EXISTS=$exists" >> "$GITHUB_OUTPUT"
-    - name: Download Cache
-      run: |
+        # The cache will always exist here as a result of the checkout job
         az storage blob download \
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
@@ -83,8 +186,7 @@ jobs:
           --name $DEPSHASH \
           --file $DEPSHASH.zip \
         echo "Downloaded cache is $(du -sh $DEPSHASH.zip | cut -f1)"
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
-    - name: Unzip and Ensure Cache
+    - name: Unzip and Ensure Src Cache
       run: |
         mkdir temp-cache
         unzip -q $DEPSHASH.zip -d temp-cache
@@ -106,173 +208,18 @@ jobs:
 
         echo "Wiping Electron Directory"
         rm -rf src/electron
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Checkout Electron
       uses: actions/checkout@v4
       with:
         path: src/electron
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Run Electron Only Hooks
       run: |
         echo "Running Electron Only Hooks"
         gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
-    - name: Touch Sync Done
-      run: |
-        touch src/electron/.gha-sync-done
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'true'
-    - name: Gclient Sync
-      run: |
-        # If we did not restore a complete sync then we need to sync for realz
-        if [ ! -s "src/electron/.gha-sync-done" ]; then
-          gclient config \
-            --name "src/electron" \
-            --unmanaged \
-            $GCLIENT_EXTRA_ARGS \
-            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
-
-          ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
-          if [ "$IS_RELEASE" != "true" ]; then
-            # Re-export all the patches to check if there were changes.
-            python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
-            cd src/electron
-            git update-index --refresh || true
-            # TODO(vertedinde): Let's not stress on patchup right now, just sync it
-            # if ! git diff-index --quiet HEAD --; then
-            #   # There are changes to the patches. Make a git commit with the updated patches
-            #   git add patches
-            #   GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
-            #   # Export it
-            #   mkdir -p ../../patches
-            #   git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
-            #   if (node ./script/push-patch.js 2> /dev/null > /dev/null); then
-            #     echo
-            #     echo "======================================================================"
-            #     echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
-            #     echo "A new CI job will kick off shortly"
-            #     echo "======================================================================"
-            #     exit 1
-            #   else
-            #     echo
-            #     echo "======================================================================"
-            #     echo "There were changes to the patches when applying."
-            #     echo "Check the CI artifacts for a patch you can apply to fix it."
-            #     echo "======================================================================"
-            #     exit 1
-            #   fi
-            # fi
-          fi
-        fi
-      if: steps.check-cache.outputs.SRC_CACHE_EXISTS == 'false'
-      # step-gclient-sync, L976
-    - name: Minimize the size of the cache
-      run: |
-        rm -rf src/android_webview
-        rm -rf src/ios/chrome
-        rm -rf src/third_party/blink/web_tests
-        rm -rf src/third_party/blink/perf_tests
-        rm -rf src/third_party/electron_node/deps/openssl
-        rm -rf src/third_party/electron_node/deps/v8
-        rm -rf src/chrome/test/data/xr/webvr_info
-        rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
-        rm -rf src/third_party/swift-toolchain
-        rm -rf src/third_party/swiftshader/tests/regres/testlists
-    - name: Free up space on MacOS
-      run: |
-        sudo mkdir -p $TMPDIR/del-target
-
-        tmpify() {
-          if [ -d "$1" ]; then
-            sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
-          fi
-        }
-
-        strip_universal_deep() {
-          opwd=$(pwd)
-          cd $1
-          f=$(find . -perm +111 -type f)
-          for fp in $f
-          do
-            if [[ $(file "$fp") == *"universal binary"* ]]; then
-              if [ "`arch`" == "arm64" ]; then
-                if [[ $(file "$fp") == *"x86_64"* ]]; then
-                  sudo lipo -remove x86_64 "$fp" -o "$fp" || true
-                fi
-              else
-                if [[ $(file "$fp") == *"arm64e)"* ]]; then
-                  sudo lipo -remove arm64e "$fp" -o "$fp" || true
-                fi
-                if [[ $(file "$fp") == *"arm64)"* ]]; then
-                  sudo lipo -remove arm64 "$fp" -o "$fp" || true
-                fi
-              fi
-            fi
-          done
-
-          cd $opwd
-        }
-
-        tmpify /Library/Developer/CoreSimulator
-        tmpify ~/Library/Developer/CoreSimulator
-        tmpify $(xcode-select -p)/Platforms/AppleTVOS.platform
-        tmpify $(xcode-select -p)/Platforms/iPhoneOS.platform
-        tmpify $(xcode-select -p)/Platforms/WatchOS.platform
-        tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
-        tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
-        tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
-        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/metal/ios
-        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift
-        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0
-        tmpify ~/.rubies
-        tmpify ~/Library/Caches/Homebrew
-        tmpify /usr/local/Homebrew
-
-        sudo rm -rf $TMPDIR/del-target
-
-        # sudo rm -rf "/System/Library/Desktop Pictures"
-        # sudo rm -rf /System/Library/Templates/Data
-        # sudo rm -rf /System/Library/Speech/Voices
-        # sudo rm -rf "/System/Library/Screen Savers"
-        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
-        # sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
-        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
-        # sudo rm -rf /System/Volumes/Data/Library/Java
-        # sudo rm -rf /System/Volumes/Data/Library/Ruby
-        # sudo rm -rf /System/Volumes/Data/Library/Printers
-        # sudo rm -rf /System/iOSSupport
-        # sudo rm -rf /System/Applications/*.app
-        # sudo rm -rf /System/Applications/Utilities/*.app
-        # sudo rm -rf /System/Library/LinguisticData
-        # sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
-        # sudo rm -rf /System/Library/Fonts/*
-        # sudo rm -rf /System/Library/PreferencePanes
-        # sudo rm -rf /System/Library/AssetsV2/*
-        sudo rm -rf /Applications/Safari.app
-        sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
-        sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
-
-        # lipo off some huge binaries arm64 versions to save space
-        strip_universal_deep $(xcode-select -p)/../SharedFrameworks
-        # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-    - name: Delete all .git directories under src on MacOS to free space
-      run: |
-        cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
-    - name: Zip Src
-      run: |
-        zip -r $DEPSHASH.zip src
-        echo "Zipped src to $(du -sh $DEPSHASH.zip | cut -f1)"
-    - name: Generate & Upload Azure Blob Src Cache
-      run: |
-        az storage blob upload \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $DEPSHASH.zip \
-          --name $DEPSHASH \
-          --debug
+    - name: Fix Sync
+      run : |
+        echo "TODO: Fix Sync" 
