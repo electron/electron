@@ -85,7 +85,7 @@ class Session : public gin::Wrappable<Session>,
                                             base::Value::Dict options = {});
 
   // Gets the Session based on |path|.
-  static absl::optional<gin::Handle<Session>> FromPath(
+  static std::optional<gin::Handle<Session>> FromPath(
       v8::Isolate* isolate,
       const base::FilePath& path,
       base::Value::Dict options = {});
@@ -101,7 +101,7 @@ class Session : public gin::Wrappable<Session>,
   // Methods.
   v8::Local<v8::Promise> ResolveHost(
       std::string host,
-      absl::optional<network::mojom::ResolveHostParametersPtr> params);
+      std::optional<network::mojom::ResolveHostParametersPtr> params);
   v8::Local<v8::Promise> ResolveProxy(gin::Arguments* args);
   v8::Local<v8::Promise> GetCacheSize();
   v8::Local<v8::Promise> ClearCache();

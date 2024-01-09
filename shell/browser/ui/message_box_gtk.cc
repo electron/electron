@@ -192,7 +192,7 @@ class GtkMessageBox : public NativeWindowObserver {
 
  private:
   // The id of the dialog.
-  absl::optional<int> id_;
+  std::optional<int> id_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_ = 0;

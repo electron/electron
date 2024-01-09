@@ -79,7 +79,7 @@
   [self updateButtonsVisibility];
 }
 
-- (void)setMargin:(const absl::optional<gfx::Point>&)margin {
+- (void)setMargin:(const std::optional<gfx::Point>&)margin {
   if (margin)
     margin_ = *margin;
   else

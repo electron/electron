@@ -44,12 +44,12 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
 
   base::StringPiece message_str(reinterpret_cast<const char*>(message.data()),
                                 message.size());
-  absl::optional<base::Value> parsed_message = base::JSONReader::Read(
+  std::optional<base::Value> parsed_message = base::JSONReader::Read(
       message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
     return;
   base::Value::Dict& dict = parsed_message->GetDict();
-  absl::optional<int> id = dict.FindInt("id");
+  std::optional<int> id = dict.FindInt("id");
   if (!id) {
     std::string* method = dict.FindString("method");
     if (!method)

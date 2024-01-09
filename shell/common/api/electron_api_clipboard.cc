@@ -229,7 +229,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   }
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  absl::optional<gfx::Image> image;
+  std::optional<gfx::Image> image;
 
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
   base::RepeatingClosure callback = run_loop.QuitClosure();
@@ -237,7 +237,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image, base::RepeatingClosure cb,
+          [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);

@@ -26,14 +26,14 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  void AddChildViewAt(gin::Handle<View> child, absl::optional<size_t> index);
+  void AddChildViewAt(gin::Handle<View> child, std::optional<size_t> index);
   void RemoveChildView(gin::Handle<View> child);
 
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds();
   void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
-  void SetBackgroundColor(absl::optional<WrappedSkColor> color);
+  void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetVisible(bool visible);
 
   // views::ViewObserver

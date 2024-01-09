@@ -25,7 +25,7 @@ static NSMenu* __strong applicationMenu_;
 ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
     NSString* key_equivalent,
     NSUInteger modifier_mask) {
-  absl::optional<char16_t> shifted_char;
+  std::optional<char16_t> shifted_char;
   ui::KeyboardCode code = electron::KeyboardCodeFromStr(
       base::SysNSStringToUTF8(key_equivalent), &shifted_char);
   int modifiers = 0;

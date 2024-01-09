@@ -67,7 +67,7 @@ void BadgeManager::BindServiceWorkerReceiver(
                                 std::move(context));
 }
 
-std::string BadgeManager::GetBadgeString(absl::optional<int> badge_content) {
+std::string BadgeManager::GetBadgeString(std::optional<int> badge_content) {
   if (!badge_content)
     return "•";
 
@@ -87,9 +87,9 @@ void BadgeManager::SetBadge(blink::mojom::BadgeValuePtr mojo_value) {
     return;
   }
 
-  absl::optional<int> value =
-      mojo_value->is_flag() ? absl::nullopt
-                            : absl::make_optional(mojo_value->get_number());
+  std::optional<int> value = mojo_value->is_flag()
+                                 ? std::nullopt
+                                 : std::make_optional(mojo_value->get_number());
 
   electron::Browser::Get()->SetBadgeCount(value);
 }
