@@ -18,6 +18,7 @@ env:
   AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  GIT_CACHE: .git/cache
 
 jobs:
   checkout:
@@ -35,6 +36,9 @@ jobs:
     - name: Install Azure CLI
       run: |
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+    - name: Set GIT_CACHE_PATH to make gclient to use the cache
+      run: |
+        echo 'export GIT_CACHE_PATH="$PWD/git-cache"' >> $GITHUB_ENV
     - name: Setup Node.js/npm
       uses: actions/setup-node@v3
       with:
@@ -103,6 +107,7 @@ jobs:
     # https://dawn-review.googlesource.com/c/dawn/+/83901
     # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
     - name: Delete .git directories under src to free space
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         cd src
         ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
