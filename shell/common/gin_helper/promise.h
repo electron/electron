@@ -52,14 +52,15 @@ class PromiseBase {
     if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(
-                         // Note that this callback can not take StringPiece,
-                         // as StringPiece only references string internally and
-                         // will blow when a temporary string is passed.
-                         [](PromiseBase&& promise, std::string str) {
-                           promise.RejectWithErrorMessage(str);
-                         },
-                         std::move(promise), std::string{errmsg}));
+          FROM_HERE,
+          base::BindOnce(
+              // Note that this callback can not take std::string_view,
+              // as StringPiece only references string internally and
+              // will blow when a temporary string is passed.
+              [](PromiseBase&& promise, std::string str) {
+                promise.RejectWithErrorMessage(str);
+              },
+              std::move(promise), std::string{errmsg}));
     } else {
       promise.RejectWithErrorMessage(errmsg);
     }
