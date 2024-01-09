@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_BROWSER_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 

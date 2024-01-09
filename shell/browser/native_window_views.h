@@ -8,6 +8,7 @@
 #include "shell/browser/native_window.h"
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 

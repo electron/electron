@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 
+#include <optional>
+
 #include "base/memory/raw_ptr.h"
 #include "gin/handle.h"
 #include "shell/common/color_util.h"

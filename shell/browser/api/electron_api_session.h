@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
 
+#include <optional>
 #include <string>
 #include <vector>
 

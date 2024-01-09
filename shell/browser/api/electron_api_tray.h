@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
