@@ -347,7 +347,6 @@ step-setup-rbe-for-build: &step-setup-rbe-for-build
       fi
       git clone https://github.com/electron/build-tools.git
       cd build-tools
-      git checkout reclient
       npx yarn --ignore-engines
       mkdir third_party
       # Pull down credential helper and print status

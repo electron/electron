@@ -100,7 +100,6 @@ for:
           }
       - git clone https://github.com/electron/build-tools.git
       - cd build-tools
-      - git checkout reclient
       - npx yarn --ignore-engines
       - mkdir third_party
       - ps: >-
