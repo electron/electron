@@ -7,38 +7,36 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index b7f9e44f827e58ac3b9376ec291f42cceb2b28bb..24cc9efe32c083d0cecd1ae94514b5a2d24ca2d6 100644
+index f52d4f805406c513904151be90e433948764b3ad..343bbafa9787f56646ee7332151d21152ecf5379 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -79,6 +79,8 @@
-     # TODO(refack): make v8-perfetto happen
+@@ -86,6 +86,8 @@
      'v8_use_perfetto': 0,
+     'tsan%': 0,
  
 +    'using_electron_config_gypi%': 0,
 +
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -282,6 +284,7 @@
-       'V8_DEPRECATION_WARNINGS',
-       'V8_IMMINENT_DEPRECATION_WARNINGS',
+@@ -285,6 +287,7 @@
+     # Defines these mostly for node-gyp to pickup.
+     'defines': [
        '_GLIBCXX_USE_CXX11_ABI=1',
 +      'ELECTRON_ENSURE_CONFIG_GYPI',
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -388,6 +391,11 @@
-           }],
-         ],
+@@ -396,6 +399,9 @@
+       ['v8_enable_v8_checks == 1', {
+         'defines': ['V8_ENABLE_CHECKS'],
        }],
 +      ['using_electron_config_gypi == 1', {
-+        'defines': [
-+          'USING_ELECTRON_CONFIG_GYPI',
-+        ],
++        'defines': ['USING_ELECTRON_CONFIG_GYPI'],
 +      }],
        ['v8_enable_pointer_compression == 1', {
-         'defines': [
-           'V8_COMPRESS_POINTERS',
+         'defines': ['V8_COMPRESS_POINTERS'],
+       }],
 diff --git a/configure.py b/configure.py
 index 7b80ec63a082ce93ba81ca6dd41ec03041534ff7..926659883d3bd6d447c89a50d6770988b59d6f88 100755
 --- a/configure.py

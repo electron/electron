@@ -7,49 +7,15 @@ Aligns common.gypi with the current build flag state of //v8.
 
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
-diff --git a/common.gypi b/common.gypi
-index 225b3df380caca809926d6af9fc1001057237752..b7f9e44f827e58ac3b9376ec291f42cceb2b28bb 100644
---- a/common.gypi
-+++ b/common.gypi
-@@ -65,6 +65,7 @@
-     # node-gyp to build addons.
-     'v8_enable_pointer_compression%': 0,
-     'v8_enable_31bit_smis_on_64bit_arch%': 0,
-+    'v8_enable_sandbox%': 0,
- 
-     # Disable v8 hugepage by default.
-     'v8_enable_hugepage%': 0,
-@@ -123,6 +124,7 @@
-       ['target_arch in "arm ia32 mips mipsel ppc"', {
-         'v8_enable_pointer_compression': 0,
-         'v8_enable_31bit_smis_on_64bit_arch': 0,
-+        'v8_enable_sandbox': 0,
-       }],
-       ['target_arch in "ppc64 s390x"', {
-         'v8_enable_backtrace': 1,
-@@ -389,9 +391,12 @@
-       ['v8_enable_pointer_compression == 1', {
-         'defines': [
-           'V8_COMPRESS_POINTERS',
--          'V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE',
-+          'V8_COMPRESS_POINTERS_IN_SHARED_CAGE',
-         ],
-       }],
-+      ['v8_enable_sandbox == 1', {
-+        'defines': ['V8_ENABLE_SANDBOX']
-+      }],
-       ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
-         'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
-       }],
 diff --git a/configure.py b/configure.py
-index 62f041ce52bf85136175e733216671e2811a337b..7b80ec63a082ce93ba81ca6dd41ec03041534ff7 100755
+index 84b016cd853080656d4dcf982e64855fcfa72a55..5ede37578480b06daf7ffab786a1361eeae3c6b4 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1497,6 +1497,7 @@ def configure_v8(o):
-   o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
+@@ -1503,6 +1503,7 @@ def configure_v8(o):
+   o['variables']['v8_enable_maglev'] = 1 if options.v8_enable_maglev else 0
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 +  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_shared_ro_heap'] = 0 if options.enable_pointer_compression or options.disable_shared_ro_heap else 1
-   o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
-   o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)
+   o['variables']['v8_enable_extensible_ro_snapshot'] = 0
+   o['variables']['v8_enable_v8_checks'] = 1 if options.debug else 0
