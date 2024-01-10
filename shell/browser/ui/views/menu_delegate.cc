@@ -37,11 +37,12 @@ void MenuDelegate::RunMenu(ElectronMenuModel* model,
   id_ = button->GetID();
   adapter_ = std::make_unique<MenuModelAdapter>(model);
 
-  auto* item = new views::MenuItemView(this);
-  static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
+  auto item = std::make_unique<views::MenuItemView>(this);
+  static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item.get());
 
   menu_runner_ = std::make_unique<views::MenuRunner>(
-      item, views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
+      std::move(item),
+      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   menu_runner_->RunMenuAt(
       button->GetWidget()->GetTopLevelWidget(),
       static_cast<views::MenuButton*>(button)->button_controller(), bounds,
@@ -77,7 +78,7 @@ const gfx::FontList* MenuDelegate::GetLabelFontList(int id) const {
   return adapter_->GetLabelFontList(id);
 }
 
-absl::optional<SkColor> MenuDelegate::GetLabelColor(int id) const {
+std::optional<SkColor> MenuDelegate::GetLabelColor(int id) const {
   return adapter_->GetLabelColor(id);
 }
 

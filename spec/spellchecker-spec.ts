@@ -2,7 +2,7 @@ import { BrowserWindow, Session, session } from 'electron/main';
 
 import { expect } from 'chai';
 import * as path from 'node:path';
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import { closeWindow } from './lib/window-helpers';
 import { ifit, ifdescribe, listen } from './lib/spec-helpers';
@@ -43,19 +43,18 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   }
 
   // Setup a server to download hunspell dictionary.
-  const server = http.createServer((req, res) => {
+  const server = http.createServer(async (req, res) => {
     // The provided is minimal dict for testing only, full list of words can
     // be found at src/third_party/hunspell_dictionaries/xx_XX.dic.
-    fs.readFile(path.join(__dirname, '/../../third_party/hunspell_dictionaries/xx-XX-3-0.bdic'), function (err, data) {
-      if (err) {
-        console.error('Failed to read dictionary file');
-        res.writeHead(404);
-        res.end(JSON.stringify(err));
-        return;
-      }
+    try {
+      const data = await fs.readFile(path.join(__dirname, '/../../third_party/hunspell_dictionaries/xx-XX-3-0.bdic'));
       res.writeHead(200);
       res.end(data);
-    });
+    } catch (err) {
+      console.error('Failed to read dictionary file');
+      res.writeHead(404);
+      res.end(JSON.stringify(err));
+    }
   });
   let serverUrl: string;
   before(async () => {

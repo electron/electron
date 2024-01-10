@@ -60,7 +60,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.setUserTasks([
@@ -80,7 +80,7 @@ app.setUserTasks([
 To clear your tasks list, you need to call `app.setUserTasks` with an empty
 array in the `main.js` file.
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.setUserTasks([])
@@ -124,7 +124,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript
+```js
 const { BrowserWindow, nativeImage } = require('electron')
 const path = require('node:path')
 
@@ -149,7 +149,7 @@ win.setThumbarButtons([
 To clear thumbnail toolbar buttons, you need to call
 `BrowserWindow.setThumbarButtons` with an empty array in the `main.js` file.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow()
@@ -188,7 +188,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript
+```js
 const { BrowserWindow, nativeImage } = require('electron')
 
 const win = new BrowserWindow()
@@ -217,7 +217,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow()

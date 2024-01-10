@@ -1,0 +1,19 @@
+{
+  "name": "Action popup demo",
+  "version": "1.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["main.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_title": "Click Me",
+    "default_popup": "popup.html"
+  }
+}

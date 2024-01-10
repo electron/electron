@@ -8,7 +8,7 @@ Process: [Main](../glossary.md#main-process)
 The following example shows how to capture video from a desktop window whose
 title is `Electron`:
 
-```javascript
+```js
 // In the main process.
 const { BrowserWindow, desktopCapturer } = require('electron')
 
@@ -24,7 +24,7 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources =
 })
 ```
 
-```javascript @ts-nocheck
+```js @ts-nocheck
 // In the preload script.
 const { ipcRenderer } = require('electron')
 
@@ -68,7 +68,7 @@ To capture both audio and video from the entire desktop the constraints passed
 to [`navigator.mediaDevices.getUserMedia`][] must include `chromeMediaSource: 'desktop'`,
 for both `audio` and `video`, but should not include a `chromeMediaSourceId` constraint.
 
-```javascript
+```js
 const constraints = {
   audio: {
     mandatory: {

@@ -30,6 +30,9 @@ void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
   node_data->SetName(suggestion_);
 }
 
+BEGIN_METADATA(AutofillPopupChildView)
+END_METADATA
+
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
     : popup_(popup), parent_widget_(parent_widget) {
@@ -144,8 +147,8 @@ bool AutofillPopupView::CanStartDragForView(views::View*,
 }
 
 void AutofillPopupView::OnSelectedRowChanged(
-    absl::optional<int> previous_row_selection,
-    absl::optional<int> current_row_selection) {
+    std::optional<int> previous_row_selection,
+    std::optional<int> current_row_selection) {
   SchedulePaint();
 
   if (current_row_selection) {
@@ -433,7 +436,7 @@ void AutofillPopupView::AcceptSelection(const gfx::Point& point) {
   AcceptSelectedLine();
 }
 
-void AutofillPopupView::SetSelectedLine(absl::optional<int> selected_line) {
+void AutofillPopupView::SetSelectedLine(std::optional<int> selected_line) {
   if (!popup_)
     return;
   if (selected_line_ == selected_line)
@@ -476,7 +479,7 @@ void AutofillPopupView::SelectPreviousLine() {
 }
 
 void AutofillPopupView::ClearSelection() {
-  SetSelectedLine(absl::nullopt);
+  SetSelectedLine(std::nullopt);
 }
 
 void AutofillPopupView::RemoveObserver() {

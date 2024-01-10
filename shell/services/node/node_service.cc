@@ -7,7 +7,11 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "services/network/public/mojom/host_resolver.mojom.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -17,6 +21,34 @@
 #include "shell/services/node/parent_port.h"
 
 namespace electron {
+
+URLLoaderBundle::URLLoaderBundle() = default;
+
+URLLoaderBundle::~URLLoaderBundle() = default;
+
+URLLoaderBundle* URLLoaderBundle::GetInstance() {
+  static base::NoDestructor<URLLoaderBundle> instance;
+  return instance.get();
+}
+
+void URLLoaderBundle::SetURLLoaderFactory(
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_factory,
+    mojo::Remote<network::mojom::HostResolver> host_resolver) {
+  factory_ = network::SharedURLLoaderFactory::Create(
+      std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+          std::move(pending_factory)));
+  host_resolver_ = std::move(host_resolver);
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+URLLoaderBundle::GetSharedURLLoaderFactory() {
+  return factory_;
+}
+
+network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
+  DCHECK(host_resolver_);
+  return host_resolver_.get();
+}
 
 NodeService::NodeService(
     mojo::PendingReceiver<node::mojom::NodeService> receiver)
@@ -41,6 +73,10 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
     return;
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
+
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)));
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
@@ -92,7 +128,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // since this call will start compilation and execution
   // of the entry script. If there is an uncaught exception
   // the exit handler set above will be triggered and it expects
-  // both Node Env and JavaScriptEnviroment are setup to perform
+  // both Node Env and JavaScriptEnvironment are setup to perform
   // a clean shutdown of this process.
   node_bindings_->LoadEnvironment(node_env_.get());
 

@@ -13,7 +13,7 @@ Currently ASAR integrity checking is only supported on macOS.
 
 ### Electron Forge / Electron Packager
 
-If you are using `>= electron-packager@15.4.0` or `>= @electron-forge/core@6.0.0-beta.61` then all these requirements are met for you automatically and you can skip to [Toggling the Fuse](#toggling-the-fuse).
+If you are using `>= @electron/packager`, `>= electron-packager@15.4.0` or `>= @electron-forge/core@6.0.0-beta.61` then all these requirements are met for you automatically and you can skip to [Toggling the Fuse](#toggling-the-fuse).
 
 ### Other build systems
 

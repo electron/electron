@@ -149,7 +149,7 @@ describe('BrowserWindow module', () => {
     it('should emit beforeunload handler', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
     });
 
     it('should not crash when keyboard event is sent before closing', async () => {
@@ -241,7 +241,7 @@ describe('BrowserWindow module', () => {
     it('should emit beforeunload event', async function () {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
     });
   });
 
@@ -583,6 +583,26 @@ describe('BrowserWindow module', () => {
           await once(w.webContents, 'did-navigate');
           expect(initiator).not.to.be.undefined();
           expect(initiator).to.equal(subframe);
+        });
+
+        it('is triggered when navigating from chrome: to http:', async () => {
+          let hasEmittedWillNavigate = false;
+          const willNavigatePromise = new Promise((resolve) => {
+            w.webContents.once('will-navigate', e => {
+              e.preventDefault();
+              hasEmittedWillNavigate = true;
+              resolve(e.url);
+            });
+          });
+          await w.loadURL('chrome://gpu');
+
+          // shouldn't emit for browser-initiated request via loadURL
+          expect(hasEmittedWillNavigate).to.equal(false);
+
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          const navigatedTo = await willNavigatePromise;
+          expect(navigatedTo).to.equal(url + '/');
+          expect(w.webContents.getURL()).to.equal('chrome://gpu/');
         });
       });
 
@@ -1123,6 +1143,34 @@ describe('BrowserWindow module', () => {
         w.showInactive();
         await shown;
         expect(w.isMaximized()).to.equal(true);
+      });
+
+      ifit(process.platform === 'darwin')('should attach child window to parent', async () => {
+        const wShow = once(w, 'show');
+        w.show();
+        await wShow;
+
+        const c = new BrowserWindow({ show: false, parent: w });
+        const cShow = once(c, 'show');
+        c.showInactive();
+        await cShow;
+
+        // verifying by checking that the child tracks the parent's visibility
+        const minimized = once(w, 'minimize');
+        w.minimize();
+        await minimized;
+
+        expect(w.isVisible()).to.be.false('parent is visible');
+        expect(c.isVisible()).to.be.false('child is visible');
+
+        const restored = once(w, 'restore');
+        w.restore();
+        await restored;
+
+        expect(w.isVisible()).to.be.true('parent is visible');
+        expect(c.isVisible()).to.be.true('child is visible');
+
+        closeWindow(c);
       });
     });
 
@@ -4004,14 +4052,14 @@ describe('BrowserWindow module', () => {
     it('returning false would prevent close', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
-      const [, proceed] = await once(w.webContents, 'before-unload-fired');
+      const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('returning empty string would prevent close', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
       w.close();
-      const [, proceed] = await once(w.webContents, 'before-unload-fired');
+      const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
@@ -4027,9 +4075,9 @@ describe('BrowserWindow module', () => {
       // the SuddenTerminationStatus message have been flushed.
       await once(w.webContents, 'console-message');
       w.close();
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
       w.close();
-      await once(w.webContents, 'before-unload-fired');
+      await once(w.webContents, '-before-unload-fired');
 
       w.webContents.removeListener('destroyed', destroyListener);
       const wait = once(w, 'closed');
@@ -4049,7 +4097,7 @@ describe('BrowserWindow module', () => {
       // the SuddenTerminationStatus message have been flushed.
       await once(w.webContents, 'console-message');
       w.reload();
-      // Chromium does not emit 'before-unload-fired' on WebContents for
+      // Chromium does not emit '-before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
       // is fired.
       await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
@@ -4073,7 +4121,7 @@ describe('BrowserWindow module', () => {
       // the SuddenTerminationStatus message have been flushed.
       await once(w.webContents, 'console-message');
       w.loadURL('about:blank');
-      // Chromium does not emit 'before-unload-fired' on WebContents for
+      // Chromium does not emit '-before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
       // is fired.
       await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
@@ -5071,6 +5119,55 @@ describe('BrowserWindow module', () => {
         w.setContentSize(10, 10);
         expectBoundsEqual(w.getContentSize(), [10, 10]);
       });
+
+      ifit(process.platform === 'win32')('do not change window with frame bounds when maximized', () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame: true,
+          thickFrame: true
+        });
+        expect(w.isResizable()).to.be.true('resizable');
+        w.maximize();
+        expect(w.isMaximized()).to.be.true('maximized');
+        const bounds = w.getBounds();
+        w.setResizable(false);
+        expectBoundsEqual(w.getBounds(), bounds);
+        w.setResizable(true);
+        expectBoundsEqual(w.getBounds(), bounds);
+      });
+
+      ifit(process.platform === 'win32')('do not change window without frame bounds when maximized', () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame: false,
+          thickFrame: true
+        });
+        expect(w.isResizable()).to.be.true('resizable');
+        w.maximize();
+        expect(w.isMaximized()).to.be.true('maximized');
+        const bounds = w.getBounds();
+        w.setResizable(false);
+        expectBoundsEqual(w.getBounds(), bounds);
+        w.setResizable(true);
+        expectBoundsEqual(w.getBounds(), bounds);
+      });
+
+      ifit(process.platform === 'win32')('do not change window transparent without frame bounds when maximized', () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame: false,
+          thickFrame: true,
+          transparent: true
+        });
+        expect(w.isResizable()).to.be.true('resizable');
+        w.maximize();
+        expect(w.isMaximized()).to.be.true('maximized');
+        const bounds = w.getBounds();
+        w.setResizable(false);
+        expectBoundsEqual(w.getBounds(), bounds);
+        w.setResizable(true);
+        expectBoundsEqual(w.getBounds(), bounds);
+      });
     });
 
     describe('loading main frame state', () => {
@@ -5513,6 +5610,19 @@ describe('BrowserWindow module', () => {
         expect(w1.isFullScreenable()).to.be.false('isFullScreenable');
         expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
         expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
+      });
+
+      it('does not disable maximize button if window is resizable', () => {
+        const w = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        expect(w.isMaximizable()).to.be.true('isMaximizable');
+
+        w.setResizable(false);
+
+        expect(w.isMaximizable()).to.be.false('isMaximizable');
       });
     });
 

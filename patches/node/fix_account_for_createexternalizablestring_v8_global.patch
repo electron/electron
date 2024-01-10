@@ -9,10 +9,10 @@ This patch can be removed when Node.js upgrades to a version of V8 with the abov
 CL - they'll need to make the same change.
 
 diff --git a/test/parallel/test-fs-write.js b/test/parallel/test-fs-write.js
-index a321f1b27adaa3f376f5e61ce5d9c1ceb3427cc7..85e8603023854de120219a98449ee64fb7372200 100644
+index 59b83f531cf0a60f960d0096aea70854f45bd629..9dcc35987a4757ea090e81c7de38a6af5bc3182f 100644
 --- a/test/parallel/test-fs-write.js
 +++ b/test/parallel/test-fs-write.js
-@@ -40,7 +40,7 @@ const constants = fs.constants;
+@@ -38,7 +38,7 @@ const constants = fs.constants;
  const { externalizeString, isOneByteString } = global;
  
  // Account for extra globals exposed by --expose_externalize_string.

@@ -5,11 +5,11 @@
 #ifndef ELECTRON_SHELL_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
 #define ELECTRON_SHELL_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "base/functional/callback.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace in_app_purchase {
 
@@ -31,7 +31,7 @@ struct ProductDiscount {
   std::string priceLocale;
   std::string paymentMode;
   int numberOfPeriods;
-  absl::optional<ProductSubscriptionPeriod> subscriptionPeriod;
+  std::optional<ProductSubscriptionPeriod> subscriptionPeriod;
 
   ProductDiscount(const ProductDiscount&);
   ProductDiscount();
@@ -50,10 +50,10 @@ struct Product {
   double price = 0.0;
   std::string formattedPrice;
   std::string currencyCode;
-  absl::optional<ProductDiscount> introductoryPrice;
+  std::optional<ProductDiscount> introductoryPrice;
   std::vector<ProductDiscount> discounts;
   std::string subscriptionGroupIdentifier;
-  absl::optional<ProductSubscriptionPeriod> subscriptionPeriod;
+  std::optional<ProductSubscriptionPeriod> subscriptionPeriod;
 
   // Downloadable Content Information
   bool isDownloadable = false;

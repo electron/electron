@@ -7,10 +7,10 @@ Subject: src: adapt to v8::Exception API change
 Cherry picked fix from https://github.com/nodejs/node-v8/commit/675f411677c28a10a2f03d4b3ef14c2284c33587
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index debd982c75805c51ea7d01229b9d635550060503..103dc6711e71e15da640edc5e017bc638ddc6ad1 100644
+index 222c78ef0cb9904742fd44f8182278ab1f50cd59..e248a144b905a6c7c166796cddfe8442f8dc7158 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -730,10 +730,10 @@ inline void Environment::ThrowRangeError(const char* errmsg) {
+@@ -780,10 +780,10 @@ inline void Environment::ThrowRangeError(const char* errmsg) {
  }
  
  inline void Environment::ThrowError(
@@ -24,15 +24,15 @@ index debd982c75805c51ea7d01229b9d635550060503..103dc6711e71e15da640edc5e017bc63
  
  inline void Environment::ThrowErrnoException(int errorno,
 diff --git a/src/env.h b/src/env.h
-index 45a9a7811b4abe1effb6acf2c89a772a7c2256c9..36e8e7d960a95a9040ad963c79a7f66c89233c87 100644
+index 87df6e1f32e584aa0c6ae21856299fff31d67669..c9a455be8c395a2f231f56e0a54211466362aa1d 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -956,7 +956,7 @@ class Environment : public MemoryRetainer {
-   inline void RemoveHeapSnapshotNearHeapLimitCallback(size_t heap_limit);
+@@ -1017,7 +1017,7 @@ class Environment : public MemoryRetainer {
+   };
  
   private:
 -  inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
 +  inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>, v8::Local<v8::Value>),
                           const char* errmsg);
- 
-   std::list<binding::DLib> loaded_addons_;
+   void TrackContext(v8::Local<v8::Context> context);
+   void UntrackContext(v8::Local<v8::Context> context);

@@ -79,8 +79,8 @@ will be able to execute native code on the user's machine.
 Under no circumstances should you load and execute remote code with
 Node.js integration enabled. Instead, use only local files (packaged together
 with your application) to execute Node.js code. To display remote content, use
-the [`<webview>`][webview-tag] tag or [`BrowserView`][browser-view], make sure
-to disable the `nodeIntegration` and enable `contextIsolation`.
+the [`<webview>`][webview-tag] tag or a [`WebContentsView`][web-contents-view]
+and make sure to disable the `nodeIntegration` and enable `contextIsolation`.
 :::
 
 :::info Electron security warnings
@@ -166,7 +166,7 @@ This recommendation is the default behavior in Electron since 5.0.0.
 :::
 
 It is paramount that you do not enable Node.js integration in any renderer
-([`BrowserWindow`][browser-window], [`BrowserView`][browser-view], or
+([`BrowserWindow`][browser-window], [`WebContentsView`][web-contents-view], or
 [`<webview>`][webview-tag]) that loads remote content. The goal is to limit the
 powers you grant to remote content, thus making it dramatically more difficult
 for an attacker to harm your users should they gain the ability to execute
@@ -306,8 +306,8 @@ This recommendation is Electron's default.
 
 You may have already guessed that disabling the `webSecurity` property on a
 renderer process ([`BrowserWindow`][browser-window],
-[`BrowserView`][browser-view], or [`<webview>`][webview-tag]) disables crucial
-security features.
+[`WebContentsView`][web-contents-view], or [`<webview>`][webview-tag]) disables
+crucial security features.
 
 Do not disable `webSecurity` in production applications.
 
@@ -375,7 +375,7 @@ which can be set using Electron's
 [`webRequest.onHeadersReceived`](../api/web-request.md#webrequestonheadersreceivedfilter-listener)
 handler:
 
-```javascript title='main.js (Main Process)'
+```js title='main.js (Main Process)'
 const { session } = require('electron')
 
 session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -759,12 +759,33 @@ function validateSender (frame) {
 }
 ```
 
+### 18. Avoid usage of the `file://` protocol and prefer usage of custom protocols
+
+You should serve local pages from a custom protocol instead of the `file://` protocol.
+
+#### Why?
+
+The `file://` protocol gets more privileges in Electron than in a web browser and even in
+browsers it is treated differently to http/https URLs. Using a custom protocol allows you
+to be more aligned with classic web url behavior while retaining even more control about
+what can be loaded and when.
+
+Pages running on `file://` have unilateral access to every file on your machine meaning
+that XSS issues can be used to load arbitrary files from the users machine. Using a custom
+protocol prevents issues like this as you can limit the protocol to only serving a specific
+set of files.
+
+#### How?
+
+Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
+learn how to serve files / content from a custom protocol.
+
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md
-[browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
+[web-contents-view]: ../api/web-contents-view.md
+[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
 [web-contents]: ../api/web-contents.md
 [window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options
-[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure

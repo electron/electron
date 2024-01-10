@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 642daa4416f1703fafa8c0f283f64044e5fa26a3..4d8842e0022a4712779604e0b1683acb6591a992 100644
+index 9066427f903cb78b75ff72f3653495c4f66028c8..41511b0d089598c505cac3b6197b0e63089eaf06 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1869,6 +1869,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1888,6 +1888,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -81,7 +81,7 @@ index e4deb71ea3afa1ef9d6ddac9c61f5916ff608514..d2e6854ac2aaa3cc83c0b72ebc03193b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 7c0598fb3f9f08d8d9905c5487f3a128f1262b15..314d443a60d0c9093dd06cd1589ab639dc81fabf 100644
+index 53e23c2b791b9f8851ecac455c3adefd8fc37688..857b648acf17742e7d904ece93ee113f4dc553b6 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,10 +93,10 @@ index 7c0598fb3f9f08d8d9905c5487f3a128f1262b15..314d443a60d0c9093dd06cd1589ab639
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index f259d42038ec740f1aed32f833f258aa724642d7..b8c8ed10d9fbfab0935a04f2421efde1d21050b2 100644
+index 82b4a00f9c66627ef897c717a0f2e93ac0f13e08..195b147c927c1b09dc24928ec4e3755b3ee1af14 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3353,6 +3353,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3357,6 +3357,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf744e78fe6 100644
+index ab5742a30a9d8319ec4596bb99313ea05841e316..5ffc2a38f66f3ab2c82102e996f8e9314da1286e 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@
@@ -159,7 +159,7 @@ index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf7
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -336,6 +337,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -266,6 +267,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -170,7 +170,7 @@ index b7e8b531371564695dd811ebba094b5f5cd4862b..051120e7988ab5168114ddfe6db2daf7
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2f2eb750b71e6a219af9f8601c6053a9799a0044..928dc14ef709c0d4fcb3e5883fc073d00f91b7a9 100644
+index 8a4e2f567831f5a295346062302470d2705ad9a4..2f9d13f03fc943342c156b676a7244348943d85f 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -21,6 +21,7 @@
@@ -189,14 +189,14 @@ index 2f2eb750b71e6a219af9f8601c6053a9799a0044..928dc14ef709c0d4fcb3e5883fc073d0
 +  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
 +    base::apple::ScopedCFTypeRef<CFDataRef> system_icc(
 +        CGColorSpaceCopyICCData(base::mac::GetSystemColorSpace()));
-+    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc);
++    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc.get());
 +    return true;
 +  }
 +
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -340,6 +349,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
+@@ -342,6 +351,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
@@ -205,7 +205,7 @@ index 2f2eb750b71e6a219af9f8601c6053a9799a0044..928dc14ef709c0d4fcb3e5883fc073d0
 +    CGColorSpaceRef color_space = base::mac::GetSystemColorSpace();
 +    base::apple::ScopedCFTypeRef<CFDataRef> color_space_icc(
 +        CGColorSpaceCopyICCData(color_space));
-+    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
++    IOSurfaceSetValue(surface.get(), CFSTR("IOSurfaceColorSpace"), color_space_icc.get());
 +    return surface;
 +  }
 +

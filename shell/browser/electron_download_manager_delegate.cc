@@ -145,7 +145,7 @@ file_dialog::Filters FormatFilterForExtensions(
       if (first_separator_index != std::string::npos)
         first_extension = first_extension.substr(0, first_separator_index);
 
-      // Find the extension name without the preceeding '.' character.
+      // Find the extension name without the preceding '.' character.
       std::string ext_name = first_extension;
       size_t ext_index = ext_name.find_first_not_of('.');
       if (ext_index != std::string::npos)
@@ -169,7 +169,7 @@ file_dialog::Filters FormatFilterForExtensions(
       base::ReplaceChars(desc, "*", base::StringPiece(), &desc);
     }
 
-    // Remove the preceeding '.' character from the extension.
+    // Remove the preceding '.' character from the extension.
     size_t ext_index = ext.find_first_not_of('.');
     if (ext_index != std::string::npos)
       ext = ext.substr(ext_index);

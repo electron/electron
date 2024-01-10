@@ -15,89 +15,67 @@ const isSameArgs = (args: string[]) => args.length === spawnedArgs.length && arg
 
 // Spawn a command and invoke the callback when it completes with an error
 // and the output from standard out.
-const spawnUpdate = function (args: string[], detached: boolean, callback: Function) {
-  let error: Error, errorEmitted: boolean, stderr: string, stdout: string;
-
-  try {
+const spawnUpdate = async function (args: string[], options: { detached: boolean }): Promise<string> {
+  return new Promise((resolve, reject) => {
     // Ensure we don't spawn multiple squirrel processes
     // Process spawned, same args:        Attach events to already running process
     // Process spawned, different args:   Return with error
     // No process spawned:                Spawn new process
     if (spawnedProcess && !isSameArgs(args)) {
-      return callback(`AutoUpdater process with arguments ${args} is already running`);
+      throw new Error(`AutoUpdater process with arguments ${args} is already running`);
     } else if (!spawnedProcess) {
       spawnedProcess = spawn(updateExe, args, {
-        detached: detached,
+        detached: options.detached,
         windowsHide: true
       });
       spawnedArgs = args || [];
     }
-  } catch (error1) {
-    error = error1 as Error;
 
-    // Shouldn't happen, but still guard it.
-    process.nextTick(function () {
-      return callback(error);
+    let stdout = '';
+    let stderr = '';
+
+    spawnedProcess.stdout.on('data', (data) => { stdout += data; });
+    spawnedProcess.stderr.on('data', (data) => { stderr += data; });
+
+    spawnedProcess.on('error', (error) => {
+      reject(error);
     });
-    return;
-  }
-  stdout = '';
-  stderr = '';
 
-  spawnedProcess.stdout.on('data', (data) => { stdout += data; });
-  spawnedProcess.stderr.on('data', (data) => { stderr += data; });
+    spawnedProcess.on('exit', function (code, signal) {
+      spawnedProcess = undefined;
+      spawnedArgs = [];
 
-  errorEmitted = false;
-  spawnedProcess.on('error', (error) => {
-    errorEmitted = true;
-    callback(error);
-  });
-
-  return spawnedProcess.on('exit', function (code, signal) {
-    spawnedProcess = undefined;
-    spawnedArgs = [];
-
-    // We may have already emitted an error.
-    if (errorEmitted) {
-      return;
-    }
-
-    // Process terminated with error.
-    if (code !== 0) {
-      return callback(`Command failed: ${signal ?? code}\n${stderr}`);
-    }
-
-    // Success.
-    callback(null, stdout);
+      if (code !== 0) {
+        // Process terminated with error.
+        reject(new Error(`Command failed: ${signal ?? code}\n${stderr}`));
+      } else {
+        // Success.
+        resolve(stdout);
+      }
+    });
   });
 };
 
 // Start an instance of the installed app.
 export function processStart () {
-  return spawnUpdate(['--processStartAndWait', exeName], true, function () {});
+  spawnUpdate(['--processStartAndWait', exeName], { detached: true });
 }
 
 // Download the releases specified by the URL and write new results to stdout.
-export function checkForUpdate (updateURL: string, callback: (error: Error | null, update?: any) => void) {
-  return spawnUpdate(['--checkForUpdate', updateURL], false, function (error: Error, stdout: string) {
-    let ref, ref1, update;
-    if (error != null) {
-      return callback(error);
-    }
-    try {
-      // Last line of output is the JSON details about the releases
-      const json = stdout.trim().split('\n').pop();
-      update = (ref = JSON.parse(json!)) != null ? (ref1 = ref.releasesToApply) != null ? typeof ref1.pop === 'function' ? ref1.pop() : undefined : undefined : undefined;
-    } catch {
-      return callback(new Error(`Invalid result:\n${stdout}`));
-    }
-    return callback(null, update);
-  });
+export async function checkForUpdate (updateURL: string): Promise<any> {
+  const stdout = await spawnUpdate(['--checkForUpdate', updateURL], { detached: false });
+  try {
+    // Last line of output is the JSON details about the releases
+    const json = stdout.trim().split('\n').pop();
+    return JSON.parse(json!)?.releasesToApply?.pop?.();
+  } catch {
+    throw new Error(`Invalid result:\n${stdout}`);
+  }
 }
 
 // Update the application to the latest remote version specified by URL.
-export function update (updateURL: string, callback: (error: Error) => void) {
-  return spawnUpdate(['--update', updateURL], false, callback);
+export async function update (updateURL: string): Promise<void> {
+  await spawnUpdate(['--update', updateURL], { detached: false });
 }
 
 // Is the Update.exe installed with the current application?

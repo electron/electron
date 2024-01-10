@@ -13,7 +13,6 @@
 #include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
-#include "shell/browser/api/electron_api_browser_view.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -97,6 +96,8 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
       options, parent.IsEmpty() ? nullptr : parent->window_.get()));
   window_->AddObserver(this);
 
+  SetContentView(View::Create(isolate));
+
 #if defined(TOOLKIT_VIEWS)
   v8::Local<v8::Value> icon;
   if (options.Get(options::kIcon, &icon)) {
@@ -164,7 +165,6 @@ void BaseWindow::OnWindowClosed() {
   Emit("closed");
 
   RemoveFromParentChildWindows();
-  BaseWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
@@ -311,8 +311,7 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 #endif
 
 void BaseWindow::SetContentView(gin::Handle<View> view) {
-  ResetBrowserViews();
-  content_view_.Reset(isolate(), view.ToV8());
+  content_view_.Reset(JavascriptEnvironment::GetIsolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
 
@@ -333,7 +332,7 @@ void BaseWindow::Blur() {
   window_->Focus(false);
 }
 
-bool BaseWindow::IsFocused() {
+bool BaseWindow::IsFocused() const {
   return window_->IsFocused();
 }
 
@@ -352,11 +351,11 @@ void BaseWindow::Hide() {
   window_->Hide();
 }
 
-bool BaseWindow::IsVisible() {
+bool BaseWindow::IsVisible() const {
   return window_->IsVisible();
 }
 
-bool BaseWindow::IsEnabled() {
+bool BaseWindow::IsEnabled() const {
   return window_->IsEnabled();
 }
 
@@ -372,7 +371,7 @@ void BaseWindow::Unmaximize() {
   window_->Unmaximize();
 }
 
-bool BaseWindow::IsMaximized() {
+bool BaseWindow::IsMaximized() const {
   return window_->IsMaximized();
 }
 
@@ -384,7 +383,7 @@ void BaseWindow::Restore() {
   window_->Restore();
 }
 
-bool BaseWindow::IsMinimized() {
+bool BaseWindow::IsMinimized() const {
   return window_->IsMinimized();
 }
 
@@ -392,7 +391,7 @@ void BaseWindow::SetFullScreen(bool fullscreen) {
   window_->SetFullScreen(fullscreen);
 }
 
-bool BaseWindow::IsFullscreen() {
+bool BaseWindow::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
@@ -403,15 +402,15 @@ void BaseWindow::SetBounds(const gfx::Rect& bounds,
   window_->SetBounds(bounds, animate);
 }
 
-gfx::Rect BaseWindow::GetBounds() {
+gfx::Rect BaseWindow::GetBounds() const {
   return window_->GetBounds();
 }
 
-bool BaseWindow::IsNormal() {
+bool BaseWindow::IsNormal() const {
   return window_->IsNormal();
 }
 
-gfx::Rect BaseWindow::GetNormalBounds() {
+gfx::Rect BaseWindow::GetNormalBounds() const {
   return window_->GetNormalBounds();
 }
 
@@ -422,7 +421,7 @@ void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
   window_->SetContentBounds(bounds, animate);
 }
 
-gfx::Rect BaseWindow::GetContentBounds() {
+gfx::Rect BaseWindow::GetContentBounds() const {
   return window_->GetContentBounds();
 }
 
@@ -434,7 +433,7 @@ void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
   window_->SetSize(size, animate);
 }
 
-std::vector<int> BaseWindow::GetSize() {
+std::vector<int> BaseWindow::GetSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetSize();
   result[0] = size.width();
@@ -450,7 +449,7 @@ void BaseWindow::SetContentSize(int width,
   window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
-std::vector<int> BaseWindow::GetContentSize() {
+std::vector<int> BaseWindow::GetContentSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetContentSize();
   result[0] = size.width();
@@ -462,7 +461,7 @@ void BaseWindow::SetMinimumSize(int width, int height) {
   window_->SetMinimumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMinimumSize() {
+std::vector<int> BaseWindow::GetMinimumSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetMinimumSize();
   result[0] = size.width();
@@ -474,7 +473,7 @@ void BaseWindow::SetMaximumSize(int width, int height) {
   window_->SetMaximumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMaximumSize() {
+std::vector<int> BaseWindow::GetMaximumSize() const {
   std::vector<int> result(2);
   gfx::Size size = window_->GetMaximumSize();
   result[0] = size.width();
@@ -492,7 +491,7 @@ void BaseWindow::SetResizable(bool resizable) {
   window_->SetResizable(resizable);
 }
 
-bool BaseWindow::IsResizable() {
+bool BaseWindow::IsResizable() const {
   return window_->IsResizable();
 }
 
@@ -500,7 +499,7 @@ void BaseWindow::SetMovable(bool movable) {
   window_->SetMovable(movable);
 }
 
-bool BaseWindow::IsMovable() {
+bool BaseWindow::IsMovable() const {
   return window_->IsMovable();
 }
 
@@ -508,7 +507,7 @@ void BaseWindow::SetMinimizable(bool minimizable) {
   window_->SetMinimizable(minimizable);
 }
 
-bool BaseWindow::IsMinimizable() {
+bool BaseWindow::IsMinimizable() const {
   return window_->IsMinimizable();
 }
 
@@ -516,7 +515,7 @@ void BaseWindow::SetMaximizable(bool maximizable) {
   window_->SetMaximizable(maximizable);
 }
 
-bool BaseWindow::IsMaximizable() {
+bool BaseWindow::IsMaximizable() const {
   return window_->IsMaximizable();
 }
 
@@ -524,7 +523,7 @@ void BaseWindow::SetFullScreenable(bool fullscreenable) {
   window_->SetFullScreenable(fullscreenable);
 }
 
-bool BaseWindow::IsFullScreenable() {
+bool BaseWindow::IsFullScreenable() const {
   return window_->IsFullScreenable();
 }
 
@@ -532,7 +531,7 @@ void BaseWindow::SetClosable(bool closable) {
   window_->SetClosable(closable);
 }
 
-bool BaseWindow::IsClosable() {
+bool BaseWindow::IsClosable() const {
   return window_->IsClosable();
 }
 
@@ -547,7 +546,7 @@ void BaseWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
   window_->SetAlwaysOnTop(z_order, level, relative_level);
 }
 
-bool BaseWindow::IsAlwaysOnTop() {
+bool BaseWindow::IsAlwaysOnTop() const {
   return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
 }
 
@@ -561,7 +560,7 @@ void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
   window_->SetPosition(gfx::Point(x, y), animate);
 }
 
-std::vector<int> BaseWindow::GetPosition() {
+std::vector<int> BaseWindow::GetPosition() const {
   std::vector<int> result(2);
   gfx::Point pos = window_->GetPosition();
   result[0] = pos.x();
@@ -582,7 +581,7 @@ void BaseWindow::SetTitle(const std::string& title) {
   window_->SetTitle(title);
 }
 
-std::string BaseWindow::GetTitle() {
+std::string BaseWindow::GetTitle() const {
   return window_->GetTitle();
 }
 
@@ -590,7 +589,7 @@ void BaseWindow::SetAccessibleTitle(const std::string& title) {
   window_->SetAccessibleTitle(title);
 }
 
-std::string BaseWindow::GetAccessibleTitle() {
+std::string BaseWindow::GetAccessibleTitle() const {
   return window_->GetAccessibleTitle();
 }
 
@@ -606,7 +605,7 @@ void BaseWindow::SetExcludedFromShownWindowsMenu(bool excluded) {
   window_->SetExcludedFromShownWindowsMenu(excluded);
 }
 
-bool BaseWindow::IsExcludedFromShownWindowsMenu() {
+bool BaseWindow::IsExcludedFromShownWindowsMenu() const {
   return window_->IsExcludedFromShownWindowsMenu();
 }
 
@@ -614,7 +613,7 @@ void BaseWindow::SetSimpleFullScreen(bool simple_fullscreen) {
   window_->SetSimpleFullScreen(simple_fullscreen);
 }
 
-bool BaseWindow::IsSimpleFullScreen() {
+bool BaseWindow::IsSimpleFullScreen() const {
   return window_->IsSimpleFullScreen();
 }
 
@@ -622,7 +621,7 @@ void BaseWindow::SetKiosk(bool kiosk) {
   window_->SetKiosk(kiosk);
 }
 
-bool BaseWindow::IsKiosk() {
+bool BaseWindow::IsKiosk() const {
   return window_->IsKiosk();
 }
 
@@ -635,7 +634,7 @@ void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color);
 }
 
-std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
+std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) const {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
@@ -647,7 +646,7 @@ void BaseWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
 
-bool BaseWindow::HasShadow() {
+bool BaseWindow::HasShadow() const {
   return window_->HasShadow();
 }
 
@@ -655,7 +654,7 @@ void BaseWindow::SetOpacity(const double opacity) {
   window_->SetOpacity(opacity);
 }
 
-double BaseWindow::GetOpacity() {
+double BaseWindow::GetOpacity() const {
   return window_->GetOpacity();
 }
 
@@ -667,7 +666,7 @@ void BaseWindow::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
 
-std::string BaseWindow::GetRepresentedFilename() {
+std::string BaseWindow::GetRepresentedFilename() const {
   return window_->GetRepresentedFilename();
 }
 
@@ -675,7 +674,7 @@ void BaseWindow::SetDocumentEdited(bool edited) {
   window_->SetDocumentEdited(edited);
 }
 
-bool BaseWindow::IsDocumentEdited() {
+bool BaseWindow::IsDocumentEdited() const {
   return window_->IsDocumentEdited();
 }
 
@@ -695,7 +694,7 @@ void BaseWindow::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
 
-bool BaseWindow::IsFocusable() {
+bool BaseWindow::IsFocusable() const {
   return window_->IsFocusable();
 }
 
@@ -749,70 +748,6 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
   }
 }
 
-void BaseWindow::SetBrowserView(
-    absl::optional<gin::Handle<BrowserView>> browser_view) {
-  ResetBrowserViews();
-  if (browser_view)
-    AddBrowserView(*browser_view);
-}
-
-void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  if (!base::Contains(browser_views_, browser_view.ToV8())) {
-    // If we're reparenting a BrowserView, ensure that it's detached from
-    // its previous owner window.
-    BaseWindow* owner_window = browser_view->owner_window();
-    if (owner_window) {
-      // iter == browser_views_.end() should imply owner_window != this.
-      DCHECK_NE(owner_window, this);
-      owner_window->RemoveBrowserView(browser_view);
-      browser_view->SetOwnerWindow(nullptr);
-    }
-
-    // If the user set the BrowserView's bounds before adding it to the window,
-    // we need to get those initial bounds *before* adding it to the window
-    // so bounds isn't returned relative despite not being correctly positioned
-    // relative to the window.
-    auto bounds = browser_view->GetBounds();
-
-    window_->AddBrowserView(browser_view->view());
-    window_->AddDraggableRegionProvider(browser_view.get());
-    browser_view->SetOwnerWindow(this);
-    browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
-
-    // Recalibrate bounds relative to the containing window.
-    if (!bounds.IsEmpty())
-      browser_view->SetBounds(bounds);
-  }
-}
-
-void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = std::find(browser_views_.begin(), browser_views_.end(),
-                        browser_view.ToV8());
-
-  if (iter != browser_views_.end()) {
-    window_->RemoveDraggableRegionProvider(browser_view.get());
-    window_->RemoveBrowserView(browser_view->view());
-    browser_view->SetOwnerWindow(nullptr);
-    iter->Reset();
-    browser_views_.erase(iter);
-  }
-}
-
-void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                                   gin_helper::Arguments* args) {
-  BaseWindow* owner_window = browser_view->owner_window();
-  auto iter = std::find(browser_views_.begin(), browser_views_.end(),
-                        browser_view.ToV8());
-  if (iter == browser_views_.end() || (owner_window && owner_window != this)) {
-    args->ThrowError("Given BrowserView is not attached to the window");
-    return;
-  }
-
-  browser_views_.erase(iter);
-  browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
-  window_->SetTopBrowserView(browser_view->view());
-}
-
 std::string BaseWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
@@ -861,7 +796,7 @@ void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
                                             skipTransformProcessType);
 }
 
-bool BaseWindow::IsVisibleOnAllWorkspaces() {
+bool BaseWindow::IsVisibleOnAllWorkspaces() const {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
@@ -879,7 +814,7 @@ void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
 }
 
 #if BUILDFLAG(IS_MAC)
-std::string BaseWindow::GetAlwaysOnTopLevel() {
+std::string BaseWindow::GetAlwaysOnTopLevel() const {
   return window_->GetAlwaysOnTopLevel();
 }
 
@@ -891,11 +826,11 @@ bool BaseWindow::GetWindowButtonVisibility() const {
   return window_->GetWindowButtonVisibility();
 }
 
-void BaseWindow::SetWindowButtonPosition(absl::optional<gfx::Point> position) {
+void BaseWindow::SetWindowButtonPosition(std::optional<gfx::Point> position) {
   window_->SetWindowButtonPosition(std::move(position));
 }
 
-absl::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
+std::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
   return window_->GetWindowButtonPosition();
 }
 #endif
@@ -965,7 +900,7 @@ void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
 
-bool BaseWindow::IsMenuBarAutoHide() {
+bool BaseWindow::IsMenuBarAutoHide() const {
   return window_->IsMenuBarAutoHide();
 }
 
@@ -973,7 +908,7 @@ void BaseWindow::SetMenuBarVisibility(bool visible) {
   window_->SetMenuBarVisibility(visible);
 }
 
-bool BaseWindow::IsMenuBarVisible() {
+bool BaseWindow::IsMenuBarVisible() const {
   return window_->IsMenuBarVisible();
 }
 
@@ -1016,31 +951,6 @@ v8::Local<v8::Value> BaseWindow::GetParentWindow() const {
 
 std::vector<v8::Local<v8::Object>> BaseWindow::GetChildWindows() const {
   return child_windows_.Values(isolate());
-}
-
-v8::Local<v8::Value> BaseWindow::GetBrowserView(
-    gin_helper::Arguments* args) const {
-  if (browser_views_.empty()) {
-    return v8::Null(isolate());
-  } else if (browser_views_.size() == 1) {
-    auto first_view = browser_views_.begin();
-    return v8::Local<v8::Value>::New(isolate(), *first_view);
-  } else {
-    args->ThrowError(
-        "BrowserWindow have multiple BrowserViews, "
-        "Use getBrowserViews() instead");
-    return v8::Null(isolate());
-  }
-}
-
-std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
-  std::vector<v8::Local<v8::Value>> ret;
-
-  for (auto const& browser_view : browser_views_) {
-    ret.push_back(v8::Local<v8::Value>::New(isolate(), browser_view));
-  }
-
-  return ret;
 }
 
 bool BaseWindow::IsModal() const {
@@ -1138,31 +1048,6 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 
 int32_t BaseWindow::GetID() const {
   return weak_map_id();
-}
-
-void BaseWindow::ResetBrowserViews() {
-  v8::HandleScope scope(isolate());
-
-  for (auto& item : browser_views_) {
-    gin::Handle<BrowserView> browser_view;
-    if (gin::ConvertFromV8(isolate(),
-                           v8::Local<v8::Value>::New(isolate(), item),
-                           &browser_view) &&
-        !browser_view.IsEmpty()) {
-      // There's a chance that the BrowserView may have been reparented - only
-      // reset if the owner window is *this* window.
-      BaseWindow* owner_window = browser_view->owner_window();
-      DCHECK_EQ(owner_window, this);
-      browser_view->SetOwnerWindow(nullptr);
-      window_->RemoveBrowserView(browser_view->view());
-      window_->RemoveDraggableRegionProvider(browser_view.get());
-      browser_view->SetOwnerWindow(nullptr);
-    }
-
-    item.Reset();
-  }
-
-  browser_views_.clear();
 }
 
 void BaseWindow::RemoveFromParentChildWindows() {
@@ -1274,10 +1159,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMenu", &BaseWindow::SetMenu)
       .SetMethod("removeMenu", &BaseWindow::RemoveMenu)
       .SetMethod("setParentWindow", &BaseWindow::SetParentWindow)
-      .SetMethod("setBrowserView", &BaseWindow::SetBrowserView)
-      .SetMethod("addBrowserView", &BaseWindow::AddBrowserView)
-      .SetMethod("removeBrowserView", &BaseWindow::RemoveBrowserView)
-      .SetMethod("setTopBrowserView", &BaseWindow::SetTopBrowserView)
       .SetMethod("getMediaSourceId", &BaseWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
@@ -1333,10 +1214,10 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("previewFile", &BaseWindow::PreviewFile)
       .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)
       .SetMethod("getContentView", &BaseWindow::GetContentView)
+      .SetProperty("contentView", &BaseWindow::GetContentView,
+                   &BaseWindow::SetContentView)
       .SetMethod("getParentWindow", &BaseWindow::GetParentWindow)
       .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
-      .SetMethod("getBrowserView", &BaseWindow::GetBrowserView)
-      .SetMethod("getBrowserViews", &BaseWindow::GetBrowserViews)
       .SetMethod("isModal", &BaseWindow::IsModal)
       .SetMethod("setThumbarButtons", &BaseWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)

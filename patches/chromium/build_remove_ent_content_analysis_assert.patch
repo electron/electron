@@ -9,7 +9,7 @@ This patch can be removed when we decide how we want to handle
 enterprise content analysis.
 
 diff --git a/components/enterprise/buildflags/buildflags.gni b/components/enterprise/buildflags/buildflags.gni
-index b26c6ca3480f529b21cd4c7544de786baa995dfd..6509e0131bca73ab080b1e47878acf7fae72d112 100644
+index 90658d1d090b5edd15339a7ca0f9ba4c0a341891..7d38d08c8ff51854deca9614176ec40dc50ad076 100644
 --- a/components/enterprise/buildflags/buildflags.gni
 +++ b/components/enterprise/buildflags/buildflags.gni
 @@ -34,4 +34,4 @@ declare_args() {

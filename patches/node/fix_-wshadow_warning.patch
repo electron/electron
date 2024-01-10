@@ -28,10 +28,10 @@ In file included from ../../third_party/electron_node/src/env-inl.h:32:
 1 error generated.
 
 diff --git a/src/util.h b/src/util.h
-index e218d9b62a1eb52404e3a57b999784e8e2f5ad58..22f2272c1bd4363be10a552748f63cbffba5c66d 100644
+index 344f7753dab2b16bc38ff808d29c031a363aaaf2..947c2c19a22f7bf8a9d82667a85a18f9252e6d65 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -129,10 +129,10 @@ void DumpBacktrace(FILE* fp);
+@@ -130,10 +130,10 @@ void DumpBacktrace(FILE* fp);
    do {                                                                        \
      /* Make sure that this struct does not end up in inline code, but      */ \
      /* rather in a read-only data section when modifying this code.        */ \

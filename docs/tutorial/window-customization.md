@@ -14,7 +14,7 @@ that are not a part of the web page.
 To create a frameless window, you need to set `frame` to `false` in the `BrowserWindow`
 constructor.
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ frame: false })
 ```
@@ -28,7 +28,7 @@ option in the `BrowserWindow` constructor.
 Applying the `hidden` title bar style results in a hidden title bar and a full-size
 content window.
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 ```
@@ -44,7 +44,7 @@ The `customButtonsOnHover` title bar style will hide the traffic lights until yo
 over them. This is useful if you want to create custom traffic lights in your HTML but still
 use the native UI to control the window.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover' })
 ```
@@ -57,7 +57,7 @@ options available.
 Applying `hiddenInset` title bar style will shift the vertical inset of the traffic lights
 by a fixed amount.
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ titleBarStyle: 'hiddenInset' })
 ```
@@ -66,7 +66,7 @@ If you need more granular control over the positioning of the traffic lights, yo
 a set of coordinates to the `trafficLightPosition` option in the `BrowserWindow`
 constructor.
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
@@ -80,7 +80,7 @@ You can also show and hide the traffic lights programmatically from the main pro
 The `win.setWindowButtonVisibility` forces traffic lights to be show or hidden depending
 on the value of its boolean parameter.
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 // hides the traffic lights
@@ -106,7 +106,7 @@ The `titleBarOverlay` option accepts two different value formats.
 Specifying `true` on either platform will result in an overlay region with default
 system colors:
 
-```javascript title='main.js'
+```js title='main.js'
 // on macOS or Windows
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
@@ -119,7 +119,7 @@ On either platform `titleBarOverlay` can also be an object. On both macOS and Wi
 
 If a color option is not specified, the color will default to its system color for the window control buttons. Similarly, if the height option is not specified it will default to the default height:
 
-```javascript title='main.js'
+```js title='main.js'
 // on Windows
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
@@ -140,7 +140,7 @@ const win = new BrowserWindow({
 
 By setting the `transparent` option to `true`, you can make a fully transparent window.
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ transparent: true })
 ```
@@ -169,7 +169,7 @@ To create a click-through window, i.e. making the window ignore all mouse
 events, you can call the [win.setIgnoreMouseEvents(ignore)][ignore-mouse-events]
 API:
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 win.setIgnoreMouseEvents(true)
@@ -182,7 +182,7 @@ meaning that mouse movement events will not be emitted. On Windows and macOS, an
 optional parameter can be used to forward mouse move messages to the web page,
 allowing events such as `mouseleave` to be emitted:
 
-```javascript title='main.js'
+```js title='main.js'
 const { BrowserWindow, ipcMain } = require('electron')
 const path = require('node:path')
 
@@ -198,7 +198,7 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 })
 ```
 
-```javascript title='preload.js'
+```js title='preload.js'
 window.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('clickThroughElement')
   el.addEventListener('mouseenter', () => {

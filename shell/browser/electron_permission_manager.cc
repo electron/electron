@@ -415,7 +415,7 @@ ElectronPermissionManager::GetPermissionStatusForEmbeddedRequester(
 }
 
 ElectronPermissionManager::SubscriptionId
-ElectronPermissionManager::SubscribePermissionStatusChange(
+ElectronPermissionManager::SubscribeToPermissionStatusChange(
     blink::PermissionType permission,
     content::RenderProcessHost* render_process_host,
     content::RenderFrameHost* render_frame_host,
@@ -424,7 +424,7 @@ ElectronPermissionManager::SubscribePermissionStatusChange(
   return SubscriptionId();
 }
 
-void ElectronPermissionManager::UnsubscribePermissionStatusChange(
+void ElectronPermissionManager::UnsubscribeFromPermissionStatusChange(
     SubscriptionId id) {}
 
 }  // namespace electron

@@ -120,7 +120,7 @@ The main process should listen for `channel` with
 
 For example:
 
-```javascript @ts-type={someArgument:unknown} @ts-type={doSomeWork:(arg:unknown)=>Promise<unknown>}
+```js @ts-type={someArgument:unknown} @ts-type={doSomeWork:(arg:unknown)=>Promise<unknown>}
 // Renderer process
 ipcRenderer.invoke('some-name', someArgument).then((result) => {
   // ...

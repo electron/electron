@@ -16,7 +16,7 @@ require('@electron/internal/common/init');
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
 
 // Export node bindings to global.
-const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers');
+const { makeRequireFunction } = __non_webpack_require__('internal/modules/helpers');
 global.module = new Module('electron/js2c/worker_init');
 global.require = makeRequireFunction(global.module);
 

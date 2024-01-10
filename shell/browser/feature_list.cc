@@ -49,7 +49,7 @@ void InitializeFeatureList() {
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
 #endif
-  base::FeatureList::InitializeInstance(enable_features, disable_features);
+  base::FeatureList::InitInstance(enable_features, disable_features);
 }
 
 void InitializeFieldTrials() {

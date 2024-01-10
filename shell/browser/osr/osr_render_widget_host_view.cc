@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -21,9 +22,9 @@
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/quads/compositor_render_pass.h"
 #include "content/browser/renderer_host/cursor_manager.h"  // nogncheck
-#include "content/browser/renderer_host/input/synthetic_gesture_target.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
+#include "content/common/input/synthetic_gesture.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
@@ -31,7 +32,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "gpu/command_buffer/client/gl_helper.h"
 #include "media/base/video_frame.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"
@@ -355,7 +355,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-absl::optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
+std::optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
@@ -394,6 +394,11 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
 void OffScreenRenderWidgetHostView::
     InvalidateLocalSurfaceIdAndAllocationGroup() {
   compositor_allocator_.Invalidate(/*also_invalidate_allocation_group=*/true);
+}
+
+void OffScreenRenderWidgetHostView::UpdateFrameSinkIdRegistration() {
+  RenderWidgetHostViewBase::UpdateFrameSinkIdRegistration();
+  GetDelegatedFrameHost()->SetIsFrameSinkIdOwner(is_frame_sink_id_owner());
 }
 
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
@@ -503,9 +508,9 @@ gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
 
-absl::optional<content::DisplayFeature>
+std::optional<content::DisplayFeature>
 OffScreenRenderWidgetHostView::GetDisplayFeature() {
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(
@@ -525,8 +530,8 @@ OffScreenRenderWidgetHostView::CreateSyntheticGestureTarget() {
 
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
     const gfx::Range&,
-    const absl::optional<std::vector<gfx::Rect>>& character_bounds,
-    const absl::optional<std::vector<gfx::Rect>>& line_bounds) {}
+    const std::optional<std::vector<gfx::Rect>>& character_bounds,
+    const std::optional<std::vector<gfx::Rect>>& line_bounds) {}
 
 gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),

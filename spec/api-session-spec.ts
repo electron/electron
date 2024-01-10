@@ -1451,6 +1451,7 @@ describe('session module', () => {
       w.webContents.executeJavaScript(`
         var iframe = document.createElement('iframe');
         iframe.src = '${loadUrl}';
+        iframe.allow = 'clipboard-read';
         document.body.appendChild(iframe);
         null;
       `);

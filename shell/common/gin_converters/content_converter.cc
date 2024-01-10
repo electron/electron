@@ -25,7 +25,7 @@
 namespace {
 
 [[nodiscard]] constexpr base::StringPiece FormControlToInputFieldTypeString(
-    const absl::optional<blink::mojom::FormControlType> form_control_type) {
+    const std::optional<blink::mojom::FormControlType> form_control_type) {
   if (!form_control_type)
     return "none";
 
@@ -69,80 +69,39 @@ namespace {
 
 namespace gin {
 
+static constexpr auto MenuSourceTypes =
+    base::MakeFixedFlatMap<base::StringPiece, ui::MenuSourceType>({
+        {"adjustSelection", ui::MENU_SOURCE_ADJUST_SELECTION},
+        {"adjustSelectionReset", ui::MENU_SOURCE_ADJUST_SELECTION_RESET},
+        {"keyboard", ui::MENU_SOURCE_KEYBOARD},
+        {"longPress", ui::MENU_SOURCE_LONG_PRESS},
+        {"longTap", ui::MENU_SOURCE_LONG_TAP},
+        {"mouse", ui::MENU_SOURCE_MOUSE},
+        {"none", ui::MENU_SOURCE_NONE},
+        {"stylus", ui::MENU_SOURCE_STYLUS},
+        {"touch", ui::MENU_SOURCE_TOUCH},
+        {"touchHandle", ui::MENU_SOURCE_TOUCH_HANDLE},
+        {"touchMenu", ui::MENU_SOURCE_TOUCH_EDIT_MENU},
+    });
+
+// let us know when upstream changes & we need to update MenuSourceTypes
+static_assert(std::size(MenuSourceTypes) == ui::MENU_SOURCE_TYPE_LAST + 1U);
+
 // static
 v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
     v8::Isolate* isolate,
     const ui::MenuSourceType& in) {
-  switch (in) {
-    case ui::MENU_SOURCE_MOUSE:
-      return StringToV8(isolate, "mouse");
-    case ui::MENU_SOURCE_KEYBOARD:
-      return StringToV8(isolate, "keyboard");
-    case ui::MENU_SOURCE_TOUCH:
-      return StringToV8(isolate, "touch");
-    case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
-      return StringToV8(isolate, "touchMenu");
-    case ui::MENU_SOURCE_LONG_PRESS:
-      return StringToV8(isolate, "longPress");
-    case ui::MENU_SOURCE_LONG_TAP:
-      return StringToV8(isolate, "longTap");
-    case ui::MENU_SOURCE_TOUCH_HANDLE:
-      return StringToV8(isolate, "touchHandle");
-    case ui::MENU_SOURCE_STYLUS:
-      return StringToV8(isolate, "stylus");
-    case ui::MENU_SOURCE_ADJUST_SELECTION:
-      return StringToV8(isolate, "adjustSelection");
-    case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
-      return StringToV8(isolate, "adjustSelectionReset");
-    case ui::MENU_SOURCE_NONE:
-      return StringToV8(isolate, "none");
-  }
+  for (auto const& [key, val] : MenuSourceTypes)
+    if (in == val)
+      return StringToV8(isolate, key);
+  return {};
 }
 
 // static
 bool Converter<ui::MenuSourceType>::FromV8(v8::Isolate* isolate,
                                            v8::Local<v8::Value> val,
                                            ui::MenuSourceType* out) {
-  std::string type;
-  if (!ConvertFromV8(isolate, val, &type))
-    return false;
-
-  if (type == "mouse") {
-    *out = ui::MENU_SOURCE_MOUSE;
-    return true;
-  } else if (type == "keyboard") {
-    *out = ui::MENU_SOURCE_KEYBOARD;
-    return true;
-  } else if (type == "touch") {
-    *out = ui::MENU_SOURCE_TOUCH;
-    return true;
-  } else if (type == "touchMenu") {
-    *out = ui::MENU_SOURCE_TOUCH_EDIT_MENU;
-    return true;
-  } else if (type == "longPress") {
-    *out = ui::MENU_SOURCE_LONG_PRESS;
-    return true;
-  } else if (type == "longTap") {
-    *out = ui::MENU_SOURCE_LONG_TAP;
-    return true;
-  } else if (type == "touchHandle") {
-    *out = ui::MENU_SOURCE_TOUCH_HANDLE;
-    return true;
-  } else if (type == "stylus") {
-    *out = ui::MENU_SOURCE_STYLUS;
-    return true;
-  } else if (type == "adjustSelection") {
-    *out = ui::MENU_SOURCE_ADJUST_SELECTION;
-    return true;
-  } else if (type == "adjustSelectionReset") {
-    *out = ui::MENU_SOURCE_ADJUST_SELECTION_RESET;
-    return true;
-  } else if (type == "none") {
-    *out = ui::MENU_SOURCE_NONE;
-    return true;
-  }
-
-  return false;
+  return FromV8WithLookup(isolate, val, MenuSourceTypes, out);
 }
 
 // static
@@ -293,6 +252,10 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "display-capture");
     case blink::PermissionType::TOP_LEVEL_STORAGE_ACCESS:
       return StringToV8(isolate, "top-level-storage-access");
+    case blink::PermissionType::CAPTURED_SURFACE_CONTROL:
+      return StringToV8(isolate, "captured-surface-control");
+    case blink::PermissionType::SMART_CARD:
+      return StringToV8(isolate, "smart-card");
     case blink::PermissionType::NUM:
       break;
   }
@@ -323,7 +286,7 @@ bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 content::StopFindAction* out) {
   using Val = content::StopFindAction;
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+      base::MakeFixedFlatMap<base::StringPiece, Val>({
           {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
           {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
           {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},

@@ -23,7 +23,7 @@ called with a `response` object when `listener` has done its work.
 
 An example of adding `User-Agent` header for requests:
 
-```javascript
+```js
 const { session } = require('electron')
 
 // Modify the user agent for all requests to the following urls.

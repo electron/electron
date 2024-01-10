@@ -6,6 +6,8 @@ module node.mojom;
 
 import "mojo/public/mojom/base/file_path.mojom";
 import "sandbox/policy/mojom/sandbox.mojom";
+import "services/network/public/mojom/host_resolver.mojom";
+import "services/network/public/mojom/url_loader_factory.mojom";
 import "third_party/blink/public/mojom/messaging/message_port_descriptor.mojom";
 
 struct NodeServiceParams {
@@ -13,6 +15,8 @@ struct NodeServiceParams {
   array<string> args;
   array<string> exec_args;
   blink.mojom.MessagePortDescriptor port;
+  pending_remote<network.mojom.URLLoaderFactory> url_loader_factory;
+  pending_remote<network.mojom.HostResolver> host_resolver;
 };
 
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]

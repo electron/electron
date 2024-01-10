@@ -10,7 +10,7 @@ certain properties and methods (e.g. `webFrame.firstChild`).
 
 An example of zooming current page to 200%.
 
-```javascript
+```js
 const { webFrame } = require('electron')
 
 webFrame.setZoomFactor(2)
@@ -96,7 +96,7 @@ with an array of misspelt words when complete.
 
 An example of using [node-spellchecker][spellchecker] as provider:
 
-```javascript @ts-expect-error=[2,6]
+```js @ts-expect-error=[2,6]
 const { webFrame } = require('electron')
 const spellChecker = require('spellchecker')
 webFrame.setSpellCheckProvider('en-US', {
@@ -205,14 +205,14 @@ Returns `Object`:
 Returns an object describing usage information of Blink's internal memory
 caches.
 
-```javascript
+```js
 const { webFrame } = require('electron')
 console.log(webFrame.getResourceUsage())
 ```
 
 This will generate:
 
-```javascript
+```js
 {
   images: {
     count: 22,

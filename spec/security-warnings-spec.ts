@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as http from 'node:http';
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as url from 'node:url';
 
@@ -27,36 +27,27 @@ describe('security warnings', () => {
 
   before(async () => {
     // Create HTTP Server
-    server = http.createServer((request, response) => {
+    server = http.createServer(async (request, response) => {
       const uri = url.parse(request.url!).pathname!;
       let filename = path.join(__dirname, 'fixtures', 'pages', uri);
 
-      fs.stat(filename, (error, stats) => {
-        if (error) {
-          response.writeHead(404, { 'Content-Type': 'text/plain' });
-          response.end();
-          return;
-        }
-
+      try {
+        const stats = await fs.stat(filename);
         if (stats.isDirectory()) {
           filename += '/index.html';
         }
 
-        fs.readFile(filename, 'binary', (err, file) => {
-          if (err) {
-            response.writeHead(404, { 'Content-Type': 'text/plain' });
-            response.end();
-            return;
-          }
+        const file = await fs.readFile(filename, 'binary');
+        const cspHeaders = [
+          ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : [])
+        ];
+        response.writeHead(200, { 'Content-Security-Policy': cspHeaders });
+        response.write(file, 'binary');
+      } catch {
+        response.writeHead(404, { 'Content-Type': 'text/plain' });
+      }
 
-          const cspHeaders = [
-            ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : [])
-          ];
-          response.writeHead(200, { 'Content-Security-Policy': cspHeaders });
-          response.write(file, 'binary');
-          response.end();
-        });
-      });
+      response.end();
     });
 
     serverUrl = `http://localhost2:${(await listen(server)).port}`;

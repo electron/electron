@@ -17,6 +17,7 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "pdf/buildflags.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -168,7 +169,9 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
                                   &schemes->cors_enabled_schemes);
   }
 
-  schemes->service_worker_schemes.emplace_back(url::kFileScheme);
+  if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {
+    schemes->service_worker_schemes.emplace_back(url::kFileScheme);
+  }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   schemes->standard_schemes.push_back(extensions::kExtensionScheme);

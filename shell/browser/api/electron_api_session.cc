@@ -281,7 +281,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       url_chain, GURL(),
       content::StoragePartitionConfig::CreateDefault(
           download_manager->GetBrowserContext()),
-      GURL(), GURL(), absl::nullopt, mime_type, mime_type, start_time,
+      GURL(), GURL(), std::nullopt, mime_type, mime_type, start_time,
       base::Time(), etag, last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
@@ -432,7 +432,7 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
 
 v8::Local<v8::Promise> Session::ResolveHost(
     std::string host,
-    absl::optional<network::mojom::ResolveHostParametersPtr> params) {
+    std::optional<network::mojom::ResolveHostParametersPtr> params) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -441,7 +441,7 @@ v8::Local<v8::Promise> Session::ResolveHost(
       params ? std::move(params.value()) : nullptr,
       base::BindOnce(
           [](gin_helper::Promise<gin_helper::Dictionary> promise,
-             int64_t net_error, const absl::optional<net::AddressList>& addrs) {
+             int64_t net_error, const std::optional<net::AddressList>& addrs) {
             if (net_error < 0) {
               promise.RejectWithErrorMessage(net::ErrorToString(net_error));
             } else {
@@ -1271,7 +1271,7 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
 }
 
 // static
-absl::optional<gin::Handle<Session>> Session::FromPath(
+std::optional<gin::Handle<Session>> Session::FromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
     base::Value::Dict options) {
@@ -1280,12 +1280,12 @@ absl::optional<gin::Handle<Session>> Session::FromPath(
   if (path.empty()) {
     gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
     promise.RejectWithErrorMessage("An empty path was specified");
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (!path.IsAbsolute()) {
     gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
     promise.RejectWithErrorMessage("An absolute path was not provided");
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   browser_context =
@@ -1410,7 +1410,7 @@ v8::Local<v8::Value> FromPath(const base::FilePath& path,
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  absl::optional<gin::Handle<Session>> session_handle =
+  std::optional<gin::Handle<Session>> session_handle =
       Session::FromPath(args->isolate(), path, std::move(options));
 
   if (session_handle)

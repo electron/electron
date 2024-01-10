@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
-```javascript
+```js
 const { app, protocol, net } = require('electron')
 
 app.whenReady().then(() => {
@@ -31,7 +31,7 @@ a different session and your custom protocol will not work if you just use
 To have your custom protocol work in combination with a custom session, you need
 to register it to that session explicitly.
 
-```javascript
+```js
 const { app, BrowserWindow, net, protocol, session } = require('electron')
 const path = require('node:path')
 const url = require('url')
@@ -61,13 +61,14 @@ The `protocol` module has the following methods:
 module gets emitted and can be called only once.
 
 Registers the `scheme` as standard, secure, bypasses content security policy for
-resources, allows registering ServiceWorker, supports fetch API, and streaming
-video/audio. Specify a privilege with the value of `true` to enable the capability.
+resources, allows registering ServiceWorker, supports fetch API, streaming
+video/audio, and V8 code cache. Specify a privilege with the value of `true` to
+enable the capability.
 
 An example of registering a privileged scheme, that bypasses Content Security
 Policy:
 
-```javascript
+```js
 const { protocol } = require('electron')
 protocol.registerSchemesAsPrivileged([
   { scheme: 'foo', privileges: { bypassCSP: true } }
@@ -122,7 +123,7 @@ Example:
 
 ```js
 const { app, net, protocol } = require('electron')
-const { join } = require('node:path')
+const path = require('node:path')
 const { pathToFileURL } = require('url')
 
 protocol.registerSchemesAsPrivileged([
@@ -145,9 +146,19 @@ app.whenReady().then(() => {
           headers: { 'content-type': 'text/html' }
         })
       }
-      // NB, this does not check for paths that escape the bundle, e.g.
+      // NB, this checks for paths that escape the bundle, e.g.
       // app://bundle/../../secret_file.txt
-      return net.fetch(pathToFileURL(join(__dirname, pathname)).toString())
+      const pathToServe = path.resolve(__dirname, pathname)
+      const relativePath = path.relative(__dirname, pathToServe)
+      const isSafe = relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
+      if (!isSafe) {
+        return new Response('bad', {
+          status: 400,
+          headers: { 'content-type': 'text/html' }
+        })
+      }
+
+      return net.fetch(pathToFileURL(pathToServe).toString())
     } else if (host === 'api') {
       return net.fetch('https://api.my-server.com/' + pathname, {
         method: req.method,
@@ -212,7 +223,7 @@ property.
 
 Example:
 
-```javascript
+```js
 protocol.registerBufferProtocol('atom', (request, callback) => {
   callback({ mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>') })
 })
@@ -267,7 +278,7 @@ has the `data` property.
 
 Example:
 
-```javascript
+```js
 const { protocol } = require('electron')
 const { PassThrough } = require('stream')
 
@@ -292,7 +303,7 @@ protocol.registerStreamProtocol('atom', (request, callback) => {
 It is possible to pass any object that implements the readable stream API (emits
 `data`/`end`/`error` events). For example, here's how a file could be returned:
 
-```javascript
+```js
 protocol.registerStreamProtocol('atom', (request, callback) => {
   callback(fs.createReadStream('index.html'))
 })

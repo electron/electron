@@ -10,45 +10,50 @@ parameters.
 This should be upstreamed.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 4d4b59916bfdb203702c4e878ff2659b79de8c52..6451464c9fb411a1988bada86eabb4071ee07eb0 100644
+index f3cda64beaa1403cb33f1b0bd8089f3dfcbfc8b9..77386bd234d0b49b122f1de3d27b1a92da5d0ea4 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -435,6 +435,22 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(
-   return maybe;
+@@ -482,6 +482,18 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+   return fn->Call(context, undefined, argc, argv);
  }
  
 +MaybeLocal<Function> BuiltinLoader::LookupAndCompile(
 +    Local<Context> context,
 +    const char* id,
 +    std::vector<Local<String>>* parameters,
-+    Environment* optional_env) {
-+  Result result;
++    Realm* optional_realm) {
 +  Isolate* isolate = context->GetIsolate();
 +
-+  MaybeLocal<Function> maybe = GetInstance()->LookupAndCompileInternal(
-+      context, id, parameters, &result);
-+  if (optional_env != nullptr) {
-+    RecordResult(id, result, optional_env);
-+  }
++  MaybeLocal<Function> maybe = LookupAndCompileInternal(
++      context, id, parameters, optional_realm);
 +  return maybe;
 +}
 +
  bool BuiltinLoader::CompileAllBuiltins(Local<Context> context) {
-   BuiltinLoader* loader = GetInstance();
-   std::vector<std::string> ids = loader->GetBuiltinIds();
+   std::vector<std::string_view> ids = GetBuiltinIds();
+   bool all_succeeded = true;
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 8d9f7c409659a30747e5feeac6cfec4208791370..34a51c3e5a79154c3633143b352aa9e108497767 100644
+index 11d10f52b7c492bfae4bc58b39c20a693762a72d..b995e15fcd795f310126a38ec652efcd9fd36945 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
-@@ -50,6 +50,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
-       v8::Local<v8::Context> context,
-       const char* id,
-       Environment* optional_env);
-+  static v8::MaybeLocal<v8::Function> LookupAndCompile(
+@@ -99,6 +99,12 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+                                                 const char* id,
+                                                 Realm* optional_realm);
+ 
++  v8::MaybeLocal<v8::Function> LookupAndCompile(
 +      v8::Local<v8::Context> context,
 +      const char* id,
 +      std::vector<v8::Local<v8::String>>* parameters,
-+      Environment* optional_env);
++      Realm* optional_realm);
++
+   v8::MaybeLocal<v8::Value> CompileAndCall(v8::Local<v8::Context> context,
+                                            const char* id,
+                                            int argc,
+@@ -109,6 +115,7 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+                                            const char* id,
+                                            Realm* realm);
  
-   static v8::Local<v8::Object> GetSourceObject(v8::Local<v8::Context> context);
++
    // Returns config.gypi as a JSON string
+   v8::Local<v8::String> GetConfigString(v8::Isolate* isolate);
+   bool Exists(const char* id);

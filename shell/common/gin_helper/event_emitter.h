@@ -21,7 +21,7 @@ class RenderFrameHost;
 
 namespace gin_helper {
 
-// Provide helperers to emit event in JavaScript.
+// Provide helpers to emit event in JavaScript.
 template <typename T>
 class EventEmitter : public gin_helper::Wrappable<T> {
  public:

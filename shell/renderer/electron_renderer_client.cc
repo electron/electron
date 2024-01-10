@@ -46,9 +46,11 @@ void ElectronRendererClient::RunScriptsAtDocumentStart(
   // Inform the document start phase.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
-  if (env)
+  if (env) {
+    v8::Context::Scope context_scope(env->context());
     gin_helper::EmitEvent(env->isolate(), env->process_object(),
                           "document-start");
+  }
 }
 
 void ElectronRendererClient::RunScriptsAtDocumentEnd(
@@ -57,9 +59,11 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
   // Inform the document end phase.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
-  if (env)
+  if (env) {
+    v8::Context::Scope context_scope(env->context());
     gin_helper::EmitEvent(env->isolate(), env->process_object(),
                           "document-end");
+  }
 }
 
 void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {

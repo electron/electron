@@ -1,0 +1,370 @@
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+[
+  {
+    "namespace": "browserAction",
+    "description": "Use browser actions to put icons in the main Google Chrome toolbar, to the right of the address bar. In addition to its <a href='browserAction#icon'>icon</a>, a browser action can have a <a href='browserAction#tooltip'>tooltip</a>, a <a href='browserAction#badge'>badge</a>, and a <a href='browserAction#popups'>popup</a>.",
+    "compiler_options": {
+      "implemented_in": "electron/shell/browser/extensions/api/extension_action/extension_action_api.h"
+    },
+    "types": [
+      {
+        "id": "ColorArray",
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "minItems": 4,
+        "maxItems": 4
+      },
+      {
+        "id": "ImageDataType",
+        "type": "object",
+        "isInstanceOf": "ImageData",
+        "additionalProperties": {
+          "type": "any"
+        },
+        "description": "Pixel data for an image. Must be an ImageData object; for example, from a <code>canvas</code> element."
+      },
+      {
+        "id": "TabDetails",
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "type": "integer",
+            "optional": true,
+            "minimum": 0,
+            "description": "The ID of the tab to query state for. If no tab is specified, the non-tab-specific state is returned."
+          }
+        }
+      }
+    ],
+    "functions": [
+      {
+        "name": "setTitle",
+        "type": "function",
+        "description": "Sets the title of the browser action. This title appears in the tooltip.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "The string the browser action should display when moused over."
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getTitle",
+        "type": "function",
+        "description": "Gets the title of the browser action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setIcon",
+        "type": "function",
+        "description": "Sets the icon for the browser action. The icon can be specified as the path to an image file, as the pixel data from a canvas element, or as a dictionary of one of those. Either the <code>path</code> or the <code>imageData</code> property must be specified.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "imageData": {
+                "choices": [
+                  {
+                    "$ref": "ImageDataType"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "any"
+                    }
+                  }
+                ],
+                "optional": true,
+                "description": "Either an ImageData object or a dictionary {size -> ImageData} representing an icon to be set. If the icon is specified as a dictionary, the image used is chosen depending on the screen's pixel density. If the number of image pixels that fit into one screen space unit equals <code>scale</code>, then an image with size <code>scale</code> * n is selected, where <i>n</i> is the size of the icon in the UI. At least one image must be specified. Note that 'details.imageData = foo' is equivalent to 'details.imageData = {'16': foo}'"
+              },
+              "path": {
+                "choices": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "any"
+                    }
+                  }
+                ],
+                "optional": true,
+                "description": "Either a relative image path or a dictionary {size -> relative image path} pointing to an icon to be set. If the icon is specified as a dictionary, the image used is chosen depending on the screen's pixel density. If the number of image pixels that fit into one screen space unit equals <code>scale</code>, then an image with size <code>scale</code> * n is selected, where <i>n</i> is the size of the icon in the UI. At least one image must be specified. Note that 'details.path = foo' is equivalent to 'details.path = {'16': foo}'"
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "parameters": []
+        }
+      },
+      {
+        "name": "setPopup",
+        "type": "function",
+        "description": "Sets the HTML document to be opened as a popup when the user clicks the browser action icon.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              },
+              "popup": {
+                "type": "string",
+                "description": "The relative path to the HTML file to show in a popup. If set to the empty string (<code>''</code>), no popup is shown."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getPopup",
+        "type": "function",
+        "description": "Gets the HTML document that is set as the popup for this browser action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setBadgeText",
+        "type": "function",
+        "description": "Sets the badge text for the browser action. The badge is displayed on top of the icon.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "optional": true,
+                "description": "Any number of characters can be passed, but only about four can fit into the space. If an empty string (<code>''</code>) is passed, the badge text is cleared.  If <code>tabId</code> is specified and <code>text</code> is null, the text for the specified tab is cleared and defaults to the global badge text."
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getBadgeText",
+        "type": "function",
+        "description": "Gets the badge text of the browser action. If no tab is specified, the non-tab-specific badge text is returned.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "name": "setBadgeBackgroundColor",
+        "type": "function",
+        "description": "Sets the background color for the badge.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "color": {
+                "description": "An array of four integers in the range 0-255 that make up the RGBA color of the badge. Can also be a string with a CSS hex color value; for example, <code>#FF0000</code> or <code>#F00</code> (red). Renders colors at full opacity.",
+                "choices": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "ColorArray"
+                  }
+                ]
+              },
+              "tabId": {
+                "type": "integer",
+                "optional": true,
+                "description": "Limits the change to when a particular tab is selected. Automatically resets when the tab is closed."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "getBadgeBackgroundColor",
+        "type": "function",
+        "description": "Gets the background color of the browser action.",
+        "parameters": [
+          {
+            "name": "details",
+            "$ref": "TabDetails"
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "$ref": "ColorArray"
+            }
+          ]
+        }
+      },
+      {
+        "name": "enable",
+        "type": "function",
+        "description": "Enables the browser action for a tab. Defaults to enabled.",
+        "parameters": [
+          {
+            "type": "integer",
+            "optional": true,
+            "name": "tabId",
+            "minimum": 0,
+            "description": "The ID of the tab for which to modify the browser action."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "disable",
+        "type": "function",
+        "description": "Disables the browser action for a tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "optional": true,
+            "name": "tabId",
+            "minimum": 0,
+            "description": "The ID of the tab for which to modify the browser action."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [],
+          "optional": true
+        }
+      },
+      {
+        "name": "openPopup",
+        "type": "function",
+        "description": "Opens the extension popup window in the active window but does not grant tab permissions.",
+        "nodoc": true,
+        "parameters": [],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "popupView",
+              "type": "object",
+              "optional": true,
+              "description": "JavaScript 'window' object for the popup window if it was succesfully opened.",
+              "additionalProperties": {
+                "type": "any"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "events": [
+      {
+        "name": "onClicked",
+        "type": "function",
+        "description": "Fired when a browser action icon is clicked. Does not fire if the browser action has a popup.",
+        "parameters": [
+          {
+            "name": "tab",
+            "$ref": "tabs.Tab"
+          }
+        ]
+      }
+    ]
+  }
+]

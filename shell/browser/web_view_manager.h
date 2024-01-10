@@ -5,8 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_VIEW_MANAGER_H_
 #define ELECTRON_SHELL_BROWSER_WEB_VIEW_MANAGER_H_
 
-#include <map>
-
+#include "base/containers/flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 
@@ -30,7 +29,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
   // content::BrowserPluginGuestManager:
   bool ForEachGuest(content::WebContents* embedder,
-                    const GuestCallback& callback) override;
+                    base::FunctionRef<bool(content::WebContents*)> fn) override;
 
  private:
   struct WebContentsWithEmbedder {
@@ -38,7 +37,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     raw_ptr<content::WebContents> embedder;
   };
   // guest_instance_id => (web_contents, embedder)
-  std::map<int, WebContentsWithEmbedder> web_contents_embedder_map_;
+  base::flat_map<int, WebContentsWithEmbedder> web_contents_embedder_map_;
 };
 
 }  // namespace electron

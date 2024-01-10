@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 10 Nov 2023 22:51:53 +0900
+Subject: Remove AllCan Read/Write
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/5006387
+Should be upstreamed.
+
+Module version checks are made against 119 since that is the current assigned version
+for Electron 28 in https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json.
+The version should be updateed to the one assinged for Electron 29 when it is available.
+
+Steps for upstreaming this patch:
+
+- Get a new module version assigned for Electron 29 in nodejs/node
+- Update NODE_21_0_MODULE_VERSION to the new version number
+- Upstream patch to nodejs/nan before Electron 29 is branched
+
+diff --git a/nan.h b/nan.h
+index 2a68349448c163fa29af327a03b11678e61f5789..2be1b4f573948024f5777fc6801126b3e799ef11 100644
+--- a/nan.h
++++ b/nan.h
+@@ -47,6 +47,7 @@
+ #define NODE_18_0_MODULE_VERSION 108
+ #define NODE_19_0_MODULE_VERSION 111
+ #define NODE_20_0_MODULE_VERSION 115
++#define NODE_21_0_MODULE_VERSION 119
+ 
+ #ifdef _MSC_VER
+ # define NAN_HAS_CPLUSPLUS_11 (_MSC_VER >= 1800)
+@@ -2517,7 +2518,9 @@ NAN_DEPRECATED inline void SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter
+   , v8::Local<v8::Value> data
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+   , v8::AccessControl settings
++#endif
+   , v8::PropertyAttribute attribute
+   , imp::Sig signature) {
+   HandleScope scope;
+@@ -2550,7 +2553,9 @@ NAN_DEPRECATED inline void SetAccessor(
+     , getter_
+     , setter_
+     , obj
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+     , settings
++#endif
+     , attribute
+ #if (NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION)
+     , signature
+@@ -2564,7 +2569,9 @@ inline void SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter = 0
+   , v8::Local<v8::Value> data = v8::Local<v8::Value>()
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+   , v8::AccessControl settings = v8::DEFAULT
++#endif
+   , v8::PropertyAttribute attribute = v8::None) {
+   HandleScope scope;
+ 
+@@ -2596,7 +2603,9 @@ inline void SetAccessor(
+     , getter_
+     , setter_
+     , obj
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+     , settings
++#endif
+     , attribute
+   );
+ }
+@@ -2634,7 +2643,15 @@ inline bool SetAccessor(
+       , New<v8::External>(reinterpret_cast<void *>(setter)));
+   }
+ 
+-#if (NODE_MODULE_VERSION >= NODE_6_0_MODULE_VERSION)
++#if (NODE_MODULE_VERSION >= NODE_21_0_MODULE_VERSION)
++  return obj->SetNativeDataProperty(
++      GetCurrentContext()
++    , name
++    , getter_
++    , setter_
++    , dataobj
++    , attribute).FromMaybe(false);
++#elif (NODE_MODULE_VERSION >= NODE_6_0_MODULE_VERSION)
+   return obj->SetAccessor(
+       GetCurrentContext()
+     , name

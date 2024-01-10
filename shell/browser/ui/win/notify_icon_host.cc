@@ -86,15 +86,15 @@ class NotifyIconHost::MouseEnteredExitedDetector {
       SendExitedEvent();
     }
 
-    // If timer is runnig then cursor is arelady over icon and
-    // CheckCursorPositionOverIcon will be repeadly checking when to send
+    // If timer is running then cursor is already over icon and
+    // CheckCursorPositionOverIcon will be repeatedly checking when to send
     // mouse exited event.
     if (mouse_exit_timer_.IsRunning())
       return;
 
     SendEnteredEvent(icon);
 
-    // Start repeadly checking when to send mouse exited event.
+    // Start repeatedly checking when to send mouse exited event.
     StartObservingIcon(icon);
   }
 
@@ -191,7 +191,7 @@ NotifyIconHost::~NotifyIconHost() {
     delete ptr;
 }
 
-NotifyIcon* NotifyIconHost::CreateNotifyIcon(absl::optional<UUID> guid) {
+NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<UUID> guid) {
   if (guid.has_value()) {
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {

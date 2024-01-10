@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <optional>
 #include <utility>
 
 #include "base/functional/bind.h"
@@ -15,7 +16,6 @@
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
 // 1. Support for additional types of arguments.
@@ -96,13 +96,13 @@ bool GetNextArgument(gin::Arguments* args,
   }
 }
 
-// Support absl::optional as output, which would be empty and do not throw error
+// Support std::optional as output, which would be empty and do not throw error
 // when conversion to T fails.
 template <typename T>
 bool GetNextArgument(gin::Arguments* args,
                      int create_flags,
                      bool is_first,
-                     absl::optional<T>* result) {
+                     std::optional<T>* result) {
   T converted;
   // Use gin::Arguments::GetNext which always advances |next| counter.
   if (args->GetNext(&converted))

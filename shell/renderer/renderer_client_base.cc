@@ -19,6 +19,7 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -275,10 +276,19 @@ void RendererClientBase::RenderThreadStarted() {
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
+  std::vector<std::string> code_cache_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);
+  for (const auto& scheme : code_cache_schemes_list) {
+    blink::WebSecurityPolicy::RegisterURLSchemeAsCodeCacheWithHashing(
+        blink::WebString::FromASCII(scheme));
+  }
+
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
-  blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
-  blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
+  if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {
+    blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
+    blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
+  }
 
 #if BUILDFLAG(IS_WIN)
   // Set ApplicationUserModelID in renderer process.
@@ -328,12 +338,13 @@ void RendererClientBase::RenderFrameCreated(
       ->AddInterface<extensions::mojom::MimeHandlerViewContainerManager>(
           base::BindRepeating(
               &extensions::MimeHandlerViewContainerManager::BindReceiver,
-              render_frame->GetRoutingID()));
+              base::Unretained(render_frame)));
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (render_frame->GetBlinkPreferences().enable_spellcheck)
-    new SpellCheckProvider(render_frame, spellcheck_.get(), this);
+  if (render_frame->GetBlinkPreferences().enable_spellcheck) {
+    new SpellCheckProvider(render_frame, spellcheck_.get());
+  }
 #endif
 }
 
@@ -622,7 +633,7 @@ void RendererClientBase::SetupMainWorldOverrides(
       isolated_api.GetHandle()};
 
   util::CompileAndCall(context, "electron/js2c/isolated_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
+                       &isolated_bundle_params, &isolated_bundle_args);
 }
 
 // static

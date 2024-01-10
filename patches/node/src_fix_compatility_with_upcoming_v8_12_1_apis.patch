@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Mon, 13 Nov 2023 22:01:07 +0900
+Subject: src: fix compatility with upcoming V8 12.1 APIs
+
+In the upcoming V8 11.10 there are a few API changes will break
+building of Node, this PR makes the code compatible with both old
+and new APIs.
+
+This PR is needed because [V8's node-ci repo](https://chromium.googlesource.com/v8/node-ci/)
+tests latest Node with latest V8, and without this change V8 has to patch Node in
+their own fork.
+
+diff --git a/src/env-inl.h b/src/env-inl.h
+index e248a144b905a6c7c166796cddfe8442f8dc7158..524a9633ef16e48797dc6a1e507ca0be2bfffe7e 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -779,9 +779,14 @@ inline void Environment::ThrowRangeError(const char* errmsg) {
+   ThrowError(v8::Exception::RangeError, errmsg);
+ }
+ 
+-inline void Environment::ThrowError(
+-    v8::Local<v8::Value> (*fun)(v8::Local<v8::String>, v8::Local<v8::Value>),
+-    const char* errmsg) {
++inline void Environment::ThrowError(V8ExceptionConstructorOld fun,
++                                    const char* errmsg) {
++  v8::HandleScope handle_scope(isolate());
++  isolate()->ThrowException(fun(OneByteString(isolate(), errmsg)));
++ }
++
++inline void Environment::ThrowError(V8ExceptionConstructorNew fun,
++                                    const char* errmsg) {
+   v8::HandleScope handle_scope(isolate());
+   isolate()->ThrowException(fun(OneByteString(isolate(), errmsg), {}));
+ }
+diff --git a/src/env.h b/src/env.h
+index c9a455be8c395a2f231f56e0a54211466362aa1d..448075e354c760a2dbd1dd763f40b7a645730250 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1017,8 +1017,14 @@ class Environment : public MemoryRetainer {
+   };
+ 
+  private:
+-  inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>, v8::Local<v8::Value>),
+-                         const char* errmsg);
++  // V8 has changed the constructor of exceptions, support both APIs before Node
++  // updates to V8 12.1.
++  using V8ExceptionConstructorOld =
++      v8::Local<v8::Value> (*)(v8::Local<v8::String>);
++  using V8ExceptionConstructorNew =
++      v8::Local<v8::Value> (*)(v8::Local<v8::String>, v8::Local<v8::Value>);
++  inline void ThrowError(V8ExceptionConstructorOld fun, const char* errmsg);
++  inline void ThrowError(V8ExceptionConstructorNew fun, const char* errmsg);
+   void TrackContext(v8::Local<v8::Context> context);
+   void UntrackContext(v8::Local<v8::Context> context);
+ 
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index f08294a26a43923cfb47dde080e42b5cde0803a5..8d48105cb4822dde19982ce1c132f521ff8b27c9 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -961,11 +961,8 @@ napi_define_class(napi_env env,
+             env, p->setter, p->data, &setter_tpl));
+       }
+ 
+-      tpl->PrototypeTemplate()->SetAccessorProperty(property_name,
+-                                                    getter_tpl,
+-                                                    setter_tpl,
+-                                                    attributes,
+-                                                    v8::AccessControl::DEFAULT);
++      tpl->PrototypeTemplate()->SetAccessorProperty(
++          property_name, getter_tpl, setter_tpl, attributes);
+     } else if (p->method != nullptr) {
+       v8::Local<v8::FunctionTemplate> t;
+       STATUS_CALL(v8impl::FunctionCallbackWrapper::NewTemplate(
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index 77386bd234d0b49b122f1de3d27b1a92da5d0ea4..6861c28eb6deea72e844b04048d88ca726385c7f 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -693,37 +693,38 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+                                                Local<ObjectTemplate> target) {
+   Isolate* isolate = isolate_data->isolate();
+ 
+-  target->SetAccessor(isolate_data->config_string(),
+-                      ConfigStringGetter,
+-                      nullptr,
+-                      Local<Value>(),
+-                      DEFAULT,
+-                      None,
+-                      SideEffectType::kHasNoSideEffect);
+-
+-  target->SetAccessor(FIXED_ONE_BYTE_STRING(isolate, "builtinIds"),
+-                      BuiltinIdsGetter,
+-                      nullptr,
+-                      Local<Value>(),
+-                      DEFAULT,
+-                      None,
+-                      SideEffectType::kHasNoSideEffect);
+-
+-  target->SetAccessor(FIXED_ONE_BYTE_STRING(isolate, "builtinCategories"),
+-                      GetBuiltinCategories,
+-                      nullptr,
+-                      Local<Value>(),
+-                      DEFAULT,
+-                      None,
+-                      SideEffectType::kHasNoSideEffect);
+-
+-  target->SetAccessor(FIXED_ONE_BYTE_STRING(isolate, "natives"),
+-                      GetNatives,
+-                      nullptr,
+-                      Local<Value>(),
+-                      DEFAULT,
+-                      None,
+-                      SideEffectType::kHasNoSideEffect);
++  target->SetNativeDataProperty(isolate_data->config_string(),
++                                ConfigStringGetter,
++                                nullptr,
++                                Local<Value>(),
++                                None,
++                                DEFAULT,
++                                SideEffectType::kHasNoSideEffect);
++
++  target->SetNativeDataProperty(FIXED_ONE_BYTE_STRING(isolate, "builtinIds"),
++                                BuiltinIdsGetter,
++                                nullptr,
++                                Local<Value>(),
++                                None,
++                                DEFAULT,
++                                SideEffectType::kHasNoSideEffect);
++
++  target->SetNativeDataProperty(
++      FIXED_ONE_BYTE_STRING(isolate, "builtinCategories"),
++      GetBuiltinCategories,
++      nullptr,
++      Local<Value>(),
++      None,
++      DEFAULT,
++      SideEffectType::kHasNoSideEffect);
++
++  target->SetNativeDataProperty(FIXED_ONE_BYTE_STRING(isolate, "natives"),
++                                GetNatives,
++                                nullptr,
++                                Local<Value>(),
++                                None,
++                                DEFAULT,
++                                SideEffectType::kHasNoSideEffect);
+ 
+   SetMethod(isolate, target, "getCacheUsage", BuiltinLoader::GetCacheUsage);
+   SetMethod(isolate, target, "compileFunction", BuiltinLoader::CompileFunction);

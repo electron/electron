@@ -56,6 +56,7 @@
 #include "content/public/common/url_constants.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
@@ -136,6 +137,7 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spell_check_host_chrome_impl.h"  // nogncheck
+#include "chrome/browser/spellchecker/spell_check_initialization_host_impl.h"  // nogncheck
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
 #endif
 
@@ -150,13 +152,11 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
-#include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_host.h"
-#include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
@@ -176,7 +176,6 @@
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
 #include "extensions/common/switches.h"
-#include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -384,20 +383,6 @@ bool ElectronBrowserClient::IsRendererSubFrame(int process_id) const {
 
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
-  // When a render process is crashed, it might be reused.
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  int process_id = host->GetID();
-
-  auto* browser_context = host->GetBrowserContext();
-
-  host->AddFilter(
-      new extensions::ExtensionMessageFilter(process_id, browser_context));
-  host->AddFilter(
-      new ElectronExtensionMessageFilter(process_id, browser_context));
-  host->AddFilter(
-      new extensions::MessagingAPIMessageFilter(process_id, browser_context));
-#endif
-
   // Remove in case the host is reused after a crash, otherwise noop.
   host->RemoveObserver(this);
 
@@ -425,8 +410,10 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
   prefs->databases_enabled = true;
-  prefs->allow_universal_access_from_file_urls = true;
-  prefs->allow_file_access_from_file_urls = true;
+  prefs->allow_universal_access_from_file_urls =
+      electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
+  prefs->allow_file_access_from_file_urls =
+      electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
   prefs->webgl1_enabled = true;
   prefs->webgl2_enabled = true;
   prefs->allow_running_insecure_content = false;
@@ -540,7 +527,8 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         switches::kStandardSchemes,      switches::kEnableSandbox,
         switches::kSecureSchemes,        switches::kBypassCSPSchemes,
         switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kStreamingSchemes};
+        switches::kServiceWorkerSchemes, switches::kStreamingSchemes,
+        switches::kCodeCacheSchemes};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames);
     if (process_type == ::switches::kUtilityProcess ||
@@ -708,7 +696,7 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
 
 void ElectronBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
-  auto schemes_list = api::GetStandardSchemes();
+  const auto& schemes_list = api::GetStandardSchemes();
   if (!schemes_list.empty())
     additional_schemes->insert(additional_schemes->end(), schemes_list.begin(),
                                schemes_list.end());
@@ -936,7 +924,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     network::mojom::WebSandboxFlags sandbox_flags,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    const absl::optional<url::Origin>& initiating_origin,
+    const std::optional<url::Origin>& initiating_origin,
     content::RenderFrameHost* initiator_document,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   content::GetUIThreadTaskRunner({})->PostTask(
@@ -1051,7 +1039,6 @@ blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
-    ukm::SourceIdObj ukm_source_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
@@ -1060,8 +1047,7 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
-          context, ukm_source_id,
-          false /* we don't support extensions::WebViewGuest */));
+          context, false /* we don't support extensions::WebViewGuest */));
 #endif
   // Always allow navigating to file:// URLs.
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
@@ -1143,7 +1129,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
-    const absl::optional<url::Origin>& request_initiator_origin,
+    const std::optional<url::Origin>& request_initiator_origin,
     NonNetworkURLLoaderFactoryMap* factories) {
   auto* render_process_host =
       content::RenderProcessHost::FromID(render_process_id);
@@ -1279,7 +1265,7 @@ void ElectronBrowserClient::CreateWebSocket(
     WebSocketFactory factory,
     const GURL& url,
     const net::SiteForCookies& site_for_cookies,
-    const absl::optional<std::string>& user_agent,
+    const std::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1316,7 +1302,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     int render_process_id,
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
-    absl::optional<int64_t> navigation_id,
+    std::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
@@ -1410,8 +1396,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
   if (factory_params->top_frame_id) {
     // Bypass CORB and CORS when web security is disabled.
     auto* rfh = content::RenderFrameHost::FromFrameToken(
-        factory_params->process_id,
-        blink::LocalFrameToken(factory_params->top_frame_id.value()));
+        content::GlobalRenderFrameHostToken(
+            factory_params->process_id,
+            blink::LocalFrameToken(factory_params->top_frame_id.value())));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
     if (prefs && !prefs->IsWebSecurityEnabled()) {
@@ -1422,6 +1409,19 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
+#endif
+}
+
+void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
+    const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
+    blink::AssociatedInterfaceRegistry& associated_registry) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  associated_registry.AddInterface<extensions::mojom::RendererHost>(
+      base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
+                          service_worker_version_info.process_id));
+  associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
+      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
+                          service_worker_version_info.process_id));
 #endif
 }
 
@@ -1481,6 +1481,13 @@ void ElectronBrowserClient::
           &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  int render_process_id = render_frame_host.GetProcess()->GetID();
+  associated_registry.AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
+                          render_process_id));
+  associated_registry.AddInterface<extensions::mojom::RendererHost>(
+      base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
+                          render_process_id));
   associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -1524,9 +1531,10 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
-    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
-                                     std::move(host_receiver));
+  if (auto host_receiver =
+          receiver.As<spellcheck::mojom::SpellCheckInitializationHost>()) {
+    SpellCheckInitializationHostImpl::Create(render_process_host->GetID(),
+                                             std::move(host_receiver));
     return;
   }
 #endif
@@ -1568,14 +1576,8 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
     blink::AssociatedInterfaceRegistry* associated_registry,
     content::RenderProcessHost* render_process_host) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  associated_registry->AddInterface<extensions::mojom::EventRouter>(
-      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
-                          render_process_host->GetID()));
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
-                          render_process_host->GetID()));
-  associated_registry->AddInterface<extensions::mojom::ServiceWorkerHost>(
-      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
                           render_process_host->GetID()));
 #endif
 }
@@ -1589,6 +1591,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
       &content::KeyboardLockServiceImpl::CreateMojoService));
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  map->Add<spellcheck::mojom::SpellCheckHost>(base::BindRepeating(
+      [](content::RenderFrameHost* frame_host,
+         mojo::PendingReceiver<spellcheck::mojom::SpellCheckHost> receiver) {
+        SpellCheckHostChromeImpl::Create(frame_host->GetProcess()->GetID(),
+                                         std::move(receiver));
+      }));
+#endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));

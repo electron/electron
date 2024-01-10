@@ -4,11 +4,11 @@
 
 #include "shell/browser/api/electron_api_desktop_capturer.h"
 
-#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
@@ -25,36 +25,29 @@
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
-
-#if defined(USE_OZONE)
-#include "ui/ozone/buildflags.h"
-#if BUILDFLAG(OZONE_PLATFORM_X11)
-#define USE_OZONE_PLATFORM_X11
-#endif
-#endif
+#include "ui/base/ozone_buildflags.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
-#elif BUILDFLAG(IS_LINUX)
-#if defined(USE_OZONE_PLATFORM_X11)
+#elif BUILDFLAG(IS_OZONE_X11)
 #include "base/logging.h"
 #include "ui/base/x/x11_display_util.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/display/util/edid_parser.h"  // nogncheck
+#include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/randr.h"
-#include "ui/gfx/x/x11_atom_cache.h"
-#endif  // defined(USE_OZONE_PLATFORM_X11)
-#endif  // BUILDFLAG(IS_WIN)
+#endif
 
 #if BUILDFLAG(IS_LINUX)
 // Private function in ui/base/x/x11_display_util.cc
-std::map<x11::RandR::Output, int> GetMonitors(int version,
-                                              x11::RandR* randr,
-                                              x11::Window window) {
-  std::map<x11::RandR::Output, int> output_to_monitor;
-  if (version >= 105) {
+base::flat_map<x11::RandR::Output, int> GetMonitors(
+    std::pair<uint32_t, uint32_t> version,
+    x11::RandR* randr,
+    x11::Window window) {
+  base::flat_map<x11::RandR::Output, int> output_to_monitor;
+  if (version >= std::pair<uint32_t, uint32_t>{1, 5}) {
     if (auto reply = randr->GetMonitors({window}).Sync()) {
       for (size_t monitor = 0; monitor < reply->monitors.size(); monitor++) {
         for (x11::RandR::Output output : reply->monitors[monitor].outputs)
@@ -83,13 +76,12 @@ std::vector<uint8_t> GetEDIDProperty(x11::RandR* randr,
 // Find the mapping from monitor name atom to the display identifier
 // that the screen API uses. Based on the logic in BuildDisplaysFromXRandRInfo
 // in ui/base/x/x11_display_util.cc
-std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
+base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   auto* connection = x11::Connection::Get();
   auto& randr = connection->randr();
   auto x_root_window = ui::GetX11RootWindow();
-  int version = ui::GetXrandrVersion();
 
-  std::map<int32_t, uint32_t> monitor_atom_to_display;
+  base::flat_map<int32_t, uint32_t> monitor_atom_to_display;
 
   auto resources = randr.GetScreenResourcesCurrent({x_root_window}).Sync();
   if (!resources) {
@@ -97,8 +89,8 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
     return monitor_atom_to_display;
   }
 
-  std::map<x11::RandR::Output, int> output_to_monitor =
-      GetMonitors(version, &randr, x_root_window);
+  const auto output_to_monitor =
+      GetMonitors(connection->randr_version(), &randr, x_root_window);
   auto monitors_reply = randr.GetMonitors({x_root_window}).Sync();
 
   for (size_t i = 0; i < resources->outputs.size(); i++) {
@@ -235,7 +227,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
   captured_sources_.clear();
 
   if (capture_window && capture_screen) {
-    // Some capturers like PipeWire suppport a single capturer for both screens
+    // Some capturers like PipeWire support a single capturer for both screens
     // and windows. Use it if possible, treating both as window capture
     std::unique_ptr<webrtc::DesktopCapturer> desktop_capturer =
         webrtc::DesktopCapturer::CreateGenericCapturer(
@@ -388,22 +380,19 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
-#elif BUILDFLAG(IS_LINUX)
-#if defined(USE_OZONE_PLATFORM_X11)
+#elif BUILDFLAG(IS_OZONE_X11)
     // On Linux, with X11, the source id is the numeric value of the
     // display name atom and the display id is either the EDID or the
     // loop index when that display was found (see
     // BuildDisplaysFromXRandRInfo in ui/base/x/x11_display_util.cc)
-    std::map<int32_t, uint32_t> monitor_atom_to_display_id =
-        MonitorAtomIdToDisplayId();
+    const auto monitor_atom_to_display_id = MonitorAtomIdToDisplayId();
     for (auto& source : screen_sources) {
       auto display_id_iter =
           monitor_atom_to_display_id.find(source.media_list_source.id.id);
       if (display_id_iter != monitor_atom_to_display_id.end())
         source.display_id = base::NumberToString(display_id_iter->second);
     }
-#endif  // defined(USE_OZONE_PLATFORM_X11)
-#endif  // BUILDFLAG(IS_WIN)
+#endif
     std::move(screen_sources.begin(), screen_sources.end(),
               std::back_inserter(captured_sources_));
   }

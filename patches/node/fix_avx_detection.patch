@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Wed, 15 Nov 2023 13:31:14 -0800
+Subject: Fix AVX detection
+
+The old/faulty code would try to use AVX/AVX2 if either the SSE bit or
+the AVX bit were set in XCR0, but did not check if both bits were set.
+
+In most cases, this still worked, but on some machines, enabling linux
+kernel mitigations for the "gather data sampling" vulnerability results
+in only the SSE bit but not the AVX bit being set, thus resulting in an
+illegal instruction and crashing the application.
+
+Fix this by checking that both bits are set.
+
+Fixes: 4bbb590 ("Proper check of CPU's AVX2 feature support (with MSVC support)")
+Signed-off-by: Pascal Ernster <git@hardfalcon.net>
+
+Cherry-Picked from https://github.com/aklomp/base64/commit/9003f9b183327df80fda97aa82dfc8054e1d3dce
+
+diff --git a/deps/base64/base64/lib/codec_choose.c b/deps/base64/base64/lib/codec_choose.c
+index 6a07d6a74cc24f61cf2b16d13c075234d5c7e2a3..f4215f1ef9d42087ef6735e6817c714ecc43a0ca 100644
+--- a/deps/base64/base64/lib/codec_choose.c
++++ b/deps/base64/base64/lib/codec_choose.c
+@@ -194,7 +194,7 @@ codec_choose_x86 (struct codec *codec)
+ 		if (ecx & bit_XSAVE_XRSTORE) {
+ 			uint64_t xcr_mask;
+ 			xcr_mask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+-			if (xcr_mask & _XCR_XMM_AND_YMM_STATE_ENABLED_BY_OS) {
++			if ((xcr_mask & _XCR_XMM_AND_YMM_STATE_ENABLED_BY_OS) == _XCR_XMM_AND_YMM_STATE_ENABLED_BY_OS) { // check multiple bits at once
+ 				#if HAVE_AVX2
+ 				if (max_level >= 7) {
+ 					__cpuid_count(7, 0, eax, ebx, ecx, edx);

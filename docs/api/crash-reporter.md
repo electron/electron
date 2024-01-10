@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer
 The following is an example of setting up Electron to automatically submit
 crash reports to a remote server:
 
-```javascript
+```js
 const { crashReporter } = require('electron')
 
 crashReporter.start({ submitURL: 'https://your-domain.com/url-to-submit' })

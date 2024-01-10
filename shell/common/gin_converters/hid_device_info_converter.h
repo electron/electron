@@ -9,6 +9,7 @@
 #include "services/device/public/mojom/hid.mojom.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/browser/hid/hid_chooser_controller.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 namespace gin {
 
@@ -18,11 +19,11 @@ struct Converter<device::mojom::HidDeviceInfoPtr> {
       v8::Isolate* isolate,
       const device::mojom::HidDeviceInfoPtr& device) {
     base::Value value = electron::HidChooserContext::DeviceInfoToValue(*device);
-    value.GetDict().Set(
-        "deviceId",
-        electron::HidChooserController::PhysicalDeviceIdFromDeviceInfo(
-            *device));
-    return gin::ConvertToV8(isolate, value);
+    base::Value::Dict& dict = value.GetDict();
+    dict.Set("deviceId",
+             electron::HidChooserController::PhysicalDeviceIdFromDeviceInfo(
+                 *device));
+    return gin::Converter<base::Value::Dict>::ToV8(isolate, dict);
   }
 };
 

@@ -162,8 +162,19 @@ describe('esm', () => {
       });
 
       describe('with context isolation', () => {
+        let badFilePath = '';
+
+        beforeEach(async () => {
+          badFilePath = path.resolve(path.resolve(os.tmpdir(), 'bad-file.badjs'));
+          await fs.promises.writeFile(badFilePath, 'const foo = "bar";');
+        });
+
+        afterEach(async () => {
+          await fs.promises.unlink(badFilePath);
+        });
+
         it('should use nodes esm dynamic loader in the isolated context', async () => {
-          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify(hostsUrl)})`, {
+          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
             nodeIntegration: true,
             sandbox: false,
             contextIsolation: true

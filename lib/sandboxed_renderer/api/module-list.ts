@@ -18,5 +18,9 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
   {
     name: 'webFrame',
     loader: () => require('@electron/internal/renderer/api/web-frame')
+  },
+  {
+    name: 'webUtils',
+    loader: () => require('@electron/internal/renderer/api/web-utils')
   }
 ];

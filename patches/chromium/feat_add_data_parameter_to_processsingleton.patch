@@ -275,10 +275,10 @@ index 11f35769cc53b4aa111a319d155a3916f0040fa7..8e3e870eaac14ce6886878b027c7cf2e
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index b9ebe9bd3b29049c9e95f5dc54f7087515d870f6..1b9e4562347a7a0f2ae8c1bedfa2140643a28892 100644
+index fb3590431bd7986a6966bcebabfc244080870542..0c9150043279f77bcdf9f6e5bf90b97998c80e00 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -38,7 +38,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -40,7 +40,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
@@ -289,7 +289,7 @@ index b9ebe9bd3b29049c9e95f5dc54f7087515d870f6..1b9e4562347a7a0f2ae8c1bedfa21406
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -67,12 +69,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -69,12 +71,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      new_command_line.AppendSwitchNative(switches::kSourceShortcut, si.lpTitle);
  
    // Send the command line to the remote chrome window.
@@ -297,9 +297,9 @@ index b9ebe9bd3b29049c9e95f5dc54f7087515d870f6..1b9e4562347a7a0f2ae8c1bedfa21406
 +  // Format is
 +  // "START\0<current-directory>\0<command-line>\0<additional-data-length>\0<additional-data>".
    std::wstring to_send = base::StrCat(
-       {base::WStringPiece{L"START\0", 6}, cur_dir.value(),
-        base::WStringPiece{L"\0", 1}, new_command_line.GetCommandLineString(),
-        base::WStringPiece{L"\0", 1}});
+       {std::wstring_view{L"START\0", 6}, cur_dir.value(),
+        std::wstring_view{L"\0", 1}, new_command_line.GetCommandLineString(),
+        std::wstring_view{L"\0", 1}});
  
 +  size_t additional_data_size = additional_data.size_bytes();
 +  if (additional_data_size) {

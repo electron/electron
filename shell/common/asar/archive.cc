@@ -90,13 +90,13 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
                           bool load_integrity,
                           const base::Value::Dict* node) {
-  if (absl::optional<int> size = node->FindInt("size")) {
+  if (std::optional<int> size = node->FindInt("size")) {
     info->size = static_cast<uint32_t>(*size);
   } else {
     return false;
   }
 
-  if (absl::optional<bool> unpacked = node->FindBool("unpacked")) {
+  if (std::optional<bool> unpacked = node->FindBool("unpacked")) {
     info->unpacked = *unpacked;
     if (info->unpacked) {
       return true;
@@ -111,7 +111,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   }
 
-  if (absl::optional<bool> executable = node->FindBool("executable")) {
+  if (std::optional<bool> executable = node->FindBool("executable")) {
     info->executable = *executable;
   }
 
@@ -121,7 +121,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     if (const base::Value::Dict* integrity = node->FindDict("integrity")) {
       const std::string* algorithm = integrity->FindString("algorithm");
       const std::string* hash = integrity->FindString("hash");
-      absl::optional<int> block_size = integrity->FindInt("blockSize");
+      std::optional<int> block_size = integrity->FindInt("blockSize");
       const base::Value::List* blocks = integrity->FindList("blocks");
 
       if (algorithm && hash && block_size && block_size > 0 && blocks) {
@@ -242,7 +242,7 @@ bool Archive::Init() {
   // Validate header signature if required and possible
   if (electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled() &&
       RelativePath().has_value()) {
-    absl::optional<IntegrityPayload> integrity = HeaderIntegrity();
+    std::optional<IntegrityPayload> integrity = HeaderIntegrity();
     if (!integrity.has_value()) {
       LOG(FATAL) << "Failed to get integrity for validatable asar archive: "
                  << RelativePath().value();
@@ -264,7 +264,7 @@ bool Archive::Init() {
   }
 #endif
 
-  absl::optional<base::Value> value = base::JSONReader::Read(header);
+  std::optional<base::Value> value = base::JSONReader::Read(header);
   if (!value || !value->is_dict()) {
     LOG(ERROR) << "Failed to parse header";
     return false;
@@ -276,12 +276,12 @@ bool Archive::Init() {
 }
 
 #if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_WIN)
-absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  return absl::nullopt;
+std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
+  return std::nullopt;
 }
 
-absl::optional<base::FilePath> Archive::RelativePath() const {
-  return absl::nullopt;
+std::optional<base::FilePath> Archive::RelativePath() const {
+  return std::nullopt;
 }
 #endif
 

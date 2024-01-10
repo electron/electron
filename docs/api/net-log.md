@@ -4,7 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-```javascript
+```js
 const { app, netLog } = require('electron')
 
 app.whenReady().then(async () => {

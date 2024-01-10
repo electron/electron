@@ -59,7 +59,7 @@ geolocation webservice. To enable this feature, acquire a
 and place the following code in your main process file, before opening any
 browser windows that will make geolocation requests:
 
-```javascript
+```js
 process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
@@ -141,11 +141,6 @@ Sets the file destination for Chromium's internal logging.
 Setting this variable is the same as passing `--log-file`
 on the command line. For more info, see `--log-file` in [command-line
 switches](./command-line-switches.md#--log-filepath).
-
-### `ELECTRON_DEBUG_DRAG_REGIONS`
-
-Adds coloration to draggable regions on [`BrowserView`](./browser-view.md)s on macOS - draggable regions will be colored
-green and non-draggable regions will be colored red to aid debugging.
 
 ### `ELECTRON_DEBUG_NOTIFICATIONS`
 

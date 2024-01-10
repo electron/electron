@@ -199,9 +199,9 @@ static void InitAsarSupport(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::vector<v8::Local<v8::String>> asar_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "require")};
   std::vector<v8::Local<v8::Value>> asar_bundle_args = {require};
-  electron::util::CompileAndCall(
-      isolate->GetCurrentContext(), "electron/js2c/asar_bundle",
-      &asar_bundle_params, &asar_bundle_args, nullptr);
+  electron::util::CompileAndCall(isolate->GetCurrentContext(),
+                                 "electron/js2c/asar_bundle",
+                                 &asar_bundle_params, &asar_bundle_args);
 }
 
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {

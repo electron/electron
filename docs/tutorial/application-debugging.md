@@ -12,7 +12,7 @@ including instances of `BrowserWindow`, `BrowserView`, and `WebView`. You
 can open them programmatically by calling the `openDevTools()` API on the
 `webContents` of the instance:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow()

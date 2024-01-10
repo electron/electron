@@ -66,7 +66,7 @@ You can use environment variables to override the base URL, the path at which to
 look for Electron binaries, and the binary filename. The URL used by `@electron/get`
 is composed as follows:
 
-```javascript @ts-nocheck
+```js @ts-nocheck
 url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 ```
 

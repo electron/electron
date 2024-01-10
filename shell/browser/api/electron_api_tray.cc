@@ -32,7 +32,7 @@ struct Converter<electron::TrayIcon::IconType> {
                      electron::TrayIcon::IconType* out) {
     using Val = electron::TrayIcon::IconType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"custom", Val::kCustom},
             {"error", Val::kError},
             {"info", Val::kInfo},
@@ -51,7 +51,7 @@ gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
-           absl::optional<UUID> guid)
+           std::optional<UUID> guid)
     : tray_icon_(TrayIcon::Create(guid)) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
@@ -62,7 +62,7 @@ Tray::~Tray() = default;
 // static
 gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
                             v8::Local<v8::Value> image,
-                            absl::optional<UUID> guid,
+                            std::optional<UUID> guid,
                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
@@ -76,8 +76,18 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
   }
 #endif
 
-  auto handle = gin::CreateHandle(args->isolate(),
-                                  new Tray(args->isolate(), image, guid));
+  // Error thrown by us will be dropped when entering V8.
+  // Make sure to abort early and propagate the error to JS.
+  // Refs https://chromium-review.googlesource.com/c/v8/v8/+/5050065
+  v8::TryCatch try_catch(args->isolate());
+  auto* tray = new Tray(args->isolate(), image, guid);
+  if (try_catch.HasCaught()) {
+    delete tray;
+    try_catch.ReThrow();
+    return gin::Handle<Tray>();
+  }
+
+  auto handle = gin::CreateHandle(args->isolate(), tray);
   handle->Pin(args->isolate());
   return handle;
 }
@@ -222,7 +232,7 @@ void Tray::SetToolTip(const std::string& tool_tip) {
 }
 
 void Tray::SetTitle(const std::string& title,
-                    const absl::optional<gin_helper::Dictionary>& options,
+                    const std::optional<gin_helper::Dictionary>& options,
                     gin::Arguments* args) {
   if (!CheckAlive())
     return;

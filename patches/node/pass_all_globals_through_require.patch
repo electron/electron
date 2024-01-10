@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 88bb870a8fd2e5458cd47f76dc88b952de6c0303..4aa672675b5cf16b609d81d360e8be8c1a345bd8 100644
+index b077ee386bb40ea32208fc6655de88a3449b7eb2..f408d6c152d6acabea5ff3e262fe344909046595 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -142,6 +142,13 @@ const {
+@@ -146,6 +146,13 @@ const {
    CHAR_FORWARD_SLASH,
  } = require('internal/constants');
  
@@ -23,8 +23,8 @@ index 88bb870a8fd2e5458cd47f76dc88b952de6c0303..4aa672675b5cf16b609d81d360e8be8c
  const {
    isProxy,
  } = require('internal/util/types');
-@@ -1251,10 +1258,12 @@ Module.prototype._compile = function(content, filename) {
-   if (requireDepth === 0) statCache = new SafeMap();
+@@ -1371,10 +1378,12 @@ Module.prototype._compile = function(content, filename) {
+   if (requireDepth === 0) { statCache = new SafeMap(); }
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,
 -                              require, module, filename, dirname);
@@ -37,4 +37,4 @@ index 88bb870a8fd2e5458cd47f76dc88b952de6c0303..4aa672675b5cf16b609d81d360e8be8c
 +                           dirname, process, localGlobal, localBuffer]);
    }
    hasLoadedAnyUserCJSModule = true;
-   if (requireDepth === 0) statCache = null;
+   if (requireDepth === 0) { statCache = null; }

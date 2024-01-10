@@ -18,7 +18,7 @@ namespace electron {
 
 class TrayIcon {
  public:
-  static TrayIcon* Create(absl::optional<UUID> guid);
+  static TrayIcon* Create(std::optional<UUID> guid);
 
 #if BUILDFLAG(IS_WIN)
   using ImageType = HICON;
