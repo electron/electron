@@ -80,8 +80,9 @@ executors:
     machine: true
 
   linux-arm:
-    resource_class: electronjs/linux-arm
-    machine: true
+    resource_class: electronjs/aks-linux-arm-test
+    docker:
+      - image: ghcr.io/electron/test:arm32v7-8e0f85b708fa58e28e4824954d6fd55adfda5e9e
 
   linux-arm64:
     resource_class: electronjs/aks-linux-arm-test
