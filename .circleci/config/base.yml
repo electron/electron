@@ -1658,12 +1658,12 @@ commands:
               export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
               export MOCHA_TIMEOUT=180000
               echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
-              (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -L1 realpath | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
+              (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -I@ -P4 bash -c "echo $(pwd)/@" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
             else
               if [ "$TARGET_ARCH" == "ia32" ]; then
                 npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
               fi
-              (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -L1 realpath | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
+              (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -I@ -P4 bash -c "echo $(pwd)/@" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
             fi
       - store_test_results:
           path: src/junit
