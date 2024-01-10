@@ -357,12 +357,12 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }  // namespace
  
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index 22546e9de25bdf95a00d06057626b544d5bf6f28..3a20f2f6a153c2f0b48b86ed83b92484ac4c274a 100644
+index b88cfb98e75aca426224e19376b3ff4c23b92e53..b66f4e2b5cbd8f36af42f82a8921207302360e39 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
 @@ -16,7 +16,7 @@
  #include "v8.h"
- #include "zlib.h"
+ #include "zlib_version.h"
  
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
