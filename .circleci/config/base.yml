@@ -80,12 +80,14 @@ executors:
     machine: true
 
   linux-arm:
-    resource_class: electronjs/linux-arm
-    machine: true
+    resource_class: electronjs/aks-linux-arm-test
+    docker:
+      - image: ghcr.io/electron/test:arm32v7-b0dee37de023a8d8a15bb8916325b54a4aebfb0c
 
   linux-arm64:
-    resource_class: electronjs/linux-arm64
-    machine: true
+    resource_class: electronjs/aks-linux-arm-test
+    docker:
+      - image: ghcr.io/electron/test:arm64v8-b0dee37de023a8d8a15bb8916325b54a4aebfb0c
 
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
@@ -1663,17 +1665,15 @@ commands:
               export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
               export MOCHA_TIMEOUT=180000
               echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
-              (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
+              (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -I@ -P4 bash -c "echo $(pwd)/@" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
             else
               if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
                 export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
-                (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
-              else
-                if [ "$TARGET_ARCH" == "ia32" ]; then
-                  npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
-                fi
-                (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
               fi
+              if [ "$TARGET_ARCH" == "ia32" ]; then
+                npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
+              fi
+              (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -I@ -P4 bash -c "echo $(pwd)/@" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
             fi
       - store_test_results:
           path: src/junit
@@ -2302,6 +2302,7 @@ jobs:
       <<: *env-global
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     steps:
       - electron-tests:
           artifact-key: linux-arm
@@ -2313,6 +2314,7 @@ jobs:
       <<: *env-global
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     steps:
       - electron-tests:
           artifact-key: linux-arm64
