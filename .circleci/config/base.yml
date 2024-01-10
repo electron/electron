@@ -84,8 +84,9 @@ executors:
     machine: true
 
   linux-arm64:
-    resource_class: electronjs/linux-arm64
-    machine: true
+    resource_class: electronjs/aks-linux-arm-test
+    docker:
+      - image: ghcr.io/electron/test:arm64v8-9a4acb4e8085c2439541a70aa28daae64feb44bf
 
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
