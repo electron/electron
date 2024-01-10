@@ -18,7 +18,7 @@ index 1931688e85d05ee2da4f88efb05d635cb43be233..afccc24392abff9eef2b9953fcffeb79
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..a111b5d7a6084caa61deb56bace5d91bf5f5aff4 100644
+index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbcd9feec9d 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -142,7 +142,7 @@ async function defaultLoad(url, context = kEmptyObject) {
@@ -48,10 +48,10 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..a111b5d7a6084caa61deb56bace5d91b
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 58e7df07ca5275e3a684f30c3d0a3f901d000fb8..2d077cc182b40e0bdce2d71d0471e96e6d30222a 100644
+index 06a34c11254a2fedd2ea59c4057bfb30c31082a6..66ecfbcdd4fb2c9986e2d4619a381337839979fe 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -731,6 +731,8 @@ function packageImportsResolve(name, base, conditions) {
+@@ -740,6 +740,8 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
@@ -60,7 +60,7 @@ index 58e7df07ca5275e3a684f30c3d0a3f901d000fb8..2d077cc182b40e0bdce2d71d0471e96e
  /**
   * Returns the package type for a given URL.
   * @param {URL} url - The URL to get the package type for.
-@@ -791,6 +793,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -800,6 +802,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -73,10 +73,10 @@ index 58e7df07ca5275e3a684f30c3d0a3f901d000fb8..2d077cc182b40e0bdce2d71d0471e96e
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 7a62615cfe4210c9fd83c6bfa3b5da19eec5fff2..bda102b266b17936efc453d039213517c4ef921c 100644
+index 9976b819f266c682631f41522af114b660d7c20c..e5fea28126b1b810cd3e1e5a13c0fdc97b6b71f5 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -280,7 +280,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -291,7 +291,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -85,7 +85,7 @@ index 7a62615cfe4210c9fd83c6bfa3b5da19eec5fff2..bda102b266b17936efc453d039213517
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -302,8 +302,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -313,8 +313,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -96,7 +96,7 @@ index 7a62615cfe4210c9fd83c6bfa3b5da19eec5fff2..bda102b266b17936efc453d039213517
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -328,6 +328,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -339,6 +339,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source);
  });
  

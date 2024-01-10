@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index f108b567a910805ff86f0baf75fa1a6102ad28d6..8406e8ca319533d6186c5d457e951b7a845b6b72 100644
+index 6a15fcae677b3bda58fc85f705862bbcd9feec9d..449131b9af99744c08d62d73f8d124cef5c9cc71 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const { kEmptyObject } = require('internal/util');
@@ -18,7 +18,7 @@ index f108b567a910805ff86f0baf75fa1a6102ad28d6..8406e8ca319533d6186c5d457e951b7a
  
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
-@@ -40,8 +40,7 @@ async function getSource(url, context) {
+@@ -42,8 +42,7 @@ async function getSource(url, context) {
    let responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -28,7 +28,7 @@ index f108b567a910805ff86f0baf75fa1a6102ad28d6..8406e8ca319533d6186c5d457e951b7a
    } else if (protocol === 'data:') {
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
-@@ -80,7 +79,7 @@ function getSourceSync(url, context) {
+@@ -82,7 +81,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -38,7 +38,7 @@ index f108b567a910805ff86f0baf75fa1a6102ad28d6..8406e8ca319533d6186c5d457e951b7a
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 2d077cc182b40e0bdce2d71d0471e96e6d30222a..34fd6613fa24d628fc026ac11e5be7217a20fff4 100644
+index 66ecfbcdd4fb2c9986e2d4619a381337839979fe..102165af37a42ca0394ec0d4efc21d3b03efe5eb 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {
@@ -50,7 +50,7 @@ index 2d077cc182b40e0bdce2d71d0471e96e6d30222a..34fd6613fa24d628fc026ac11e5be721
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
-@@ -257,7 +257,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -266,7 +266,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -90,4 +90,3 @@ index e5fea28126b1b810cd3e1e5a13c0fdc97b6b71f5..cea066d1073a31573e134d584f1991e7
          const { exportNames: reexportNames } = cjsPreparseModuleExports(resolved, source);
          for (const name of reexportNames) {
            exportNames.add(name);
-

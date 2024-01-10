@@ -2121,10 +2121,10 @@ index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868b
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 84815969b6d1faa7cc3ed177e04248d9cb074596..80b36dc1aefca4d5d4124d7f84b12b9762a8de2c 100644
+index bafd8d4b8581f0aee6cb1f30b810c8dfc46c2ce9..453d874efff767a95ef25fad7005ac11717f0c67 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -738,6 +738,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -739,6 +739,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);

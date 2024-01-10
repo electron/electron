@@ -263,7 +263,7 @@ index c5dd2fb8fce40f2bf6f9a8543047ffb50cc08084..d850af9257cc194ee385130ce3cd2c01
  
  void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 245f352918696413f8f0f7cec94dbcec687685af..35c1c1ce9f0e3d59b75e3966d485bf70b846de5b 100644
+index 48154df7dc91ed7c0d65323199bc2f59dfc68135..6431e5c3062890975854780d15ecb84370b81770 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
 @@ -140,7 +140,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
@@ -383,7 +383,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 29cb7fc6b29b89946856990032645ad4edb8529c..faca807e31daaadb0103556001a16629a3822c1f 100644
+index 5da6918af8c125259a89ce95bbbbc4fc475c4c69..a3d25cdd52f18e319ae3ac81437c8a0206b18690 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -396,7 +396,7 @@ index 29cb7fc6b29b89946856990032645ad4edb8529c..faca807e31daaadb0103556001a16629
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 30955c779714ce5ad9b79f11e4cfefbcada7fa05..f02c07cd418fa2e3c64221bd37acd380a130f608 100644
+index 312fae8f759c5828d0770ceee845dc4754871436..207468a2177d36894c64cb37aac946af02c82549 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

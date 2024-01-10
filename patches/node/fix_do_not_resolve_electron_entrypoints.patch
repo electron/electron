@@ -6,7 +6,7 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 1d94cbeb771375243f58e544c583f612c3f4385c..97146f38a5478afeaded03c16e44ffb56fbe8087 100644
+index 449131b9af99744c08d62d73f8d124cef5c9cc71..3df06eff63106aece1009d88fd01df2abdf6d943 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -132,7 +132,7 @@ async function defaultLoad(url, context = kEmptyObject) {
@@ -19,10 +19,10 @@ index 1d94cbeb771375243f58e544c583f612c3f4385c..97146f38a5478afeaded03c16e44ffb5
        context = { __proto__: context, source };
      }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index dbbe37474c70addfbf8cf805c29732dcd38c74f6..96ffb2b0b051163d8a777ed3d1b5bc2c83fc37c5 100644
+index cea066d1073a31573e134d584f1991e7a06b1036..2b2d8e00e7ecf2e8266218d8dc5e65f0f7c8a49f 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -376,6 +376,9 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -387,6 +387,9 @@ function cjsPreparseModuleExports(filename, source) {
      if (cached) {
        return { module, exportNames: cached.exportNames };
      }

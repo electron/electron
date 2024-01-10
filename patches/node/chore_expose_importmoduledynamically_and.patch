@@ -90,7 +90,7 @@ diff --git a/src/module_wrap.h b/src/module_wrap.h
 index 1fc801edced9c5e44613846b4dc555804c5bae97..767d183c6b6b6d97726cf5d63c0b202bd9ae10a6 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
-@@ -30,7 +30,14 @@ enum HostDefinedOptions : int {
+@@ -31,7 +31,14 @@ enum HostDefinedOptions : int {
    kLength = 9,
  };
  
