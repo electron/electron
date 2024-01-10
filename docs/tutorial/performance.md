@@ -24,7 +24,7 @@ careful to understand that the term "performance" means different things for
 a Node.js backend than it does for an application running on a client.
 
 This list is provided for your convenience – and is, much like our
-[security checklist][security] – not meant to exhaustive. It is probably possible
+[security checklist][security] – not meant to be exhaustive. It is probably possible
 to build a slow Electron app that follows all the steps outlined below. Electron
 is a powerful development platform that enables you, the developer, to do more
 or less whatever you want. All that freedom means that performance is largely
@@ -62,14 +62,34 @@ at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-t
 Chances are that your app could be a little leaner, faster, and generally less
 resource-hungry if you attempt these steps.
 
-1. [Carelessly including modules](#1-carelessly-including-modules)
-2. [Loading and running code too soon](#2-loading-and-running-code-too-soon)
-3. [Blocking the main process](#3-blocking-the-main-process)
-4. [Blocking the renderer process](#4-blocking-the-renderer-process)
-5. [Unnecessary polyfills](#5-unnecessary-polyfills)
-6. [Unnecessary or blocking network requests](#6-unnecessary-or-blocking-network-requests)
-7. [Bundle your code](#7-bundle-your-code)
-8. [Call `Menu.setApplicationMenu(null)` when you do not need a default menu](#8-call-menusetapplicationmenunull-when-you-do-not-need-a-default-menu)
+- [Performance](#performance)
+  - [Measure, Measure, Measure](#measure-measure-measure)
+    - [Recommended Reading](#recommended-reading)
+  - [Checklist: Performance recommendations](#checklist-performance-recommendations)
+    - [1. Carelessly including modules](#1-carelessly-including-modules)
+      - [Why?](#why)
+      - [How?](#how)
+    - [2. Loading and running code too soon](#2-loading-and-running-code-too-soon)
+      - [Why?](#why-1)
+      - [How?](#how-1)
+    - [3. Blocking the main process](#3-blocking-the-main-process)
+      - [Why?](#why-2)
+      - [How?](#how-2)
+    - [4. Blocking the renderer process](#4-blocking-the-renderer-process)
+      - [Why?](#why-3)
+      - [How?](#how-3)
+    - [5. Unnecessary polyfills](#5-unnecessary-polyfills)
+      - [Why?](#why-4)
+      - [How?](#how-4)
+    - [6. Unnecessary or blocking network requests](#6-unnecessary-or-blocking-network-requests)
+      - [Why?](#why-5)
+      - [How?](#how-5)
+    - [7. Bundle your code](#7-bundle-your-code)
+      - [Why?](#why-6)
+      - [How?](#how-6)
+    - [8. Call `Menu.setApplicationMenu(null)` when you do not need a default menu](#8-call-menusetapplicationmenunull-when-you-do-not-need-a-default-menu)
+      - [Why?](#why-7)
+      - [How?](#how-7)
 
 ### 1. Carelessly including modules
 
@@ -83,7 +103,7 @@ is not in fact the leanest or smallest one available.
 
 The reasoning behind this recommendation is best illustrated with a real-world
 example. During the early days of Electron, reliable detection of network
-connectivity was a problem, resulting many apps to use a module that exposed a
+connectivity was a problem, resulting in many apps to use a module that exposed a
 simple `isOnline()` method.
 
 That module detected your network connectivity by attempting to reach out to a
