@@ -46,7 +46,7 @@ base::FilePath FileURLToFilePath(v8::Isolate* isolate, const GURL& url) {
 v8::Local<v8::Promise> ResolveHost(
     v8::Isolate* isolate,
     std::string host,
-    absl::optional<network::mojom::ResolveHostParametersPtr> params) {
+    std::optional<network::mojom::ResolveHostParametersPtr> params) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -54,7 +54,7 @@ v8::Local<v8::Promise> ResolveHost(
       nullptr, std::move(host), params ? std::move(params.value()) : nullptr,
       base::BindOnce(
           [](gin_helper::Promise<gin_helper::Dictionary> promise,
-             int64_t net_error, const absl::optional<net::AddressList>& addrs) {
+             int64_t net_error, const std::optional<net::AddressList>& addrs) {
             if (net_error < 0) {
               promise.RejectWithErrorMessage(net::ErrorToString(net_error));
             } else {

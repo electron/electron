@@ -5,6 +5,7 @@
 #include "shell/browser/ui/webui/accessibility_ui.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,7 +43,6 @@
 #include "content/public/browser/web_ui_data_source.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/platform/ax_platform_node.h"
 #include "ui/accessibility/platform/ax_platform_node_delegate.h"
 #include "ui/base/webui/web_ui_util.h"

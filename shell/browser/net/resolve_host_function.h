@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_RESOLVE_HOST_FUNCTION_H_
 #define ELECTRON_SHELL_BROWSER_NET_RESOLVE_HOST_FUNCTION_H_
 
+#include <optional>
 #include <string>
 
 #include "base/memory/raw_ptr.h"
@@ -16,7 +17,6 @@
 #include "services/network/public/cpp/resolve_host_client_base.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace electron {
 
@@ -26,9 +26,8 @@ class ResolveHostFunction
     : public base::RefCountedThreadSafe<ResolveHostFunction>,
       network::ResolveHostClientBase {
  public:
-  using ResolveHostCallback = base::OnceCallback<void(
-      int64_t,
-      const absl::optional<net::AddressList>& resolved_addresses)>;
+  using ResolveHostCallback = base::OnceCallback<
+      void(int64_t, const std::optional<net::AddressList>& resolved_addresses)>;
 
   explicit ResolveHostFunction(ElectronBrowserContext* browser_context,
                                std::string host,
@@ -50,8 +49,8 @@ class ResolveHostFunction
   // network::mojom::ResolveHostClient implementation
   void OnComplete(int result,
                   const net::ResolveErrorInfo& resolve_error_info,
-                  const absl::optional<net::AddressList>& resolved_addresses,
-                  const absl::optional<net::HostResolverEndpointResults>&
+                  const std::optional<net::AddressList>& resolved_addresses,
+                  const std::optional<net::HostResolverEndpointResults>&
                       endpoint_results_with_metadata) override;
 
   SEQUENCE_CHECKER(sequence_checker_);

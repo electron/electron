@@ -7,10 +7,10 @@
 
 #include <windows.h>
 
+#include <optional>
 #include <vector>
 
 #include "shell/common/gin_converters/guid_converter.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
@@ -27,7 +27,7 @@ class NotifyIconHost {
   NotifyIconHost(const NotifyIconHost&) = delete;
   NotifyIconHost& operator=(const NotifyIconHost&) = delete;
 
-  NotifyIcon* CreateNotifyIcon(absl::optional<UUID> guid);
+  NotifyIcon* CreateNotifyIcon(std::optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
 
  private:

@@ -25,7 +25,7 @@
 namespace {
 
 [[nodiscard]] constexpr base::StringPiece FormControlToInputFieldTypeString(
-    const absl::optional<blink::mojom::FormControlType> form_control_type) {
+    const std::optional<blink::mojom::FormControlType> form_control_type) {
   if (!form_control_type)
     return "none";
 

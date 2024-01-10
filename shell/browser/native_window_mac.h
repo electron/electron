@@ -8,6 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -127,8 +128,8 @@ class NativeWindowMac : public NativeWindow,
   void SetVibrancy(const std::string& type) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
-  void SetWindowButtonPosition(absl::optional<gfx::Point> position) override;
-  absl::optional<gfx::Point> GetWindowButtonPosition() const override;
+  void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
+  std::optional<gfx::Point> GetWindowButtonPosition() const override;
   void RedrawTrafficLights() override;
   void UpdateFrame() override;
   void SetTouchBar(
@@ -142,7 +143,7 @@ class NativeWindowMac : public NativeWindow,
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
-  absl::optional<std::string> GetTabbingIdentifier() const override;
+  std::optional<std::string> GetTabbingIdentifier() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
   void PreviewFile(const std::string& path,
@@ -150,7 +151,7 @@ class NativeWindowMac : public NativeWindow,
   void CloseFilePreview() override;
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
-  absl::optional<gfx::Rect> GetWindowControlsOverlayRect() override;
+  std::optional<gfx::Rect> GetWindowControlsOverlayRect() override;
   void NotifyWindowEnterFullScreen() override;
   void NotifyWindowLeaveFullScreen() override;
   void SetActive(bool is_key) override;
@@ -249,7 +250,7 @@ class NativeWindowMac : public NativeWindow,
   bool fullscreen_before_kiosk_ = false;
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
-  absl::optional<gfx::Point> traffic_light_position_;
+  std::optional<gfx::Point> traffic_light_position_;
 
   // Trying to close an NSWindow during a fullscreen transition will cause the
   // window to lock up. Use this to track if CloseWindow was called during a
@@ -271,7 +272,7 @@ class NativeWindowMac : public NativeWindow,
 
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().
-  absl::optional<bool> window_button_visibility_;
+  std::optional<bool> window_button_visibility_;
 
   // Controls the position and visibility of window buttons.
   WindowButtonsProxy* __strong buttons_proxy_;

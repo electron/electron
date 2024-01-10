@@ -258,7 +258,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
   if (!dict.Get("keyCode", &str))
     return false;
 
-  absl::optional<char16_t> shifted_char;
+  std::optional<char16_t> shifted_char;
   ui::KeyboardCode keyCode = electron::KeyboardCodeFromStr(str, &shifted_char);
   out->windows_key_code = keyCode;
   if (shifted_char)
@@ -460,9 +460,9 @@ v8::Local<v8::Value> Converter<blink::mojom::ContextMenuDataMediaType>::ToV8(
 
 // static
 v8::Local<v8::Value>
-Converter<absl::optional<blink::mojom::FormControlType>>::ToV8(
+Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
     v8::Isolate* isolate,
-    const absl::optional<blink::mojom::FormControlType>& in) {
+    const std::optional<blink::mojom::FormControlType>& in) {
   base::StringPiece str{"none"};
   if (in.has_value()) {
     switch (*in) {

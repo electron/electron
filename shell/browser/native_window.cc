@@ -488,7 +488,7 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-absl::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
+std::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
   return "";  // for non-Mac platforms
 }
 
@@ -539,7 +539,7 @@ void NativeWindow::PreviewFile(const std::string& path,
 
 void NativeWindow::CloseFilePreview() {}
 
-absl::optional<gfx::Rect> NativeWindow::GetWindowControlsOverlayRect() {
+std::optional<gfx::Rect> NativeWindow::GetWindowControlsOverlayRect() {
   return overlay_rect_;
 }
 

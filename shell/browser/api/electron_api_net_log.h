@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 
+#include <optional>
+
 #include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
@@ -16,7 +18,6 @@
 #include "net/log/net_log_capture_mode.h"
 #include "services/network/public/mojom/net_log.mojom.h"
 #include "shell/common/gin_helper/promise.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin {
 class Arguments;
@@ -67,7 +68,7 @@ class NetLog : public gin::Wrappable<NetLog> {
 
   mojo::Remote<network::mojom::NetLogExporter> net_log_exporter_;
 
-  absl::optional<gin_helper::Promise<void>> pending_start_promise_;
+  std::optional<gin_helper::Promise<void>> pending_start_promise_;
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 

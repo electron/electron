@@ -516,10 +516,10 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   return handle;
 }
 
-bool Browser::SetBadgeCount(absl::optional<int> count) {
-  absl::optional<std::string> badge_content;
+bool Browser::SetBadgeCount(std::optional<int> count) {
+  std::optional<std::string> badge_content;
   if (count.has_value() && count.value() == 0) {
-    badge_content = absl::nullopt;
+    badge_content = std::nullopt;
   } else {
     badge_content = badging::BadgeManager::GetBadgeString(count);
   }
@@ -560,7 +560,7 @@ bool Browser::SetBadgeCount(absl::optional<int> count) {
 
 void Browser::UpdateBadgeContents(
     HWND hwnd,
-    const absl::optional<std::string>& badge_content,
+    const std::optional<std::string>& badge_content,
     const std::string& badge_alt_string) {
   SkBitmap badge;
   if (badge_content) {

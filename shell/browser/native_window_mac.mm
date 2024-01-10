@@ -1545,7 +1545,7 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
 }
 
 void NativeWindowMac::SetWindowButtonPosition(
-    absl::optional<gfx::Point> position) {
+    std::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
   if (buttons_proxy_) {
     [buttons_proxy_ setMargin:traffic_light_position_];
@@ -1553,7 +1553,7 @@ void NativeWindowMac::SetWindowButtonPosition(
   }
 }
 
-absl::optional<gfx::Point> NativeWindowMac::GetWindowButtonPosition() const {
+std::optional<gfx::Point> NativeWindowMac::GetWindowButtonPosition() const {
   return traffic_light_position_;
 }
 
@@ -1623,9 +1623,9 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   return true;
 }
 
-absl::optional<std::string> NativeWindowMac::GetTabbingIdentifier() const {
+std::optional<std::string> NativeWindowMac::GetTabbingIdentifier() const {
   if ([window_ tabbingMode] == NSWindowTabbingModeDisallowed)
-    return absl::nullopt;
+    return std::nullopt;
 
   return base::SysNSStringToUTF8([window_ tabbingIdentifier]);
 }
@@ -1870,9 +1870,9 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
   [window_ setAcceptsMouseMovedEvents:forward];
 }
 
-absl::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
+std::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
   if (!titlebar_overlay_)
-    return absl::nullopt;
+    return std::nullopt;
 
   // On macOS, when in fullscreen mode, window controls (the menu bar, title
   // bar, and toolbar) are attached to a separate NSView that slides down from
@@ -1896,7 +1896,7 @@ absl::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
     return overlay;
   }
 
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 // static

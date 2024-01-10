@@ -40,7 +40,7 @@ class CertVerifierClient : public network::mojom::CertVerifierClient {
               const scoped_refptr<net::X509Certificate>& certificate,
               const std::string& hostname,
               int flags,
-              const absl::optional<std::string>& ocsp_response,
+              const std::optional<std::string>& ocsp_response,
               VerifyCallback callback) override;
 
  private:
