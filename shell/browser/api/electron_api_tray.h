@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -43,7 +44,7 @@ class Tray : public gin::Wrappable<Tray>,
   // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
                                v8::Local<v8::Value> image,
-                               absl::optional<UUID> guid,
+                               std::optional<UUID> guid,
                                gin::Arguments* args);
 
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
@@ -60,7 +61,7 @@ class Tray : public gin::Wrappable<Tray>,
  private:
   Tray(v8::Isolate* isolate,
        v8::Local<v8::Value> image,
-       absl::optional<UUID> guid);
+       std::optional<UUID> guid);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -92,7 +93,7 @@ class Tray : public gin::Wrappable<Tray>,
   void SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title,
-                const absl::optional<gin_helper::Dictionary>& options,
+                const std::optional<gin_helper::Dictionary>& options,
                 gin::Arguments* args);
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);

@@ -307,7 +307,7 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
 }
 
 void BrowserWindow::SetBrowserView(
-    absl::optional<gin::Handle<BrowserView>> browser_view) {
+    std::optional<gin::Handle<BrowserView>> browser_view) {
   BaseWindow::ResetBrowserViews();
   if (browser_view)
     BaseWindow::AddBrowserView(*browser_view);

@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_app.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -76,7 +77,6 @@
 #include "shell/common/platform_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -928,7 +928,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 
 #if !BUILDFLAG(IS_MAC)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         absl::optional<base::FilePath> custom_path) {
+                         std::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
@@ -1605,7 +1605,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
     // doh_config.
     std::vector<net::DnsOverHttpsServerConfig> servers;
     for (const std::string& server_template : secure_dns_server_strings) {
-      absl::optional<net::DnsOverHttpsServerConfig> server_config =
+      std::optional<net::DnsOverHttpsServerConfig> server_config =
           net::DnsOverHttpsServerConfig::FromString(server_template);
       if (!server_config.has_value()) {
         thrower.ThrowTypeError(std::string("not a valid DoH template: ") +

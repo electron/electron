@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_NET_ELECTRON_URL_LOADER_FACTORY_H_
 
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -21,7 +22,6 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace electron {
 
@@ -73,7 +73,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
         const std::vector<std::string>& removed_headers,
         const net::HttpRequestHeaders& modified_headers,
         const net::HttpRequestHeaders& modified_cors_exempt_headers,
-        const absl::optional<GURL>& new_url) override;
+        const std::optional<GURL>& new_url) override;
     void SetPriority(net::RequestPriority priority,
                      int32_t intra_priority_value) override {}
     void PauseReadingBodyFromNet() override {}

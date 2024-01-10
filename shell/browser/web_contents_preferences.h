@@ -55,10 +55,10 @@ class WebContentsPreferences
   base::Value* last_preference() { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return offscreen_; }
-  absl::optional<SkColor> GetBackgroundColor() const {
+  std::optional<SkColor> GetBackgroundColor() const {
     return background_color_;
   }
-  void SetBackgroundColor(absl::optional<SkColor> color) {
+  void SetBackgroundColor(std::optional<SkColor> color) {
     background_color_ = color;
   }
   bool ShouldUsePreferredSizeMode() const {
@@ -104,7 +104,7 @@ class WebContentsPreferences
   bool node_integration_in_worker_;
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
-  absl::optional<bool> sandbox_;
+  std::optional<bool> sandbox_;
   bool context_isolation_;
   bool javascript_;
   bool images_;
@@ -118,23 +118,23 @@ class WebContentsPreferences
   bool navigate_on_drag_drop_;
   blink::mojom::AutoplayPolicy autoplay_policy_;
   std::map<std::string, std::u16string> default_font_family_;
-  absl::optional<int> default_font_size_;
-  absl::optional<int> default_monospace_font_size_;
-  absl::optional<int> minimum_font_size_;
-  absl::optional<std::string> default_encoding_;
+  std::optional<int> default_font_size_;
+  std::optional<int> default_monospace_font_size_;
+  std::optional<int> minimum_font_size_;
+  std::optional<std::string> default_encoding_;
   bool is_webview_;
   std::vector<std::string> custom_args_;
   std::vector<std::string> custom_switches_;
-  absl::optional<std::string> enable_blink_features_;
-  absl::optional<std::string> disable_blink_features_;
+  std::optional<std::string> enable_blink_features_;
+  std::optional<std::string> disable_blink_features_;
   bool disable_popups_;
   bool disable_dialogs_;
   bool safe_dialogs_;
-  absl::optional<std::string> safe_dialogs_message_;
+  std::optional<std::string> safe_dialogs_message_;
   bool ignore_menu_shortcuts_;
-  absl::optional<SkColor> background_color_;
+  std::optional<SkColor> background_color_;
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
-  absl::optional<base::FilePath> preload_path_;
+  std::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
 
 #if BUILDFLAG(IS_MAC)

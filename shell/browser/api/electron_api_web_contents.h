@@ -7,6 +7,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -161,7 +162,7 @@ class WebContents : public ExclusiveAccessContext,
   const char* GetTypeName() override;
 
   void Destroy();
-  void Close(absl::optional<gin_helper::Dictionary> options);
+  void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   bool GetBackgroundThrottling() const override;

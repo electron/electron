@@ -78,7 +78,7 @@ const gfx::FontList* MenuDelegate::GetLabelFontList(int id) const {
   return adapter_->GetLabelFontList(id);
 }
 
-absl::optional<SkColor> MenuDelegate::GetLabelColor(int id) const {
+std::optional<SkColor> MenuDelegate::GetLabelColor(int id) const {
   return adapter_->GetLabelColor(id);
 }
 

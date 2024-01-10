@@ -6,6 +6,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -129,7 +130,6 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "storage/browser/file_system/isolated_context.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
@@ -497,9 +497,9 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   capture_handle.RunAndReset();
 }
 
-absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
+std::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #if BUILDFLAG(IS_MAC)
-  absl::optional<base::TimeDelta> system_value(
+  std::optional<base::TimeDelta> system_value(
       ui::TextInsertionCaretBlinkPeriodFromDefaults());
   if (system_value)
     return *system_value;
@@ -513,7 +513,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
                                      : base::Milliseconds(system_msec);
   }
 #endif
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -1112,7 +1112,7 @@ void WebContents::Destroy() {
   }
 }
 
-void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   bool dispatch_beforeunload = false;
   if (options)
     options->Get("waitForBeforeUnload", &dispatch_beforeunload);
@@ -1655,7 +1655,7 @@ void WebContents::HandleNewRenderFrame(
 }
 
 void WebContents::OnBackgroundColorChanged() {
-  absl::optional<SkColor> color = web_contents()->GetBackgroundColor();
+  std::optional<SkColor> color = web_contents()->GetBackgroundColor();
   if (color.has_value()) {
     auto* const view = web_contents()->GetRenderWidgetHostView();
     static_cast<content::RenderWidgetHostViewBase*>(view)
@@ -3144,8 +3144,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
           web_contents()->GetPrimaryMainFrame()->GetLastCommittedURL(),
           landscape, display_header_footer, print_background, scale,
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
-          margin_right, absl::make_optional(header_template),
-          absl::make_optional(footer_template), prefer_css_page_size,
+          margin_right, std::make_optional(header_template),
+          std::make_optional(footer_template), prefer_css_page_size,
           generate_tagged_pdf, generate_document_outline);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
@@ -4081,7 +4081,7 @@ void WebContents::DevToolsIndexPath(
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
   std::vector<std::string> excluded_folders;
-  absl::optional<base::Value> parsed_excluded_folders =
+  std::optional<base::Value> parsed_excluded_folders =
       base::JSONReader::Read(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
@@ -4498,8 +4498,7 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
       existing_preferences->SetFromDictionary(web_preferences_dict);
-      absl::optional<SkColor> color =
-          existing_preferences->GetBackgroundColor();
+      std::optional<SkColor> color = existing_preferences->GetBackgroundColor();
       web_contents->web_contents()->SetPageBaseBackgroundColor(color);
       // Because web preferences don't recognize transparency,
       // only set rwhv background color if a color exists

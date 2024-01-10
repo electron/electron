@@ -131,7 +131,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
                    gin_helper::ErrorThrower thrower,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
-                   absl::optional<v8::Local<v8::Value>> transfer) {
+                   std::optional<v8::Local<v8::Value>> transfer) {
     if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
@@ -153,7 +153,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
 
     std::vector<blink::MessagePortChannel> ports;
     for (auto& transferable : transferables) {
-      absl::optional<blink::MessagePortChannel> port =
+      std::optional<blink::MessagePortChannel> port =
           blink::WebMessagePortConverter::
               DisentangleAndExtractMessagePortChannel(isolate, transferable);
       if (!port.has_value()) {

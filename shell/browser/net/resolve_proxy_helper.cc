@@ -53,7 +53,7 @@ void ResolveProxyHelper::StartPendingRequest() {
       receiver_.BindNewPipeAndPassRemote();
   receiver_.set_disconnect_handler(
       base::BindOnce(&ResolveProxyHelper::OnProxyLookupComplete,
-                     base::Unretained(this), net::ERR_ABORTED, absl::nullopt));
+                     base::Unretained(this), net::ERR_ABORTED, std::nullopt));
   browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->LookUpProxyForURL(pending_requests_.front().url,
@@ -63,7 +63,7 @@ void ResolveProxyHelper::StartPendingRequest() {
 
 void ResolveProxyHelper::OnProxyLookupComplete(
     int32_t net_error,
-    const absl::optional<net::ProxyInfo>& proxy_info) {
+    const std::optional<net::ProxyInfo>& proxy_info) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!pending_requests_.empty());
 

@@ -41,7 +41,7 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
   return PolicyPermission::DISALLOW;
 }
 
-absl::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
+std::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
     content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
@@ -54,7 +54,7 @@ absl::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
       return tab.ToValue();
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(

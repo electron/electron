@@ -229,7 +229,7 @@ void WebFrameMain::OnRendererConnectionError() {
 void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                const std::string& channel,
                                v8::Local<v8::Value> message_value,
-                               absl::optional<v8::Local<v8::Value>> transfer) {
+                               std::optional<v8::Local<v8::Value>> transfer) {
   blink::TransferableMessage transferable_message;
   if (!electron::SerializeV8Value(isolate, message_value,
                                   &transferable_message)) {

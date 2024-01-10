@@ -5,9 +5,8 @@
 #include "shell/browser/api/process_metric.h"
 
 #include <memory>
+#include <optional>
 #include <utility>
-
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
@@ -34,14 +33,14 @@ mach_port_t TaskForPid(pid_t pid) {
   return task;
 }
 
-absl::optional<mach_task_basic_info_data_t> GetTaskInfo(mach_port_t task) {
+std::optional<mach_task_basic_info_data_t> GetTaskInfo(mach_port_t task) {
   if (task == MACH_PORT_NULL)
-    return absl::nullopt;
+    return std::nullopt;
   mach_task_basic_info_data_t info = {};
   mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
   kern_return_t kr = task_info(task, MACH_TASK_BASIC_INFO,
                                reinterpret_cast<task_info_t>(&info), &count);
-  return (kr == KERN_SUCCESS) ? absl::make_optional(info) : absl::nullopt;
+  return (kr == KERN_SUCCESS) ? std::make_optional(info) : std::nullopt;
 }
 
 }  // namespace

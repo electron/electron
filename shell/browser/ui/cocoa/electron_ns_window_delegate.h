@@ -7,9 +7,10 @@
 
 #include <Quartz/Quartz.h>
 
+#include <optional>
+
 #include "base/memory/raw_ptr.h"
 #include "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace electron {
 class NativeWindowMac;
@@ -30,7 +31,7 @@ class NativeWindowMac;
   // Only valid during a live resize.
   // Used to keep track of whether a resize is happening horizontally or
   // vertically, even if physically the user is resizing in both directions.
-  absl::optional<bool> resizingHorizontally_;
+  std::optional<bool> resizingHorizontally_;
 }
 - (id)initWithShell:(electron::NativeWindowMac*)shell;
 @end
