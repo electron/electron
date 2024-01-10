@@ -26,7 +26,7 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..a111b5d7a6084caa61deb56bace5d91b
        format = await defaultGetFormat(urlInstance, context);
  
 -      if (format === 'commonjs') {
-+      if (format === 'commonjs' || format === 'electron') {
++      if (format === 'electron' || format === 'commonjs') {
          // For backward compatibility reasons, we need to discard the source in
          // order for the CJS loader to re-fetch it.
          source = null;
