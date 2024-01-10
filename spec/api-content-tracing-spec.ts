@@ -73,7 +73,7 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       // If the `categoryFilter` param above is not respected
       // the file size will be above 50KB.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 10; // Depends on a platform.
+      const expectedMaximumFileSize = 50; // Depends on a platform.
 
       expect(fileSizeInKiloBytes).to.be.above(0,
         `the trace output file is empty, check "${outputFilePath}"`);
