@@ -8,133 +8,117 @@
 #include <algorithm>
 #include <sstream>
 
+#include "base/base_paths.h"
 #include "base/json/json_reader.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
 
-using namespace std;
-using namespace base;
-
-#define INTEGRITY_CHECK_RESOURCE_TYPE L"Integrity"
-#define INTEGRITY_CHECK_RESOURCE_ITEM L"ElectronAsar"
-
 namespace asar {
 
-/*
-  Windows integrity payload cache
-    - key: file rel path
-    - value: integrity payload
-  absl::nullopt: cache not initialized
-  empty map: cache initialized but no data.
-*/
-static base::NoDestructor<
-    absl::optional<unordered_map<string, IntegrityPayload>>>
-    s_win_integrity_payloads_cache;
+const wchar_t kIntegrityCheckResourceType[] = L"Integrity";
+const wchar_t kIntegrityCheckResourceItem[] = L"ElectronAsar";
 
 absl::optional<base::FilePath> Archive::RelativePath() const {
-  // In case user has Windows long path enabled, the exe path should still no
-  // larger than the asar path.
-  size_t buf_len = max(path_.value().size(), (size_t)MAX_PATH);
-  wchar_t* buf = new (std::nothrow) wchar_t[buf_len];
-  if (!buf) {
-    LOG(FATAL) << "Failed to alloc enough space to store exe file path";
+  base::FilePath exe_path;
+  if (!base::PathService::Get(base::FILE_EXE, &exe_path)) {
+    LOG(FATAL) << "Couldn't get exe file path";
     return absl::nullopt;
   }
 
-  DWORD len = GetModuleFileName(NULL, buf, buf_len);
-  wstring exe_path = wstring(buf, len);
-  delete[] buf;
-
-  if (!len) {
-    LOG(FATAL) << "GetModuleFileName failed. Last error: " << GetLastError();
-    return absl::nullopt;
-  }
-
-  base::FilePath exe_dir = base::FilePath(exe_path).DirName();
   base::FilePath relative_path;
-  if (!exe_dir.AppendRelativePath(path_, &relative_path)) {
+  if (!exe_path.DirName().AppendRelativePath(path_, &relative_path)) {
     return absl::nullopt;
   }
 
   return relative_path;
 }
 
-void LoadIntegrityConfigCache() {
+absl::optional<std::unordered_map<std::string, IntegrityPayload>>
+LoadIntegrityConfigCache() {
+  static base::NoDestructor<
+      absl::optional<std::unordered_map<std::string, IntegrityPayload>>>
+      integirty_config_cache;
+
   // Skip loading if cache is already loaded
-  if (s_win_integrity_payloads_cache->has_value()) {
-    return;
+  if (integirty_config_cache->has_value()) {
+    return *integirty_config_cache;
   }
 
   // Init cache
-  *s_win_integrity_payloads_cache = unordered_map<string, IntegrityPayload>();
+  *integirty_config_cache = std::unordered_map<std::string, IntegrityPayload>();
 
   // Load integrity config from exe resource
   HMODULE module_handle = ::GetModuleHandle(NULL);
 
-  HRSRC resource = ::FindResource(module_handle, INTEGRITY_CHECK_RESOURCE_ITEM,
-                                  INTEGRITY_CHECK_RESOURCE_TYPE);
+  HRSRC resource = ::FindResource(module_handle, kIntegrityCheckResourceItem,
+                                  kIntegrityCheckResourceType);
   if (!resource) {
-    LOG(FATAL) << "FindResource failed. Last error: " << GetLastError();
-    return;
+    PLOG(FATAL) << "FindResource failed.";
+    return *integirty_config_cache;
   }
 
   HGLOBAL rcData = ::LoadResource(module_handle, resource);
   if (!rcData) {
-    LOG(FATAL) << "LoadResource failed. Last error: " << GetLastError();
-    return;
+    PLOG(FATAL) << "LoadResource failed.";
+    return *integirty_config_cache;
   }
 
   auto* res_data = static_cast<const char*>(::LockResource(rcData));
-  int res_size = SizeofResource(NULL, resource);
+  int res_size = SizeofResource(module_handle, resource);
 
-  if (!res_data || !res_size) {
-    LOG(FATAL) << "Failed to integrity config from exe resource.";
-    return;
+  if (!res_data) {
+    PLOG(FATAL) << "Failed to integrity config from exe resource.";
+    return *integirty_config_cache;
+  }
+
+  if (!res_size) {
+    PLOG(FATAL) << "Unexpected empty integrity config from exe resource.";
+    return *integirty_config_cache;
   }
 
   // Parse integrity config payload
-  auto integrity_config_payload = string(res_data, res_size);
-  absl::optional<base::Value> root = base::JSONReader::Read(
-      integrity_config_payload,
-      base::JSON_PARSE_CHROMIUM_EXTENSIONS | base::JSON_ALLOW_TRAILING_COMMAS);
+  std::string integrity_config_payload = std::string(res_data, res_size);
+  absl::optional<base::Value> root =
+      base::JSONReader::Read(integrity_config_payload);
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";
-    return;
+    return *integirty_config_cache;
   }
 
   const base::Value::List* file_configs = root.value().GetIfList();
   if (!file_configs) {
     LOG(FATAL) << "Invalid integrity config: NOT a list.";
-    return;
+    return *integirty_config_cache;
   }
 
   // Parse each individual file integrity config
   for (size_t i = 0; i < file_configs->size(); i++) {
     // Skip invalid file configs
-    const Value::Dict* ele_dict = (*file_configs)[i].GetIfDict();
+    const base::Value::Dict* ele_dict = (*file_configs)[i].GetIfDict();
     if (!ele_dict) {
       LOG(WARNING) << "Skip config " << i << ": NOT a valid dict";
       continue;
     }
 
-    const string* file = ele_dict->FindString("file");
+    const std::string* file = ele_dict->FindString("file");
     if (!file || file->empty()) {
       LOG(WARNING) << "Skip config " << i << ": Invalid file";
       continue;
     }
 
-    const string* alg = ele_dict->FindString("alg");
+    const std::string* alg = ele_dict->FindString("alg");
     if (!alg || base::ToLowerASCII(*alg) != "sha256") {
       LOG(WARNING) << "Skip config " << i << ": Invalid alg";
       continue;
     }
 
-    const string* value = ele_dict->FindString("value");
+    const std::string* value = ele_dict->FindString("value");
     if (!value || value->empty()) {
       LOG(WARNING) << "Skip config " << i << ": Invalid hash value";
       continue;
@@ -143,11 +127,13 @@ void LoadIntegrityConfigCache() {
     // Add valid file config into cache
     IntegrityPayload header_integrity;
     header_integrity.algorithm = HashAlgorithm::kSHA256;
-    header_integrity.hash = *value;
+    header_integrity.hash = base::ToLowerASCII(*value);
 
-    s_win_integrity_payloads_cache->value()[ToLowerASCII(*file)] =
-        header_integrity;
+    integirty_config_cache->value()[base::ToLowerASCII(*file)] =
+        std::move(header_integrity);
   }
+
+  return *integirty_config_cache;
 }
 
 absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
@@ -156,19 +142,20 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   CHECK(relative_path.has_value());
 
   // Load integrity config from exe resource
-  LoadIntegrityConfigCache();
-  if (!s_win_integrity_payloads_cache->has_value()) {
+  absl::optional<std::unordered_map<std::string, IntegrityPayload>>
+      integrity_config = LoadIntegrityConfigCache();
+  if (!integrity_config.has_value()) {
     LOG(WARNING) << "Failed to integrity config from exe resource.";
     return absl::nullopt;
   }
 
-  // Convert Window rel path to ASCII lower case
-  string rel_path_utf8 = WideToASCII(relative_path.value().value().c_str());
-  rel_path_utf8 = ToLowerASCII(rel_path_utf8);
+  // Convert Window rel path to UTF8 lower case
+  std::string rel_path_utf8 = base::WideToUTF8(relative_path.value().value());
+  rel_path_utf8 = base::ToLowerASCII(rel_path_utf8);
 
   // Find file integrity config
-  auto iter = s_win_integrity_payloads_cache->value().find(rel_path_utf8);
-  if (iter == s_win_integrity_payloads_cache->value().end()) {
+  auto iter = integrity_config.value().find(rel_path_utf8);
+  if (iter == integrity_config.value().end()) {
     LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
     return absl::nullopt;
   }
