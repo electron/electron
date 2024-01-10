@@ -130,8 +130,8 @@ jobs:
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-        tar -czvf $DEPSHASH.tar.gz src
-        echo "Compressed src to $(du -sh $DEPSHASH.tar.gz | cut -f1 -d' ')"
+        tar -cvf $DEPSHASH.tar src
+        echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
     - name: Upload Compressed Src Cache to Azure
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
@@ -139,7 +139,7 @@ jobs:
           --account-name $AZURE_STORAGE_ACCOUNT \
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $DEPSHASH.tar.gz \
+          --file $DEPSHASH.tar \
           --name $DEPSHASH \
           --debug
   build:
@@ -200,12 +200,12 @@ jobs:
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
           --name $DEPSHASH \
-          --file $DEPSHASH.tar.gz \
+          --file $DEPSHASH.tar \
     - name: Unzip and Ensure Src Cache
       run: |
-        echo "Downloaded cache is $(du -sh $DEPSHASH.tar.gz | cut -f1)"
+        echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
         mkdir temp-cache
-        tar -xzvf $DEPSHASH.tar.gz -d temp-cache
+        tar -xvf $DEPSHASH.tar -C temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
         if [ -d "temp-cache/src" ]; then
@@ -214,7 +214,7 @@ jobs:
           mv temp-cache/src src
 
           echo "Deleting zip file"
-          rm -rf $DEPSHASH.tar.gz
+          rm -rf $DEPSHASH.tar
         fi
 
         if [ ! -d "src/third_party/blink" ]; then
@@ -281,12 +281,32 @@ jobs:
         sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
         cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
 
-        echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $BASH_ENV
+        echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $GITHUB_ENV
 
         cd src/third_party/angle
-        rm .git/objects/info/alternates
+        rm -f .git/objects/info/alternates
         git remote set-url origin https://chromium.googlesource.com/angle/angle.git
         cp .git/config .git/config.backup
         git remote remove origin
         mv .git/config.backup .git/config
         git fetch
+    # TODO(vertedinde): This won't work until we add an auth token
+    # to not-goma, see proj channel
+    # - name: Setup RBE
+    #   run: |
+    #     echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $GITHUB_ENV
+    #     if [ "`uname`" == "Darwin" ]; then
+    #       echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $GITHUB_ENV
+    #       echo 'ulimit -n 10000' >> $GITHUB_ENV
+    #       echo 'sudo launchctl limit maxfiles 65536 200000' >> $GITHUB_ENV
+    #     fi
+    #     git clone https://github.com/electron/build-tools.git
+    #     cd build-tools
+    #     npx yarn --ignore-engines
+    #     mkdir third_party
+    #     # Pull down credential helper and print status
+    #     node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
+    #     HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
+    #     $HELPER login
+    #     echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
+    #     echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
