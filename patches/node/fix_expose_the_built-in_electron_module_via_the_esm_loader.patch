@@ -18,19 +18,19 @@ index 1931688e85d05ee2da4f88efb05d635cb43be233..afccc24392abff9eef2b9953fcffeb79
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 6f9b73abd8a76191714f12d68c01a881653d8d4a..f108b567a910805ff86f0baf75fa1a6102ad28d6 100644
+index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..a111b5d7a6084caa61deb56bace5d91bf5f5aff4 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -140,7 +140,7 @@ async function defaultLoad(url, context = kEmptyObject) {
-     // Now that we have the source for the module, run `defaultGetFormat` again in case we detect ESM syntax.
-     format ??= await defaultGetFormat(urlInstance, contextToPass);
+@@ -142,7 +142,7 @@ async function defaultLoad(url, context = kEmptyObject) {
+       // Now that we have the source for the module, run `defaultGetFormat` to detect its format.
+       format = await defaultGetFormat(urlInstance, context);
  
--    if (format === 'commonjs' && contextToPass !== context) {
-+    if ((format === 'commonjs' || format === 'electron') && contextToPass !== context) {
-       // For backward compatibility reasons, we need to discard the source in
-       // order for the CJS loader to re-fetch it.
-       source = null;
-@@ -221,6 +221,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+-      if (format === 'commonjs') {
++      if (format === 'commonjs' || format === 'electron') {
+         // For backward compatibility reasons, we need to discard the source in
+         // order for the CJS loader to re-fetch it.
+         source = null;
+@@ -224,6 +224,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
@@ -38,7 +38,7 @@ index 6f9b73abd8a76191714f12d68c01a881653d8d4a..f108b567a910805ff86f0baf75fa1a61
      (
        !experimentalNetworkImports ||
        (
-@@ -229,7 +230,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -232,7 +233,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
        )
      )
    ) {
