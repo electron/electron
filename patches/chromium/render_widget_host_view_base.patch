@@ -24,17 +24,18 @@ index cfacbb911e5fd2cce13598cf4c2697e9d0c73038..114203c9fc5ff1ab82c80f478049ee47
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 67cb5cf0b9749f8488e307a4e0bd5ea3a0213db0..38b18aec9e3425f24e57cd71bb02093322acdd88 100644
+index 43531968500880d97911a7a777bd79a1f335681e..75fd40c7a484b923ff08a49367b407344d2cbae4 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -25,9 +25,12 @@
+@@ -24,10 +24,13 @@
+ #include "components/viz/common/surfaces/surface_id.h"
  #include "components/viz/host/hit_test/hit_test_query.h"
  #include "content/browser/renderer_host/display_feature.h"
- #include "content/browser/renderer_host/input/input_router_impl.h"
 +#include "content/browser/renderer_host/visible_time_request_trigger.h"
 +#include "content/browser/web_contents/web_contents_view.h"
  #include "content/common/content_export.h"
  #include "content/common/input/event_with_latency_info.h"
+ #include "content/common/input/input_router_impl.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
 +#include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
