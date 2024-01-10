@@ -17,11 +17,11 @@ index fadf75968c779d5aee8d9d1ee27e7b4abf241240..d407d440d74c66d9dc8ca4d465309629
 +void FSPermission::RadixTree::Insert(const std::string& path_prefix) {
    FSPermission::RadixTree::Node* current_node = root_node_;
  
-   unsigned int parent_node_prefix_len = current_node->prefix.length();
--  int path_len = path.length();
-+  int path_len = path_prefix.length();
+   size_t parent_node_prefix_len = current_node->prefix.length();
+-  size_t path_len = path.length();
++  size_t path_len = path_prefix.length();
  
-   for (int i = 1; i <= path_len; ++i) {
+   for (size_t i = 1; i <= path_len; ++i) {
 -    bool is_wildcard_node = path[i - 1] == '*';
 +    bool is_wildcard_node = path_prefix[i - 1] == '*';
      bool is_last_char = i == path_len;
@@ -49,9 +49,9 @@ index 244e95727ad48757995c6404f457f42a4ba33ccd..4b6aab197333928bfbd5143bea15b3a5
  
        Node() : wildcard_child(nullptr), is_leaf(false) {}
  
--      Node* CreateChild(std::string prefix) {
+-      Node* CreateChild(const std::string& prefix) {
 -        if (prefix.empty() && !is_leaf) {
-+      Node* CreateChild(std::string path_prefix) {
++      Node* CreateChild(const std::string& path_prefix) {
 +        if (path_prefix.empty() && !is_leaf) {
            is_leaf = true;
            return this;
@@ -65,10 +65,10 @@ index 244e95727ad48757995c6404f457f42a4ba33ccd..4b6aab197333928bfbd5143bea15b3a5
 +          children[label] = new Node(path_prefix);
            return children[label];
          }
- 
-@@ -48,7 +48,7 @@ class FSPermission final : public PermissionBase {
-         unsigned int i = 0;
-         unsigned int prefix_len = prefix.length();
+
+@@ -49,7 +49,7 @@ class FSPermission final : public PermissionBase {
+         size_t i = 0;
+         size_t prefix_len = prefix.length();
          for (; i < child->prefix.length(); ++i) {
 -          if (i > prefix_len || prefix[i] != child->prefix[i]) {
 +          if (i > prefix_len || path_prefix[i] != child->prefix[i]) {
