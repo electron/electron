@@ -116,8 +116,10 @@ jobs:
         id: find-prev-release-board
         with:
           title: ${{ steps.generate-project-metadata.outputs.prev-prev-major }}-x-y
+          token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/close-project@3a81985616963f32fae17d1d1b406c631f3201a1 # v1.1.0
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
+          token: ${{ steps.generate-token.outputs.token }}
