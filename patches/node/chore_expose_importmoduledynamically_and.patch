@@ -11,10 +11,10 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 41077285452eac05766a22c2e1d252868e7e548b..2246e57efcf0b95903644d643ad5572717ecdaf4 100644
+index 003ae7eb987f03611444f02695bc8582e0ac6a67..bbf1df480bc6ec90ee3ac29312dc89ff8bf94ab3 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
-@@ -22,7 +22,7 @@ const {
+@@ -23,7 +23,7 @@ const {
    ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
    ERR_INVALID_ARG_VALUE,
  } = require('internal/errors').codes;
@@ -23,14 +23,14 @@ index 41077285452eac05766a22c2e1d252868e7e548b..2246e57efcf0b95903644d643ad55727
  const {
    loadPreloadModules,
    initializeFrozenIntrinsics,
-@@ -190,12 +190,13 @@ let _isLoaderWorker = false;
-  * @param {boolean} [isLoaderWorker=false] - A boolean indicating whether the loader is a worker or not.
+@@ -221,12 +221,13 @@ let _forceDefaultLoader = false;
+  * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
   */
- function initializeESM(isLoaderWorker = false) {
+ function initializeESM(forceDefaultLoader = false) {
 +  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
-   _isLoaderWorker = isLoaderWorker;
+   _forceDefaultLoader = forceDefaultLoader;
    initializeDefaultConditions();
-   // Setup per-isolate callbacks that locate data or callbacks that we keep
+   // Setup per-realm callbacks that locate data or callbacks that we keep
    // track of for different ESM modules.
 -  setInitializeImportMetaObjectCallback(initializeImportMetaObject);
 -  setImportModuleDynamicallyCallback(importModuleDynamicallyCallback);
@@ -40,10 +40,10 @@ index 41077285452eac05766a22c2e1d252868e7e548b..2246e57efcf0b95903644d643ad55727
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 52c30dcb47d1faba0c2267e4381a624e450baa02..ba4c1a0d5a987e4d410b49f5c47166943bd101a6 100644
+index 895ff3a5948add3513700ecc2f32fce4c2fbe4eb..3182a5e4aad2ba0be2b6769edb696b815ce39a61 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -547,7 +547,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -554,7 +554,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
@@ -52,15 +52,15 @@ index 52c30dcb47d1faba0c2267e4381a624e450baa02..ba4c1a0d5a987e4d410b49f5c4716694
      Local<Context> context,
      Local<v8::Data> host_defined_options,
      Local<Value> resource_name,
-@@ -608,12 +608,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
-   Environment* env = Environment::GetCurrent(args);
+@@ -618,12 +618,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+   Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
 -  CHECK_EQ(args.Length(), 1);
 +  CHECK_EQ(args.Length(), 2);
    CHECK(args[0]->IsFunction());
    Local<Function> import_callback = args[0].As<Function>();
-   env->set_host_import_module_dynamically_callback(import_callback);
+   realm->set_host_import_module_dynamically_callback(import_callback);
  
 -  isolate->SetHostImportModuleDynamicallyCallback(ImportModuleDynamically);
 +  if (args[1]->IsBoolean() && args[1]->BooleanValue(isolate))
@@ -68,15 +68,15 @@ index 52c30dcb47d1faba0c2267e4381a624e450baa02..ba4c1a0d5a987e4d410b49f5c4716694
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -650,13 +651,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
-   Environment* env = Environment::GetCurrent(args);
-   Isolate* isolate = env->isolate();
+@@ -665,13 +666,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+   Realm* realm = Realm::GetCurrent(args);
+   Isolate* isolate = realm->isolate();
  
 -  CHECK_EQ(args.Length(), 1);
 +  CHECK_EQ(args.Length(), 2);
    CHECK(args[0]->IsFunction());
    Local<Function> import_meta_callback = args[0].As<Function>();
-   env->set_host_initialize_import_meta_object_callback(import_meta_callback);
+   realm->set_host_initialize_import_meta_object_callback(import_meta_callback);
  
 -  isolate->SetHostInitializeImportMetaObjectCallback(
 -      HostInitializeImportMetaObjectCallback);
