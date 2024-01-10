@@ -1659,7 +1659,7 @@ commands:
               echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
               (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
             else
-              if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+              if [ "$TARGET_ARCH" == "arm" ]; then
                 export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
                 (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
               else
@@ -2308,6 +2308,7 @@ jobs:
       <<: *env-global
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     steps:
       - electron-tests:
           artifact-key: linux-arm64
