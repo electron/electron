@@ -1,7 +1,7 @@
-From 389ea9be7d68bb189e16da79f6414edbd4f7594f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Toon Verwaest <verwaest@chromium.org>
 Date: Thu, 11 Jan 2024 10:47:17 +0100
-Subject: [PATCH] [runtime] Drop fast last-property deletion
+Subject: Drop fast last-property deletion
 
 This interacts badly with other optimizations and isn't particularly
 common.
@@ -14,13 +14,12 @@ Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Auto-Submit: Toon Verwaest <verwaest@chromium.org>
 Commit-Queue: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#91782}
----
 
 diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
-index 84170c3..7428ff8 100644
+index 94af9625f372c09b6cf10aead05f71832c274a6b..87b20def865db3cd1f50e35c70f8aedf226bdede 100644
 --- a/src/runtime/runtime-object.cc
 +++ b/src/runtime/runtime-object.cc
-@@ -71,186 +71,10 @@
+@@ -71,186 +71,10 @@ MaybeHandle<Object> Runtime::HasProperty(Isolate* isolate,
    return ReadOnlyRoots(isolate).boolean_value_handle(maybe.FromJust());
  }
  
@@ -208,10 +207,10 @@ index 84170c3..7428ff8 100644
    PropertyKey lookup_key(isolate, key, &success);
    if (!success) return Nothing<bool>();
 diff --git a/test/cctest/test-field-type-tracking.cc b/test/cctest/test-field-type-tracking.cc
-index ccbd96c..fbced12 100644
+index 41500ea14a571d3a081c79ed10f0d37430df852c..65193aa2308764cdf64c1c75d5a8ada4e6315c30 100644
 --- a/test/cctest/test-field-type-tracking.cc
 +++ b/test/cctest/test-field-type-tracking.cc
-@@ -3031,122 +3031,6 @@
+@@ -3030,122 +3030,6 @@ TEST(RepresentationPredicatesAreInSync) {
    }
  }
  
