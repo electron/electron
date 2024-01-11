@@ -54,14 +54,14 @@ void MenuBar::SetMenu(ElectronMenuModel* model) {
 }
 
 void MenuBar::SetAcceleratorVisibility(bool visible) {
-  for (auto* child : GetChildrenInZOrder())
+  for (views::View* child : GetChildrenInZOrder())
     static_cast<SubmenuButton*>(child)->SetAcceleratorVisibility(visible);
 }
 
 MenuBar::View* MenuBar::FindAccelChild(char16_t key) {
   if (key == 0)
     return nullptr;
-  for (auto* child : GetChildrenInZOrder()) {
+  for (views::View* child : GetChildrenInZOrder()) {
     if (static_cast<SubmenuButton*>(child)->accelerator() == key)
       return child;
   }
@@ -188,7 +188,7 @@ void MenuBar::ButtonPressed(size_t id, const ui::Event& event) {
   }
 
   SubmenuButton* source = nullptr;
-  for (auto* child : children()) {
+  for (views::View* child : children()) {
     auto* button = static_cast<SubmenuButton*>(child);
     int button_id = button->GetID();
     if (button_id >= 0 && static_cast<size_t>(button_id) == id) {
@@ -252,7 +252,7 @@ void MenuBar::UpdateViewColors() {
 #if BUILDFLAG(IS_LINUX)
   const auto& textColor =
       window_->IsFocused() ? enabled_color_ : disabled_color_;
-  for (auto* child : GetChildrenInZOrder()) {
+  for (views::View* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
     button->SetTextColor(views::Button::STATE_NORMAL, textColor);
     button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
@@ -261,7 +261,7 @@ void MenuBar::UpdateViewColors() {
     button->SetUnderlineColor(textColor);
   }
 #elif BUILDFLAG(IS_WIN)
-  for (auto* child : GetChildrenInZOrder()) {
+  for (views::View* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
     button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
   }
