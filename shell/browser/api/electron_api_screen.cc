@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_screen.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/functional/bind.h"
 #include "gin/dictionary.h"
@@ -49,13 +50,13 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
 }
 
 void DelayEmit(Screen* screen,
-               base::StringPiece name,
+               const std::string_view name,
                const display::Display& display) {
   screen->Emit(name, display);
 }
 
 void DelayEmitWithMetrics(Screen* screen,
-                          base::StringPiece name,
+                          const std::string_view name,
                           const display::Display& display,
                           const std::vector<std::string>& metrics) {
   screen->Emit(name, display, metrics);

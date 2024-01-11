@@ -2,10 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <iomanip>
+#include <string_view>
+
 #include <dwmapi.h>
 #include <windows.devices.enumeration.h>
 #include <wrl/client.h>
-#include <iomanip>
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
@@ -98,39 +100,38 @@ std::string SystemPreferences::GetAccentColor() {
 
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
                                         const std::string& color) {
-  static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, int>({
-          {"3d-dark-shadow", COLOR_3DDKSHADOW},
-          {"3d-face", COLOR_3DFACE},
-          {"3d-highlight", COLOR_3DHIGHLIGHT},
-          {"3d-light", COLOR_3DLIGHT},
-          {"3d-shadow", COLOR_3DSHADOW},
-          {"active-border", COLOR_ACTIVEBORDER},
-          {"active-caption", COLOR_ACTIVECAPTION},
-          {"active-caption-gradient", COLOR_GRADIENTACTIVECAPTION},
-          {"app-workspace", COLOR_APPWORKSPACE},
-          {"button-text", COLOR_BTNTEXT},
-          {"caption-text", COLOR_CAPTIONTEXT},
-          {"desktop", COLOR_DESKTOP},
-          {"disabled-text", COLOR_GRAYTEXT},
-          {"highlight", COLOR_HIGHLIGHT},
-          {"highlight-text", COLOR_HIGHLIGHTTEXT},
-          {"hotlight", COLOR_HOTLIGHT},
-          {"inactive-border", COLOR_INACTIVEBORDER},
-          {"inactive-caption", COLOR_INACTIVECAPTION},
-          {"inactive-caption-gradient", COLOR_GRADIENTINACTIVECAPTION},
-          {"inactive-caption-text", COLOR_INACTIVECAPTIONTEXT},
-          {"info-background", COLOR_INFOBK},
-          {"info-text", COLOR_INFOTEXT},
-          {"menu", COLOR_MENU},
-          {"menu-highlight", COLOR_MENUHILIGHT},
-          {"menu-text", COLOR_MENUTEXT},
-          {"menubar", COLOR_MENUBAR},
-          {"scrollbar", COLOR_SCROLLBAR},
-          {"window", COLOR_WINDOW},
-          {"window-frame", COLOR_WINDOWFRAME},
-          {"window-text", COLOR_WINDOWTEXT},
-      });
+  static constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
+      {"3d-dark-shadow", COLOR_3DDKSHADOW},
+      {"3d-face", COLOR_3DFACE},
+      {"3d-highlight", COLOR_3DHIGHLIGHT},
+      {"3d-light", COLOR_3DLIGHT},
+      {"3d-shadow", COLOR_3DSHADOW},
+      {"active-border", COLOR_ACTIVEBORDER},
+      {"active-caption", COLOR_ACTIVECAPTION},
+      {"active-caption-gradient", COLOR_GRADIENTACTIVECAPTION},
+      {"app-workspace", COLOR_APPWORKSPACE},
+      {"button-text", COLOR_BTNTEXT},
+      {"caption-text", COLOR_CAPTIONTEXT},
+      {"desktop", COLOR_DESKTOP},
+      {"disabled-text", COLOR_GRAYTEXT},
+      {"highlight", COLOR_HIGHLIGHT},
+      {"highlight-text", COLOR_HIGHLIGHTTEXT},
+      {"hotlight", COLOR_HOTLIGHT},
+      {"inactive-border", COLOR_INACTIVEBORDER},
+      {"inactive-caption", COLOR_INACTIVECAPTION},
+      {"inactive-caption-gradient", COLOR_GRADIENTINACTIVECAPTION},
+      {"inactive-caption-text", COLOR_INACTIVECAPTIONTEXT},
+      {"info-background", COLOR_INFOBK},
+      {"info-text", COLOR_INFOTEXT},
+      {"menu", COLOR_MENU},
+      {"menu-highlight", COLOR_MENUHILIGHT},
+      {"menu-text", COLOR_MENUTEXT},
+      {"menubar", COLOR_MENUBAR},
+      {"scrollbar", COLOR_SCROLLBAR},
+      {"window", COLOR_WINDOW},
+      {"window-frame", COLOR_WINDOWFRAME},
+      {"window-text", COLOR_WINDOWTEXT},
+  });
 
   if (const auto* iter = Lookup.find(color); iter != Lookup.end())
     return ToRGBAHex(color_utils::GetSysSkColor(iter->second));

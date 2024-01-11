@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/apple/bundle_locations.h"
@@ -80,9 +81,9 @@ namespace {
 
 const char kRelauncherProcess[] = "relauncher";
 
-constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
-constexpr base::StringPiece kElectronEnableStackDumping(
-    "ELECTRON_ENABLE_STACK_DUMPING");
+constexpr std::string_view kElectronDisableSandbox{"ELECTRON_DISABLE_SANDBOX"};
+constexpr std::string_view kElectronEnableStackDumping{
+    "ELECTRON_ENABLE_STACK_DUMPING"};
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.

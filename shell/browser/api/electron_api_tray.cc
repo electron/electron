@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_tray.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
 #include "gin/dictionary.h"
@@ -32,7 +33,7 @@ struct Converter<electron::TrayIcon::IconType> {
                      electron::TrayIcon::IconType* out) {
     using Val = electron::TrayIcon::IconType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"custom", Val::kCustom},
             {"error", Val::kError},
             {"info", Val::kInfo},
