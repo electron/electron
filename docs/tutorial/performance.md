@@ -103,7 +103,7 @@ is not in fact the leanest or smallest one available.
 
 The reasoning behind this recommendation is best illustrated with a real-world
 example. During the early days of Electron, reliable detection of network
-connectivity was a problem, resulting in many apps to use a module that exposed a
+connectivity was a problem, resulting in many apps using a module that exposed a
 simple `isOnline()` method.
 
 That module detected your network connectivity by attempting to reach out to a
