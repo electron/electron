@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a2279083173a5b 100644
+index d8e49b2ed69bd7eeb0b7d474c665fea7b06e297b..c07e1cb57de8fdd80c7c67bc14daea5ca3a37173 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -21,8 +21,10 @@
@@ -21,9 +21,9 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
  #include "chrome/browser/picture_in_picture/auto_pip_setting_helper.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "media/base/media_switches.h"
+ #include "net/base/url_util.h"
  #include "third_party/blink/public/common/features.h"
- #include "ui/views/view.h"
-@@ -38,7 +40,7 @@ constexpr gfx::Size kMinWindowSize(240, 52);
+@@ -39,7 +41,7 @@ constexpr gfx::Size kMinWindowSize(240, 52);
  // not apply to video Picture-in-Picture windows.
  constexpr double kMaxWindowSizeRatio = 0.8;
  
@@ -32,7 +32,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -170,7 +172,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -171,7 +173,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -41,7 +41,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
    if (auto_pip_setting_helper_) {
      auto_pip_setting_helper_->OnUserClosedWindow();
    }
-@@ -353,7 +355,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -354,7 +356,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -50,7 +50,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -376,7 +378,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
+@@ -391,7 +393,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
    pip_window_controller_->Close(false /* should_pause_video */);
    pip_window_controller_ = nullptr;
@@ -59,7 +59,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
    auto_pip_setting_helper_.reset();
  #endif  // !BUILDFLAG(IS_ANDROID)
  }
-@@ -387,8 +389,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -402,8 +404,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
    // contents, so we only need to forget the controller here when user closes
    // the parent web contents with the PiP window open.
    document_web_contents_observer_.reset();
@@ -70,7 +70,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
    if (pip_window_controller_)
      pip_window_controller_ = nullptr;
  }
-@@ -410,6 +414,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -425,6 +429,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -78,7 +78,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -440,6 +445,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -455,6 +460,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -87,7 +87,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
  }
  
  PictureInPictureOcclusionTracker*
-@@ -450,6 +457,7 @@ PictureInPictureWindowManager::GetOcclusionTracker() {
+@@ -465,6 +472,7 @@ PictureInPictureWindowManager::GetOcclusionTracker() {
  #endif  // !BUILDFLAG(IS_ANDROID)
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
  void PictureInPictureWindowManager::CreateAutoPipSettingHelperIfNeeded() {
    // Because we have to defer creating this until after the tab helper finds out
    // about pip, we don't care if there's already a helper.  Just use it.
-@@ -479,6 +487,7 @@ void PictureInPictureWindowManager::CreateAutoPipSettingHelperIfNeeded() {
+@@ -494,6 +502,7 @@ void PictureInPictureWindowManager::CreateAutoPipSettingHelperIfNeeded() {
        web_contents,
        base::BindOnce(&PictureInPictureWindowManager::ExitPictureInPictureSoon));
  }
@@ -104,7 +104,7 @@ index 297e37c11cc69025843b225a4ba8ae096e304915..6244f27cacbddeed4881463d07a22790
  void PictureInPictureWindowManager::CreateOcclusionTrackerIfNecessary() {
    if (occlusion_tracker_) {
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 5b3deb74d3e1cceebfd86a8f4bacf81a10967ade..8ca4f8d8fd6353177ae203e3c4c0810a11640b7c 100644
+index dee3d975ce032054b1f8da839620f281a3ab17de..2013ec36331dea37bedde7b0ee4a9e6f0f51830e 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -11,6 +11,7 @@
@@ -115,7 +115,7 @@ index 5b3deb74d3e1cceebfd86a8f4bacf81a10967ade..8ca4f8d8fd6353177ae203e3c4c0810a
  #include "build/build_config.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
-@@ -32,7 +33,9 @@ class Display;
+@@ -33,7 +34,9 @@ class Display;
  }  // namespace display
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -125,7 +125,7 @@ index 5b3deb74d3e1cceebfd86a8f4bacf81a10967ade..8ca4f8d8fd6353177ae203e3c4c0810a
  class PictureInPictureOcclusionTracker;
  
  namespace views {
-@@ -179,10 +182,11 @@ class PictureInPictureWindowManager {
+@@ -180,10 +183,11 @@ class PictureInPictureWindowManager {
        const gfx::Rect& browser_view_overridden_bounds,
        views::View* anchor_view,
        views::BubbleBorder::Arrow arrow);
@@ -138,7 +138,7 @@ index 5b3deb74d3e1cceebfd86a8f4bacf81a10967ade..8ca4f8d8fd6353177ae203e3c4c0810a
  
    // Returns the PictureInPictureOcclusionTracker, which can inform observers
    // when a widget has been occluded by a video or document picture-in-picture
-@@ -238,8 +242,10 @@ class PictureInPictureWindowManager {
+@@ -245,8 +249,10 @@ class PictureInPictureWindowManager {
    static void ExitPictureInPictureSoon();
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -149,7 +149,7 @@ index 5b3deb74d3e1cceebfd86a8f4bacf81a10967ade..8ca4f8d8fd6353177ae203e3c4c0810a
  
    // Creates the `occlusion_tracker_` if it does not already exist and should
    // exist.
-@@ -256,7 +262,9 @@ class PictureInPictureWindowManager {
+@@ -263,7 +269,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  

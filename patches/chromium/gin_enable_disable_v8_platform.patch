@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 4cb88241eeaaacdd1c1e419759fd56bc003dbaf3..1c3536a183aad1965e834b1681e36a3fc46ae419 100644
+index cdaa098dd404ae477d208375cc4c9ca1b5ac43e4..cb2529a65f62c40e39d7cd4c96e50e1b72abbd53 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -140,9 +140,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
+@@ -151,9 +151,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
                                 const intptr_t* reference_table,
                                 const std::string js_command_line_flags,
                                 v8::FatalErrorCallback fatal_error_callback,
@@ -38,10 +38,10 @@ index c19eb72e8d37fe8145b813d07875addf793e12dc..a5db8841773618814ac90f740201d4d7
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index b3647cb580bfa3ba7678511072f18a8d53cd0a6a..7dca3d0f45b63a270e6705180ffac4a05430f5ec 100644
+index bc74835cd03758d5be79049b118403578a87ce35..374735e1e4308d2b0c095a6d318161ff71ac6b8b 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -443,7 +443,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
+@@ -446,7 +446,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
                                 const std::string js_command_line_flags,
@@ -51,7 +51,7 @@ index b3647cb580bfa3ba7678511072f18a8d53cd0a6a..7dca3d0f45b63a270e6705180ffac4a0
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -453,7 +454,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+@@ -456,7 +457,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
    // See https://crbug.com/v8/11043
    SetFlags(mode, js_command_line_flags);
  

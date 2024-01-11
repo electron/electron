@@ -54,7 +54,7 @@ index 632b95912ff5c48431bfef4807b6481646a5cfd5..4a2e03f7d314c22497db700e88ae8367
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index ae38020ebd9525795f53d4751b225cc30ac02d19..2f8fe962b9219b70e5a9f35f4b59f163aa07564d 100644
+index e094878a71fba2542e64c3ebe963b8980ce3a938..86b9ffed2136ca9b710134a648516ab5b781e567 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -514,6 +514,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
@@ -68,7 +68,7 @@ index ae38020ebd9525795f53d4751b225cc30ac02d19..2f8fe962b9219b70e5a9f35f4b59f163
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -631,6 +635,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -629,6 +633,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  
