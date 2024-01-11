@@ -110,7 +110,6 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
     ELECTRON_OUT_DIR: 'Default',
     ELECTRON_ENABLE_STACK_DUMPING: 1,
     ELECTRON_ALSO_LOG_TO_STDERR: 1,
-    GOMA_FALLBACK_ON_AUTH_FAILURE: true,
     DEPOT_TOOLS_WIN_TOOLCHAIN: 0,
     PYTHONIOENCODING: 'UTF-8'
   };
