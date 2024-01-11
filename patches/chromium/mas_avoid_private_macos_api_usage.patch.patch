@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e54d9ff43f3ab09e007fea77344482f9884ce404..3d395e8feeeb2f6d0fc460b19235dfdbae00437a 100644
+index ccbf80dcc16734d1f8fd4f8bb574dd4534f3e7c4..3c07d4c27bdf22986e4d832cc36da573db4cfbc4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1032,6 +1032,7 @@ component("base") {
+@@ -1038,6 +1038,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -390,7 +390,7 @@ index 12f99e2640142c922944d7101633a4e75baa4a92..27b8d9c767ca3f4dede7f79d6295ec8c
  
    if (is_win) {
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index 76be676717e62c429319338c6115be89f2dfa424..18a5fd3c87b08c95d668b70c9b8f7a76413a75bb 100644
+index eaf077d33ca54a5394b1f1ab9024b22c4e496ae5..ac2b42196188bc32b9842f95df74aa4ca8ed54ae 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -86,8 +86,10 @@ id GetFocusedBrowserAccessibilityElement() override {
@@ -405,7 +405,7 @@ index 76be676717e62c429319338c6115be89f2dfa424..18a5fd3c87b08c95d668b70c9b8f7a76
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 14a52ca1254d4b583b44c20336cce1637b91f88c..618b9a6d680a2bfaf26ad3c7303a95081ccdb75b 100644
+index 8c32ab0c35f68ae57f93002455a979f9381e3ac6..77782bb1847baf847d53e9bea926316c36f92838 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -2020,15 +2020,21 @@ - (NSAccessibilityRole)accessibilityRole {
@@ -431,7 +431,7 @@ index 14a52ca1254d4b583b44c20336cce1637b91f88c..618b9a6d680a2bfaf26ad3c7303a9508
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 531f2f8f15cb0d052621bc6a4f0a4c3afcb89d19..2cd7d5894206c6fc322918a79562d942984f3e1f 100644
+index e67304f208e1ad657fff4b9c958fba4e74b75bf4..62695d9439c28ef29a18999909ae9c5fc442181a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -515,7 +515,7 @@ index 04033ad13703e6e2a96ac3eec298c778c52512a1..24eb6f80dd31c55af90153dccd3b450e
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 0f1bc6f3804309f513cbc700cc10e8b173a68dc0..fae7865cda633ae96df60b2d8d6beb1384031969 100644
+index 816e03b7a9c8d3dd1ca7ec2dc354a02e9b03a2f0..1c89ef6bfe1ad78e0f7d25135619f481746c75b6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -568,10 +568,10 @@ index 0f1bc6f3804309f513cbc700cc10e8b173a68dc0..fae7865cda633ae96df60b2d8d6beb13
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index f1dbc483ec57d2a1cc409b9d82448879f84ffeae..1c85063d6df14dafa5a4334046e1eadaf314443b 100644
+index 3c5d755932014bc28cd1ced41a49bd8c920c93b0..a15ed2cee75e5a82a3e43457c77471735e4c0fa2 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -220,6 +220,7 @@ source_set("common") {
+@@ -238,6 +238,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -580,7 +580,7 @@ index f1dbc483ec57d2a1cc409b9d82448879f84ffeae..1c85063d6df14dafa5a4334046e1eada
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 19a85853ced691c017760ebc415d8a78ab5a970b..104fd36fc669db13b4af483f81ef991358df1e8f 100644
+index 8d978ba3c27d6399c1d03b5cb291dab0b5305e0e..026b9d7ff92e09e5cb98723ffc2c8998a34c0787 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -660,10 +660,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a19857ade673092db3741f1e8f385d418246b580..d523a23793e4f28112af6500eb6ea1043b83516d 100644
+index 39fbfa15fb71497baa79e2989a1bafc87fa83fd4..0b71495e29c2d8fd512110ae416c277075ecd168 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -474,6 +474,7 @@ static_library("test_support") {
+@@ -475,6 +475,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -671,7 +671,7 @@ index a19857ade673092db3741f1e8f385d418246b580..d523a23793e4f28112af6500eb6ea104
    ]
  
    public_deps = [
-@@ -1047,6 +1048,7 @@ static_library("browsertest_support") {
+@@ -1050,6 +1051,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index a19857ade673092db3741f1e8f385d418246b580..d523a23793e4f28112af6500eb6ea104
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1666,6 +1668,7 @@ test("content_browsertests") {
+@@ -1670,6 +1672,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index a19857ade673092db3741f1e8f385d418246b580..d523a23793e4f28112af6500eb6ea104
  
    public_deps = [
      ":test_interfaces",
-@@ -2906,6 +2909,7 @@ test("content_unittests") {
+@@ -2912,6 +2915,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -696,7 +696,7 @@ index a19857ade673092db3741f1e8f385d418246b580..d523a23793e4f28112af6500eb6ea104
    public_deps = [ "//content:content_resources" ]
  
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index fadba8ec22728d9b99e6042438039b3c8a88b836..3cf1ab8200f7ff18d4ef1e5678579ce8af7072fa 100644
+index 38e5fd5c3af79a9f0ed80b2e15d748e9144b7982..508816a935744166cbc15561de07d7e77a1f68af 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -149,6 +149,8 @@ static_library("web_test_browser") {
@@ -777,7 +777,7 @@ index e321b406a8375986b41d64342919bb0e8c5e58eb..8081d53adab80a6fccfdb4cd6f608c3b
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index f8d4dc33b5687122420af314d597679d16126e00..e187d08374b74314fa817ebb0ba7f28f6f6764b9 100644
+index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e76cdc5d2 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -23,7 +23,9 @@
@@ -802,10 +802,10 @@ index f8d4dc33b5687122420af314d597679d16126e00..e187d08374b74314fa817ebb0ba7f28f
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21fafad7c1ec4 100644
+index 9c4e8e2536819610648aa5b3d11eaa5d2da24a9c..0b3660e51b0a15102b7b1726e17b34d582b3576e 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -67,12 +67,16 @@
+@@ -72,12 +72,16 @@
  }  // namespace
  
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL()
@@ -823,7 +823,7 @@ index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21faf
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, !av_disabled_at_command_line);
  
-@@ -93,6 +97,10 @@
+@@ -98,6 +102,10 @@
  #endif
      ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
@@ -834,7 +834,7 @@ index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21faf
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -221,9 +229,13 @@
+@@ -235,9 +243,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -849,7 +849,7 @@ index 1f4f64ad8f5d37dfdd6e51e97ce2fb743abfcd90..9531c528b84b9d7a0b59c3abb1a21faf
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 6ab4e755d5d7a82685424118c21ded35924c611c..65022e5613c275883b6578662492a9f761ee7294 100644
+index 878a23986aa6c2bc3db8943c2a25414efdae51b4..d5d1d657faea0d949a47f1d2d5d07d2a73353f38 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -209,6 +209,7 @@ source_set("audio") {
@@ -861,10 +861,10 @@ index 6ab4e755d5d7a82685424118c21ded35924c611c..65022e5613c275883b6578662492a9f7
  
    if (is_ios) {
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index cb1fda282600555b57b3e135434ceaaeed863a6e..c26ec863c15f9dbe441b05ea74349f19cbcaccec 100644
+index a21d4afac7ed2e17d6d31255be381b465de70e5b..00556993be4176b921be59dad57a5b0dff2e0da1 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
-@@ -31,19 +31,23 @@
+@@ -33,19 +33,23 @@
  
  namespace {
  extern "C" {
@@ -886,10 +886,10 @@ index cb1fda282600555b57b3e135434ceaaeed863a6e..c26ec863c15f9dbe441b05ea74349f19
    }
 +#endif
  }
- 
  }  // namespace
+ #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 7f079995d4161796b7208348c43c39a2569b0fc1..1d8fc87f2c420bb809f4925eaa3902ca89453c13 100644
+index 473162885a2249cbc9b20bd810de95f54f0876f7..2fb15fcb7a04bfff01d7a22e79d467ba946b37d8 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -970,7 +970,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c1974a6726285a5311727f026f62f90c1187130f..f050022227720283135e2c3d85c5992f193d7e1e 100644
+index d9349048bd9f0dbf4058a0085211c31140fd8818..58b32362c3c6821257ca93311b8e3d54281f570b 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
