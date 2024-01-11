@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1f40ac55a05561faf727732813004e6a17ff7ad7..d2cb8ac8b6a4b3e3a947a235a802c0b1d5bc6d13 100644
+index ee7e9dd96052fab076e2675ec07e8061662321f7..e2519929397c31c7449691c02673dd9a7f7ac8c9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1034,6 +1034,7 @@ component("base") {
@@ -431,7 +431,7 @@ index 14a52ca1254d4b583b44c20336cce1637b91f88c..618b9a6d680a2bfaf26ad3c7303a9508
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2669b822d242a7a6fd6aec923afe7593f03b7eb7..ec74ae5fa01ca89e048ec2deef7776d3f28058c0 100644
+index 768c5b2e30e725268f8e4154e9a7a46c726ee900..d5556cc0c2edafd2735b09847941a6666f4b26dc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -568,10 +568,10 @@ index 0f1bc6f3804309f513cbc700cc10e8b173a68dc0..fae7865cda633ae96df60b2d8d6beb13
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index f1dbc483ec57d2a1cc409b9d82448879f84ffeae..1c85063d6df14dafa5a4334046e1eadaf314443b 100644
+index 8e1115c6b2d259ca8d8fb163f6d8fa020a46ae31..b801ab4a2349867f53ba7abbd9974d5238c5ec75 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -220,6 +220,7 @@ source_set("common") {
+@@ -235,6 +235,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c970dd6d3ad7d40a919b0dd99c2d5b81652646ab..0a93246100832dac7dd4f32966ef4c80d5c9b6bb 100644
+index b71775e869ee6e48754ce9e5a476bb76fefc48b4..d59d1b1245cdd49b3c68225d4cefdc3899c08f9c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -474,6 +474,7 @@ static_library("test_support") {
