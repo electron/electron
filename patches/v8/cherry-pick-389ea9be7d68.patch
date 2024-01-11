@@ -1,0 +1,336 @@
+From 389ea9be7d68bb189e16da79f6414edbd4f7594f Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 11 Jan 2024 10:47:17 +0100
+Subject: [PATCH] [runtime] Drop fast last-property deletion
+
+This interacts badly with other optimizations and isn't particularly
+common.
+
+Bug: chromium:1517354
+Change-Id: I7adb51a8fc0ec47eaeb911ca2a4cbc517088e416
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5185340
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#91782}
+---
+
+diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
+index 84170c3..7428ff8 100644
+--- a/src/runtime/runtime-object.cc
++++ b/src/runtime/runtime-object.cc
+@@ -71,186 +71,10 @@
+   return ReadOnlyRoots(isolate).boolean_value_handle(maybe.FromJust());
+ }
+ 
+-namespace {
+-
+-// This function sets the sentinel value in a deleted field. Thes sentinel has
+-// to look like a proper standalone object because the slack tracking may
+-// complete at any time. For this reason we use the filler map word.
+-// If V8_MAP_PACKING is enabled, then the filler map word is a packed filler
+-// map. Otherwise, the filler map word is the same as the filler map.
+-inline void ClearField(Isolate* isolate, Tagged<JSObject> object,
+-                       FieldIndex index) {
+-  if (index.is_inobject()) {
+-    MapWord filler_map_word =
+-        ReadOnlyRoots(isolate).one_pointer_filler_map_word();
+-#ifndef V8_MAP_PACKING
+-    DCHECK_EQ(filler_map_word.ToMap(),
+-              ReadOnlyRoots(isolate).one_pointer_filler_map());
+-#endif
+-    int offset = index.offset();
+-    TaggedField<MapWord>::Release_Store(object, offset, filler_map_word);
+-  } else {
+-    object->property_array()->set(
+-        index.outobject_array_index(),
+-        ReadOnlyRoots(isolate).one_pointer_filler_map());
+-  }
+-}
+-
+-void GeneralizeAllTransitionsToFieldAsMutable(Isolate* isolate, Handle<Map> map,
+-                                              Handle<Name> name) {
+-  InternalIndex descriptor(map->NumberOfOwnDescriptors());
+-
+-  Handle<Map> target_maps[kPropertyAttributesCombinationsCount];
+-  int target_maps_count = 0;
+-
+-  // Collect all outgoing field transitions.
+-  {
+-    DisallowGarbageCollection no_gc;
+-    TransitionsAccessor transitions(isolate, *map);
+-    transitions.ForEachTransitionTo(
+-        *name,
+-        [&](Tagged<Map> target) {
+-          DCHECK_EQ(descriptor, target->LastAdded());
+-          DCHECK_EQ(*name, target->GetLastDescriptorName(isolate));
+-          PropertyDetails details = target->GetLastDescriptorDetails(isolate);
+-          // Currently, we track constness only for fields.
+-          if (details.kind() == PropertyKind::kData &&
+-              details.constness() == PropertyConstness::kConst) {
+-            target_maps[target_maps_count++] = handle(target, isolate);
+-          }
+-          DCHECK_IMPLIES(details.kind() == PropertyKind::kAccessor,
+-                         details.constness() == PropertyConstness::kConst);
+-        },
+-        &no_gc);
+-    CHECK_LE(target_maps_count, kPropertyAttributesCombinationsCount);
+-  }
+-
+-  for (int i = 0; i < target_maps_count; i++) {
+-    Handle<Map> target = target_maps[i];
+-    PropertyDetails details =
+-        target->instance_descriptors(isolate)->GetDetails(descriptor);
+-    Handle<FieldType> field_type(
+-        target->instance_descriptors(isolate)->GetFieldType(descriptor),
+-        isolate);
+-    MapUpdater::GeneralizeField(isolate, target, descriptor,
+-                                PropertyConstness::kMutable,
+-                                details.representation(), field_type);
+-    DCHECK_EQ(PropertyConstness::kMutable, target->instance_descriptors(isolate)
+-                                               ->GetDetails(descriptor)
+-                                               .constness());
+-  }
+-}
+-
+-bool DeleteObjectPropertyFast(Isolate* isolate, Handle<JSReceiver> receiver,
+-                              Handle<Object> raw_key) {
+-  // This implements a special case for fast property deletion: when the
+-  // last property in an object is deleted, then instead of normalizing
+-  // the properties, we can undo the last map transition, with a few
+-  // prerequisites:
+-  // (1) The receiver must be a regular object and the key a unique name.
+-  Handle<Map> receiver_map(receiver->map(), isolate);
+-  if (IsSpecialReceiverMap(*receiver_map)) return false;
+-  DCHECK(IsJSObjectMap(*receiver_map));
+-
+-  if (!IsUniqueName(*raw_key)) return false;
+-  Handle<Name> key = Handle<Name>::cast(raw_key);
+-  // (2) The property to be deleted must be the last property.
+-  int nof = receiver_map->NumberOfOwnDescriptors();
+-  if (nof == 0) return false;
+-  InternalIndex descriptor(nof - 1);
+-  Handle<DescriptorArray> descriptors(
+-      receiver_map->instance_descriptors(isolate), isolate);
+-  if (descriptors->GetKey(descriptor) != *key) return false;
+-  // (3) The property to be deleted must be deletable.
+-  PropertyDetails details = descriptors->GetDetails(descriptor);
+-  if (!details.IsConfigurable()) return false;
+-  // (4) The map must have a back pointer.
+-  Handle<Object> backpointer(receiver_map->GetBackPointer(), isolate);
+-  if (!IsMap(*backpointer)) return false;
+-  Handle<Map> parent_map = Handle<Map>::cast(backpointer);
+-  // (5) The last transition must have been caused by adding a property
+-  // (and not any kind of special transition).
+-  if (parent_map->NumberOfOwnDescriptors() != nof - 1) return false;
+-
+-  // Preconditions successful. No more bailouts after this point.
+-
+-  // Zap the property to avoid keeping objects alive. Zapping is not necessary
+-  // for properties stored in the descriptor array.
+-  if (details.location() == PropertyLocation::kField) {
+-    DisallowGarbageCollection no_gc;
+-
+-    // Invalidate slots manually later in case we delete an in-object tagged
+-    // property. In this case we might later store an untagged value in the
+-    // recorded slot.
+-    isolate->heap()->NotifyObjectLayoutChange(
+-        *receiver, no_gc, InvalidateRecordedSlots::kNo,
+-        InvalidateExternalPointerSlots::kNo);
+-    FieldIndex index =
+-        FieldIndex::ForPropertyIndex(*receiver_map, details.field_index());
+-    // Special case deleting the last out-of object property.
+-    if (!index.is_inobject() && index.outobject_array_index() == 0) {
+-      DCHECK(!parent_map->HasOutOfObjectProperties());
+-      // Clear out the properties backing store.
+-      receiver->SetProperties(ReadOnlyRoots(isolate).empty_fixed_array());
+-    } else {
+-      ClearField(isolate, JSObject::cast(*receiver), index);
+-      if (index.is_inobject()) {
+-        // We need to clear the recorded slot in this case because in-object
+-        // slack tracking might not be finished. This ensures that we don't
+-        // have recorded slots in free space.
+-        isolate->heap()->ClearRecordedSlot(*receiver,
+-                                           receiver->RawField(index.offset()));
+-      }
+-    }
+-  }
+-  // If the {receiver_map} was marked stable before, then there could be
+-  // optimized code that depends on the assumption that no object that
+-  // reached this {receiver_map} transitions away from it without triggering
+-  // the "deoptimize dependent code" mechanism.
+-  receiver_map->NotifyLeafMapLayoutChange(isolate);
+-  // Finally, perform the map rollback.
+-  receiver->set_map(*parent_map, kReleaseStore);
+-#if VERIFY_HEAP
+-  if (v8_flags.verify_heap) {
+-    receiver->HeapObjectVerify(isolate);
+-    receiver->property_array()->PropertyArrayVerify(isolate);
+-  }
+-#endif
+-
+-  // If the {descriptor} was "const" so far, we need to update the
+-  // {receiver_map} here, otherwise we could get the constants wrong, i.e.
+-  //
+-  //   o.x = 1;
+-  //   [change o.x's attributes or reconfigure property kind]
+-  //   delete o.x;
+-  //   o.x = 2;
+-  //
+-  // could trick V8 into thinking that `o.x` is still 1 even after the second
+-  // assignment.
+-
+-  // Step 1: Migrate object to an up-to-date shape.
+-  if (parent_map->is_deprecated()) {
+-    JSObject::MigrateInstance(isolate, Handle<JSObject>::cast(receiver));
+-    parent_map = handle(receiver->map(), isolate);
+-  }
+-
+-  // Step 2: Mark outgoing transitions from the up-to-date version of the
+-  // parent_map to same property name of any kind or attributes as mutable.
+-  // Also migrate object to the up-to-date map to make the object shapes
+-  // converge sooner.
+-  GeneralizeAllTransitionsToFieldAsMutable(isolate, parent_map, key);
+-
+-  return true;
+-}
+-
+-}  // namespace
+-
+ Maybe<bool> Runtime::DeleteObjectProperty(Isolate* isolate,
+                                           Handle<JSReceiver> receiver,
+                                           Handle<Object> key,
+                                           LanguageMode language_mode) {
+-  if (DeleteObjectPropertyFast(isolate, receiver, key)) return Just(true);
+-
+   bool success = false;
+   PropertyKey lookup_key(isolate, key, &success);
+   if (!success) return Nothing<bool>();
+diff --git a/test/cctest/test-field-type-tracking.cc b/test/cctest/test-field-type-tracking.cc
+index ccbd96c..fbced12 100644
+--- a/test/cctest/test-field-type-tracking.cc
++++ b/test/cctest/test-field-type-tracking.cc
+@@ -3031,122 +3031,6 @@
+   }
+ }
+ 
+-TEST(DeletePropertyGeneralizesConstness) {
+-  CcTest::InitializeVM();
+-  v8::HandleScope scope(CcTest::isolate());
+-  Isolate* isolate = CcTest::i_isolate();
+-  Handle<FieldType> any_type = FieldType::Any(isolate);
+-
+-  // Create a map with some properties.
+-  Handle<Map> initial_map = Map::Create(isolate, kPropCount + 3);
+-  Handle<Map> map = initial_map;
+-  for (int i = 0; i < kPropCount; i++) {
+-    Handle<String> name = CcTest::MakeName("prop", i);
+-    map = Map::CopyWithField(isolate, map, name, any_type, NONE,
+-                             PropertyConstness::kConst, Representation::Smi(),
+-                             INSERT_TRANSITION)
+-              .ToHandleChecked();
+-  }
+-  Handle<Map> parent_map = map;
+-  CHECK(!map->is_deprecated());
+-
+-  Handle<String> name_x = CcTest::MakeString("x");
+-  Handle<String> name_y = CcTest::MakeString("y");
+-
+-  map = Map::CopyWithField(isolate, parent_map, name_x, any_type, NONE,
+-                           PropertyConstness::kConst, Representation::Smi(),
+-                           INSERT_TRANSITION)
+-            .ToHandleChecked();
+-
+-  // Create an object, initialize its properties and add a couple of clones.
+-  Handle<JSObject> object1 = isolate->factory()->NewJSObjectFromMap(map);
+-  for (int i = 0; i < kPropCount; i++) {
+-    FieldIndex index = FieldIndex::ForDescriptor(*map, InternalIndex(i));
+-    object1->FastPropertyAtPut(index, Smi::FromInt(i));
+-  }
+-  Handle<JSObject> object2 = isolate->factory()->CopyJSObject(object1);
+-
+-  CHECK(!map->is_deprecated());
+-  CHECK(!parent_map->is_deprecated());
+-
+-  // Transition to Double must deprecate m1.
+-  CHECK(!Representation::Smi().CanBeInPlaceChangedTo(Representation::Double()));
+-
+-  // Reconfigure one of the first properties to make the whole transition tree
+-  // deprecated (including |parent_map| and |map|).
+-  Handle<Map> new_map =
+-      ReconfigureProperty(isolate, map, InternalIndex(0), PropertyKind::kData,
+-                          NONE, Representation::Double(), any_type);
+-  CHECK(map->is_deprecated());
+-  CHECK(parent_map->is_deprecated());
+-  CHECK(!new_map->is_deprecated());
+-  // The "x" property is still kConst.
+-  CHECK_EQ(new_map->GetLastDescriptorDetails(isolate).constness(),
+-           PropertyConstness::kConst);
+-
+-  Handle<Map> new_parent_map = Map::Update(isolate, parent_map);
+-  CHECK(!new_parent_map->is_deprecated());
+-
+-  // |new_parent_map| must have exactly one outgoing transition to |new_map|.
+-  {
+-    TransitionsAccessor ta(isolate, *new_parent_map);
+-    CHECK_EQ(ta.NumberOfTransitions(), 1);
+-    CHECK_EQ(ta.GetTarget(0), *new_map);
+-  }
+-
+-  // Deletion of the property from |object1| must migrate it to |new_parent_map|
+-  // which is an up-to-date version of the |parent_map|. The |new_map|'s "x"
+-  // property should be marked as mutable.
+-  CHECK_EQ(object1->map(isolate), *map);
+-  CHECK(Runtime::DeleteObjectProperty(isolate, object1, name_x,
+-                                      LanguageMode::kSloppy)
+-            .ToChecked());
+-  CHECK_EQ(object1->map(isolate), *new_parent_map);
+-  CHECK_EQ(new_map->GetLastDescriptorDetails(isolate).constness(),
+-           PropertyConstness::kMutable);
+-
+-  // Now add transitions to "x" and "y" properties from |new_parent_map|.
+-  std::vector<Handle<Map>> transitions;
+-  Handle<Object> value = handle(Smi::FromInt(0), isolate);
+-  for (int i = 0; i < kPropertyAttributesCombinationsCount; i++) {
+-    auto attributes = PropertyAttributesFromInt(i);
+-
+-    Handle<Map> tmp;
+-    // Add some transitions to "x" and "y".
+-    tmp = Map::TransitionToDataProperty(isolate, new_parent_map, name_x, value,
+-                                        attributes, PropertyConstness::kConst,
+-                                        StoreOrigin::kNamed);
+-    CHECK(!tmp->map(isolate)->is_dictionary_map());
+-    transitions.push_back(tmp);
+-
+-    tmp = Map::TransitionToDataProperty(isolate, new_parent_map, name_y, value,
+-                                        attributes, PropertyConstness::kConst,
+-                                        StoreOrigin::kNamed);
+-    CHECK(!tmp->map(isolate)->is_dictionary_map());
+-    transitions.push_back(tmp);
+-  }
+-
+-  // Deletion of the property from |object2| must migrate it to |new_parent_map|
+-  // which is an up-to-date version of the |parent_map|.
+-  // All outgoing transitions from |new_map| that add "x" must be marked as
+-  // mutable, transitions to other properties must remain const.
+-  CHECK_EQ(object2->map(isolate), *map);
+-  CHECK(Runtime::DeleteObjectProperty(isolate, object2, name_x,
+-                                      LanguageMode::kSloppy)
+-            .ToChecked());
+-  CHECK_EQ(object2->map(isolate), *new_parent_map);
+-  for (Handle<Map> m : transitions) {
+-    if (m->GetLastDescriptorName(isolate) == *name_x) {
+-      CHECK_EQ(m->GetLastDescriptorDetails(isolate).constness(),
+-               PropertyConstness::kMutable);
+-
+-    } else {
+-      CHECK_EQ(m->GetLastDescriptorDetails(isolate).constness(),
+-               PropertyConstness::kConst);
+-    }
+-  }
+-}
+-
+ #define CHECK_SAME(object, rep, expected)                    \
+   CHECK_EQ(Object::FitsRepresentation(*object, rep, true),   \
+            Object::FitsRepresentation(*object, rep, false)); \
