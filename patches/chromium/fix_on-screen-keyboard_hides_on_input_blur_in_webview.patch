@@ -45,10 +45,10 @@ index e340087e3ab2f07937ed6e6bd8e0ec8aa2a76d48..2b29e246b2f6ecf5d7605abfa3602864
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a2e8526344318df726ea3af130aab3f72a3125e1..35b1cdcd9099bac3fd926ab6c9587dc5597c0d7d 100644
+index 9bbffa0392668c800cb030f57dc44103da4a563d..7f2eb90067f36b344e4d9295992114f99c5343ab 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8645,7 +8645,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -8681,7 +8681,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =

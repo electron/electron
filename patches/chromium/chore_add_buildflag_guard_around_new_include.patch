@@ -9,7 +9,7 @@ This is an experimental commit; but if it's successful,
 This patch should be upstreamed and then removed from electron's code.
 
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index d028fb25d8f095243a2ff07a799091159d081679..708c47987973c9267ff4cab7781a1d923e91d268 100644
+index adedfa5aa0af7335a6215cc46423c9b6da6a6a48..ff952dc80980c10e91ecf57ef51abfbe3f974466 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
 @@ -43,7 +43,6 @@

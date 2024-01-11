@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ccbf80dcc16734d1f8fd4f8bb574dd4534f3e7c4..3c07d4c27bdf22986e4d832cc36da573db4cfbc4 100644
+index b5acd3b6eb7122aaf4284ce62212f415325a7394..9de4a87a2b11c196c95113984e4b7f3f160fd063 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1038,6 +1038,7 @@ component("base") {
@@ -431,7 +431,7 @@ index 8c32ab0c35f68ae57f93002455a979f9381e3ac6..77782bb1847baf847d53e9bea926316c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e67304f208e1ad657fff4b9c958fba4e74b75bf4..62695d9439c28ef29a18999909ae9c5fc442181a 100644
+index fbbd6a0daf4318b90fb4dece86430e1d8828c873..e948db87fc0e66ce89b19b889cd97a2dad14b18d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 39fbfa15fb71497baa79e2989a1bafc87fa83fd4..0b71495e29c2d8fd512110ae416c277075ecd168 100644
+index 01f1f3de7b77b94fe9285e2a4554c8f487d65fdf..28e738c44cdc2d10a22ca8002d7bf4cf30eff1ba 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -679,7 +679,7 @@ index 39fbfa15fb71497baa79e2989a1bafc87fa83fd4..0b71495e29c2d8fd512110ae416c2770
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1670,6 +1672,7 @@ test("content_browsertests") {
+@@ -1668,6 +1670,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index 39fbfa15fb71497baa79e2989a1bafc87fa83fd4..0b71495e29c2d8fd512110ae416c2770
  
    public_deps = [
      ":test_interfaces",
-@@ -2912,6 +2915,7 @@ test("content_unittests") {
+@@ -2910,6 +2913,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -709,10 +709,10 @@ index 38e5fd5c3af79a9f0ed80b2e15d748e9144b7982..508816a935744166cbc15561de07d7e7
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 6a662873b042a50f052e88bc849e3ef623963961..8b429cb2a5d6cd4555d7d56d3b072b05f87a30e6 100644
+index e09b425de7f7c799f675d385d6a8189baaeb13dd..3ddb0afe42879933c7a15c1bb82309736e78a15a 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -242,6 +242,7 @@ component("bluetooth") {
+@@ -243,6 +243,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d9349048bd9f0dbf4058a0085211c31140fd8818..58b32362c3c6821257ca93311b8e3d54281f570b 100644
+index f90c93e24e5108a4ada2eda59094677609e803ea..b4732ba0be1ced6824cc567515a0c4f528a4d220 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1345,10 +1345,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..6ffffe8b3946e0427aead8be19878c53
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 1fa9aeacd09eea1c90742f62528da0e71bc5bd34..8c25910bb27a2ed24feef30c7d6bcbd21fa59e82 100644
+index 181b77f7ca4114540957343193cf7f3eecf6cf1f..8874adb1df8b0d9b9ff2bdb921472b59c027052d 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -253,6 +253,7 @@ component("platform") {
+@@ -254,6 +254,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
