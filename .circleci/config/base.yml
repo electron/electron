@@ -883,25 +883,43 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v18-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v18-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
   restore_cache_aks:
     step-name: Restoring src cache
-    cache_key: v18-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
     cache_path: /var/portal
 
 step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
   restore_cache_aks:
     step-name: Restoring src cache marker
-    cache_key: v18-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
     cache_path: "."
+
+# Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
+# If the src cache was restored above then this will match an empty cache
+# If the src cache was not restored above then this will match a close git cache
+step-maybe-restore-git-cache: &step-maybe-restore-git-cache
+  restore_cache:
+    paths:
+      - git-cache
+    keys:
+      - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
+    name: Conditionally restoring git cache
+
+step-maybe-restore-git-cache-aks: &step-maybe-restore-git-cache-aks
+  restore_cache_aks:
+    step-name: Conditionally restoring git cache (aks)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ') v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')
+    cache_path: git-cache
 
 step-set-git-cache-path: &step-set-git-cache-path
   run:
@@ -910,6 +928,21 @@ step-set-git-cache-path: &step-set-git-cache-path
       # CircleCI does not support interpolation when setting environment variables.
       # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
       echo 'export GIT_CACHE_PATH="$PWD/git-cache"' >> $BASH_ENV
+
+# Persist the git cache based on the hash of DEPS and .circle-sync-done
+# If the src cache was restored above then this will persist an empty cache
+step-save-git-cache: &step-save-git-cache
+  save_cache:
+    paths:
+      - git-cache
+    key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+    name: Persisting git cache
+
+step-save-git-cache-aks: &step-save-git-cache-aks
+  save_cache_aks:
+    step-name: Persisting git cache (AKS)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ')
+    cache_path: git-cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -948,7 +981,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v18-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -958,16 +991,16 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v18-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 step-save-src-cache-aks: &step-save-src-cache-aks
   save_cache_aks:
     step-name: Persisting src cache (aks)
-    cache_key: v18-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
     cache_path: /var/portal
 step-save-src-cache-marker-aks: &step-save-src-cache-marker-aks
   save_cache_aks:
     step-name: Persisting src cache marker (aks)
-    cache_key: v18-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
     cache_path: .src-cache-marker
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
@@ -1344,6 +1377,9 @@ commands:
       checkout-and-assume-cache:
         type: boolean
         default: false
+      save-git-cache:
+        type: boolean
+        default: false
       checkout-to-create-src-cache:
         type: boolean
         default: false
@@ -1403,6 +1439,11 @@ commands:
                   - maybe-restore-portaled-src-cache:
                       halt-if-successful: << parameters.checkout-to-create-src-cache >>
                       could-be-aks: << parameters.could-be-aks >>
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-git-cache
+                aks:
+                  - *step-maybe-restore-git-cache-aks
                 could-be-aks: << parameters.could-be-aks >>
             - *step-set-git-cache-path
             - *step-fix-known-hosts-linux
@@ -1418,6 +1459,15 @@ commands:
             - *step-run-electron-only-hooks
             - *step-generate-deps-hash-cleanly
             - *step-touch-sync-done
+            - when:
+                condition: << parameters.save-git-cache >>
+                steps:
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-git-cache
+                      aks:
+                        - *step-save-git-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
             # Mark sync as done _after_ saving the git cache so that it is uploaded
             # only when the src cache was not present
             # Their are theoretically two cases for this cache key
@@ -1663,6 +1713,7 @@ commands:
           steps:
             - *step-checkout-electron
             - *step-touch-sync-done
+            - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             - *step-gclient-sync
             - *step-delete-git-directories
@@ -1734,6 +1785,7 @@ jobs:
           persist: false
           build: false
           checkout: true
+          save-git-cache: true
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
@@ -1773,6 +1825,7 @@ jobs:
           persist: false
           build: false
           checkout: true
+          save-git-cache: true
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
@@ -1792,6 +1845,7 @@ jobs:
           persist: false
           build: false
           checkout: true
+          save-git-cache: true
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
