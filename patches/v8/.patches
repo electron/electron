@@ -4,3 +4,4 @@ fix_build_deprecated_attribute_for_older_msvc_versions.patch
 chore_allow_customizing_microtask_policy_per_context.patch
 cherry-pick-cbd09b2ca928.patch
 merged_turboshaft_fix_structuraloptimization_because_of_ignored.patch
+cherry-pick-389ea9be7d68.patch
