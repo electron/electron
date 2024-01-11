@@ -6,6 +6,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "base/base64.h"
@@ -960,8 +961,8 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (!frontend_loaded_)
     return;
 
-  base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
-                                message.size());
+  const std::string_view str_message{
+      reinterpret_cast<const char*>(message.data()), message.size()};
   if (str_message.length() < kMaxMessageChunkSize) {
     CallClientFunction("DevToolsAPI", "dispatchMessage",
                        base::Value(std::string(str_message)));

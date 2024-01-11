@@ -12,14 +12,14 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(
     : isolate_(isolate), template_(templ) {}
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetImpl(
-    const base::StringPiece& name,
+    const std::string_view name,
     v8::Local<v8::Data> val) {
   template_->Set(gin::StringToSymbol(isolate_, name), val);
   return *this;
 }
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
-    const base::StringPiece& name,
+    const std::string_view name,
     v8::Local<v8::FunctionTemplate> getter,
     v8::Local<v8::FunctionTemplate> setter) {
   template_->SetAccessorProperty(gin::StringToSymbol(isolate_, name), getter,
