@@ -83,7 +83,7 @@ const extensions::PermissionMessageProvider&
 ElectronExtensionsClient::GetPermissionMessageProvider() const {
   NOTIMPLEMENTED();
 
-  base::NoDestructor<ElectronPermissionMessageProvider> instance;
+  static base::NoDestructor<ElectronPermissionMessageProvider> instance;
   return *instance;
 }
 
