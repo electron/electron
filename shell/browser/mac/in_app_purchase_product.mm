@@ -24,6 +24,7 @@
 @interface InAppPurchaseProduct : NSObject <SKProductsRequestDelegate> {
  @private
   in_app_purchase::InAppPurchaseProductsCallback callback_;
+  InAppPurchaseProduct __strong* self_;
 }
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseProductsCallback)callback;
@@ -43,6 +44,7 @@
     (in_app_purchase::InAppPurchaseProductsCallback)callback {
   if ((self = [super init])) {
     callback_ = std::move(callback);
+    self_ = self;
   }
 
   return self;
@@ -81,6 +83,7 @@
   // Send the callback to the browser thread.
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(std::move(callback_), converted));
+  self_ = nil;
 }
 
 /**
