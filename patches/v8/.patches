@@ -6,3 +6,4 @@ chore_allow_customizing_microtask_policy_per_context.patch
 cherry-pick-57d372c3e399.patch
 merged_promises_async_stack_traces_fix_the_case_when_the_closure.patch
 turboshaft_fix_structuraloptimization_because_of_ignored.patch
+cherry-pick-389ea9be7d68.patch
