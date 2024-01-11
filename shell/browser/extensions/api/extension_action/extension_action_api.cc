@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/lazy_instance.h"
 #include "base/no_destructor.h"
 #include "base/observer_list.h"
 #include "extensions/browser/event_router.h"
