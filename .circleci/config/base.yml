@@ -337,46 +337,26 @@ step-setup-env-for-build: &step-setup-env-for-build
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
 
-step-setup-goma-for-build: &step-setup-goma-for-build
+step-setup-rbe-for-build: &step-setup-rbe-for-build
   run:
-    name: Setup Goma
+    name: Setup RBE
     command: |
       echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
       if [ "`uname`" == "Darwin" ]; then
+        echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $BASH_ENV
         echo 'ulimit -n 10000' >> $BASH_ENV
         echo 'sudo launchctl limit maxfiles 65536 200000' >> $BASH_ENV
       fi
-      if [ ! -z "$RAW_GOMA_AUTH" ]; then
-        echo $RAW_GOMA_AUTH > ~/.goma_oauth2_config
-      fi
       git clone https://github.com/electron/build-tools.git
       cd build-tools
-      npm install
+      npx yarn --ignore-engines
       mkdir third_party
-      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-      export GOMA_FALLBACK_ON_AUTH_FAILURE=true
-      third_party/goma/goma_ctl.py ensure_start
-      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`third_party/goma/goma_auth.py info`" != "Login as Fermi Planck" ]; then
-        echo "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token."
-        exit 1
-      fi
-      echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
-      echo 'export GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
-      echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
-      cd ..
-      touch "${TMPDIR:=/tmp}"/.goma-ready
-    background: true
-
-step-wait-for-goma: &step-wait-for-goma
-  run:
-    name: Wait for Goma
-    command: |
-      until [ -f "${TMPDIR:=/tmp}"/.goma-ready ]
-      do
-          sleep 5
-      done
-      echo "Goma ready"
-    no_output_timeout: 5m
+      # Pull down credential helper and print status
+      node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
+      HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
+      $HELPER login
+      echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $BASH_ENV
+      echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $BASH_ENV
 
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
@@ -550,6 +530,13 @@ step-fix-sync: &step-fix-sync
         sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
         cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
 
+        # Fix reclient (wrong binary)
+        echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+        cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
+        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
+
         # Fix dsymutil (wrong binary)
         if  [ "$TARGET_ARCH" == "arm64" ]; then
           export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
@@ -602,7 +589,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
 
 step-gn-check: &step-gn-check
   run:
@@ -638,16 +625,16 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     command: |
       cd src
       if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
-        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") use_remoteexec=true is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
         export CHROMEDRIVER_DIR="out/chromedriver"
       else
         export CHROMEDRIVER_DIR="out/Default"
       fi
-      ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+      autoninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
       if [ "`uname`" == "Linux" ]; then
         electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/$CHROMEDRIVER_DIR/chromedriver
       fi
-      ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver_zip
+      autoninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver_zip
       if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
         cp out/chromedriver/chromedriver.zip out/Default
       fi
@@ -657,7 +644,7 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     name: Build Node.js headers
     command: |
       cd src
-      ninja -C out/Default electron:node_headers
+      autoninja -C out/Default electron:node_headers
 
 step-electron-publish: &step-electron-publish
   run:
@@ -711,14 +698,14 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS"
+      gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+      autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
 
 step-verify-mksnapshot: &step-verify-mksnapshot
   run:
@@ -750,26 +737,13 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
         sh -e /etc/init.d/xvfb start
       fi
 
-step-show-goma-stats: &step-show-goma-stats
-  run:
-    shell: /bin/bash
-    name: Check goma stats after build
-    command: |
-      set +e
-      set +o pipefail
-      python3 $GOMA_DIR/goma_ctl.py stat
-      python3 $GOMA_DIR/diagnose_goma_log.py
-      true
-    when: always
-    background: true
-
 step-mksnapshot-build: &step-mksnapshot-build
   run:
     name: mksnapshot build
     no_output_timeout: 30m
     command: |
       cd src
-      ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+      autoninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
       gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
       # Remove unused args from mksnapshot_args
       SEDOPTION="-i"
@@ -792,7 +766,7 @@ step-mksnapshot-build: &step-mksnapshot-build
         fi
       fi
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
-        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        autoninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
 
@@ -802,7 +776,7 @@ step-hunspell-build: &step-hunspell-build
     command: |
       cd src
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
-        ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
 
 step-maybe-generate-libcxx: &step-maybe-generate-libcxx
@@ -811,9 +785,9 @@ step-maybe-generate-libcxx: &step-maybe-generate-libcxx
     command: |
       cd src
       if [ "`uname`" == "Linux" ]; then
-        ninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        ninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        ninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+        autoninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        autoninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        autoninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
 
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
@@ -823,7 +797,7 @@ step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
     command: |
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
-        ninja -C out/Default electron:electron_symbols
+        autoninja -C out/Default electron:electron_symbols
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -832,8 +806,8 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
-      ninja -C out/Default electron:licenses
-      ninja -C out/Default electron:electron_version_file
+      autoninja -C out/Default electron:licenses
+      autoninja -C out/Default electron:electron_version_file
       electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-zip-symbols-and-clean: &step-maybe-zip-symbols-and-clean
@@ -842,8 +816,8 @@ step-maybe-zip-symbols-and-clean: &step-maybe-zip-symbols-and-clean
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
-      ninja -C out/Default electron:licenses
-      ninja -C out/Default electron:electron_version_file
+      autoninja -C out/Default electron:licenses
+      autoninja -C out/Default electron:electron_version_file
       DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
@@ -1190,11 +1164,10 @@ commands:
       could-be-aks:
         type: boolean
     steps:
-      - *step-setup-goma-for-build
+      - *step-setup-rbe-for-build
       - checkout-from-cache:
           could-be-aks: << parameters.could-be-aks >>
       - *step-setup-env-for-build
-      - *step-wait-for-goma
       - *step-gn-gen-default
       - *step-gn-check
   build_and_save_artifacts:
@@ -1214,8 +1187,6 @@ commands:
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build:
           additional-targets: electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
-
-      - *step-show-goma-stats
 
       # mksnapshot
       - *step-mksnapshot-build
@@ -1345,7 +1316,7 @@ commands:
           command: |
             cd src
             if [ "$SKIP_DIST_ZIP" != "1" ]; then
-              ninja -C out/Default electron:electron_dist_zip << parameters.additional-targets >> -j $NUMBER_OF_NINJA_PROCESSES
+              autoninja -C out/Default electron:electron_dist_zip << parameters.additional-targets >> -j $NUMBER_OF_NINJA_PROCESSES
               if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
                 if [ "`uname`" == "Darwin" ]; then
                   target_os=mac
@@ -1446,7 +1417,7 @@ commands:
       - when:
           condition: << parameters.build >>
           steps:
-            - *step-setup-goma-for-build
+            - *step-setup-rbe-for-build
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
@@ -1565,7 +1536,6 @@ commands:
           steps:
             - *step-depot-tools-add-to-path
             - *step-setup-env-for-build
-            - *step-wait-for-goma
             - *step-get-more-space-on-mac
             - *step-fix-sync
             - *step-delete-git-directories
@@ -1751,14 +1721,12 @@ commands:
       - *step-fix-sync
       - *step-setup-env-for-build
       - *step-fix-known-hosts-linux
-      - *step-setup-goma-for-build
-      - *step-wait-for-goma
+      - *step-setup-rbe-for-build
       - *step-gn-gen-default
 
       # Electron app
       - ninja_build_electron:
           build-type: << parameters.build-type >>
-      - *step-show-goma-stats
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build

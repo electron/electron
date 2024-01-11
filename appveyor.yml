@@ -37,7 +37,6 @@ environment:
   ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, tap"
-  GOMA_FALLBACK_ON_AUTH_FAILURE: true
   DEPOT_TOOLS_WIN_TOOLCHAIN: 1
   DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
   GYP_MSVS_HASH_27370823e7: 28622d16b1
@@ -99,31 +98,20 @@ for:
           if (Test-Path -Path "$pwd\src\electron") {
             Remove-Item -Recurse -Force $pwd\src\electron
           }
-      - ps: >-
-          if (Test-Path 'env:RAW_GOMA_AUTH') {
-            $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-            $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-          }
       - git clone https://github.com/electron/build-tools.git
       - cd build-tools
-      - npm install
+      - npx yarn --ignore-engines
       - mkdir third_party
       - ps: >-
-          node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-      - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
-      - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-      - cd ..\..
-      - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
+          node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
+      - ps: $env:RECLIENT_HELPER = node -p "require('./src/utils/reclient.js').helperPath"
       - ps: >-
-          if (Test-Path 'env:RAW_GOMA_AUTH') {
-            $goma_login = python3 $env:LOCAL_GOMA_DIR\goma_auth.py info
-            if ($goma_login -eq 'Login as Fermi Planck') {
-              Write-warning "Goma authentication is correct";
-            } else {
-              Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
-              $host.SetShouldExit(1)
-            }
-          }
+          & $env:RECLIENT_HELPER login
+      - ps: >-
+          $env:RBE_service = node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"
+      - ps: >-
+          $env:RBE_experimental_credentials_helper = $env:RECLIENT_HELPER
+      - cd ..\..
       - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
       - ps: >-
           if ($env:GN_CONFIG -ne 'release') {
@@ -145,27 +133,26 @@ for:
       - cd src
       - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
       - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
-      - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
+      - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") use_remoteexec=true %GN_EXTRA_ARGS% "
       - gn check out/Default //electron:electron_lib
       - gn check out/Default //electron:electron_app
       - gn check out/Default //electron/shell/common/api:mojo
-      - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
+      - if DEFINED ELECTRON_RBE_JWT (autoninja -j 300 -C out/Default electron:electron_app) else (autoninja -C out/Default electron:electron_app)
       - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
-      - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
-      - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
-      - ninja -C out/Default electron:electron_dist_zip
+      - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true %GN_EXTRA_ARGS%"
+      - autoninja -C out/ffmpeg electron:electron_ffmpeg_zip
+      - autoninja -C out/Default electron:electron_dist_zip
       - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
       # Remove unused args from mksnapshot_args
       - ps: >-
           Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') -And -not $_.Contains('The gn arg use_goma=true') } | Set-Content out/Default/mksnapshot_args
-      - ninja -C out/Default electron:electron_mksnapshot_zip
+      - autoninja -C out/Default electron:electron_mksnapshot_zip
       - cd out\Default
       - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
       - cd ..\..
-      - ninja -C out/Default electron:hunspell_dictionaries_zip
-      - ninja -C out/Default electron:electron_chromedriver_zip
-      - ninja -C out/Default electron:node_headers
-      - python3 %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - autoninja -C out/Default electron:hunspell_dictionaries_zip
+      - autoninja -C out/Default electron:electron_chromedriver_zip
+      - autoninja -C out/Default electron:node_headers
       - ps: >-
           Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
       - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
@@ -174,7 +161,7 @@ for:
           if ($env:GN_CONFIG -eq 'release') {
             # Needed for msdia140.dll on 64-bit windows
             $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
-            ninja -C out/Default electron:electron_symbols
+            autoninja -C out/Default electron:electron_symbols
           }
       - ps: >-
           if ($env:GN_CONFIG -eq 'release') {

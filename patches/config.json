@@ -21,5 +21,7 @@
 
   "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
 
-  "src/electron/patches/webrtc": "src/third_party/webrtc"
+  "src/electron/patches/webrtc": "src/third_party/webrtc",
+
+  "src/electron/patches/reclient-configs": "src/third_party/engflow-reclient-configs"
 }
