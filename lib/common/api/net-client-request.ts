@@ -1,14 +1,15 @@
 import * as url from 'url';
 import { Readable, Writable } from 'stream';
-import { app } from 'electron/main';
-import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+import type {
+  ClientRequestConstructorOptions,
+  UploadProgress
+} from 'electron/common';
 
 const {
   isValidHeaderName,
   isValidHeaderValue,
   createURLLoader
-} = process._linkedBinding('electron_browser_net');
-const { Session } = process._linkedBinding('electron_browser_session');
+} = process._linkedBinding('electron_common_net');
 
 const kHttpProtocols = new Set(['http:', 'https:']);
 
@@ -283,14 +284,17 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     const key = name.toLowerCase();
     urlLoaderOptions.headers[key] = { name, value };
   }
-  if (options.session) {
-    if (!(options.session instanceof Session)) { throw new TypeError('`session` should be an instance of the Session class'); }
-    urlLoaderOptions.session = options.session;
-  } else if (options.partition) {
-    if (typeof options.partition === 'string') {
-      urlLoaderOptions.partition = options.partition;
-    } else {
-      throw new TypeError('`partition` should be a string');
+  if (process.type !== 'utility') {
+    const { Session } = process._linkedBinding('electron_browser_session');
+    if (options.session) {
+      if (!(options.session instanceof Session)) { throw new TypeError('`session` should be an instance of the Session class'); }
+      urlLoaderOptions.session = options.session;
+    } else if (options.partition) {
+      if (typeof options.partition === 'string') {
+        urlLoaderOptions.partition = options.partition;
+      } else {
+        throw new TypeError('`partition` should be a string');
+      }
     }
   }
   return urlLoaderOptions;
@@ -311,10 +315,6 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
 
   constructor (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
     super({ autoDestroy: true });
-
-    if (!app.isReady()) {
-      throw new Error('net module can only be used after app is ready');
-    }
 
     if (callback) {
       this.once('response', callback);

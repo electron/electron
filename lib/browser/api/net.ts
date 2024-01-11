@@ -1,10 +1,13 @@
-import { IncomingMessage, session } from 'electron/main';
+import { app, IncomingMessage, session } from 'electron/main';
 import type { ClientRequestConstructorOptions } from 'electron/main';
-import { ClientRequest } from '@electron/internal/browser/api/net-client-request';
+import { ClientRequest } from '@electron/internal/common/api/net-client-request';
 
-const { isOnline } = process._linkedBinding('electron_browser_net');
+const { isOnline } = process._linkedBinding('electron_common_net');
 
 export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
+  if (!app.isReady()) {
+    throw new Error('net module can only be used after app is ready');
+  }
   return new ClientRequest(options, callback);
 }
 

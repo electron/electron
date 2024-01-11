@@ -214,7 +214,6 @@ auto_filenames = {
     "lib/browser/api/message-channel.ts",
     "lib/browser/api/module-list.ts",
     "lib/browser/api/native-theme.ts",
-    "lib/browser/api/net-client-request.ts",
     "lib/browser/api/net-fetch.ts",
     "lib/browser/api/net-log.ts",
     "lib/browser/api/net.ts",
@@ -250,6 +249,7 @@ auto_filenames = {
     "lib/browser/web-view-events.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
+    "lib/common/api/net-client-request.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
     "lib/common/deprecate.ts",
@@ -343,12 +343,16 @@ auto_filenames = {
   ]
 
   utility_bundle_deps = [
+    "lib/browser/api/net-fetch.ts",
     "lib/browser/message-port-main.ts",
+    "lib/common/api/net-client-request.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/reset-search-paths.ts",
+    "lib/common/webpack-globals-provider.ts",
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",
+    "lib/utility/api/net.ts",
     "lib/utility/init.ts",
     "lib/utility/parent-port.ts",
     "package.json",

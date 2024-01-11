@@ -6,11 +6,11 @@
   "devDependencies": {
     "@azure/storage-blob": "^12.9.0",
     "@electron/asar": "^3.2.1",
-    "@electron/docs-parser": "^1.1.1",
+    "@electron/docs-parser": "^1.2.0",
     "@electron/fiddle-core": "^1.0.4",
     "@electron/github-app-auth": "^2.0.0",
     "@electron/lint-roller": "^1.8.0",
-    "@electron/typescript-definitions": "^8.14.5",
+    "@electron/typescript-definitions": "^8.15.2",
     "@octokit/rest": "^19.0.7",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
