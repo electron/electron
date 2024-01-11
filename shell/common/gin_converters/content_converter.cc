@@ -256,6 +256,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "captured-surface-control");
     case blink::PermissionType::SMART_CARD:
       return StringToV8(isolate, "smart-card");
+    case blink::PermissionType::WEB_PRINTING:
+      return StringToV8(isolate, "web-printing");
     case blink::PermissionType::NUM:
       break;
   }

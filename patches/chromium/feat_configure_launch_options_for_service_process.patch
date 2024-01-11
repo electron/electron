@@ -110,19 +110,19 @@ index 9e5365dc37489dcd9f94d23cf03713492ab20e5f..03206ccc3181eae7776b4f2c076285b8
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 57f3ac588c98c3a3ec0857c7f0d60c3bce0e32a1..707e878379b337b1ef22bb9675aad4fabcf453bd 100644
+index e5c96c7e5fada31994754679115f5e7b703b3ad4..e1bbce4ed643827c2ce2e841fae4d09cdff4dff3 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
-@@ -19,6 +19,8 @@
+@@ -21,6 +21,8 @@
  #include "sandbox/policy/win/sandbox_win.h"
  #include "sandbox/win/src/sandbox_types.h"
  
 +#include <windows.h>
 +
- namespace content {
- namespace internal {
+ namespace {
  
-@@ -58,6 +60,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+ // /prefetch:# arguments to use when launching various process types. It has
+@@ -190,6 +192,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
      mojo_channel_->PrepareToPassRemoteEndpoint(&options->handles_to_inherit,
                                                 command_line());
    }
@@ -153,7 +153,7 @@ index 57f3ac588c98c3a3ec0857c7f0d60c3bce0e32a1..707e878379b337b1ef22bb9675aad4fa
    return true;
  }
  
-@@ -85,7 +111,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
+@@ -217,7 +243,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
    ChildProcessLauncherHelper::Process process;
    *launch_result =
        StartSandboxedProcess(delegate_.get(), *command_line(),
@@ -183,10 +183,10 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index b9ddc82c767c5641b0d8b0166fa181148aea4de7..c6f8418eeddfe8f95927afbe6e034511e3df1011 100644
+index db744a552e0147ebcf3b162f9017de3a5c8f6c66..2f56433f44a425f645120271c4e39e8e4447e3bb 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -157,11 +157,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -180,11 +180,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -202,7 +202,7 @@ index b9ddc82c767c5641b0d8b0166fa181148aea4de7..c6f8418eeddfe8f95927afbe6e034511
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -227,6 +229,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -250,6 +252,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -227,7 +227,7 @@ index b9ddc82c767c5641b0d8b0166fa181148aea4de7..c6f8418eeddfe8f95927afbe6e034511
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -445,9 +465,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -468,9 +488,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH)
  

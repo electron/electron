@@ -269,9 +269,6 @@ ElectronBrowserContext::~ElectronBrowserContext() {
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
   ShutdownStoragePartitions();
-
-  BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                            std::move(resource_context_));
 }
 
 void ElectronBrowserContext::InitPrefs() {
@@ -363,12 +360,6 @@ bool ElectronBrowserContext::CanUseHttpCache() const {
 
 int ElectronBrowserContext::GetMaxCacheSize() const {
   return max_cache_size_;
-}
-
-content::ResourceContext* ElectronBrowserContext::GetResourceContext() {
-  if (!resource_context_)
-    resource_context_ = std::make_unique<content::ResourceContext>();
-  return resource_context_.get();
 }
 
 std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
