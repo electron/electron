@@ -116,9 +116,8 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
     return false;
 
   std::u16string w = base::UTF8ToUTF16(word);
-  return client->GetSpellCheck()->SpellCheckWord(w.c_str(), 0, word.size(),
-                                                 *spellcheck_host.get(), &start,
-                                                 &length, optional_suggestions);
+  return client->GetSpellCheck()->SpellCheckWord(
+      w, *spellcheck_host.get(), &start, &length, optional_suggestions);
 }
 
 #endif
