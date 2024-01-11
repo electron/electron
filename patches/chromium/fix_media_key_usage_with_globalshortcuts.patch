@@ -59,7 +59,7 @@ index f96af14cb915c8ab92b314ac15b6dffcdd6ec607..2556abe433493251ebd48d4aeddaa6d4
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index aa21320061131a051f1393e2a71181fd49d1d938..6be700f632e9f8732bee726b8c4c3d39787fca60 100644
+index 8bc58dd31b5822682fe13ad7ded1dc40892b296d..1811361f25fd8276c317e4fcd883e998af8aeab8 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -86,7 +86,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(

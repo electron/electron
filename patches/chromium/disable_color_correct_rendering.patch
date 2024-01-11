@@ -81,10 +81,10 @@ index e4deb71ea3afa1ef9d6ddac9c61f5916ff608514..d2e6854ac2aaa3cc83c0b72ebc03193b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 53e23c2b791b9f8851ecac455c3adefd8fc37688..857b648acf17742e7d904ece93ee113f4dc553b6 100644
+index 8f305d8563d8ce23d372decba75ee918e917d3aa..7550a286cb3cbc10680dcc37f840c9861ec3b9df 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -229,6 +229,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -93,10 +93,10 @@ index 53e23c2b791b9f8851ecac455c3adefd8fc37688..857b648acf17742e7d904ece93ee113f
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0fa0effecebf1437181c02e477762ef4f33e9aaf..36351f2c0d82d7ffc9c03e8d9ca043652cab7fb6 100644
+index 73cad457ad37cfdb5459c11e7828a543dc0cf31d..49429659b2e9cb63314baa5b724105ebeeb4a7a0 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3362,6 +3362,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3387,6 +3387,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

@@ -45,7 +45,7 @@ index e340087e3ab2f07937ed6e6bd8e0ec8aa2a76d48..2b29e246b2f6ecf5d7605abfa3602864
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5adeba5c2286b7914355d6e7aa5502c55ac3160d..85225b3667d9bc4c40896173d7291b7ac6d02ea0 100644
+index a2e8526344318df726ea3af130aab3f72a3125e1..35b1cdcd9099bac3fd926ab6c9587dc5597c0d7d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -8645,7 +8645,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(

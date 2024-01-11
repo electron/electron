@@ -116,7 +116,7 @@ index eb5bcfe0234c39526d6d162434476fe9e32d8184..8480d07e2607eb3c8c16b54a02077c04
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index 9ab5fb1c822752854fc88ba0ee3d24ddca4dd107..11ae602ccc58cb2728911b28d6637079d2dcb359 100644
+index 15addd5c5e6635ad3b5797d5986c79353590a583..f31ae6b9e8bfdcc32239d0f6859e29ea6b4112b1 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
 @@ -91,6 +91,7 @@ bool PlatformCrashpadInitialization(

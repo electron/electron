@@ -52,7 +52,7 @@ index 8309281d321256e118e7086b29692f63be6aa9e6..96c433b8a3a42bf477c6467595b58a50
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index cfa7d6f8eeba0484a6e06a0ee8200bf5870cb9be..954ee85cc2307e812889cf8dd3980f2b07f6311f 100644
+index f47e14bc5dda6b84d1ae63148d7ee3bfb4797eb7..74838fd3621fd1d271ce8e3b037b1c785dd05651 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
 @@ -51,8 +51,7 @@ class AshWebViewImpl : public ash::AshWebView,
@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b62e7b83fab208b069006b1255bc24c28e34b5e6..7071ada887c5f4bc73bc3ec41dc77dadd290963d 100644
+index 038cef59809065f0a775e1a0282bfeb9f31a4551..8baab27c7bc1bd7e0bbc6342388327a33304f713 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4403,8 +4403,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
