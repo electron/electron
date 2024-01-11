@@ -27,7 +27,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -310,6 +309,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
+  widget()->SetNativeWindowProperty(kElectronNativeWindowKey, this);
   SetCanResize(resizable_);
 
   bool fullscreen = false;
@@ -1335,50 +1335,6 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 }
 
-void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
-    return;
-  }
-
-  add_browser_view(view);
-  if (view->GetInspectableWebContentsView())
-    content_view()->AddChildView(
-        view->GetInspectableWebContentsView()->GetView());
-}
-
-void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
-    return;
-  }
-
-  if (view->GetInspectableWebContentsView())
-    content_view()->RemoveChildView(
-        view->GetInspectableWebContentsView()->GetView());
-  remove_browser_view(view);
-}
-
-void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
-    return;
-  }
-
-  remove_browser_view(view);
-  add_browser_view(view);
-
-  if (view->GetInspectableWebContentsView())
-    content_view()->ReorderChildView(
-        view->GetInspectableWebContentsView()->GetView(), -1);
-}
-
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
@@ -1672,14 +1628,6 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
-    int width_delta = new_bounds.width() - widget_size_.width();
-    int height_delta = new_bounds.height() - widget_size_.height();
-    for (NativeBrowserView* item : browser_views()) {
-      auto* native_view = static_cast<NativeBrowserViewViews*>(item);
-      native_view->SetAutoResizeProportions(widget_size_);
-      native_view->AutoResize(new_bounds, width_delta, height_delta);
-    }
-
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
   }

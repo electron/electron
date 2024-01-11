@@ -11,7 +11,6 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_browser_view.h"
 #include "shell/browser/native_window.h"
 
 namespace electron {
@@ -58,21 +57,6 @@ void AutofillDriver::ShowAutofillPopup(
                   embedder_view->GetViewBounds().origin();
     popup_bounds.Offset(offset);
     embedder_frame_host = embedder->web_contents()->GetPrimaryMainFrame();
-  }
-
-  // Ensure that if the WebContents belongs to a BrowserView,
-  // the popup is positioned relative to the BrowserView's bounds.
-  for (NativeBrowserView* bv : owner_window->browser_views()) {
-    auto* iwc = bv->GetInspectableWebContents();
-    if (!iwc)
-      continue;
-
-    auto* awc = api::WebContents::From(iwc->GetWebContents());
-    if (awc == web_contents) {
-      auto bv_origin = bv->GetBounds().origin();
-      popup_bounds.Offset(gfx::Vector2dF(bv_origin.x(), bv_origin.y()));
-      break;
-    }
   }
 
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,

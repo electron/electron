@@ -1,100 +1,47 @@
-# BrowserWindow
+# BaseWindow
 
-> Create and control browser windows.
+> Create and control windows.
 
 Process: [Main](../glossary.md#main-process)
+
+> **Note**
+> `BaseWindow` provides a flexible way to compose multiple web views in a
+> single window. For windows with only a single, full-size web view, the
+> [`BrowserWindow`](browser-window.md) class may be a simpler option.
 
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
 ```js
 // In the main process.
-const { BrowserWindow } = require('electron')
+const { BaseWindow, WebContentsView } = require('electron')
 
-const win = new BrowserWindow({ width: 800, height: 600 })
+const win = new BaseWindow({ width: 800, height: 600 })
 
-// Load a remote URL
-win.loadURL('https://github.com')
+const leftView = new WebContentsView()
+leftView.webContents.loadURL('https://electronjs.org')
+win.contentView.addChildView(leftView)
 
-// Or load a local HTML file
-win.loadFile('index.html')
+const rightView = new WebContentsView()
+rightView.webContents.loadURL('https://github.com/electron/electron')
+win.contentView.addChildView(rightView)
+
+leftView.setBounds({ x: 0, y: 0, width: 400, height: 600 })
+rightView.setBounds({ x: 400, y: 0, width: 400, height: 600 })
 ```
-
-## Window customization
-
-The `BrowserWindow` class exposes various ways to modify the look and behavior of
-your app's windows. For more details, see the [Window Customization](../tutorial/window-customization.md)
-tutorial.
-
-## Showing the window gracefully
-
-When loading a page in the window directly, users may see the page load incrementally,
-which is not a good experience for a native app. To make the window display
-without a visual flash, there are two solutions for different situations.
-
-### Using the `ready-to-show` event
-
-While loading the page, the `ready-to-show` event will be emitted when the renderer
-process has rendered the page for the first time if the window has not been shown yet. Showing
-the window after this event will have no visual flash:
-
-```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow({ show: false })
-win.once('ready-to-show', () => {
-  win.show()
-})
-```
-
-This event is usually emitted after the `did-finish-load` event, but for
-pages with many remote resources, it may be emitted before the `did-finish-load`
-event.
-
-Please note that using this event implies that the renderer will be considered "visible" and
-paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
-
-### Setting the `backgroundColor` property
-
-For a complex app, the `ready-to-show` event could be emitted too late, making
-the app feel slow. In this case, it is recommended to show the window
-immediately, and use a `backgroundColor` close to your app's background:
-
-```js
-const { BrowserWindow } = require('electron')
-
-const win = new BrowserWindow({ backgroundColor: '#2e2c29' })
-win.loadURL('https://github.com')
-```
-
-Note that even for apps that use `ready-to-show` event, it is still recommended
-to set `backgroundColor` to make the app feel more native.
-
-Some examples of valid `backgroundColor` values include:
-
-```js
-const win = new BrowserWindow()
-win.setBackgroundColor('hsl(230, 100%, 50%)')
-win.setBackgroundColor('rgb(255, 145, 145)')
-win.setBackgroundColor('#ff00a3')
-win.setBackgroundColor('blueviolet')
-```
-
-For more information about these color types see valid options in [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor).
 
 ## Parent and child windows
 
 By using `parent` option, you can create child windows:
 
 ```js
-const { BrowserWindow } = require('electron')
+const { BaseWindow } = require('electron')
 
-const top = new BrowserWindow()
-const child = new BrowserWindow({ parent: top })
-child.show()
-top.show()
+const parent = new BaseWindow()
+const child = new BaseWindow({ parent })
 ```
 
-The `child` window will always show on top of the `top` window.
+The `child` window will always show on top of the `parent` window.
 
 ## Modal windows
 
@@ -102,34 +49,11 @@ A modal window is a child window that disables parent window. To create a modal
 window, you have to set both the `parent` and `modal` options:
 
 ```js
-const { BrowserWindow } = require('electron')
+const { BaseWindow } = require('electron')
 
-const top = new BrowserWindow()
-const child = new BrowserWindow({ parent: top, modal: true, show: false })
-child.loadURL('https://github.com')
-child.once('ready-to-show', () => {
-  child.show()
-})
+const parent = new BaseWindow()
+const child = new BaseWindow({ parent, modal: true })
 ```
-
-## Page visibility
-
-The [Page Visibility API][page-visibility-api] works as follows:
-
-* On all platforms, the visibility state tracks whether the window is
-  hidden/minimized or not.
-* Additionally, on macOS, the visibility state also tracks the window
-  occlusion state. If the window is occluded (i.e. fully covered) by another
-  window, the visibility state will be `hidden`. On other platforms, the
-  visibility state will be `hidden` only when the window is minimized or
-  explicitly hidden with `win.hide()`.
-* If a `BrowserWindow` is created with `show: false`, the initial visibility
-  state will be `visible` despite the window actually being hidden.
-* If `backgroundThrottling` is disabled, the visibility state will remain
-  `visible` even if the window is minimized, occluded, or hidden.
-
-It is recommended that you pause expensive operations when the visibility
-state is `hidden` in order to minimize power consumption.
 
 ## Platform notices
 
@@ -140,38 +64,26 @@ state is `hidden` in order to minimize power consumption.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
 
-## Class: BrowserWindow extends `BaseWindow`
+## Class: BaseWindow
 
-> Create and control browser windows.
+> Create and control windows.
 
 Process: [Main](../glossary.md#main-process)
 
-`BrowserWindow` is an [EventEmitter][event-emitter].
+`BaseWindow` is an [EventEmitter][event-emitter].
 
-It creates a new `BrowserWindow` with native properties as set by the `options`.
+It creates a new `BaseWindow` with native properties as set by the `options`.
 
-### `new BrowserWindow([options])`
+### `new BaseWindow([options])`
 
-* `options` [BrowserWindowConstructorOptions](structures/browser-window-options.md?inline) (optional)
+* `options` [BaseWindowConstructorOptions](structures/base-window-options.md?inline) (optional)
 
 ### Instance Events
 
-Objects created with `new BrowserWindow` emit the following events:
+Objects created with `new BaseWindow` emit the following events:
 
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
-
-#### Event: 'page-title-updated'
-
-Returns:
-
-* `event` Event
-* `title` string
-* `explicitSet` boolean
-
-Emitted when the document changed its title, calling `event.preventDefault()`
-will prevent the native window's title from changing.
-`explicitSet` is false when title is synthesized from file URL.
 
 #### Event: 'close'
 
@@ -212,14 +124,6 @@ remove the reference to the window and avoid using it any more.
 Emitted when window session is going to end due to force shutdown or machine restart
 or session log off.
 
-#### Event: 'unresponsive'
-
-Emitted when the web page becomes unresponsive.
-
-#### Event: 'responsive'
-
-Emitted when the unresponsive web page becomes responsive again.
-
 #### Event: 'blur'
 
 Emitted when the window loses focus.
@@ -235,14 +139,6 @@ Emitted when the window is shown.
 #### Event: 'hide'
 
 Emitted when the window is hidden.
-
-#### Event: 'ready-to-show'
-
-Emitted when the web page has been rendered (while not being shown) and window can be displayed without
-a visual flash.
-
-Please note that using this event implies that the renderer will be considered "visible" and
-paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
 
 #### Event: 'maximize'
 
@@ -319,14 +215,6 @@ Emitted when the window enters a full-screen state.
 
 Emitted when the window leaves a full-screen state.
 
-#### Event: 'enter-html-full-screen'
-
-Emitted when the window enters a full-screen state triggered by HTML API.
-
-#### Event: 'leave-html-full-screen'
-
-Emitted when the window leaves a full-screen state triggered by HTML API.
-
 #### Event: 'always-on-top-changed'
 
 Returns:
@@ -352,12 +240,12 @@ Commands are lowercased, underscores are replaced with hyphens, and the
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
+const { BaseWindow } = require('electron')
+const win = new BaseWindow()
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
-  if (cmd === 'browser-backward' && win.webContents.canGoBack()) {
-    win.webContents.goBack()
+  if (cmd === 'browser-backward') {
+    // Find the appropriate WebContents to navigate.
   }
 })
 ```
@@ -423,65 +311,39 @@ Calling `event.preventDefault()` will prevent the menu from being displayed.
 
 ### Static Methods
 
-The `BrowserWindow` class has the following static methods:
+The `BaseWindow` class has the following static methods:
 
-#### `BrowserWindow.getAllWindows()`
+#### `BaseWindow.getAllWindows()`
 
-Returns `BrowserWindow[]` - An array of all opened browser windows.
+Returns `BaseWindow[]` - An array of all opened browser windows.
 
-#### `BrowserWindow.getFocusedWindow()`
+#### `BaseWindow.getFocusedWindow()`
 
-Returns `BrowserWindow | null` - The window that is focused in this application, otherwise returns `null`.
+Returns `BaseWindow | null` - The window that is focused in this application, otherwise returns `null`.
 
-#### `BrowserWindow.fromWebContents(webContents)`
-
-* `webContents` [WebContents](web-contents.md)
-
-Returns `BrowserWindow | null` - The window that owns the given `webContents`
-or `null` if the contents are not owned by a window.
-
-#### `BrowserWindow.fromBrowserView(browserView)` _Deprecated_
-
-* `browserView` [BrowserView](browser-view.md)
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
-Returns `BrowserWindow | null` - The window that owns the given `browserView`. If the given view is not attached to any window, returns `null`.
-
-#### `BrowserWindow.fromId(id)`
+#### `BaseWindow.fromId(id)`
 
 * `id` Integer
 
-Returns `BrowserWindow | null` - The window with the given `id`.
+Returns `BaseWindow | null` - The window with the given `id`.
 
 ### Instance Properties
 
-Objects created with `new BrowserWindow` have the following properties:
+Objects created with `new BaseWindow` have the following properties:
 
 ```js
-const { BrowserWindow } = require('electron')
+const { BaseWindow } = require('electron')
 // In this example `win` is our instance
-const win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('https://github.com')
+const win = new BaseWindow({ width: 800, height: 600 })
 ```
-
-#### `win.webContents` _Readonly_
-
-A `WebContents` object this window owns. All web page related events and
-operations will be done via it.
-
-See the [`webContents` documentation](web-contents.md) for its methods and
-events.
 
 #### `win.id` _Readonly_
 
-A `Integer` property representing the unique ID of the window. Each ID is unique among all `BrowserWindow` instances of the entire Electron application.
+A `Integer` property representing the unique ID of the window. Each ID is unique among all `BaseWindow` instances of the entire Electron application.
 
-#### `win.tabbingIdentifier` _macOS_ _Readonly_
+#### `win.contentView`
 
-A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
+A `View` property for the content view of the window.
 
 #### `win.autoHideMenuBar`
 
@@ -576,8 +438,9 @@ On Linux the setter is a no-op, although the getter returns `true`.
 
 A `boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
 
-```js @ts-expect-error=[11]
-const win = new BrowserWindow({ height: 600, width: 600 })
+```js @ts-expect-error=[12]
+const { Menu, BaseWindow } = require('electron')
+const win = new BaseWindow({ height: 600, width: 600 })
 
 const template = [
   {
@@ -599,10 +462,20 @@ visible to users.
 
 ### Instance Methods
 
-Objects created with `new BrowserWindow` have the following instance methods:
+Objects created with `new BaseWindow` have the following instance methods:
 
 **Note:** Some methods are only available on specific operating systems and are
 labeled as such.
+
+#### `win.setContentView(view)`
+
+* `view` [View](view.md)
+
+Sets the content view of the window.
+
+#### `win.getContentView()`
+
+Returns [View](view.md) - The content view of the window.
 
 #### `win.destroy()`
 
@@ -646,7 +519,7 @@ Hides the window.
 
 #### `win.isVisible()`
 
-Returns `boolean` - Whether the window is visible to the user in the foreground of the app.
+Returns `boolean` - Whether the window is visible to the user.
 
 #### `win.isModal()`
 
@@ -683,8 +556,6 @@ Returns `boolean` - Whether the window is minimized.
 * `flag` boolean
 
 Sets whether the window should be in fullscreen mode.
-
-**Note:** On macOS, fullscreen transitions take place asynchronously. If further actions depend on the fullscreen state, use the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events.
 
 #### `win.isFullScreen()`
 
@@ -744,23 +615,23 @@ Examples of valid `backgroundColor` values:
   * #ffffff (RGB)
   * #ffffffff (ARGB)
 * RGB
-  * rgb\((\[\d]+),\s*(\[\d]+),\s*(\[\d]+)\)
+  * `rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)`
     * e.g. rgb(255, 255, 255)
 * RGBA
-  * rgba\((\[\d]+),\s*(\[\d]+),\s*(\[\d]+),\s*(\[\d.]+)\)
+  * `rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)`
     * e.g. rgba(255, 255, 255, 1.0)
 * HSL
-  * hsl\((-?\[\d.]+),\s*(\[\d.]+)%,\s*(\[\d.]+)%\)
+  * `hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)`
     * e.g. hsl(200, 20%, 50%)
 * HSLA
-  * hsla\((-?\[\d.]+),\s*(\[\d.]+)%,\s*(\[\d.]+)%,\s*(\[\d.]+)\)
+  * `hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)`
     * e.g. hsla(200, 20%, 50%, 0.5)
 * Color name
   * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
 
-Sets the background color of the window. See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
+Sets the background color of the window. See [Setting `backgroundColor`](browser-window.md#setting-the-backgroundcolor-property).
 
 #### `win.previewFile(path[, displayName])` _macOS_
 
@@ -785,8 +656,8 @@ Closes the currently open [Quick Look][quick-look] panel.
 Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
 
 ```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
+const { BaseWindow } = require('electron')
+const win = new BaseWindow()
 
 // set all bounds properties
 win.setBounds({ x: 440, y: 225, width: 800, height: 600 })
@@ -798,19 +669,15 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
-**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
-
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
-
-**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
 Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) format.
 
-See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
+See [Setting `backgroundColor`](browser-window.md#setting-the-backgroundcolor-property).
 
 **Note:** The alpha value is _not_ returned alongside the red, green, and blue values.
 
@@ -1036,12 +903,12 @@ window.
 * `offsetX` Float (optional)
 
 Changes the attachment point for sheets on macOS. By default, sheets are
-attached just below the window frame, but you may want to display them beneath
-a HTML-rendered toolbar. For example:
+attached just below the window frame, but you may want to offset them. For
+example:
 
 ```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
+const { BaseWindow } = require('electron')
+const win = new BaseWindow()
 
 const toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
 win.setSheetOffset(toolbarRect.height)
@@ -1144,93 +1011,6 @@ bar will become gray when set to `true`.
 
 Returns `boolean` - Whether the window's document has been edited.
 
-#### `win.focusOnWebView()`
-
-#### `win.blurWebView()`
-
-#### `win.capturePage([rect, opts])`
-
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
-* `opts` Object (optional)
-  * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
-  * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
-
-Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
-
-Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty. The page is considered visible when its browser window is hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
-
-#### `win.loadURL(url[, options])`
-
-* `url` string
-* `options` Object (optional)
-  * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer URL.
-  * `userAgent` string (optional) - A user agent originating the request.
-  * `extraHeaders` string (optional) - Extra headers separated by "\n"
-  * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
-  * `baseURLForDataURL` string (optional) - Base URL (with trailing path separator) for files to be loaded by the data URL. This is needed only if the specified `url` is a data URL and needs to load other files.
-
-Returns `Promise<void>` - the promise will resolve when the page has finished loading
-(see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
-if the page fails to load (see [`did-fail-load`](web-contents.md#event-did-fail-load)).
-
-Same as [`webContents.loadURL(url[, options])`](web-contents.md#contentsloadurlurl-options).
-
-The `url` can be a remote address (e.g. `http://`) or a path to a local
-HTML file using the `file://` protocol.
-
-To ensure that file URLs are properly formatted, it is recommended to use
-Node's [`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject)
-method:
-
-```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
-
-const url = require('url').format({
-  protocol: 'file',
-  slashes: true,
-  pathname: require('node:path').join(__dirname, 'index.html')
-})
-
-win.loadURL(url)
-```
-
-You can load a URL using a `POST` request with URL-encoded data by doing
-the following:
-
-```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
-
-win.loadURL('http://localhost:8000/post', {
-  postData: [{
-    type: 'rawData',
-    bytes: Buffer.from('hello=world')
-  }],
-  extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
-})
-```
-
-#### `win.loadFile(filePath[, options])`
-
-* `filePath` string
-* `options` Object (optional)
-  * `query` Record<string, string> (optional) - Passed to `url.format()`.
-  * `search` string (optional) - Passed to `url.format()`.
-  * `hash` string (optional) - Passed to `url.format()`.
-
-Returns `Promise<void>` - the promise will resolve when the page has finished loading
-(see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
-if the page fails to load (see [`did-fail-load`](web-contents.md#event-did-fail-load)).
-
-Same as `webContents.loadFile`, `filePath` should be a path to an HTML
-file relative to the root of your application.  See the `webContents` docs
-for more information.
-
-#### `win.reload()`
-
-Same as `webContents.reload`.
-
 #### `win.setMenu(menu)` _Linux_ _Windows_
 
 * `menu` Menu | null
@@ -1275,7 +1055,7 @@ convey some sort of application status or to passively notify the user.
 
 Invalidates the window shadow so that it is recomputed based on the current window shape.
 
-`BrowserWindows` that are transparent can sometimes leave behind visual artifacts on macOS.
+`BaseWindow`s that are transparent can sometimes leave behind visual artifacts on macOS.
 This method can be used to clear these artifacts when, for example, performing an animation.
 
 #### `win.setHasShadow(hasShadow)`
@@ -1381,10 +1161,6 @@ Sets the properties for the window's taskbar button.
 **Note:** `relaunchCommand` and `relaunchDisplayName` must always be set
 together. If one of those properties is not set, then neither will be used.
 
-#### `win.showDefinitionForSelection()` _macOS_
-
-Same as `webContents.showDefinitionForSelection()`.
-
 #### `win.setIcon(icon)` _Windows_ _Linux_
 
 * `icon` [NativeImage](native-image.md) | string
@@ -1484,18 +1260,18 @@ Returns `boolean` - Whether the window can be focused.
 
 #### `win.setParentWindow(parent)`
 
-* `parent` BrowserWindow | null
+* `parent` BaseWindow | null
 
 Sets `parent` as current window's parent window, passing `null` will turn
 current window into a top-level window.
 
 #### `win.getParentWindow()`
 
-Returns `BrowserWindow | null` - The parent window or `null` if there is no parent.
+Returns `BaseWindow | null` - The parent window or `null` if there is no parent.
 
 #### `win.getChildWindows()`
 
-Returns `BrowserWindow[]` - All child windows.
+Returns `BaseWindow[]` - All child windows.
 
 #### `win.setAutoHideCursor(autoHide)` _macOS_
 
@@ -1513,10 +1289,6 @@ tabs in the window.
 Selects the next tab when native tabs are enabled and there are other
 tabs in the window.
 
-#### `win.showAllTabs()` _macOS_
-
-Shows or hides the tab overview when native tabs are enabled.
-
 #### `win.mergeAllWindows()` _macOS_
 
 Merges all windows into one window with multiple tabs when native tabs
@@ -1532,34 +1304,23 @@ there is more than one tab in the current window.
 Toggles the visibility of the tab bar if native tabs are enabled and
 there is only one tab in the current window.
 
-#### `win.addTabbedWindow(browserWindow)` _macOS_
+#### `win.addTabbedWindow(baseWindow)` _macOS_
 
-* `browserWindow` BrowserWindow
+* `baseWindow` BaseWindow
 
 Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
+* `type` string | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
-Adds a vibrancy effect to the browser window. Passing `null` or an empty string
+Adds a vibrancy effect to the window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
-#### `win.setBackgroundMaterial(material)` _Windows_
-
-* `material` string
-  * `auto` - Let the Desktop Window Manager (DWM) automatically decide the system-drawn backdrop material for this window. This is the default.
-  * `none` - Don't draw any system backdrop.
-  * `mica` - Draw the backdrop material effect corresponding to a long-lived window.
-  * `acrylic` - Draw the backdrop material effect corresponding to a transient window.
-  * `tabbed` - Draw the backdrop material effect corresponding to a window with a tabbed title bar.
-
-This method sets the browser window's system-drawn background material, including behind the non-client area.
-
-See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_systembackdrop_type) for more details.
-
-**Note:** This method is only supported on Windows 11 22H2 and up.
+Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
+deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setWindowButtonPosition(position)` _macOS_
 
@@ -1573,6 +1334,25 @@ Passing `null` will reset the position to default.
 Returns `Point | null` - The custom position for the traffic light buttons in
 frameless window, `null` will be returned when there is no custom position.
 
+#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
+
+* `position` [Point](structures/point.md)
+
+Set a custom position for the traffic light buttons in frameless window.
+Passing `{ x: 0, y: 0 }` will reset the position to default.
+
+> **Note**
+> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
+
+#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
+
+Returns `Point` - The custom position for the traffic light buttons in
+frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
+position.
+
+> **Note**
+> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
+
 #### `win.setTouchBar(touchBar)` _macOS_
 
 * `touchBar` TouchBar | null
@@ -1584,74 +1364,16 @@ machine has a touch bar.
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
 
-#### `win.setBrowserView(browserView)` _Experimental_ _Deprecated_
-
-* `browserView` [BrowserView](browser-view.md) | null - Attach `browserView` to `win`.
-If there are other `BrowserView`s attached, they will be removed from
-this window.
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
-#### `win.getBrowserView()` _Experimental_ _Deprecated_
-
-Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
-if one is not attached. Throws an error if multiple `BrowserView`s are attached.
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
-#### `win.addBrowserView(browserView)` _Experimental_ _Deprecated_
-
-* `browserView` [BrowserView](browser-view.md)
-
-Replacement API for setBrowserView supporting work with multi browser views.
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
-#### `win.removeBrowserView(browserView)` _Experimental_ _Deprecated_
-
-* `browserView` [BrowserView](browser-view.md)
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
-#### `win.setTopBrowserView(browserView)` _Experimental_ _Deprecated_
-
-* `browserView` [BrowserView](browser-view.md)
-
-Raises `browserView` above other `BrowserView`s attached to `win`.
-Throws an error if `browserView` is not attached to `win`.
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
-#### `win.getBrowserViews()` _Experimental_ _Deprecated_
-
-Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
-with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
-
-> **Note**
-> The `BrowserView` class is deprecated, and replaced by the new
-> [`WebContentsView`](web-contents-view.md) class.
-
 #### `win.setTitleBarOverlay(options)` _Windows_
 
 * `options` Object
   * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
   * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
-  * `height` Integer (optional) _macOS_ _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
 
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.
 
-[page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level

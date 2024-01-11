@@ -46,13 +46,13 @@
 #define ELECTRON_BROWSER_BINDINGS(V)     \
   V(electron_browser_app)                \
   V(electron_browser_auto_updater)       \
-  V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
   V(electron_browser_desktop_capturer)   \
   V(electron_browser_dialog)             \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
+  V(electron_browser_image_view)         \
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
@@ -101,8 +101,6 @@
   V(electron_common_net)             \
   V(electron_utility_parent_port)
 
-#define ELECTRON_VIEWS_BINDINGS(V) V(electron_browser_image_view)
-
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
 
 // This is used to load built-in bindings. Instead of using
@@ -115,9 +113,6 @@ ELECTRON_BROWSER_BINDINGS(V)
 ELECTRON_COMMON_BINDINGS(V)
 ELECTRON_RENDERER_BINDINGS(V)
 ELECTRON_UTILITY_BINDINGS(V)
-#if BUILDFLAG(ENABLE_VIEWS_API)
-ELECTRON_VIEWS_BINDINGS(V)
-#endif
 #if DCHECK_IS_ON()
 ELECTRON_TESTING_BINDINGS(V)
 #endif
@@ -444,9 +439,6 @@ void NodeBindings::RegisterBuiltinBindings() {
 #define V(modname) _register_##modname();
   if (IsBrowserProcess()) {
     ELECTRON_BROWSER_BINDINGS(V)
-#if BUILDFLAG(ENABLE_VIEWS_API)
-    ELECTRON_VIEWS_BINDINGS(V)
-#endif
   }
   ELECTRON_COMMON_BINDINGS(V)
   if (IsRendererProcess()) {
