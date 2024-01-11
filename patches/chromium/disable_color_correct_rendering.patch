@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 9066427f903cb78b75ff72f3653495c4f66028c8..41511b0d089598c505cac3b6197b0e63089eaf06 100644
+index cb9d275b54d95d2df68b481ed7ce73b9e4aa83b2..e6fb1db611d5314176ddbc909cfbf25965a45dca 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1888,6 +1888,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1891,6 +1891,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -93,10 +93,10 @@ index 53e23c2b791b9f8851ecac455c3adefd8fc37688..857b648acf17742e7d904ece93ee113f
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 82b4a00f9c66627ef897c717a0f2e93ac0f13e08..195b147c927c1b09dc24928ec4e3755b3ee1af14 100644
+index 0fa0effecebf1437181c02e477762ef4f33e9aaf..36351f2c0d82d7ffc9c03e8d9ca043652cab7fb6 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3357,6 +3357,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3362,6 +3362,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -170,7 +170,7 @@ index ab5742a30a9d8319ec4596bb99313ea05841e316..5ffc2a38f66f3ab2c82102e996f8e931
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 8a4e2f567831f5a295346062302470d2705ad9a4..2f9d13f03fc943342c156b676a7244348943d85f 100644
+index a66a9eacee191c7be9ed172b8db1dcd02f983d49..25e251f5afa50fb3bb0cab74efb740ea621cbab7 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -21,6 +21,7 @@
@@ -196,7 +196,7 @@ index 8a4e2f567831f5a295346062302470d2705ad9a4..2f9d13f03fc943342c156b676a724434
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -342,6 +351,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
+@@ -340,6 +349,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
