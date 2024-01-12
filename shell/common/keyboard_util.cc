@@ -19,7 +19,7 @@ using CodeAndShiftedChar =
     std::pair<ui::KeyboardCode, absl::optional<char16_t>>;
 
 constexpr CodeAndShiftedChar KeyboardCodeFromKeyIdentifier(
-    base::StringPiece str) {
+    const std::string_view str) {
 #if BUILDFLAG(IS_MAC)
   constexpr auto CommandOrControl = ui::VKEY_COMMAND;
 #else
@@ -27,7 +27,7 @@ constexpr CodeAndShiftedChar KeyboardCodeFromKeyIdentifier(
 #endif
 
   constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, CodeAndShiftedChar>({
+      base::MakeFixedFlatMap<std::string_view, CodeAndShiftedChar>({
           {"alt", {ui::VKEY_MENU, {}}},
           {"altgr", {ui::VKEY_ALTGR, {}}},
           {"backspace", {ui::VKEY_BACK, {}}},
@@ -273,7 +273,7 @@ constexpr CodeAndShiftedChar KeyboardCodeFromCharCode(char16_t c) {
 
 }  // namespace
 
-ui::KeyboardCode KeyboardCodeFromStr(base::StringPiece str,
+ui::KeyboardCode KeyboardCodeFromStr(const std::string_view str,
                                      absl::optional<char16_t>* shifted_char) {
   auto const [code, shifted] =
       str.size() == 1 ? KeyboardCodeFromCharCode(base::ToLowerASCII(str[0]))

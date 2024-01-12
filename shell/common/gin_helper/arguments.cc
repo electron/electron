@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
+#include <string_view>
+
 #include "shell/common/gin_helper/arguments.h"
 
 #include "v8/include/v8-exception.h"
@@ -15,7 +17,7 @@ void Arguments::ThrowError() const {
   gin::Arguments::ThrowError();
 }
 
-void Arguments::ThrowError(base::StringPiece message) const {
+void Arguments::ThrowError(const std::string_view message) const {
   isolate()->ThrowException(
       v8::Exception::Error(gin::StringToV8(isolate(), message)));
 }

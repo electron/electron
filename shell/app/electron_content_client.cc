@@ -5,6 +5,7 @@
 #include "shell/app/electron_content_client.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -106,12 +107,12 @@ bool IsWidevineAvailable(
 }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
-void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
+void AppendDelimitedSwitchToVector(const std::string_view cmd_switch,
                                    std::vector<std::string>* append_me) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   auto switch_value = command_line->GetSwitchValueASCII(cmd_switch);
   if (!switch_value.empty()) {
-    constexpr base::StringPiece delimiter(",", 1);
+    constexpr std::string_view delimiter{",", 1};
     auto tokens =
         base::SplitString(switch_value, delimiter, base::TRIM_WHITESPACE,
                           base::SPLIT_WANT_NONEMPTY);
