@@ -17,7 +17,6 @@
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
-#include "base/lazy_instance.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
@@ -221,14 +220,13 @@ namespace {
 
 ElectronBrowserClient* g_browser_client = nullptr;
 
-base::LazyInstance<std::string>::DestructorAtExit
-    g_io_thread_application_locale = LAZY_INSTANCE_INITIALIZER;
+base::NoDestructor<std::string> g_io_thread_application_locale;
 
 base::NoDestructor<std::string> g_application_locale;
 
 void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  g_io_thread_application_locale.Get() = locale;
+  *g_io_thread_application_locale = locale;
 }
 
 void BindNetworkHintsHandler(
@@ -337,7 +335,7 @@ void ElectronBrowserClient::SetApplicationLocale(const std::string& locale) {
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
       !content::GetIOThreadTaskRunner({})->PostTask(
           FROM_HERE, base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
-    g_io_thread_application_locale.Get() = locale;
+    *g_io_thread_application_locale = locale;
   }
   *g_application_locale = locale;
 }
@@ -1499,9 +1497,9 @@ void ElectronBrowserClient::
 }
 
 std::string ElectronBrowserClient::GetApplicationLocale() {
-  if (BrowserThread::CurrentlyOn(BrowserThread::IO))
-    return g_io_thread_application_locale.Get();
-  return *g_application_locale;
+  return BrowserThread::CurrentlyOn(BrowserThread::IO)
+             ? *g_io_thread_application_locale
+             : *g_application_locale;
 }
 
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
