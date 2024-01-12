@@ -4,6 +4,7 @@
 
 #include "shell/browser/web_contents_permission_helper.h"
 
+#include <string_view>
 #include <utility>
 
 #include "content/public/browser/browser_context.h"
@@ -17,7 +18,7 @@
 
 namespace {
 
-constexpr base::StringPiece MediaStreamTypeToString(
+constexpr std::string_view MediaStreamTypeToString(
     blink::mojom::MediaStreamType type) {
   switch (type) {
     case blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE:

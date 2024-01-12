@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_service_worker_context.h"
 
+#include <string_view>
 #include <utility>
 
 #include "base/strings/string_number_conversions.h"
@@ -25,7 +26,7 @@ namespace electron::api {
 
 namespace {
 
-constexpr base::StringPiece MessageSourceToString(
+constexpr std::string_view MessageSourceToString(
     const blink::mojom::ConsoleMessageSource source) {
   switch (source) {
     case blink::mojom::ConsoleMessageSource::kXml:

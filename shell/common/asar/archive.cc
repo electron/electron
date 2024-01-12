@@ -5,6 +5,7 @@
 #include "shell/common/asar/archive.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -104,7 +105,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
   const std::string* offset = node->FindString("offset");
   if (offset &&
-      base::StringToUint64(base::StringPiece(*offset), &info->offset)) {
+      base::StringToUint64(std::string_view{*offset}, &info->offset)) {
     info->offset += header_size;
   } else {
     return false;

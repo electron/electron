@@ -4,6 +4,8 @@
 
 #include "shell/browser/electron_browser_main_parts.h"
 
+#include <string_view>
+
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "ui/ozone/public/ozone_switches.h"
@@ -15,8 +17,8 @@
 #include "shell/common/thread_restrictions.h"
 #endif
 
-constexpr base::StringPiece kElectronOzonePlatformHint(
-    "ELECTRON_OZONE_PLATFORM_HINT");
+constexpr std::string_view kElectronOzonePlatformHint{
+    "ELECTRON_OZONE_PLATFORM_HINT"};
 
 #if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
 
