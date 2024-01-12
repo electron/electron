@@ -183,7 +183,14 @@ async function circleCIRequest (url, method, requestBody) {
   }
 
   return makeRequest(requestOpts, true).catch(err => {
-    console.log('Error calling CircleCI:', err);
+    if (err.response?.body) {
+      console.error('Could not call CircleCI: ', {
+        statusCode: err.response.statusCode,
+        body: JSON.parse(err.response.body)
+      });
+    } else {
+      console.error('Error calling CircleCI:', err);
+    }
   });
 }
 
@@ -234,7 +241,14 @@ async function callAppVeyor (targetBranch, job, options) {
     const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
     console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
   } catch (err) {
-    console.log('Could not call AppVeyor: ', err);
+    if (err.response?.body) {
+      console.error('Could not call AppVeyor: ', {
+        statusCode: err.response.statusCode,
+        body: JSON.parse(err.response.body)
+      });
+    } else {
+      console.error('Error calling AppVeyor:', err);
+    }
   }
 }
 
