@@ -17,6 +17,21 @@ See https://gist.github.com/codebytere/275ec8923253fd6559b3d36115f7b31b for more
 
 This should be fixed and re-enabled on all platforms.
 
+diff --git a/BUILD.gn b/BUILD.gn
+index 541e7d2b8ee05677b64a3ea39c1422560fd5df75..8d63fea3304b36654992fe718ceeb3931ef86d39 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -181,6 +181,10 @@ config("node_internal_config") {
+   }
+   defines += [ "NODE_ARCH=\"$node_arch\"" ]
+ 
++  if (target_cpu == "x86" || target_cpu == "arm") {
++    defines += [ "NODE_RUNNING_32_BIT" ]
++  }
++
+   if (target_os == "win") {
+     node_platform = "win32"
+   } else if (target_os == "mac") {
 diff --git a/src/env.cc b/src/env.cc
 index a429d5526d0af66eef94132b196e42994e3f6448..ba575a04340b91709fb6c8710ab160a4ca1f8b77 100644
 --- a/src/env.cc
@@ -39,30 +54,3 @@ index a429d5526d0af66eef94132b196e42994e3f6448..ba575a04340b91709fb6c8710ab160a4
    }
    // We do not care about overflow since we just want this to be different
    // from the cppgc id.
-diff --git a/src/env.cc b/src/env.cc
-index 1d8df40c3446ac9c72c5f0ad24edf0b8a96cf16b..25b81dee18aeeb1bd0452ba0b66085d451723709 100644
---- a/src/env.cc
-+++ b/src/env.cc
-@@ -542,7 +542,8 @@ IsolateData::IsolateData(Isolate* isolate,
-     // for embedder ID, V8 could accidentally enable cppgc on them. So
-     // safe guard against this.
-     DCHECK_NE(descriptor.wrappable_type_index, BaseObject::kSlot);
--  } else {
-+  } else  {
-+#if !defined(NODE_RUNNING_32_BIT)
-     cpp_heap_ = CppHeap::Create(
-         platform,
-         CppHeapCreateParams{
-@@ -550,6 +551,7 @@ IsolateData::IsolateData(Isolate* isolate,
-             WrapperDescriptor(
-                 BaseObject::kEmbedderType, BaseObject::kSlot, cppgc_id)});
-     isolate->AttachCppHeap(cpp_heap_.get());
-+#endif
-   }
-   // We do not care about overflow since we just want this to be different
-   // from the cppgc id.
-=======
-     if (is_win) {
-       defines += [
-         "NOMINMAX",
->>>>>>> 95a9029428 (chore: fix patch indices)

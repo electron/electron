@@ -60,6 +60,8 @@ def main(target_file, target_cpu):
   v['node_module_version'] = int(args['node_module_version'])
   # Used by certain versions of node-gyp.
   v['build_v8_with_gn'] = 'false'
+  # TODO(zcbenz): Support the flags in Node's configure script.
+  v['v8_enable_sandbox'] = 1
 
   with open(target_file, 'w+') as f:
     f.write(pprint.pformat(config, indent=2))

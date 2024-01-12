@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index f52d4f805406c513904151be90e433948764b3ad..343bbafa9787f56646ee7332151d21152ecf5379 100644
+index f52d4f805406c513904151be90e433948764b3ad..7b790060b03cceec62bfe4c1f12d396b9cf52e8c 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -86,6 +86,8 @@
@@ -27,18 +27,20 @@ index f52d4f805406c513904151be90e433948764b3ad..343bbafa9787f56646ee7332151d2115
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -396,6 +399,9 @@
-       ['v8_enable_v8_checks == 1', {
-         'defines': ['V8_ENABLE_CHECKS'],
+@@ -391,6 +394,11 @@
+           }],
+         ],
        }],
 +      ['using_electron_config_gypi == 1', {
-+        'defines': ['USING_ELECTRON_CONFIG_GYPI'],
++        'defines': [
++          'USING_ELECTRON_CONFIG_GYPI',
++        ],
 +      }],
-       ['v8_enable_pointer_compression == 1', {
-         'defines': ['V8_COMPRESS_POINTERS'],
-       }],
+       # The defines bellow must include all things from the external_v8_defines
+       # list in v8/BUILD.gn.
+       ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index 5ede37578480b06daf7ffab786a1361eeae3c6b4..cc957e96f356547f7e104f1ccb5af3471923a590 100755
+index 84b016cd853080656d4dcf982e64855fcfa72a55..f0cccff0eed2ef11275d2f7ec2358276f6e10458 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1489,6 +1489,7 @@ def configure_library(lib, output, pkgname=None):
