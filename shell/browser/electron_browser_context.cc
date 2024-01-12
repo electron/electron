@@ -483,6 +483,7 @@ ElectronBrowserContext::GetBackgroundSyncController() {
 
 content::BrowsingDataRemoverDelegate*
 ElectronBrowserContext::GetBrowsingDataRemoverDelegate() {
+  CHECK(false) << "TODO";
   return nullptr;
 }
 

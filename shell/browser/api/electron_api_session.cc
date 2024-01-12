@@ -33,6 +33,7 @@
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/browsing_data_remover.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
@@ -148,6 +149,26 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
   return quota_mask;
+}
+
+constexpr content::BrowsingDataRemover::DataType kDataTypeAll =
+    0xffffffffffffffffull;
+constexpr content::BrowsingDataRemover::OriginType kOriginTypeAll =
+    0xffffffffffffffffull;
+
+struct ClearBrowsingDataOptions {
+  content::BrowsingDataRemover::DataType data_types = kDataTypeAll;
+  content::BrowsingDataRemover::OriginType origin_types = kOriginTypeAll;
+};
+
+content::BrowsingDataRemover::DataType GetDataTypeMask(
+    const std::vector<std::string>& data_types) {
+  uint32_t mask = 0;
+  for (const auto& it : data_types) {
+    auto type = base::ToLowerASCII(it);
+    // TODO: ???
+  }
+  return mask;
 }
 
 base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
@@ -1102,6 +1123,18 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   return handle;
 }
 
+v8::Local<v8::Promise> Session::ClearBrowsingData(gin::Arguments* args) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> promise_handle = promise.GetHandle();
+
+  auto* remover = browser_context_->GetBrowsingDataRemover();
+
+  // TODO: ???
+
+  return promise_handle;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -1371,6 +1404,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getStoragePath", &Session::GetPath)
       .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
+      .SetMethod("clearBrowsingData", &Session::ClearBrowsingData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
