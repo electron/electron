@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris Harrelson <chrishtr@chromium.org>
+Date: Thu, 4 Jan 2024 18:26:31 +0000
+Subject: Ensure an AXContext before painting.
+
+Before this CL, if a node was highlighted in an iframe, an AXContext
+may not have been initialized before painting began, which is a
+rendering lifecycle error.
+
+Fixed: 1515088
+
+Change-Id: I0f95ad59c3c982b43b2ac4beddc76414a67d22c6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5165954
+Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+Commit-Queue: Chris Harrelson <chrishtr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1243003}
+
+diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.cc b/third_party/blink/renderer/core/inspector/inspect_tools.cc
+index 4be51d41702c006b89d0e7b57bf10cb7c107bcbb..6fa5b9145903fa09e25513ff860cfc60c03dc689 100644
+--- a/third_party/blink/renderer/core/inspector/inspect_tools.cc
++++ b/third_party/blink/renderer/core/inspector/inspect_tools.cc
+@@ -179,7 +179,7 @@ void SearchingForNodeTool::Draw(float scale) {
+                              !omit_tooltip_ && highlight_config_->show_info &&
+                              node->GetLayoutObject() &&
+                              node->GetDocument().GetFrame();
+-  overlay_->EnsureAXContext(node);
++  DCHECK(overlay_->HasAXContext(node));
+   InspectorHighlight highlight(node, *highlight_config_, contrast_info_,
+                                append_element_info, false,
+                                content_visibility_state_);
+@@ -251,6 +251,7 @@ bool SearchingForNodeTool::HandleMouseMove(const WebMouseEvent& event) {
+   // Store values for the highlight.
+   bool hovered_node_changed = node != hovered_node_;
+   hovered_node_ = node;
++  overlay_->EnsureAXContext(node);
+   event_target_node_ = (event.GetModifiers() & WebInputEvent::kShiftKey)
+                            ? HoveredNodeForEvent(frame, event, false)
+                            : nullptr;
+@@ -361,6 +362,7 @@ NodeHighlightTool::NodeHighlightTool(
+   if (auto* flexbox = DynamicTo<LayoutFlexibleBox>(node->GetLayoutObject())) {
+     flexbox->SetNeedsLayoutForDevtools();
+   }
++  overlay_->EnsureAXContext(node);
+ }
+ 
+ String NodeHighlightTool::GetOverlayName() {
+@@ -406,8 +408,7 @@ void NodeHighlightTool::DrawMatchingSelector() {
+   ContainerNode* query_base = node_->ContainingShadowRoot();
+   if (!query_base)
+     query_base = node_->ownerDocument();
+-
+-  overlay_->EnsureAXContext(query_base);
++  DCHECK(overlay_->HasAXContext(query_base));
+ 
+   StaticElementList* elements = query_base->QuerySelectorAll(
+       AtomicString(selector_list_), exception_state);
+@@ -438,7 +439,7 @@ std::unique_ptr<protocol::DictionaryValue>
+ NodeHighlightTool::GetNodeInspectorHighlightAsJson(
+     bool append_element_info,
+     bool append_distance_info) const {
+-  overlay_->EnsureAXContext(node_.Get());
++  DCHECK(overlay_->HasAXContext(node_.Get()));
+   InspectorHighlight highlight(node_.Get(), *highlight_config_, contrast_info_,
+                                append_element_info, append_distance_info,
+                                content_visibility_state_);
+@@ -717,6 +718,7 @@ bool NearbyDistanceTool::HandleMouseMove(const WebMouseEvent& event) {
+ 
+   // Store values for the highlight.
+   hovered_node_ = node;
++  overlay_->EnsureAXContext(node);
+   return true;
+ }
+ 
+@@ -728,7 +730,7 @@ void NearbyDistanceTool::Draw(float scale) {
+   Node* node = hovered_node_.Get();
+   if (!node)
+     return;
+-  overlay_->EnsureAXContext(node);
++  DCHECK(overlay_->HasAXContext(node));
+   auto content_visibility_state = DetermineSelfContentVisibilityState(node);
+   InspectorHighlight highlight(
+       node, InspectorHighlight::DefaultConfig(),
+diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
+index 794baa4ca401656601ab078c73974c1a70f4f8bb..437ed5a4abd24cfe1934f3c56fc8096db0d1b9e8 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
+@@ -489,6 +489,10 @@ protocol::Response InspectorOverlayAgent::enable() {
+   return protocol::Response::Success();
+ }
+ 
++bool InspectorOverlayAgent::HasAXContext(Node* node) {
++  return document_to_ax_context_.Contains(&node->GetDocument());
++}
++
+ void InspectorOverlayAgent::EnsureAXContext(Node* node) {
+   EnsureAXContext(node->GetDocument());
+ }
+diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
+index ccaa46dd8a0067fc2d37677862e6345421d70669..1441ee7809851a4529acdde3db314b0c59264162 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
++++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
+@@ -267,6 +267,7 @@ class CORE_EXPORT InspectorOverlayAgent final
+   void Dispose() override;
+ 
+   void Inspect(Node*);
++  bool HasAXContext(Node*);
+   void EnsureAXContext(Node*);
+   void EnsureAXContext(Document&);
+   void DispatchBufferedTouchEvents();
+diff --git a/third_party/blink/web_tests/inspector-protocol/overlay/overlay-in-iframe-expected.txt b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-in-iframe-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ad0f146f06757b8b85054a2a343ca2a8aeef7bba
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-in-iframe-expected.txt
+@@ -0,0 +1,2 @@
++Verifies that overlay of an iframe element doesn't crash.
++
+diff --git a/third_party/blink/web_tests/inspector-protocol/overlay/overlay-in-iframe.js b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-in-iframe.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c2fb6822d0afe6ac8f9c6efdb7c97036f7f49502
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-in-iframe.js
+@@ -0,0 +1,36 @@
++(async function(testRunner) {
++  const {page, session, dp} = await testRunner.startHTML(``,
++    "Verifies that overlay of an iframe element doesn't crash.");
++
++  await session.evaluate(() => {
++    var iframe = document.createElement('iframe');
++    iframe.style.position = 'absolute';
++    iframe.style.top = '200px';
++    iframe.style.left = '200px';
++    iframe.style.width = '500px';
++    iframe.style.height = '500px';
++    document.body.appendChild(iframe);
++    iframe.contentWindow.document.body.innerHTML = `
++      <div style="width:100px;height:100px;background:orange"></div>
++    `;
++  });
++
++  await dp.DOM.enable();
++  await dp.Emulation.enable();
++  await dp.Overlay.enable();
++
++  const root = (await dp.DOM.getDocument()).result.root;
++  const iframeDiv = (await dp.DOM.getNodeForLocation({x: 250, y: 250})).result.nodeId;
++
++  const result = await dp.Overlay.highlightNode({
++    highlightConfig: {contentColor: {r: 0, g: 128, b: 0, a: 0.5}},
++    nodeId: iframeDiv,
++  });
++
++  // Wait for overlay rendering to finish by requesting an animation frame.
++  await session.evaluate(() => {
++    return new Promise(resolve => requestAnimationFrame(resolve));
++  });
++
++  testRunner.completeTest();
++});
