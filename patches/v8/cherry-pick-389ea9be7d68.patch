@@ -1,7 +1,7 @@
-From 389ea9be7d68bb189e16da79f6414edbd4f7594f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Toon Verwaest <verwaest@chromium.org>
 Date: Thu, 11 Jan 2024 10:47:17 +0100
-Subject: [PATCH] [runtime] Drop fast last-property deletion
+Subject: Drop fast last-property deletion
 
 This interacts badly with other optimizations and isn't particularly
 common.
@@ -14,14 +14,13 @@ Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Auto-Submit: Toon Verwaest <verwaest@chromium.org>
 Commit-Queue: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#91782}
----
 
 diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
-index 84170c3..7428ff8 100644
+index 18ce25614edaae28f2dac7721bde4b4a83a45af6..f0483acadb8d1c9f3ea1bfbe258dc1a57b32ad99 100644
 --- a/src/runtime/runtime-object.cc
 +++ b/src/runtime/runtime-object.cc
-@@ -71,186 +71,10 @@
-   return ReadOnlyRoots(isolate).boolean_value_handle(maybe.FromJust());
+@@ -72,184 +72,10 @@ MaybeHandle<Object> Runtime::HasProperty(Isolate* isolate,
+                           : ReadOnlyRoots(isolate).false_value_handle();
  }
  
 -namespace {
@@ -31,8 +30,7 @@ index 84170c3..7428ff8 100644
 -// complete at any time. For this reason we use the filler map word.
 -// If V8_MAP_PACKING is enabled, then the filler map word is a packed filler
 -// map. Otherwise, the filler map word is the same as the filler map.
--inline void ClearField(Isolate* isolate, Tagged<JSObject> object,
--                       FieldIndex index) {
+-inline void ClearField(Isolate* isolate, JSObject object, FieldIndex index) {
 -  if (index.is_inobject()) {
 -    MapWord filler_map_word =
 -        ReadOnlyRoots(isolate).one_pointer_filler_map_word();
@@ -43,7 +41,7 @@ index 84170c3..7428ff8 100644
 -    int offset = index.offset();
 -    TaggedField<MapWord>::Release_Store(object, offset, filler_map_word);
 -  } else {
--    object->property_array()->set(
+-    object.property_array().set(
 -        index.outobject_array_index(),
 -        ReadOnlyRoots(isolate).one_pointer_filler_map());
 -  }
@@ -62,10 +60,10 @@ index 84170c3..7428ff8 100644
 -    TransitionsAccessor transitions(isolate, *map);
 -    transitions.ForEachTransitionTo(
 -        *name,
--        [&](Tagged<Map> target) {
--          DCHECK_EQ(descriptor, target->LastAdded());
--          DCHECK_EQ(*name, target->GetLastDescriptorName(isolate));
--          PropertyDetails details = target->GetLastDescriptorDetails(isolate);
+-        [&](Map target) {
+-          DCHECK_EQ(descriptor, target.LastAdded());
+-          DCHECK_EQ(*name, target.GetLastDescriptorName(isolate));
+-          PropertyDetails details = target.GetLastDescriptorDetails(isolate);
 -          // Currently, we track constness only for fields.
 -          if (details.kind() == PropertyKind::kData &&
 -              details.constness() == PropertyConstness::kConst) {
@@ -81,15 +79,15 @@ index 84170c3..7428ff8 100644
 -  for (int i = 0; i < target_maps_count; i++) {
 -    Handle<Map> target = target_maps[i];
 -    PropertyDetails details =
--        target->instance_descriptors(isolate)->GetDetails(descriptor);
+-        target->instance_descriptors(isolate).GetDetails(descriptor);
 -    Handle<FieldType> field_type(
--        target->instance_descriptors(isolate)->GetFieldType(descriptor),
+-        target->instance_descriptors(isolate).GetFieldType(descriptor),
 -        isolate);
 -    MapUpdater::GeneralizeField(isolate, target, descriptor,
 -                                PropertyConstness::kMutable,
 -                                details.representation(), field_type);
 -    DCHECK_EQ(PropertyConstness::kMutable, target->instance_descriptors(isolate)
--                                               ->GetDetails(descriptor)
+-                                               .GetDetails(descriptor)
 -                                               .constness());
 -  }
 -}
@@ -102,10 +100,10 @@ index 84170c3..7428ff8 100644
 -  // prerequisites:
 -  // (1) The receiver must be a regular object and the key a unique name.
 -  Handle<Map> receiver_map(receiver->map(), isolate);
--  if (IsSpecialReceiverMap(*receiver_map)) return false;
--  DCHECK(IsJSObjectMap(*receiver_map));
+-  if (receiver_map->IsSpecialReceiverMap()) return false;
+-  DCHECK(receiver_map->IsJSObjectMap());
 -
--  if (!IsUniqueName(*raw_key)) return false;
+-  if (!raw_key->IsUniqueName()) return false;
 -  Handle<Name> key = Handle<Name>::cast(raw_key);
 -  // (2) The property to be deleted must be the last property.
 -  int nof = receiver_map->NumberOfOwnDescriptors();
@@ -119,7 +117,7 @@ index 84170c3..7428ff8 100644
 -  if (!details.IsConfigurable()) return false;
 -  // (4) The map must have a back pointer.
 -  Handle<Object> backpointer(receiver_map->GetBackPointer(), isolate);
--  if (!IsMap(*backpointer)) return false;
+-  if (!backpointer->IsMap()) return false;
 -  Handle<Map> parent_map = Handle<Map>::cast(backpointer);
 -  // (5) The last transition must have been caused by adding a property
 -  // (and not any kind of special transition).
@@ -135,9 +133,8 @@ index 84170c3..7428ff8 100644
 -    // Invalidate slots manually later in case we delete an in-object tagged
 -    // property. In this case we might later store an untagged value in the
 -    // recorded slot.
--    isolate->heap()->NotifyObjectLayoutChange(
--        *receiver, no_gc, InvalidateRecordedSlots::kNo,
--        InvalidateExternalPointerSlots::kNo);
+-    isolate->heap()->NotifyObjectLayoutChange(*receiver, no_gc,
+-                                              InvalidateRecordedSlots::kNo);
 -    FieldIndex index =
 -        FieldIndex::ForPropertyIndex(*receiver_map, details.field_index());
 -    // Special case deleting the last out-of object property.
@@ -166,7 +163,7 @@ index 84170c3..7428ff8 100644
 -#if VERIFY_HEAP
 -  if (v8_flags.verify_heap) {
 -    receiver->HeapObjectVerify(isolate);
--    receiver->property_array()->PropertyArrayVerify(isolate);
+-    receiver->property_array().PropertyArrayVerify(isolate);
 -  }
 -#endif
 -
@@ -208,10 +205,10 @@ index 84170c3..7428ff8 100644
    PropertyKey lookup_key(isolate, key, &success);
    if (!success) return Nothing<bool>();
 diff --git a/test/cctest/test-field-type-tracking.cc b/test/cctest/test-field-type-tracking.cc
-index ccbd96c..fbced12 100644
+index 34e3db375bfd34f5f2f31090e766593d2102a26c..9ed4871db490761415c38468855e740239c3c201 100644
 --- a/test/cctest/test-field-type-tracking.cc
 +++ b/test/cctest/test-field-type-tracking.cc
-@@ -3031,122 +3031,6 @@
+@@ -3027,126 +3027,10 @@ TEST(RepresentationPredicatesAreInSync) {
    }
  }
  
@@ -300,13 +297,13 @@ index ccbd96c..fbced12 100644
 -    tmp = Map::TransitionToDataProperty(isolate, new_parent_map, name_x, value,
 -                                        attributes, PropertyConstness::kConst,
 -                                        StoreOrigin::kNamed);
--    CHECK(!tmp->map(isolate)->is_dictionary_map());
+-    CHECK(!tmp->map(isolate).is_dictionary_map());
 -    transitions.push_back(tmp);
 -
 -    tmp = Map::TransitionToDataProperty(isolate, new_parent_map, name_y, value,
 -                                        attributes, PropertyConstness::kConst,
 -                                        StoreOrigin::kNamed);
--    CHECK(!tmp->map(isolate)->is_dictionary_map());
+-    CHECK(!tmp->map(isolate).is_dictionary_map());
 -    transitions.push_back(tmp);
 -  }
 -
@@ -331,6 +328,14 @@ index ccbd96c..fbced12 100644
 -  }
 -}
 -
- #define CHECK_SAME(object, rep, expected)                    \
-   CHECK_EQ(Object::FitsRepresentation(*object, rep, true),   \
-            Object::FitsRepresentation(*object, rep, false)); \
+-#define CHECK_SAME(object, rep, expected)           \
+-  CHECK_EQ(object->FitsRepresentation(rep, true),   \
+-           object->FitsRepresentation(rep, false)); \
+-  CHECK_EQ(object->FitsRepresentation(rep, true), expected)
++#define CHECK_SAME(object, rep, expected)                    \
++  CHECK_EQ(Object::FitsRepresentation(*object, rep, true),   \
++           Object::FitsRepresentation(*object, rep, false)); \
++  CHECK_EQ(Object::FitsRepresentation(*object, rep, true), expected)
+ 
+ TEST(CheckFitsRepresentationPredicate) {
+   CcTest::InitializeVM();
