@@ -11,6 +11,7 @@
 
 #include "base/functional/bind.h"
 #include "base/lazy_instance.h"
+#include "base/no_destructor.h"
 #include "base/observer_list.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_prefs.h"
@@ -38,9 +39,6 @@ ExtensionActionAPI::Observer::~Observer() {}
 // ExtensionActionAPI
 //
 
-static base::LazyInstance<BrowserContextKeyedAPIFactory<ExtensionActionAPI>>::
-    DestructorAtExit g_extension_action_api_factory = LAZY_INSTANCE_INITIALIZER;
-
 ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext* context)
     : browser_context_(context), extension_prefs_(nullptr) {}
 
@@ -49,7 +47,9 @@ ExtensionActionAPI::~ExtensionActionAPI() {}
 // static
 BrowserContextKeyedAPIFactory<ExtensionActionAPI>*
 ExtensionActionAPI::GetFactoryInstance() {
-  return g_extension_action_api_factory.Pointer();
+  static base::NoDestructor<BrowserContextKeyedAPIFactory<ExtensionActionAPI>>
+      instance;
+  return instance.get();
 }
 
 // static
