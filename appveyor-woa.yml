@@ -113,6 +113,8 @@ for:
           $env:RBE_service = node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"
       - ps: >-
           $env:RBE_experimental_credentials_helper = $env:RECLIENT_HELPER
+      - ps: >-
+          $env:RBE_experimental_credentials_helper_args = "print"
       - cd ..\..
       - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
       - ps: >-
