@@ -2603,4 +2603,84 @@ describe('webContents module', () => {
       await bw.webContents.executeJavaScript('alert("message");');
     });
   });
+
+  describe('mime sniffing', () => {
+    afterEach(closeAllWindows);
+    it('check text/html utf8 bom', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/html-utf8-bom").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/html');
+    });
+
+    it('check text/html with comments at the start of the file', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/html-with-comments").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/html');
+    });
+
+    it('check text/html utf8 bom with comments at the start of the file', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/html-utf8-bom-with-comments").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/html');
+    });
+
+    it('check image/svg+xml', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/svg").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('image/svg+xml');
+    });
+
+    it('check image/svg+xml utf8 bom', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/svg-utf8-bom").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('image/svg+xml');
+    });
+
+    it('check image/svg+xml with comments', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/svg-with-comments").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('image/svg+xml');
+    });
+
+    it('check image/svg+xml utf8 bom with comments', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/svg-utf8-bom-with-comments").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('image/svg+xml');
+    });
+
+    it('check text/xml', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/xml").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/xml');
+    });
+
+    it('check text/xml utf8 bom', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/xml-utf8-bom").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/xml');
+    });
+
+    it('check text/xml with comments', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/xml-with-comments").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/xml');
+    });
+
+    it('check text/xml utf8 bom with comments', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const mimeType = await w.webContents.executeJavaScript(`fetch("file://${fixturesPath}/assets/mime-sniffing/xml-utf8-bom-with-comments").then(r => r.blob().then(b => b.type))`);
+      expect(mimeType).to.equal('text/xml');
+    });
+  });
 });

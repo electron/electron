@@ -1,0 +1,6 @@
+﻿<?xml version="1.0"?>
+<!-- XML file with comments at the start of the file. -->
+<root>
+  <!-- comment -->
+  <child>text</child>
+</root>

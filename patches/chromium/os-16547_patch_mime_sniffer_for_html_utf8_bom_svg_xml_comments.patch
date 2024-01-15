@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tariq Bashir <tbashir@brightsign.biz>
+Date: Fri, 5 Jan 2024 15:16:40 +0000
+Subject: OS-16547: patch mime sniffer for html utf8 bom, svg and xml comments
+
+Change to the mime sniffer to recognise html files with a utf8 bom, svg files and
+xml files with comments.
+Cherry picked from QtWebEngine change IDs:
+I11c9915a4c23155fc8b8b4e405b69ed48821db5a
+I7ee3558529c24a08b22b1ad3a4a9d6df73174cdd
+I6d9a40bb65b8ff4d44e4e5b6d850f1a728768feb
+
+Includes an additional change missing from QtWebEngine version to stop the binary sniffer changing the mime type of text/xml files to text/plain.
+
+diff --git a/net/base/mime_sniffer.cc b/net/base/mime_sniffer.cc
+index 826622c7378890d80e338f61601128fa5b7b9f12..5382d058d13f194ae29abc299d152b455d27d2e1 100644
+--- a/net/base/mime_sniffer.cc
++++ b/net/base/mime_sniffer.cc
+@@ -371,8 +371,17 @@ static bool SniffForHTML(base::StringPiece content,
+ 
+   // We adopt a strategy similar to that used by Mozilla to sniff HTML tags,
+   // but with some modifications to better match the HTML5 spec.
+-  base::StringPiece trimmed =
+-      base::TrimWhitespaceASCII(content, base::TRIM_LEADING);
++  base::StringPiece trimmed;
++  if (base::StartsWith(content, base::kUtf8ByteOrderMark))
++      trimmed = base::TrimString(content, base::kUtf8ByteOrderMark, base::TrimPositions::TRIM_LEADING);
++  else if (base::StartsWith(content, "\xFE\xFF"))
++      trimmed = base::TrimString(content, "\xFE\xFF", base::TrimPositions::TRIM_LEADING);
++  else if (base::StartsWith(content, "\xFF\xFE"))
++      trimmed = base::TrimString(content, "\xFF\xFE", base::TrimPositions::TRIM_LEADING);
++  else
++      trimmed = content;
++
++  trimmed = base::TrimWhitespaceASCII(trimmed, base::TRIM_LEADING);
+ 
+   // |trimmed| now starts at first non-whitespace character (or is empty).
+   return CheckForMagicNumbers(trimmed, kSniffableTags, result);
+@@ -507,6 +516,7 @@ static bool SniffForInvalidOfficeDocs(base::StringPiece content,
+ static const MagicNumber kMagicXML[] = {
+     MAGIC_STRING("application/atom+xml", "<feed"),
+     MAGIC_STRING("application/rss+xml", "<rss"),
++    MAGIC_STRING("image/svg+xml", "<svg"),
+ };
+ 
+ // Returns true and sets result if the content appears to contain XHTML or a
+@@ -539,12 +549,24 @@ static bool SniffXML(base::StringPiece content,
+     // Skip XML and DOCTYPE declarations.
+     static constexpr base::StringPiece kXmlPrefix("<?xml");
+     static constexpr base::StringPiece kDocTypePrefix("<!DOCTYPE");
++    static constexpr base::StringPiece kCommentPrefix("<!--");
++    static constexpr base::StringPiece kCommentSuffix("-->");
+     if (base::StartsWith(current, kXmlPrefix,
+                          base::CompareCase::INSENSITIVE_ASCII) ||
+         base::StartsWith(current, kDocTypePrefix,
+                          base::CompareCase::INSENSITIVE_ASCII)) {
+       ++pos;
+       continue;
++
++    } else if (base::StartsWith(current, kCommentPrefix,
++                                base::CompareCase::INSENSITIVE_ASCII)) {
++      // Skip comment
++      size_t close_comment = current.find(kCommentSuffix);
++      if (close_comment != base::StringPiece::npos) {
++        pos += close_comment + kCommentSuffix.length();
++        continue;
++      } else
++        return false;    // Truncated or unterminated comment, can't find any magic
+     }
+ 
+     if (CheckForMagicNumbers(current, kMagicXML, result))
+@@ -729,6 +751,9 @@ bool SniffMimeType(base::StringPiece content,
+   // Cache information about the type_hint
+   bool hint_is_unknown_mime_type = IsUnknownMimeType(type_hint);
+ 
++  // Did SniffForHtml() detect XML?
++  bool sniffed_xml = false;
++
+   // First check for HTML, unless it's a file URL and
+   // |allow_sniffing_files_urls_as_html| is false.
+   if (hint_is_unknown_mime_type &&
+@@ -737,8 +762,13 @@ bool SniffMimeType(base::StringPiece content,
+     // We're only willing to sniff HTML if the server has not supplied a mime
+     // type, or if the type it did supply indicates that it doesn't know what
+     // the type should be.
+-    if (SniffForHTML(content, &have_enough_content, result))
+-      return true;  // We succeeded in sniffing HTML.  No more content needed.
++    if (SniffForHTML(content, &have_enough_content, result)) {
++      if (*result == "text/xml")
++        // if we found XML, continue in case it is SVG or another subtype
++        sniffed_xml = true;
++      else
++        return true;  // We succeeded in sniffing HTML.  No more content needed.
++    }
+   }
+ 
+   // We're only willing to sniff for binary in 3 cases:
+@@ -748,7 +778,7 @@ bool SniffMimeType(base::StringPiece content,
+   // 3. The type is "text/plain" which is the default on some web servers and
+   //    could be indicative of a mis-configuration that we shield the user from.
+   const bool hint_is_text_plain = (type_hint == "text/plain");
+-  if (hint_is_unknown_mime_type || hint_is_text_plain) {
++  if ((hint_is_unknown_mime_type || hint_is_text_plain) && !sniffed_xml) {
+     if (!SniffBinary(content, &have_enough_content, result)) {
+       // If the server said the content was text/plain and it doesn't appear
+       // to be binary, then we trust it.
+@@ -759,12 +789,14 @@ bool SniffMimeType(base::StringPiece content,
+   }
+ 
+   // If we have plain XML, sniff XML subtypes.
+-  if (type_hint == "text/xml" || type_hint == "application/xml") {
++  if (type_hint == "text/xml" || type_hint == "application/xml" || sniffed_xml) {
+     // We're not interested in sniffing these types for images and the like.
+     // Instead, we're looking explicitly for a feed.  If we don't find one
+     // we're done and return early.
+     if (SniffXML(content, &have_enough_content, result))
+       return true;
++    if (sniffed_xml)    // The HTML sniffer detected XML, so report result
++      return true;
+     return have_enough_content;
+   }
+ 
