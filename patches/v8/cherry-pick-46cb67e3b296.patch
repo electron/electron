@@ -1,7 +1,10 @@
-From 46cb67e3b296e50d7fda5a58233d18b9f3dab0d5 Mon Sep 17 00:00:00 2001
-From: Dominik Inführ <dinfuehr@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
 Date: Mon, 18 Dec 2023 09:15:00 +0100
-Subject: [PATCH] [codegen] Install BytecodeArray last in SharedFunctionInfo
+Subject: Install BytecodeArray last in SharedFunctionInfo
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Maglev assumes that when a SharedFunctionInfo has a BytecodeArray,
 then it should also have FeedbackMetadata. However, this may not
@@ -20,13 +23,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5125960
 Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Commit-Queue: Dominik Inführ <dinfuehr@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#91568}
----
 
 diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
-index d3b9135..cd196f7 100644
+index 03860399e8b393cf315a507dbf5653381fc86d40..ff7360c10148657848440446e8d86bc4fcd51298 100644
 --- a/src/codegen/compiler.cc
 +++ b/src/codegen/compiler.cc
-@@ -721,12 +721,12 @@
+@@ -724,12 +724,12 @@ void InstallUnoptimizedCode(UnoptimizedCompilationInfo* compilation_info,
      }
  #endif  // V8_ENABLE_WEBASSEMBLY
  
