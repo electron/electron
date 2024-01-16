@@ -16,6 +16,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/raw_ptr.h"
+#include "base/scoped_observation.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -79,6 +80,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
@@ -151,25 +153,37 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-constexpr content::BrowsingDataRemover::DataType kDataTypeAll =
+constexpr content::BrowsingDataRemover::DataType kClearDataTypeAll =
     0xffffffffffffffffull;
-constexpr content::BrowsingDataRemover::OriginType kOriginTypeAll =
+constexpr content::BrowsingDataRemover::OriginType kClearOriginTypeAll =
     0xffffffffffffffffull;
 
-struct ClearBrowsingDataOptions {
-  content::BrowsingDataRemover::DataType data_types = kDataTypeAll;
-  content::BrowsingDataRemover::OriginType origin_types = kOriginTypeAll;
-};
-
-content::BrowsingDataRemover::DataType GetDataTypeMask(
-    const std::vector<std::string>& data_types) {
-  uint32_t mask = 0;
-  for (const auto& it : data_types) {
-    auto type = base::ToLowerASCII(it);
-    // TODO: ???
+class ClearBrowsingDataObserver
+    : public content::BrowsingDataRemover::Observer {
+ public:
+  ClearBrowsingDataObserver(gin_helper::Promise<void> promise,
+                            content::BrowsingDataRemover* remover)
+      : promise_(std::move(promise)) {
+    observation_.Observe(remover);
   }
-  return mask;
-}
+
+  void OnBrowsingDataRemoverDone(uint64_t failed_data_types) override {
+    if (failed_data_types == 0) {
+      promise_.Resolve();
+    } else {
+      promise_.RejectWithErrorMessage("Failed to clear data: " +
+                                      base::NumberToString(failed_data_types));
+    }
+    observation_.Reset();
+    delete this;
+  }
+
+ private:
+  gin_helper::Promise<void> promise_;
+  base::ScopedObservation<content::BrowsingDataRemover,
+                          content::BrowsingDataRemover::Observer>
+      observation_{this};
+};
 
 base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
                                     std::string const& pac_url,
@@ -1128,9 +1142,12 @@ v8::Local<v8::Promise> Session::ClearBrowsingData(gin::Arguments* args) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> promise_handle = promise.GetHandle();
 
-  auto* remover = browser_context_->GetBrowsingDataRemover();
+  content::BrowsingDataRemover* remover =
+      browser_context_->GetBrowsingDataRemover();
 
-  // TODO: ???
+  auto* observer = new ClearBrowsingDataObserver(std::move(promise), remover);
+  remover->RemoveAndReply(base::Time::Min(), base::Time::Max(),
+                          kClearDataTypeAll, kClearOriginTypeAll, observer);
 
   return promise_handle;
 }
