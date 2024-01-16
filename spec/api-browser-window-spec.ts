@@ -1081,12 +1081,14 @@ describe('BrowserWindow module', () => {
         w.show();
         await p;
         expect(w.isVisible()).to.equal(true);
+        expect(w.isHidden()).to.equal(false);
       });
       it('emits when window is shown', async () => {
         const show = once(w, 'show');
         w.show();
         await show;
         expect(w.isVisible()).to.equal(true);
+        expect(w.isHidden()).to.equal(false);
       });
     });
 
@@ -1099,6 +1101,7 @@ describe('BrowserWindow module', () => {
         w.show();
         w.hide();
         expect(w.isVisible()).to.equal(false);
+        expect(w.isHidden()).to.equal(true);
       });
       it('emits when window is hidden', async () => {
         const shown = once(w, 'show');
@@ -1108,6 +1111,7 @@ describe('BrowserWindow module', () => {
         w.hide();
         await hidden;
         expect(w.isVisible()).to.equal(false);
+        expect(w.isHidden()).to.equal(true);
       });
     });
 
@@ -1120,6 +1124,7 @@ describe('BrowserWindow module', () => {
 
         expect(w.isMinimized()).to.equal(true);
         expect(w.isVisible()).to.equal(false);
+        expect(w.isHidden()).to.equal(false);
       });
     });
 
@@ -1177,8 +1182,10 @@ describe('BrowserWindow module', () => {
     describe('BrowserWindow.focus()', () => {
       it('does not make the window become visible', () => {
         expect(w.isVisible()).to.equal(false);
+        expect(w.isHidden()).to.equal(true);
         w.focus();
         expect(w.isVisible()).to.equal(false);
+        expect(w.isHidden()).to.equal(true);
       });
 
       ifit(process.platform !== 'win32')('focuses a blurred window', async () => {

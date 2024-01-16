@@ -566,6 +566,10 @@ bool NativeWindowMac::IsVisible() const {
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
+bool NativeWindowMac::IsHidden() const {
+  return ![window_ isVisible];
+}
+
 bool NativeWindowMac::IsEnabled() const {
   return [window_ attachedSheet] == nil;
 }

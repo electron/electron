@@ -355,6 +355,10 @@ bool BaseWindow::IsVisible() const {
   return window_->IsVisible();
 }
 
+bool BaseWindow::IsHidden() const {
+  return window_->IsHidden();
+}
+
 bool BaseWindow::IsEnabled() const {
   return window_->IsEnabled();
 }
@@ -1086,6 +1090,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showInactive", &BaseWindow::ShowInactive)
       .SetMethod("hide", &BaseWindow::Hide)
       .SetMethod("isVisible", &BaseWindow::IsVisible)
+      .SetMethod("isHidden", &BaseWindow::IsHidden)
       .SetMethod("isEnabled", &BaseWindow::IsEnabled)
       .SetMethod("setEnabled", &BaseWindow::SetEnabled)
       .SetMethod("maximize", &BaseWindow::Maximize)

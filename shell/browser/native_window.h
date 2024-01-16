@@ -88,6 +88,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void ShowInactive() = 0;
   virtual void Hide() = 0;
   virtual bool IsVisible() const = 0;
+  virtual bool IsHidden() const = 0;
   virtual bool IsEnabled() const = 0;
   virtual void SetEnabled(bool enable) = 0;
   virtual void Maximize() = 0;

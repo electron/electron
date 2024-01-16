@@ -648,6 +648,10 @@ Hides the window.
 
 Returns `boolean` - Whether the window is visible to the user in the foreground of the app.
 
+#### `win.isHidden()`
+
+Returns `boolean` - Whether the window is hidden—it exists, but is inaccessible to the user.
+
 #### `win.isModal()`
 
 Returns `boolean` - Whether current window is a modal window.
