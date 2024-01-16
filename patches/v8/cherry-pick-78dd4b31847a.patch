@@ -1,0 +1,28 @@
+From 78dd4b31847ab1f5b06ef3d8742a9f3835fb6919 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 08 Jan 2024 11:13:58 +0100
+Subject: [PATCH] [maglev] Fix allocation folding in derived constructors
+
+Bug: v8:7700
+Change-Id: Ia33724d39d1397c7d47c36d14071abce6ed4b0fc
+Fixed: chromium:1515930
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5173470
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#91709}
+---
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index ad7eccf..3dd3df5 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -5597,6 +5597,7 @@
+           object = BuildAllocateFastObject(
+               FastObject(new_target_function->AsJSFunction(), zone(), broker()),
+               AllocationType::kYoung);
++          ClearCurrentRawAllocation();
+         } else {
+           object = BuildCallBuiltin<Builtin::kFastNewObject>(
+               {GetConstant(current_function), new_target});
