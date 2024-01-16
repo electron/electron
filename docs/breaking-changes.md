@@ -22,6 +22,10 @@ attribute in order to access them.
 See [documentation](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#allow) for
 more information.
 
+### Removed: The `--disable-color-correct-rendering` switch
+
+This switch was never formally documented but it's removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
+
 ## Planned Breaking API Changes (29.0)
 
 ### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`

@@ -9,15 +9,22 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index 48b7a20c212578ba9055b781b5c05b312fa7e974..3ae8136e5c938be80df141f7ca582d974fb08eed 100644
+index 48b7a20c212578ba9055b781b5c05b312fa7e974..d7d92f326ba94be7a3960d527bc2b6d8d15890fa 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-@@ -49,6 +49,9 @@ namespace {
+@@ -13,6 +13,7 @@
+ #include "base/functional/bind.h"
+ #include "base/lazy_instance.h"
+ #include "base/location.h"
++#include "base/no_destructor.h"
+ #include "base/notreached.h"
+ #include "base/observer_list.h"
+ #include "base/path_service.h"
+@@ -49,6 +50,8 @@ namespace {
  base::LazyInstance<GURL>::Leaky g_download_url_for_testing =
      LAZY_INSTANCE_INITIALIZER;
  
-+base::LazyInstance<GURL>::Leaky g_base_download_url_override =
-+    LAZY_INSTANCE_INITIALIZER;
++base::NoDestructor<GURL> g_base_download_url_override;
 +
  // Close the file.
  void CloseDictionary(base::File file) {
@@ -27,7 +34,7 @@ index 48b7a20c212578ba9055b781b5c05b312fa7e974..3ae8136e5c938be80df141f7ca582d97
  }
  
 +void SpellcheckHunspellDictionary::SetBaseDownloadURL(const GURL url) {
-+  g_base_download_url_override.Get() = url;
++  *g_base_download_url_override = url;
 +}
 +
  GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
@@ -37,8 +44,8 @@ index 48b7a20c212578ba9055b781b5c05b312fa7e974..3ae8136e5c938be80df141f7ca582d97
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
    DCHECK(!bdict_file.empty());
  
-+  if (g_base_download_url_override.Get() != GURL())
-+    return GURL(g_base_download_url_override.Get().spec() + base::ToLowerASCII(bdict_file));
++  if (*g_base_download_url_override != GURL())
++    return GURL(g_base_download_url_override->spec() + base::ToLowerASCII(bdict_file));
 +
    static const char kDownloadServerUrl[] =
        "https://redirector.gvt1.com/edgedl/chrome/dict/";

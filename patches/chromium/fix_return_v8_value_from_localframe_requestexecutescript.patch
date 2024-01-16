@@ -203,6 +203,18 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    base::TimeTicks start_time_;
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
+diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
+index c9646c493c5f93dba207fd46e7fc88f9b763b458..c59adf0360919655063468d6462879e9d9c049c1 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_test.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
+@@ -285,6 +285,7 @@ void ExecuteScriptsInMainWorld(
+       DOMWrapperWorld::kMainWorldId, sources, user_gesture,
+       mojom::blink::EvaluationTiming::kSynchronous,
+       mojom::blink::LoadEventBlockingOption::kDoNotBlock, std::move(callback),
++      base::NullCallback(),
+       BackForwardCacheAware::kAllow,
+       mojom::blink::WantResultOption::kWantResult, wait_for_promise);
+ }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 index 3fb4db1c30008420ec2c16e95aedac7ee57689e7..20bc251e545627ac87de9bfa825e0b4d503fbe79 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
@@ -237,3 +249,15 @@ index 5c6ff2a2da3d3d585f08020c2885e23b3acbf824..2eb4bf48607823119548071e4b445e46
                              BackForwardCacheAware back_forward_cache_aware,
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption) override;
+diff --git a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
+index c34270e92a9268eebc7933c956eca8c8a4b282ec..aa145d19fddf4a572c67d7b173fe5b34377549d7 100644
+--- a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
++++ b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
+@@ -58,6 +58,7 @@ class VirtualTimeTest : public SimTest {
+         mojom::blink::LoadEventBlockingOption::kDoNotBlock,
+         WTF::BindOnce(&ScriptExecutionCallbackHelper::Completed,
+                       base::Unretained(&callback_helper)),
++        base::NullCallback(),
+         BackForwardCacheAware::kAllow,
+         mojom::blink::WantResultOption::kWantResult,
+         mojom::blink::PromiseResultOption::kDoNotWait);

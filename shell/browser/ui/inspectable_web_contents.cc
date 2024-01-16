@@ -6,6 +6,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "base/base64.h"
@@ -257,22 +258,11 @@ class InspectableWebContents::NetworkResourceLoader
 
   void OnDataReceived(base::StringPiece chunk,
                       base::OnceClosure resume) override {
-    base::Value chunkValue;
-
     bool encoded = !base::IsStringUTF8(chunk);
-    if (encoded) {
-      std::string encoded_string;
-      base::Base64Encode(chunk, &encoded_string);
-      chunkValue = base::Value(std::move(encoded_string));
-    } else {
-      chunkValue = base::Value(chunk);
-    }
-    base::Value id(stream_id_);
-    base::Value encodedValue(encoded);
-
-    bindings_->CallClientFunction("DevToolsAPI", "streamWrite", std::move(id),
-                                  std::move(chunkValue),
-                                  std::move(encodedValue));
+    bindings_->CallClientFunction(
+        "DevToolsAPI", "streamWrite", base::Value{stream_id_},
+        base::Value{encoded ? base::Base64Encode(chunk) : chunk},
+        base::Value{encoded});
     std::move(resume).Run();
   }
 
@@ -959,8 +949,8 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (!frontend_loaded_)
     return;
 
-  base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
-                                message.size());
+  const std::string_view str_message{
+      reinterpret_cast<const char*>(message.data()), message.size()};
   if (str_message.length() < kMaxMessageChunkSize) {
     CallClientFunction("DevToolsAPI", "dispatchMessage",
                        base::Value(std::string(str_message)));

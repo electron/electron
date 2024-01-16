@@ -5,6 +5,7 @@
 #include "shell/common/logging.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
@@ -19,8 +20,8 @@
 
 namespace logging {
 
-constexpr base::StringPiece kLogFileName("ELECTRON_LOG_FILE");
-constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
+constexpr std::string_view kLogFileName{"ELECTRON_LOG_FILE"};
+constexpr std::string_view kElectronEnableLogging{"ELECTRON_ENABLE_LOGGING"};
 
 base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);

@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -371,7 +372,7 @@ class WebContents : public ExclusiveAccessContext,
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
-  bool EmitWithSender(base::StringPiece name,
+  bool EmitWithSender(const std::string_view name,
                       content::RenderFrameHost* frame,
                       electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {

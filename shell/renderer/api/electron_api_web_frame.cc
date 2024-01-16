@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -116,9 +117,8 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
     return false;
 
   std::u16string w = base::UTF8ToUTF16(word);
-  return client->GetSpellCheck()->SpellCheckWord(w.c_str(), 0, word.size(),
-                                                 *spellcheck_host.get(), &start,
-                                                 &length, optional_suggestions);
+  return client->GetSpellCheck()->SpellCheckWord(
+      w, *spellcheck_host.get(), &start, &length, optional_suggestions);
 }
 
 #endif
@@ -397,7 +397,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
  private:
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
-                           const base::StringPiece method_name,
+                           const std::string_view method_name,
                            content::RenderFrame** render_frame_ptr) {
     std::string error_msg;
     if (!MaybeGetRenderFrame(&error_msg, method_name, render_frame_ptr)) {
@@ -408,7 +408,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   }
 
   bool MaybeGetRenderFrame(std::string* error_msg,
-                           const base::StringPiece method_name,
+                           const std::string_view method_name,
                            content::RenderFrame** render_frame_ptr) {
     auto* frame = render_frame();
     if (!frame) {

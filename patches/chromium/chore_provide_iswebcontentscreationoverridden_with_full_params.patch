@@ -52,7 +52,7 @@ index 8309281d321256e118e7086b29692f63be6aa9e6..96c433b8a3a42bf477c6467595b58a50
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index cfa7d6f8eeba0484a6e06a0ee8200bf5870cb9be..954ee85cc2307e812889cf8dd3980f2b07f6311f 100644
+index f47e14bc5dda6b84d1ae63148d7ee3bfb4797eb7..74838fd3621fd1d271ce8e3b037b1c785dd05651 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
 @@ -51,8 +51,7 @@ class AshWebViewImpl : public ash::AshWebView,
@@ -80,10 +80,10 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index e8310edc4c783976f9cb1a6624084812676d1f5c..45aedec3b34103f734415413241849054b5b0aed 100644
+index 018602d17271ca421188098326ad6090a219ac2a..af6dd489b2d85fbb7d5a53a1059ec80992de7849 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1885,12 +1885,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1890,12 +1890,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index e8310edc4c783976f9cb1a6624084812676d1f5c..45aedec3b34103f73441541324184905
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 456bdd201ed3f4a136857d84d0f5b9889c857980..7ee6a0b58d5e435cdca5dfb4e10858527e8f4658 100644
+index 12a7f47ed24e8ceaa40ee3684b3fb8334481908b..e712e7471b04d1e7f2f70332fbe540134b2e94a9 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -890,8 +890,7 @@ class Browser : public TabStripModelObserver,
+@@ -908,8 +908,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b057b66c99a7f91b40b803f51e9b1c225e4bba4a..81c2ea6d3266068593388211043c670bbdffe006 100644
+index 038cef59809065f0a775e1a0282bfeb9f31a4551..8baab27c7bc1bd7e0bbc6342388327a33304f713 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4396,8 +4396,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4403,8 +4403,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

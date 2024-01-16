@@ -97,8 +97,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   }
 
   if (!settings.icon.isNull()) {
-    NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
-        *settings.icon.bitmap(), base::mac::GetGenericRGBColorSpace());
+    NSImage* image = skia::SkBitmapToNSImage(*settings.icon.bitmap());
     [alert setIcon:image];
   }
 

@@ -109,7 +109,7 @@ index 0000000000000000000000000000000000000000..54817e4f6f9e3cb2f1e7ea1317fa8fef
 +# Launch
 +"$1" "${@:2}"
 diff --git a/python/rewrapper_linux.cfg b/python/rewrapper_linux.cfg
-index 951bc66afd28b280fe936141f0b1a8e473bdba05..4ac7ec4b7559ffc133912ee932f9cf8e7450e4db 100644
+index 951bc66afd28b280fe936141f0b1a8e473bdba05..2cdeb39313a83a94cdf321025ef969af7db83fd7 100644
 --- a/python/rewrapper_linux.cfg
 +++ b/python/rewrapper_linux.cfg
 @@ -13,3 +13,6 @@
@@ -118,10 +118,10 @@ index 951bc66afd28b280fe936141f0b1a8e473bdba05..4ac7ec4b7559ffc133912ee932f9cf8e
  # This config is merged with Chromium config. See README.md.
 +
 +inputs=buildtools/reclient_cfgs/python/python_remote_wrapper
-+remote_wrapper=../../buildtools/reclient_cfgs/python/python_remote_wrapper
++remote_wrapper={src_dir}/buildtools/reclient_cfgs/python/python_remote_wrapper
 \ No newline at end of file
 diff --git a/python/rewrapper_mac.cfg b/python/rewrapper_mac.cfg
-index 951bc66afd28b280fe936141f0b1a8e473bdba05..4ac7ec4b7559ffc133912ee932f9cf8e7450e4db 100644
+index 951bc66afd28b280fe936141f0b1a8e473bdba05..2cdeb39313a83a94cdf321025ef969af7db83fd7 100644
 --- a/python/rewrapper_mac.cfg
 +++ b/python/rewrapper_mac.cfg
 @@ -13,3 +13,6 @@
@@ -130,15 +130,15 @@ index 951bc66afd28b280fe936141f0b1a8e473bdba05..4ac7ec4b7559ffc133912ee932f9cf8e
  # This config is merged with Chromium config. See README.md.
 +
 +inputs=buildtools/reclient_cfgs/python/python_remote_wrapper
-+remote_wrapper=../../buildtools/reclient_cfgs/python/python_remote_wrapper
++remote_wrapper={src_dir}/buildtools/reclient_cfgs/python/python_remote_wrapper
 \ No newline at end of file
 diff --git a/python/rewrapper_windows.cfg b/python/rewrapper_windows.cfg
-index 7ff80607546455eb7c5f16a410770d18949cd7f5..ce19dc95094d87b494e4b89a2bf1a368ace567a2 100644
+index 7ff80607546455eb7c5f16a410770d18949cd7f5..b5cc55f79ca6f5571f5ac78310369812966ba0fa 100644
 --- a/python/rewrapper_windows.cfg
 +++ b/python/rewrapper_windows.cfg
 @@ -15,3 +15,5 @@
  # This config is merged with Chromium config. See README.md.
  
  server_address=pipe://reproxy.pipe
-+inputs=buildtools/reclient_cfgs/python/python_remote_wrapper
-+remote_wrapper=../../buildtools/reclient_cfgs/python/python_remote_wrapper
++toolchain_inputs={src_dir}/buildtools/reclient_cfgs/python/python_remote_wrapper
++remote_wrapper={src_dir}/buildtools/reclient_cfgs/python/python_remote_wrapper
