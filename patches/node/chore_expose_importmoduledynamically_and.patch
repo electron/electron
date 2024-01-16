@@ -82,7 +82,7 @@ index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd104
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 58b233d036515c52d9bd5574c776c2ea65d2ecb1..5f7ef75480a76761c6fa62061c8700c812a3fc6f 100644
+index 1fc801edced9c5e44613846b4dc555804c5bae97..767d183c6b6b6d97726cf5d63c0b202bd9ae10a6 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -30,7 +30,14 @@ enum HostDefinedOptions : int {
@@ -100,4 +100,21 @@ index 58b233d036515c52d9bd5574c776c2ea65d2ecb1..5f7ef75480a76761c6fa62061c8700c8
 +class NODE_EXTERN ModuleWrap : public BaseObject {
   public:
    enum InternalFields {
-     kModuleWrapBaseField = BaseObject::kInternalFieldCount,
+     kModuleSlot = BaseObject::kInternalFieldCount,
+@@ -65,6 +72,8 @@ class ModuleWrap : public BaseObject {
+     return true;
+   }
+ 
++  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
++
+  private:
+   ModuleWrap(Environment* env,
+              v8::Local<v8::Object> object,
+@@ -99,7 +108,6 @@ class ModuleWrap : public BaseObject {
+       v8::Local<v8::String> specifier,
+       v8::Local<v8::FixedArray> import_attributes,
+       v8::Local<v8::Module> referrer);
+-  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
+ 
+   v8::Global<v8::Module> module_;
+   std::unordered_map<std::string, v8::Global<v8::Promise>> resolve_cache_;
