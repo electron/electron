@@ -42,15 +42,15 @@ std::optional<std::unordered_map<std::string, IntegrityPayload>>
 LoadIntegrityConfigCache() {
   static base::NoDestructor<
       std::optional<std::unordered_map<std::string, IntegrityPayload>>>
-      integirty_config_cache;
+      integrity_config_cache;
 
   // Skip loading if cache is already loaded
-  if (integirty_config_cache->has_value()) {
-    return *integirty_config_cache;
+  if (integrity_config_cache->has_value()) {
+    return *integrity_config_cache;
   }
 
   // Init cache
-  *integirty_config_cache = std::unordered_map<std::string, IntegrityPayload>();
+  *integrity_config_cache = std::unordered_map<std::string, IntegrityPayload>();
 
   // Load integrity config from exe resource
   HMODULE module_handle = ::GetModuleHandle(NULL);
@@ -59,13 +59,13 @@ LoadIntegrityConfigCache() {
                                   kIntegrityCheckResourceType);
   if (!resource) {
     PLOG(FATAL) << "FindResource failed.";
-    return *integirty_config_cache;
+    return *integrity_config_cache;
   }
 
   HGLOBAL rcData = ::LoadResource(module_handle, resource);
   if (!rcData) {
     PLOG(FATAL) << "LoadResource failed.";
-    return *integirty_config_cache;
+    return *integrity_config_cache;
   }
 
   auto* res_data = static_cast<const char*>(::LockResource(rcData));
@@ -73,12 +73,12 @@ LoadIntegrityConfigCache() {
 
   if (!res_data) {
     PLOG(FATAL) << "Failed to integrity config from exe resource.";
-    return *integirty_config_cache;
+    return *integrity_config_cache;
   }
 
   if (!res_size) {
     PLOG(FATAL) << "Unexpected empty integrity config from exe resource.";
-    return *integirty_config_cache;
+    return *integrity_config_cache;
   }
 
   // Parse integrity config payload
@@ -88,13 +88,13 @@ LoadIntegrityConfigCache() {
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";
-    return *integirty_config_cache;
+    return *integrity_config_cache;
   }
 
   const base::Value::List* file_configs = root.value().GetIfList();
   if (!file_configs) {
     LOG(FATAL) << "Invalid integrity config: NOT a list.";
-    return *integirty_config_cache;
+    return *integrity_config_cache;
   }
 
   // Parse each individual file integrity config
@@ -129,11 +129,11 @@ LoadIntegrityConfigCache() {
     header_integrity.algorithm = HashAlgorithm::kSHA256;
     header_integrity.hash = base::ToLowerASCII(*value);
 
-    integirty_config_cache->value()[base::ToLowerASCII(*file)] =
+    integrity_config_cache->value()[base::ToLowerASCII(*file)] =
         std::move(header_integrity);
   }
 
-  return *integirty_config_cache;
+  return *integrity_config_cache;
 }
 
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
