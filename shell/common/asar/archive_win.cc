@@ -23,25 +23,25 @@ namespace asar {
 const wchar_t kIntegrityCheckResourceType[] = L"Integrity";
 const wchar_t kIntegrityCheckResourceItem[] = L"ElectronAsar";
 
-absl::optional<base::FilePath> Archive::RelativePath() const {
+std::optional<base::FilePath> Archive::RelativePath() const {
   base::FilePath exe_path;
   if (!base::PathService::Get(base::FILE_EXE, &exe_path)) {
     LOG(FATAL) << "Couldn't get exe file path";
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   base::FilePath relative_path;
   if (!exe_path.DirName().AppendRelativePath(path_, &relative_path)) {
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   return relative_path;
 }
 
-absl::optional<std::unordered_map<std::string, IntegrityPayload>>
+std::optional<std::unordered_map<std::string, IntegrityPayload>>
 LoadIntegrityConfigCache() {
   static base::NoDestructor<
-      absl::optional<std::unordered_map<std::string, IntegrityPayload>>>
+      std::optional<std::unordered_map<std::string, IntegrityPayload>>>
       integirty_config_cache;
 
   // Skip loading if cache is already loaded
@@ -83,7 +83,7 @@ LoadIntegrityConfigCache() {
 
   // Parse integrity config payload
   std::string integrity_config_payload = std::string(res_data, res_size);
-  absl::optional<base::Value> root =
+  std::optional<base::Value> root =
       base::JSONReader::Read(integrity_config_payload);
 
   if (!root.has_value()) {
@@ -136,17 +136,17 @@ LoadIntegrityConfigCache() {
   return *integirty_config_cache;
 }
 
-absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  absl::optional<base::FilePath> relative_path = RelativePath();
+std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
+  std::optional<base::FilePath> relative_path = RelativePath();
   // Callers should have already asserted this
   CHECK(relative_path.has_value());
 
   // Load integrity config from exe resource
-  absl::optional<std::unordered_map<std::string, IntegrityPayload>>
+  std::optional<std::unordered_map<std::string, IntegrityPayload>>
       integrity_config = LoadIntegrityConfigCache();
   if (!integrity_config.has_value()) {
     LOG(WARNING) << "Failed to integrity config from exe resource.";
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   // Convert Window rel path to UTF8 lower case
@@ -157,7 +157,7 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   auto iter = integrity_config.value().find(rel_path_utf8);
   if (iter == integrity_config.value().end()) {
     LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   return iter->second;
