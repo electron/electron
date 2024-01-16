@@ -5,3 +5,5 @@ chore_allow_customizing_microtask_policy_per_context.patch
 cherry-pick-cbd09b2ca928.patch
 merged_turboshaft_fix_structuraloptimization_because_of_ignored.patch
 cherry-pick-389ea9be7d68.patch
+cherry-pick-46cb67e3b296.patch
+cherry-pick-78dd4b31847a.patch

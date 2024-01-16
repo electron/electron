@@ -1,0 +1,31 @@
+From c1cda70a433a0c625b280eb88ed6ff4f4feffa12 Mon Sep 17 00:00:00 2001
+From: Mike Wasserman <msw@chromium.org>
+Date: Thu, 21 Dec 2023 22:33:05 +0000
+Subject: [PATCH] Speculative fix for UAF in content::WebContentsImpl::ExitFullscreenMode
+
+Bug: 1506535, 854815
+Change-Id: Iace64d63f8cea2dbfbc761ad233db42451ec101c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5146875
+Commit-Queue: John Abd-El-Malek <jam@chromium.org>
+Auto-Submit: Mike Wasserman <msw@chromium.org>
+Reviewed-by: John Abd-El-Malek <jam@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1240353}
+---
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 97f45e33..d425d19 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3879,7 +3879,12 @@
+   }
+ 
+   if (delegate_) {
++    // This may spin the message loop and destroy this object crbug.com/1506535
++    base::WeakPtr<WebContentsImpl> weak_ptr = weak_factory_.GetWeakPtr();
+     delegate_->ExitFullscreenModeForTab(this);
++    if (!weak_ptr) {
++      return;
++    }
+ 
+     if (keyboard_lock_widget_) {
+       delegate_->CancelKeyboardLockRequest(this);

@@ -1,0 +1,44 @@
+From 46cb67e3b296e50d7fda5a58233d18b9f3dab0d5 Mon Sep 17 00:00:00 2001
+From: Dominik Inführ <dinfuehr@chromium.org>
+Date: Mon, 18 Dec 2023 09:15:00 +0100
+Subject: [PATCH] [codegen] Install BytecodeArray last in SharedFunctionInfo
+
+Maglev assumes that when a SharedFunctionInfo has a BytecodeArray,
+then it should also have FeedbackMetadata. However, this may not
+hold with concurrent compilation when the SharedFunctionInfo is
+re-compiled after being flushed. Here the BytecodeArray was installed
+on the SFI before the FeedbackMetadata and a concurrent thread could
+observe the BytecodeArray but not the FeedbackMetadata.
+
+Drive-by: Reset the age field before setting the BytecodeArray as
+well. This ensures that the concurrent marker will not observe the
+old age for the new BytecodeArray.
+
+Bug: chromium:1507412
+Change-Id: I8855ed7ecc50c4a47d2c89043d62ac053858bc75
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5125960
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Dominik Inführ <dinfuehr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#91568}
+---
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index d3b9135..cd196f7 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -721,12 +721,12 @@
+     }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
+-    shared_info->set_bytecode_array(*compilation_info->bytecode_array());
+-    shared_info->set_age(0);
+-
+     Handle<FeedbackMetadata> feedback_metadata = FeedbackMetadata::New(
+         isolate, compilation_info->feedback_vector_spec());
+     shared_info->set_feedback_metadata(*feedback_metadata, kReleaseStore);
++
++    shared_info->set_age(0);
++    shared_info->set_bytecode_array(*compilation_info->bytecode_array());
+   } else {
+ #if V8_ENABLE_WEBASSEMBLY
+     DCHECK(compilation_info->has_asm_wasm_data());
