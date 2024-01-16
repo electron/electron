@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rebekah Potter <rbpotter@chromium.org>
+Date: Fri, 15 Dec 2023 19:23:42 +0000
+Subject: Reland mojom_ts_generator: Handle empty module path identically to
+ '/'
+
+Reason for revert: Original change was reverted incorrectly.
+
+Original change's description:
+> Revert "mojom_ts_generator: Handle empty module path identically to '/'"
+>
+> This reverts commit 4d1f1115f0f70c7ff4493f64221fdf15810c5005.
+>
+> Reason for revert: The tree is down https://ci.chromium.org/ui/p/chromium/builders/ci/Linux%20Chromium%20OS%20ASan%20LSan%20Builder/82276/overview
+>
+> Original change's description:
+> > mojom_ts_generator: Handle empty module path identically to '/'
+> >
+> > Fixes an issue with Python 3.11.2. Workaround originally proposed at
+> > https://bugs.chromium.org/p/chromium/issues/detail?id=1422178#c4
+> >
+> > Bug: 1422178
+> > Change-Id: I4f02cbd4a0aafbab1a7fef8a36d812f1621c75e4
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5121571
+> > Reviewed-by: Demetrios Papadopoulos <dpapad@chromium.org>
+> > Commit-Queue: Rebekah Potter <rbpotter@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#1237792}
+>
+> Bug: 1422178
+> Change-Id: Icb352e5b437deee34100d213bd9c1bc0cedaaaf4
+> No-Presubmit: true
+> No-Tree-Checks: true
+> No-Try: true
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5124992
+> Owners-Override: Shibalik Mohapatra <shibalik@chromium.org>
+> Commit-Queue: Shibalik Mohapatra <shibalik@chromium.org>
+> Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+> Cr-Commit-Position: refs/heads/main@{#1237835}
+
+Bug: 1422178
+Change-Id: I2486fca59de0b28efc38020de8cd3d01a56eca98
+No-Presubmit: true
+No-Tree-Checks: true
+No-Try: true
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5125915
+Commit-Queue: Demetrios Papadopoulos <dpapad@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/heads/main@{#1238190}
+
+diff --git a/mojo/public/tools/bindings/generators/mojom_ts_generator.py b/mojo/public/tools/bindings/generators/mojom_ts_generator.py
+index d8e0cf30486690b5aa33906985642dc8f7f762f5..1c43796152811d020370aa0a42bc4fddf8b05c06 100644
+--- a/mojo/public/tools/bindings/generators/mojom_ts_generator.py
++++ b/mojo/public/tools/bindings/generators/mojom_ts_generator.py
+@@ -175,8 +175,10 @@ def _GetWebUiModulePath(module):
+   path. Otherwise, returned paths always end in a '/' and begin with either
+   `chrome://resources/` or a '/'."""
+   path = module.metadata.get('webui_module_path')
+-  if path is None or path == '/':
+-    return path
++  if path is None:
++    return None
++  if path == '' or path == '/':
++    return '/'
+   if _IsAbsoluteChromeResourcesPath(path):
+     return path.rstrip('/') + '/'
+   return '/{}/'.format(path.strip('/'))
