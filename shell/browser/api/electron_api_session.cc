@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "base/command_line.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
@@ -159,6 +160,8 @@ constexpr content::BrowsingDataRemover::OriginType kClearOriginTypeAll =
     content::BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB |
     content::BrowsingDataRemover::ORIGIN_TYPE_PROTECTED_WEB;
 
+// Observes the BrowsingDataRemover that backs the `clearBrowsingData` method
+// and resolves/rejects that API's promise once its done
 class ClearBrowsingDataObserver
     : public content::BrowsingDataRemover::Observer {
  public:
@@ -168,12 +171,13 @@ class ClearBrowsingDataObserver
     observation_.Observe(remover);
   }
 
-  void OnBrowsingDataRemoverDone(uint64_t failed_data_types) override {
+  void OnBrowsingDataRemoverDone(
+      content::BrowsingDataRemover::DataType failed_data_types) override {
     if (failed_data_types == 0) {
       promise_.Resolve();
     } else {
-      promise_.RejectWithErrorMessage("Failed to clear data: " +
-                                      base::NumberToString(failed_data_types));
+      promise_.RejectWithErrorMessage(absl::StrFormat(
+          "Failed to clear browsing data (%d)", failed_data_types));
     }
     observation_.Reset();
     delete this;
