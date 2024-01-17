@@ -1513,7 +1513,7 @@ is emitted.
 Returns `string | null` - The absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
 
-### `ses.clearBrowsingData()`
+#### `ses.clearBrowsingData()`
 
 Returns `Promise<void>` - resolves when all data has been cleared.
 
