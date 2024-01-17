@@ -259,7 +259,7 @@ index f033faa6f451074adfb58d4430e9465999f803bb..84b604a103666dec5cdca9921bebdc8f
    }
 +#endif // Printing is always enabled.
  
-   absl::optional<int> printer_type_value =
+   std::optional<int> printer_type_value =
        job_settings.FindInt(kSettingPrinterType);
 @@ -711,6 +752,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
  
