@@ -924,7 +924,8 @@ bool NativeWindowMac::IsMaximizable() {
 
 void NativeWindowMac::UpdateZoomButton() {
   [[window_ standardWindowButton:NSWindowZoomButton]
-      setEnabled:HasStyleMask(NSWindowStyleMaskResizable) && (CanMaximize() || IsFullScreenable())];
+      setEnabled:HasStyleMask(NSWindowStyleMaskResizable) &&
+                 (CanMaximize() || IsFullScreenable())];
 }
 
 void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
