@@ -148,10 +148,11 @@ void ElectronExtensionLoader::FinishExtensionLoad(
       ExtensionPrefs::ScopedDictionaryUpdate update(
           extension_prefs, extension.get()->id(),
           extensions::pref_names::kPrefPreferences);
+
       auto preference = update.Create();
-      const base::Time install_time = base::Time::Now();
-      preference->SetString(
-          "install_time", base::NumberToString(install_time.ToInternalValue()));
+      const int64_t now_usec =
+          base::Time::Now().since_origin().InMicroseconds();
+      preference->SetString("install_time", base::NumberToString(now_usec));
     }
   }
 
