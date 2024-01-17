@@ -22,7 +22,14 @@ module.exports = async function getUrlHash (targetUrl, algorithm = 'sha256', att
     return resp.body.trim();
   } catch (err) {
     if (attempts > 1) {
-      console.error('Failed to get URL hash for', targetUrl, 'we will retry', err);
+      if (err.response?.body) {
+        console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, {
+          statusCode: err.response.statusCode,
+          body: JSON.parse(err.response.body)
+        });
+      } else {
+        console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, err);
+      }
       return getUrlHash(targetUrl, algorithm, attempts - 1);
     }
     throw err;
