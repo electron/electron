@@ -2,6 +2,3 @@ build_gn.patch
 do_not_export_private_v8_symbols_on_windows.patch
 fix_build_deprecated_attribute_for_older_msvc_versions.patch
 chore_allow_customizing_microtask_policy_per_context.patch
-cherry-pick-389ea9be7d68.patch
-cherry-pick-46cb67e3b296.patch
-cherry-pick-78dd4b31847a.patch
