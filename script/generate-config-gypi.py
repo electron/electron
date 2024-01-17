@@ -6,6 +6,7 @@ import pprint
 import re
 import subprocess
 import sys
+from lib.config import get_target_arch
 
 ELECTRON_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
 NODE_DIR = os.path.join(ELECTRON_DIR, '..', 'third_party', 'electron_node')
@@ -61,7 +62,8 @@ def main(target_file, target_cpu):
   # Used by certain versions of node-gyp.
   v['build_v8_with_gn'] = 'false'
   # TODO(zcbenz): Support the flags in Node's configure script.
-  v['v8_enable_sandbox'] = 1
+  is_arm = get_target_arch().startswith('arm')
+  v['v8_enable_sandbox'] = 0 if is_arm else 1
 
   with open(target_file, 'w+') as f:
     f.write(pprint.pformat(config, indent=2))
