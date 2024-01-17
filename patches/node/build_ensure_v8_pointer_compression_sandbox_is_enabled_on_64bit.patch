@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 17 Jan 2024 16:01:08 +0100
+Subject: build: ensure v8_pointer_compression_sandbox is enabled on 64bit
+
+The defines themselves were upstreamed in https://github.com/nodejs/node/pull/50820
+but the ability to configure the variables themselves were not. This adds that back
+in.
+
+This should be upstreamed.
+
+diff --git a/common.gypi b/common.gypi
+index 7b790060b03cceec62bfe4c1f12d396b9cf52e8c..ef8c7a0477aa9c92439846699e739eae4340b88c 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -133,6 +133,7 @@
+       ['target_arch in "arm ia32 mips mipsel ppc"', {
+         'v8_enable_pointer_compression': 0,
+         'v8_enable_31bit_smis_on_64bit_arch': 0,
++        'v8_enable_sandbox': 0
+       }],
+       ['target_arch in "ppc64 s390x"', {
+         'v8_enable_backtrace': 1,
+diff --git a/configure.py b/configure.py
+index f0cccff0eed2ef11275d2f7ec2358276f6e10458..87b647ab363219add8201966a64b539215bdee03 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1503,6 +1503,7 @@ def configure_v8(o):
+   o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
+   o['variables']['v8_enable_maglev'] = 1 if options.v8_enable_maglev else 0
+   o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
++  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_shared_ro_heap'] = 0 if options.enable_pointer_compression or options.disable_shared_ro_heap else 1
+   o['variables']['v8_enable_extensible_ro_snapshot'] = 0
