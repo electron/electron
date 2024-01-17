@@ -76,8 +76,8 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
   if (origin.is_valid()) {
     filename = base::MD5String(origin.spec()) + ".png";
   } else {
-    const int64_t us = base::Time::Now().since_origin().InMicroseconds();
-    filename = base::NumberToString(us) + ".png";
+    const int64_t now_usec = base::Time::Now().since_origin().InMicroseconds();
+    filename = base::NumberToString(now_usec) + ".png";
   }
 
   ScopedAllowBlockingForElectron allow_blocking;
