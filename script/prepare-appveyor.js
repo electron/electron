@@ -70,7 +70,14 @@ async function checkAppVeyorImage (options) {
     const { cloudSettings } = settings;
     return cloudSettings.images.find(image => image.name === `${options.imageVersion}`) || null;
   } catch (err) {
-    console.log('Could not call AppVeyor: ', err);
+    if (err.response?.body) {
+      console.error('Could not call AppVeyor: ', {
+        statusCode: err.response.statusCode,
+        body: JSON.parse(err.response.body)
+      });
+    } else {
+      console.error('Error calling AppVeyor:', err);
+    }
   }
 }
 
