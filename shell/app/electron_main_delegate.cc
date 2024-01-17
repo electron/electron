@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/apple/bundle_locations.h"
@@ -80,9 +81,9 @@ namespace {
 
 const char kRelauncherProcess[] = "relauncher";
 
-constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
-constexpr base::StringPiece kElectronEnableStackDumping(
-    "ELECTRON_ENABLE_STACK_DUMPING");
+constexpr std::string_view kElectronDisableSandbox{"ELECTRON_DISABLE_SANDBOX"};
+constexpr std::string_view kElectronEnableStackDumping{
+    "ELECTRON_ENABLE_STACK_DUMPING"};
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
@@ -238,7 +239,7 @@ const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
 const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
     std::size(kNonWildcardDomainNonPortSchemes);
 
-absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
+std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
 #if BUILDFLAG(IS_WIN)
@@ -311,7 +312,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
       ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 void ElectronMainDelegate::PreSandboxStartup() {
@@ -398,7 +399,7 @@ void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #endif
 }
 
-absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
+std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
@@ -408,7 +409,7 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {

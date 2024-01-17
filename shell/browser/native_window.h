@@ -7,6 +7,7 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <string>
 #include <vector>
@@ -22,7 +23,6 @@
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -229,8 +229,8 @@ class NativeWindow : public base::SupportsUserData,
 #if BUILDFLAG(IS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
-  virtual void SetWindowButtonPosition(absl::optional<gfx::Point> position) = 0;
-  virtual absl::optional<gfx::Point> GetWindowButtonPosition() const = 0;
+  virtual void SetWindowButtonPosition(std::optional<gfx::Point> position) = 0;
+  virtual std::optional<gfx::Point> GetWindowButtonPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
   virtual void UpdateFrame() = 0;
 #endif
@@ -254,7 +254,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
   virtual bool AddTabbedWindow(NativeWindow* window);
-  virtual absl::optional<std::string> GetTabbingIdentifier() const;
+  virtual std::optional<std::string> GetTabbingIdentifier() const;
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
@@ -284,7 +284,7 @@ class NativeWindow : public base::SupportsUserData,
     return weak_factory_.GetWeakPtr();
   }
 
-  virtual absl::optional<gfx::Rect> GetWindowControlsOverlayRect();
+  virtual std::optional<gfx::Rect> GetWindowControlsOverlayRect();
   virtual void SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect);
 
   // Methods called by the WebContents.
@@ -433,11 +433,11 @@ class NativeWindow : public base::SupportsUserData,
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
 
   // Minimum and maximum size.
-  absl::optional<extensions::SizeConstraints> size_constraints_;
+  std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
   // constraints beacause converting between them will cause rounding errors
   // on HiDPI displays on some environments.
-  absl::optional<extensions::SizeConstraints> content_size_constraints_;
+  std::optional<extensions::SizeConstraints> content_size_constraints_;
 
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state_ =

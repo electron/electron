@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/electron_api_cookies.h"
 
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/time/time.h"
@@ -127,13 +129,13 @@ bool MatchesCookie(const base::Value::Dict& filter,
   if ((str = filter.FindString("domain")) &&
       !MatchesDomain(*str, cookie.Domain()))
     return false;
-  absl::optional<bool> secure_filter = filter.FindBool("secure");
+  std::optional<bool> secure_filter = filter.FindBool("secure");
   if (secure_filter && *secure_filter != cookie.IsSecure())
     return false;
-  absl::optional<bool> session_filter = filter.FindBool("session");
+  std::optional<bool> session_filter = filter.FindBool("session");
   if (session_filter && *session_filter == cookie.IsPersistent())
     return false;
-  absl::optional<bool> httpOnly_filter = filter.FindBool("httpOnly");
+  std::optional<bool> httpOnly_filter = filter.FindBool("httpOnly");
   if (httpOnly_filter && *httpOnly_filter != cookie.IsHttpOnly())
     return false;
   return true;
@@ -161,7 +163,7 @@ void FilterCookieWithStatuses(
 }
 
 // Parse dictionary property to CanonicalCookie time correctly.
-base::Time ParseTimeProperty(const absl::optional<double>& value) {
+base::Time ParseTimeProperty(const std::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
     return base::Time();
   if (*value == 0)  // FromSecondsSinceUnixEpoch would convert 0 to empty Time
@@ -169,7 +171,7 @@ base::Time ParseTimeProperty(const absl::optional<double>& value) {
   return base::Time::FromSecondsSinceUnixEpoch(*value);
 }
 
-base::StringPiece InclusionStatusToString(net::CookieInclusionStatus status) {
+std::string_view InclusionStatusToString(net::CookieInclusionStatus status) {
   if (status.HasExclusionReason(net::CookieInclusionStatus::EXCLUDE_HTTP_ONLY))
     return "Failed to create httponly cookie";
   if (status.HasExclusionReason(
@@ -321,7 +323,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       path ? *path : "", ParseTimeProperty(details.FindDouble("creationDate")),
       ParseTimeProperty(details.FindDouble("expirationDate")),
       ParseTimeProperty(details.FindDouble("lastAccessDate")), secure,
-      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, absl::nullopt,
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, std::nullopt,
       &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {

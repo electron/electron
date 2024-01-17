@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -18,7 +19,6 @@
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
 #include "shell/common/node_includes.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
 
@@ -97,14 +97,14 @@ class NodeBindings {
       node::MultiIsolatePlatform* platform,
       std::vector<std::string> args,
       std::vector<std::string> exec_args,
-      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
-          absl::nullopt);
+      std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          std::nullopt);
 
   std::shared_ptr<node::Environment> CreateEnvironment(
       v8::Handle<v8::Context> context,
       node::MultiIsolatePlatform* platform,
-      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
-          absl::nullopt);
+      std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          std::nullopt);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);

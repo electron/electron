@@ -7,7 +7,9 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "content/public/browser/browser_task_traits.h"
@@ -187,8 +189,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   std::string GetAlwaysOnTopLevel() const;
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
-  void SetWindowButtonPosition(absl::optional<gfx::Point> position);
-  absl::optional<gfx::Point> GetWindowButtonPosition() const;
+  void SetWindowButtonPosition(std::optional<gfx::Point> position);
+  std::optional<gfx::Point> GetWindowButtonPosition() const;
 
   bool IsHiddenInMissionControl();
   void SetHiddenInMissionControl(bool hidden);
@@ -248,7 +250,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void RemoveFromParentChildWindows();
 
   template <typename... Args>
-  void EmitEventSoon(base::StringPiece eventName) {
+  void EmitEventSoon(std::string_view eventName) {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
         base::BindOnce(base::IgnoreResult(&BaseWindow::Emit<Args...>),

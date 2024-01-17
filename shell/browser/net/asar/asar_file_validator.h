@@ -7,12 +7,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 
 #include "crypto/secure_hash.h"
 #include "mojo/public/cpp/system/file_data_source.h"
 #include "mojo/public/cpp/system/filtered_data_source.h"
 #include "shell/common/asar/archive.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace asar {
 

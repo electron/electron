@@ -97,8 +97,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   }
 
   if (!settings.icon.isNull()) {
-    NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
-        *settings.icon.bitmap(), base::mac::GetGenericRGBColorSpace());
+    NSImage* image = skia::SkBitmapToNSImage(*settings.icon.bitmap());
     [alert setIcon:image];
   }
 
@@ -162,7 +161,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
-    __block absl::optional<int> id = std::move(settings.id);
+    __block std::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
 
     auto handler = ^(NSModalResponse response) {

@@ -66,7 +66,7 @@ gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
     return gin::Handle<WebContents>();
 }
 
-void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
+void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   View::SetBackgroundColor(color);
   if (api_web_contents_) {
     api_web_contents_->SetBackgroundColor(color);

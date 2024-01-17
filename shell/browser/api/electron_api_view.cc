@@ -182,7 +182,7 @@ View::~View() {
 }
 
 void View::AddChildViewAt(gin::Handle<View> child,
-                          absl::optional<size_t> maybe_index) {
+                          std::optional<size_t> maybe_index) {
   // TODO(nornagon): !view_ is only for supporting the weird case of
   // WebContentsView's view being deleted when the underlying WebContents is
   // destroyed (on non-Mac). We should fix that so that WebContentsView always
@@ -292,7 +292,7 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
   return ret;
 }
 
-void View::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
+void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   if (!view_)
     return;
   view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);

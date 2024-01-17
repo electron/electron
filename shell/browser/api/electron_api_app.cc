@@ -5,7 +5,9 @@
 #include "shell/browser/api/electron_api_app.h"
 
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -75,7 +77,6 @@
 #include "shell/common/platform_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -157,7 +158,7 @@ struct Converter<JumpListItem::Type> {
 
  private:
   static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, JumpListItem::Type>({
+      base::MakeFixedFlatMap<std::string_view, JumpListItem::Type>({
           {"file", JumpListItem::Type::kFile},
           {"separator", JumpListItem::Type::kSeparator},
           {"task", JumpListItem::Type::kTask},
@@ -248,7 +249,7 @@ struct Converter<JumpListCategory::Type> {
 
  private:
   static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, JumpListCategory::Type>({
+      base::MakeFixedFlatMap<std::string_view, JumpListCategory::Type>({
           {"custom", JumpListCategory::Type::kCustom},
           {"frequent", JumpListCategory::Type::kFrequent},
           {"recent", JumpListCategory::Type::kRecent},
@@ -414,7 +415,7 @@ struct Converter<net::SecureDnsMode> {
                      v8::Local<v8::Value> val,
                      net::SecureDnsMode* out) {
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, net::SecureDnsMode>({
+        base::MakeFixedFlatMap<std::string_view, net::SecureDnsMode>({
             {"automatic", net::SecureDnsMode::kAutomatic},
             {"off", net::SecureDnsMode::kOff},
             {"secure", net::SecureDnsMode::kSecure},
@@ -440,9 +441,9 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 }
 
 // Return the path constant from string.
-int GetPathConstant(base::StringPiece name) {
+int GetPathConstant(std::string_view name) {
   // clang-format off
-  constexpr auto Lookup = base::MakeFixedFlatMap<base::StringPiece, int>({
+  constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
       {"appData", DIR_APP_DATA},
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},
@@ -927,7 +928,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 
 #if !BUILDFLAG(IS_MAC)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         absl::optional<base::FilePath> custom_path) {
+                         std::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
@@ -1604,7 +1605,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
     // doh_config.
     std::vector<net::DnsOverHttpsServerConfig> servers;
     for (const std::string& server_template : secure_dns_server_strings) {
-      absl::optional<net::DnsOverHttpsServerConfig> server_config =
+      std::optional<net::DnsOverHttpsServerConfig> server_config =
           net::DnsOverHttpsServerConfig::FromString(server_template);
       if (!server_config.has_value()) {
         thrower.ThrowTypeError(std::string("not a valid DoH template: ") +

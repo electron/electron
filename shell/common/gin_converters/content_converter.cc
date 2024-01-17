@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
 #include "content/public/browser/context_menu_params.h"
@@ -24,8 +25,8 @@
 
 namespace {
 
-[[nodiscard]] constexpr base::StringPiece FormControlToInputFieldTypeString(
-    const absl::optional<blink::mojom::FormControlType> form_control_type) {
+[[nodiscard]] constexpr std::string_view FormControlToInputFieldTypeString(
+    const std::optional<blink::mojom::FormControlType> form_control_type) {
   if (!form_control_type)
     return "none";
 
@@ -70,7 +71,7 @@ namespace {
 namespace gin {
 
 static constexpr auto MenuSourceTypes =
-    base::MakeFixedFlatMap<base::StringPiece, ui::MenuSourceType>({
+    base::MakeFixedFlatMap<std::string_view, ui::MenuSourceType>({
         {"adjustSelection", ui::MENU_SOURCE_ADJUST_SELECTION},
         {"adjustSelectionReset", ui::MENU_SOURCE_ADJUST_SELECTION_RESET},
         {"keyboard", ui::MENU_SOURCE_KEYBOARD},
@@ -256,6 +257,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "captured-surface-control");
     case blink::PermissionType::SMART_CARD:
       return StringToV8(isolate, "smart-card");
+    case blink::PermissionType::WEB_PRINTING:
+      return StringToV8(isolate, "web-printing");
     case blink::PermissionType::NUM:
       break;
   }
@@ -285,12 +288,11 @@ bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 content::StopFindAction* out) {
   using Val = content::StopFindAction;
-  static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, Val>({
-          {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
-          {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
-          {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},
-      });
+  static constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, Val>({
+      {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
+      {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
+      {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},
+  });
   return FromV8WithLookup(isolate, val, Lookup, out);
 }
 

@@ -7,10 +7,10 @@ With WCO, allow chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index a85fa97d213058196e4703166cf974497e89e2d6..39778ad7cdfec863d1acb7eb51438f5070c47318 100644
+index a51018a455c114d9c3b15dd2628e6ab6bfc3da38..1fec1bfa23c5ae67317b6f4c2bc8f341f3eb1d85 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1222,6 +1222,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1226,6 +1226,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -34,7 +34,7 @@ index 013f571b521682e3f3381fd9fabc6e949d624fa3..5b1cacf1e9ce082712762785cc9bfe2f
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 9ddf5e7d00d81b292ecc66bdac911dbb2d1d3fd1..517d137e35e6a270136b7f8cda17695eb96d6896 100644
+index ecabc717aa51fd636aed60a06120186ac4ee9de3..45d1e126667cfcd782ec82f4368f698f9107ec65 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3114,15 +3114,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,

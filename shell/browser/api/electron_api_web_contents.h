@@ -7,7 +7,9 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -164,7 +166,7 @@ class WebContents : public ExclusiveAccessContext,
   const char* GetTypeName() override;
 
   void Destroy();
-  void Close(absl::optional<gin_helper::Dictionary> options);
+  void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   bool GetBackgroundThrottling() const override;
@@ -370,7 +372,7 @@ class WebContents : public ExclusiveAccessContext,
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
-  bool EmitWithSender(base::StringPiece name,
+  bool EmitWithSender(const std::string_view name,
                       content::RenderFrameHost* frame,
                       electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {
@@ -403,7 +405,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetOwnerWindow(NativeWindow* owner_window);
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
-  void SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window);
+  void SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
@@ -474,7 +476,7 @@ class WebContents : public ExclusiveAccessContext,
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
 
-  void SetBackgroundColor(absl::optional<SkColor> color);
+  void SetBackgroundColor(std::optional<SkColor> color);
 
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();

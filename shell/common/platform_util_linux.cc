@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #include <stdio.h>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,6 @@
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
 #include "shell/common/platform_util_internal.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gtk/gtk_util.h"  // nogncheck
 #include "url/gurl.h"
 
@@ -247,7 +247,7 @@ class ShowItemHelper {
   raw_ptr<dbus::ObjectProxy> dbus_proxy_ = nullptr;
   raw_ptr<dbus::ObjectProxy> object_proxy_ = nullptr;
 
-  absl::optional<bool> prefer_filemanager_interface_;
+  std::optional<bool> prefer_filemanager_interface_;
 };
 
 // Descriptions pulled from https://linux.die.net/man/1/xdg-open

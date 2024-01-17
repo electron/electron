@@ -304,7 +304,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings,
                                     parent_widget, base::Unretained(hwnd)),
                      base::BindOnce(
-                         [](MessageBoxCallback callback, absl::optional<int> id,
+                         [](MessageBoxCallback callback, std::optional<int> id,
                             DialogResult result) {
                            if (id)
                              GetDialogsMap().erase(*id);

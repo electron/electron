@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/containers/contains.h"
@@ -33,7 +34,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 
 static constexpr auto ResourceTypes =
-    base::MakeFixedFlatMap<base::StringPiece,
+    base::MakeFixedFlatMap<std::string_view,
                            extensions::WebRequestResourceType>({
         {"cspReport", extensions::WebRequestResourceType::CSP_REPORT},
         {"font", extensions::WebRequestResourceType::FONT},
@@ -77,7 +78,7 @@ struct UserData : public base::SupportsUserData::Data {
   raw_ptr<WebRequest> data;
 };
 
-extensions::WebRequestResourceType ParseResourceType(base::StringPiece value) {
+extensions::WebRequestResourceType ParseResourceType(std::string_view value) {
   if (const auto* iter = ResourceTypes.find(value); iter != ResourceTypes.end())
     return iter->second;
 

@@ -269,9 +269,6 @@ ElectronBrowserContext::~ElectronBrowserContext() {
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
   ShutdownStoragePartitions();
-
-  BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                            std::move(resource_context_));
 }
 
 void ElectronBrowserContext::InitPrefs() {
@@ -365,12 +362,6 @@ int ElectronBrowserContext::GetMaxCacheSize() const {
   return max_cache_size_;
 }
 
-content::ResourceContext* ElectronBrowserContext::GetResourceContext() {
-  if (!resource_context_)
-    resource_context_ = std::make_unique<content::ResourceContext>();
-  return resource_context_.get();
-}
-
 std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
@@ -447,7 +438,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
+          url::Origin(), std::nullopt, ukm::kInvalidSourceIdObj,
           &factory_receiver, &header_client, nullptr, nullptr, nullptr,
           nullptr);
 

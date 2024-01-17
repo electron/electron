@@ -49,7 +49,7 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   return process.WaitForExit(exit_code);
 }
 
-absl::optional<std::string> GetXdgAppOutput(
+std::optional<std::string> GetXdgAppOutput(
     const std::vector<std::string>& argv) {
   std::string reply;
   int success_code;
@@ -58,9 +58,9 @@ absl::optional<std::string> GetXdgAppOutput(
                                                &success_code);
 
   if (!ran_ok || success_code != EXIT_SUCCESS)
-    return absl::optional<std::string>();
+    return std::optional<std::string>();
 
-  return absl::make_optional(reply);
+  return std::make_optional(reply);
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
@@ -126,7 +126,7 @@ std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
 
-bool Browser::SetBadgeCount(absl::optional<int> count) {
+bool Browser::SetBadgeCount(std::optional<int> count) {
   if (IsUnityRunning() && count.has_value()) {
     unity::SetDownloadCount(count.value());
     badge_count_ = count.value();

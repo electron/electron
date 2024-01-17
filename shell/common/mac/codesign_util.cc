@@ -5,17 +5,18 @@
 
 #include "shell/common/mac/codesign_util.h"
 
+#include <optional>
+
 #include "base/apple/foundation_util.h"
 #include "base/apple/osstatus_logging.h"
 #include "base/apple/scoped_cftyperef.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
 
 namespace electron {
 
-absl::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
+std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   base::apple::ScopedCFTypeRef<SecStaticCodeRef> static_code;
   OSStatus status = SecCodeCopyStaticCode(code, kSecCSDefaultFlags,
                                           static_code.InitializeInto());
@@ -24,7 +25,7 @@ absl::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   }
   if (status != errSecSuccess) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyStaticCode";
-    return absl::optional<bool>();
+    return std::optional<bool>();
   }
   // Copy the signing info from the SecStaticCodeRef.
   base::apple::ScopedCFTypeRef<CFDictionaryRef> signing_info;
@@ -33,7 +34,7 @@ absl::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
                                     signing_info.InitializeInto());
   if (status != errSecSuccess) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopySigningInformation";
-    return absl::optional<bool>();
+    return std::optional<bool>();
   }
   // Look up the code signing flags. If the flags are absent treat this as
   // unsigned. This decision is consistent with the StaticCode source:
@@ -50,7 +51,7 @@ absl::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   long long flags;
   if (!CFNumberGetValue(signing_info_flags, kCFNumberLongLongType, &flags)) {
     LOG(ERROR) << "CFNumberGetValue";
-    return absl::optional<bool>();
+    return std::optional<bool>();
   }
   if (static_cast<uint32_t>(flags) & kSecCodeSignatureAdhoc) {
     return true;
@@ -67,7 +68,7 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyGuestWithAttributes";
     return false;
   }
-  absl::optional<bool> not_signed = IsUnsignedOrAdHocSigned(self_code.get());
+  std::optional<bool> not_signed = IsUnsignedOrAdHocSigned(self_code.get());
   if (!not_signed.has_value()) {
     // Error happened.
     return false;

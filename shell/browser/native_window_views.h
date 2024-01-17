@@ -8,6 +8,7 @@
 #include "shell/browser/native_window.h"
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -304,7 +305,7 @@ class NativeWindowViews : public NativeWindow,
   // Whether the window is currently being moved.
   bool is_moving_ = false;
 
-  absl::optional<gfx::Rect> pending_bounds_change_;
+  std::optional<gfx::Rect> pending_bounds_change_;
 
   // The color to use as the theme and symbol colors respectively for Window
   // Controls Overlay if enabled on Windows.

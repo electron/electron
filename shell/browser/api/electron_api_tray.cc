@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_tray.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
 #include "gin/dictionary.h"
@@ -32,7 +33,7 @@ struct Converter<electron::TrayIcon::IconType> {
                      electron::TrayIcon::IconType* out) {
     using Val = electron::TrayIcon::IconType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"custom", Val::kCustom},
             {"error", Val::kError},
             {"info", Val::kInfo},
@@ -51,7 +52,7 @@ gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
-           absl::optional<UUID> guid)
+           std::optional<UUID> guid)
     : tray_icon_(TrayIcon::Create(guid)) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
@@ -62,7 +63,7 @@ Tray::~Tray() = default;
 // static
 gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
                             v8::Local<v8::Value> image,
-                            absl::optional<UUID> guid,
+                            std::optional<UUID> guid,
                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
@@ -232,7 +233,7 @@ void Tray::SetToolTip(const std::string& tool_tip) {
 }
 
 void Tray::SetTitle(const std::string& title,
-                    const absl::optional<gin_helper::Dictionary>& options,
+                    const std::optional<gin_helper::Dictionary>& options,
                     gin::Arguments* args) {
   if (!CheckAlive())
     return;

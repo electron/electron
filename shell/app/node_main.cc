@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -60,7 +61,7 @@ namespace {
 // See https://nodejs.org/api/cli.html#cli_options
 void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   // Options that are unilaterally disallowed.
-  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+  static constexpr auto disallowed = base::MakeFixedFlatSet<std::string_view>({
       "--enable-fips",
       "--force-fips",
       "--openssl-config",
@@ -69,7 +70,7 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   });
 
   for (const auto& arg : argv) {
-    const auto key = base::StringPiece(arg).substr(0, arg.find('='));
+    const auto key = std::string_view{arg}.substr(0, arg.find('='));
     if (disallowed.contains(key)) {
       LOG(ERROR) << "The Node.js cli flag " << key
                  << " is not supported in Electron";

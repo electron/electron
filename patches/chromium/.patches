@@ -32,7 +32,6 @@ worker_context_will_destroy.patch
 frame_host_manager.patch
 crashpad_pid_check.patch
 network_service_allow_remote_certificate_verification_logic.patch
-disable_color_correct_rendering.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
 picture-in-picture.patch
 disable_compositor_recycling.patch
@@ -128,3 +127,4 @@ chore_remove_check_is_test_on_script_injection_tracker.patch
 fix_restore_original_resize_performance_on_macos.patch
 feat_allow_code_cache_in_custom_schemes.patch
 enable_partition_alloc_ref_count_size.patch
+build_run_reclient_cfg_generator_after_chrome.patch

@@ -14,6 +14,7 @@
 #include "base/bits.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/no_destructor.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
@@ -184,9 +185,6 @@ class EnabledStateObserverImpl final
   std::unordered_set<v8::TracingController::TraceStateObserver*> observers_;
 };
 
-base::LazyInstance<EnabledStateObserverImpl>::Leaky g_trace_state_dispatcher =
-    LAZY_INSTANCE_INITIALIZER;
-
 class TracingControllerImpl : public node::tracing::TracingController {
  public:
   TracingControllerImpl() = default;
@@ -265,11 +263,19 @@ class TracingControllerImpl : public node::tracing::TracingController {
     TRACE_EVENT_API_UPDATE_TRACE_EVENT_DURATION(category_enabled_flag, name,
                                                 traceEventHandle);
   }
+
   void AddTraceStateObserver(TraceStateObserver* observer) override {
-    g_trace_state_dispatcher.Get().AddObserver(observer);
+    GetObserverDelegate().AddObserver(observer);
   }
+
   void RemoveTraceStateObserver(TraceStateObserver* observer) override {
-    g_trace_state_dispatcher.Get().RemoveObserver(observer);
+    GetObserverDelegate().RemoveObserver(observer);
+  }
+
+ private:
+  static EnabledStateObserverImpl& GetObserverDelegate() {
+    static base::NoDestructor<EnabledStateObserverImpl> instance;
+    return *instance;
   }
 };
 
