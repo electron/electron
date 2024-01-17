@@ -65,18 +65,18 @@ index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f30557a4f 100644
+index 298c9c81fa110ad7900d0bd6822136bb57f0382e..29fe398557e8e13a3daa18d9ca79c827583c1af7 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -613,6 +613,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -610,6 +610,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
 +                     const std::vector<const uint8_t> additional_data,
                       SocketReader* reader);
  
-  private:
-@@ -667,13 +668,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+   // Called when the ProcessSingleton that owns this class is about to be
+@@ -669,13 +670,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -88,10 +88,11 @@ index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f
    DCHECK(ui_task_runner_->BelongsToCurrentThread());
    DCHECK(reader);
  
-   if (parent_->notification_callback_.Run(base::CommandLine(argv),
--                                          base::FilePath(current_dir))) {
-+                                          base::FilePath(current_dir),
-+                                          std::move(additional_data))) {
+   if (parent_ && parent_->notification_callback_.Run(
+-                     base::CommandLine(argv), base::FilePath(current_dir))) {
++                     base::CommandLine(argv),
++                     base::FilePath(current_dir)),
++                     std::move(additional_data)) {
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken, std::size(kACKToken) - 1);
    } else {
