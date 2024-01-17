@@ -1607,4 +1607,18 @@ describe('session module', () => {
       await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
     });
   });
+
+  describe('ses.clearBrowsingData()', () => {
+    afterEach(closeAllWindows);
+
+    // NOTE: This API clears more than localStorage, but localStorage is a
+    // convenient test target for this API
+    it('clears localstorage data', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+      await w.webContents.session.clearBrowsingData();
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+    });
+  });
 });
