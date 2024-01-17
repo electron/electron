@@ -154,3 +154,4 @@ cherry-pick-f15cfb9371c4.patch
 cherry-pick-4ca62c7a8b88.patch
 cherry-pick-5b2fddadaa12.patch
 cherry-pick-50a1bddfca85.patch
+reland_mojom_ts_generator_handle_empty_module_path_identically_to.patch
