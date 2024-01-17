@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amanda Baker <ambake@microsoft.com>
+Date: Wed, 17 Jan 2024 21:07:24 +0000
+Subject: fix: drag regions not working after navigation in WCO app
+
+crrev.com/c/4814003 caused a regression where draggable regions (set
+using the app-region CSS property) did not work after a Window
+Controls Overlay or Borderless app navigated to another url.
+
+This change fixes this issue by setting SupportsAppRegion to true on
+each navigation within the app window.
+
+Bug: 1516830, 1447586
+Change-Id: I98019070f13ccd93a0f6db57a187eed00b460e81
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5179536
+Commit-Queue: Amanda Baker <ambake@microsoft.com>
+Reviewed-by: Phillis Tang <phillis@chromium.org>
+Reviewed-by: Dmitry Gozman <dgozman@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1248354}
+
+diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
+index 0550bf54088ba18311ea13cea1555d22e2976a20..9c1359730ae381037102d2fe9950f1a19a679e54 100644
+--- a/third_party/blink/renderer/core/exported/web_view_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
+@@ -4016,7 +4016,24 @@ bool WebViewImpl::IsFencedFrameRoot() const {
+ }
+ 
+ void WebViewImpl::SetSupportsAppRegion(bool supports_app_region) {
+-  MainFrameImpl()->GetFrame()->SetSupportsAppRegion(supports_app_region);
++  supports_app_region_ = supports_app_region;
++  if (!MainFrameImpl() || !MainFrameImpl()->GetFrame()) {
++    return;
++  }
++
++  LocalFrame* local_frame = MainFrameImpl()->GetFrame();
++
++  if (supports_app_region_) {
++    local_frame->View()->UpdateDocumentAnnotatedRegions();
++  } else {
++    local_frame->GetDocument()->SetAnnotatedRegions(
++        Vector<AnnotatedRegionValue>());
++    local_frame->Client()->AnnotatedRegionsChanged();
++  }
++}
++
++bool WebViewImpl::SupportsAppRegion() {
++  return supports_app_region_;
+ }
+ 
+ void WebViewImpl::MojoDisconnected() {
+diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
+index c227b904fef4acc76a4af50263ab9d4fa35472e2..8dfb3b5b9026df92e28271258870c9eb588a6526 100644
+--- a/third_party/blink/renderer/core/exported/web_view_impl.h
++++ b/third_party/blink/renderer/core/exported/web_view_impl.h
+@@ -636,6 +636,9 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+ 
+   scheduler::WebAgentGroupScheduler& GetWebAgentGroupScheduler();
+ 
++  // Returns true if the page supports app-region: drag/no-drag.
++  bool SupportsAppRegion();
++
+  private:
+   FRIEND_TEST_ALL_PREFIXES(WebFrameTest, DivScrollIntoEditableTest);
+   FRIEND_TEST_ALL_PREFIXES(WebFrameTest,
+@@ -998,6 +1001,10 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+   absl::optional<base::debug::StackTrace> close_called_stack_trace_;
+   absl::optional<base::debug::StackTrace> close_window_called_stack_trace_;
+ 
++  // Indicates whether the page supports draggable regions via the app-region
++  // CSS property.
++  bool supports_app_region_ = false;
++
+   // All the registered observers.
+   base::ObserverList<WebViewObserver> observers_;
+ 
+diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
+index 8cd79df2968ca7e98761b5aa604fb0228cbeaa8d..3a948217adf7ddb5a846c06cd4c0c5a8d64ab87b 100644
+--- a/third_party/blink/renderer/core/frame/local_frame.cc
++++ b/third_party/blink/renderer/core/frame/local_frame.cc
+@@ -3829,19 +3829,4 @@ const mojom::RendererContentSettingsPtr& LocalFrame::GetContentSettings() {
+   return loader_.GetDocumentLoader()->GetContentSettings();
+ }
+ 
+-bool LocalFrame::SupportsAppRegion() {
+-  return supports_app_region_;
+-}
+-
+-void LocalFrame::SetSupportsAppRegion(bool supports_app_region) {
+-  supports_app_region_ = supports_app_region;
+-  if (supports_app_region) {
+-    view_->UpdateDocumentAnnotatedRegions();
+-  } else {
+-    CHECK(GetDocument());
+-    GetDocument()->SetAnnotatedRegions(Vector<AnnotatedRegionValue>());
+-    Client()->AnnotatedRegionsChanged();
+-  }
+-}
+-
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
+index eb5ec8620c583e8850ea40deca9d19b08a144323..4acd8d0df124e1c2d5a546294e7fae261baf3440 100644
+--- a/third_party/blink/renderer/core/frame/local_frame.h
++++ b/third_party/blink/renderer/core/frame/local_frame.h
+@@ -926,10 +926,6 @@ class CORE_EXPORT LocalFrame final
+   // Can only be called while the frame is not detached.
+   const mojom::RendererContentSettingsPtr& GetContentSettings();
+ 
+-  // Returns true if the frame supports app-region: drag/no-drag.
+-  bool SupportsAppRegion();
+-  void SetSupportsAppRegion(bool supports_app_region);
+-
+  private:
+   friend class FrameNavigationDisabler;
+   // LocalFrameMojoHandler is a part of LocalFrame.
+@@ -1191,8 +1187,6 @@ class CORE_EXPORT LocalFrame final
+ 
+   Member<v8_compile_hints::V8LocalCompileHintsProducer>
+       v8_local_compile_hints_producer_;
+-
+-  bool supports_app_region_ = false;
+ };
+ 
+ inline FrameLoader& LocalFrame::Loader() const {
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 8cb1426970f17a84f1012ab7520373648f40ea35..b5c034a451c860c2fd4ca6488a98b6c863691c2f 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -1730,7 +1730,8 @@ void LocalFrameView::NotifyPageThatContentAreaWillPaint() const {
+ 
+ void LocalFrameView::UpdateDocumentAnnotatedRegions() const {
+   Document* document = frame_->GetDocument();
+-  if (!document->HasAnnotatedRegions() || !frame_->SupportsAppRegion()) {
++  if (!document->HasAnnotatedRegions() ||
++      !frame_->GetPage()->GetChromeClient().SupportsAppRegion()) {
+     return;
+   }
+ 
+diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
+index 47dab797a32b8832e9380c89cad92546233d9351..82bf787bc884a60ad49aeabecf8b62d2f72cd619 100644
+--- a/third_party/blink/renderer/core/loader/empty_clients.h
++++ b/third_party/blink/renderer/core/loader/empty_clients.h
+@@ -106,6 +106,7 @@ class CORE_EXPORT EmptyChromeClient : public ChromeClient {
+   void DidFocusPage() override {}
+   bool CanTakeFocus(mojom::blink::FocusType) override { return false; }
+   void TakeFocus(mojom::blink::FocusType) override {}
++  bool SupportsAppRegion() override { return false; }
+   void Show(LocalFrame& frame,
+             LocalFrame& opener_frame,
+             NavigationPolicy navigation_policy,
+diff --git a/third_party/blink/renderer/core/page/chrome_client.h b/third_party/blink/renderer/core/page/chrome_client.h
+index 73cddb74781652fddae126f497bf8f76a2cd179c..07cc5202bd2fc38f5463a1ec651dc6dd3cc4b419 100644
+--- a/third_party/blink/renderer/core/page/chrome_client.h
++++ b/third_party/blink/renderer/core/page/chrome_client.h
+@@ -177,6 +177,10 @@ class CORE_EXPORT ChromeClient : public GarbageCollected<ChromeClient> {
+ 
+   virtual void SetKeyboardFocusURL(Element*) {}
+ 
++  // Returns true if the page should support drag regions via the app-region
++  // CSS property.
++  virtual bool SupportsAppRegion() = 0;
++
+   // Allow document lifecycle updates to be run in order to produce composited
+   // outputs. Updates are blocked from occurring during loading navigation in
+   // order to prevent contention and allow Blink to proceed more quickly. This
+diff --git a/third_party/blink/renderer/core/page/chrome_client_impl.cc b/third_party/blink/renderer/core/page/chrome_client_impl.cc
+index 55d3e4248f722c56951b9c0120f3ac4480f1b5fe..b047b993fa780b19e08fb9a5bd328f7e83cc5661 100644
+--- a/third_party/blink/renderer/core/page/chrome_client_impl.cc
++++ b/third_party/blink/renderer/core/page/chrome_client_impl.cc
+@@ -291,6 +291,10 @@ void ChromeClientImpl::SetKeyboardFocusURL(Element* new_focus_element) {
+   web_view_->SetKeyboardFocusURL(focus_url);
+ }
+ 
++bool ChromeClientImpl::SupportsAppRegion() {
++  return web_view_->SupportsAppRegion();
++}
++
+ void ChromeClientImpl::StartDragging(LocalFrame* frame,
+                                      const WebDragData& drag_data,
+                                      DragOperationsMask mask,
+diff --git a/third_party/blink/renderer/core/page/chrome_client_impl.h b/third_party/blink/renderer/core/page/chrome_client_impl.h
+index bc8f7fe91eaff2ee9a0676e91ddff806bcaee5ff..ad179bc9ea6290e7bbeba427f54f0ea6ab396338 100644
+--- a/third_party/blink/renderer/core/page/chrome_client_impl.h
++++ b/third_party/blink/renderer/core/page/chrome_client_impl.h
+@@ -77,6 +77,7 @@ class CORE_EXPORT ChromeClientImpl final : public ChromeClient {
+   bool CanTakeFocus(mojom::blink::FocusType) override;
+   void TakeFocus(mojom::blink::FocusType) override;
+   void SetKeyboardFocusURL(Element* new_focus_element) override;
++  bool SupportsAppRegion() override;
+   void BeginLifecycleUpdates(LocalFrame& main_frame) override;
+   void RegisterForCommitObservation(CommitObserver*) override;
+   void UnregisterFromCommitObservation(CommitObserver*) override;
+diff --git a/third_party/blink/renderer/core/testing/internals.cc b/third_party/blink/renderer/core/testing/internals.cc
+index 23cf906dbba8136c604a1e3a59d27882710368c6..9ff8b22cf794cd58bff985e054df37636e34aabd 100644
+--- a/third_party/blink/renderer/core/testing/internals.cc
++++ b/third_party/blink/renderer/core/testing/internals.cc
+@@ -3008,7 +3008,8 @@ DOMRectList* Internals::nonDraggableRegions(Document* document,
+ }
+ 
+ void Internals::SetSupportsAppRegion(bool supports_app_region) {
+-  GetFrame()->SetSupportsAppRegion(supports_app_region);
++  document_->GetPage()->GetChromeClient().GetWebView()->SetSupportsAppRegion(
++      supports_app_region);
+ }
+ 
+ DOMRectList* Internals::AnnotatedRegions(Document* document,

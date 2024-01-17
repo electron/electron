@@ -31,6 +31,7 @@
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_source.h"
+#include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "ui/base/resource/resource_bundle.h"
 
@@ -56,6 +57,8 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
       renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
+
+  render_frame_->GetWebView()->SetSupportsAppRegion(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
