@@ -150,8 +150,9 @@ void ElectronExtensionLoader::FinishExtensionLoad(
           extensions::pref_names::kPrefPreferences);
 
       auto preference = update.Create();
-      const int64_t us = base::Time::Now().since_origin().InMicroseconds();
-      preference->SetString("install_time", base::NumberToString(us));
+      const int64_t now_usec =
+          base::Time::Now().since_origin().InMicroseconds();
+      preference->SetString("install_time", base::NumberToString(now_usec));
     }
   }
 
