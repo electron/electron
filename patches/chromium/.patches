@@ -143,3 +143,4 @@ fix_font_flooding_in_dev_tools.patch
 feat_allow_code_cache_in_custom_schemes.patch
 enable_partition_alloc_ref_count_size.patch
 reland_mojom_ts_generator_handle_empty_module_path_identically_to.patch
+cherry-pick-c1cda70a433a.patch
