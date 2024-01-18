@@ -219,6 +219,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
     const base::Process& process) {
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
+  LOG(WARNING) << "Utility process created with pid " << pid_;
   GetAllUtilityProcessWrappers().AddWithID(this, pid_);
   if (stdout_read_fd_ != -1) {
     EmitWithoutEvent("stdout", stdout_read_fd_);
@@ -253,6 +254,7 @@ void UtilityProcessWrapper::CloseConnectorPort() {
 }
 
 void UtilityProcessWrapper::Shutdown(int exit_code) {
+  LOG(WARNING) << "Utility process shutdown with exit code " << exit_code;
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();

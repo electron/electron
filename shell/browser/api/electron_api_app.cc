@@ -887,6 +887,7 @@ void App::BrowserChildProcessCrashedOrKilled(
   }
   if (data.process_type == content::PROCESS_TYPE_UTILITY) {
     base::ProcessId pid = data.GetProcess().Pid();
+    LOG(WARNING) << "Process " << pid << " crashed.";
     auto utility_process_wrapper = UtilityProcessWrapper::FromProcessId(pid);
     if (utility_process_wrapper)
       utility_process_wrapper->Shutdown(info.exit_code);
