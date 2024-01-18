@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/electron_api_url_loader.h"
+#include "shell/common/api/electron_api_url_loader.h"
 
 #include <algorithm>
 #include <memory>
@@ -13,6 +13,7 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
+#include "base/sequence_checker.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -39,7 +40,10 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
+#include "shell/services/node/node_service.h"
 #include "third_party/blink/public/common/loader/referrer_utils.h"
 #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
 
@@ -186,6 +190,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
       mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
           chunked_data_pipe_getter)
       : isolate_(isolate), body_func_(isolate, body_func) {
+    DETACH_FROM_SEQUENCE(sequence_checker_);
     receiver_.Bind(std::move(chunked_data_pipe_getter));
   }
 
@@ -195,7 +200,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   void StartReading(mojo::ScopedDataPipeProducerHandle pipe) override {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
     if (body_func_.IsEmpty()) {
       LOG(ERROR) << "Tried to read twice from a JSChunkedDataPipeGetter";
@@ -251,7 +256,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
 
   void OnWriteChunkComplete(gin_helper::Promise<void> promise,
                             MojoResult result) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     is_writing_ = false;
     if (result == MOJO_RESULT_OK) {
       promise.Resolve();
@@ -278,6 +283,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     size_callback_.Reset();
   }
 
+  SEQUENCE_CHECKER(sequence_checker_);
   GetSizeCallback size_callback_;
   mojo::Receiver<network::mojom::ChunkedDataPipeGetter> receiver_{this};
   std::unique_ptr<mojo::DataPipeProducer> data_producer_;
@@ -320,6 +326,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     : browser_context_(browser_context),
       request_options_(options),
       request_(std::move(request)) {
+  DETACH_FROM_SEQUENCE(sequence_checker_);
   if (!request_->trusted_params)
     request_->trusted_params = network::ResourceRequest::TrustedParams();
   mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
@@ -393,7 +400,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
     const scoped_refptr<net::HttpResponseHeaders>& head_headers,
     mojo::PendingRemote<network::mojom::AuthChallengeResponder>
         auth_challenge_responder) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
   // WeakPtr because if we're Cancel()ed while waiting for auth, and the
@@ -462,6 +469,10 @@ void SimpleURLLoaderWrapper::Cancel() {
 }
 scoped_refptr<network::SharedURLLoaderFactory>
 SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
+  if (electron::IsUtilityProcess()) {
+    return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
+  }
+  CHECK(browser_context_);
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory;
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context_);
@@ -660,18 +671,22 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     }
   }
 
-  std::string partition;
-  gin::Handle<Session> session;
-  if (!opts.Get("session", &session)) {
-    if (opts.Get("partition", &partition))
-      session = Session::FromPartition(args->isolate(), partition);
-    else  // default session
-      session = Session::FromPartition(args->isolate(), "");
+  ElectronBrowserContext* browser_context = nullptr;
+  if (electron::IsBrowserProcess()) {
+    std::string partition;
+    gin::Handle<Session> session;
+    if (!opts.Get("session", &session)) {
+      if (opts.Get("partition", &partition))
+        session = Session::FromPartition(args->isolate(), partition);
+      else  // default session
+        session = Session::FromPartition(args->isolate(), "");
+    }
+    browser_context = session->browser_context();
   }
 
   auto ret = gin::CreateHandle(
-      args->isolate(), new SimpleURLLoaderWrapper(session->browser_context(),
-                                                  std::move(request), options));
+      args->isolate(),
+      new SimpleURLLoaderWrapper(browser_context, std::move(request), options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
@@ -681,7 +696,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
 void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
                                             base::OnceClosure resume) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
