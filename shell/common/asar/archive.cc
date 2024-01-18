@@ -239,7 +239,7 @@ bool Archive::Init() {
     return false;
   }
 
-#if BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   // Validate header signature if required and possible
   if (electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled() &&
       RelativePath().has_value()) {
@@ -276,7 +276,7 @@ bool Archive::Init() {
   return true;
 }
 
-#if !BUILDFLAG(IS_MAC)
+#if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_WIN)
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   return std::nullopt;
 }

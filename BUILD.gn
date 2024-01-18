@@ -660,6 +660,7 @@ source_set("electron_lib") {
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
+    sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
