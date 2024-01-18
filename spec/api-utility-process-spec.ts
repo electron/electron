@@ -58,16 +58,14 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(0);
     });
 
-    it('emits \'exit\' when child process crashes', async function () {
-      this.timeout(180000);
+    it('emits \'exit\' when child process crashes', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
       // Do not check for exit code in this case,
       // SIGSEGV code can be 139 or 11 across our different CI pipeline.
       await once(child, 'exit');
     });
 
-    it('emits \'exit\' corresponding to the child process', async function () {
-      this.timeout(180000);
+    it('emits \'exit\' corresponding to the child process', async () => {
       const child1 = utilityProcess.fork(path.join(fixturesPath, 'endless.js'));
       await once(child1, 'spawn');
       const child2 = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
@@ -97,8 +95,7 @@ describe('utilityProcess module', () => {
   });
 
   describe('app \'child-process-gone\' event', () => {
-    it('with default serviceName', async function () {
-      this.timeout(180000);
+    it('with default serviceName', async () => {
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
       const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
       expect(details.type).to.equal('Utility');
@@ -107,8 +104,7 @@ describe('utilityProcess module', () => {
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
-    it('with custom serviceName', async function () {
-      this.timeout(180000);
+    it('with custom serviceName', async () => {
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: 'Hello World!' });
       const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
       expect(details.type).to.equal('Utility');
