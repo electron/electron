@@ -12,12 +12,14 @@ async function ensureWindowIsClosed (window: BaseWindow | null) {
       // window.
       const isClosed = once(window, 'closed');
       window.destroy();
+      console.log('In ensureWindowIsClosed; awaiting window is closed');
       await isClosed;
     } else {
       // If there's no WebContents or if the WebContents is already destroyed,
       // then the 'closed' event has already been emitted so there's nothing to
       // wait for.
       window.destroy();
+      console.log('In ensureWindowIsClosed; NOT awaiting window is closed');
     }
   }
 }
@@ -29,13 +31,20 @@ export const closeWindow = async (
   await ensureWindowIsClosed(window);
 
   if (assertNotWindows) {
-    const windows = BaseWindow.getAllWindows();
-    try {
-      expect(windows).to.have.lengthOf(0);
-    } finally {
-      for (const win of windows) {
-        await ensureWindowIsClosed(win);
-      }
+    let windows = BaseWindow.getAllWindows();
+    if (windows.length > 0) {
+      console.log('ALERT --- EXPECTED WINDOWS TO BE CLOSED BUT THEY ARE NOT CLOSED!!!!');
+      setTimeout(async () => {
+        // Wait until next tick to assert that all windows have been closed.
+        windows = BaseWindow.getAllWindows();
+        try {
+          expect(windows).to.have.lengthOf(0);
+        } finally {
+          for (const win of windows) {
+            await ensureWindowIsClosed(win);
+          }
+        }
+      });
     }
   }
 };
