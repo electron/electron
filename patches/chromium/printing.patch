@@ -34,10 +34,10 @@ index 2fafbb88224a6290733379631a08e5e20b08218d..81bc36fa8525d6b7dd9482284553fc67
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index c60e2083bf70d2310bec57646df797856aa7d2dd..dabf6536a0dd67635a551a4d8aaed981bdaca4de 100644
+index 874b9efcf9e70650728885519009360ee770a79f..6c4d24d44e69d796bc6bfec5f7092f5b3ae28703 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -95,6 +95,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
+@@ -96,6 +96,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
    return base::FeatureList::IsEnabled(features::kPrintWithReducedRasterization);
  }
  
@@ -45,7 +45,7 @@ index c60e2083bf70d2310bec57646df797856aa7d2dd..dabf6536a0dd67635a551a4d8aaed981
  PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
    // because `web_contents` was null. As a result, this section has many more
-@@ -109,6 +110,7 @@ content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
+@@ -110,6 +111,7 @@ content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
    auto* rfh = content::RenderFrameHost::FromID(rfh_id);
    return rfh ? content::WebContents::FromRenderFrameHost(rfh) : nullptr;
  }
@@ -53,7 +53,7 @@ index c60e2083bf70d2310bec57646df797856aa7d2dd..dabf6536a0dd67635a551a4d8aaed981
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -149,10 +151,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
+@@ -150,10 +152,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
  
  #if BUILDFLAG(IS_WIN)
    pdf_page_mapping_ = PageNumber::GetPages(settings->ranges(), page_count);
@@ -66,7 +66,7 @@ index c60e2083bf70d2310bec57646df797856aa7d2dd..dabf6536a0dd67635a551a4d8aaed981
  #endif
  
    auto new_doc = base::MakeRefCounted<PrintedDocument>(std::move(settings),
-@@ -403,8 +403,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -404,8 +404,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -78,7 +78,7 @@ index c60e2083bf70d2310bec57646df797856aa7d2dd..dabf6536a0dd67635a551a4d8aaed981
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -496,8 +498,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -497,8 +499,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
@@ -91,7 +91,7 @@ index c60e2083bf70d2310bec57646df797856aa7d2dd..dabf6536a0dd67635a551a4d8aaed981
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index f033faa6f451074adfb58d4430e9465999f803bb..84b604a103666dec5cdca9921bebdc8f09d5d571 100644
+index e4ba6fdfac5ebaa0e960ef1009fc1399dd391553..62a8fc34d817c1423375bdb55483ac7b1ebfb61e 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -22,7 +22,9 @@
@@ -465,7 +465,7 @@ index f033faa6f451074adfb58d4430e9465999f803bb..84b604a103666dec5cdca9921bebdc8f
  
  #if BUILDFLAG(ENABLE_PRINT_CONTENT_ANALYSIS)
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index f137fc60162622a37c2e4896f521fa3da9dac68e..f7a15e6189736bd86474be3b86a080fdf8b78984 100644
+index 99612fd36fdb51fc735ddad8412f8119293f42f0..e6ec8d53b5a2c71a11ab61c7f967c7de7fa857be 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -44,6 +44,8 @@ namespace printing {
@@ -537,7 +537,7 @@ index f137fc60162622a37c2e4896f521fa3da9dac68e..f7a15e6189736bd86474be3b86a080fd
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 75fb743f95c375420f07b0cd93b2a13bf83b33f6..e60f5f4ca226c7575082fe31e7209ccaa10616d4 100644
+index 418f53b0db3a2b2624298fca5628aacdd2a99c94..4a110fda692e16ec887cb90c6a2fa611c67b8d6f 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -829,10 +829,10 @@ index 3cf735c0bf3ba4ed4a871f4608f43cf9767de62f..fccabc0c51ba2fc1ccd8646d30da782f
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e948db87fc0e66ce89b19b889cd97a2dad14b18d..3f58d778ab8023c4c3a344294531cb1a1b2013c0 100644
+index 5b74aba69396929b5adc8adf732667c6cdb006e2..2800a847001f46c34053d78ca99bf471844e6888 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2965,8 +2965,9 @@ source_set("browser") {
+@@ -2973,8 +2973,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
