@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 2c8a6fe7603559ca7bce7e12755fadf419e935fe..44ffe1264f0d7a933d9330ffedc90604e80cd97a 100644
+index 074708eb373433cb27af50f070a0bf535976f1e8..831164924127a629f74909c91b9aff3b842be0e1 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -8230,6 +8230,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 2c8a6fe7603559ca7bce7e12755fadf419e935fe..44ffe1264f0d7a933d9330ffedc90604
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7521b498d9a472d84d31f150808752bbe5843446..63aa4b0f46c4853efedf2fa6e1f2e6f1b023280a 100644
+index 15ed60751ddc7ba5312169e7a8916249e0690c77..966e6e36a7172c62b0bfd99861e05f3ab6213f85 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4514,6 +4514,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -148,10 +148,10 @@ index 4b32bf8ccc4ed370e2d1a218ae1fd69a98e23636..b9168a2488f5c4977eba5856882b561e
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c0e32773ecc06d404bd1a402b408dc9c27787bd1..e4478680bf643bdbe07bc8c92117532b6f8e3b95 100644
+index e899bf9790eaa98596d9d94145d35731a11e2e61..7c361a5303450843e3f3bd7e90ee5509c871d4a2 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6554,6 +6554,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6565,6 +6565,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
