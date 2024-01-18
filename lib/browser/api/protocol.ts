@@ -104,8 +104,12 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
+      const headers = new Headers(preq.headers);
+      if (headers.get('origin') === 'null') {
+        headers.delete('origin');
+      }
       const req = new Request(preq.url, {
-        headers: preq.headers,
+        headers,
         method: preq.method,
         referrer: preq.referrer,
         body,
