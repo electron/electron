@@ -129,3 +129,5 @@ fix_restore_original_resize_performance_on_macos.patch
 feat_allow_code_cache_in_custom_schemes.patch
 enable_partition_alloc_ref_count_size.patch
 build_run_reclient_cfg_generator_after_chrome.patch
+fix_font_flooding_in_dev_tools.patch
+ci_logging.patch
