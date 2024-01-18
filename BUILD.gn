@@ -9,7 +9,7 @@ import("//pdf/features.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
-import("//third_party/electron_node/node.gni")
+import("//third_party/electron_node/electron_node.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -414,8 +414,10 @@ action("electron_generate_node_defines") {
 }
 
 source_set("electron_lib") {
-  configs += [ "//v8:external_startup_data" ]
-  configs += [ "//third_party/electron_node:node_internals" ]
+  configs += [
+    "//v8:external_startup_data",
+    "//third_party/electron_node:node_internals",
+  ]
 
   public_configs = [
     ":branding",

@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 035f495687856b0cfbcc4e87ba6e90d56c99e837..c02906eacd90ac27d618e7578d1f928f16a858f7 100644
+index 33edf44239a7ec13ebee2f926b1e7f9b8d0b83fe..11f8b8dea7bf4119c2d99ee451e3f1bc7bde8902 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -131,10 +131,10 @@ index d45325954d980724f80d49298bbe837197237a9b..ccea18080142bd9cba3765dbbec61c2a
      return ret;
  
 diff --git a/src/node_internals.h b/src/node_internals.h
-index d7f78664615fcfca6ed7404f940906c148a5e02c..35d76aaa69abfaca18421f12aa1ff78297b8f93f 100644
+index 9a96e042fc5cda18beb13b89965a6267fba3e0a6..bd210db0b6ad12075e8ced8b321da38752b3d050 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -102,7 +102,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
+@@ -112,7 +112,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -145,7 +145,7 @@ index d7f78664615fcfca6ed7404f940906c148a5e02c..35d76aaa69abfaca18421f12aa1ff782
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -121,7 +123,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -131,7 +133,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:

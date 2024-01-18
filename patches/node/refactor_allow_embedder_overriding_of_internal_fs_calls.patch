@@ -22,7 +22,7 @@ index 7a773d5208e250abd8b0efb6dde66c45060bbee4..45e38ca0a122e3b1c5d8d59865f9610c
  const binding = internalBinding('builtins');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index f408d6c152d6acabea5ff3e262fe344909046595..ea3b411a78495d0414b1956503b86cbd5f0ed765 100644
+index d4b70bab5e89300bfe6305263d556c986380e2e0..1f3b719048f2477de183e2856b9b8eee8502f708 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -96,6 +96,7 @@ const assert = require('internal/assert');
