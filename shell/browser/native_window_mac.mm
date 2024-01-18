@@ -1450,13 +1450,14 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
     const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
     const int macos_version = base::mac::MacOSMajorVersion();
 
-    // Modal window corners are rounded on macOS >= 11 or higher if the user
-    // hasn't passed noRoundedCorners.
+    // If the window is modal, its corners are rounded on macOS >= 11 or higher
+    // unless the user has explicitly passed noRoundedCorners.
     bool should_round_modal =
-        !no_rounded_corner && (macos_version >= 11 ? true : !is_modal());
-    // Nonmodal window corners are rounded if they're frameless and the user
-    // hasn't passed noRoundedCorners.
-    bool should_round_nonmodal = !no_rounded_corner && !has_frame();
+        is_modal() ? (macos_version >= 11 && !no_rounded_corner) : false;
+    // If the window is nonmodal, its corners are rounded if it is frameless and
+    // the user hasn't passed noRoundedCorners.
+    bool should_round_nonmodal =
+        !is_modal() && !has_frame() && !no_rounded_corner;
 
     if (should_round_nonmodal || should_round_modal) {
       CGFloat radius;
