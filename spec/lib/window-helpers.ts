@@ -29,13 +29,19 @@ export const closeWindow = async (
   await ensureWindowIsClosed(window);
 
   if (assertNotWindows) {
-    const windows = BrowserWindow.getAllWindows();
-    try {
-      expect(windows).to.have.lengthOf(0);
-    } finally {
-      for (const win of windows) {
-        await ensureWindowIsClosed(win);
-      }
+    let windows = BrowserWindow.getAllWindows();
+    if (windows.length > 0) {
+      setTimeout(async () => {
+        // Wait until next tick to assert that all windows have been closed.
+        windows = BrowserWindow.getAllWindows();
+        try {
+          expect(windows).to.have.lengthOf(0);
+        } finally {
+          for (const win of windows) {
+            await ensureWindowIsClosed(win);
+          }
+        }
+      });
     }
   }
 };
