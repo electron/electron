@@ -29,6 +29,21 @@ function makeStreamFromPipe (pipe: any): ReadableStream {
   });
 }
 
+function makeStreamFromFileInfo ({
+  filePath,
+  offset = 0,
+  length = -1
+}: {
+  filePath: string;
+  offset?: number;
+  length?: number;
+}): ReadableStream {
+  return Readable.toWeb(createReadStream(filePath, {
+    start: offset,
+    end: length >= 0 ? offset + length : undefined
+  }));
+}
+
 function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): RequestInit['body'] {
   if (!uploadData) return null;
   // Optimization: skip creating a stream if the request is just a single buffer.
@@ -48,8 +63,10 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
       } else {
         if (!chunks.length) { return controller.close(); }
         const chunk = chunks.shift()!;
-        if (chunk.type === 'rawData') { controller.enqueue(chunk.bytes); } else if (chunk.type === 'file') {
-          current = Readable.toWeb(createReadStream(chunk.filePath, { start: chunk.offset ?? 0, end: chunk.length >= 0 ? chunk.offset + chunk.length : undefined })).getReader();
+        if (chunk.type === 'rawData') {
+          controller.enqueue(chunk.bytes);
+        } else if (chunk.type === 'file') {
+          current = makeStreamFromFileInfo(chunk).getReader();
           this.pull!(controller);
         } else if (chunk.type === 'stream') {
           current = makeStreamFromPipe(chunk.body).getReader();
