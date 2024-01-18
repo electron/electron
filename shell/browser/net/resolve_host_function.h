@@ -9,6 +9,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
+#include "base/sequence_checker.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "net/base/address_list.h"
 #include "net/dns/public/host_resolver_results.h"
@@ -52,6 +53,8 @@ class ResolveHostFunction
                   const absl::optional<net::AddressList>& resolved_addresses,
                   const absl::optional<net::HostResolverEndpointResults>&
                       endpoint_results_with_metadata) override;
+
+  SEQUENCE_CHECKER(sequence_checker_);
 
   // Receiver for the currently in-progress request, if any.
   mojo::Receiver<network::mojom::ResolveHostClient> receiver_{this};

@@ -11,6 +11,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/sequence_checker.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "net/base/auth.h"
@@ -133,6 +134,7 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
+  SEQUENCE_CHECKER(sequence_checker_);
   raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;

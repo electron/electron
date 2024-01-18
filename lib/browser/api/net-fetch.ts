@@ -1,6 +1,6 @@
-import { net, IncomingMessage, Session as SessionT } from 'electron/main';
+import { ClientRequestConstructorOptions, ClientRequest, IncomingMessage, Session as SessionT } from 'electron/main';
 import { Readable, Writable, isReadable } from 'stream';
-import { allowAnyProtocol } from '@electron/internal/browser/api/net-client-request';
+import { allowAnyProtocol } from '@electron/internal/common/api/net-client-request';
 
 function createDeferredPromise<T, E extends Error = Error> (): { promise: Promise<T>; resolve: (x: T) => void; reject: (e: E) => void; } {
   let res: (x: T) => void;
@@ -13,7 +13,8 @@ function createDeferredPromise<T, E extends Error = Error> (): { promise: Promis
   return { promise, resolve: res!, reject: rej! };
 }
 
-export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypassCustomProtocolHandlers?: boolean}) | undefined, session: SessionT): Promise<Response> {
+export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypassCustomProtocolHandlers?: boolean}) | undefined, session: SessionT | undefined,
+  request: (options: ClientRequestConstructorOptions | string) => ClientRequest) {
   const p = createDeferredPromise<Response>();
   let req: Request;
   try {
@@ -73,7 +74,7 @@ export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypa
   // We can't set credentials to same-origin unless there's an origin set.
   const credentials = req.credentials === 'same-origin' && !origin ? 'include' : req.credentials;
 
-  const r = net.request(allowAnyProtocol({
+  const r = request(allowAnyProtocol({
     session,
     method: req.method,
     url: req.url,
