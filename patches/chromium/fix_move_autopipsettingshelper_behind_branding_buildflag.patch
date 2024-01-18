@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 0ce1329190c2fed707abcd5ffb01bf660b9069d7..5410c34efffa85569cc0947ee44a48b9ceb676b8 100644
+index 1c99c954e979490a23b77266596c617fba3c00c2..b24b2c3656250e5f8e07b3621dcec978d8e3f51a 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -22,8 +22,10 @@
@@ -104,17 +104,17 @@ index 0ce1329190c2fed707abcd5ffb01bf660b9069d7..5410c34efffa85569cc0947ee44a48b9
  void PictureInPictureWindowManager::CreateOcclusionTrackerIfNecessary() {
    if (occlusion_tracker_) {
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index dee3d975ce032054b1f8da839620f281a3ab17de..2013ec36331dea37bedde7b0ee4a9e6f0f51830e 100644
+index 522d4342d65e82496376591fd96481d70239a6ed..83f2c6d24f64bdbc0c5a77418674eebedd9006c4 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-@@ -11,6 +11,7 @@
+@@ -12,6 +12,7 @@
  #include "base/memory/singleton.h"
  #include "base/observer_list.h"
  #include "base/observer_list_types.h"
 +#include "build/branding_buildflags.h"
  #include "build/build_config.h"
- #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
+ #include "ui/gfx/geometry/rect.h"
 @@ -33,7 +34,9 @@ class Display;
  }  // namespace display
  

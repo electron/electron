@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index c4255d8dfc2e3c4f1f32506e4e9edbb90a74340a..142398a8adafc94e6724ee750b612a66d23d724b 100644
+index acf92799b643246222306a37aa4fc611ef65149a..4eabd290955e5df65951a0ec2378588598dd5830 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -23,6 +23,7 @@
@@ -30,7 +30,7 @@ index c4255d8dfc2e3c4f1f32506e4e9edbb90a74340a..142398a8adafc94e6724ee750b612a66
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index f15ba3475d6733bf33f1d3d243773928c29dd776..6e1cf587c7cd1b406b8f6488f4a7f309476f11a8 100644
+index 033634314d706196b5a68fc44114971d31bda3cb..1d3f8f9484f64be58f59e240b1dae1fb507acd59 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -2141,6 +2141,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
@@ -44,10 +44,10 @@ index f15ba3475d6733bf33f1d3d243773928c29dd776..6e1cf587c7cd1b406b8f6488f4a7f309
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ee242208ff86778fc830b5ceaba86b39ff0f9b8c..fc8159095efb2a7088d7e92bb45f72003a5150a6 100644
+index 63aa4b0f46c4853efedf2fa6e1f2e6f1b023280a..aadd1683c14b4ba54eb5c0895b0f06aca4499000 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5113,6 +5113,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5160,6 +5160,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,7 +60,7 @@ index ee242208ff86778fc830b5ceaba86b39ff0f9b8c..fc8159095efb2a7088d7e92bb45f7200
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 18a5c929fada97f250f13cd9d9ec712a1947a944..55a55425c48cd522ee16fbba6bd9a2496c87b70c 100644
+index 53378ce5da224021aa52827058643cd75d04d7ab..f2f2c3f01f8c89c48796b4e6e5c90071412e3607 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1020,6 +1020,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -72,10 +72,10 @@ index 18a5c929fada97f250f13cd9d9ec712a1947a944..55a55425c48cd522ee16fbba6bd9a249
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 58c1d39f5e5e5f704faf8d3db82e107a4efa7629..ac2ca2dc7a91e6603c9250a177ad9fb3d44fab8b 100644
+index 839fa5e82f140bc582606738285e3b9a78769d6f..181004251d2dd0432b92f917efe1a117973a2da4 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
-@@ -32,6 +32,7 @@
+@@ -33,6 +33,7 @@
  #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-forward.h"
  #include "third_party/blink/public/mojom/media/capture_handle_config.mojom-forward.h"
  #include "third_party/skia/include/core/SkColor.h"
@@ -83,7 +83,7 @@ index 58c1d39f5e5e5f704faf8d3db82e107a4efa7629..ac2ca2dc7a91e6603c9250a177ad9fb3
  #include "ui/base/page_transition_types.h"
  #include "ui/base/window_open_disposition.h"
  
-@@ -569,6 +570,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
+@@ -570,6 +571,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
    // Invoked when the primary main frame changes size.
    virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  

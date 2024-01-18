@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index e7aa270fce64dbf884393b08063890eb56f186a7..d63e0d63fa9e7c2888ac9693de02071b63035c90 100644
+index e7aa270fce64dbf884393b08063890eb56f186a7..397a37518a094d2a538cefe9c3ff2ee85f7ef3ef 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -72,7 +72,7 @@ index e7aa270fce64dbf884393b08063890eb56f186a7..d63e0d63fa9e7c2888ac9693de02071b
  }
  
  MediaStreamDevicesController::~MediaStreamDevicesController() {
-@@ -437,6 +445,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -447,6 +455,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
  
@@ -80,7 +80,7 @@ index e7aa270fce64dbf884393b08063890eb56f186a7..d63e0d63fa9e7c2888ac9693de02071b
    // TODO(raymes): This function wouldn't be needed if
    // PermissionManager::RequestPermissions returned a denial reason.
    content::PermissionResult result =
-@@ -447,6 +456,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -457,6 +466,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }
