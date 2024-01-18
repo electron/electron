@@ -80,6 +80,8 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
           // knowledge of the `Session` associated with the current request by
           // always pulling `Blob` data out of the default `Session`.
           controller.enqueue(await session.defaultSession.getBlobData(chunk.blobUUID));
+        } else {
+          throw new Error(`Unknown upload data chunk type: ${chunk.type}`);
         }
       }
     }
