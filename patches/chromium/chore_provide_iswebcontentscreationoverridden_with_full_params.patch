@@ -35,10 +35,10 @@ index 9433ce4602414df4999f6ced8b371d4e847819ce..f38afaafcd6710f9cfcef816bf152cd2
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
-index 8309281d321256e118e7086b29692f63be6aa9e6..96c433b8a3a42bf477c6467595b58a50c46499b4 100644
+index f88f664eb7226425e6f1b45fe6811d49dd44f3ce..851d31a0e8bbdc57d4ca617f4d4c814343736ddd 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
-@@ -111,10 +111,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
+@@ -112,10 +112,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -52,10 +52,10 @@ index 8309281d321256e118e7086b29692f63be6aa9e6..96c433b8a3a42bf477c6467595b58a50
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index f47e14bc5dda6b84d1ae63148d7ee3bfb4797eb7..74838fd3621fd1d271ce8e3b037b1c785dd05651 100644
+index 65840fa273b367efa9d681a4d267a3930d496eea..a28bdc08ee5535c3650169d5246aaa9a14d4778d 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
-@@ -51,8 +51,7 @@ class AshWebViewImpl : public ash::AshWebView,
+@@ -56,8 +56,7 @@ class AshWebViewImpl : public ash::AshWebView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index aadd1683c14b4ba54eb5c0895b0f06aca4499000..19dc4c51cc1b7e4564d1a510867c3e303bb20b26 100644
+index 77cbe3e299daec7d8b30f295c64da7c61492bc85..ef03b3fe5acc355d44946b538d218cdc876963b1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4420,8 +4420,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

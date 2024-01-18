@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3362f5296db7ccfed1e092e2d2eaa6a140b0db81..97e9d4990af4d149a424863c9bf5ea755ae59846 100644
+index 5d33c1b12152fad7892027a86de9654cb9ee154f..5f92cea741b9273b0497662061b7a4f37bf2ed01 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1041,6 +1041,7 @@ component("base") {
+@@ -1044,6 +1044,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -171,7 +171,7 @@ index 445b70c2f381cde2c540fe386ecd34d30ad973b7..1a8072f6e0456569db8f435248e80513
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 0369b1efab3783c0c61e086f82b3724772e4dff0..11a35c9f611fba4f5313994e41a440658cbe040a 100644
+index 1ed0027978b0a3ff70d194421078b472aac977e0..7b7c669125948d2aa3650dde4238e9f3f8d42032 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -303,10 +303,10 @@ index 085d9821933390c781fe11d441910501bf22d601..6c79434e2a5b59267c9801ac23c318c9
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 6e837d66209e6322324227bc596e40e56fccc495..3c3c5db57cfaba8e59867e74b81b4fad1cf7a8ed 100644
+index eeeaec7e1064ca250ffc4ef5d5e174c562dcd640..7b0c310ab949140811031f68f0e7163e5329326f 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -101,7 +101,9 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -104,7 +104,9 @@ void OrderChildWindow(NSWindow* child_window,
  }  // namespace
  
  @interface NSWindow (Private)
@@ -316,7 +316,7 @@ index 6e837d66209e6322324227bc596e40e56fccc495..3c3c5db57cfaba8e59867e74b81b4fad
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -139,6 +141,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -143,6 +145,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -325,7 +325,7 @@ index 6e837d66209e6322324227bc596e40e56fccc495..3c3c5db57cfaba8e59867e74b81b4fad
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -165,6 +169,8 @@ - (BOOL)usesCustomDrawing {
+@@ -169,6 +173,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -334,7 +334,7 @@ index 6e837d66209e6322324227bc596e40e56fccc495..3c3c5db57cfaba8e59867e74b81b4fad
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -353,6 +359,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -357,6 +363,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -343,7 +343,7 @@ index 6e837d66209e6322324227bc596e40e56fccc495..3c3c5db57cfaba8e59867e74b81b4fad
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -364,6 +372,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -368,6 +376,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -568,7 +568,7 @@ index 0ae21acbcc4cf1cd8a4a317edfac89bf04f10337..8e89fb47039493ae0040b0789a3e9ed2
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 3c5d755932014bc28cd1ced41a49bd8c920c93b0..a15ed2cee75e5a82a3e43457c77471735e4c0fa2 100644
+index 51f387cb147e8787ac6462fb95a31b73afcbe022..3f139fada4cf88ce3f29bc1d285f15de11caa2ab 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -238,6 +238,7 @@ source_set("common") {
@@ -902,10 +902,10 @@ index 473162885a2249cbc9b20bd810de95f54f0876f7..2fb15fcb7a04bfff01d7a22e79d467ba
  }
  
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index d299b28f339eec861c9303840ede22f603368dd4..03ca25a766a7c64ae4acb45101c6ca808c195706 100644
+index 0c5cb82b1248997ef3b97f17bef52f880fed26fd..8adecabe9aee119c7474834c038c79b271ad888e 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -179,6 +179,8 @@ source_set("dns") {
+@@ -183,6 +183,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
