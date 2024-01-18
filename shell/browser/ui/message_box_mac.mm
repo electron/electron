@@ -76,14 +76,14 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
     [[ns_buttons objectAtIndex:settings.default_id] setKeyEquivalent:@"\r"];
   }
 
-  if (button_count > 1) {
+  if (button_count > 1 && settings.cancel_id >= 0) {
     // Bind cancel id button to escape key if there is more than one button.
-    if (settings.cancel_id >= 0 && settings.cancel_id < button_count) {
+    if (settings.cancel_id < button_count) {
       [[ns_buttons objectAtIndex:settings.cancel_id] setKeyEquivalent:@"\e"];
     }
 
     // TODO(@codebytere): This behavior violates HIG & should be deprecated.
-    if (settings.cancel_id >= 0 && settings.cancel_id == settings.default_id) {
+    if (settings.cancel_id == settings.default_id) {
       [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
     }
   }
