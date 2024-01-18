@@ -871,10 +871,6 @@ void App::BrowserChildProcessKilled(
 void App::BrowserChildProcessCrashedOrKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  LOG(WARNING) << "ChildProcessCrashedOrKilled: type=" << data.process_type
-               << ", metrics_name=" << data.metrics_name
-               << ", status=" << info.status
-               << ", exit_code=" << info.exit_code;
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);

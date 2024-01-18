@@ -5,27 +5,6 @@ Subject: ci: logging
 
 DO NOT COMMIT!
 
-diff --git a/content/browser/browser_child_process_host_impl.cc b/content/browser/browser_child_process_host_impl.cc
-index e351c233b58fbcffcedd291e4b28bf8d1fd40427..6c54b78ceef6bbf147f69d53346130d12cc4a20d 100644
---- a/content/browser/browser_child_process_host_impl.cc
-+++ b/content/browser/browser_child_process_host_impl.cc
-@@ -467,6 +467,7 @@ void BrowserChildProcessHostImpl::OnChannelInitialized(IPC::Channel* channel) {
- }
- 
- void BrowserChildProcessHostImpl::OnChildDisconnected() {
-+  LOG(WARNING) << "BrowserChildProcessHostImpl::OnChildDisconnected";
-   DCHECK_CURRENTLY_ON(BrowserThread::UI);
- 
-   tracing_registration_.reset();
-@@ -480,6 +481,8 @@ void BrowserChildProcessHostImpl::OnChildDisconnected() {
-   if (child_process_launcher_.get() || IsProcessLaunched()) {
-     ChildProcessTerminationInfo info =
-         GetTerminationInfo(true /* known_dead */);
-+    LOG(WARNING) << "BrowserChildProcessHostImpl::OnChildDisconnected: "
-+                 << info.status << ", " << info.exit_code;
- #if BUILDFLAG(IS_ANDROID)
-     exited_abnormally_ = true;
-     // Do not treat clean_exit, ie when child process exited due to quitting
 diff --git a/content/browser/child_process_host_impl.cc b/content/browser/child_process_host_impl.cc
 index b9dad494f9a55c70dab570907259544b3f8ea7f5..b1bf2b6e5503b467c76a94a7ab4d170b348ff6e1 100644
 --- a/content/browser/child_process_host_impl.cc
