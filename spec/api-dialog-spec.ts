@@ -146,6 +146,22 @@ describe('dialog module', () => {
       expect(result.response).to.equal(0);
     });
 
+    it('does not crash when there is a defaultId but no buttons', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, {
+        signal,
+        message: 'i am message',
+        type: 'info',
+        defaultId: 0,
+        title: 'i am title'
+      });
+      controller.abort();
+      const result = await p;
+      expect(result.response).to.equal(0);
+    });
+
     it('cancels message box', async () => {
       const controller = new AbortController();
       const signal = controller.signal;
