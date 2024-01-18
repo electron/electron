@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -80,41 +81,20 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // partition_id => browser_context
   struct PartitionKey {
-    enum class KeyType { Partition, FilePath };
-    std::string location;
-    bool in_memory;
-    KeyType partition_type;
+    PartitionKey(const std::string_view partition, bool in_memory)
+        : type_{Partition}, location_{partition}, in_memory_{in_memory} {}
 
-    PartitionKey(const std::string& partition, bool in_memory)
-        : location(partition),
-          in_memory(in_memory),
-          partition_type(KeyType::Partition) {}
     explicit PartitionKey(const base::FilePath& file_path)
-        : location(file_path.AsUTF8Unsafe()),
-          in_memory(false),
-          partition_type(KeyType::FilePath) {}
+        : type_{Path}, location_{file_path.AsUTF8Unsafe()}, in_memory_{false} {}
 
-    bool operator<(const PartitionKey& other) const {
-      if (partition_type == KeyType::Partition) {
-        if (location == other.location)
-          return in_memory < other.in_memory;
-        return location < other.location;
-      } else {
-        if (location == other.location)
-          return false;
-        return location < other.location;
-      }
-    }
+    friend auto operator<=>(const PartitionKey&, const PartitionKey&) = default;
 
-    bool operator==(const PartitionKey& other) const {
-      if (partition_type == KeyType::Partition) {
-        return (location == other.location) && (in_memory < other.in_memory);
-      } else {
-        if (location == other.location)
-          return true;
-        return false;
-      }
-    }
+   private:
+    enum class Type { Partition, Path };
+
+    Type type_;
+    std::string location_;
+    bool in_memory_;
   };
 
   using BrowserContextMap =
