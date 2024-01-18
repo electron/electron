@@ -293,7 +293,7 @@ for:
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging
+      - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main -g 'utilityProcess module lifecycle events' --enable-logging
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
       - echo "About to verify mksnapshot"

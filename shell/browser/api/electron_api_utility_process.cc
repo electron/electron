@@ -233,6 +233,8 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
     uint32_t error_code,
     const std::string& description) {
+  LOG(WARNING) << "Utility process disconnected with error code " << error_code
+               << ": " << description;
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   CloseConnectorPort();
