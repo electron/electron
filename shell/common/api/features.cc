@@ -21,6 +21,10 @@ bool IsFakeLocationProviderEnabled() {
   return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
 }
 
+bool IsViewApiEnabled() {
+  return BUILDFLAG(ENABLE_VIEWS_API);
+}
+
 bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
@@ -46,6 +50,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
+  dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);

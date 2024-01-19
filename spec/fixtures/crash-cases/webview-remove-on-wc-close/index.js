@@ -19,7 +19,7 @@ app.whenReady().then(() => {
     });
 
     contents.on('did-finish-load', () => {
-      win.webContents.executeJavaScript('closeBtn.click()');
+      win.webContents.executeJavaScript('document.querySelector(\'.close-btn\').click()');
     });
 
     contents.on('will-prevent-unload', event => {

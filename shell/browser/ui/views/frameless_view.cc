@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/views/frameless_view.h"
 
+#include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "ui/aura/window.h"
