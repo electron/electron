@@ -82,10 +82,12 @@ class ElectronBrowserContext : public content::BrowserContext {
   // partition_id => browser_context
   struct PartitionKey {
     PartitionKey(const std::string_view partition, bool in_memory)
-        : type_{Partition}, location_{partition}, in_memory_{in_memory} {}
+        : type_{Type::Partition}, location_{partition}, in_memory_{in_memory} {}
 
     explicit PartitionKey(const base::FilePath& file_path)
-        : type_{Path}, location_{file_path.AsUTF8Unsafe()}, in_memory_{false} {}
+        : type_{Type::Path},
+          location_{file_path.AsUTF8Unsafe()},
+          in_memory_{false} {}
 
     friend auto operator<=>(const PartitionKey&, const PartitionKey&) = default;
 
