@@ -83,7 +83,7 @@ terminated as well.
 
 The main process also controls your application's lifecycle through Electron's
 [`app`][app] module. This module provides a large set of events and methods
-that you can use to add custom application behaviour (for instance, programmatically
+that you can use to add custom application behavior (for instance, programmatically
 quitting your application, modifying the application dock, or showing an About panel).
 
 As a practical example, the app shown in the [quick start guide][quick-start-lifecycle]
