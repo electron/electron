@@ -30,18 +30,10 @@ index 23b17b4a46a31cb005e36bb1bbadba6cc3ea6b3c..b86862dcf5232fc6971293fe2c9f17c9
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter.cc b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-index 6a6cb3d4ef0e454d18cf47cd971240d0dabea9fb..10ea1b43e5caa7c6c0f6c9ff5182a712ca422f9b 100644
+index 6a6cb3d4ef0e454d18cf47cd971240d0dabea9fb..be8e629cedbaf25ca3ce9cc234c9819109b3e61d 100644
 --- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 +++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-@@ -6,6 +6,7 @@
- 
- #include "third_party/blink/public/common/messaging/message_port_channel.h"
- #include "third_party/blink/renderer/bindings/core/v8/script_value.h"
-+#include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h"
- #include "third_party/blink/renderer/bindings/core/v8/v8_message_port.h"
- #include "third_party/blink/renderer/core/messaging/message_port.h"
- 
-@@ -21,4 +22,15 @@ WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
+@@ -21,4 +21,17 @@ WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
    return port->Disentangle();
  }
  
@@ -53,7 +45,9 @@ index 6a6cb3d4ef0e454d18cf47cd971240d0dabea9fb..10ea1b43e5caa7c6c0f6c9ff5182a712
 +  CHECK(execution_context);
 +  auto* port = MakeGarbageCollected<MessagePort>(*execution_context);
 +  port->Entangle(std::move(port_channel));
-+  return ToV8(port, context->Global(), context->GetIsolate());
++  if (port->Value().IsEmpty())
++    return v8::Undefined(context->GetIsolate());
++  return port->Value().V8Value();
 +}
 +
  }  // namespace blink
