@@ -27,7 +27,6 @@ std::optional<base::FilePath> Archive::RelativePath() const {
   base::FilePath exe_path;
   if (!base::PathService::Get(base::FILE_EXE, &exe_path)) {
     LOG(FATAL) << "Couldn't get exe file path";
-    return std::nullopt;
   }
 
   base::FilePath relative_path;
@@ -88,13 +87,11 @@ LoadIntegrityConfigCache() {
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";
-    return *integrity_config_cache;
   }
 
   const base::Value::List* file_configs = root.value().GetIfList();
   if (!file_configs) {
     LOG(FATAL) << "Invalid integrity config: NOT a list.";
-    return *integrity_config_cache;
   }
 
   // Parse each individual file integrity config
@@ -157,7 +154,6 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   auto iter = integrity_config.value().find(rel_path_utf8);
   if (iter == integrity_config.value().end()) {
     LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
-    return std::nullopt;
   }
 
   return iter->second;
