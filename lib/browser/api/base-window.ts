@@ -4,7 +4,7 @@ const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as
 
 Object.setPrototypeOf(BaseWindow.prototype, EventEmitter.prototype);
 
-BaseWindow.prototype._init = function (this: TLWT) {
+BaseWindow.prototype._init = function () {
   // Avoid recursive require.
   const { app } = require('electron');
 
@@ -103,7 +103,7 @@ Object.defineProperty(BaseWindow.prototype, 'movable', {
 });
 
 BaseWindow.getFocusedWindow = () => {
-  return BaseWindow.getAllWindows().find((win) => win.isFocused()) ?? null;
+  return BaseWindow.getAllWindows().find((win) => win.isFocused());
 };
 
 module.exports = BaseWindow;

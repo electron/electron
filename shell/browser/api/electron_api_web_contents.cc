@@ -718,6 +718,12 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                         file_system_path);
 }
 
+void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
+  rwhv->SetBackgroundColor(color);
+  static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+      ->SetContentBackgroundColor(color);
+}
+
 content::RenderFrameHost* GetRenderFrameHost(
     content::NavigationHandle* navigation_handle) {
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -734,6 +740,7 @@ content::RenderFrameHost* GetRenderFrameHost(
 
   return frame_host;
 }
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -833,7 +840,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  bool initially_shown = true;
+  // BrowserViews are not attached to a window initially so they should start
+  // off as hidden. This is also important for compositor recycling. See:
+  // https://github.com/electron/electron/pull/21372
+  bool initially_shown = type_ != Type::kBrowserView;
   options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
@@ -1278,11 +1288,13 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
+  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen ||
+      type_ == Type::kBrowserView)
+    *proceed_to_fire_unload = proceed;
+  else
+    *proceed_to_fire_unload = true;
   // Note that Chromium does not emit this for navigations.
-
-  // Emit returns true if preventDefault() was called, so !Emit will be true if
-  // the event should proceed.
-  *proceed_to_fire_unload = !Emit("-before-unload-fired", proceed);
+  Emit("before-unload-fired", proceed);
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
@@ -1301,7 +1313,12 @@ void WebContents::CloseContents(content::WebContents* source) {
     autofill_driver_factory->CloseAllPopups();
   }
 
-  Destroy();
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnCloseContents();
+
+  // This is handled by the embedder frame.
+  if (!IsGuest())
+    Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1583,53 +1600,9 @@ void WebContents::RequestMediaAccessPermission(
   permission_helper->RequestMediaAccessPermission(request, std::move(callback));
 }
 
-const void* const kJavaScriptDialogManagerKey = &kJavaScriptDialogManagerKey;
-
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
-  // Indirect these delegate methods through a helper object whose lifetime is
-  // bound to that of the content::WebContents. This prevents the
-  // content::WebContents from calling methods on the Electron WebContents in
-  // the event that the Electron one is destroyed before the content one, as
-  // happens sometimes during shutdown or when webviews are involved.
-  class JSDialogManagerHelper : public content::JavaScriptDialogManager,
-                                public base::SupportsUserData::Data {
-   public:
-    void RunJavaScriptDialog(content::WebContents* web_contents,
-                             content::RenderFrameHost* rfh,
-                             content::JavaScriptDialogType dialog_type,
-                             const std::u16string& message_text,
-                             const std::u16string& default_prompt_text,
-                             DialogClosedCallback callback,
-                             bool* did_suppress_message) override {
-      auto* wc = WebContents::From(web_contents);
-      if (wc)
-        wc->RunJavaScriptDialog(web_contents, rfh, dialog_type, message_text,
-                                default_prompt_text, std::move(callback),
-                                did_suppress_message);
-    }
-    void RunBeforeUnloadDialog(content::WebContents* web_contents,
-                               content::RenderFrameHost* rfh,
-                               bool is_reload,
-                               DialogClosedCallback callback) override {
-      auto* wc = WebContents::From(web_contents);
-      if (wc)
-        wc->RunBeforeUnloadDialog(web_contents, rfh, is_reload,
-                                  std::move(callback));
-    }
-    void CancelDialogs(content::WebContents* web_contents,
-                       bool reset_state) override {
-      auto* wc = WebContents::From(web_contents);
-      if (wc)
-        wc->CancelDialogs(web_contents, reset_state);
-    }
-  };
-  if (!source->GetUserData(kJavaScriptDialogManagerKey))
-    source->SetUserData(kJavaScriptDialogManagerKey,
-                        std::make_unique<JSDialogManagerHelper>());
-
-  return static_cast<JSDialogManagerHelper*>(
-      source->GetUserData(kJavaScriptDialogManagerKey));
+  return this;
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {
@@ -1656,8 +1629,17 @@ void WebContents::HandleNewRenderFrame(
 
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences)
-    SetBackgroundColor(web_preferences->GetBackgroundColor());
+  if (web_preferences) {
+    auto maybe_color = web_preferences->GetBackgroundColor();
+    bool guest = IsGuest() || type_ == Type::kBrowserView;
+
+    // If webPreferences has no color stored we need to explicitly set guest
+    // webContents background color to transparent.
+    auto bg_color =
+        maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
+    web_contents()->SetPageBaseBackgroundColor(bg_color);
+    SetBackgroundColor(rwhv, bg_color);
+  }
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
@@ -2262,11 +2244,6 @@ void WebContents::DevToolsResized() {
 
 void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
-}
-
-void WebContents::SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window) {
-  SetOwnerWindow(GetWebContents(),
-                 owner_window ? (*owner_window)->window() : nullptr);
 }
 
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
@@ -3778,22 +3755,6 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
-void WebContents::SetBackgroundColor(absl::optional<SkColor> maybe_color) {
-  web_contents()->SetPageBaseBackgroundColor(maybe_color);
-
-  content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
-  if (!rfh)
-    return;
-  content::RenderWidgetHostView* rwhv = rfh->GetView();
-  if (rwhv) {
-    SkColor color =
-        maybe_color.value_or(IsGuest() ? SK_ColorTRANSPARENT : SK_ColorWHITE);
-    rwhv->SetBackgroundColor(color);
-    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
-        ->SetContentBackgroundColor(color);
-  }
-}
-
 void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
   Emit("input-event", event);
 }
@@ -4454,7 +4415,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
-      .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }
 
@@ -4538,8 +4498,14 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
       existing_preferences->SetFromDictionary(web_preferences_dict);
-      web_contents->SetBackgroundColor(
-          existing_preferences->GetBackgroundColor());
+      absl::optional<SkColor> color =
+          existing_preferences->GetBackgroundColor();
+      web_contents->web_contents()->SetPageBaseBackgroundColor(color);
+      // Because web preferences don't recognize transparency,
+      // only set rwhv background color if a color exists
+      auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
+      if (rwhv && color.has_value())
+        SetBackgroundColor(rwhv, color.value());
     }
   } else {
     // Create one if not.
