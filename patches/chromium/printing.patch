@@ -91,7 +91,7 @@ index 874b9efcf9e70650728885519009360ee770a79f..6c4d24d44e69d796bc6bfec5f7092f5b
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 301a4a47fb4dfb6007c2214b04ffdff744cc3043..30ebd441d530b5b9c90de6f03b714ab3520fbed7 100644
+index 301a4a47fb4dfb6007c2214b04ffdff744cc3043..427a045c310109475b83a229637f4d09b1e78450 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -23,7 +23,9 @@
@@ -235,7 +235,7 @@ index 301a4a47fb4dfb6007c2214b04ffdff744cc3043..30ebd441d530b5b9c90de6f03b714ab3
    set_cookie(settings->params->document_cookie);
    std::move(callback).Run(std::move(settings));
  }
-@@ -647,6 +684,7 @@ void PrintViewManagerBase::DidPrintDocument(
+@@ -647,11 +684,12 @@ void PrintViewManagerBase::DidPrintDocument(
  void PrintViewManagerBase::GetDefaultPrintSettings(
      GetDefaultPrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -243,6 +243,12 @@ index 301a4a47fb4dfb6007c2214b04ffdff744cc3043..30ebd441d530b5b9c90de6f03b714ab3
    if (!printing_enabled_.GetValue()) {
      GetDefaultPrintSettingsReply(std::move(callback), nullptr);
      return;
+   }
+-
++#endif
+   content::RenderFrameHost* render_frame_host = GetCurrentTargetFrame();
+   if (base::FeatureList::IsEnabled(kCheckPrintRfhIsActive) &&
+       !render_frame_host->IsActive()) {
 @@ -710,10 +748,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value::Dict job_settings,
      UpdatePrintSettingsCallback callback) {
