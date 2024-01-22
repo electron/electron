@@ -65,7 +65,7 @@ index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 298c9c81fa110ad7900d0bd6822136bb57f0382e..1c9a95bcd97a11b9d85000f8bac3582a9281b7a9 100644
+index 298c9c81fa110ad7900d0bd6822136bb57f0382e..457cebeb3fe41f0dd55eabf600b6cf2ef758b193 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -610,6 +610,7 @@ class ProcessSingleton::LinuxWatcher
@@ -91,7 +91,7 @@ index 298c9c81fa110ad7900d0bd6822136bb57f0382e..1c9a95bcd97a11b9d85000f8bac3582a
    if (parent_ && parent_->notification_callback_.Run(
 -                     base::CommandLine(argv), base::FilePath(current_dir))) {
 +                     base::CommandLine(argv),
-+                     base::FilePath(current_dir)),
++                     base::FilePath(current_dir),
 +                     std::move(additional_data)) {
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken, std::size(kACKToken) - 1);
