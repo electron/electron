@@ -204,7 +204,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index c9646c493c5f93dba207fd46e7fc88f9b763b458..c59adf0360919655063468d6462879e9d9c049c1 100644
+index b704f5d3532fc91ed31583adaa19e00c9eb7a884..018f2874c21a3fea5fcc7113de8474ff58b6fafc 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -285,6 +285,7 @@ void ExecuteScriptsInMainWorld(
@@ -250,10 +250,10 @@ index f4ef9bfc74daa63f3863bc143513ca5006400074..8fd56b42955860428c8215bf562bb81b
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption) override;
 diff --git a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-index c34270e92a9268eebc7933c956eca8c8a4b282ec..aa145d19fddf4a572c67d7b173fe5b34377549d7 100644
+index b1e363d8ea4bce0d80daef6f32b1cf055047d086..1fcd8f667cf966ebce3ab3c970673742fb5ac654 100644
 --- a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
 +++ b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-@@ -58,6 +58,7 @@ class VirtualTimeTest : public SimTest {
+@@ -59,6 +59,7 @@ class VirtualTimeTest : public SimTest {
          mojom::blink::LoadEventBlockingOption::kDoNotBlock,
          WTF::BindOnce(&ScriptExecutionCallbackHelper::Completed,
                        base::Unretained(&callback_helper)),
