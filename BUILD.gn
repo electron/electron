@@ -166,15 +166,6 @@ npm_action("build_electron_definitions") {
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
-webpack_build("electron_asar_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.asar_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.asar.js"
-  out_file = "$target_gen_dir/js2c/asar_bundle.js"
-}
-
 webpack_build("electron_browser_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -220,6 +211,15 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
+webpack_build("electron_node_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.node_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.node.js"
+  out_file = "$target_gen_dir/js2c/node_init.js"
+}
+
 webpack_build("electron_utility_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -231,9 +231,9 @@ webpack_build("electron_utility_bundle") {
 
 action("electron_js2c") {
   deps = [
-    ":electron_asar_bundle",
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_node_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
@@ -242,9 +242,9 @@ action("electron_js2c") {
   ]
 
   sources = [
-    "$target_gen_dir/js2c/asar_bundle.js",
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/node_init.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
     "$target_gen_dir/js2c/utility_init.js",

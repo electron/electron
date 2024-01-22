@@ -38,8 +38,8 @@ const main = async () => {
       config: 'webpack.config.worker.js'
     },
     {
-      name: 'asar_bundle_deps',
-      config: 'webpack.config.asar.js'
+      name: 'node_bundle_deps',
+      config: 'webpack.config.node.js'
     },
     {
       name: 'utility_bundle_deps',
