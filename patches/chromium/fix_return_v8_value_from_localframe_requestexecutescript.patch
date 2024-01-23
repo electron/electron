@@ -204,7 +204,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index e0bc84a52ae6da905b4318963678e293df0484d9..fa3828933d30f52eeb890284b19613fd4e0e0615 100644
+index b6a622acf02054cb425a34c27471b4450596f7f1..7747568ad1b8921eef7b639232dac99a7f816a9f 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1125,14 +1125,15 @@ void WebLocalFrameImpl::RequestExecuteScript(

@@ -568,10 +568,10 @@ index 0ae21acbcc4cf1cd8a4a317edfac89bf04f10337..8e89fb47039493ae0040b0789a3e9ed2
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 3c5d755932014bc28cd1ced41a49bd8c920c93b0..a15ed2cee75e5a82a3e43457c77471735e4c0fa2 100644
+index 250d68fe80384f4409e91dd94a37ebc6ad34d383..4f5f1021dcdf2ca45531b8f56fed44b4c1097e8f 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -238,6 +238,7 @@ source_set("common") {
+@@ -240,6 +240,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 742e215ca1b09efa5744a8eb564bb60f4efdf52f..509325d41f970f1135b42961497e01ef9f633366 100644
+index 8397c1e0e6081c322f95ddc372283bdaa6e8c64c..5e4a22496768528e86883e5ff827100a6a540601 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -687,7 +687,7 @@ index 742e215ca1b09efa5744a8eb564bb60f4efdf52f..509325d41f970f1135b42961497e01ef
  
    public_deps = [
      ":test_interfaces",
-@@ -2916,6 +2919,7 @@ test("content_unittests") {
+@@ -2917,6 +2920,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

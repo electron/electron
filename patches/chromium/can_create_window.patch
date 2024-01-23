@@ -100,7 +100,7 @@ index d0a5dbc45467019aba2d185187ebb16879775dc4..dbeebb4ed9aa1fcba31cc2ce7e2031a4
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 8c0e628124ad6068d95935ac4960f2d744adb3fd..aa401c609d1062cfd4149bbd7677f66a2554c3b4 100644
+index 55afe83e3052afb40176cb8ab6e974013e207ff5..4f9e32610e7e2c97c486be8693bd357b0d3e29f8 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -30,6 +30,17 @@ namespace content {
@@ -122,7 +122,7 @@ index 8c0e628124ad6068d95935ac4960f2d744adb3fd..aa401c609d1062cfd4149bbd7677f66a
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 4b32bf8ccc4ed370e2d1a218ae1fd69a98e23636..b9168a2488f5c4977eba5856882b561e07195c7f 100644
+index 0a80169aa10cf956e53df5866719fd27437dd050..c34e8d3822fa5aafb351a6b2119c7d49b283a4b0 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@

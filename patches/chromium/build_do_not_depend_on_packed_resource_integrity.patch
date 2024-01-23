@@ -33,10 +33,10 @@ index d09e7aeb788550e7ecefb4b9c177dd26ecc5ad4c..c894dc421f55a94e541d00e05e2f05bf
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 13433d14dcbfc8da5f8f42dfd89d596c4490685c..d10ad63d85b0d96e05ff50f4be5d2189dd01233e 100644
+index 09ce5fb3a441b0a1f80abd3bdce718175421237c..d870159541f73686ef0c3df9050eb390416cf6ee 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4759,7 +4759,7 @@ static_library("browser") {
+@@ -4752,7 +4752,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 13433d14dcbfc8da5f8f42dfd89d596c4490685c..d10ad63d85b0d96e05ff50f4be5d2189
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index c3f4b2a104c325dc9134fc96282e53614ed2c3f5..475e81f30ccc93f097b79f81a3f0b40b1d0b2499 100644
+index d54e06c0cee611941641f215a69ed693d58e82ff..36ee3f54e2dd16ac37b4445d61a29a072be307e7 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7213,7 +7213,6 @@ if (!is_fuchsia) {
+@@ -7217,7 +7217,6 @@ if (!is_fuchsia) {
  
        deps += [
          "//chrome:other_version",
@@ -57,7 +57,7 @@ index c3f4b2a104c325dc9134fc96282e53614ed2c3f5..475e81f30ccc93f097b79f81a3f0b40b
          "//chrome//services/util_win:unit_tests",
          "//chrome/app:chrome_dll_resources",
          "//chrome/app:win_unit_tests",
-@@ -7234,6 +7233,10 @@ if (!is_fuchsia) {
+@@ -7238,6 +7237,10 @@ if (!is_fuchsia) {
          "//ui/resources",
        ]
  
@@ -68,7 +68,7 @@ index c3f4b2a104c325dc9134fc96282e53614ed2c3f5..475e81f30ccc93f097b79f81a3f0b40b
        ldflags = [
          "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
          "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -8255,7 +8258,6 @@ if (!is_fuchsia) {
+@@ -8259,7 +8262,6 @@ if (!is_fuchsia) {
        }
  
        deps += [
@@ -76,7 +76,7 @@ index c3f4b2a104c325dc9134fc96282e53614ed2c3f5..475e81f30ccc93f097b79f81a3f0b40b
          "//chrome/browser/apps:icon_standardizer",
          "//chrome/browser/apps/app_service",
          "//chrome/browser/apps/app_service:app_registry_cache_waiter",
-@@ -8348,6 +8350,10 @@ if (!is_fuchsia) {
+@@ -8352,6 +8354,10 @@ if (!is_fuchsia) {
          "//ui/webui/resources/js/browser_command:mojo_bindings",
        ]
  

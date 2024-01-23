@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 524994eb853a0364c916dfa7a16faa2983318501..5ecf71fbe6a0cee5034dffb87f2002dd9f164278 100644
+index 067b08552d5fcb3f9f25b9971c0252a6c26282d7..11b3c6286fa6860138edbd387945453d5a1548b6 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -971,7 +971,6 @@ if (is_win) {
@@ -846,10 +846,10 @@ index 70d29fafd953f86fdd43452af8d395b6a142d848..50bef5a70ffdde6af55105ac5876de64
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 94f51e9f280a4282a3e9676c2895703e1bf55422..94555c2577d821ce2cbb521eee269138bbbf1a2b 100644
+index 9866f21c5530ac389f3392350de1f6f413df147a..8656f221a96622cd7684e4c4c4a4c080a3963362 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -145,7 +145,6 @@ void PrintingContext::UsePdfSettings() {
+@@ -154,7 +154,6 @@ void PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value::Dict job_settings) {
@@ -858,10 +858,10 @@ index 94f51e9f280a4282a3e9676c2895703e1bf55422..94555c2577d821ce2cbb521eee269138
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 6db58a9992642e557bac669b10f109bf6fd0f6ad..e1a5fcdca50d612dcb56faaf846752a44a697b84 100644
+index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890fb82c038d 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -202,6 +202,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -206,6 +206,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    bool PrintingAborted() const { return abort_printing_; }
  
@@ -870,8 +870,8 @@ index 6db58a9992642e557bac669b10f109bf6fd0f6ad..e1a5fcdca50d612dcb56faaf846752a4
 +
    int job_id() const { return job_id_; }
  
-  protected:
-@@ -213,9 +216,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+ #if BUILDFLAG(ENABLE_OOP_PRINTING)
+@@ -224,9 +227,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
        Delegate* delegate,
        ProcessBehavior process_behavior);
  
