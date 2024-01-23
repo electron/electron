@@ -83,6 +83,23 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   }
 }
 
+#if BUILDFLAG(IS_MAC)
+// A list of node envs that may be used to inject scripts.
+const char* kHijackableEnvs[] = {"NODE_OPTIONS", "NODE_REPL_EXTERNAL_MODULE"};
+
+// Return true if there is any env in kHijackableEnvs.
+bool UnsetHijackableEnvs(base::Environment* env) {
+  bool has = false;
+  for (const char* name : kHijackableEnvs) {
+    if (env->HasVar(name)) {
+      env->UnSetVar(name);
+      has = true;
+    }
+  }
+  return has;
+}
+#endif
+
 #if IS_MAS_BUILD()
 void SetCrashKeyStub(const std::string& key, const std::string& value) {}
 void ClearCrashKeyStub(const std::string& key) {}
@@ -124,8 +141,8 @@ int NodeMain(int argc, char* argv[]) {
     //                               NODE_OPTIONS: "--require 'bad.js'"}})
     // To prevent Electron apps from being used to work around macOS security
     // restrictions, when the parent process is not part of the app bundle, all
-    // environment variables starting with NODE_ will be removed.
-    if (util::UnsetAllNodeEnvs()) {
+    // environment variables that may be used to inject scripts are removed.
+    if (UnsetHijackableEnvs(os_env.get())) {
       LOG(ERROR) << "Node.js environment variables are disabled because this "
                     "process is invoked by other apps.";
     }
