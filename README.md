@@ -89,7 +89,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-* [Turkey](https://npmmirror.com/mirrors/electron/)
+* [Turkiye](https://npmmirror.com/mirrors/electron/)
 
 See the [Advanced Installation Instructions](https://www.electronjs.org/docs/latest/tutorial/installation#mirror) to learn how to use a custom mirror.
 
