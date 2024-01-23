@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c761254d0e25f94b6a1f094cda4ca6a70521988a..ab797abaf6cf172b4d21f26ae3b4ce0dadf037eb 100644
+index c00c41bc2c7fd716589c325722d69316d939ecfe..83fc835ecab873c9203ffe58ad21f2404ff80d4b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1044,6 +1044,7 @@ component("base") {
+@@ -1047,6 +1047,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -159,13 +159,13 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..0d830234edb5621f57e39f4a951d357a
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 445b70c2f381cde2c540fe386ecd34d30ad973b7..1a8072f6e0456569db8f435248e8051374212b4c 100644
+index db26459da52479751d042e89935d97c74c329c54..3d068770c0c06f5f042791731e394abd39248e32 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -47,6 +47,7 @@ component("os_crypt") {
-       "keychain_password_mac.mm",
+@@ -48,6 +48,7 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
+     deps += [ "//crypto:mock_apple_keychain" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
@@ -431,7 +431,7 @@ index 76959be428bd4ea2efe5e73c78b0aed77246fd96..58c8c975b737c9452674090396637122
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3adeb7a4db672cb0e07b553e90e8f0210bc8bdab..70d29fafd953f86fdd43452af8d395b6a142d848 100644
+index a460c6503d69549a0b236a04d9e457c2d36ee405..821e5db63fd5d69b3fcc329ec02f71a1a7907ada 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8397c1e0e6081c322f95ddc372283bdaa6e8c64c..5e4a22496768528e86883e5ff827100a6a540601 100644
+index 581d0df81ddf0caf748abb13eac8097af91b0ac0..0c66545a917a12e710c594ff3b82ee023e7a1069 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {

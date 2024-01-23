@@ -562,7 +562,7 @@ index febb2718cb34ea4d9f411f068d8c01a89c7db888..be8bd51cb61c20ef3df8552972a0ac2f
    gpu::SyncPointManager* GetSyncPointManager() override;
  };
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 4e701c6dfa7568be3aa4352eaf17f9d9c8f3fffe..60f451007c6770479fef2418ada0ca3b8d9c371f 100644
+index 516c7f65097f139496184dcca8f054553b84d752..4fd23fbf7ab2b7aa4eee9c2fc4b98a04dd48efce 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -408,8 +408,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -618,7 +618,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 5a47b68bf1b8ef8fea1ad238a39f645bc4e097de..e094878a71fba2542e64c3ebe963b8980ce3a938 100644
+index 86d021ca68674344c71cfaf12898d0dc486effc6..87c4b363a80713888d9e24a31afbe82a65ed2b1c 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ class DisplayPrivate;
@@ -656,7 +656,7 @@ index 5a47b68bf1b8ef8fea1ad238a39f645bc4e097de..e094878a71fba2542e64c3ebe963b898
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -537,6 +551,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -539,6 +553,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
