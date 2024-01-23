@@ -74,21 +74,14 @@ bool StringToAccelerator(const std::string& shortcut,
 
 void GenerateAcceleratorTable(AcceleratorTable* table,
                               electron::ElectronMenuModel* model) {
-  size_t count = model->GetItemCount();
-  for (size_t i = 0; i < count; ++i) {
-    electron::ElectronMenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == electron::ElectronMenuModel::TYPE_SUBMENU) {
-      auto* submodel = model->GetSubmenuModelAt(i);
-      GenerateAcceleratorTable(table, submodel);
-    } else {
-      ui::Accelerator accelerator;
-      if (model->ShouldRegisterAcceleratorAt(i)) {
-        if (model->GetAcceleratorAtWithParams(i, true, &accelerator)) {
-          MenuItem item = {i, model};
-          (*table)[accelerator] = item;
-        }
-      }
-    }
+  for (size_t i = 0, count = model->GetItemCount(); i < count; ++i) {
+    if (auto* const submenu = model->GetSubmenuModelAt(i))
+      GenerateAcceleratorTable(table, submenu);
+
+    if (ui::Accelerator accelerator;
+        model->ShouldRegisterAcceleratorAt(i) &&
+        model->GetAcceleratorAtWithParams(i, true, &accelerator))
+      table->insert_or_assign(std::move(accelerator), MenuItem{i, model});
   }
 }
 
