@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ryan Manuel <ryanm@cypress.io>
+Date: Thu, 4 Aug 2022 22:37:01 -0500
+Subject: Create browser v8 snapshot file name fuse
+
+By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This patch allows consumers
+to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
+
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index 5fa68db39e6ded11d4d0f6bee46c7938b2f011c0..48f1cdd0a7763242b81c7a54cad72700c8a42af1 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -39,6 +39,7 @@
+ #include "base/process/memory.h"
+ #include "base/process/process.h"
+ #include "base/process/process_handle.h"
++#include "base/strings/string_piece.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
+ #include "base/task/single_thread_task_runner.h"
+@@ -253,8 +254,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+ 
+ #endif
+ 
+-void LoadV8SnapshotFile(const base::CommandLine& command_line) {
++void LoadV8SnapshotFile(const raw_ptr<ContentMainDelegate> delegate, const base::CommandLine& command_line) {
+   const gin::V8SnapshotFileType snapshot_type = GetSnapshotType(command_line);
++  base::StringPiece browser_v8_snapshot_file_name = delegate->GetBrowserV8SnapshotFilename();
++  if (!browser_v8_snapshot_file_name.empty()) {
++    gin::V8Initializer::LoadV8SnapshotFromFileName(browser_v8_snapshot_file_name, snapshot_type);
++    return;
++  }
+ #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+   base::FileDescriptorStore& file_descriptor_store =
+       base::FileDescriptorStore::GetInstance();
+@@ -283,11 +289,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+ 
+ #endif  // V8_USE_EXTERNAL_STARTUP_DATA
+ 
+-void LoadV8SnapshotIfNeeded(const base::CommandLine& command_line,
++void LoadV8SnapshotIfNeeded(const raw_ptr<ContentMainDelegate> delegate,
++                            const base::CommandLine& command_line,
+                             const std::string& process_type) {
+ #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
+   if (ShouldLoadV8Snapshot(command_line, process_type))
+-    LoadV8SnapshotFile(command_line);
++    LoadV8SnapshotFile(delegate, command_line);
+ #endif  // V8_USE_EXTERNAL_STARTUP_DATA
+ }
+ 
+@@ -967,7 +974,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+     return TerminateForFatalInitializationError();
+ #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+ 
+-  LoadV8SnapshotIfNeeded(command_line, process_type);
++  LoadV8SnapshotIfNeeded(delegate_, command_line, process_type);
+ 
+   blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
+       base::BindRepeating([]() -> blink::OriginTrialPolicy* {
+diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
+index 610938d92786cc033c19615364e5e45d54bf8ec6..11797f0429845bd3b654aff2bfa468460e4fd772 100644
+--- a/content/public/app/content_main_delegate.cc
++++ b/content/public/app/content_main_delegate.cc
+@@ -5,6 +5,7 @@
+ #include "content/public/app/content_main_delegate.h"
+ 
+ #include "base/check.h"
++#include "base/strings/string_piece.h"
+ #include "build/build_config.h"
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/common/content_client.h"
+@@ -87,6 +88,10 @@ std::optional<int> ContentMainDelegate::PostEarlyInitialization(
+   return std::nullopt;
+ }
+ 
++base::StringPiece ContentMainDelegate::GetBrowserV8SnapshotFilename() {
++  return base::StringPiece();
++}
++
+ ContentClient* ContentMainDelegate::CreateContentClient() {
+   return new ContentClient();
+ }
+diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
+index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb555b551e7 100644
+--- a/content/public/app/content_main_delegate.h
++++ b/content/public/app/content_main_delegate.h
+@@ -10,6 +10,7 @@
+ #include <string>
+ #include <vector>
+ 
++#include "base/strings/string_piece.h"
+ #include "build/build_config.h"
+ #include "content/common/content_export.h"
+ #include "content/public/common/main_function_params.h"
+@@ -168,6 +169,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+   virtual bool ShouldHandleConsoleControlEvents();
+ #endif
+ 
++  virtual base::StringPiece GetBrowserV8SnapshotFilename();
++
+  protected:
+   friend class ContentClientCreator;
+   friend class ContentClientInitializer;
+diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
+index f823cf647d1ae3d57fba3aa7a2325debcdf6050a..b7330ef0685c2afbef7937bf1b9502d5c2af7584 100644
+--- a/gin/v8_initializer.cc
++++ b/gin/v8_initializer.cc
+@@ -563,8 +563,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+ 
+ #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
+ 
+-// static
+-void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
++void V8Initializer::LoadV8SnapshotFromFileName(base::StringPiece file_name, V8SnapshotFileType snapshot_file_type) {
+   if (g_mapped_snapshot) {
+     // TODO(crbug.com/802962): Confirm not loading different type of snapshot
+     // files in a process.
+@@ -573,10 +572,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+ 
+   base::MemoryMappedFile::Region file_region;
+   base::File file =
+-      OpenV8File(GetSnapshotFileName(snapshot_file_type), &file_region);
++      OpenV8File(file_name.data(), &file_region);
+   LoadV8SnapshotFromFile(std::move(file), &file_region, snapshot_file_type);
+ }
+ 
++// static
++void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
++  const char* file_name = GetSnapshotFileName(snapshot_file_type);
++
++  LoadV8SnapshotFromFileName(file_name, snapshot_file_type);
++}
++
+ // static
+ void V8Initializer::LoadV8SnapshotFromFile(
+     base::File snapshot_file,
+diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
+index dd9899c3e0dbadfc0074ffce87d51193e1c963cb..25c747ee645d845a0abfaf63cc66595319df4b51 100644
+--- a/gin/v8_initializer.h
++++ b/gin/v8_initializer.h
+@@ -9,6 +9,7 @@
+ 
+ #include "base/files/file.h"
+ #include "base/files/memory_mapped_file.h"
++#include "base/strings/string_piece.h"
+ #include "build/build_config.h"
+ #include "gin/array_buffer.h"
+ #include "gin/gin_export.h"
+@@ -42,6 +43,7 @@ class GIN_EXPORT V8Initializer {
+                                         int* snapshot_size_out);
+ 
+ #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
++  static void LoadV8SnapshotFromFileName(base::StringPiece file_name, V8SnapshotFileType snapshot_file_type);
+   // Load V8 snapshot from default resources, if they are available.
+   static void LoadV8Snapshot(
+       V8SnapshotFileType snapshot_file_type = V8SnapshotFileType::kDefault);
