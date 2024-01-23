@@ -30,6 +30,7 @@
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
@@ -57,6 +58,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/media/capture_handle_config.mojom.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
@@ -151,6 +153,29 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
 }
 
 // Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
+absl::optional<int> GetZoomLevel(content::WebContents* capturer,
+                                 const url::Origin& capturer_origin,
+                                 const content::DesktopMediaID& captured_id) {
+  content::RenderFrameHost* const captured_rfh =
+      content::RenderFrameHost::FromID(
+          captured_id.web_contents_id.render_process_id,
+          captured_id.web_contents_id.main_render_frame_id);
+  if (!captured_rfh || !captured_rfh->IsActive()) {
+    return absl::nullopt;
+  }
+
+  content::WebContents* const captured_wc =
+      content::WebContents::FromRenderFrameHost(captured_rfh);
+  if (!captured_wc) {
+    return absl::nullopt;
+  }
+
+  double zoom_level = blink::PageZoomLevelToZoomFactor(
+      content::HostZoomMap::GetZoomLevel(captured_wc));
+  return std::round(100 * zoom_level);
+}
+
+// Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
 media::mojom::DisplayMediaInformationPtr
 DesktopMediaIDToDisplayMediaInformation(
     content::WebContents* capturer,
@@ -169,6 +194,7 @@ DesktopMediaIDToDisplayMediaInformation(
 #endif  // defined(USE_AURA)
 
   media::mojom::CaptureHandlePtr capture_handle;
+  int zoom_level = 100;
   switch (media_id.type) {
     case content::DesktopMediaID::TYPE_SCREEN:
       display_surface = media::mojom::DisplayCaptureSurfaceType::MONITOR;
@@ -184,13 +210,16 @@ DesktopMediaIDToDisplayMediaInformation(
       display_surface = media::mojom::DisplayCaptureSurfaceType::BROWSER;
       cursor = media::mojom::CursorCaptureType::MOTION;
       capture_handle = CreateCaptureHandle(capturer, capturer_origin, media_id);
+      zoom_level =
+          GetZoomLevel(capturer, capturer_origin, media_id).value_or(100);
       break;
     case content::DesktopMediaID::TYPE_NONE:
       break;
   }
 
   return media::mojom::DisplayMediaInformation::New(
-      display_surface, logical_surface, cursor, std::move(capture_handle));
+      display_surface, logical_surface, cursor, std::move(capture_handle),
+      zoom_level);
 }
 
 // Convert string to lower case and escape it.
