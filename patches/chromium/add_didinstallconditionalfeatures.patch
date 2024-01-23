@@ -92,10 +92,10 @@ index 2709519d0bbf33548704c14a99324b504d27ccbf..aa3c2d3c1ea73da128616fe676ac09e2
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 87b8cbdc3f799822e3138b29c8ad7cd553a51cc0..123d4039721ba8d96ca27d30b8204a191e1a945c 100644
+index 6139aed9ebbb459d4d7027312c0f15b669fedfb6..db566ba272b1eff5e67547c5d82bf7420def7285 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-@@ -283,6 +283,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
+@@ -289,6 +289,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
      web_frame_->Client()->DidCreateScriptContext(context, world_id);
  }
  
