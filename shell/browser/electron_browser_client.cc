@@ -707,7 +707,7 @@ void ElectronBrowserClient::GetAdditionalWebUISchemes(
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
-void ElectronBrowserClient::SiteInstanceGotProcess(
+void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context =

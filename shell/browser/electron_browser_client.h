@@ -277,7 +277,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
       LoginAuthRequiredCallback auth_required_callback) override;
-  void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
+  void SiteInstanceGotProcessAndSite(
+      content::SiteInstance* site_instance) override;
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
   CreateURLLoaderThrottles(
       const network::ResourceRequest& request,
