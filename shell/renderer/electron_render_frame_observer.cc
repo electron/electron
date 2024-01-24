@@ -58,7 +58,10 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
 
-  render_frame_->GetWebView()->SetSupportsAppRegion(true);
+  // App regions are only supported in the main frame.
+  auto* main_frame = frame->GetMainRenderFrame();
+  if (main_frame && main_frame == frame)
+    render_frame_->GetWebView()->SetSupportsAppRegion(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
