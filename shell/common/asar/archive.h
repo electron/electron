@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_ASAR_ARCHIVE_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -16,7 +17,6 @@
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "base/values.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace asar {
 
@@ -48,7 +48,7 @@ class Archive {
     bool executable;
     uint32_t size;
     uint64_t offset;
-    absl::optional<IntegrityPayload> integrity;
+    std::optional<IntegrityPayload> integrity;
   };
 
   enum class FileType {
@@ -71,8 +71,8 @@ class Archive {
   // Read and parse the header.
   bool Init();
 
-  absl::optional<IntegrityPayload> HeaderIntegrity() const;
-  absl::optional<base::FilePath> RelativePath() const;
+  std::optional<IntegrityPayload> HeaderIntegrity() const;
+  std::optional<base::FilePath> RelativePath() const;
 
   // Get the info of a file.
   bool GetFileInfo(const base::FilePath& path, FileInfo* info) const;
@@ -106,7 +106,7 @@ class Archive {
   base::File file_;
   int fd_ = -1;
   uint32_t header_size_ = 0;
-  absl::optional<base::Value::Dict> header_;
+  std::optional<base::Value::Dict> header_;
 
   // Cached external temporary files.
   base::Lock external_files_lock_;

@@ -393,7 +393,7 @@ void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
 
 void SimpleURLLoaderWrapper::OnAuthRequired(
-    const absl::optional<base::UnguessableToken>& window_id,
+    const std::optional<base::UnguessableToken>& window_id,
     uint32_t request_id,
     const GURL& url,
     bool first_auth_attempt,
@@ -414,7 +414,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
          gin::Arguments* args) {
         std::u16string username_str, password_str;
         if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
-          auth_responder->OnAuthCredentials(absl::nullopt);
+          auth_responder->OnAuthCredentials(std::nullopt);
           return;
         }
         auth_responder->OnAuthCredentials(
@@ -437,7 +437,7 @@ void SimpleURLLoaderWrapper::OnClearSiteData(
     const GURL& url,
     const std::string& header_value,
     int32_t load_flags,
-    const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+    const std::optional<net::CookiePartitionKey>& cookie_partition_key,
     bool partitioned_state_allowed_only,
     OnClearSiteDataCallback callback) {
   std::move(callback).Run();
@@ -759,7 +759,7 @@ void SimpleURLLoaderWrapper::OnRedirect(
   bool should_clear_upload = false;
   net::RedirectUtil::UpdateHttpRequest(
       request_->url, request_->method, redirect_info, *removed_headers,
-      /* modified_headers = */ absl::nullopt, &request_->headers,
+      /* modified_headers = */ std::nullopt, &request_->headers,
       &should_clear_upload);
   if (should_clear_upload) {
     // The request body is no longer applicable.

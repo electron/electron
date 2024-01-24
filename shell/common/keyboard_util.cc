@@ -15,8 +15,7 @@ namespace electron {
 
 namespace {
 
-using CodeAndShiftedChar =
-    std::pair<ui::KeyboardCode, absl::optional<char16_t>>;
+using CodeAndShiftedChar = std::pair<ui::KeyboardCode, std::optional<char16_t>>;
 
 constexpr CodeAndShiftedChar KeyboardCodeFromKeyIdentifier(
     const std::string_view str) {
@@ -274,7 +273,7 @@ constexpr CodeAndShiftedChar KeyboardCodeFromCharCode(char16_t c) {
 }  // namespace
 
 ui::KeyboardCode KeyboardCodeFromStr(const std::string_view str,
-                                     absl::optional<char16_t>* shifted_char) {
+                                     std::optional<char16_t>* shifted_char) {
   auto const [code, shifted] =
       str.size() == 1 ? KeyboardCodeFromCharCode(base::ToLowerASCII(str[0]))
                       : KeyboardCodeFromKeyIdentifier(base::ToLowerASCII(str));

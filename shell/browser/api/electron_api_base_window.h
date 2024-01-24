@@ -7,6 +7,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -175,7 +176,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
   virtual void SetBrowserView(
-      absl::optional<gin::Handle<BrowserView>> browser_view);
+      std::optional<gin::Handle<BrowserView>> browser_view);
   virtual void AddBrowserView(gin::Handle<BrowserView> browser_view);
   virtual void RemoveBrowserView(gin::Handle<BrowserView> browser_view);
   virtual void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
@@ -197,8 +198,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   std::string GetAlwaysOnTopLevel() const;
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
-  void SetWindowButtonPosition(absl::optional<gfx::Point> position);
-  absl::optional<gfx::Point> GetWindowButtonPosition() const;
+  void SetWindowButtonPosition(std::optional<gfx::Point> position);
+  std::optional<gfx::Point> GetWindowButtonPosition() const;
 
   bool IsHiddenInMissionControl();
   void SetHiddenInMissionControl(bool hidden);

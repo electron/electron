@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_SCRIPTING_SCRIPTING_API_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,7 +17,6 @@
 #include "extensions/browser/script_executor.h"
 #include "extensions/common/mojom/code_injection.mojom.h"
 #include "extensions/common/user_script.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace extensions {
 
@@ -49,7 +49,7 @@ class ScriptingExecuteScriptFunction : public ExtensionFunction {
 
   // Called when the resource files to be injected has been loaded.
   void DidLoadResources(std::vector<InjectedFileSource> file_sources,
-                        absl::optional<std::string> load_error);
+                        std::optional<std::string> load_error);
 
   // Triggers the execution of `sources` in the appropriate context.
   // Returns true on success; on failure, populates `error`.
@@ -78,7 +78,7 @@ class ScriptingInsertCSSFunction : public ExtensionFunction {
 
   // Called when the resource files to be injected has been loaded.
   void DidLoadResources(std::vector<InjectedFileSource> file_sources,
-                        absl::optional<std::string> load_error);
+                        std::optional<std::string> load_error);
 
   // Triggers the execution of `sources` in the appropriate context.
   // Returns true on success; on failure, populates `error`.
@@ -132,7 +132,7 @@ class ScriptingRegisterContentScriptsFunction : public ExtensionFunction {
       scripting::ValidateScriptsResult result);
 
   // Called when content scripts have been registered.
-  void OnContentScriptsRegistered(const absl::optional<std::string>& error);
+  void OnContentScriptsRegistered(const std::optional<std::string>& error);
 };
 
 class ScriptingGetRegisteredContentScriptsFunction : public ExtensionFunction {
@@ -171,7 +171,7 @@ class ScriptingUnregisterContentScriptsFunction : public ExtensionFunction {
   ~ScriptingUnregisterContentScriptsFunction() override;
 
   // Called when content scripts have been unregistered.
-  void OnContentScriptsUnregistered(const absl::optional<std::string>& error);
+  void OnContentScriptsUnregistered(const std::optional<std::string>& error);
 };
 
 class ScriptingUpdateContentScriptsFunction : public ExtensionFunction {
@@ -197,7 +197,7 @@ class ScriptingUpdateContentScriptsFunction : public ExtensionFunction {
       scripting::ValidateScriptsResult result);
 
   // Called when content scripts have been updated.
-  void OnContentScriptsUpdated(const absl::optional<std::string>& error);
+  void OnContentScriptsUpdated(const std::optional<std::string>& error);
 };
 
 }  // namespace extensions

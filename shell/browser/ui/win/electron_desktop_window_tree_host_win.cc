@@ -4,11 +4,12 @@
 
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
+#include <optional>
+
 #include "base/win/windows_version.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/win/hwnd_metrics.h"
 #include "ui/base/win/shell.h"
 

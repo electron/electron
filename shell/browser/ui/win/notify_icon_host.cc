@@ -191,7 +191,7 @@ NotifyIconHost::~NotifyIconHost() {
     delete ptr;
 }
 
-NotifyIcon* NotifyIconHost::CreateNotifyIcon(absl::optional<UUID> guid) {
+NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<UUID> guid) {
   if (guid.has_value()) {
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {

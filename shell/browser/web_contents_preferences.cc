@@ -120,7 +120,7 @@ void WebContentsPreferences::Clear() {
   node_integration_in_worker_ = false;
   disable_html_fullscreen_window_resize_ = false;
   webview_tag_ = false;
-  sandbox_ = absl::nullopt;
+  sandbox_ = std::nullopt;
   context_isolation_ = true;
   javascript_ = true;
   images_ = true;
@@ -134,24 +134,24 @@ void WebContentsPreferences::Clear() {
   navigate_on_drag_drop_ = false;
   autoplay_policy_ = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
   default_font_family_.clear();
-  default_font_size_ = absl::nullopt;
-  default_monospace_font_size_ = absl::nullopt;
-  minimum_font_size_ = absl::nullopt;
-  default_encoding_ = absl::nullopt;
+  default_font_size_ = std::nullopt;
+  default_monospace_font_size_ = std::nullopt;
+  minimum_font_size_ = std::nullopt;
+  default_encoding_ = std::nullopt;
   is_webview_ = false;
   custom_args_.clear();
   custom_switches_.clear();
-  enable_blink_features_ = absl::nullopt;
-  disable_blink_features_ = absl::nullopt;
+  enable_blink_features_ = std::nullopt;
+  disable_blink_features_ = std::nullopt;
   disable_popups_ = false;
   disable_dialogs_ = false;
   safe_dialogs_ = false;
-  safe_dialogs_message_ = absl::nullopt;
+  safe_dialogs_message_ = std::nullopt;
   ignore_menu_shortcuts_ = false;
-  background_color_ = absl::nullopt;
+  background_color_ = std::nullopt;
   image_animation_policy_ =
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
-  preload_path_ = absl::nullopt;
+  preload_path_ = std::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
 
 #if BUILDFLAG(IS_MAC)

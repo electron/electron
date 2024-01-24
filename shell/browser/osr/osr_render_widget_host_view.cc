@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -31,7 +32,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "gpu/command_buffer/client/gl_helper.h"
 #include "media/base/video_frame.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"
@@ -355,7 +355,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-absl::optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
+std::optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
@@ -508,9 +508,9 @@ gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
 
-absl::optional<content::DisplayFeature>
+std::optional<content::DisplayFeature>
 OffScreenRenderWidgetHostView::GetDisplayFeature() {
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(
@@ -530,8 +530,8 @@ OffScreenRenderWidgetHostView::CreateSyntheticGestureTarget() {
 
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
     const gfx::Range&,
-    const absl::optional<std::vector<gfx::Rect>>& character_bounds,
-    const absl::optional<std::vector<gfx::Rect>>& line_bounds) {}
+    const std::optional<std::vector<gfx::Rect>>& character_bounds,
+    const std::optional<std::vector<gfx::Rect>>& line_bounds) {}
 
 gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),

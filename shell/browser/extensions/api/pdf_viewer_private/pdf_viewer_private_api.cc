@@ -53,7 +53,7 @@ PdfViewerPrivateIsAllowedLocalFileAccessFunction::
 
 ExtensionFunction::ResponseAction
 PdfViewerPrivateIsAllowedLocalFileAccessFunction::Run() {
-  absl::optional<IsAllowedLocalFileAccess::Params> params =
+  std::optional<IsAllowedLocalFileAccess::Params> params =
       IsAllowedLocalFileAccess::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
@@ -81,7 +81,7 @@ PdfViewerPrivateSetPdfOcrPrefFunction::
 
 // TODO(codebytere): enable when https://crbug.com/1393069 works properly.
 ExtensionFunction::ResponseAction PdfViewerPrivateSetPdfOcrPrefFunction::Run() {
-  absl::optional<SetPdfOcrPref::Params> params =
+  std::optional<SetPdfOcrPref::Params> params =
       SetPdfOcrPref::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
   return RespondNow(WithArguments(false));

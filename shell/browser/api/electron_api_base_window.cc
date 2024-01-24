@@ -750,7 +750,7 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
 }
 
 void BaseWindow::SetBrowserView(
-    absl::optional<gin::Handle<BrowserView>> browser_view) {
+    std::optional<gin::Handle<BrowserView>> browser_view) {
   ResetBrowserViews();
   if (browser_view)
     AddBrowserView(*browser_view);
@@ -891,11 +891,11 @@ bool BaseWindow::GetWindowButtonVisibility() const {
   return window_->GetWindowButtonVisibility();
 }
 
-void BaseWindow::SetWindowButtonPosition(absl::optional<gfx::Point> position) {
+void BaseWindow::SetWindowButtonPosition(std::optional<gfx::Point> position) {
   window_->SetWindowButtonPosition(std::move(position));
 }
 
-absl::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
+std::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
   return window_->GetWindowButtonPosition();
 }
 #endif

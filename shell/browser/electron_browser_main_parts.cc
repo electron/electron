@@ -5,6 +5,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -64,7 +65,6 @@
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
@@ -308,7 +308,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
   auto env = base::Environment::Create();
-  absl::optional<std::string> lc_all;
+  std::optional<std::string> lc_all;
   if (!locale.empty()) {
     std::string str;
     if (env->GetVar("LC_ALL", &str))

@@ -324,7 +324,7 @@ bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
 }
 
-gfx::Size NativeImage::GetSize(const absl::optional<float> scale_factor) {
+gfx::Size NativeImage::GetSize(const std::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
@@ -340,7 +340,7 @@ std::vector<float> NativeImage::GetScaleFactors() {
   return scale_factors;
 }
 
-float NativeImage::GetAspectRatio(const absl::optional<float> scale_factor) {
+float NativeImage::GetAspectRatio(const std::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::Size size = GetSize(sf);
   if (size.IsEmpty())
@@ -354,8 +354,8 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);
-  absl::optional<int> new_width = options.FindInt("width");
-  absl::optional<int> new_height = options.FindInt("height");
+  std::optional<int> new_width = options.FindInt("width");
+  std::optional<int> new_height = options.FindInt("height");
   int width = new_width.value_or(size.width());
   int height = new_height.value_or(size.height());
   size.SetSize(width, height);

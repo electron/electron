@@ -7,10 +7,12 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
+
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -233,7 +235,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
-  absl::optional<std::string> user_agent_;
+  std::optional<std::string> user_agent_;
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;

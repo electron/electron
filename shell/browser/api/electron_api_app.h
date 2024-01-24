@@ -7,6 +7,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -180,7 +181,7 @@ class App : public ElectronBrowserClient::Delegate,
   void ChildProcessDisconnected(int pid);
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                      absl::optional<base::FilePath> custom_path);
+                      std::optional<base::FilePath> custom_path);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(gin_helper::ErrorThrower thrower,

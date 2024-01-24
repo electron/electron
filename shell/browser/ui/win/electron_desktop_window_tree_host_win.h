@@ -7,8 +7,9 @@
 
 #include <windows.h>
 
+#include <optional>
+
 #include "shell/browser/native_window_views.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
 namespace electron {
@@ -44,7 +45,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
 
  private:
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
-  absl::optional<bool> force_should_paint_as_active_;
+  std::optional<bool> force_should_paint_as_active_;
 };
 
 }  // namespace electron

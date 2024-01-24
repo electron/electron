@@ -95,7 +95,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
-  absl::optional<SkColor> GetBackgroundColor() override;
+  std::optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
   blink::mojom::PointerLockResult LockMouse(
       bool request_unadjusted_movement) override;
@@ -141,7 +141,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   display::ScreenInfo GetScreenInfo() const override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
-  absl::optional<content::DisplayFeature> GetDisplayFeature() override;
+  std::optional<content::DisplayFeature> GetDisplayFeature() override;
   void SetDisplayFeatureForTesting(
       const content::DisplayFeature* display_feature) override;
   void NotifyHostAndDelegateOnWasShown(
@@ -154,8 +154,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   CreateSyntheticGestureTarget() override;
   void ImeCompositionRangeChanged(
       const gfx::Range&,
-      const absl::optional<std::vector<gfx::Rect>>& character_bounds,
-      const absl::optional<std::vector<gfx::Rect>>& line_bounds) override;
+      const std::optional<std::vector<gfx::Rect>>& character_bounds,
+      const std::optional<std::vector<gfx::Rect>>& line_bounds) override;
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
 

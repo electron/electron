@@ -6,13 +6,13 @@
 #define ELECTRON_SHELL_BROWSER_NET_RESOLVE_PROXY_HELPER_H_
 
 #include <deque>
+#include <optional>
 #include <string>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/mojom/proxy_lookup_client.mojom.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -61,7 +61,7 @@ class ResolveProxyHelper
   // network::mojom::ProxyLookupClient implementation.
   void OnProxyLookupComplete(
       int32_t net_error,
-      const absl::optional<net::ProxyInfo>& proxy_info) override;
+      const std::optional<net::ProxyInfo>& proxy_info) override;
 
   // Self-reference. Owned as long as there's an outstanding proxy lookup.
   scoped_refptr<ResolveProxyHelper> owned_self_;
