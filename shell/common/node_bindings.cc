@@ -20,9 +20,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/trace_event/trace_event.h"
+#include "chrome/common/chrome_version.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
@@ -34,6 +36,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
+#include "shell/common/node_util.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
@@ -608,7 +611,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
                          electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
   }
 
-  base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
@@ -647,7 +649,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::TryCatch try_catch(isolate);
     env = node::CreateEnvironment(
         static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(env_flags));
+        static_cast<node::EnvironmentFlags::Flags>(env_flags), {}, {},
+        &OnNodePreload);
 
     if (try_catch.HasCaught()) {
       std::string err_msg =
@@ -733,11 +736,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
-  process.Set("resourcesPath", resources_path);
-  // The path to helper app.
-  base::FilePath helper_exec_path;
-  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
-  process.Set("helperExecPath", helper_exec_path);
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kRenderer) {
@@ -927,6 +925,31 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
     // Deal with event in main thread.
     self->WakeupMainThread();
   }
+}
+
+void OnNodePreload(node::Environment* env,
+                   v8::Local<v8::Value> process,
+                   v8::Local<v8::Value> require) {
+  // Set custom process properties.
+  gin_helper::Dictionary dict(env->isolate(), process.As<v8::Object>());
+  dict.SetReadOnly("resourcesPath", GetResourcesPath());
+  base::FilePath helper_exec_path;  // path to the helper app.
+  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  dict.SetReadOnly("helperExecPath", helper_exec_path);
+  gin_helper::Dictionary versions;
+  if (dict.Get("versions", &versions)) {
+    versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
+    versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
+  }
+
+  // Execute lib/node/init.ts.
+  std::vector<v8::Local<v8::String>> bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
+      node::FIXED_ONE_BYTE_STRING(env->isolate(), "require"),
+  };
+  std::vector<v8::Local<v8::Value>> bundle_args = {process, require};
+  electron::util::CompileAndCall(env->context(), "electron/js2c/node_init",
+                                 &bundle_params, &bundle_args);
 }
 
 }  // namespace electron
