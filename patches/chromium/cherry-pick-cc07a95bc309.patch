@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Fri, 19 Jan 2024 19:17:18 +0000
+Subject: Update rendering state of automatic pull nodes before graph rendering
+
+In rare cases, the rendering fan out count of automatic pull node
+does not match the main thread fan out count after recreating
+a platform destination followed by disconnection.
+
+This CL forces the update of the rendering state of automatic
+pull nodes before graph rendering to make sure that fan out counts
+are synchronized before executing the audio processing function call.
+
+NOTE: This change makes 2 WPTs fail. The follow-up work is planned
+to address them once this patch is merged.
+
+(cherry picked from commit f4bffa09b46c21147431179e1e6dd2b27bc35fbc)
+
+Bug: 1505080
+Test: Locally confirmed that ASAN doesn't crash on all repro cases.
+Change-Id: I6768cd8bc64525ea9d56a19b9c58439e9cdab9a8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5131958
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1246718}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5214669
+Auto-Submit: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1833}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/analyser_handler.cc b/third_party/blink/renderer/modules/webaudio/analyser_handler.cc
+index a3ef095cdeba50edc14b278cfc802a306e2719e8..3c885957ed5ef5f88de7c40c33160461391843fe 100644
+--- a/third_party/blink/renderer/modules/webaudio/analyser_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/analyser_handler.cc
+@@ -39,9 +39,14 @@ AnalyserHandler::~AnalyserHandler() {
+ }
+ 
+ void AnalyserHandler::Process(uint32_t frames_to_process) {
+-  AudioBus* output_bus = Output(0).Bus();
++  DCHECK(Context()->IsAudioThread());
+ 
+-  if (!IsInitialized()) {
++  // It's possible that output is not connected. Assign nullptr to indicate
++  // such case.
++  AudioBus* output_bus = Output(0).RenderingFanOutCount() > 0
++      ? Output(0).Bus() : nullptr;
++
++  if (!IsInitialized() && output_bus) {
+     output_bus->Zero();
+     return;
+   }
+@@ -53,6 +58,11 @@ void AnalyserHandler::Process(uint32_t frames_to_process) {
+   // Analyser reflects the current input.
+   analyser_.WriteInput(input_bus.get(), frames_to_process);
+ 
++  // Subsequent steps require `output_bus` to be valid.
++  if (!output_bus) {
++    return;
++  }
++
+   if (!Input(0).IsConnected()) {
+     // No inputs, so clear the output, and propagate the silence hint.
+     output_bus->Zero();
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
+index 0bf86b7d659533e0acd9cd0c902c6dd68b51e1e6..903e8172d7c381da2e2cb8e9962ea601c76b375a 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
+@@ -119,12 +119,14 @@ void AudioWorkletHandler::Process(uint32_t frames_to_process) {
+     return;
+   }
+ 
+-  // If the input is not connected, inform the processor with nullptr.
++  // If the input or the output is not connected, inform the processor with
++  // nullptr.
+   for (unsigned i = 0; i < NumberOfInputs(); ++i) {
+     inputs_[i] = Input(i).IsConnected() ? Input(i).Bus() : nullptr;
+   }
+   for (unsigned i = 0; i < NumberOfOutputs(); ++i) {
+-    outputs_[i] = WrapRefCounted(Output(i).Bus());
++    outputs_[i] = Output(i).RenderingFanOutCount() > 0
++        ? WrapRefCounted(Output(i).Bus()) : nullptr;
+   }
+ 
+   for (const auto& param_name : param_value_map_.Keys()) {
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
+index 181dfa92723843d5ce9ae3e7399215870ac1dc80..c3c53d7a7099d67a6bb76df55a6c71965ca3bf02 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
+@@ -376,6 +376,12 @@ void AudioWorkletProcessor::CopyArrayBuffersToPort(
+ 
+   for (uint32_t bus_index = 0; bus_index < audio_port.size(); ++bus_index) {
+     const scoped_refptr<AudioBus>& audio_bus = audio_port[bus_index];
++
++    // nullptr indicates the output bus is not connected. Do not proceed.
++    if (!audio_bus) {
++      break;
++    }
++
+     for (uint32_t channel_index = 0;
+          channel_index < audio_bus->NumberOfChannels(); ++channel_index) {
+       auto backing_store = array_buffers[bus_index][channel_index]
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+index fa1de8f37b9be681f7ac447bc3e3859e8909216d..4730383dafa957c2e84c009387d15d6fe479e5ba 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+@@ -172,6 +172,16 @@ void DeferredTaskHandler::UpdateAutomaticPullNodes() {
+     base::AutoTryLock try_locker(automatic_pull_handlers_lock_);
+     if (try_locker.is_acquired()) {
+       rendering_automatic_pull_handlers_.assign(automatic_pull_handlers_);
++
++      // In rare cases, it is possible for automatic pull nodes' output bus
++      // to become stale. Make sure update their rendering output counts.
++      // crbug.com/1505080.
++      for (auto& handler : rendering_automatic_pull_handlers_) {
++        for (unsigned i = 0; i < handler->NumberOfOutputs(); ++i) {
++          handler->Output(i).UpdateRenderingState();
++        }
++      }
++
+       automatic_pull_handlers_need_updating_ = false;
+     }
+   }
+diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html
+index 33627204a6f538eba77bd8346952404814e4affa..ce0cfa40b691d859d372c9e6da7ff54fe64bbbe1 100644
+--- a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html
++++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html
+@@ -43,7 +43,10 @@
+           if (actual.done)
+             task.done();
+         };
+-        sourceNode.connect(workletNode);
++        // To have valid ArrayBuffers for both input and output, we need
++        // both connections.
++        // See: https://github.com/WebAudio/web-audio-api/issues/2566
++        sourceNode.connect(workletNode).connect(context.destination);
+         sourceNode.start();
+       });
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https-expected.txt b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fbac76d9b865bfdec552bf280e4a19ae1743ef4a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https-expected.txt
+@@ -0,0 +1,6 @@
++This is a testharness.js-based test.
++[PASS] 3 inputs; 0 outputs
++[FAIL] 0 inputs; 3 outputs
++  assert_equals: outputs[0].length expected 1 but got 0
++Harness: the test ran to completion.
++
