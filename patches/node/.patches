@@ -54,3 +54,4 @@ test_fix_edge_snapshot_stack_traces.patch
 chore_remove_use_of_deprecated_kmaxlength.patch
 fix_avx_detection.patch
 src_preload_function_for_environment.patch
+fix_undici_incorrectly_copies_headers_onto_fetches.patch
