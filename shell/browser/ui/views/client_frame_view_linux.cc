@@ -132,9 +132,11 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
           window->GetAcceleratedWidget()));
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
+  bool tiled = tiled_edges().top || tiled_edges().left ||
+               tiled_edges().bottom || tiled_edges().right;
   frame_provider_ =
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, frame_->IsMaximized());
+          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
 
   UpdateWindowTitle();
 
@@ -283,9 +285,11 @@ void ClientFrameViewLinux::Layout() {
     return;
   }
 
+  bool tiled = tiled_edges().top || tiled_edges().left ||
+               tiled_edges().bottom || tiled_edges().right;
   frame_provider_ =
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, frame_->IsMaximized());
+          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
 
   UpdateButtonImages();
   LayoutButtons();
@@ -302,7 +306,7 @@ void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
   if (!frame_->IsFullscreen()) {
     frame_provider_->PaintWindowFrame(canvas, GetLocalBounds(),
                                       GetTitlebarBounds().bottom(),
-                                      ShouldPaintAsActive(), tiled_edges());
+                                      ShouldPaintAsActive(), GetInputInsets());
   }
 }
 
