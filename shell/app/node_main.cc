@@ -21,7 +21,6 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "content/public/common/content_switches.h"
-#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
@@ -260,7 +259,8 @@ int NodeMain(int argc, char* argv[]) {
       env = node::CreateEnvironment(
           isolate_data, isolate->GetCurrentContext(), result->args(),
           result->exec_args(),
-          static_cast<node::EnvironmentFlags::Flags>(env_flags));
+          static_cast<node::EnvironmentFlags::Flags>(env_flags), {}, {},
+          &OnNodePreload);
       CHECK_NE(nullptr, env);
 
       node::SetIsolateUpForNode(isolate);
@@ -282,11 +282,6 @@ int NodeMain(int argc, char* argv[]) {
 #endif
 
       process.Set("crashReporter", reporter);
-
-      gin_helper::Dictionary versions;
-      if (process.Get("versions", &versions)) {
-        versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
-      }
     }
 
     v8::HandleScope scope(isolate);
