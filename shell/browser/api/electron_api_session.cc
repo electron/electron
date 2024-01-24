@@ -11,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_format.h"
 #include "base/command_line.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
@@ -154,14 +153,14 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-constexpr content::BrowsingDataRemover::DataType kClearDataTypeAll =
-    0xffffffffffffffffull;
+constexpr content::BrowsingDataRemover::DataType kClearDataTypeAll = ~0ULL;
 constexpr content::BrowsingDataRemover::OriginType kClearOriginTypeAll =
     content::BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB |
     content::BrowsingDataRemover::ORIGIN_TYPE_PROTECTED_WEB;
 
 // Observes the BrowsingDataRemover that backs the `clearBrowsingData` method
-// and resolves/rejects that API's promise once its done
+// and resolves/rejects that API's promise once it's done. This type manages its
+// own lifetime, deleting itself once it's done.
 class ClearBrowsingDataObserver
     : public content::BrowsingDataRemover::Observer {
  public:
@@ -173,13 +172,12 @@ class ClearBrowsingDataObserver
 
   void OnBrowsingDataRemoverDone(
       content::BrowsingDataRemover::DataType failed_data_types) override {
-    if (failed_data_types == 0) {
+    if (failed_data_types == 0ULL) {
       promise_.Resolve();
     } else {
-      promise_.RejectWithErrorMessage(absl::StrFormat(
-          "Failed to clear browsing data (%d)", failed_data_types));
+      promise_.RejectWithErrorMessage(base::StringPrintf(
+          "Failed to clear browsing data (%llu)", failed_data_types));
     }
-    observation_.Reset();
     delete this;
   }
 
