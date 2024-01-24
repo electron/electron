@@ -50,6 +50,8 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
   errorEmitted = false;
   spawnedProcess.on('error', (error) => {
     errorEmitted = true;
+    spawnedProcess = undefined;
+    spawnedArgs = [];
     callback(error);
   });
 
