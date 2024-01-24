@@ -2988,7 +2988,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await readClipboard();
-    expect(clipboard).to.not.equal('Read permission denied.');
+    expect(clipboard).to.not.contain('Read permission denied.');
   });
 
   it('returns an error when permission denied', async () => {
@@ -3000,7 +3000,7 @@ describe('navigator.clipboard.read', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.equal('Read permission denied.');
+    expect(clipboard).to.contain('Read permission denied.');
   });
 
   it('returns clipboard contents when permission is granted', async () => {
@@ -3012,7 +3012,7 @@ describe('navigator.clipboard.read', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.not.equal('Read permission denied.');
+    expect(clipboard).to.not.contain('Read permission denied.');
   });
 });
 
@@ -3036,7 +3036,7 @@ describe('navigator.clipboard.write', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
+    expect(clipboard).to.be.undefined();
   });
 
   it('returns an error when permission denied', async () => {
@@ -3048,7 +3048,7 @@ describe('navigator.clipboard.write', () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.equal('Write permission denied.');
+    expect(clipboard).to.contain('Write permission denied.');
   });
 
   it('returns clipboard contents when permission is granted', async () => {
@@ -3060,7 +3060,7 @@ describe('navigator.clipboard.write', () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
+    expect(clipboard).to.be.undefined();
   });
 });
 
