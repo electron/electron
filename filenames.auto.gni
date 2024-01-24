@@ -328,10 +328,9 @@ auto_filenames = {
     "typings/internal-electron.d.ts",
   ]
 
-  asar_bundle_deps = [
-    "lib/asar/fs-wrapper.ts",
-    "lib/asar/init.ts",
-    "lib/common/webpack-provider.ts",
+  node_bundle_deps = [
+    "lib/node/asar-fs-wrapper.ts",
+    "lib/node/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
