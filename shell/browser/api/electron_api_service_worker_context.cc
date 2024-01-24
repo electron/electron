@@ -7,6 +7,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/strings/string_number_conversions.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/storage_partition.h"
@@ -120,7 +121,7 @@ v8::Local<v8::Value> ServiceWorkerContext::GetAllRunningWorkerInfo(
       service_worker_context_->GetRunningServiceWorkerInfos();
   for (const auto& iter : info_map) {
     builder.Set(
-        std::to_string(iter.first),
+        base::NumberToString(iter.first),
         ServiceWorkerRunningInfoToDict(isolate, std::move(iter.second)));
   }
   return builder.Build();
