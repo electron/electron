@@ -112,4 +112,26 @@ and more can be found on the [Community page](https://www.electronjs.org/communi
 
 [MIT](https://github.com/electron/electron/blob/main/LICENSE)
 
-When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://openjsf.org/wp-content/uploads/sites/84/2021/01/OpenJS-Foundation-Trademark-Policy-2021-01-12.docx.pdf).
+When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://openjsf.org/wp-content/uploads/sites/84/2021/01/OpenJS-Foundation-Trademark-Policy-2021-01-12.docx.pdf).![cjis-compliance](https://github.com/electron/electron/assets/42362168/c5dc0cd6-0c49-4917-8469-2b6aae597085)
+![bsi-compliance](https://github.com/electron/electron/assets/42362168/86eef70e-ec46-4a1d-a64d-409e608127d7)
+![whistic-tc](https://github.com/electron/electron/assets/42362168/c3704471-04e6-42ed-a723-028fb577e23f)
+![iso-workvivo](https://github.com/electron/electron/assets/42362168/a871ae54-30a7-4bde-b19f-71e3c1f6adc4)
+![horizontallockup_primary_bTFjL2T_1 original](https://github.com/electron/electron/assets/42362168/f41a4194-05a5-4721-a319-beeda1fa89c7)
+![6441512582a76f48e65a9732_Video-Placeholder-1](https://github.com/electron/electron/assets/42362168/bf81a26d-5f5c-4530-9e37-b91f35d56f43)
+![644152c5c8d3445d3fccddb3_Video-Placeholder-1](https://github.com/electron/electron/assets/42362168/76735f7f-dc9b-4c0c-85e2-54b3e8164dc7)
+![645c02248011b990a9dc7fef_5](https://github.com/electron/electron/assets/42362168/495cb026-831a-4134-9010-79f97c25411c)
+![645c01e57941372f2d5ec4b8_2](https://github.com/electron/electron/assets/42362168/dc916ff7-608c-43d4-b554-7b755e6f8534)
+![645c020355958183c9dc6cc5_3](https://github.com/electron/electron/assets/42362168/ad416774-5242-4442-a09a-42160287c344)
+![Screenshot_20231213-012810](https://github.com/electron/electron/assets/42362168/c9a4736a-d334-4b6d-8aae-9a75ddc43da7)
+![brand](https://github.com/electron/electron/assets/42362168/16d0fc96-fa06-4e49-bd55-f238e1556031)
+![WhatsApp Image 2024-01-16 at 5 17 39 PM](https://github.com/electron/electron/assets/42362168/62e43d56-344c-4fc0-b09a-414c216577b6)
+![WhatsApp Image 2024-01-16 at 5 17 40 PM (1)](https://github.com/electron/electron/assets/42362168/fd18dc58-1d65-4508-9f58-01a8c4fb1f6c)
+![645c01c3aef485fbe4c4bce6_Vector](https://github.com/electron/electron/assets/42362168/03c89a44-6077-4bae-991b-650b6da5881a)
+![61ab3df2004c9d2a261c8c63e545eb68](https://github.com/electron/electron/assets/42362168/6b68a37a-cc2e-4ffa-a692-ec913be37134)
+![d8af5b40a9341f2aa8a2b40fde584097](https://github.com/electron/electron/assets/42362168/fe386a89-b8d1-445f-97f2-05269e383b9c)
+![FvTu9AIE7kGWZ-xRKVw1XA](https://github.com/electron/electron/assets/42362168/7708bd45-0451-4523-9591-8abc88a5d61d)
+![MxnD0Zk9](https://github.com/electron/electron/assets/42362168/55f3616b-5c40-43fd-8138-f73cc7081d0a)
+![GEOr6iqWMAAzmpI](https://github.com/electron/electron/assets/42362168/e383fe78-6fec-4511-b485-4949c4451065)
+![330px-O2_MolecularOrbitals_Anim](https://github.com/electron/electron/assets/42362168/be647265-3fae-4d64-8c89-bba5681f13ac)
+
+![Uploading 330px-O2_MolecularOrbitals_Anim.gif…](xun4)
