@@ -15,8 +15,9 @@
 
 #include "base/environment.h"
 #include "base/logging.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util_win.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -46,15 +47,15 @@ namespace winui = ABI::Windows::UI;
     }                                                  \
   } while (false)
 
-#define REPORT_AND_RETURN_IF_FAILED(hr, msg)                     \
-  do {                                                           \
-    if (const HRESULT _hrTemp = hr; FAILED(_hrTemp)) {           \
-      std::string _err =                                         \
-          base::StringPrintf("%s,ERROR %" PRId32, msg, _hrTemp); \
-      DebugLog(_err);                                            \
-      Notification::NotificationFailed(_err);                    \
-      return _hrTemp;                                            \
-    }                                                            \
+#define REPORT_AND_RETURN_IF_FAILED(hr, msg)                              \
+  do {                                                                    \
+    if (const HRESULT _hrTemp = hr; FAILED(_hrTemp)) {                    \
+      std::string _err =                                                  \
+          base::StrCat({msg, ", ERROR ", base::NumberToString(_hrTemp)}); \
+      DebugLog(_err);                                                     \
+      Notification::NotificationFailed(_err);                             \
+      return _hrTemp;                                                     \
+    }                                                                     \
   } while (false)
 
 namespace electron {
