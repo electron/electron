@@ -58,13 +58,11 @@ LoadIntegrityConfigCache() {
                                   kIntegrityCheckResourceType);
   if (!resource) {
     PLOG(FATAL) << "FindResource failed.";
-    return *integrity_config_cache;
   }
 
   HGLOBAL rcData = ::LoadResource(module_handle, resource);
   if (!rcData) {
     PLOG(FATAL) << "LoadResource failed.";
-    return *integrity_config_cache;
   }
 
   auto* res_data = static_cast<const char*>(::LockResource(rcData));
@@ -72,12 +70,10 @@ LoadIntegrityConfigCache() {
 
   if (!res_data) {
     PLOG(FATAL) << "Failed to integrity config from exe resource.";
-    return *integrity_config_cache;
   }
 
   if (!res_size) {
     PLOG(FATAL) << "Unexpected empty integrity config from exe resource.";
-    return *integrity_config_cache;
   }
 
   // Parse integrity config payload
