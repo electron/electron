@@ -6627,7 +6627,7 @@ describe('BrowserWindow module', () => {
 
       const startPos = w.getPosition();
 
-      await mouse.move(straightTo(centerOf(titleBarRegion)));
+      await mouse.setPosition(await centerOf(titleBarRegion));
       await mouse.pressButton(Button.LEFT);
       await mouse.drag(straightTo(centerOf(screenRegion)));
 
