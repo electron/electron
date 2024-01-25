@@ -12,7 +12,7 @@ import { mouse, straightTo, centerOf, Region, Button } from '@nut-tree/nut-js';
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor, hasCapturableScreen } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { setTimeout as syncSetTimeout } from 'node:timers';
@@ -6604,7 +6604,7 @@ describe('BrowserWindow module', () => {
   describe('draggable regions', () => {
     afterEach(closeAllWindows);
 
-    it('should allow the window to be dragged when enabled', async () => {
+    ifit(hasCapturableScreen())('should allow the window to be dragged when enabled', async () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
