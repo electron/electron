@@ -5,7 +5,6 @@
 #include <string>
 
 #include "base/containers/fixed_flat_map.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "shell/common/keyboard_util.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
