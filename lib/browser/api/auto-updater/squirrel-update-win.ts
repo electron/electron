@@ -38,6 +38,8 @@ const spawnUpdate = async function (args: string[], options: { detached: boolean
     spawnedProcess.stderr.on('data', (data) => { stderr += data; });
 
     spawnedProcess.on('error', (error) => {
+      spawnedProcess = undefined;
+      spawnedArgs = [];
       reject(error);
     });
 
