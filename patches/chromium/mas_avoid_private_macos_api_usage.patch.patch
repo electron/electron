@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c00c41bc2c7fd716589c325722d69316d939ecfe..83fc835ecab873c9203ffe58ad21f2404ff80d4b 100644
+index 4dda9f3b080656613777536a07a958ef839892a0..d6497675c5cd77065367f1ceae5e47ac28cc2f83 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1047,6 +1047,7 @@ component("base") {
@@ -353,7 +353,7 @@ index eeeaec7e1064ca250ffc4ef5d5e174c562dcd640..7b0c310ab949140811031f68f0e7163e
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 053b8a2182778b469941116eab3acd5fd6fd8099..d085258d5970b37215fe0d5591e6c0306401a172 100644
+index 4a97dd3ea091018387ead065f5f489b39f84301c..e6df67902a269975e739d4ce22aaf49730c10a96 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -600,10 +600,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -405,7 +405,7 @@ index eaf077d33ca54a5394b1f1ab9024b22c4e496ae5..ac2b42196188bc32b9842f95df74aa4c
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 76959be428bd4ea2efe5e73c78b0aed77246fd96..58c8c975b737c9452674090396637122bb1cde7b 100644
+index 2cc144b6001b7862d77c0e5a4240e863aff3dd21..e2f6f2c58352d0d3526a51fd180d5011c20200df 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -2020,15 +2020,21 @@ - (NSAccessibilityRole)accessibilityRole {
@@ -443,7 +443,7 @@ index a460c6503d69549a0b236a04d9e457c2d36ee405..821e5db63fd5d69b3fcc329ec02f71a1
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4fc3b51b53 100644
+index 5a6706495ed2a8f1cd781da9bde8572318bf6897..afd4d1f728a7f056e49b2ecb006c5a05388d3409 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -456,7 +456,7 @@ index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4f
  
  namespace {
  
-@@ -225,6 +227,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -224,6 +226,7 @@ void PostAnnouncementNotification(NSString* announcement,
          return;
        }
  
@@ -464,7 +464,7 @@ index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4f
        BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
        if (root_manager) {
          BrowserAccessibilityManagerMac* root_manager_mac =
-@@ -247,6 +250,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -246,6 +249,7 @@ void PostAnnouncementNotification(NSString* announcement,
            return;
          }
        }
@@ -472,7 +472,7 @@ index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4f
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -633,6 +637,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -632,6 +636,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -480,7 +480,7 @@ index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4f
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -661,6 +666,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -660,6 +665,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -849,7 +849,7 @@ index 9c4e8e2536819610648aa5b3d11eaa5d2da24a9c..0b3660e51b0a15102b7b1726e17b34d5
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index b3c80d0943c7418658e0c8cbe286d994aec14a3f..08228fde75372936b6f17efad7ed23cd05eaa06b 100644
+index 90e093cd2d499ba0f37f3246bab288c758b51e19..6027134a4de53e6fe39fdbfdb67885e0b5f56e40 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -199,6 +199,7 @@ source_set("audio") {
@@ -860,10 +860,10 @@ index b3c80d0943c7418658e0c8cbe286d994aec14a3f..08228fde75372936b6f17efad7ed23cd
    }
  
    if (is_ios) {
-diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 244df26cbaecd482e812d53c96b6d63ac0a579e7..6ea4763fc7ba0d0747bd70615e076474b204853c 100644
---- a/media/audio/mac/audio_low_latency_input_mac.cc
-+++ b/media/audio/mac/audio_low_latency_input_mac.cc
+diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
+index 8cd474c33e514fd0aa90daf68a56ed7fc902d713..9fff9cc7b00b257c3bebb02c75a3c2e809ffdf0a 100644
+--- a/media/audio/apple/audio_low_latency_input.cc
++++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -33,19 +33,23 @@
  
  namespace {
@@ -889,7 +889,7 @@ index 244df26cbaecd482e812d53c96b6d63ac0a579e7..6ea4763fc7ba0d0747bd70615e076474
  }  // namespace
  #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index e229c574bbbc7933043418c9155daf7d78e75b68..4664ab42fed9b3071696265984d6a811fd528273 100644
+index 402efe6d0d30153598649cca2c665e4b67306311..51566f515ad346d2f37ae3a0e350afc7ab4b38fa 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -970,7 +970,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(

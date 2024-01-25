@@ -562,7 +562,7 @@ index febb2718cb34ea4d9f411f068d8c01a89c7db888..be8bd51cb61c20ef3df8552972a0ac2f
    gpu::SyncPointManager* GetSyncPointManager() override;
  };
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 516c7f65097f139496184dcca8f054553b84d752..4fd23fbf7ab2b7aa4eee9c2fc4b98a04dd48efce 100644
+index 36a762f6a8054158bd7f05c077a2b96cf7cfd10c..598c8b46c7d4b3d48f07bb5826ec640006ade0e2 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -408,8 +408,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(

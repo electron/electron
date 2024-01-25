@@ -51,10 +51,10 @@ index a94977d7a76ae9952bbba0efe59a7cb5021a1c84..11c4f890eaeae1329ca5a6634a698aef
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index d78f00cbb877b64892b9871252d79796fd4cabb8..4d2de00328f0b6437789612b14a53aae79eb15ab 100644
+index 8d07d5346afd62dd8b44b4ed4f7bc6c735fffea8..dbf1556cfae0e1ae18734e37f6b67acd34861180 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -559,8 +559,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -557,8 +557,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -66,10 +66,10 @@ index d78f00cbb877b64892b9871252d79796fd4cabb8..4d2de00328f0b6437789612b14a53aae
  
  void RenderWidgetHostViewAura::NotifyHostAndDelegateOnWasShown(
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index 9979c25ecd57e68331b628a518368635db5c2027..f65bfbbb663a5bb0511ffa389d3163e0fdeb4d1f 100644
+index 20ca763ff7f55e8176b77349b41917b11e051ae6..a50c122064b5f0092f57e3d508fb19389b72203b 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -76,6 +76,9 @@ class CONTENT_EXPORT RenderViewHost {
+@@ -75,6 +75,9 @@ class CONTENT_EXPORT RenderViewHost {
    virtual void WriteIntoTrace(
        perfetto::TracedProto<TraceProto> context) const = 0;
  
