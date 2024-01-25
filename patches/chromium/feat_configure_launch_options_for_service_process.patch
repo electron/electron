@@ -18,10 +18,10 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index e515503a0f636d935fdcd779a5ac01bd8f351e74..0669361cb063c9dd15a19486fce1a609171d4cda 100644
+index fff0bf658a41f2f85db6086662768726f4a177a6..4f50fd78ea423efbeb0db6b8551b0f161b83ae9f 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
-@@ -32,6 +32,7 @@
+@@ -33,6 +33,7 @@
  
  #if BUILDFLAG(IS_WIN)
  #include "base/win/windows_types.h"
@@ -29,7 +29,7 @@ index e515503a0f636d935fdcd779a5ac01bd8f351e74..0669361cb063c9dd15a19486fce1a609
  #endif
  
  #if BUILDFLAG(IS_POSIX)
-@@ -164,7 +165,10 @@ struct ChildProcessLauncherFileData {
+@@ -166,7 +167,10 @@ struct ChildProcessLauncherFileData {
        delete;
    ~ChildProcessLauncherFileData();
  
@@ -41,7 +41,7 @@ index e515503a0f636d935fdcd779a5ac01bd8f351e74..0669361cb063c9dd15a19486fce1a609
    // Files opened by the browser and passed as corresponding file descriptors
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
-@@ -179,6 +183,15 @@ struct ChildProcessLauncherFileData {
+@@ -181,6 +185,15 @@ struct ChildProcessLauncherFileData {
    std::map<std::string, absl::variant<base::FilePath, base::ScopedFD>>
        files_to_preload;
  #endif
