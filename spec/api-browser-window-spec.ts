@@ -7,7 +7,6 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import { AddressInfo } from 'node:net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
-import { mouse, straightTo, centerOf, Region, Button } from '@nut-tree/nut-js';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
@@ -6605,6 +6604,11 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     ifit(hasCapturableScreen())('should allow the window to be dragged when enabled', async () => {
+      // WOA fails to load libnut so we're using require to defer loading only
+      // on supported platforms.
+      // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
+      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
