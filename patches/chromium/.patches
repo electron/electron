@@ -143,5 +143,4 @@ fix_font_flooding_in_dev_tools.patch
 feat_allow_code_cache_in_custom_schemes.patch
 enable_partition_alloc_ref_count_size.patch
 ensure_an_axcontext_before_painting.patch
-cherry-pick-cc07a95bc309.patch
 safely_crash_on_dangling_profile.patch
