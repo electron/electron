@@ -187,6 +187,12 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       frame_rate_(frame_rate),
       size_(initial_size),
       painting_(painting),
+      delegated_frame_host_client_{
+          std::make_unique<ElectronDelegatedFrameHostClient>(this)},
+      delegated_frame_host_{std::make_unique<content::DelegatedFrameHost>(
+          AllocateFrameSinkId(),
+          delegated_frame_host_client_.get(),
+          true /* should_register_frame_sink_id */)},
       cursor_manager_(std::make_unique<content::CursorManager>(this)),
       mouse_wheel_phase_handler_(this),
       backing_(std::make_unique<SkBitmap>()) {
@@ -204,12 +210,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       delegated_frame_host_allocator_.GetCurrentLocalSurfaceId();
   compositor_allocator_.GenerateId();
   compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
-
-  delegated_frame_host_client_ =
-      std::make_unique<ElectronDelegatedFrameHostClient>(this);
-  delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
-      AllocateFrameSinkId(), delegated_frame_host_client_.get(),
-      true /* should_register_frame_sink_id */);
 
   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
 
@@ -247,7 +247,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
         content::DelegatedFrameHost::HiddenCause::kOther);
   delegated_frame_host_->DetachFromCompositor();
 
-  delegated_frame_host_.reset();
   compositor_.reset();
   root_layer_.reset();
 }
