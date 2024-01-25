@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 27b8d9c767ca3f4dede7f79d6295ec8cc06eaffe..ebcd7d4fb8e876e3d5fd1fa1e0b6629049e664af 100644
+index 53428bbfddb82c38995b0ab727c995d325713189..d495e71462c818a67f4d4410da0df00c6c04fad6 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -143,6 +143,8 @@ viz_component("service") {
+@@ -165,6 +165,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -562,7 +562,7 @@ index febb2718cb34ea4d9f411f068d8c01a89c7db888..be8bd51cb61c20ef3df8552972a0ac2f
    gpu::SyncPointManager* GetSyncPointManager() override;
  };
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index d149ead2520ed05c975119b81cc7b86701e1404f..4532417a34c6b24df2cd4bb96a0e0a463959dccf 100644
+index 516c7f65097f139496184dcca8f054553b84d752..4fd23fbf7ab2b7aa4eee9c2fc4b98a04dd48efce 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -408,8 +408,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -618,7 +618,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 30f2e29532c5e781d7a329f8265193023a00b1d8..ae38020ebd9525795f53d4751b225cc30ac02d19 100644
+index 86d021ca68674344c71cfaf12898d0dc486effc6..87c4b363a80713888d9e24a31afbe82a65ed2b1c 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ class DisplayPrivate;
