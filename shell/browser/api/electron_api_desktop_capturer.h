@@ -26,6 +26,9 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
     // Will be an empty string if not available.
     std::string display_id;
 
+    // Will be true if user selected this source
+    bool user_selected;
+
     // Whether or not this source should provide an icon.
     bool fetch_icon = false;
   };
