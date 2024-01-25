@@ -42,7 +42,7 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
 
   SizeChanged(view_->SizeInPixels());
-  SetFrameRate(view_->GetFrameRate());
+  SetFrameRate(view_->get_frame_rate());
 }
 
 OffScreenVideoConsumer::~OffScreenVideoConsumer() = default;
