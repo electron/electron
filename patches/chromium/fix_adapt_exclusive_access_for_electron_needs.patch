@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..b392fe006c7540bef4c3030309aecebd617660f4 100644
+index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7fc9583395 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -110,7 +110,19 @@ index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..b392fe006c7540bef4c3030309aecebd
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER)
-@@ -563,12 +573,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -549,6 +559,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+   if (chrome::IsRunningInAppMode())
+     return;
+ 
++#if 0
+   CHECK(fullscreen_start_time_);
+   if (exclusive_access_tab()) {
+     ukm::SourceId source_id =
+@@ -560,15 +571,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
+         .Record(ukm::UkmRecorder::Get());
+     fullscreen_start_time_.reset();
+   }
++#endif
  
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;
