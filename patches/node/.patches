@@ -1,5 +1,3 @@
-refactor_alter_child_process_fork_to_use_execute_script_with.patch
-feat_initialize_asar_support.patch
 expose_get_builtin_module_function.patch
 build_add_gn_build_files.patch
 fix_add_default_values_for_variables_in_common_gypi.patch
@@ -55,3 +53,4 @@ win_process_avoid_assert_after_spawning_store_app_4152.patch
 test_fix_edge_snapshot_stack_traces.patch
 chore_remove_use_of_deprecated_kmaxlength.patch
 fix_avx_detection.patch
+src_preload_function_for_environment.patch

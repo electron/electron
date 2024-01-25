@@ -11,10 +11,10 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index cbfb6e3620a7e77658c86a4730c50661b8a937f7..ccd48027e3dfebd563fcbe83239174c79c693dd7 100644
+index 21dbf3d87c813b057602637a27ed226bb91698a5..fd5357997a4e05567146dc997e47af408e1fc8f4 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -567,7 +567,7 @@ function initializeESMLoader() {
+@@ -560,7 +560,7 @@ function initializeESMLoader() {
    // Create this WeakMap in js-land because V8 has no C++ API for WeakMap.
    internalBinding('module_wrap').callbackMap = new SafeWeakMap();
  
@@ -23,7 +23,7 @@ index cbfb6e3620a7e77658c86a4730c50661b8a937f7..ccd48027e3dfebd563fcbe83239174c7
  
    const {
      setImportModuleDynamicallyCallback,
-@@ -576,8 +576,8 @@ function initializeESMLoader() {
+@@ -569,8 +569,8 @@ function initializeESMLoader() {
    const esm = require('internal/process/esm_loader');
    // Setup per-isolate callbacks that locate data or callbacks that we keep
    // track of for different ESM modules.
