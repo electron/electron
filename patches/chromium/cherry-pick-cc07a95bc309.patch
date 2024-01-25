@@ -1,7 +1,7 @@
-From cc07a95bc3099eaf38e0268f2a19f909ea240833 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Fri, 19 Jan 2024 19:17:18 +0000
-Subject: [PATCH] Update rendering state of automatic pull nodes before graph rendering
+Subject: Update rendering state of automatic pull nodes before graph rendering
 
 In rare cases, the rendering fan out count of automatic pull node
 does not match the main thread fan out count after recreating
@@ -27,30 +27,29 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5214669
 Auto-Submit: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#1833}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/analyser_handler.cc b/third_party/blink/renderer/modules/webaudio/analyser_handler.cc
-index b2f3242..490143f 100644
+index b2f3242426930b06694a12296206da1e7a7abfb7..490143f710dc51a93dd89fdc85035519db5e292b 100644
 --- a/third_party/blink/renderer/modules/webaudio/analyser_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/analyser_handler.cc
-@@ -40,9 +40,14 @@
+@@ -40,9 +40,14 @@ AnalyserHandler::~AnalyserHandler() {
  }
  
  void AnalyserHandler::Process(uint32_t frames_to_process) {
 -  AudioBus* output_bus = Output(0).Bus();
 +  DCHECK(Context()->IsAudioThread());
- 
--  if (!IsInitialized()) {
++
 +  // It's possible that output is not connected. Assign nullptr to indicate
 +  // such case.
 +  AudioBus* output_bus = Output(0).RenderingFanOutCount() > 0
 +      ? Output(0).Bus() : nullptr;
-+
+ 
+-  if (!IsInitialized()) {
 +  if (!IsInitialized() && output_bus) {
      output_bus->Zero();
      return;
    }
-@@ -54,6 +59,11 @@
+@@ -54,6 +59,11 @@ void AnalyserHandler::Process(uint32_t frames_to_process) {
    // Analyser reflects the current input.
    analyser_.WriteInput(input_bus.get(), frames_to_process);
  
@@ -62,7 +61,7 @@ index b2f3242..490143f 100644
    if (!Input(0).IsConnected()) {
      // No inputs, so clear the output, and propagate the silence hint.
      output_bus->Zero();
-@@ -178,8 +188,12 @@
+@@ -178,8 +188,12 @@ double AnalyserHandler::TailTime() const {
  }
  
  void AnalyserHandler::PullInputs(uint32_t frames_to_process) {
@@ -78,10 +77,10 @@ index b2f3242..490143f 100644
  
  void AnalyserHandler::CheckNumberOfChannelsForInput(AudioNodeInput* input) {
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
-index 0bf86b7..903e817 100644
+index 0bf86b7d659533e0acd9cd0c902c6dd68b51e1e6..903e8172d7c381da2e2cb8e9962ea601c76b375a 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
-@@ -119,12 +119,14 @@
+@@ -119,12 +119,14 @@ void AudioWorkletHandler::Process(uint32_t frames_to_process) {
      return;
    }
  
@@ -99,10 +98,10 @@ index 0bf86b7..903e817 100644
  
    for (const auto& param_name : param_value_map_.Keys()) {
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
-index 181dfa9..c3c53d7a 100644
+index 181dfa92723843d5ce9ae3e7399215870ac1dc80..c3c53d7a7099d67a6bb76df55a6c71965ca3bf02 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
-@@ -376,6 +376,12 @@
+@@ -376,6 +376,12 @@ void AudioWorkletProcessor::CopyArrayBuffersToPort(
  
    for (uint32_t bus_index = 0; bus_index < audio_port.size(); ++bus_index) {
      const scoped_refptr<AudioBus>& audio_bus = audio_port[bus_index];
@@ -116,10 +115,10 @@ index 181dfa9..c3c53d7a 100644
           channel_index < audio_bus->NumberOfChannels(); ++channel_index) {
        auto backing_store = array_buffers[bus_index][channel_index]
 diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
-index fa1de8f..4730383d 100644
+index fa1de8f37b9be681f7ac447bc3e3859e8909216d..4730383dafa957c2e84c009387d15d6fe479e5ba 100644
 --- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
-@@ -172,6 +172,16 @@
+@@ -172,6 +172,16 @@ void DeferredTaskHandler::UpdateAutomaticPullNodes() {
      base::AutoTryLock try_locker(automatic_pull_handlers_lock_);
      if (try_locker.is_acquired()) {
        rendering_automatic_pull_handlers_.assign(automatic_pull_handlers_);
@@ -137,7 +136,7 @@ index fa1de8f..4730383d 100644
      }
    }
 diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html
-index 33627204..ce0cfa4 100644
+index 33627204a6f538eba77bd8346952404814e4affa..ce0cfa40b691d859d372c9e6da7ff54fe64bbbe1 100644
 --- a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html
 +++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html
 @@ -43,7 +43,10 @@
@@ -154,7 +153,7 @@ index 33627204..ce0cfa4 100644
  
 diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https-expected.txt b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https-expected.txt
 new file mode 100644
-index 0000000..fbac76d
+index 0000000000000000000000000000000000000000..fbac76d9b865bfdec552bf280e4a19ae1743ef4a
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https-expected.txt
 @@ -0,0 +1,6 @@
