@@ -88,7 +88,7 @@ bool ElectronExtensionsAPIProvider::IsAPISchemaGenerated(
   return extensions::api::ElectronGeneratedSchemas::IsGenerated(name);
 }
 
-base::StringPiece ElectronExtensionsAPIProvider::GetAPISchema(
+std::string_view ElectronExtensionsAPIProvider::GetAPISchema(
     const std::string& name) {
   return extensions::api::ElectronGeneratedSchemas::Get(name);
 }

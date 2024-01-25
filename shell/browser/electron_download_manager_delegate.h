@@ -36,7 +36,7 @@ class ElectronDownloadManagerDelegate
   void Shutdown() override;
   bool DetermineDownloadTarget(
       download::DownloadItem* download,
-      content::DownloadTargetCallback* callback) override;
+      download::DownloadTargetCallback* callback) override;
   bool ShouldOpenDownload(
       download::DownloadItem* download,
       content::DownloadOpenDelayedCallback callback) override;
@@ -49,12 +49,12 @@ class ElectronDownloadManagerDelegate
                                 file_dialog::DialogSettings* options);
 
   void OnDownloadPathGenerated(uint32_t download_id,
-                               content::DownloadTargetCallback callback,
+                               download::DownloadTargetCallback callback,
                                const base::FilePath& default_path);
 
   void OnDownloadSaveDialogDone(
       uint32_t download_id,
-      content::DownloadTargetCallback download_callback,
+      download::DownloadTargetCallback download_callback,
       gin_helper::Dictionary result);
 
   base::FilePath last_saved_directory_;

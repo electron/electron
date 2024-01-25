@@ -51,7 +51,7 @@ index b05c0157ecca222452fb38e3b28c9d7cc6bcfbfd..02d9eabfef9521722340739bf86df3df
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663d64a63e6 100644
+index f2913f2d78edb2547ae21816b34936d38f1870a9..298c9c81fa110ad7900d0bd6822136bb57f0382e 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -70,29 +70,25 @@ index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663
  #include "base/threading/platform_thread.h"
  #include "base/time/time.h"
  #include "base/timer/timer.h"
-@@ -97,9 +99,11 @@
+@@ -97,7 +99,7 @@
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/resource/scoped_startup_resource_bundle.h"
  
+-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 +#if 0
- #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
  #include "chrome/browser/ui/process_singleton_dialog_linux.h"
  #endif
-+#endif
  
- using content::BrowserThread;
- 
-@@ -343,6 +347,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -343,6 +345,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
 +  return true;
-+
 +#if 0
    // Ensure there is an instance of ResourceBundle that is initialized for
    // localized string resource accesses.
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
-@@ -366,6 +373,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -366,6 +370,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -100,8 +96,8 @@ index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -406,6 +414,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
-   return (cookie == ReadLink(path));
+@@ -378,6 +383,21 @@ bool IsChromeProcess(pid_t pid) {
+               base::FilePath(chrome::kBrowserProcessExecutableName));
  }
  
 +bool IsAppSandboxed() {
@@ -119,13 +115,13 @@ index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663
 +#endif  // BUILDFLAG(IS_MAC)
 +}
 +
- bool ConnectSocket(ScopedSocket* socket,
-                    const base::FilePath& socket_path,
-                    const base::FilePath& cookie_path) {
-@@ -773,6 +796,10 @@ ProcessSingleton::ProcessSingleton(
- 
- ProcessSingleton::~ProcessSingleton() {
-   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ // A helper class to hold onto a socket.
+ class ScopedSocket {
+  public:
+@@ -781,6 +801,10 @@ ProcessSingleton::~ProcessSingleton() {
+   if (watcher_) {
+     watcher_->OnEminentProcessSingletonDestruction();
+   }
 +  // Manually free resources with IO explicitly allowed.
 +  base::ScopedAllowBlocking allow_blocking;
 +  watcher_ = nullptr;
@@ -133,13 +129,10 @@ index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1036,14 +1063,32 @@ bool ProcessSingleton::Create() {
- #endif
-   }
- 
--  // Create the socket file somewhere in /tmp which is usually mounted as a
--  // normal filesystem. Some network filesystems (notably AFS) are screwy and
--  // do not support Unix domain sockets.
+@@ -1047,11 +1071,32 @@ bool ProcessSingleton::Create() {
+   // Create the socket file somewhere in /tmp which is usually mounted as a
+   // normal filesystem. Some network filesystems (notably AFS) are screwy and
+   // do not support Unix domain sockets.
 -  if (!socket_dir_.CreateUniqueTempDir()) {
 -    LOG(ERROR) << "Failed to create socket directory.";
 +  base::FilePath tmp_dir;

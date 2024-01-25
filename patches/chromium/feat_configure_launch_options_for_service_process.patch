@@ -58,7 +58,7 @@ index e515503a0f636d935fdcd779a5ac01bd8f351e74..0669361cb063c9dd15a19486fce1a609
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 94d18b775d432cfeeb4d2db6091adda179dc6e6b..7560f17040c40291f9f603e5811db4c94dece517 100644
+index 795ad47165f2f02e816f424ce74391a435c61a32..ace57135682f4372814acfbd202d1b077ecb1c0c 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -63,6 +63,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -84,7 +84,7 @@ index 94d18b775d432cfeeb4d2db6091adda179dc6e6b..7560f17040c40291f9f603e5811db4c9
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 9e5365dc37489dcd9f94d23cf03713492ab20e5f..03206ccc3181eae7776b4f2c076285b8729379b8 100644
+index 8736af0021dccba915e3d2303191ae3ec80f6e75..56f8384c3ff4959272363cb71e4c380ee9125273 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -123,7 +123,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -110,7 +110,7 @@ index 9e5365dc37489dcd9f94d23cf03713492ab20e5f..03206ccc3181eae7776b4f2c076285b8
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index e5c96c7e5fada31994754679115f5e7b703b3ad4..e1bbce4ed643827c2ce2e841fae4d09cdff4dff3 100644
+index 4b7c732a6ee2771156120f7a6d43020013cdf209..493c53aeda0841af95de81eac262558494c8a675 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -21,6 +21,8 @@
@@ -163,7 +163,7 @@ index e5c96c7e5fada31994754679115f5e7b703b3ad4..e1bbce4ed643827c2ce2e841fae4d09c
  }
  
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08cf3c97bf 100644
+index 97cda5eb354a16b53a2224de009898d85b348a69..75d7bc00759226859af635d66cdfbc3dd565b4a2 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
 @@ -208,6 +208,15 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
@@ -183,10 +183,10 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index db744a552e0147ebcf3b162f9017de3a5c8f6c66..2f56433f44a425f645120271c4e39e8e4447e3bb 100644
+index f3d7fb47d0950a3489271bf8e44fe48e10277b5d..e7f30e95727137fc54f8493dfa8eb36b74fbdcb4 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -180,11 +180,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -177,11 +177,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -202,7 +202,7 @@ index db744a552e0147ebcf3b162f9017de3a5c8f6c66..2f56433f44a425f645120271c4e39e8e
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -250,6 +252,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -247,6 +249,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -227,7 +227,7 @@ index db744a552e0147ebcf3b162f9017de3a5c8f6c66..2f56433f44a425f645120271c4e39e8e
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -468,9 +488,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -461,9 +481,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -252,7 +252,7 @@ index db744a552e0147ebcf3b162f9017de3a5c8f6c66..2f56433f44a425f645120271c4e39e8e
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 33d7e3613801085630735b49a5789d2a9bf2aed3..b0b6efc9c9acdd2aac6a9c90640f4fbc638b1761 100644
+index 01a921c772f769c64ac97bfc5e74862a801e3e61..9bfc30138a01520d59760a49d15dd4819feb0556 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@
@@ -300,7 +300,7 @@ index 33d7e3613801085630735b49a5789d2a9bf2aed3..b0b6efc9c9acdd2aac6a9c90640f4fbc
    mojom::ChildProcess* GetChildProcess();
  
 @@ -209,6 +227,22 @@ class CONTENT_EXPORT UtilityProcessHost
-   absl::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
+   std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
 +#if BUILDFLAG(IS_WIN)
@@ -486,10 +486,10 @@ index e6bd27288a8d29dcf263a0677d2629d0aa7cf7c4..24d5acf41ea3fb825d813a040644aef1
  ServiceProcessHost::Options&
  ServiceProcessHost::Options::WithPreloadedLibraries(
 diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
-index 32fad70cbdf15d587eb32fa74b2995d30b27f694..2df65c405acdf896c5a66dcd3d0aaf44031bc2f7 100644
+index 69c6f20a95c1da6a3f2ae02e81073bef0733af4e..8efbbd030729276114c40b33ee72822b02444a84 100644
 --- a/content/public/browser/service_process_host.h
 +++ b/content/public/browser/service_process_host.h
-@@ -13,6 +13,7 @@
+@@ -14,6 +14,7 @@
  #include "base/command_line.h"
  #include "base/functional/callback.h"
  #include "base/observer_list_types.h"
@@ -540,8 +540,8 @@ index 32fad70cbdf15d587eb32fa74b2995d30b27f694..2df65c405acdf896c5a66dcd3d0aaf44
      // Specifies libraries to preload before the sandbox is locked down. Paths
      // should be absolute paths. Libraries will be preloaded before sandbox
 @@ -131,11 +155,20 @@ class CONTENT_EXPORT ServiceProcessHost {
-     absl::optional<GURL> site;
-     absl::optional<int> child_flags;
+     std::optional<GURL> site;
+     std::optional<int> child_flags;
      std::vector<std::string> extra_switches;
 +#if BUILDFLAG(IS_WIN)
 +    base::win::ScopedHandle stdout_handle;
