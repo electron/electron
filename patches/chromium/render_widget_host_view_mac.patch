@@ -8,10 +8,10 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index f62563a6f79b4f471cac4b5be57898900269661f..2cc144b6001b7862d77c0e5a4240e863aff3dd21 100644
+index 0825f3f1ef87120a9b82d3f52289dc54d2d6f233..5f6e5b078672c0336cee72300a7a37d6284db226 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -159,6 +159,15 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -160,6 +160,15 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -27,7 +27,7 @@ index f62563a6f79b4f471cac4b5be57898900269661f..2cc144b6001b7862d77c0e5a4240e863
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -747,6 +756,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -742,6 +751,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -37,7 +37,7 @@ index f62563a6f79b4f471cac4b5be57898900269661f..2cc144b6001b7862d77c0e5a4240e863
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -831,6 +843,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -826,6 +838,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -48,7 +48,7 @@ index f62563a6f79b4f471cac4b5be57898900269661f..2cc144b6001b7862d77c0e5a4240e863
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1160,6 +1176,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1154,6 +1170,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  
@@ -58,4 +58,4 @@ index f62563a6f79b4f471cac4b5be57898900269661f..2cc144b6001b7862d77c0e5a4240e863
 +
    // We only handle key down events and just simply forward other events.
    if (eventType != NSEventTypeKeyDown) {
-     _hostHelper->ForwardKeyboardEvent(event, latency_info);
+     _hostHelper->ForwardKeyboardEvent(event, latencyInfo);

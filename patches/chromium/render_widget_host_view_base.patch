@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 6b51fa563b1b796e60197fd3d4223c844d5fbef2..47783dcd82d1a256f14d69fde66063dea9cde564 100644
+index 57ec605af8434dd44c45d5a180fbc55459b53beb..0f3a0ce6f3a3f3ff8ed403eae952a7cd91c88320 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -700,6 +700,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
+@@ -701,6 +701,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
    return false;
  }
  
@@ -24,7 +24,7 @@ index 6b51fa563b1b796e60197fd3d4223c844d5fbef2..47783dcd82d1a256f14d69fde66063de
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index cc3738cade39af393c651cbfb8a6cce87d7f770d..482e8abc5fa65b1f04f7549f087b7bc4450152af 100644
+index e62ac5b38b8d61b71077c46cc82f8a1fb09352ce..c46c57dbe2b9931035e667c6fba495e9be4a413c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -25,10 +25,13 @@
