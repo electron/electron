@@ -6,6 +6,16 @@ import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-re
 
 const Module = require('module');
 
+// We do not want to allow use of the VM module in the renderer process as
+// it conflicts with Blink's V8::Context internal logic.
+const originalModuleLoad = Module._load;
+Module._load = function (request: string) {
+  if (request === 'vm') {
+    console.warn('The vm module of Node.js is deprecated in the renderer process and will be removed.');
+  }
+  return originalModuleLoad.apply(this, arguments as any);
+};
+
 // Make sure globals like "process" and "global" are always available in preload
 // scripts even after they are deleted in "loaded" script.
 //
@@ -31,9 +41,6 @@ Module.wrapper = [
 // We modified the original process.argv to let node.js load the
 // init.js, we need to restore it here.
 process.argv.splice(1, 1);
-
-// Clear search paths.
-require('../common/reset-search-paths');
 
 // Import common settings.
 require('@electron/internal/common/init');

@@ -9,9 +9,6 @@ const entryScript: string = v8Util.getHiddenValue(process, '_serviceStartupScrip
 // we need to restore it here.
 process.argv.splice(1, 1, entryScript);
 
-// Clear search paths.
-require('../common/reset-search-paths');
-
 // Import common settings.
 require('@electron/internal/common/init');
 

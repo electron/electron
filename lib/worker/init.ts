@@ -6,9 +6,6 @@ const Module = require('module');
 // init.js, we need to restore it here.
 process.argv.splice(1, 1);
 
-// Clear search paths.
-require('../common/reset-search-paths');
-
 // Import common settings.
 require('@electron/internal/common/init');
 
