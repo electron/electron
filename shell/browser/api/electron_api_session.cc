@@ -176,7 +176,7 @@ class ClearBrowsingDataObserver
       promise_.Resolve();
     } else {
       promise_.RejectWithErrorMessage(base::StringPrintf(
-          "Failed to clear browsing data (%llu)", failed_data_types));
+          "Failed to clear browsing data (%" PRIu64 ")", failed_data_types));
     }
     delete this;
   }
