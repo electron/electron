@@ -186,7 +186,12 @@ for:
             # built on CI.
             7z a pdb.zip out\Default\*.pdb
           }
-      - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+      - ps: |
+          $manifest_file = "electron/script/zip_manifests/dist_zip.win.$env:TARGET_ARCH.manifest"
+          python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip $manifest_file
+          if ($LASTEXITCODE -ne 0) {
+            throw "Zip contains files not listed in the manifest $manifest_file"
+          }
       - ps: |
           cd C:\projects\src
           $missing_artifacts = $false
