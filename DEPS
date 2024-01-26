@@ -105,6 +105,10 @@ deps = {
   'src/third_party/engflow-reclient-configs': {
     'url': Var("engflow_git") + '/reclient-configs.git@' + Var("engflow_reclient_configs_version"),
     'condition': 'process_deps'
+  },
+  'src': {
+    'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
+    'condition': 'checkout_chromium and process_deps',
   }
 }
 
