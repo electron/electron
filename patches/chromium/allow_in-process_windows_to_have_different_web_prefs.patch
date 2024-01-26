@@ -56,7 +56,7 @@ index 9909d43a76d8bf5bd8e9b3523fe5be5f8740ad54..69bc9db9304547b272393727432f81d3
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 48134e1dd50c297ed987e4f8068612c420f038a3..a7902ae02436fe820feeb01a73ccd0a3e9b00946 100644
+index c206966bc77ed6e99dc4c3d8302e4520c6dc239a..f7469e9828d778b4ee4c3974f44ccc4a4611fe34 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -67,7 +67,7 @@ index 48134e1dd50c297ed987e4f8068612c420f038a3..a7902ae02436fe820feeb01a73ccd0a3
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -159,6 +160,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -157,6 +158,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;
