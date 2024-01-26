@@ -7,27 +7,27 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index b7f9e44f827e58ac3b9376ec291f42cceb2b28bb..24cc9efe32c083d0cecd1ae94514b5a2d24ca2d6 100644
+index f52d4f805406c513904151be90e433948764b3ad..7b790060b03cceec62bfe4c1f12d396b9cf52e8c 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -79,6 +79,8 @@
-     # TODO(refack): make v8-perfetto happen
+@@ -86,6 +86,8 @@
      'v8_use_perfetto': 0,
+     'tsan%': 0,
  
 +    'using_electron_config_gypi%': 0,
 +
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -282,6 +284,7 @@
-       'V8_DEPRECATION_WARNINGS',
-       'V8_IMMINENT_DEPRECATION_WARNINGS',
+@@ -285,6 +287,7 @@
+     # Defines these mostly for node-gyp to pickup.
+     'defines': [
        '_GLIBCXX_USE_CXX11_ABI=1',
 +      'ELECTRON_ENSURE_CONFIG_GYPI',
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -388,6 +391,11 @@
+@@ -391,6 +394,11 @@
            }],
          ],
        }],
@@ -36,14 +36,14 @@ index b7f9e44f827e58ac3b9376ec291f42cceb2b28bb..24cc9efe32c083d0cecd1ae94514b5a2
 +          'USING_ELECTRON_CONFIG_GYPI',
 +        ],
 +      }],
-       ['v8_enable_pointer_compression == 1', {
-         'defines': [
-           'V8_COMPRESS_POINTERS',
+       # The defines bellow must include all things from the external_v8_defines
+       # list in v8/BUILD.gn.
+       ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index 7b80ec63a082ce93ba81ca6dd41ec03041534ff7..926659883d3bd6d447c89a50d6770988b59d6f88 100755
+index 84b016cd853080656d4dcf982e64855fcfa72a55..f0cccff0eed2ef11275d2f7ec2358276f6e10458 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1484,6 +1484,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1489,6 +1489,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):

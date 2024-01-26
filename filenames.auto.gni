@@ -260,7 +260,6 @@ auto_filenames = {
     "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
     "package.json",
@@ -277,7 +276,6 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-provider.ts",
     "lib/renderer/api/clipboard.ts",
@@ -316,7 +314,6 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/webpack-provider.ts",
     "lib/renderer/api/clipboard.ts",
     "lib/renderer/api/context-bridge.ts",
@@ -336,10 +333,9 @@ auto_filenames = {
     "typings/internal-electron.d.ts",
   ]
 
-  asar_bundle_deps = [
-    "lib/asar/fs-wrapper.ts",
-    "lib/asar/init.ts",
-    "lib/common/webpack-provider.ts",
+  node_bundle_deps = [
+    "lib/node/asar-fs-wrapper.ts",
+    "lib/node/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
@@ -353,7 +349,6 @@ auto_filenames = {
     "lib/common/api/net-client-request.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/webpack-globals-provider.ts",
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",

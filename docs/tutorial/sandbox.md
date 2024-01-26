@@ -17,7 +17,7 @@ further configuration. If you want to disable the sandbox for a process, see the
 [Disabling the sandbox for a single process](#disabling-the-sandbox-for-a-single-process)
 section.
 
-## Sandbox behaviour in Electron
+## Sandbox behavior in Electron
 
 Sandboxed processes in Electron behave _mostly_ in the same way as Chromium's do, but
 Electron has a few additional concepts to consider because it interfaces with Node.js.

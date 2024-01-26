@@ -9,7 +9,7 @@ This patch can be removed when Node.js upgrades to a version of V8 containing
 the above CL.
 
 diff --git a/lib/.eslintrc.yaml b/lib/.eslintrc.yaml
-index 942d7cc1305eb4cf327de5666551435802f0dbac..991c65215488b9526758b9aca96842ad17fc018e 100644
+index fbaf641789e8dc2b1ba991ad7ee755271e756ee1..53bc3ce5e144f5988a9164c41e6bbc6cc44582d2 100644
 --- a/lib/.eslintrc.yaml
 +++ b/lib/.eslintrc.yaml
 @@ -33,10 +33,6 @@ rules:
@@ -24,7 +24,7 @@ index 942d7cc1305eb4cf327de5666551435802f0dbac..991c65215488b9526758b9aca96842ad
        message: Use `const { Blob } = require('buffer');` instead of the global.
      - name: BroadcastChannel
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 12ae4a9b23212d3f8ff1566a1c2b815a47d3838a..4460042d7bfbb8286a9b2abcbfb9e44f21b5d944 100644
+index 56697c3b2c2209ff58b8fefbccec03c7e3d9f9a0..4eb7230edcd0fb3d21e80218f6a912eb308fc89d 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
 @@ -112,7 +112,7 @@ port.on('message', (message) => {

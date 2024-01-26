@@ -15,6 +15,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "base/sequence_checker.h"
+#include "base/strings/string_number_conversions.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -263,7 +264,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
       promise.Resolve();
     } else {
       promise.RejectWithErrorMessage("mojo result not ok: " +
-                                     std::to_string(result));
+                                     base::NumberToString(result));
       Finished();
     }
   }

@@ -21,7 +21,6 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "content/public/common/content_switches.h"
-#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
@@ -83,6 +82,23 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   }
 }
 
+#if BUILDFLAG(IS_MAC)
+// A list of node envs that may be used to inject scripts.
+const char* kHijackableEnvs[] = {"NODE_OPTIONS", "NODE_REPL_EXTERNAL_MODULE"};
+
+// Return true if there is any env in kHijackableEnvs.
+bool UnsetHijackableEnvs(base::Environment* env) {
+  bool has = false;
+  for (const char* name : kHijackableEnvs) {
+    if (env->HasVar(name)) {
+      env->UnSetVar(name);
+      has = true;
+    }
+  }
+  return has;
+}
+#endif
+
 #if IS_MAS_BUILD()
 void SetCrashKeyStub(const std::string& key, const std::string& value) {}
 void ClearCrashKeyStub(const std::string& key) {}
@@ -124,8 +140,8 @@ int NodeMain(int argc, char* argv[]) {
     //                               NODE_OPTIONS: "--require 'bad.js'"}})
     // To prevent Electron apps from being used to work around macOS security
     // restrictions, when the parent process is not part of the app bundle, all
-    // environment variables starting with NODE_ will be removed.
-    if (util::UnsetAllNodeEnvs()) {
+    // environment variables that may be used to inject scripts are removed.
+    if (UnsetHijackableEnvs(os_env.get())) {
       LOG(ERROR) << "Node.js environment variables are disabled because this "
                     "process is invoked by other apps.";
     }
@@ -243,7 +259,8 @@ int NodeMain(int argc, char* argv[]) {
       env = node::CreateEnvironment(
           isolate_data, isolate->GetCurrentContext(), result->args(),
           result->exec_args(),
-          static_cast<node::EnvironmentFlags::Flags>(env_flags));
+          static_cast<node::EnvironmentFlags::Flags>(env_flags), {}, {},
+          &OnNodePreload);
       CHECK_NE(nullptr, env);
 
       node::SetIsolateUpForNode(isolate);
@@ -265,11 +282,6 @@ int NodeMain(int argc, char* argv[]) {
 #endif
 
       process.Set("crashReporter", reporter);
-
-      gin_helper::Dictionary versions;
-      if (process.Get("versions", &versions)) {
-        versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
-      }
     }
 
     v8::HandleScope scope(isolate);

@@ -90,7 +90,6 @@ declare namespace NodeJS {
       asarPath: string;
       filePath: string;
     };
-    initAsarSupport(require: NodeJS.Require): void;
   }
 
   interface NetBinding {

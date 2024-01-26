@@ -15,7 +15,6 @@
 #include "base/json/json_reader.h"
 #include "base/logging.h"
 #include "base/pickle.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "electron/fuses.h"
 #include "shell/common/asar/asar_util.h"
@@ -147,7 +146,6 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
     if (!info->integrity.has_value()) {
       LOG(FATAL) << "Failed to read integrity for file in ASAR archive";
-      return false;
     }
   }
 #endif
@@ -239,7 +237,7 @@ bool Archive::Init() {
     return false;
   }
 
-#if BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   // Validate header signature if required and possible
   if (electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled() &&
       RelativePath().has_value()) {
@@ -247,7 +245,6 @@ bool Archive::Init() {
     if (!integrity.has_value()) {
       LOG(FATAL) << "Failed to get integrity for validatable asar archive: "
                  << RelativePath().value();
-      return false;
     }
 
     // Currently we only support the sha256 algorithm, we can add support for
@@ -276,7 +273,7 @@ bool Archive::Init() {
   return true;
 }
 
-#if !BUILDFLAG(IS_MAC)
+#if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_WIN)
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   return std::nullopt;
 }

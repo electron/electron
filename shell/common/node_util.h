@@ -27,12 +27,6 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     std::vector<v8::Local<v8::String>>* parameters,
     std::vector<v8::Local<v8::Value>>* arguments);
 
-#if BUILDFLAG(IS_MAC)
-// Unset all environment variables that start with NODE_. Return false if there
-// is no node env at all.
-bool UnsetAllNodeEnvs();
-#endif
-
 }  // namespace electron::util
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_UTIL_H_

@@ -24,10 +24,10 @@ index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c2
        wrap->object()->Has(env->context(), env->handle_onclose_symbol())
        .FromMaybe(false)) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 64860d7e56d2bf68034d613d06bd0e36ca935ef6..af66f25c79b274838e308f8227fa463f31ae8658 100644
+index a68f6bb686768e2c5eaa4148741891926156883d..0239c64f80f4fb1870b452ed44e6ac36bfa0e3d2 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -446,6 +446,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
+@@ -472,6 +472,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
  void ContextifyContext::PropertyGetterCallback(
      Local<Name> property,
      const PropertyCallbackInfo<Value>& args) {
@@ -35,7 +35,7 @@ index 64860d7e56d2bf68034d613d06bd0e36ca935ef6..af66f25c79b274838e308f8227fa463f
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -453,6 +454,8 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -479,6 +480,8 @@ void ContextifyContext::PropertyGetterCallback(
  
    Local<Context> context = ctx->context();
    Local<Object> sandbox = ctx->sandbox();
@@ -44,7 +44,7 @@ index 64860d7e56d2bf68034d613d06bd0e36ca935ef6..af66f25c79b274838e308f8227fa463f
    MaybeLocal<Value> maybe_rv =
        sandbox->GetRealNamedProperty(context, property);
    if (maybe_rv.IsEmpty()) {
-@@ -462,6 +465,11 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -488,6 +491,11 @@ void ContextifyContext::PropertyGetterCallback(
  
    Local<Value> rv;
    if (maybe_rv.ToLocal(&rv)) {
@@ -57,10 +57,10 @@ index 64860d7e56d2bf68034d613d06bd0e36ca935ef6..af66f25c79b274838e308f8227fa463f
        rv = ctx->global_proxy();
  
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index 0a45234d55b837b3cc394db77d2cc0644b3cb501..c3794f8de34be43cd78e1bc0d940acba0cf257ff 100644
+index 6c9a23e669b29d1fdbc4e371d903e77060fd1b74..7c9f6b004295433be6a4ce84621f2005a0b67e14 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
-@@ -905,7 +905,7 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
+@@ -907,7 +907,7 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
                                       const TransferList& transfer_v) {
    Isolate* isolate = env->isolate();
    Local<Object> obj = object(isolate);
@@ -69,7 +69,7 @@ index 0a45234d55b837b3cc394db77d2cc0644b3cb501..c3794f8de34be43cd78e1bc0d940acba
    std::shared_ptr<Message> msg = std::make_shared<Message>();
  
    // Per spec, we need to both check if transfer list has the source port, and
-@@ -913,6 +913,10 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
+@@ -915,6 +915,10 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
  
    Maybe<bool> serialization_maybe =
        msg->Serialize(env, context, message_v, transfer_v, obj);

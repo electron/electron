@@ -279,16 +279,21 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
+
+  // depends-on: root_layer_
   std::unique_ptr<ui::Compositor> compositor_;
-  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+
+  // depends-on: render_widget_host_, root_layer_
+  const std::unique_ptr<ElectronDelegatedFrameHostClient>
+      delegated_frame_host_client_;
+
+  // depends-on: delegated_frame_host_client_
+  const std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
   raw_ptr<OffScreenHostDisplayClient> host_display_client_;
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
-
-  std::unique_ptr<ElectronDelegatedFrameHostClient>
-      delegated_frame_host_client_;
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
 
