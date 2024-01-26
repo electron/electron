@@ -292,21 +292,29 @@ jobs:
         git fetch
     # TODO(vertedinde): This won't work until we add an auth token
     # to not-goma, see proj channel
-    # - name: Setup RBE
-    #   run: |
-    #     echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $GITHUB_ENV
-    #     if [ "`uname`" == "Darwin" ]; then
-    #       echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $GITHUB_ENV
-    #       echo 'ulimit -n 10000' >> $GITHUB_ENV
-    #       echo 'sudo launchctl limit maxfiles 65536 200000' >> $GITHUB_ENV
-    #     fi
-    #     git clone https://github.com/electron/build-tools.git
-    #     cd build-tools
-    #     npx yarn --ignore-engines
-    #     mkdir third_party
-    #     # Pull down credential helper and print status
-    #     node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
-    #     HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
-    #     $HELPER login
-    #     echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
-    #     echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
+    - name: Setup RBE
+      run: |
+        echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $GITHUB_ENV
+        echo 'ulimit -n 10000' >> $GITHUB_ENV
+        echo 'sudo launchctl limit maxfiles 65536 200000' >> $GITHUB_ENV
+        git clone https://github.com/electron/build-tools.git
+        cd build-tools
+        npx yarn --ignore-engines
+        mkdir third_party
+        # Pull down credential helper and print status
+        node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
+        HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
+        $HELPER login
+        echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
+        echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
+    - name: step-gn-gen-default
+      run: |
+        cd src
+        gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+    #  TODO(vertedinde): Just use "e build" here
+    - name: ninja_build_electron
+      run: |
+        cd src
+        NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+        cp out/Default/.ninja_log out/electron_ninja_log
+        node electron/script/check-symlinks.js
