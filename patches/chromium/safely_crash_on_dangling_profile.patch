@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bo Liu <boliu@chromium.org>
+Date: Mon, 4 Dec 2023 15:01:22 +0000
+Subject: Safely crash on dangling profile
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: 1407197
+Change-Id: Idcafd8f0ba2f980d06338e573489a3456e3823c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5080603
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Commit-Queue: Bo Liu <boliu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1232704}
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index e49ccf4ffc115a78abceeddd7f452aeeb5c6a917..09a30d7329b3da7e1f7aa1ea13f4bef876555319 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -256,6 +256,11 @@ BASE_FEATURE(kBackNavigationPredictionMetrics,
+              "BackNavigationPredictionMetrics",
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// Kill switch for crash immediately on dangling BrowserContext.
++BASE_FEATURE(kCrashOnDanglingBrowserContext,
++             "CrashOnDanglingBrowserContext",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ using LifecycleState = RenderFrameHost::LifecycleState;
+ using LifecycleStateImpl = RenderFrameHostImpl::LifecycleStateImpl;
+ 
+@@ -1017,11 +1022,18 @@ class WebContentsOfBrowserContext : public base::SupportsUserData::Data {
+           env, web_contents_with_dangling_ptr_to_browser_context);
+ #endif  // BUILDFLAG(IS_ANDROID)
+ 
+-      NOTREACHED()
+-          << "BrowserContext is getting destroyed without first closing all "
+-          << "WebContents (for more info see https://crbug.com/1376879#c44); "
+-          << "creator = " << creator;
+-      base::debug::DumpWithoutCrashing();
++      if (base::FeatureList::IsEnabled(kCrashOnDanglingBrowserContext)) {
++        LOG(FATAL)
++            << "BrowserContext is getting destroyed without first closing all "
++            << "WebContents (for more info see https://crbug.com/1376879#c44); "
++            << "creator = " << creator;
++      } else {
++        NOTREACHED()
++            << "BrowserContext is getting destroyed without first closing all "
++            << "WebContents (for more info see https://crbug.com/1376879#c44); "
++            << "creator = " << creator;
++        base::debug::DumpWithoutCrashing();
++      }
+     }
+   }
+ 
