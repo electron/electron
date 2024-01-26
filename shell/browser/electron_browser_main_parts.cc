@@ -494,6 +494,13 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 void ElectronBrowserMainParts::WillRunMainMessageLoop(
     std::unique_ptr<base::RunLoop>& run_loop) {
+#if BUILDFLAG(IS_LINUX)
+  auto shutdown_cb = base::BindOnce(run_loop->QuitWhenIdleClosure());
+  ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
+      std::move(shutdown_cb),
+      content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
+#endif
+
   exit_code_ = content::RESULT_CODE_NORMAL_EXIT;
   Browser::Get()->SetMainMessageLoopQuitClosure(
       run_loop->QuitWhenIdleClosure());
@@ -504,11 +511,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   std::string app_name = electron::Browser::Get()->GetName();
 #endif
 #if BUILDFLAG(IS_LINUX)
-  auto shutdown_cb =
-      base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-  ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
-      std::move(shutdown_cb),
-      content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
 
