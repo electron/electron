@@ -593,14 +593,14 @@ class WebContents : public ExclusiveAccessContext,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
-  void OnRequestToLockMouse(content::WebContents* web_contents,
+  void OnRequestPointerLock(content::WebContents* web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
                             bool allowed);
-  void RequestToLockMouse(content::WebContents* web_contents,
+  void RequestPointerLock(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
-  void LostMouseLock() override;
+  void LostPointerLock() override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);

@@ -1512,32 +1512,32 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result.GetHandle());
 }
 
-void WebContents::OnRequestToLockMouse(content::WebContents* web_contents,
+void WebContents::OnRequestPointerLock(content::WebContents* web_contents,
                                        bool user_gesture,
                                        bool last_unlocked_by_target,
                                        bool allowed) {
   if (allowed) {
-    exclusive_access_manager_.mouse_lock_controller()->RequestToLockMouse(
+    exclusive_access_manager_.pointer_lock_controller()->RequestToLockPointer(
         web_contents, user_gesture, last_unlocked_by_target);
   } else {
-    web_contents->GotResponseToLockMouseRequest(
+    web_contents->GotResponseToPointerLockRequest(
         blink::mojom::PointerLockResult::kPermissionDenied);
   }
 }
 
-void WebContents::RequestToLockMouse(content::WebContents* web_contents,
+void WebContents::RequestPointerLock(content::WebContents* web_contents,
                                      bool user_gesture,
                                      bool last_unlocked_by_target) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::OnRequestToLockMouse,
+      base::BindOnce(&WebContents::OnRequestPointerLock,
                      base::Unretained(this)));
 }
 
-void WebContents::LostMouseLock() {
-  exclusive_access_manager_.mouse_lock_controller()->LostMouseLock();
+void WebContents::LostPointerLock() {
+  exclusive_access_manager_.pointer_lock_controller()->LostPointerLock();
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,

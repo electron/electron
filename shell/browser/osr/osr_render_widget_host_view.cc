@@ -366,17 +366,18 @@ gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
 
 void OffScreenRenderWidgetHostView::SetInsets(const gfx::Insets& insets) {}
 
-blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::LockMouse(
+blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::LockPointer(
     bool request_unadjusted_movement) {
   return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
-blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::ChangeMouseLock(
+blink::mojom::PointerLockResult
+OffScreenRenderWidgetHostView::ChangePointerLock(
     bool request_unadjusted_movement) {
   return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
-void OffScreenRenderWidgetHostView::UnlockMouse() {}
+void OffScreenRenderWidgetHostView::UnlockPointer() {}
 
 void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
     content::RenderWidgetHostView* view) {
