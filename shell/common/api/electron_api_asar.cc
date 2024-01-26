@@ -10,7 +10,6 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/node_util.h"
 
 namespace {
 
@@ -191,19 +190,6 @@ class Archive : public node::ObjectWrap {
   std::shared_ptr<asar::Archive> archive_;
 };
 
-static void InitAsarSupport(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  auto* isolate = args.GetIsolate();
-  auto require = args[0];
-
-  // Evaluate asar_bundle.js.
-  std::vector<v8::Local<v8::String>> asar_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "require")};
-  std::vector<v8::Local<v8::Value>> asar_bundle_args = {require};
-  electron::util::CompileAndCall(
-      isolate->GetCurrentContext(), "electron/js2c/asar_bundle",
-      &asar_bundle_params, &asar_bundle_args, nullptr);
-}
-
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
 
@@ -239,7 +225,6 @@ void Initialize(v8::Local<v8::Object> exports,
   exports->Set(context, node::FIXED_ONE_BYTE_STRING(isolate, "Archive"), cons)
       .Check();
   NODE_SET_METHOD(exports, "splitPath", &SplitPath);
-  NODE_SET_METHOD(exports, "initAsarSupport", &InitAsarSupport);
 }
 
 }  // namespace

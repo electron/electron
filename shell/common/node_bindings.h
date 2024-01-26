@@ -201,6 +201,12 @@ class NodeBindings {
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };
 
+// A thread-safe function responsible for loading preload script which runs for
+// all node environments (including child processes and workers).
+void OnNodePreload(node::Environment* env,
+                   v8::Local<v8::Value> process,
+                   v8::Local<v8::Value> require);
+
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_

@@ -8,7 +8,7 @@ to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
 by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index da553f6556a06d57d7490d74a3b4dd8f0132600c..168a6c72520d6540f0dbf84a62bc5e2b2f3ae022 100644
+index 59c37b97672d39a9da89ca2b78aa28a77ca78699..319d853a35d9191c64a4f21132306a774acd84e6 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -60,6 +60,7 @@ let debug = require('internal/util/debuglog').debuglog(
@@ -19,7 +19,7 @@ index da553f6556a06d57d7490d74a3b4dd8f0132600c..168a6c72520d6540f0dbf84a62bc5e2b
  
  const {
    AbortError,
-@@ -163,7 +164,6 @@ function fork(modulePath, args = [], options) {
+@@ -152,7 +153,6 @@ function fork(modulePath, args = [], options) {
        ArrayPrototypeSplice(execArgv, index - 1, 2);
      }
    }
@@ -27,7 +27,7 @@ index da553f6556a06d57d7490d74a3b4dd8f0132600c..168a6c72520d6540f0dbf84a62bc5e2b
    args = [...execArgv, modulePath, ...args];
  
    if (typeof options.stdio === 'string') {
-@@ -625,6 +625,21 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -614,6 +614,21 @@ function normalizeSpawnArguments(file, args, options) {
                      'options.windowsVerbatimArguments');
    }
  
