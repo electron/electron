@@ -29,3 +29,21 @@ cp.fork = (modulePath: string, args: any, options: any) => {
   }
   return originalFork(modulePath, args, options);
 };
+
+// Prevent Node from adding paths outside this app to search paths.
+const path = require('path');
+const Module = require('module') as NodeJS.ModuleInternal;
+const resourcesPathWithTrailingSlash = process.resourcesPath + path.sep;
+const originalNodeModulePaths = Module._nodeModulePaths;
+Module._nodeModulePaths = function (from: string) {
+  const paths: string[] = originalNodeModulePaths(from);
+  const fromPath = path.resolve(from) + path.sep;
+  // If "from" is outside the app then we do nothing.
+  if (fromPath.startsWith(resourcesPathWithTrailingSlash)) {
+    return paths.filter(function (candidate) {
+      return candidate.startsWith(resourcesPathWithTrailingSlash);
+    });
+  } else {
+    return paths;
+  }
+};
