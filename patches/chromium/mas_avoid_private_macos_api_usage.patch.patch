@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2a847e3295a147e83dba61dcf3b3446c9870cc34..a2e9bb1e3a93e1d1f6a745dd61b7e43b5948656f 100644
+index 8e017e42b87cf92fe2db63ca86afe94933cf5494..41b5ed9d6f1ee3634efc8d54e46424cfd2d59aca 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1047,6 +1047,7 @@ component("base") {
@@ -353,7 +353,7 @@ index eeeaec7e1064ca250ffc4ef5d5e174c562dcd640..7b0c310ab949140811031f68f0e7163e
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 4a97dd3ea091018387ead065f5f489b39f84301c..e6df67902a269975e739d4ce22aaf49730c10a96 100644
+index c3bcc9b889c0540adf562f84287f0a84c2b3802b..e91d05123ba2f8ea11d36a7f6dbedafd55b896a2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -600,10 +600,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 56a5195afef4b081bdae1d4b5b00256e8075f1cb..179724608c9bd490dabf62b1112f965d9cfc035e 100644
+index f5fb70fc679e467ab8d584325a9fdc06238932ed..1c21d5fb533c12d7042d67f9f4075786d8f037e8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -679,7 +679,7 @@ index 56a5195afef4b081bdae1d4b5b00256e8075f1cb..179724608c9bd490dabf62b1112f965d
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1670,6 +1672,7 @@ test("content_browsertests") {
+@@ -1671,6 +1673,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index 56a5195afef4b081bdae1d4b5b00256e8075f1cb..179724608c9bd490dabf62b1112f965d
  
    public_deps = [
      ":test_interfaces",
-@@ -2917,6 +2920,7 @@ test("content_unittests") {
+@@ -2918,6 +2921,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 1a68df39a51b31e5e36ea06f3b44caf5e0b61547..220df1c6748a2d13143286601ce582b61014640f 100644
+index 28cde4522e94ee6587b26e294c10a859dbce5d12..7aa02c2de417d1f12431252526334779ac51a99d 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
