@@ -6,10 +6,10 @@ Subject: fix: patch out Profile refs in accessibility_ui
 This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
-diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665643749f9 100644
---- a/chrome/browser/accessibility/accessibility_ui.cc
-+++ b/chrome/browser/accessibility/accessibility_ui.cc
+diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
+index ca2d1f1f6ebda6b47030043b6ec1c86f8140e4b9..6912477a0e4111eb356fca53afac1c19650e2aa2 100644
+--- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
++++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -22,7 +22,10 @@
  #include "base/trace_event/trace_event.h"
  #include "build/build_config.h"
@@ -69,7 +69,7 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
    data.Set(kInternal, show_internal ? kOn : kOff);
  
    base::Value::List page_list;
-@@ -265,11 +273,11 @@ void HandleAccessibilityRequestCallback(
+@@ -271,11 +279,11 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPagesField, std::move(page_list));
  
    base::Value::List browser_list;
@@ -83,7 +83,7 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
    data.Set(kBrowsersField, std::move(browser_list));
  
    base::Value::List widgets_list;
-@@ -486,8 +494,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(
+@@ -513,8 +521,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(
  
    AllowJavascript();
    if (flag_name_str == kInternal) {
@@ -94,7 +94,7 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
      return;
    }
  
-@@ -591,8 +601,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -619,8 +629,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -107,7 +107,7 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
    std::string accessibility_contents =
        web_contents->DumpAccessibilityTree(internal, property_filters);
    result.Set(kTreeField, accessibility_contents);
-@@ -617,6 +631,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -645,6 +659,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -115,7 +115,7 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        base::Value::Dict result = BuildTargetDescriptor(browser);
-@@ -629,6 +644,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -657,6 +672,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -123,7 +123,7 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
  #endif  // !BUILDFLAG(IS_ANDROID)
    // No browser with the specified |session_id| was found.
    base::Value::Dict result;
-@@ -741,5 +757,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -769,5 +785,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {
@@ -131,11 +131,11 @@ index 3414ca5314a171a34138d87a7e927be767f1e8f6..d3103ea10cb80f318e296cd911048665
    registry->RegisterBooleanPref(prefs::kShowInternalAccessibilityTree, false);
 +#endif
  }
-diff --git a/chrome/browser/accessibility/accessibility_ui.h b/chrome/browser/accessibility/accessibility_ui.h
-index 94fdbf91a5f6e03a259eb970f1d402a6d3cc12e4..2be0cbce1090b7dccad7ef483baa68fbc4235964 100644
---- a/chrome/browser/accessibility/accessibility_ui.h
-+++ b/chrome/browser/accessibility/accessibility_ui.h
-@@ -22,6 +22,8 @@ struct AXEventNotificationDetails;
+diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.h b/chrome/browser/ui/webui/accessibility/accessibility_ui.h
+index b78f1ab1493d7b6c6f57beca703421e914f8e469..8a4e90d8d151aafd182d70dae5b52231a6b605bb 100644
+--- a/chrome/browser/ui/webui/accessibility/accessibility_ui.h
++++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.h
+@@ -23,6 +23,8 @@ struct AXEventNotificationDetails;
  class WebContents;
  }  // namespace content
  
@@ -144,7 +144,7 @@ index 94fdbf91a5f6e03a259eb970f1d402a6d3cc12e4..2be0cbce1090b7dccad7ef483baa68fb
  namespace user_prefs {
  class PrefRegistrySyncable;
  }  // namespace user_prefs
-@@ -63,6 +65,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
+@@ -75,6 +77,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
    static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
  
   private:

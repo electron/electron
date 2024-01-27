@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 38922e7df71f92153d1f563a6fa63c33434d5188..4f41db41b4ab0bdfbfed959f5b7acd1aee32b341 100644
+index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c7244284e098df 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -755,7 +755,7 @@ index 38922e7df71f92153d1f563a6fa63c33434d5188..4f41db41b4ab0bdfbfed959f5b7acd1a
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2310,25 +2324,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2314,25 +2328,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -796,7 +796,7 @@ index 38922e7df71f92153d1f563a6fa63c33434d5188..4f41db41b4ab0bdfbfed959f5b7acd1a
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 3cf735c0bf3ba4ed4a871f4608f43cf9767de62f..fccabc0c51ba2fc1ccd8646d30da782fdd5904a8 100644
+index 50c05b02ebe6245cee5dbfd529d4eebbc4f57dde..1326edfcbe4c5eb0a8427071d1ed35c8a895486a 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -245,7 +245,7 @@ class PrintRenderFrameHelper
