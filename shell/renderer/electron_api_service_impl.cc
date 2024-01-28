@@ -61,12 +61,10 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
 
   // Only set up the node::CallbackScope if there's a node environment.
   // Sandboxed renderers don't have a node environment.
-  node::Environment* env = node::Environment::GetCurrent(context);
   std::unique_ptr<node::CallbackScope> callback_scope;
-  if (env) {
-    node::async_context async_context = {};
-    callback_scope = std::make_unique<node::CallbackScope>(isolate, ipcNative,
-                                                           async_context);
+  if (node::Environment::GetCurrent(context)) {
+    callback_scope = std::make_unique<node::CallbackScope>(
+        isolate, ipcNative, node::async_context{0, 0});
   }
 
   auto callback_key = gin::ConvertToV8(isolate, callback_name)

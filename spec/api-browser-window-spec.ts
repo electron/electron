@@ -14,6 +14,7 @@ import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+import { setTimeout as syncSetTimeout } from 'node:timers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -1779,6 +1780,36 @@ describe('BrowserWindow module', () => {
 
           expect(w.isMaximized()).to.equal(false);
           expect(w.isFullScreen()).to.equal(true);
+        });
+
+        it('does not crash if maximized, minimized, then restored to maximized state', (done) => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          let count = 0;
+
+          w.on('maximize', () => {
+            if (count === 0) syncSetTimeout(() => { w.minimize(); });
+            count++;
+          });
+
+          w.on('minimize', () => {
+            if (count === 1) syncSetTimeout(() => { w.restore(); });
+            count++;
+          });
+
+          w.on('restore', () => {
+            try {
+              throw new Error('hey!');
+            } catch (e: any) {
+              expect(e.message).to.equal('hey!');
+              done();
+            }
+          });
+
+          w.maximize();
         });
 
         it('checks normal bounds for maximized transparent window', async () => {
