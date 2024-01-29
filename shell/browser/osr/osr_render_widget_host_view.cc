@@ -135,7 +135,7 @@ class ElectronDelegatedFrameHostClient
       const ElectronDelegatedFrameHostClient&) = delete;
 
   ui::Layer* DelegatedFrameHostGetLayer() const override {
-    return view_->get_root_layer();
+    return view_->root_layer();
   }
 
   bool DelegatedFrameHostIsVisible() const override {
@@ -214,8 +214,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
 
   bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
-  get_root_layer()->SetFillsBoundsOpaquely(opaque);
-  get_root_layer()->SetColor(background_color_);
+  root_layer()->SetFillsBoundsOpaquely(opaque);
+  root_layer()->SetColor(background_color_);
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
@@ -306,7 +306,7 @@ void OffScreenRenderWidgetHostView::ShowWithVisibility(
 
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(GetLocalSurfaceId(),
-                                  get_root_layer()->bounds().size(), {});
+                                  root_layer()->bounds().size(), {});
 
   if (render_widget_host_)
     render_widget_host_->WasShown({});
@@ -988,10 +988,10 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
   gfx::Size size = GetViewBounds().size();
 
-  if (!force && !sf_did_change && size == get_root_layer()->bounds().size())
+  if (!force && !sf_did_change && size == root_layer()->bounds().size())
     return;
 
-  get_root_layer()->SetBounds(gfx::Rect(size));
+  root_layer()->SetBounds(gfx::Rect(size));
 
   const gfx::Size& size_in_pixels =
       gfx::ToFlooredSize(gfx::ConvertSizeToPixels(size, sf));
@@ -1031,8 +1031,8 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
   background_color_ = color;
 
   bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
-  get_root_layer()->SetFillsBoundsOpaquely(opaque);
-  get_root_layer()->SetColor(color);
+  root_layer()->SetFillsBoundsOpaquely(opaque);
+  root_layer()->SetColor(color);
 }
 
 void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(

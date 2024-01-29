@@ -215,7 +215,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetFrameRate(int frame_rate);
   int get_frame_rate() const { return frame_rate_; }
 
-  ui::Layer* get_root_layer() const { return root_layer_.get(); }
+  ui::Layer* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* get_delegated_frame_host() const {
     return delegated_frame_host_.get();
