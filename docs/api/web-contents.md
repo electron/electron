@@ -1630,7 +1630,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const win = new BrowserWindow()
   win.loadURL('https://github.com')
 
