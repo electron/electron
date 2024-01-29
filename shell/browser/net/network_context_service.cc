@@ -81,7 +81,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
   if (!in_memory) {
     // Configure the HTTP cache path and size.
     network_context_params->http_cache_max_size =
-        browser_context_->get_max_cache_size();
+        browser_context_->max_cache_size();
 
     network_context_params->file_paths =
         network::mojom::NetworkContextFilePaths::New();
