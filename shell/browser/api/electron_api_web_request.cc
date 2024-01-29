@@ -114,10 +114,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         std::string filename = "\"" + header.filename() + "\"";
         value = decodedFilename + "; filename=" + filename;
       }
-      base::Value::List* values = response_headers.FindList(key);
-      if (!values)
-        values = &response_headers.Set(key, base::Value::List())->GetList();
-      values->Append(base::Value(value));
+      response_headers.EnsureList(key)->Append(value);
     }
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
