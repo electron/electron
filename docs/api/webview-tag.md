@@ -611,6 +611,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
   * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
+  * `generateDocumentOutline` boolean (optional) _Experimental_ - Whether or not to generate a PDF document outline from content headers. Defaults to false.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 
