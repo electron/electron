@@ -67,18 +67,20 @@ class Notification : public gin::Wrappable<Notification>,
   void Close();
 
   // Prop Getters
-  std::u16string GetTitle() const;
-  std::u16string GetSubtitle() const;
-  std::u16string GetBody() const;
-  bool GetSilent() const;
-  bool GetHasReply() const;
-  std::u16string GetTimeoutType() const;
-  std::u16string GetReplyPlaceholder() const;
-  std::u16string GetUrgency() const;
-  std::u16string GetSound() const;
-  std::vector<electron::NotificationAction> GetActions() const;
-  std::u16string GetCloseButtonText() const;
-  std::u16string GetToastXml() const;
+  std::u16string get_title() const { return title_; }
+  std::u16string get_subtitle() const { return subtitle_; }
+  std::u16string get_body() const { return body_; }
+  bool get_silent() const { return silent_; }
+  bool get_has_reply() const { return has_reply_; }
+  std::u16string get_timeout_type() const { return timeout_type_; }
+  std::u16string get_reply_placeholder() const { return reply_placeholder_; }
+  std::u16string get_urgency() const { return urgency_; }
+  std::u16string get_sound() const { return sound_; }
+  std::vector<electron::NotificationAction> get_actions() const {
+    return actions_;
+  }
+  std::u16string get_close_button_text() const { return close_button_text_; }
+  std::u16string get_toast_xml() const { return toast_xml_; }
 
   // Prop Setters
   void SetTitle(const std::u16string& new_title);
