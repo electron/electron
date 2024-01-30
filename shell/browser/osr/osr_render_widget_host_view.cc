@@ -235,7 +235,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
         this, base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
                                   weak_ptr_factory_.GetWeakPtr()));
     video_consumer_->SetActive(is_painting());
-    video_consumer_->SetFrameRate(get_frame_rate());
+    video_consumer_->SetFrameRate(this->frame_rate());
   }
 }
 
@@ -558,7 +558,7 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, true, embedder_host_view->get_frame_rate(), callback_,
+      transparent_, true, embedder_host_view->frame_rate(), callback_,
       render_widget_host, embedder_host_view, size());
 }
 
@@ -923,10 +923,10 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
 
 void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   if (parent_host_view_) {
-    if (parent_host_view_->get_frame_rate() == get_frame_rate())
+    if (parent_host_view_->frame_rate() == this->frame_rate())
       return;
 
-    frame_rate_ = parent_host_view_->get_frame_rate();
+    frame_rate_ = parent_host_view_->frame_rate();
   } else {
     if (frame_rate <= 0)
       frame_rate = 1;
@@ -939,7 +939,7 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   SetupFrameRate(true);
 
   if (video_consumer_) {
-    video_consumer_->SetFrameRate(get_frame_rate());
+    video_consumer_->SetFrameRate(this->frame_rate());
   }
 
   for (auto* guest_host_view : guest_host_views_)

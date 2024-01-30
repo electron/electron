@@ -213,7 +213,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   bool is_painting() const { return painting_; }
 
   void SetFrameRate(int frame_rate);
-  int get_frame_rate() const { return frame_rate_; }
+  int frame_rate() const { return frame_rate_; }
 
   ui::Layer* root_layer() const { return root_layer_.get(); }
 

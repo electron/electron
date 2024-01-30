@@ -139,7 +139,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
           : web_contents_impl->GetRenderWidgetHostView());
 
   return new OffScreenRenderWidgetHostView(transparent_, painting_,
-                                           view->get_frame_rate(), callback_,
+                                           view->frame_rate(), callback_,
                                            render_widget_host, view, GetSize());
 }
 
@@ -206,7 +206,7 @@ void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
 
 int OffScreenWebContentsView::GetFrameRate() const {
   if (auto* view = GetView())
-    return view->get_frame_rate();
+    return view->frame_rate();
   return frame_rate_;
 }
 
