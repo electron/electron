@@ -21,6 +21,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
@@ -65,6 +66,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::EnvironmentMap env_map,
     base::FilePath current_working_directory,
     bool use_plugin_helper) {
+  App* app = App::Get();
+  if (app->GetNodePreload())
+    params->preload = app->GetNodePreload();
+
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);

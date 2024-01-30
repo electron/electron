@@ -676,6 +676,54 @@ Overrides the current application's name.
 
 **Note:** This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
 
+### `app.setNodePreload(filepath)`
+
+* `filepath` string | null
+
+Sets a preload script that will be run before a Node.js environment is
+initialized.
+
+The preload script runs after the Node.js environment is initialized and before
+the Electron's initialization script is loaded, which is exactly the same time
+with scripts loaded by the `--require` CLI flag.
+
+The preload script runs when a Node.js environment is created. That is, in
+Node.js workers, child processes created with `child_process.fork`, utility
+processes, non-sandboxed renderer processes. It does not run in the main
+process, because by the time this API is invoked, the initialization phase has
+already passed. It also does not run in sandboxed renderer processes, because
+there is no real Node.js environment created there.
+
+Since Electron's initialization script runs after the preload script, changes
+made by Electron will overwrite the ones done in the preload script. For
+example Electron patches the `fs` module to support ASAR archives and the
+`Module._nodeModulePaths` method to reset module search paths, any modification
+to those things in preload script will be overwritten by Electron.
+
+To reliably patch things of Node.js or Electron, users can define the `exports`
+of preload module with a `onBuiltinModulesPatched` method, which will run after
+Electron's initialization script finishes running.
+
+```js @ts-nocheck
+const Module = require('node:module')
+const originalMethod = Module._nodeModulePaths
+exports.onBuiltinModulesPatched = () => {
+  Module._nodeModulePaths = (...args) => {
+    originalMethod(...args)
+  }
+}
+```
+
+This API is mainly used by apps that want to reliably add more security checks,
+for example restricting module search paths to a certain directory, or forbids
+`fs` operations outside certain locations.
+
+### `app.getNodePreload()`
+
+Returns `string` | null.
+
+Gets the preload script set by the `app.setNodePreload` API.
+
 ### `app.getLocale()`
 
 Returns `string` - The current application locale, fetched using Chromium's `l10n_util` library.

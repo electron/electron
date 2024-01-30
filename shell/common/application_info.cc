@@ -4,14 +4,18 @@
 
 #include "shell/common/application_info.h"
 
+#include "base/base_paths.h"
+#include "base/command_line.h"
 #include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
+#include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/common/user_agent.h"
 #include "electron/electron_version.h"
 #include "shell/browser/browser.h"
+#include "shell/common/mac/main_application_bundle.h"
 
 namespace electron {
 
@@ -54,6 +58,18 @@ bool IsAppRTL() {
   base::i18n::TextDirection text_direction =
       base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
   return text_direction == base::i18n::RIGHT_TO_LEFT;
+}
+
+base::FilePath GetResourcesPath() {
+#if BUILDFLAG(IS_MAC)
+  return MainApplicationBundlePath().Append("Contents").Append("Resources");
+#else
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  base::FilePath exec_path(command_line->GetProgram());
+  base::PathService::Get(base::FILE_EXE, &exec_path);
+
+  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+#endif
 }
 
 }  // namespace electron

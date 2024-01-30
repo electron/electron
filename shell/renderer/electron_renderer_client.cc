@@ -30,7 +30,11 @@ ElectronRendererClient::ElectronRendererClient()
     : node_bindings_{NodeBindings::Create(
           NodeBindings::BrowserEnvironment::kRenderer)},
       electron_bindings_{
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {
+  auto* cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch(switches::kNodePreload))
+    node_preload_ = cmd->GetSwitchValuePath(switches::kNodePreload);
+}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
 
@@ -125,7 +129,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   BindProcess(env->isolate(), &process_dict, render_frame);
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env.get());
+  node_bindings_->LoadEnvironment(env.get(), node_preload_);
 
   if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
@@ -191,7 +195,8 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     auto* current = WebWorkerObserver::GetCurrent();
     if (current)
       return;
-    WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
+    WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context,
+                                                                node_preload_);
   }
 }
 

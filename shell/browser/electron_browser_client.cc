@@ -548,8 +548,12 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 #endif
 
     if (delegate_) {
-      auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
-      command_line->AppendSwitchPath(switches::kAppPath, app_path);
+      api::App* app = static_cast<api::App*>(delegate_);
+      command_line->AppendSwitchPath(switches::kAppPath, app->GetAppPath());
+      if (app->GetNodePreload()) {
+        command_line->AppendSwitchPath(switches::kNodePreload,
+                                       *app->GetNodePreload());
+      }
     }
 
     auto env = base::Environment::Create();

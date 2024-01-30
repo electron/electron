@@ -71,10 +71,12 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
+#include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
@@ -1581,6 +1583,35 @@ std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
 }
 
+void App::SetNodePreload(gin_helper::ErrorThrower thrower,
+                         std::optional<base::FilePath> preload) {
+  node::Environment* env = node::Environment::GetCurrent(thrower.isolate());
+  gin_helper::Dictionary process(env->isolate(), env->process_object());
+  if (preload && !preload->empty()) {
+    if (!preload->IsAbsolute()) {
+      thrower.ThrowError("The file path of preload script must be absolute.");
+      return;
+    }
+    if (IsPackaged() && !GetResourcesPath().IsParent(*preload)) {
+      thrower.ThrowError("The preload script must reside in resourcesPath.");
+      return;
+    }
+    // Update the preload property of process which will be used by node's
+    // child_process.fork.
+    process.SetHidden("preload", *preload);
+  } else {
+    process.SetHidden("preload", nullptr);
+  }
+  // Update the preload property of node::Environment which will be inherited
+  // by node workers.
+  env->set_embedder_preload(GetNodePreloadCallback(preload));
+  preload_ = std::move(preload);
+}
+
+const std::optional<base::FilePath>& App::GetNodePreload() const {
+  return preload_;
+}
+
 #if BUILDFLAG(IS_MAC)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
                                    gin::Arguments* args) {
@@ -1857,6 +1888,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("getGPUInfo", &App::GetGPUInfo)
+      .SetMethod("setNodePreload", &App::SetNodePreload)
+      .SetMethod("getNodePreload", &App::GetNodePreload)
 #if IS_MAS_BUILD()
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)

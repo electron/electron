@@ -53,6 +53,7 @@ class ElectronRendererClient : public RendererClientBase {
 
   const std::unique_ptr<NodeBindings> node_bindings_;
   const std::unique_ptr<ElectronBindings> electron_bindings_;
+  std::optional<base::FilePath> node_preload_;
 
   // The node::Environment::GetCurrent API does not return nullptr when it
   // is called for a context without node::Environment, so we have to keep

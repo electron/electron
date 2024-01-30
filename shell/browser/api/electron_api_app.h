@@ -74,6 +74,7 @@ class App : public ElectronBrowserClient::Delegate,
 #endif
 
   base::FilePath GetAppPath() const;
+  const std::optional<base::FilePath>& GetNodePreload() const;
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessExited(content::RenderProcessHost* host);
 
@@ -224,6 +225,8 @@ class App : public ElectronBrowserClient::Delegate,
   std::string GetUserAgentFallback();
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
   v8::Local<v8::Promise> ResolveProxy(gin::Arguments* args);
+  void SetNodePreload(gin_helper::ErrorThrower thrower,
+                      std::optional<base::FilePath> preload);
 
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
@@ -261,6 +264,7 @@ class App : public ElectronBrowserClient::Delegate,
   base::CancelableTaskTracker cancelable_task_tracker_;
 
   base::FilePath app_path_;
+  std::optional<base::FilePath> preload_;
 
   // pid -> electron::ProcessMetric
   base::flat_map<int, std::unique_ptr<electron::ProcessMetric>> app_metrics_;

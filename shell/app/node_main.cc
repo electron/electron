@@ -32,6 +32,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "shell/common/options_switches.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -167,6 +168,17 @@ int NodeMain(int argc, char* argv[]) {
   }
 #endif
 
+  // Check if parent has passed a preload script.
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::optional<base::FilePath> preload;
+  if (os_env->HasVar("ELECTRON_HAS_NODE_PRELOAD")) {
+    os_env->UnSetVar("ELECTRON_HAS_NODE_PRELOAD");
+    preload = command_line->GetSwitchValuePath(switches::kNodePreload);
+    // Remove the last arg, which is the preload script.
+    // Note that modifying argc only has effects on process.argv in node.
+    argc -= 1;
+  }
+
   int exit_code = 1;
   {
     // Feed gin::PerIsolateData with a task runner.
@@ -206,7 +218,6 @@ int NodeMain(int argc, char* argv[]) {
     // On Linux, initialize crashpad after Nodejs init phase so that
     // crash and termination signal handlers can be set by the crashpad client.
     if (!pid_string.empty()) {
-      auto* command_line = base::CommandLine::ForCurrentProcess();
       command_line->AppendSwitchASCII(
           crash_reporter::switches::kCrashpadHandlerPid, pid_string);
       ElectronCrashReporterClient::Create();
@@ -284,7 +295,8 @@ int NodeMain(int argc, char* argv[]) {
     }
 
     v8::HandleScope scope(isolate);
-    node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
+    node::LoadEnvironment(env, node::StartExecutionCallback{},
+                          GetNodePreloadCallback(std::move(preload)));
 
     // Potential reasons we get Nothing here may include: the env
     // is stopping, or the user hooks process.emit('exit').

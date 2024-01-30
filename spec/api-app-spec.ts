@@ -5,7 +5,9 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import * as fs from 'fs-extra';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { promisify } from 'node:util';
+import { Worker } from 'node:worker_threads';
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
@@ -2148,6 +2150,108 @@ describe('default behavior', () => {
       } else {
         expect(app.runningUnderARM64Translation).to.be.undefined();
       }
+    });
+  });
+
+  describe('app.setNodePreload', () => {
+    const checkProcessObject = (message: any) => {
+      expect(message.preloadRun).to.equal(true);
+      expect(message.versions.electron).to.equal(process.versions.electron);
+      expect(message.resourcesPath).to.equal(process.resourcesPath);
+    };
+
+    const preloadPath = path.join(fixturesPath, 'module', 'node-preload.js');
+    beforeEach(() => {
+      app.setNodePreload(preloadPath);
+    });
+
+    afterEach(() => {
+      app.setNodePreload(null);
+    });
+
+    it('sets preload in forked node child process', async () => {
+      const child = cp.fork(path.join(fixturesPath, 'module', 'send-process.js'));
+      const [msg] = await once(child, 'message');
+      checkProcessObject(msg);
+    });
+
+    it('sets preload in worker', async () => {
+      const msg = await new Promise((resolve, reject) => {
+        const worker = new Worker(path.join(fixturesPath, 'module', 'worker-post-process.js'));
+        worker.once('message', resolve);
+        worker.once('error', reject);
+        worker.once('exit', (code) => {
+          if (code !== 0) { reject(new Error(`Worker stopped with exit code ${code}`)); }
+        });
+      });
+      checkProcessObject(JSON.parse(msg as string));
+    });
+
+    it('sets preload in utility process', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'module', 'utility-post-process.js'));
+      const [msg] = await once(child, 'message');
+      checkProcessObject(JSON.parse(msg as string));
+    });
+
+    it('onBuiltinModulesPatched is run after builtin modules are patches', async () => {
+      const child = cp.fork(path.join(fixturesPath, 'module', 'module-paths.js'));
+      const [msg] = await once(child, 'message');
+      expect(msg).to.deep.equal(['patched']);
+    });
+
+    it('the --node-preload cmd flag is ignored in the main process', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'print-process');
+      const flag = `--node-preload=${preloadPath}`;
+      const { stdout } = cp.spawnSync(process.execPath, [appPath, flag]);
+      expect(stdout.toString().trim()).to.equal('undefined');
+    });
+
+    afterEach(() => {
+      delete process.env.ELECTRON_FORCE_IS_PACKAGED;
+    });
+
+    it('throws when path outside of resources path is passed', () => {
+      process.env.ELECTRON_FORCE_IS_PACKAGED = 'true';
+      expect(() => {
+        app.setNodePreload(path.join(os.tmpdir(), 'test.js'));
+      }).to.throw(/The preload script must reside in resourcesPath/);
+    });
+
+    it('does not throw when path is in resources path', () => {
+      process.env.ELECTRON_FORCE_IS_PACKAGED = 'true';
+      expect(() => {
+        app.setNodePreload(path.join(process.resourcesPath, 'test.js'));
+      }).to.not.throw();
+    });
+
+    afterEach(closeAllWindows);
+
+    it('sets preload in non-sandboxed renderer', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadURL('about:blank');
+      const result = await w.webContents.executeJavaScript('JSON.stringify(process)');
+      checkProcessObject(JSON.parse(result as string));
+    });
+
+    it('sets not preload in sandboxed renderer', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadURL('about:blank');
+      const result = await w.webContents.executeJavaScript('typeof process');
+      expect(result).to.equal('undefined');
     });
   });
 });
