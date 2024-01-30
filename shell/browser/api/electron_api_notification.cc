@@ -214,26 +214,23 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
-      .SetProperty("title", &Notification::get_title, &Notification::SetTitle)
-      .SetProperty("subtitle", &Notification::get_subtitle,
+      .SetProperty("title", &Notification::title, &Notification::SetTitle)
+      .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)
-      .SetProperty("body", &Notification::get_body, &Notification::SetBody)
-      .SetProperty("silent", &Notification::get_silent,
-                   &Notification::SetSilent)
-      .SetProperty("hasReply", &Notification::get_has_reply,
+      .SetProperty("body", &Notification::body, &Notification::SetBody)
+      .SetProperty("silent", &Notification::is_silent, &Notification::SetSilent)
+      .SetProperty("hasReply", &Notification::has_reply,
                    &Notification::SetHasReply)
-      .SetProperty("timeoutType", &Notification::get_timeout_type,
+      .SetProperty("timeoutType", &Notification::timeout_type,
                    &Notification::SetTimeoutType)
-      .SetProperty("replyPlaceholder", &Notification::get_reply_placeholder,
+      .SetProperty("replyPlaceholder", &Notification::reply_placeholder,
                    &Notification::SetReplyPlaceholder)
-      .SetProperty("urgency", &Notification::get_urgency,
-                   &Notification::SetUrgency)
-      .SetProperty("sound", &Notification::get_sound, &Notification::SetSound)
-      .SetProperty("actions", &Notification::get_actions,
-                   &Notification::SetActions)
-      .SetProperty("closeButtonText", &Notification::get_close_button_text,
+      .SetProperty("urgency", &Notification::urgency, &Notification::SetUrgency)
+      .SetProperty("sound", &Notification::sound, &Notification::SetSound)
+      .SetProperty("actions", &Notification::actions, &Notification::SetActions)
+      .SetProperty("closeButtonText", &Notification::close_button_text,
                    &Notification::SetCloseButtonText)
-      .SetProperty("toastXml", &Notification::get_toast_xml,
+      .SetProperty("toastXml", &Notification::toast_xml,
                    &Notification::SetToastXml)
       .Build();
 }
