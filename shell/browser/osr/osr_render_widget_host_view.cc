@@ -727,10 +727,10 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
       }
 
       for (auto* proxy_view : proxy_views_) {
-        gfx::Rect rect = proxy_view->get_bounds();
+        gfx::Rect rect = proxy_view->bounds();
         gfx::Point origin_in_pixels =
             gfx::ToFlooredPoint(gfx::ConvertPointToPixels(rect.origin(), sf));
-        canvas.writePixels(*proxy_view->get_bitmap(), origin_in_pixels.x(),
+        canvas.writePixels(*proxy_view->bitmap(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
     }
@@ -786,7 +786,7 @@ void OffScreenRenderWidgetHostView::SynchronizeVisualProperties() {
 void OffScreenRenderWidgetHostView::SendMouseEvent(
     const blink::WebMouseEvent& event) {
   for (auto* proxy_view : proxy_views_) {
-    gfx::Rect bounds = proxy_view->get_bounds();
+    gfx::Rect bounds = proxy_view->bounds();
     if (bounds.Contains(event.PositionInWidget().x(),
                         event.PositionInWidget().y())) {
       blink::WebMouseEvent proxy_event(event);
@@ -824,7 +824,7 @@ void OffScreenRenderWidgetHostView::SendMouseEvent(
 void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
     const blink::WebMouseWheelEvent& event) {
   for (auto* proxy_view : proxy_views_) {
-    gfx::Rect bounds = proxy_view->get_bounds();
+    gfx::Rect bounds = proxy_view->bounds();
     if (bounds.Contains(event.PositionInWidget().x(),
                         event.PositionInWidget().y())) {
       blink::WebMouseWheelEvent proxy_event(event);
