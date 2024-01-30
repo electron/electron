@@ -235,6 +235,7 @@ WebContents.prototype.printToPDF = async function (options) {
     pageRanges: checkType(options.pageRanges ?? '', 'string', 'pageRanges'),
     preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
     generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
+    generateDocumentOutline: checkType(options.generateDocumentOutline ?? false, 'boolean', 'generateDocumentOutline'),
     ...parsePageSize(options.pageSize ?? 'letter')
   };
 
