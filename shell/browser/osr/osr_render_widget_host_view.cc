@@ -294,7 +294,7 @@ bool OffScreenRenderWidgetHostView::HasFocus() {
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
-  return get_delegated_frame_host()->CanCopyFromCompositingSurface();
+  return delegated_frame_host()->CanCopyFromCompositingSurface();
 }
 
 void OffScreenRenderWidgetHostView::ShowWithVisibility(
@@ -320,9 +320,9 @@ void OffScreenRenderWidgetHostView::Hide() {
     render_widget_host_->WasHidden();
 
   // TODO(deermichel): correct or kOther?
-  get_delegated_frame_host()->WasHidden(
+  delegated_frame_host()->WasHidden(
       content::DelegatedFrameHost::HiddenCause::kOccluded);
-  get_delegated_frame_host()->DetachFromCompositor();
+  delegated_frame_host()->DetachFromCompositor();
 
   is_showing_ = false;
 }
@@ -384,9 +384,9 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
               ->IsRenderWidgetHostViewChildFrame());
   auto* view_osr = static_cast<OffScreenRenderWidgetHostView*>(view);
   SetBackgroundColor(view_osr->background_color_);
-  if (get_delegated_frame_host() && view_osr->get_delegated_frame_host()) {
-    get_delegated_frame_host()->TakeFallbackContentFrom(
-        view_osr->get_delegated_frame_host());
+  if (delegated_frame_host() && view_osr->delegated_frame_host()) {
+    delegated_frame_host()->TakeFallbackContentFrom(
+        view_osr->delegated_frame_host());
   }
 }
 
@@ -397,11 +397,11 @@ void OffScreenRenderWidgetHostView::
 
 void OffScreenRenderWidgetHostView::UpdateFrameSinkIdRegistration() {
   RenderWidgetHostViewBase::UpdateFrameSinkIdRegistration();
-  get_delegated_frame_host()->SetIsFrameSinkIdOwner(is_frame_sink_id_owner());
+  delegated_frame_host()->SetIsFrameSinkIdOwner(is_frame_sink_id_owner());
 }
 
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
-  get_delegated_frame_host()->ResetFallbackToFirstNavigationSurface();
+  delegated_frame_host()->ResetFallbackToFirstNavigationSurface();
 }
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
@@ -483,8 +483,8 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
     base::OnceCallback<void(const SkBitmap&)> callback) {
-  get_delegated_frame_host()->CopyFromCompositingSurface(src_rect, output_size,
-                                                         std::move(callback));
+  delegated_frame_host()->CopyFromCompositingSurface(src_rect, output_size,
+                                                     std::move(callback));
 }
 
 display::ScreenInfo OffScreenRenderWidgetHostView::GetScreenInfo() const {
@@ -516,9 +516,8 @@ void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(
     const content::DisplayFeature* display_feature) {}
 
 viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
-  return get_delegated_frame_host()
-             ? get_delegated_frame_host()->GetCurrentSurfaceId()
-             : viz::SurfaceId();
+  return delegated_frame_host() ? delegated_frame_host()->GetCurrentSurfaceId()
+                                : viz::SurfaceId();
 }
 
 std::unique_ptr<content::SyntheticGestureTarget>
@@ -563,7 +562,7 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
 }
 
 const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
-  return get_delegated_frame_host()->frame_sink_id();
+  return delegated_frame_host()->frame_sink_id();
 }
 
 void OffScreenRenderWidgetHostView::DidNavigate() {
@@ -1006,7 +1005,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   delegated_frame_host_surface_id_ =
       delegated_frame_host_allocator_.GetCurrentLocalSurfaceId();
 
-  get_delegated_frame_host()->EmbedSurface(
+  delegated_frame_host()->EmbedSurface(
       delegated_frame_host_surface_id_, size,
       cc::DeadlinePolicy::UseDefaultDeadline());
 

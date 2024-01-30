@@ -217,7 +217,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   ui::Layer* root_layer() const { return root_layer_.get(); }
 
-  content::DelegatedFrameHost* get_delegated_frame_host() const {
+  content::DelegatedFrameHost* delegated_frame_host() const {
     return delegated_frame_host_.get();
   }
 
