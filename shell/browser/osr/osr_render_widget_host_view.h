@@ -210,14 +210,16 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SendMouseWheelEvent(const blink::WebMouseWheelEvent& event);
 
   void SetPainting(bool painting);
-  bool IsPainting() const;
+  bool is_painting() const { return painting_; }
 
   void SetFrameRate(int frame_rate);
-  int GetFrameRate() const;
+  int frame_rate() const { return frame_rate_; }
 
-  ui::Layer* GetRootLayer() const;
+  ui::Layer* root_layer() const { return root_layer_.get(); }
 
-  content::DelegatedFrameHost* GetDelegatedFrameHost() const;
+  content::DelegatedFrameHost* delegated_frame_host() const {
+    return delegated_frame_host_.get();
+  }
 
   void Invalidate();
   void InvalidateBounds(const gfx::Rect&);

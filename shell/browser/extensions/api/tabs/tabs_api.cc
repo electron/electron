@@ -369,7 +369,7 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
       params->zoom_factor > 0
           ? blink::PageZoomFactorToZoomLevel(params->zoom_factor)
           : blink::PageZoomFactorToZoomLevel(
-                zoom_controller->GetDefaultZoomFactor());
+                zoom_controller->default_zoom_factor());
 
   zoom_controller->SetZoomLevel(zoom_level);
 

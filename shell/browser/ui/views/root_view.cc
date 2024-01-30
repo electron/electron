@@ -84,10 +84,6 @@ void RootView::SetAutoHideMenuBar(bool auto_hide) {
   menu_bar_autohide_ = auto_hide;
 }
 
-bool RootView::IsMenuBarAutoHide() const {
-  return menu_bar_autohide_;
-}
-
 void RootView::SetMenuBarVisibility(bool visible) {
   if (!window_->content_view() || !menu_bar_ || menu_bar_visible_ == visible)
     return;
@@ -102,10 +98,6 @@ void RootView::SetMenuBarVisibility(bool visible) {
   }
 
   Layout();
-}
-
-bool RootView::IsMenuBarVisible() const {
-  return menu_bar_visible_;
 }
 
 void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
