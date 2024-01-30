@@ -3149,7 +3149,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto landscape = settings.GetDict().FindBool("landscape");
   auto display_header_footer =
       settings.GetDict().FindBool("displayHeaderFooter");
-  auto print_background = settings.GetDict().FindBool("shouldPrintBackgrounds");
+  auto print_background = settings.GetDict().FindBool("printBackground");
   auto scale = settings.GetDict().FindDouble("scale");
   auto paper_width = settings.GetDict().FindDouble("paperWidth");
   auto paper_height = settings.GetDict().FindDouble("paperHeight");
