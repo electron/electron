@@ -149,6 +149,7 @@ def format_patch(repo, since):
     'format-patch',
     '--keep-subject',
     '--no-stat',
+    '--notes',
     '--stdout',
 
     # Per RFC 3676 the signature is separated from the body by a line with
