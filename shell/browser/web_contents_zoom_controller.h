@@ -81,7 +81,7 @@ class WebContentsZoomController
   bool SetZoomLevel(double zoom_level);
 
   void SetDefaultZoomFactor(double factor);
-  double GetDefaultZoomFactor();
+  double default_zoom_factor() { return default_zoom_factor_; }
 
   // Sets the temporary zoom level through HostZoomMap.
   void SetTemporaryZoomLevel(double level);

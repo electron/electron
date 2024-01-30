@@ -384,14 +384,6 @@ bool ElectronBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
-bool ElectronBrowserContext::CanUseHttpCache() const {
-  return use_cache_;
-}
-
-int ElectronBrowserContext::GetMaxCacheSize() const {
-  return max_cache_size_;
-}
-
 std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
