@@ -333,7 +333,7 @@ void WebContentsZoomController::RenderFrameHostChanged(
 void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
     const GURL& url) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (blink::PageZoomValuesEqual(get_default_zoom_factor(), kPageZoomEpsilon))
+  if (blink::PageZoomValuesEqual(default_zoom_factor(), kPageZoomEpsilon))
     return;
 
   content::GlobalRenderFrameHostId old_rfh_id_ =
@@ -356,7 +356,7 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   // pref store < kZoomFactor < setZoomLevel
   std::string host = net::GetHostOrSpecFromURL(url);
   std::string scheme = url.scheme();
-  double zoom_factor = get_default_zoom_factor();
+  double zoom_factor = default_zoom_factor();
   double zoom_level = blink::PageZoomFactorToZoomLevel(zoom_factor);
   if (host_zoom_map_->HasZoomLevel(scheme, host)) {
     zoom_level = host_zoom_map_->GetZoomLevelForHostAndScheme(scheme, host);
