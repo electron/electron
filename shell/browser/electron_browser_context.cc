@@ -37,6 +37,7 @@
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/cookie_change_notifier.h"
@@ -449,9 +450,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   if (url_loader_factory_)
     return url_loader_factory_;
 
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> network_factory_remote;
-  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver =
-      network_factory_remote.InitWithNewPipeAndPassReceiver();
+  network::URLLoaderFactoryBuilder factory_builder;
 
   // Consult the embedder.
   mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
@@ -461,8 +460,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), std::nullopt, ukm::kInvalidSourceIdObj,
-          &factory_receiver, &header_client, nullptr, nullptr, nullptr,
-          nullptr);
+          factory_builder, &header_client, nullptr, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -475,11 +473,9 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   params->disable_web_security = false;
 
   auto* storage_partition = GetDefaultStoragePartition();
-  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
-      std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
-      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
-          std::move(network_factory_remote));
+      std::move(factory_builder)
+          .Finish(storage_partition->GetNetworkContext(), std::move(params));
   return url_loader_factory_;
 }
 
