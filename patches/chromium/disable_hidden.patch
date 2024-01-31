@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 48a03412e7a05f8f2888a83c369c5eb900a6f9e5..ad2c39a98a22ff436ae7c0b3cdaa80ae9e2a4010 100644
+index 88e6720ca337789cfe7243cb163cc3d77af0a702..63dfa2cc882e387bd5f84fb5dea31bca58009ab4 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -832,6 +832,9 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -20,10 +20,10 @@ index 48a03412e7a05f8f2888a83c369c5eb900a6f9e5..ad2c39a98a22ff436ae7c0b3cdaa80ae
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index d0e15d15697eecad453d36f6294b42bcbe909a76..3ce1fec5e365e8d8267655c4398436e98adfbf03 100644
+index 8e48429dbce9896e36ba146574680af99db5eb77..088a08151b29c54a99e9942aa22c0cb0cb7388b5 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -914,6 +914,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -917,6 +917,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    void UpdateBrowserControlsState(cc::BrowserControlsState constraints,
                                    cc::BrowserControlsState current,
                                    bool animate);
