@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index f4999e176f45331a7f3fdee44b1b58d60128ec58..6b69988dd530e3775177c9882107636c98f42d90 100644
+index a525dee9a568010d274ff9c6213b136cc81b2d88..f168d982452eb0e234ab63493edca6f468822708 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -23,6 +23,7 @@
@@ -19,7 +19,7 @@ index f4999e176f45331a7f3fdee44b1b58d60128ec58..6b69988dd530e3775177c9882107636c
  #include "ui/gfx/native_widget_types.h"
  
  namespace blink {
-@@ -265,6 +266,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -269,6 +270,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -44,10 +44,10 @@ index ad2c39a98a22ff436ae7c0b3cdaa80ae9e2a4010..87332b12fe68c5ba63f4954d3b3415b4
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6dcb5aeefd613cc33e8e1a16d9cf6d8cdf2a5576..45c2f2b04bd5607f9b03376c1833ac10432116f5 100644
+index 5c8173aad40803b369c87ec40a3243371fdf17cf..6f8137108b1507b020c476c426616578e1e81ede 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5166,6 +5166,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5171,6 +5171,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 6dcb5aeefd613cc33e8e1a16d9cf6d8cdf2a5576..45c2f2b04bd5607f9b03376c1833ac10
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 04906e135ba0979dd39db1fb1b94491ced7fcc96..1e021af85462070e86c4a60030378f58392721b8 100644
+index fe870de18e7609485fc059b7ffbcd2e1509d6d8a..11a38e4a58cc3c4afd6d10fa03925ac0ca4b210d 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1022,6 +1022,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1025,6 +1025,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;

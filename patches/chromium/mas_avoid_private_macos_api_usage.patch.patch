@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8e017e42b87cf92fe2db63ca86afe94933cf5494..41b5ed9d6f1ee3634efc8d54e46424cfd2d59aca 100644
+index ffd4d22926a9c890da80502da6d7e14b4a7cee98..639ae4b2dc1e91002d80518447950b0cbf731cee 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1047,6 +1047,7 @@ component("base") {
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a460c6503d69549a0b236a04d9e457c2d36ee405..821e5db63fd5d69b3fcc329ec02f71a1a7907ada 100644
+index 201e3ef8951b9e1025f7d86f1bddeeff1138b0a3..c2440b7aeef4d517be35c09b18e4e69cef7b791c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f5fb70fc679e467ab8d584325a9fdc06238932ed..1c21d5fb533c12d7042d67f9f4075786d8f037e8 100644
+index bf0c705aed831a926ee8a8952f89ee96e023108e..19b6e3ee7e4b42cee2bda01755f8327c779493dc 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -1345,7 +1345,7 @@ index dcf493d62990018040a3f84b6f875af737bd2214..6ffffe8b3946e0427aead8be19878c53
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 181b77f7ca4114540957343193cf7f3eecf6cf1f..8874adb1df8b0d9b9ff2bdb921472b59c027052d 100644
+index fc99800e70eb29b94ac356b55caef81a25518896..e9fe9be7f737372b0111e113bd120b520fb4568a 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -254,6 +254,7 @@ component("platform") {
@@ -1556,10 +1556,10 @@ index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d147
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 3600dd711ffdde460cda5b4c11817997bf61704a..6bb301dda6562e419bc36ec80d5974babc9aeb50 100644
+index d63fae1e5e13ce48333a5d526826318f55f00740..0a301bfc073171384c49e46645c2f976277b4c55 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -703,6 +703,7 @@ component("views") {
+@@ -704,6 +704,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1567,7 +1567,7 @@ index 3600dd711ffdde460cda5b4c11817997bf61704a..6bb301dda6562e419bc36ec80d5974ba
    }
  
    if (is_win) {
-@@ -1134,6 +1135,8 @@ source_set("test_support") {
+@@ -1135,6 +1136,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
