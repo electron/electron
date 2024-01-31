@@ -356,14 +356,6 @@ bool ElectronBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
-bool ElectronBrowserContext::CanUseHttpCache() const {
-  return use_cache_;
-}
-
-int ElectronBrowserContext::GetMaxCacheSize() const {
-  return max_cache_size_;
-}
-
 content::ResourceContext* ElectronBrowserContext::GetResourceContext() {
   if (!resource_context_)
     resource_context_ = std::make_unique<content::ResourceContext>();
