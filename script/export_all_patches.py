@@ -8,23 +8,13 @@ from lib import git
 
 
 def export_patches(config, dry_run):
-  if isinstance(config, list):
-    for target in config:
-      out_dir = target.get('patch_dir')
-      repo = target.get('repo')
-      grep = target.get('grep')
-      if os.path.exists(repo):
-        git.export_patches(dry_run=dry_run,
-                           grep=grep,
-                           out_dir=out_dir,
-                           repo=repo)
-    return
-
-  # previous config format was an object of patch dir key -> repo dir vals
-  if isinstance(config, dict):
-    for out_dir, repo in config.items():
-      if os.path.exists(repo):
-        git.export_patches(repo=repo, out_dir=out_dir, dry_run=dry_run)
+  for target in config:
+    repo = target.get('repo')
+    if not os.path.exists(repo):
+      continue
+    out_dir = target.get('patch_dir')
+    grep = target.get('grep')
+    git.export_patches(dry_run=dry_run, grep=grep, out_dir=out_dir, repo=repo)
 
 
 def parse_args():
