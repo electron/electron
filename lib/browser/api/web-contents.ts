@@ -391,7 +391,7 @@ WebContents.prototype.loadURL = function (url, options) {
       if (!error && isMainFrame) {
         error = { errorCode, errorDescription, url: validatedURL };
       }
-      if (!navigationStarted) {
+      if (!navigationStarted && isMainFrame) {
         finishListener();
       }
     };
