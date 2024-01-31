@@ -2047,6 +2047,20 @@ describe('webContents module', () => {
       }
     });
 
+    it('rejects when margins exceed physical page size', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      await expect(w.webContents.printToPDF({
+        pageSize: 'Letter',
+        margins: {
+          top: 100,
+          bottom: 100,
+          left: 5,
+          right: 5
+        }
+      })).to.eventually.be.rejectedWith('margins must be less than or equal to pageSize');
+    });
+
     it('does not crash when called multiple times in parallel', async () => {
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
 
