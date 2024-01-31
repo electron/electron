@@ -71,6 +71,7 @@
 #include "services/network/public/cpp/network_switches.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -1294,7 +1295,7 @@ void ElectronBrowserClient::CreateWebSocket(
       &next_id_);
 }
 
-bool ElectronBrowserClient::WillCreateURLLoaderFactory(
+void ElectronBrowserClient::WillCreateURLLoaderFactory(
     content::BrowserContext* browser_context,
     content::RenderFrameHost* frame_host,
     int render_process_id,
@@ -1302,7 +1303,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     const url::Origin& request_initiator,
     std::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
-    mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
+    network::URLLoaderFactoryBuilder& factory_builder,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,
     bool* bypass_redirect_checks,
@@ -1320,22 +1321,20 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
         extensions::WebRequestAPI>::Get(browser_context);
 
     DCHECK(web_request_api);
-    bool use_proxy_for_web_request =
+    bool used_proxy_for_web_request =
         web_request_api->MaybeProxyURLLoaderFactory(
             browser_context, frame_host, render_process_id, type, navigation_id,
-            ukm_source_id, factory_receiver, header_client,
+            ukm_source_id, factory_builder, header_client,
             navigation_response_task_runner);
 
     if (bypass_redirect_checks)
-      *bypass_redirect_checks = use_proxy_for_web_request;
-    if (use_proxy_for_web_request)
-      return true;
+      *bypass_redirect_checks = used_proxy_for_web_request;
+    if (used_proxy_for_web_request)
+      return;
   }
 #endif
 
-  auto proxied_receiver = std::move(*factory_receiver);
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote;
-  *factory_receiver = target_factory_remote.InitWithNewPipeAndPassReceiver();
+  auto [proxied_receiver, target_factory_remote] = factory_builder.Append();
 
   // Required by WebRequestInfoInitParams.
   //
@@ -1362,8 +1361,6 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
       std::move(navigation_ui_data), std::move(navigation_id),
       std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
-
-  return true;
 }
 
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>

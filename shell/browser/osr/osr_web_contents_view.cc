@@ -223,4 +223,9 @@ void OffScreenWebContentsView::FullscreenStateChanged(bool is_fullscreen) {}
 void OffScreenWebContentsView::UpdateWindowControlsOverlay(
     const gfx::Rect& bounding_rect) {}
 
+content::BackForwardTransitionAnimationManager*
+OffScreenWebContentsView::GetBackForwardTransitionAnimationManager() {
+  return nullptr;
+}
+
 }  // namespace electron

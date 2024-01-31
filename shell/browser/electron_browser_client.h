@@ -215,7 +215,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
           handshake_client) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
-  bool WillCreateURLLoaderFactory(
+  void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
       int render_process_id,
@@ -223,7 +223,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const url::Origin& request_initiator,
       std::optional<int64_t> navigation_id,
       ukm::SourceIdObj ukm_source_id,
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
+      network::URLLoaderFactoryBuilder& factory_builder,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
       bool* bypass_redirect_checks,

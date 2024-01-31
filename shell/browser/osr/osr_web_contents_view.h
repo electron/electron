@@ -68,6 +68,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void OnCapturerCountChanged() override;
   void FullscreenStateChanged(bool is_fullscreen) override;
   void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
+  content::BackForwardTransitionAnimationManager*
+  GetBackForwardTransitionAnimationManager() override;
 
 #if BUILDFLAG(IS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;

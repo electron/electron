@@ -6,7 +6,7 @@ Subject: frame_host_manager.patch
 Allows embedder to intercept site instances created by chromium.
 
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index 67cbdec6cdb18be2d99efb86436b371dc7aa3d69..9292d04288a2feeccb68d35ac26bb7eda441785f 100644
+index 2df0ba8a8cbe4aba14f79543012c4c33ce262b2e..5236a86e64dbd2b82a56b6a8e8a9288b7b2a3d6a 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
 @@ -4237,6 +4237,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
@@ -20,7 +20,7 @@ index 67cbdec6cdb18be2d99efb86436b371dc7aa3d69..9292d04288a2feeccb68d35ac26bb7ed
  }
  
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4d6250a0a9f0174d1ddc61e5d125fda6f7a9c521..43e7758fec76a44b0b35491618d995582171700d 100644
+index b9178a001681843a6e956ba45f0b3056bf89587b..3e610a94da7771d0b5ab743048714128f9ea33a7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -298,6 +298,11 @@ class CONTENT_EXPORT ContentBrowserClient {

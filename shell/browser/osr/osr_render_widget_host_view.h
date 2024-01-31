@@ -97,11 +97,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetBackgroundColor(SkColor color) override;
   std::optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
-  blink::mojom::PointerLockResult LockMouse(
+  blink::mojom::PointerLockResult LockPointer(
       bool request_unadjusted_movement) override;
-  blink::mojom::PointerLockResult ChangeMouseLock(
+  blink::mojom::PointerLockResult ChangePointerLock(
       bool request_unadjusted_movement) override;
-  void UnlockMouse(void) override;
+  void UnlockPointer(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
 #if BUILDFLAG(IS_MAC)
   void SetActive(bool active) override;

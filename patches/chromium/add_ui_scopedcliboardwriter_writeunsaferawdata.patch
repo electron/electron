@@ -8,10 +8,10 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index 5f28fee3f6d5e25a318e352f237cea2666671845..9bd5250012249ef0ac7b4013b448acc747dc9736 100644
+index 6095ece239ae3b3ef6795d54e5c8bc4d1bb730ff..43c39f61e7d040c9923dac60ddc50fce2e3ee038 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -239,6 +239,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
+@@ -227,6 +227,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
  }
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -29,10 +29,10 @@ index 5f28fee3f6d5e25a318e352f237cea2666671845..9bd5250012249ef0ac7b4013b448acc7
    objects_.clear();
    platform_representations_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index ec10abcafda69417044a4e792c3637bba5dcd54e..e4ef4f98f3c96c1813f000e185d81ec6082b48ca 100644
+index 6328d90cd1aca85c481b96bf859f0e9acb9de055..9aad0ae0134387fb2821d098a7d015ddd445de78 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
-@@ -91,6 +91,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
+@@ -89,6 +89,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
    // This is only used to write custom format data.
    void WriteData(const std::u16string& format, mojo_base::BigBuffer data);
  

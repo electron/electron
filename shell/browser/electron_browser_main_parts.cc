@@ -505,10 +505,11 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 #endif
 #if BUILDFLAG(IS_LINUX)
   auto shutdown_cb =
-      base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
+      base::BindOnce([] { LOG(FATAL) << "Failed to shutdown."; });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       std::move(shutdown_cb),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
+
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
 

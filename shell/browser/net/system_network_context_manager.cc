@@ -281,7 +281,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      base::FeatureList::IsEnabled(features::kAsyncDns),
+      base::FeatureList::IsEnabled(net::features::kAsyncDns),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
   // The OSCrypt keys are process bound, so if network service is out of

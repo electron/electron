@@ -7,11 +7,11 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 4547a0dc6956204da4a8b6d8ac203a78b678767a..8dd57dc6d943054bda0e3ab9d992732f36ec6d3e 100644
+index 3008c520a42a73c7df772ab2947f88ab402e52af..d393e383a5d9f6a66a42a04dd834494522107494 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -150,6 +150,11 @@
- #include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
 +// Electron
@@ -147,10 +147,10 @@ index 4547a0dc6956204da4a8b6d8ac203a78b678767a..8dd57dc6d943054bda0e3ab9d992732f
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582cd20f36c4 100644
+index 651ed01e0e2c9888d604e93272e1af19fae2f8cd..2da35fd3348158b80ce150082224c465c99e4eaf 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -113,6 +113,7 @@ class URLMatcher;
+@@ -112,6 +112,7 @@ class URLMatcher;
  
  namespace network {
  class CertVerifierWithTrustAnchors;
@@ -158,7 +158,7 @@ index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582c
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -245,6 +246,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -244,6 +245,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -167,7 +167,7 @@ index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582c
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -880,6 +883,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -879,6 +882,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -208,7 +208,7 @@ index 3096bd7d6719b99818ad2e5befefd4dbeee0ddb8..fee16e02e0160825e44c668672176546
    CreateURLLoaderFactory(pending_receiver<URLLoaderFactory> url_loader_factory,
                           URLLoaderFactoryParams params);
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index caf25a79cface282294e4646dcb8fd08d6ca6efd..381c00fbe1af5711860b3237be1165e1c58540c0 100644
+index 298d43af5a94e1a5a3653a74cfcaed262e803999..6cf559f8dd2b2b83e8af4bea3c38058a4856fe54 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -62,6 +62,8 @@ class TestNetworkContext : public mojom::NetworkContext {

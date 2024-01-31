@@ -389,8 +389,9 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
 
   web_ui()->RegisterMessageCallback(
       "toggleAccessibility",
-      base::BindRepeating(&AccessibilityUIMessageHandler::ToggleAccessibility,
-                          base::Unretained(this)));
+      base::BindRepeating(
+          &AccessibilityUIMessageHandler::ToggleAccessibilityForWebContents,
+          base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setGlobalFlag",
       base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,
