@@ -11,7 +11,7 @@ THREEWAY = "ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES" in os.environ
 
 def apply_patches(target):
   repo = target.get('repo')
-  if !os.path.exists(repo):
+  if not os.path.exists(repo):
     return
   patch_dir = target.get('patch_dir')
   git.import_patches(
