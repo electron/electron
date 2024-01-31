@@ -345,6 +345,8 @@ filenames = {
     "shell/browser/child_web_contents_tracker.h",
     "shell/browser/cookie_change_notifier.cc",
     "shell/browser/cookie_change_notifier.h",
+    "shell/browser/crypto_module_delegate_nss.cc",
+    "shell/browser/crypto_module_delegate_nss.h",
     "shell/browser/draggable_region_provider.h",
     "shell/browser/electron_api_ipc_handler_impl.cc",
     "shell/browser/electron_api_ipc_handler_impl.h",
