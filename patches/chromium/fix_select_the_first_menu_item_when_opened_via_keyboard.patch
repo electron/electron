@@ -104,7 +104,7 @@ index 8100d5e1b4a44783d8d26e86600c0b20e9cc6bd2..0dc9adbab1e980bd1c6dda49cfd6d40e
  
  void MenuRunnerImpl::Cancel() {
 diff --git a/ui/views/controls/menu/menu_runner_impl.h b/ui/views/controls/menu/menu_runner_impl.h
-index 9b2ac3f475acc009d85eee9eb19c230d72ea708b..00ca9b558f08924110b8cb20d205539d6329deff 100644
+index 572355b1f1d5700de5714457068a32ef6df5bf6c..95e8856a774f79e717af7a6e9d76ca1a4ec333e2 100644
 --- a/ui/views/controls/menu/menu_runner_impl.h
 +++ b/ui/views/controls/menu/menu_runner_impl.h
 @@ -52,6 +52,7 @@ class VIEWS_EXPORT MenuRunnerImpl : public MenuRunnerImplInterface,
