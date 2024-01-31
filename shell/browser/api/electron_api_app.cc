@@ -1578,7 +1578,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   }
 
   bool enable_built_in_resolver =
-      base::FeatureList::IsEnabled(features::kAsyncDns);
+      base::FeatureList::IsEnabled(net::features::kAsyncDns);
   bool additional_dns_query_types_enabled = true;
 
   if (opts.Has("enableBuiltInResolver") &&
