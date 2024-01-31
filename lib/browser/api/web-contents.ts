@@ -220,6 +220,16 @@ function parsePageSize (pageSize: string | ElectronInternal.PageSize) {
 let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
   const margins = checkType(options.margins ?? {}, 'object', 'margins');
+  const pageSize = parsePageSize(options.pageSize ?? 'letter');
+
+  const { top, bottom, left, right } = margins;
+  const validHeight = [top, bottom].every(u => u === undefined || u <= pageSize.paperHeight);
+  const validWidth = [left, right].every(u => u === undefined || u <= pageSize.paperWidth);
+
+  if (!validHeight || !validWidth) {
+    throw new Error('margins must be less than or equal to pageSize');
+  }
+
   const printSettings = {
     requestID: getNextId(),
     landscape: checkType(options.landscape ?? false, 'boolean', 'landscape'),
@@ -236,7 +246,7 @@ WebContents.prototype.printToPDF = async function (options) {
     preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
     generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
     generateDocumentOutline: checkType(options.generateDocumentOutline ?? false, 'boolean', 'generateDocumentOutline'),
-    ...parsePageSize(options.pageSize ?? 'letter')
+    ...pageSize
   };
 
   if (this._printToPDF) {
