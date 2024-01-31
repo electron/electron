@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import warnings
 
 from lib import git
 from lib.patches import patch_from_dir
@@ -12,6 +13,7 @@ THREEWAY = "ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES" in os.environ
 def apply_patches(target):
   repo = target.get('repo')
   if not os.path.exists(repo):
+    warnings.warn('repo not found: %s' % repo)
     return
   patch_dir = target.get('patch_dir')
   git.import_patches(
