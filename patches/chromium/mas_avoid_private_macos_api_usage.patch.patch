@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index bf0c705aed831a926ee8a8952f89ee96e023108e..19b6e3ee7e4b42cee2bda01755f8327c779493dc 100644
+index 1c709c77ae140b88a32546d6a39e9f0ed4a9189d..b2ee605d507a9ab363c68184acc7a07c315e7701 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index bf0c705aed831a926ee8a8952f89ee96e023108e..19b6e3ee7e4b42cee2bda01755f8327c
    ]
  
    public_deps = [
-@@ -1052,6 +1053,7 @@ static_library("browsertest_support") {
+@@ -1059,6 +1060,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index bf0c705aed831a926ee8a8952f89ee96e023108e..19b6e3ee7e4b42cee2bda01755f8327c
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1671,6 +1673,7 @@ test("content_browsertests") {
+@@ -1672,6 +1674,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index bf0c705aed831a926ee8a8952f89ee96e023108e..19b6e3ee7e4b42cee2bda01755f8327c
  
    public_deps = [
      ":test_interfaces",
-@@ -2918,6 +2921,7 @@ test("content_unittests") {
+@@ -2914,6 +2917,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
