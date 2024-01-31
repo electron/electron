@@ -188,10 +188,9 @@ def filter_patches(patches, key):
     return patches
   matches = []
   for patch in patches:
-    for line in patch:
-      if key in line:
-        matches.append(patch)
-        continue
+    if any(key in line for line in patch):
+      matches.append(patch)
+      continue
   return matches
 
 def munge_subject_to_filename(subject):
@@ -251,7 +250,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False, grep=None):
         num_patches, repo, patch_range[0:7]))
   patch_data = format_patch(repo, patch_range)
   patches = split_patches(patch_data)
-  if grep is not None:
+  if grep:
     patches = filter_patches(patches, grep)
 
   try:
