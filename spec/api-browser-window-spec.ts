@@ -6607,6 +6607,7 @@ describe('BrowserWindow module', () => {
       // WOA fails to load libnut so we're using require to defer loading only
       // on supported platforms.
       // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
+      // @ts-ignore: nut-js is an optional dependency so it may not be installed
       const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
 
       const display = screen.getPrimaryDisplay();
