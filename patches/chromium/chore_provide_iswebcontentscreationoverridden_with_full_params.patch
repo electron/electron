@@ -316,10 +316,10 @@ index a5066da1a593cfb9033b31dc45beed29bdc58410..563224db005f79b3f5f0d5a604d5be10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 508df04f7936f68779768588eaf95de956026a46..3a2fbd8339a66e51c7342202f2837cbde0d3a0d9 100644
+index faa8416c8d625fac0cdb15dc9d54855417dce252..4f3e06a2e9945980f8b12418f7b31e0f73e11e61 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -568,8 +568,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -574,8 +574,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

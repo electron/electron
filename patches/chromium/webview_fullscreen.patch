@@ -15,7 +15,7 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 525f5467e0e994283937a06e1c7f41119ffde008..010324416ffe7acb80e9ea7433e56443551e4151 100644
+index 2100a75264a77409436ee1dcb73fab26f2b47e05..21f82d881ac2d194f49ec5125c9029ec54da0c9f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7504,6 +7504,17 @@ void RenderFrameHostImpl::EnterFullscreen(
@@ -88,7 +88,7 @@ index 4a911829b833a952e4e63e2a7ce4850918eec84b..05d42b8808ac3dbb2c3ccfe3213fd971
    // When WebView is the `delegate_` we can end up with VisualProperties changes
    // synchronously. Notify the view ahead so it can handle the transition.
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index eb1ca15be1502b49b5b864935acbafbd6c75d8aa..1e9c96808cdcbf1131a07f33f36b5666bb9ae1e8 100644
+index e53244747933c99934129c6a968d0e99216b3a03..582474596f74ceaa39c2335fe0e414e6124c18af 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -111,7 +111,7 @@ void FullscreenElementChanged(Document& document,

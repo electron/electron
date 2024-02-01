@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9002f101ee58f2c7db4d99b3b4221720ad0d37f0..adc4edb2aa6888bd465610251e2bbc90a79b6e04 100644
+index 3c109c824ce509095743b7305d707728c6760f72..d5f0e57de4b7135b6f249c61126f81fd7259431f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1049,6 +1049,7 @@ component("base") {
@@ -171,7 +171,7 @@ index db26459da52479751d042e89935d97c74c329c54..3d068770c0c06f5f042791731e394abd
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 1ed0027978b0a3ff70d194421078b472aac977e0..7b7c669125948d2aa3650dde4238e9f3f8d42032 100644
+index ede971d0090bc5f73c3f4f3a8294253b6054f4d6..d4ac19bf61574a27f38e41f2030d72e48ebc8baa 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index ccf604397be0158b22d50a6ae36170b7cc7b3dcf..065277e175415a13ab151f6a2d59e398d68f0b62 100644
+index bfa8b543a9d4705704cf6a8072b65f4d81f7c7a9..e984fb4c1814f10eff4e5140ca87a35674cfac18 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1556,7 +1556,7 @@ index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d147
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 8cd0eb88c8ad03ca745e422afbde2f92f6fec832..699632c4db9ed31646907b2ba273f5cbc4f832b9 100644
+index f9859a7fa09adce6f578a0e4abbe94f00da7ce5e..62975745d3686edd25291fe4b1ec696081a8224e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -704,6 +704,7 @@ component("views") {

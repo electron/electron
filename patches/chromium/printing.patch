@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c7244284e098df 100644
+index 0b513556370f7244db91947aabdeaa5a01fcef79..9fca4030c1babfb55626035a4ff0a0cc888c31d7 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@

@@ -146,7 +146,7 @@ index 8b2e1065dc9e989f7f3a7dbb9375c2d3b2abce7c..e34774c7b2f4c311ef0a7c804afffddc
                   absl::optional<gfx::RoundedCornersF> corners = absl::nullopt,
                   absl::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.h b/ui/views/controls/menu/menu_runner_impl_cocoa.h
-index 0d920c6857f8a01b3595f745f2ed183672630d16..f78104e2d3d8ea91a2c9ceb5a35e721b4e7af619 100644
+index a5ed63f449829edec8b216affa28122ec7d574fc..fbb423b5ece34cae22d37304f827a65d802aa20e 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.h
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.h
 @@ -41,6 +41,7 @@ class VIEWS_EXPORT MenuRunnerImplCocoa : public MenuRunnerImplInterface {
@@ -158,10 +158,10 @@ index 0d920c6857f8a01b3595f745f2ed183672630d16..f78104e2d3d8ea91a2c9ceb5a35e721b
                   absl::optional<gfx::RoundedCornersF> corners = absl::nullopt,
                   absl::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index c7b2c7ae0bd9b64af289a9c69995736acd84747b..ee846937d24436d3b31f0b1473558e83eaf9bbb1 100644
+index 094ecd201328d0c94f2d6a2a60c4855688ebe7e8..0fcf7665e8c1931dd0097cfbf8cad787cd2ca4d6 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-@@ -189,6 +189,7 @@
+@@ -116,6 +116,7 @@
      const gfx::Rect& bounds,
      MenuAnchorPosition anchor,
      int32_t run_types,

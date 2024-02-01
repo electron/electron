@@ -72,7 +72,7 @@ index 8e0127561d6782912cfd3e9f3e11fe5e5c6406b1..7d6a250a5bd819957d901b67c54267cf
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 839fa5e82f140bc582606738285e3b9a78769d6f..181004251d2dd0432b92f917efe1a117973a2da4 100644
+index 67a814a07af1e7294134eaa90893318e8c202730..c863f0dd1d90dfe3035b65ce1b00920679b78615 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@
@@ -83,7 +83,7 @@ index 839fa5e82f140bc582606738285e3b9a78769d6f..181004251d2dd0432b92f917efe1a117
  #include "ui/base/page_transition_types.h"
  #include "ui/base/window_open_disposition.h"
  
-@@ -570,6 +571,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
+@@ -572,6 +573,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
    // Invoked when the primary main frame changes size.
    virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  

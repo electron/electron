@@ -116,10 +116,10 @@ index 2ba868f0efb2ee082d452bb011409f1b4c5c5e1e..6caab2df3cfc367c63839b7ac635d8d0
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index a4e5ef9c949a874a3720ceb4b6fc3349e2419b71..2b64adfd0bf45d8539591a65e4bc99de9758b2f9 100644
+index b1b1c75138a22eb3acf837a6d9433b4de1b9b455..a164dc9466df0e498644c17c6a09e0468a1f3b7e 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2422,6 +2422,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2425,6 +2425,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index a4e5ef9c949a874a3720ceb4b6fc3349e2419b71..2b64adfd0bf45d8539591a65e4bc99de
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3913,10 +3917,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3916,10 +3920,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
