@@ -1616,9 +1616,27 @@ describe('session module', () => {
     it('clears localstorage data', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+
       expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+
       await w.webContents.session.clearBrowsingData();
+
       expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+    });
+    it('clears localstorage data when called twice in parallel', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+
+      // This first call is not awaited immediately
+      const clearDataPromise = w.webContents.session.clearBrowsingData();
+      await w.webContents.session.clearBrowsingData();
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+
+      // Await the first promise so it doesn't creep into another test
+      await clearDataPromise;
     });
   });
 });
