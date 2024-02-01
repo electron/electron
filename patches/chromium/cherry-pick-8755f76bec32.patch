@@ -1,7 +1,7 @@
-From 8755f76bec326c654370de6dd68eea693df74ede Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
 Date: Thu, 18 Jan 2024 16:47:18 +0000
-Subject: [PATCH] [RTCPeerConnection] Exit early from RTCPeerConnectionHandler
+Subject: Exit early from RTCPeerConnectionHandler
 
 For certain operations that require a live client
 (i.e., RTCPeerConnection, which is garbage collected),
@@ -20,13 +20,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5210359
 Reviewed-by: Tomas Gunnarsson <tommi@chromium.org>
 Commit-Queue: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1248826}
----
 
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
-index 03f1b44..f08815c 100644
+index 473eb82685f004d960f3d488e3976a2305eda248..b6d893cc0f93d5bbb12b07734c63b31a52d662f1 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
-@@ -839,15 +839,19 @@
+@@ -1056,15 +1056,19 @@ bool RTCPeerConnectionHandler::Initialize(
      WebLocalFrame* frame,
      ExceptionState& exception_state) {
    DCHECK(task_runner_->RunsTasksInCurrentSequence());
@@ -48,7 +47,7 @@ index 03f1b44..f08815c 100644
    peer_connection_tracker_ = PeerConnectionTracker::From(*frame);
  
    configuration_ = server_configuration;
-@@ -2058,10 +2062,13 @@
+@@ -2312,10 +2316,13 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
                                                int sdp_mline_index,
                                                int component,
                                                int address_family) {
@@ -64,10 +63,10 @@ index 03f1b44..f08815c 100644
    // This line can cause garbage collection.
    auto* platform_candidate = MakeGarbageCollected<RTCIceCandidatePlatform>(
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc
-index bbbed46..f872765 100644
+index f8838ab0c5a31182e210cc6f42b9f489c7dd5365..f689a679a7589f16839349189cbfdf84efd14367 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc
-@@ -541,7 +541,7 @@
+@@ -601,7 +601,7 @@ class RTCPeerConnectionHandlerTest : public SimTest {
      waitable_event->Signal();
    }
  
@@ -76,7 +75,7 @@ index bbbed46..f872765 100644
    ScopedTestingPlatformSupport<AudioCapturerSourceTestingPlatformSupport>
        webrtc_audio_device_platform_support_;
    Persistent<MockRTCPeerConnectionHandlerClient> mock_client_;
-@@ -1054,4 +1054,32 @@
+@@ -1168,4 +1168,32 @@ TEST_F(RTCPeerConnectionHandlerTest,
    observer->OnIceCandidate(native_candidate.get());
  }
  

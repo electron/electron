@@ -1,7 +1,7 @@
-From 1f8bec96890207503a59249a8d4140a4c7767782 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tsuyoshi Horo <horo@chromium.org>
 Date: Wed, 24 Jan 2024 02:04:24 +0000
-Subject: [PATCH] [M120] Fix UAF in SourceStreamToDataPipe
+Subject: Fix UAF in SourceStreamToDataPipe
 
 SourceStreamToDataPipe::ReadMore() is passing a callback with
 Unretained(this) to net::SourceStream::Read(). But this callback may be
@@ -23,10 +23,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5231558
 Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#1860}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/services/network/public/cpp/source_stream_to_data_pipe.cc b/services/network/public/cpp/source_stream_to_data_pipe.cc
-index 6be1210..62ad4f9 100644
+index bfd85b1a00b216b52ae816ca29cb66ddabe20b6d..07afd58a40f92485ded07c535092a891c5140c7b 100644
 --- a/services/network/public/cpp/source_stream_to_data_pipe.cc
 +++ b/services/network/public/cpp/source_stream_to_data_pipe.cc
 @@ -55,9 +55,9 @@ void SourceStreamToDataPipe::ReadMore() {
@@ -43,7 +42,7 @@ index 6be1210..62ad4f9 100644
    if (result != net::ERR_IO_PENDING)
      DidRead(result);
 diff --git a/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc b/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc
-index 7061418..54159df 100644
+index 7061418c5141d936f04b1193c98e66efc5e72ac5..54159df39afa7cf6e2faa51da185dc034b923209 100644
 --- a/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc
 +++ b/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc
 @@ -6,7 +6,9 @@
@@ -56,7 +55,7 @@ index 7061418..54159df 100644
  #include "net/filter/mock_source_stream.h"
  #include "testing/gtest/include/gtest/gtest.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
-@@ -42,6 +44,33 @@
+@@ -42,6 +44,33 @@ struct SourceStreamToDataPipeTestParam {
    const ReadResultType read_result_type;
  };
  
@@ -90,7 +89,7 @@ index 7061418..54159df 100644
  }  // namespace
  
  class SourceStreamToDataPipeTest
-@@ -212,4 +241,33 @@
+@@ -212,4 +241,33 @@ TEST_P(SourceStreamToDataPipeTest, MayHaveMoreBytes) {
    EXPECT_EQ(ReadPipe(&output), net::OK);
    EXPECT_EQ(output, message);
  }

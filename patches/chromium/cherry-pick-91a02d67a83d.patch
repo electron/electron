@@ -1,7 +1,7 @@
-From 91a02d67a83dd9fe81fcfb13196461327de44d8e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jean-Philippe Gravel <jpgravel@chromium.org>
 Date: Tue, 23 Jan 2024 21:37:50 +0000
-Subject: [PATCH] Fix use-after-free in DrawTextInternal
+Subject: Fix use-after-free in DrawTextInternal
 
 DrawTextInternal was calling GetOrCreatePaintCanvas multiple times,
 once at the start of the function, once inside of the
@@ -30,13 +30,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5230237
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/6099@{#1859}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
-index cf74c80..aa61546 100644
+index f09459b0b67c37d307c70a516731d05db49f49b8..89cb2a41b3eef8bb359984b0d14bfa0e4e19cfdc 100644
 --- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
 +++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
-@@ -2709,40 +2709,6 @@
+@@ -2682,40 +2682,6 @@ const Font& BaseRenderingContext2D::AccessFont(HTMLCanvasElement* canvas) {
    return GetState().GetFont();
  }
  
@@ -77,7 +76,7 @@ index cf74c80..aa61546 100644
  void BaseRenderingContext2D::DrawTextInternal(
      const String& text,
      double x,
-@@ -2763,8 +2729,10 @@
+@@ -2736,8 +2702,10 @@ void BaseRenderingContext2D::DrawTextInternal(
      canvas->GetDocument().UpdateStyleAndLayoutTreeForNode(
          canvas, DocumentUpdateReason::kCanvas);
    }
@@ -90,7 +89,7 @@ index cf74c80..aa61546 100644
      return;
    }
  
-@@ -2835,14 +2803,13 @@
+@@ -2808,14 +2776,13 @@ void BaseRenderingContext2D::DrawTextInternal(
      InflateStrokeRect(bounds);
    }
  
@@ -107,7 +106,7 @@ index cf74c80..aa61546 100644
      location.set_x(location.x() / ClampTo<float>(width / font_width));
    }
  
-@@ -2873,6 +2840,16 @@
+@@ -2846,6 +2813,16 @@ void BaseRenderingContext2D::DrawTextInternal(
        { return false; },
        bounds, paint_type, CanvasRenderingContext2DState::kNoImage,
        CanvasPerformanceMonitor::DrawType::kText);
