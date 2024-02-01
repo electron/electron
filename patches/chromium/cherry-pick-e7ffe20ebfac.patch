@@ -1,0 +1,87 @@
+From e7ffe20ebfac228a7ae26c83a0493ed801e2963c Mon Sep 17 00:00:00 2001
+From: Aaron Leventhal <aleventhal@google.com>
+Date: Sat, 27 Jan 2024 04:15:37 +0000
+Subject: [PATCH] [A11y] Ensure old children of objects that become leaves are cleared
+
+Fixed: 1520335
+Change-Id: I9cd2fa6bfbb59d43318b7b378e4267c53e139f97
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5238389
+Commit-Queue: Chris Harrelson <chrishtr@chromium.org>
+Auto-Submit: Aaron Leventhal <aleventhal@chromium.org>
+Reviewed-by: Chris Harrelson <chrishtr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1252998}
+---
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+index f5b9fcc..deacd0e3 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+@@ -4600,15 +4600,7 @@
+   }
+ 
+   CHECK(NeedsToUpdateChildren());
+-
+-  if (!CanHaveChildren()) {
+-    // TODO(crbug.com/1407397): Make sure this is no longer firing then
+-    // transform this block to CHECK(CanHaveChildren());
+-    DUMP_WILL_BE_NOTREACHED_NORETURN()
+-        << "Should not reach AddChildren() if CanHaveChildren() is false.\n"
+-        << ToString(true, true);
+-    return;
+-  }
++  CHECK(CanHaveChildren());
+ 
+   if (ShouldLoadInlineTextBoxes() && HasLayoutText(this)) {
+     AddInlineTextBoxChildren();
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object.cc b/third_party/blink/renderer/modules/accessibility/ax_object.cc
+index 1f09e0d8..f53de32 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object.cc
+@@ -5764,16 +5764,19 @@
+     return;
+   }
+ 
+-  if (!CanHaveChildren()) {
+-    SetNeedsToUpdateChildren(false);
+-    return;
+-  }
+-
+   CHECK(!AXObjectCache().IsFrozen())
+       << "Object should have already had its children updated in "
+          "AXObjectCacheImpl::UpdateTreeIfNeeded(): "
+       << ToString(true, true);
+ 
++  if (!CanHaveChildren()) {
++    // Clear any children in case the node previously allowed children.
++    ClearChildren();
++    SetNeedsToUpdateChildren(false);
++    child_cached_values_need_update_ = false;
++    return;
++  }
++
+   UpdateCachedAttributeValuesIfNeeded();
+ 
+   ClearChildren();
+diff --git a/third_party/blink/web_tests/external/wpt/accessibility/crashtests/inert-br-child.html b/third_party/blink/web_tests/external/wpt/accessibility/crashtests/inert-br-child.html
+new file mode 100644
+index 0000000..9c9039c3
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/accessibility/crashtests/inert-br-child.html
+@@ -0,0 +1,17 @@
++<!DOCTYPE html>
++<!-- Test for crash when inert br gains illegal child -->
++<html>
++<dialog></dialog>
++<br>
++
++<script>
++requestAnimationFrame(() => {
++  requestAnimationFrame(() => {
++    document.querySelector('dialog').showModal();
++    const br = document.querySelector('br');
++    br.appendChild(document.createElement('fieldset'));
++  });
++});
++</script>
++
++</html>
