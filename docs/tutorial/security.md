@@ -794,15 +794,22 @@ learn how to serve files / content from a custom protocol.
 
 ### 19. Check which fuses you can change
 
-Electron ships with a number of options that can be useful but a large portion of applications probably don't need. In order to avoid having to build your own version of Electron, these can be turned off or on using [Fuses](./fuses.md).
+Electron ships with a number of options that can be useful but a large portion of
+applications probably don't need. In order to avoid having to build your own version of
+Electron, these can be turned off or on using [Fuses](./fuses.md).
 
 #### Why?
 
-Some fuses, like `runAsNode` and `nodeCliInspect` allow the application to behave differently when run from the command line using specific environment variables or CLI arguments. These can be used to execute commands on the device through your application.
+Some fuses, like `runAsNode` and `nodeCliInspect` allow the application to behave differently
+when run from the command line using specific environment variables or CLI arguments. These
+can be used to execute commands on the device through your application.
 
-This can let external scripts run commands that they potentially would not be allowed to, but that your application might have the rights for. 
+This can let external scripts run commands that they potentially would not be allowed to, but
+that your application might have the rights for.
 
 #### How?
 
-We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make flipping these fuses easy. Check out the README of that module for more details on usage and potential error cases, and refer to [How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
-
+We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make
+flipping these fuses easy. Check out the README of that module for more details on usage and
+potential error cases, and refer to
+[How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
