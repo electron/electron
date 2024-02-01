@@ -1,7 +1,10 @@
-From 4a98f9e304be8129401e797cd3491d53bec05785 Mon Sep 17 00:00:00 2001
-From: Peter Boström <pbos@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Peter=20Bostr=C3=B6m?= <pbos@chromium.org>
 Date: Fri, 26 Jan 2024 19:37:57 +0000
-Subject: [PATCH] Speculatively fix race in mojo ShutDownOnIOThread
+Subject: Speculatively fix race in mojo ShutDownOnIOThread
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This acquires `write_lock_` before resetting handles used by WriteNoLock
 (which is called under the same lock in another thread). We also set
@@ -27,13 +30,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1250580}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5239564
 Cr-Commit-Position: refs/branch-heads/6099@{#1883}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/mojo/core/channel_posix.cc b/mojo/core/channel_posix.cc
-index 0a35963..eae6b07 100644
+index 0a3596382d0e9a40c72bfb4ead6f0338a61253d6..eae6b0768463679b5043514dc5745da52b80ae10 100644
 --- a/mojo/core/channel_posix.cc
 +++ b/mojo/core/channel_posix.cc
-@@ -246,16 +246,21 @@
+@@ -246,16 +246,21 @@ void ChannelPosix::WaitForWriteOnIOThreadNoLock() {
  void ChannelPosix::ShutDownOnIOThread() {
    base::CurrentThread::Get()->RemoveDestructionObserver(this);
  

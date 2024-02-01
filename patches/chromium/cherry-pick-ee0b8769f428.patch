@@ -1,7 +1,7 @@
-From ee0b8769f428a72f90c880f4c28f4069d0574344 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
 Date: Wed, 24 Jan 2024 18:40:01 +0000
-Subject: [PATCH] [RTCPeerConnection] Exit early from RTCPeerConnectionHandler
+Subject: Exit early from RTCPeerConnectionHandler
 
 For certain operations that require a live client
 (i.e., RTCPeerConnection, which is garbage collected),
@@ -28,7 +28,6 @@ Auto-Submit: Guido Urdaneta <guidou@chromium.org>
 Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/6099@{#1867}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
 index 76fa93800543ff134859c8fc0c0fa63123cf9772..9e5ce0572cfd1d2dd729e5f560b021aba05653f3 100644
