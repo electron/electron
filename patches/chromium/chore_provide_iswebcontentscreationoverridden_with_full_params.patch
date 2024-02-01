@@ -35,10 +35,10 @@ index 9433ce4602414df4999f6ced8b371d4e847819ce..f38afaafcd6710f9cfcef816bf152cd2
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
-index f88f664eb7226425e6f1b45fe6811d49dd44f3ce..851d31a0e8bbdc57d4ca617f4d4c814343736ddd 100644
+index ef5c95be3340b98ae0a74784187590781f6a7892..532576e19e4e76d021a6905da40230960f04e1a8 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
-@@ -112,10 +112,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
+@@ -115,10 +115,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -52,10 +52,10 @@ index f88f664eb7226425e6f1b45fe6811d49dd44f3ce..851d31a0e8bbdc57d4ca617f4d4c8143
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index 65840fa273b367efa9d681a4d267a3930d496eea..a28bdc08ee5535c3650169d5246aaa9a14d4778d 100644
+index 0daac30efcfe15d0b3072306e5c96d56883992ae..4f794d3843192871bc78b586467a90cc56301759 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
-@@ -56,8 +56,7 @@ class AshWebViewImpl : public ash::AshWebView,
+@@ -57,8 +57,7 @@ class AshWebViewImpl : public ash::AshWebView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
