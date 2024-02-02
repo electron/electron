@@ -18,7 +18,7 @@ index 0db7bb39ad611d3f9e4735d075c30a11d2958391..24e588e65a09b7a1d602c3c92040dacb
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index d95428476a53594bc40da191f425fcb642ba2fd2..bf06a53ac0d6b83ed75d9dcd502b6c690a08dd9a 100644
+index 8498a534a07bdd7cd1c8e23a9a3bb059d7fc103d..bbd56e8d8d4b5532ca2364978897efb5e6717c64 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -50,6 +50,7 @@

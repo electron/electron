@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3c109c824ce509095743b7305d707728c6760f72..d5f0e57de4b7135b6f249c61126f81fd7259431f 100644
+index 8942ea199783870cdf09218fa8b06b289753a1e7..1be2fc3b7c556ad89968e38405778cf5112abb8b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1049,6 +1049,7 @@ component("base") {
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 201e3ef8951b9e1025f7d86f1bddeeff1138b0a3..c2440b7aeef4d517be35c09b18e4e69cef7b791c 100644
+index 53fc78d8db822b965c61ec85172bf2720e2c5584..f68f6fa6736ef4cdb986ab4148e196361159029e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -802,10 +802,10 @@ index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 9c4e8e2536819610648aa5b3d11eaa5d2da24a9c..0b3660e51b0a15102b7b1726e17b34d582b3576e 100644
+index 3cbf9f3aa356f933c8e0b8788cb6d6066934f769..570e4374413e61e1848d5ec7e6dc73f67325a110 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -72,12 +72,16 @@
+@@ -75,12 +75,16 @@
  }  // namespace
  
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL()
@@ -823,7 +823,7 @@ index 9c4e8e2536819610648aa5b3d11eaa5d2da24a9c..0b3660e51b0a15102b7b1726e17b34d5
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, !av_disabled_at_command_line);
  
-@@ -98,6 +102,10 @@
+@@ -101,6 +105,10 @@
  #endif
      ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
@@ -834,7 +834,7 @@ index 9c4e8e2536819610648aa5b3d11eaa5d2da24a9c..0b3660e51b0a15102b7b1726e17b34d5
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -235,9 +243,13 @@
+@@ -233,9 +241,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
