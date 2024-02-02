@@ -782,16 +782,6 @@ set of files.
 Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
 learn how to serve files / content from a custom protocol.
 
-[breaking-changes]: ../breaking-changes.md
-[browser-window]: ../api/browser-window.md
-[webview-tag]: ../api/webview-tag.md
-[web-contents-view]: ../api/web-contents-view.md
-[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
-[web-contents]: ../api/web-contents.md
-[window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
-[will-navigate]: ../api/web-contents.md#event-will-navigate
-[open-external]: ../api/shell.md#shellopenexternalurl-options
-
 ### 19. Check which fuses you can change
 
 Electron ships with a number of options that can be useful but a large portion of
@@ -813,3 +803,13 @@ We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fus
 flipping these fuses easy. Check out the README of that module for more details on usage and
 potential error cases, and refer to
 [How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
+
+[breaking-changes]: ../breaking-changes.md
+[browser-window]: ../api/browser-window.md
+[webview-tag]: ../api/webview-tag.md
+[web-contents-view]: ../api/web-contents-view.md
+[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
+[web-contents]: ../api/web-contents.md
+[window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
+[will-navigate]: ../api/web-contents.md#event-will-navigate
+[open-external]: ../api/shell.md#shellopenexternalurl-options
