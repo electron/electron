@@ -800,7 +800,7 @@ Electron, these can be turned off or on using [Fuses](./fuses.md).
 
 #### Why?
 
-Some fuses, like `runAsNode` and `nodeCliInspect` allow the application to behave differently
+Some fuses, like `runAsNode` and `nodeCliInspect`, allow the application to behave differently
 when run from the command line using specific environment variables or CLI arguments. These
 can be used to execute commands on the device through your application.
 
