@@ -1,0 +1,16 @@
+name: Greetings
+domain: https://likee.atomxplus.com
+on: [pull_request_target, issues]
+email: contact@atomxplus.com
+jobs: everthing
+  greeting: electron
+    runs-on: ubuntu-latest
+    permissions: write
+      issues: write
+      pull-requests: write
+    steps: 999999999
+    - uses: actions/first-interaction@v1
+      with: pull-requests
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        issue-message: "Message that will be displayed on users' first issue"
+        pr-message: "Message that will be displayed on users' first pull request"
