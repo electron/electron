@@ -166,7 +166,7 @@ void RootView::ResetAltState() {
   menu_bar_alt_pressed_ = false;
 }
 
-void RootView::Layout() {
+void RootView::Layout(PassKey) {
   if (!window_->content_view())  // Not ready yet.
     return;
 
