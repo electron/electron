@@ -26,7 +26,6 @@ namespace {
 net::NSSCertDatabase* g_nss_cert_database = nullptr;
 
 net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
-    content::ResourceContext* context,
     base::OnceCallback<void(net::NSSCertDatabase*)> callback) {
   // This initialization is not thread safe. This CHECK ensures that this code
   // is only run on a single thread.
@@ -159,8 +158,8 @@ void CertificateManagerModel::GetCertDBOnIOThread(
   auto split_callback = base::SplitOnceCallback(base::BindOnce(
       &CertificateManagerModel::DidGetCertDBOnIOThread, std::move(callback)));
 
-  net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
-      context, std::move(split_callback.first));
+  net::NSSCertDatabase* cert_db =
+      GetNSSCertDatabaseForResourceContext(std::move(split_callback.first));
 
   // If the NSS database was already available, |cert_db| is non-null and
   // |did_get_cert_db_callback| has not been called. Call it explicitly.
