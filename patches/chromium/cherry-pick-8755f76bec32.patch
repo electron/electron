@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Thu, 18 Jan 2024 16:47:18 +0000
+Subject: Exit early from RTCPeerConnectionHandler
+
+For certain operations that require a live client
+(i.e., RTCPeerConnection, which is garbage collected),
+PeerConnectionHandler keeps a pointer to the client on the stack
+to prevent garbage collection.
+
+In some cases, the client may have already been garbage collected
+(the client is null). In that case, there is no point in doing the
+operation and it should exit early to avoid UAF/crashes.
+
+This CL adds early exit to the cases that do not already have it.
+
+Bug: 1514777
+Change-Id: I27e9541cfaa74d978799c03e2832a0980f9e5710
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5210359
+Reviewed-by: Tomas Gunnarsson <tommi@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1248826}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index 473eb82685f004d960f3d488e3976a2305eda248..b6d893cc0f93d5bbb12b07734c63b31a52d662f1 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -1056,15 +1056,19 @@ bool RTCPeerConnectionHandler::Initialize(
+     WebLocalFrame* frame,
+     ExceptionState& exception_state) {
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+-  DCHECK(frame);
+   DCHECK(dependency_factory_);
+-  frame_ = frame;
+ 
+   CHECK(!initialize_called_);
+   initialize_called_ = true;
+ 
+   // Prevent garbage collection of client_ during processing.
+   auto* client_on_stack = client_.Get();
++  if (!client_on_stack) {
++    return false;
++  }
++
++  DCHECK(frame);
++  frame_ = frame;
+   peer_connection_tracker_ = PeerConnectionTracker::From(*frame);
+ 
+   configuration_ = server_configuration;
+@@ -2312,10 +2316,13 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
+                                               int sdp_mline_index,
+                                               int component,
+                                               int address_family) {
++  DCHECK(task_runner_->RunsTasksInCurrentSequence());
+   // In order to ensure that the RTCPeerConnection is not garbage collected
+   // from under the function, we keep a pointer to it on the stack.
+   auto* client_on_stack = client_.Get();
+-  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  if (!client_on_stack) {
++    return;
++  }
+   TRACE_EVENT0("webrtc", "RTCPeerConnectionHandler::OnIceCandidateImpl");
+   // This line can cause garbage collection.
+   auto* platform_candidate = MakeGarbageCollected<RTCIceCandidatePlatform>(
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc
+index f8838ab0c5a31182e210cc6f42b9f489c7dd5365..f689a679a7589f16839349189cbfdf84efd14367 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler_test.cc
+@@ -601,7 +601,7 @@ class RTCPeerConnectionHandlerTest : public SimTest {
+     waitable_event->Signal();
+   }
+ 
+- public:
++ protected:
+   ScopedTestingPlatformSupport<AudioCapturerSourceTestingPlatformSupport>
+       webrtc_audio_device_platform_support_;
+   Persistent<MockRTCPeerConnectionHandlerClient> mock_client_;
+@@ -1168,4 +1168,32 @@ TEST_F(RTCPeerConnectionHandlerTest,
+   observer->OnIceCandidate(native_candidate.get());
+ }
+ 
++TEST_F(RTCPeerConnectionHandlerTest,
++       OnIceCandidateAfterClientGarbageCollectionDoesNothing) {
++  testing::InSequence sequence;
++  EXPECT_CALL(*mock_tracker_.Get(),
++              TrackAddIceCandidate(pc_handler_.get(), _,
++                                   PeerConnectionTracker::kSourceLocal, true))
++      .Times(0);
++
++  std::unique_ptr<webrtc::IceCandidateInterface> native_candidate(
++      mock_dependency_factory_->CreateIceCandidate("sdpMid", 1, kDummySdp));
++  mock_client_ = nullptr;
++  WebHeap::CollectAllGarbageForTesting();
++  pc_handler_->observer()->OnIceCandidate(native_candidate.get());
++  RunMessageLoopsUntilIdle();
++}
++
++TEST_F(RTCPeerConnectionHandlerTest,
++       OnIceCandidateAfterClientGarbageCollectionFails) {
++  DummyExceptionStateForTesting exception_state;
++  auto pc_handler = CreateRTCPeerConnectionHandlerUnderTest();
++  mock_client_ = nullptr;
++  WebHeap::CollectAllGarbageForTesting();
++  EXPECT_FALSE(pc_handler->Initialize(
++      /*context=*/nullptr, webrtc::PeerConnectionInterface::RTCConfiguration(),
++      /*media_constraints=*/nullptr,
++      /*frame=*/nullptr, exception_state));
++}
++
+ }  // namespace blink

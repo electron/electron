@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jean-Philippe Gravel <jpgravel@chromium.org>
+Date: Tue, 23 Jan 2024 21:37:50 +0000
+Subject: Fix use-after-free in DrawTextInternal
+
+DrawTextInternal was calling GetOrCreatePaintCanvas multiple times,
+once at the start of the function, once inside of the
+BaseRenderingContext2DAutoRestoreSkCanvas helper class and once in the
+Draw call. GetOrCreatePaintCanvas destroys the canvas resource provider
+if the GPU context is lost. If this happens on the second call to
+GetOrCreatePaintCanvas, destroying the resource provider will
+invalidate the cc::PaintCanvas returned by the first call to
+GetOrCreatePaintCanvas.
+
+The GPU process can technically crash at any point during the renderer
+process execution (perhaps because of something another renderer
+process did). We therefore have to assume that any call to
+GetOrCreatePaintCanvas can invalidate previously returned
+cc::PaintCanvas.
+
+(cherry picked from commit d4a197e4913f8e5072263b59aedc29f2b5af3e93)
+
+Change-Id: Ifa77735ab1b2b55b3d494f886b8566299937f6fe
+Fixed: 1511567
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5198419
+Reviewed-by: Fernando Serboncini <fserb@chromium.org>
+Commit-Queue: Jean-Philippe Gravel <jpgravel@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1248204}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5230237
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6099@{#1859}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+index f09459b0b67c37d307c70a516731d05db49f49b8..89cb2a41b3eef8bb359984b0d14bfa0e4e19cfdc 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -2682,40 +2682,6 @@ const Font& BaseRenderingContext2D::AccessFont(HTMLCanvasElement* canvas) {
+   return GetState().GetFont();
+ }
+ 
+-namespace {
+-
+-// Drawing methods need to use this instead of SkAutoCanvasRestore in case
+-// overdraw detection substitutes the recording canvas (to discard overdrawn
+-// draw calls).
+-class BaseRenderingContext2DAutoRestoreSkCanvas {
+-  STACK_ALLOCATED();
+-
+- public:
+-  explicit BaseRenderingContext2DAutoRestoreSkCanvas(
+-      BaseRenderingContext2D* context)
+-      : context_(context) {
+-    DCHECK(context_);
+-    cc::PaintCanvas* c = context_->GetOrCreatePaintCanvas();
+-    if (c) {
+-      save_count_ = c->getSaveCount();
+-    }
+-  }
+-
+-  ~BaseRenderingContext2DAutoRestoreSkCanvas() {
+-    cc::PaintCanvas* c = context_->GetOrCreatePaintCanvas();
+-    if (c) {
+-      c->restoreToCount(save_count_);
+-    }
+-    context_->ValidateStateStack();
+-  }
+-
+- private:
+-  BaseRenderingContext2D* context_;
+-  int save_count_ = 0;
+-};
+-
+-}  // namespace
+-
+ void BaseRenderingContext2D::DrawTextInternal(
+     const String& text,
+     double x,
+@@ -2736,8 +2702,10 @@ void BaseRenderingContext2D::DrawTextInternal(
+     canvas->GetDocument().UpdateStyleAndLayoutTreeForNode(
+         canvas, DocumentUpdateReason::kCanvas);
+   }
+-  cc::PaintCanvas* c = GetOrCreatePaintCanvas();
+-  if (!c) {
++
++  // Abort if we don't have a paint canvas (e.g. the context was lost).
++  cc::PaintCanvas* paint_canvas = GetOrCreatePaintCanvas();
++  if (!paint_canvas) {
+     return;
+   }
+ 
+@@ -2808,14 +2776,13 @@ void BaseRenderingContext2D::DrawTextInternal(
+     InflateStrokeRect(bounds);
+   }
+ 
+-  BaseRenderingContext2DAutoRestoreSkCanvas state_restorer(this);
+   if (use_max_width) {
+-    c->save();
++    paint_canvas->save();
+     // We draw when fontWidth is 0 so compositing operations (eg, a "copy" op)
+     // still work. As the width of canvas is scaled, so text can be scaled to
+     // match the given maxwidth, update text location so it appears on desired
+     // place.
+-    c->scale(ClampTo<float>(width / font_width), 1);
++    paint_canvas->scale(ClampTo<float>(width / font_width), 1);
+     location.set_x(location.x() / ClampTo<float>(width / font_width));
+   }
+ 
+@@ -2846,6 +2813,16 @@ void BaseRenderingContext2D::DrawTextInternal(
+       { return false; },
+       bounds, paint_type, CanvasRenderingContext2DState::kNoImage,
+       CanvasPerformanceMonitor::DrawType::kText);
++
++  if (use_max_width) {
++    // Cannot use `paint_canvas` in case recording canvas was substituted or
++    // destroyed during draw call.
++    cc::PaintCanvas* c = GetPaintCanvas();
++    if (c) {
++      c->restore();
++    }
++  }
++  ValidateStateStack();
+ }
+ 
+ TextMetrics* BaseRenderingContext2D::measureText(const String& text) {
