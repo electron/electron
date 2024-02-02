@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tsuyoshi Horo <horo@chromium.org>
+Date: Wed, 24 Jan 2024 02:04:24 +0000
+Subject: Fix UAF in SourceStreamToDataPipe
+
+SourceStreamToDataPipe::ReadMore() is passing a callback with
+Unretained(this) to net::SourceStream::Read(). But this callback may be
+called even after the SourceStream is destructed. This is causing UAF
+issue (crbug.com/1511085).
+
+To solve this problem, this CL changes ReadMore() method to pass a
+callback with a weak ptr of this.
+
+(cherry picked from commit 6e36a69da1b73f9aea9c54bfbe6c5b9cb2c672a5)
+
+Bug: 1511085
+Change-Id: Idd4e34ff300ff5db2de1de7b303841c7db3a964a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5179746
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Tsuyoshi Horo <horo@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1244526}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5231558
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1860}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/services/network/public/cpp/source_stream_to_data_pipe.cc b/services/network/public/cpp/source_stream_to_data_pipe.cc
+index bfd85b1a00b216b52ae816ca29cb66ddabe20b6d..07afd58a40f92485ded07c535092a891c5140c7b 100644
+--- a/services/network/public/cpp/source_stream_to_data_pipe.cc
++++ b/services/network/public/cpp/source_stream_to_data_pipe.cc
+@@ -55,9 +55,9 @@ void SourceStreamToDataPipe::ReadMore() {
+ 
+   scoped_refptr<net::IOBuffer> buffer(
+       new network::NetToMojoIOBuffer(pending_write_.get()));
+-  int result = source_->Read(
+-      buffer.get(), base::checked_cast<int>(num_bytes),
+-      base::BindOnce(&SourceStreamToDataPipe::DidRead, base::Unretained(this)));
++  int result = source_->Read(buffer.get(), base::checked_cast<int>(num_bytes),
++                             base::BindOnce(&SourceStreamToDataPipe::DidRead,
++                                            weak_factory_.GetWeakPtr()));
+ 
+   if (result != net::ERR_IO_PENDING)
+     DidRead(result);
+diff --git a/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc b/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc
+index 7061418c5141d936f04b1193c98e66efc5e72ac5..54159df39afa7cf6e2faa51da185dc034b923209 100644
+--- a/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc
++++ b/services/network/public/cpp/source_stream_to_data_pipe_unittest.cc
+@@ -6,7 +6,9 @@
+ 
+ #include "base/functional/bind.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/test/bind.h"
+ #include "base/test/task_environment.h"
++#include "net/base/net_errors.h"
+ #include "net/filter/mock_source_stream.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+@@ -42,6 +44,33 @@ struct SourceStreamToDataPipeTestParam {
+   const ReadResultType read_result_type;
+ };
+ 
++class DummyPendingSourceStream : public net::SourceStream {
++ public:
++  DummyPendingSourceStream() : net::SourceStream(SourceStream::TYPE_NONE) {}
++  ~DummyPendingSourceStream() override = default;
++
++  DummyPendingSourceStream(const DummyPendingSourceStream&) = delete;
++  DummyPendingSourceStream& operator=(const DummyPendingSourceStream&) = delete;
++
++  // SourceStream implementation
++  int Read(net::IOBuffer* dest_buffer,
++           int buffer_size,
++           net::CompletionOnceCallback callback) override {
++    callback_ = std::move(callback);
++    return net::ERR_IO_PENDING;
++  }
++  std::string Description() const override { return ""; }
++  bool MayHaveMoreBytes() const override { return true; }
++
++  net::CompletionOnceCallback TakeCompletionCallback() {
++    CHECK(callback_);
++    return std::move(callback_);
++  }
++
++ private:
++  net::CompletionOnceCallback callback_;
++};
++
+ }  // namespace
+ 
+ class SourceStreamToDataPipeTest
+@@ -212,4 +241,33 @@ TEST_P(SourceStreamToDataPipeTest, MayHaveMoreBytes) {
+   EXPECT_EQ(ReadPipe(&output), net::OK);
+   EXPECT_EQ(output, message);
+ }
++
++TEST(SourceStreamToDataPipeCallbackTest, CompletionCallbackAfterDestructed) {
++  base::test::TaskEnvironment task_environment;
++
++  std::unique_ptr<DummyPendingSourceStream> source =
++      std::make_unique<DummyPendingSourceStream>();
++  DummyPendingSourceStream* source_ptr = source.get();
++  const MojoCreateDataPipeOptions data_pipe_options{
++      sizeof(MojoCreateDataPipeOptions), MOJO_CREATE_DATA_PIPE_FLAG_NONE, 1, 1};
++  mojo::ScopedDataPipeProducerHandle producer_end;
++  mojo::ScopedDataPipeConsumerHandle consumer_end;
++  CHECK_EQ(MOJO_RESULT_OK, mojo::CreateDataPipe(&data_pipe_options,
++                                                producer_end, consumer_end));
++
++  std::unique_ptr<SourceStreamToDataPipe> adapter =
++      std::make_unique<SourceStreamToDataPipe>(std::move(source),
++                                               std::move(producer_end));
++  bool callback_called = false;
++  adapter->Start(
++      base::BindLambdaForTesting([&](int result) { callback_called = true; }));
++  net::CompletionOnceCallback callback = source_ptr->TakeCompletionCallback();
++  adapter.reset();
++
++  // Test that calling `callback` after deleting `adapter` must not cause UAF
++  // (crbug.com/1511085).
++  std::move(callback).Run(net::ERR_FAILED);
++  EXPECT_FALSE(callback_called);
++}
++
+ }  // namespace network

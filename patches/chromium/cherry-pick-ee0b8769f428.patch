@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Wed, 24 Jan 2024 18:40:01 +0000
+Subject: Exit early from RTCPeerConnectionHandler
+
+For certain operations that require a live client
+(i.e., RTCPeerConnection, which is garbage collected),
+PeerConnectionHandler keeps a pointer to the client on the stack
+to prevent garbage collection.
+
+In some cases, the client may have already been garbage collected
+(the client is null). In that case, there is no point in doing the
+operation and it should exit early to avoid UAF/crashes.
+
+This CL adds early exit to the cases that do not already have it.
+
+(cherry picked from commit 8755f76bec326c654370de6dd68eea693df74ede)
+
+Bug: 1514777
+Change-Id: I27e9541cfaa74d978799c03e2832a0980f9e5710
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5210359
+Reviewed-by: Tomas Gunnarsson <tommi@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1248826}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5233883
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6099@{#1867}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index 76fa93800543ff134859c8fc0c0fa63123cf9772..9e5ce0572cfd1d2dd729e5f560b021aba05653f3 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -1057,15 +1057,19 @@ bool RTCPeerConnectionHandler::Initialize(
+     WebLocalFrame* frame,
+     ExceptionState& exception_state) {
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+-  DCHECK(frame);
+   DCHECK(dependency_factory_);
+-  frame_ = frame;
+ 
+   CHECK(!initialize_called_);
+   initialize_called_ = true;
+ 
+   // Prevent garbage collection of client_ during processing.
+   auto* client_on_stack = client_;
++  if (!client_on_stack) {
++    return false;
++  }
++
++  DCHECK(frame);
++  frame_ = frame;
+   peer_connection_tracker_ = PeerConnectionTracker::From(*frame);
+ 
+   configuration_ = server_configuration;
+@@ -2312,10 +2316,13 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
+                                               int sdp_mline_index,
+                                               int component,
+                                               int address_family) {
++  DCHECK(task_runner_->RunsTasksInCurrentSequence());
+   // In order to ensure that the RTCPeerConnection is not garbage collected
+   // from under the function, we keep a pointer to it on the stack.
+   auto* client_on_stack = client_;
+-  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  if (!client_on_stack) {
++    return;
++  }
+   TRACE_EVENT0("webrtc", "RTCPeerConnectionHandler::OnIceCandidateImpl");
+   // This line can cause garbage collection.
+   auto* platform_candidate = MakeGarbageCollected<RTCIceCandidatePlatform>(
