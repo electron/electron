@@ -38,11 +38,9 @@ class KeyWeakMap {
 
   // Gets the object from WeakMap by its |key|.
   v8::MaybeLocal<v8::Object> Get(v8::Isolate* isolate, const K& key) {
-    auto iter = map_.find(key);
-    if (iter == map_.end())
-      return v8::MaybeLocal<v8::Object>();
-    else
+    if (auto iter = map_.find(key); iter != map_.end())
       return v8::Local<v8::Object>::New(isolate, iter->second.second);
+    return {};
   }
 
   // Returns all objects.
