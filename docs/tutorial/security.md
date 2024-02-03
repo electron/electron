@@ -114,6 +114,8 @@ You should at least follow these steps to improve the security of your applicati
 15. [Do not use `shell.openExternal` with untrusted content](#15-do-not-use-shellopenexternal-with-untrusted-content)
 16. [Use a current version of Electron](#16-use-a-current-version-of-electron)
 17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
+18. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
+19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -779,6 +781,28 @@ set of files.
 
 Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
 learn how to serve files / content from a custom protocol.
+
+### 19. Check which fuses you can change
+
+Electron ships with a number of options that can be useful but a large portion of
+applications probably don't need. In order to avoid having to build your own version of
+Electron, these can be turned off or on using [Fuses](./fuses.md).
+
+#### Why?
+
+Some fuses, like `runAsNode` and `nodeCliInspect`, allow the application to behave differently
+when run from the command line using specific environment variables or CLI arguments. These
+can be used to execute commands on the device through your application.
+
+This can let external scripts run commands that they potentially would not be allowed to, but
+that your application might have the rights for.
+
+#### How?
+
+We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make
+flipping these fuses easy. Check out the README of that module for more details on usage and
+potential error cases, and refer to
+[How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
 
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md
