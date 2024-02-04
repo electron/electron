@@ -148,10 +148,10 @@ index c5dd9a90738a8645ae643be370ec74e6ccc1ef8a..f7d73b550e0d46f77095ac685a9be8aa
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d821d714e2a6278123b2c51266d4205840e36a9c..90cd920687a3e3d1966f0e0a71ae98823dc8c15a 100644
+index ecc5a4bc6c20cdb6abce97e87f3d43e5ef8a5193..6ae8545d44771e00de3850b9b74b9de560d5c46c 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6560,6 +6560,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6572,6 +6572,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -189,28 +189,28 @@ index 1b60d72c3728956e3879248d17cce0d93fc15c8f..f7c9ee76f3cc6545f97982493cf60c4e
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index bef5a989bac50c177f15f52fe87ac3790d553e85..65dcd2e3b51929400c8bfb6a98a4fb59bb6a3d6b 100644
+index 78956238f8d959580e928d2590866b2f4da3d218..806b3337ec8a8ad7c89681857b4e81dc06301c04 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
-@@ -34,6 +34,7 @@
- #include "third_party/abseil-cpp/absl/types/optional.h"
+@@ -35,6 +35,7 @@
+ 
  #include "third_party/blink/public/platform/web_string.h"
  #include "third_party/blink/public/platform/web_vector.h"
 +#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
  
  namespace blink {
  
-@@ -73,6 +74,8 @@ struct WebWindowFeatures {
+@@ -74,6 +75,8 @@ struct WebWindowFeatures {
    // TODO(apaseltiner): Investigate moving this field to a non-public struct
    // since it is only needed within //third_party/blink.
-   absl::optional<WebVector<WebString>> attribution_srcs;
+   std::optional<WebVector<WebString>> attribution_srcs;
 +
 +  String raw_features;
  };
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index e70c583bca65fef07ceea2455df460e2394099e4..0004396f2082aef04f441ce1d7f3d26e1024f19f 100644
+index 8b2ba041d1fb430b0e9b4e634f098ba6f495278b..8b8d46a201ed9e99acbc5178036da75c1abd890d 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2210,6 +2210,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

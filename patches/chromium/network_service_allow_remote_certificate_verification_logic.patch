@@ -177,7 +177,7 @@ index 651ed01e0e2c9888d604e93272e1af19fae2f8cd..2da35fd3348158b80ce150082224c465
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 3096bd7d6719b99818ad2e5befefd4dbeee0ddb8..fee16e02e0160825e44c668672176546abe7d99d 100644
+index 504594f4cdf11f26c88f53ea3b9bdb588663fcf0..d10578f1f43d081bf79190f2625fcac2041acd94 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -297,6 +297,16 @@ struct SocketBrokerRemotes {

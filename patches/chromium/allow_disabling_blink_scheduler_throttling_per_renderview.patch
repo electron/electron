@@ -104,10 +104,10 @@ index ed73a6fe6d146eac904f0aa0d88facf055df503e..4bbc792068db75739a7ceb8ad01c85f9
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 2ba868f0efb2ee082d452bb011409f1b4c5c5e1e..6caab2df3cfc367c63839b7ac635d8d072ef8a57 100644
+index d98282b35beea63c2b8206a86533409da06a6e6b..db62c091239e8cf963ce44081516503fc04efa17 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -378,6 +378,7 @@ class BLINK_EXPORT WebView {
+@@ -379,6 +379,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -116,7 +116,7 @@ index 2ba868f0efb2ee082d452bb011409f1b4c5c5e1e..6caab2df3cfc367c63839b7ac635d8d0
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index b1b1c75138a22eb3acf837a6d9433b4de1b9b455..a164dc9466df0e498644c17c6a09e0468a1f3b7e 100644
+index 304f3b906632aaad753059c40020eb766fd877dc..86a7d6142ed13e727d1974a5ebcf4748915532aa 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2425,6 +2425,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -155,7 +155,7 @@ index b1b1c75138a22eb3acf837a6d9433b4de1b9b455..a164dc9466df0e498644c17c6a09e046
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 25566d1e5a3671c698e7352bc7600005a8bfcf3c..8dfb3b5b9026df92e28271258870c9eb588a6526 100644
+index 0435e8bf952f1a7a6dd4efad7e7cfa453a9eaa7e..382cd1b854bdb95a7ec9586fbe79d6597972892d 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -453,6 +453,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
