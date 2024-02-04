@@ -246,9 +246,10 @@ jobs:
       # 2. Fixing esbuild (wrong binary)
       # 3. Fixing rustc (wrong binary)
       # 4. Fixing gn (wrong binary)
-      # 5. Fixing dsymutil (wrong binary)
-      # 6. Ensuring we are using the correct ninja and adding it to PATH
-      # 7. Fixing angle (wrong remote)
+      # 5. Fix reclient (wrong binary)
+      # 6. Fixing dsymutil (wrong binary)
+      # 7. Ensuring we are using the correct ninja and adding it to PATH
+      # 8. Fixing angle (wrong remote)
       run : |
         SEDOPTION="-i"
         if [ "`uname`" == "Darwin" ]; then
@@ -264,10 +265,16 @@ jobs:
           rm -rf src/third_party/rust-toolchain
           python3 src/tools/rust/update_rust.py
           
+          # Prevent calling gclient getdep which always calls update_depot_tools
           echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
-          # Remove extra output from calling gclient getdep which always calls update_depot_tools
           sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
           cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
+
+          # Prevent calling gclient getdep which always calls update_depot_tools
+          echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
+          sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+          cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
+          python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
 
           if  [ "$TARGET_ARCH" == "arm64" ]; then
             export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
@@ -290,8 +297,6 @@ jobs:
         git remote remove origin
         mv .git/config.backup .git/config
         git fetch
-    # TODO(vertedinde): This won't work until we add an auth token
-    # to not-goma, see proj channel
     - name: Setup RBE
       run: |
         echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $GITHUB_ENV
@@ -307,12 +312,12 @@ jobs:
         $HELPER login
         echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
         echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
-    - name: step-gn-gen-default
+    - name: Default GN gen
       run: |
         cd src
         gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
     #  TODO(vertedinde): Just use "e build" here
-    - name: ninja_build_electron
+    - name: Build Electron
       run: |
         cd src
         NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
