@@ -117,7 +117,6 @@ jobs:
         rm -rf src/ios/chrome
         rm -rf src/third_party/blink/web_tests
         rm -rf src/third_party/blink/perf_tests
-        rm -rf src/third_party/electron_node/deps/openssl
         rm -rf src/chrome/test/data/xr/webvr_info
         rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
         rm -rf src/third_party/swift-toolchain
@@ -311,7 +310,7 @@ jobs:
     - name: Default GN gen
       run: |
         cd src/electron
-        # TODO: remove this once we figure out why .git/packed-refs is initially missing
+        # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
         gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
