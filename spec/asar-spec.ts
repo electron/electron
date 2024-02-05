@@ -1528,12 +1528,22 @@ describe('asar package', function () {
       originalFs.createReadStream(path.join(asarDir, 'a.asar'));
     });
 
-    itremote('can recursively delete a directory with an asar file in itremote', () => {
+    itremote('can recursively delete a directory with an asar file in itremote using rmdirSync', () => {
       const deleteDir = path.join(asarDir, 'deleteme');
       fs.mkdirSync(deleteDir);
 
       const originalFs = require('original-fs');
       originalFs.rmdirSync(deleteDir, { recursive: true });
+
+      expect(fs.existsSync(deleteDir)).to.be.false();
+    });
+
+    itremote('can recursively delete a directory with an asar file in itremote using promises.rmdir', async () => {
+      const deleteDir = path.join(asarDir, 'deleteme');
+      fs.mkdirSync(deleteDir);
+
+      const originalFs = require('original-fs');
+      await originalFs.promises.rmdir(deleteDir, { recursive: true });
 
       expect(fs.existsSync(deleteDir)).to.be.false();
     });
