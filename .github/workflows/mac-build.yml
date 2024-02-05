@@ -307,9 +307,8 @@ jobs:
         HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
         $HELPER login
         echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
-        echo 'RBE_service is $RBE_service'
         echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
-        echo 'RBE_experimental_credentials_helper is $RBE_experimental_credentials_helper'
+        echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
     - name: Default GN gen
       run: |
         cd src/electron
