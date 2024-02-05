@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - gh-mac-runner
-  workflow_dispatch:
-    inputs:
-      debug_enabled:
-        type: boolean
-        description: 'Run the build with tmate debugging enabled'
-        required: false
-        default: false
 
 env:
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
@@ -30,7 +23,7 @@ jobs:
       with:
         path: src/electron
     - name: Enable ssh Debugging
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      if: runner.debug == 1
       uses: mxschmitt/action-tmate@v3
       with:
         detached: true
@@ -161,7 +154,7 @@ jobs:
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable ssh Debugging
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      if: runner.debug == 1
       uses: mxschmitt/action-tmate@v3
       with:
         detached: true
