@@ -1,6 +1,7 @@
 import * as util from 'util';
+import type * as stream from 'stream';
 
-const timers = require('timers');
+import timers = require('timers');
 
 type AnyFn = (...args: any[]) => any
 
@@ -62,7 +63,7 @@ if (process.type === 'browser' ||
 
 if (process.platform === 'win32') {
   // Always returns EOF for stdin stream.
-  const { Readable } = require('stream');
+  const { Readable } = require('stream') as typeof stream;
   const stdin = new Readable();
   stdin.push(null);
   Object.defineProperty(process, 'stdin', {
