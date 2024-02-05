@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Peter=20Bostr=C3=B6m?= <pbos@chromium.org>
+Date: Fri, 26 Jan 2024 19:37:57 +0000
+Subject: Speculatively fix race in mojo ShutDownOnIOThread
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This acquires `write_lock_` before resetting handles used by WriteNoLock
+(which is called under the same lock in another thread). We also set
+`reject_writes_` to prevent future write attempts after shutdown. That
+seems strictly more correct.
+
+We also acquire `fds_to_close_lock_` before clearing the FDs.
+
+I was unable to repro locally as content_browsertests just times out
+in my local setup without reporting anything interesting. This seems
+strictly more correct though.
+
+(cherry picked from commit 9755d9d81e4a8cb5b4f76b23b761457479dbb06b)
+
+Bug: 1519980
+Change-Id: I96279936ca908ecb98eddd381df20d61597cba43
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5226127
+Auto-Submit: Peter Boström <pbos@chromium.org>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Commit-Queue: Peter Boström <pbos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1250580}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5239564
+Cr-Commit-Position: refs/branch-heads/6099@{#1883}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/mojo/core/channel_posix.cc b/mojo/core/channel_posix.cc
+index 0a3596382d0e9a40c72bfb4ead6f0338a61253d6..eae6b0768463679b5043514dc5745da52b80ae10 100644
+--- a/mojo/core/channel_posix.cc
++++ b/mojo/core/channel_posix.cc
+@@ -246,16 +246,21 @@ void ChannelPosix::WaitForWriteOnIOThreadNoLock() {
+ void ChannelPosix::ShutDownOnIOThread() {
+   base::CurrentThread::Get()->RemoveDestructionObserver(this);
+ 
+-  read_watcher_.reset();
+-  write_watcher_.reset();
+-  if (leak_handle_) {
+-    std::ignore = socket_.release();
+-  } else {
+-    socket_.reset();
+-  }
++  {
++    base::AutoLock lock(write_lock_);
++    reject_writes_ = true;
++    read_watcher_.reset();
++    write_watcher_.reset();
++    if (leak_handle_) {
++      std::ignore = socket_.release();
++    } else {
++      socket_.reset();
++    }
+ #if BUILDFLAG(IS_IOS)
+-  fds_to_close_.clear();
++    base::AutoLock fd_lock(fds_to_close_lock_);
++    fds_to_close_.clear();
+ #endif
++  }
+ 
+   // May destroy the |this| if it was the last reference.
+   self_ = nullptr;
