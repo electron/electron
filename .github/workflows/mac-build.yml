@@ -118,7 +118,6 @@ jobs:
         rm -rf src/third_party/blink/web_tests
         rm -rf src/third_party/blink/perf_tests
         rm -rf src/third_party/electron_node/deps/openssl
-        rm -rf src/third_party/electron_node/deps/v8
         rm -rf src/chrome/test/data/xr/webvr_info
         rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
         rm -rf src/third_party/swift-toolchain
