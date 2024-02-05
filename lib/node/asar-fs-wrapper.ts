@@ -2,7 +2,9 @@ import { Buffer } from 'buffer';
 import { constants } from 'fs';
 import * as path from 'path';
 import * as util from 'util';
+
 import type * as Crypto from 'crypto';
+import type * as os from 'os';
 
 const asar = process._linkedBinding('electron_common_asar');
 
@@ -255,7 +257,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (!process.env.ELECTRON_LOG_ASAR_READS) return;
     if (!logFDs.has(asarPath)) {
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
-      const logPath = path.join(require('os').tmpdir(), logFilename);
+      const logPath = path.join((require('os') as typeof os).tmpdir(), logFilename);
       logFDs.set(asarPath, fs.openSync(logPath, 'a'));
     }
     fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
