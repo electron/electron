@@ -519,6 +519,10 @@ describe('webContents module', () => {
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
     });
+
+    it('invalid URL load rejects', async () => {
+      await expect(w.loadURL('invalidURL')).to.eventually.be.rejected();
+    });
   });
 
   describe('getFocusedWebContents() API', () => {

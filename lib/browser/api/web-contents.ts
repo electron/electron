@@ -366,11 +366,6 @@ WebContents.prototype.loadURL = function (url, options) {
         resolveAndCleanup();
       }
     };
-    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
-      if (!error && isMainFrame) {
-        error = { errorCode, errorDescription, url: validatedURL };
-      }
-    };
 
     let navigationStarted = false;
     let browserInitiatedInPageNavigation = false;
@@ -390,6 +385,14 @@ WebContents.prototype.loadURL = function (url, options) {
         }
         browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
+      }
+    };
+    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+      if (!error && isMainFrame) {
+        error = { errorCode, errorDescription, url: validatedURL };
+      }
+      if (!navigationStarted && isMainFrame) {
+        finishListener();
       }
     };
     const stopLoadingListener = () => {
