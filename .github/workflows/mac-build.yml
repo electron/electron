@@ -291,11 +291,9 @@ jobs:
         git remote remove origin
         mv .git/config.backup .git/config
         git fetch
-    - name: Setup RBE
+    - name: Install build-tools & Setup RBE
       run: |
         echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $GITHUB_ENV
-        echo 'ulimit -n 10000' >> $GITHUB_ENV
-        echo 'sudo launchctl limit maxfiles 65536 200000' >> $GITHUB_ENV
         git clone https://github.com/electron/build-tools.git
         cd build-tools
         npx yarn --ignore-engines
@@ -310,9 +308,10 @@ jobs:
       run: |
         cd src
         gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-    #  TODO(vertedinde): Just use "e build" here
     - name: Build Electron
       run: |
+        ulimit -n 10000
+        sudo launchctl limit maxfiles 65536 200000
         cd src
         NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
