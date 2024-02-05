@@ -312,7 +312,10 @@ jobs:
         echo 'RBE_experimental_credentials_helper is $RBE_experimental_credentials_helper'
     - name: Default GN gen
       run: |
-        cd src
+        cd src/electron
+        # TODO: remove this once we figure out why .git/packed-refs is initially missing
+        git pack-refs
+        cd ..
         gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
     - name: Build Electron
       run: |
