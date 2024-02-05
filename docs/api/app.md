@@ -346,7 +346,6 @@ app.on('client-certificate-request-password', async (event, hostName, tokenName,
 })
 ```
 
-
 ### Event: 'select-client-certificate'
 
 Returns:
