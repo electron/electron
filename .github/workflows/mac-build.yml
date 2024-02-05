@@ -308,10 +308,14 @@ jobs:
         HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
         $HELPER login
         echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
+        echo 'RBE_service is $RBE_service'
         echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
+        echo 'RBE_experimental_credentials_helper is $RBE_experimental_credentials_helper'
     - name: Default GN gen
       run: |
         cd src
+        # TODO(codebytere): add a check in BUILD.gn to see if packed-refs exists and if not, run git pack-refs
+        git pack-refs
         gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
     - name: Build Electron
       run: |
