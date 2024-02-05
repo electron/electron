@@ -142,6 +142,10 @@ jobs:
     runs-on: macos-13-xlarge
     needs: checkout
     steps:
+    - name: Load Build Tools
+      run: |
+        npm i -g @electron/build-tools
+        e init --root=$PWD --out=Default testing
     - name: Checkout Electron
       uses: actions/checkout@v4
       with:
@@ -165,6 +169,9 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install
+    - name: Load Xcode
+      run: |
+        e load-xcode
     - name: Get Depot Tools 
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -296,10 +303,8 @@ jobs:
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=200" >> $GITHUB_ENV
-        git clone https://github.com/electron/build-tools.git
-        cd build-tools
+        cd ~/.electron_build_tools
         npx yarn --ignore-engines
-        mkdir third_party
         # Pull down credential helper and print status
         node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
         HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
@@ -319,6 +324,6 @@ jobs:
         ulimit -n 10000
         sudo launchctl limit maxfiles 65536 200000
         cd src
-        NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
