@@ -13,6 +13,11 @@ env:
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   GIT_CACHE: .git/cache
+  # TODO: this should be set to the correct GN_CONFIG for the build type.
+  GN_CONFIG: //electron/build/args/testing.gn
+  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
+  # Disable pre-compiled headers to reduce out size - only useful for rebuilds
+  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
 
 jobs:
   checkout:
