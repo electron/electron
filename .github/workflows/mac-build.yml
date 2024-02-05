@@ -38,7 +38,7 @@ jobs:
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
-        echo 'export GIT_CACHE_PATH="$PWD/git-cache"' >> $GITHUB_ENV
+        echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
     - name: Setup Node.js/npm
       uses: actions/setup-node@v3
       with:
@@ -65,7 +65,7 @@ jobs:
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
-      run: echo "$PWD/depot_tools" >> $GITHUB_PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
@@ -184,7 +184,7 @@ jobs:
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
-      run: echo "$PWD/depot_tools" >> $GITHUB_PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
@@ -237,7 +237,7 @@ jobs:
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Setup Environment Variables
       run: |
-        echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $GITHUB_ENV
+        echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Fix Sync
       # This step is required to correct for differences between "gclient sync"
       # on Linux and the expected state on macOS. This requires:
@@ -287,7 +287,7 @@ jobs:
         sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
         cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
 
-        echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $GITHUB_ENV
+        echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
 
         cd src/third_party/angle
         rm -f .git/objects/info/alternates
@@ -298,7 +298,7 @@ jobs:
         git fetch
     - name: Install build-tools & Setup RBE
       run: |
-        echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $GITHUB_ENV
+        echo "NUMBER_OF_NINJA_PROCESSES=200" >> $GITHUB_ENV
         git clone https://github.com/electron/build-tools.git
         cd build-tools
         npx yarn --ignore-engines
@@ -307,15 +307,13 @@ jobs:
         node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
         HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
         $HELPER login
-        echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
+        echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
         echo 'RBE_service is $RBE_service'
-        echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
+        echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
         echo 'RBE_experimental_credentials_helper is $RBE_experimental_credentials_helper'
     - name: Default GN gen
       run: |
         cd src
-        # TODO(codebytere): add a check in BUILD.gn to see if packed-refs exists and if not, run git pack-refs
-        git pack-refs
         gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
     - name: Build Electron
       run: |
