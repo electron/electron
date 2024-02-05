@@ -3,6 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+import type * as url from 'url';
+import type * as v8 from 'v8';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -132,7 +134,7 @@ if (packageJson.desktopName != null) {
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
 if (packageJson.v8Flags != null) {
-  require('v8').setFlagsFromString(packageJson.v8Flags);
+  (require('v8') as typeof v8).setFlagsFromString(packageJson.v8Flags);
 }
 
 app.setAppPath(packagePath);
@@ -199,7 +201,7 @@ if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
     const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
-    const main = require('url').pathToFileURL(path.join(packagePath, mainStartupScript));
+    const main = (require('url') as typeof url).pathToFileURL(path.join(packagePath, mainStartupScript));
     loadESM(async (esmLoader: any) => {
       try {
         await esmLoader.import(main.toString(), undefined, Object.create(null));
