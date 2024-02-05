@@ -12,7 +12,6 @@ env:
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  GIT_CACHE: .git/cache
   # TODO: this should be set to the correct GN_CONFIG for the build type.
   GN_CONFIG: //electron/build/args/testing.gn
   GN_EXTRA_ARGS: 'target_cpu = "arm64"'
