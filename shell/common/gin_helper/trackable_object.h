@@ -107,7 +107,7 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
 
   // Removes this instance from the weak map.
   void RemoveFromWeakMap() {
-    if (weak_map_ && weak_map_->Has(weak_map_id()))
+    if (weak_map_)
       weak_map_->Remove(weak_map_id());
   }
 
