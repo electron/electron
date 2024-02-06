@@ -19,12 +19,6 @@ namespace electron {
 template <typename K>
 class KeyWeakMap {
  public:
-  // Records the key and self, used by SetWeak.
-  struct KeyObject {
-    K key;
-    raw_ptr<KeyWeakMap> self;
-  };
-
   KeyWeakMap() {}
   virtual ~KeyWeakMap() {
     for (auto& p : map_)
@@ -75,6 +69,12 @@ class KeyWeakMap {
   }
 
  private:
+  // Records the key and self, used by SetWeak.
+  struct KeyObject {
+    K key;
+    raw_ptr<KeyWeakMap> self;
+  };
+
   static void OnObjectGC(
       const v8::WeakCallbackInfo<typename KeyWeakMap<K>::KeyObject>& data) {
     KeyWeakMap<K>::KeyObject* key_object = data.GetParameter();
