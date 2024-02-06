@@ -21,8 +21,7 @@ Process: [Main](../glossary.md#main-process)<br />
     of the child process. Default is `inherit`.
     String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to
     [stdio][] documentation from Node.js. Currently this option only supports configuring `stdout` and
-    `stderr` to either `pipe`, `inherit` or `ignore`. Configuring `stdin` is not supported; any property
-    other than `ignore` will result in an error.
+    `stderr` to either `pipe`, `inherit` or `ignore`. Configuring `stdin` to any property other than `ignore` is not supported and will result in an error.
     For example, the supported values will be processed as following:
     * `pipe`: equivalent to \['ignore', 'pipe', 'pipe']
     * `ignore`: equivalent to \['ignore', 'ignore', 'ignore']
