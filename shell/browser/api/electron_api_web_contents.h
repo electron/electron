@@ -173,7 +173,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
-  Type GetType() const;
+  [[nodiscard]] Type type() const { return type_; }
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();

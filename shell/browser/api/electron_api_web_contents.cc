@@ -2374,10 +2374,6 @@ base::ProcessId WebContents::GetOSProcessID() const {
   return base::GetProcId(process_handle);
 }
 
-WebContents::Type WebContents::GetType() const {
-  return type_;
-}
-
 bool WebContents::Equal(const WebContents* web_contents) const {
   return ID() == web_contents->ID();
 }
@@ -3371,7 +3367,7 @@ bool WebContents::IsFocused() const {
   if (!view)
     return false;
 
-  if (GetType() != Type::kBackgroundPage) {
+  if (type() != Type::kBackgroundPage) {
     auto* window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
@@ -4412,7 +4408,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
-      .SetMethod("getType", &WebContents::GetType)
+      .SetMethod("getType", &WebContents::type)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
