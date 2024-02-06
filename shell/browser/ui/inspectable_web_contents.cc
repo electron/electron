@@ -512,10 +512,6 @@ void InspectableWebContents::CallClientFunction(
       std::move(arguments), std::move(cb));
 }
 
-gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
-  return devtools_bounds_;
-}
-
 void InspectableWebContents::SaveDevToolsBounds(const gfx::Rect& bounds) {
   pref_service_->Set(kDevToolsBoundsPref,
                      base::Value{RectToDictionary(bounds)});
