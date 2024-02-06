@@ -467,6 +467,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: generated_artifacts_darwin-arm64
+        path: ./generated_artifacts_darwin-arm64
     - name: Restore Persisted Build Artifacts
       uses: actions/cache/restore@v4
       with:
