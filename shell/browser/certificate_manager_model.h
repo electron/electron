@@ -105,8 +105,7 @@ class CertificateManagerModel {
                                      CreationCallback callback);
   static void DidGetCertDBOnIOThread(CreationCallback callback,
                                      net::NSSCertDatabase* cert_db);
-  static void GetCertDBOnIOThread(content::ResourceContext* context,
-                                  CreationCallback callback);
+  static void GetCertDBOnIOThread(CreationCallback callback);
 
   raw_ptr<net::NSSCertDatabase> cert_db_;
   // Whether the certificate database has a public slot associated with the

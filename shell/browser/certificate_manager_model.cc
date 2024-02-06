@@ -72,7 +72,6 @@ void CertificateManagerModel::Create(content::BrowserContext* browser_context,
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
-                                browser_context->GetResourceContext(),
                                 std::move(callback)));
 }
 
@@ -150,9 +149,7 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
 }
 
 // static
-void CertificateManagerModel::GetCertDBOnIOThread(
-    content::ResourceContext* context,
-    CreationCallback callback) {
+void CertificateManagerModel::GetCertDBOnIOThread(CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   auto split_callback = base::SplitOnceCallback(base::BindOnce(
