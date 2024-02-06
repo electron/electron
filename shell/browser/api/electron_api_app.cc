@@ -1224,7 +1224,6 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     CertificateManagerModel::Create(base::BindOnce(
         &App::OnCertificateManagerModelCreated, base::Unretained(this),
