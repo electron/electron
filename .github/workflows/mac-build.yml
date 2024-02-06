@@ -425,6 +425,7 @@ jobs:
           src/cross-arch-snapshots
           src/third_party/llvm-build
           src/build/linux
+          src/buildtools/mac
           src/buildtools/third_party/libc++
           src/buildtools/third_party/libc++abi
           src/third_party/libc++
@@ -494,6 +495,7 @@ jobs:
           src/cross-arch-snapshots
           src/third_party/llvm-build
           src/build/linux
+          src/buildtools/mac
           src/buildtools/third_party/libc++
           src/buildtools/third_party/libc++abi
           src/third_party/libc++
