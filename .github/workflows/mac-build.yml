@@ -411,11 +411,30 @@ jobs:
         mv_if_exist src/cross-arch-snapshots
         cp_if_exist src/out/electron_ninja_log
         cp_if_exist src/out/Default/.ninja_log
-    - name: Upload Artifacts for Testing
+    - name: Upload Generated Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: generated_artifacts_darwin-arm64
         path: ./generated_artifacts_darwin-arm64
+    - name: Persist Build Artifacts
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          src/out/Default/gen/node_headers
+          src/out/Default/overlapped-checker
+          src/electron
+          src/third_party/electron_node
+          src/third_party/nan
+          src/cross-arch-snapshots
+          src/third_party/llvm-build
+          src/build/linux
+          src/buildtools/third_party/libc++
+          src/buildtools/third_party/libc++abi
+          src/third_party/libc++
+          src/third_party/libc++abi
+          src/out/Default/obj/buildtools/third_party
+          src/v8/tools/builtins-pgo
+        key: ${{ runner.os }}-build-artifacts-${{ github.sha }}
   test:
     runs-on: macos-13-xlarge
     needs: build
@@ -423,7 +442,7 @@ jobs:
     - name: Load Build Tools
       run: |
         npm i -g @electron/build-tools
-        e init --root=$PWD --out=Default testing
+        e init --root=$(pwd) --out=Default testing
     - name: Checkout Electron
       uses: actions/checkout@v4
       with:
@@ -434,15 +453,40 @@ jobs:
         node-version: 18.18.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
+    - name: Enable ssh Debugging
+      if: runner.debug == 1
+      uses: mxschmitt/action-tmate@v3
+      with:
+        detached: true
+        limit-access-to-actor: true
     - name: Install Dependencies
       run: |
         cd src/electron
         node script/yarn install
-    - name: Download Artifacts for Testing
+    - name: Download Generated Artifacts
       uses: actions/download-artifact@v4
       with:
         name: generated_artifacts_darwin-arm64
-    - name: Restore key specific artifacts
+    - name: Restore Persisted Build Artifacts
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          src/out/Default/gen/node_headers
+          src/out/Default/overlapped-checker
+          src/electron
+          src/third_party/electron_node
+          src/third_party/nan
+          src/cross-arch-snapshots
+          src/third_party/llvm-build
+          src/build/linux
+          src/buildtools/third_party/libc++
+          src/buildtools/third_party/libc++abi
+          src/third_party/libc++
+          src/third_party/libc++abi
+          src/out/Default/obj/buildtools/third_party
+          src/v8/tools/builtins-pgo
+        key: ${{ runner.os }}-build-artifacts-${{ github.sha }}
+    - name: Restore Generated Artifacts
       run: |
         mv_if_exist() {
           if [ -f "generated_artifacts_darwin-arm64/$1" ] || [ -d "generated_artifacts_darwin-arm64/$1" ]; then
