@@ -384,10 +384,6 @@ InspectableWebContentsDelegate* InspectableWebContents::GetDelegate() const {
   return delegate_;
 }
 
-bool InspectableWebContents::IsGuest() const {
-  return is_guest_;
-}
-
 void InspectableWebContents::ReleaseWebContents() {
   web_contents_.release();
   WebContentsDestroyed();
@@ -454,7 +450,7 @@ void InspectableWebContents::CloseDevTools() {
       managed_devtools_web_contents_.reset();
     }
     embedder_message_dispatcher_.reset();
-    if (!IsGuest())
+    if (!is_guest())
       web_contents_->Focus();
   }
 }
