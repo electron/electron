@@ -14,7 +14,7 @@
 
 namespace electron {
 
-// Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
+// Like ES6's WeakMap, with a K key and Weak Pointer value.
 template <typename K>
 class KeyWeakMap {
  public:
