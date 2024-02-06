@@ -514,3 +514,12 @@ jobs:
         sudo security authorizationdb write com.apple.trust-settings.admin allow
         cd src/electron
         ./script/codesign/generate-identity.sh
+    - name: Run Electron Tests
+      env:
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+      run: |
+        e test --runners=main --trace-uncaught --enable-logging --files
