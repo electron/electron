@@ -379,6 +379,8 @@ jobs:
         e build electron:electron_version_file
         electron/script/zip-symbols.py -b $BUILD_PATH
       # TODO(vertedinde): handle creating ffmpeg and hunspell for release builds
+      # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
+      # tp ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
       run: |
         rm -rf generated_artifacts_darwin-arm64
@@ -414,3 +416,75 @@ jobs:
       with:
         name: generated_artifacts_darwin-arm64
         path: ./generated_artifacts_darwin-arm64
+  test:
+    runs-on: macos-13-xlarge
+    needs: build
+    steps:
+    - name: Load Build Tools
+      run: |
+        npm i -g @electron/build-tools
+        e init --root=$PWD --out=Default testing
+    - name: Checkout Electron
+      uses: actions/checkout@v4
+      with:
+        path: src/electron
+    - name: Setup Node.js/npm
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.18.x
+        cache: yarn
+        cache-dependency-path: src/electron/yarn.lock
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Download Artifacts for Testing
+      uses: actions/download-artifact@v4
+      with:
+        name: generated_artifacts_darwin-arm64
+    - name: Restore key specific artifacts
+      run: |
+        mv_if_exist() {
+          if [ -f "generated_artifacts_darwin-arm64/$1" ] || [ -d "generated_artifacts_darwin-arm64/$1" ]; then
+            echo Restoring $1 to $2
+            mkdir -p $2
+            mv generated_artifacts_darwin-arm64/$1 $2
+          else
+            echo Skipping $1 - It is not present on disk
+          fi
+        }
+        mv_if_exist dist.zip src/out/Default
+        mv_if_exist node_headers.tar.gz src/out/Default/gen
+        mv_if_exist symbols.zip src/out/Default
+        mv_if_exist mksnapshot.zip src/out/Default
+        mv_if_exist chromedriver.zip src/out/Default
+        mv_if_exist ffmpeg.zip src/out/ffmpeg
+        mv_if_exist hunspell_dictionaries.zip src/out/Default
+        mv_if_exist cross-arch-snapshots src
+    - name: Unzip Dist, Mksnapshot & Chromedriver
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+        unzip -:o chromedriver.zip
+        unzip -:o mksnapshot.zip
+    # - name: Import & Trust Self-Signed Codesigning Cert on MacOS
+    #   run: |
+    #     sudo security authorizationdb write com.apple.trust-settings.admin allow
+    #     cd src/electron
+    #     ./script/codesign/generate-identity.sh
+    # TODO(vertedinde): Does GHA support test-splitting?
+    # - name: Run Electron tests
+    #   env:
+    #     MOCHA_REPORTER: mocha-multi-reporters
+    #     ELECTRON_TEST_RESULTS_DIR: junit
+    #     MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+    #     ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+    #   run: |
+    #     cd src
+    #     if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+    #       export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
+    #     fi
+    #     cd electron
+    #     e test
+    #     # (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -I@ -P4 bash -c "echo $(pwd)/@" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
+  
