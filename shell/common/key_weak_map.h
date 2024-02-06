@@ -19,7 +19,7 @@ template <typename K>
 class KeyWeakMap {
  public:
   KeyWeakMap() {}
-  virtual ~KeyWeakMap() {
+  ~KeyWeakMap() {
     for (auto& p : map_)
       p.second.second.ClearWeak();
   }
