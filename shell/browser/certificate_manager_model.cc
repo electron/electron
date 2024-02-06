@@ -7,9 +7,7 @@
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/logging.h"
-#include "base/strings/utf_string_conversions.h"
-#include "content/public/browser/browser_context.h"
+#include "base/memory/ptr_util.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
@@ -25,8 +23,7 @@ namespace {
 
 net::NSSCertDatabase* g_nss_cert_database = nullptr;
 
-net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
-    content::ResourceContext* context,
+net::NSSCertDatabase* GetNSSCertDatabase(
     base::OnceCallback<void(net::NSSCertDatabase*)> callback) {
   // This initialization is not thread safe. This CHECK ensures that this code
   // is only run on a single thread.
@@ -57,7 +54,7 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 //                  \--------------------------------------v
 //                                CertificateManagerModel::GetCertDBOnIOThread
 //                                                         |
-//                                     GetNSSCertDatabaseForResourceContext
+//                                                 GetNSSCertDatabase
 //                                                         |
 //                               CertificateManagerModel::DidGetCertDBOnIOThread
 //                  v--------------------------------------/
@@ -68,12 +65,10 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 //               callback
 
 // static
-void CertificateManagerModel::Create(content::BrowserContext* browser_context,
-                                     CreationCallback callback) {
+void CertificateManagerModel::Create(CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
-                                browser_context->GetResourceContext(),
                                 std::move(callback)));
 }
 
@@ -151,16 +146,14 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
 }
 
 // static
-void CertificateManagerModel::GetCertDBOnIOThread(
-    content::ResourceContext* context,
-    CreationCallback callback) {
+void CertificateManagerModel::GetCertDBOnIOThread(CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   auto split_callback = base::SplitOnceCallback(base::BindOnce(
       &CertificateManagerModel::DidGetCertDBOnIOThread, std::move(callback)));
 
-  net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
-      context, std::move(split_callback.first));
+  net::NSSCertDatabase* cert_db =
+      GetNSSCertDatabase(std::move(split_callback.first));
 
   // If the NSS database was already available, |cert_db| is non-null and
   // |did_get_cert_db_callback| has not been called. Call it explicitly.
