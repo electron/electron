@@ -77,6 +77,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
   window_->AddDraggableRegionProvider(web_contents_view.get());
+  web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
   // Save a reference of the WebContents.
   gin::Handle<WebContents> web_contents =
@@ -92,7 +93,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   InitWithArgs(args);
 
   // Install the content view after BaseWindow's JS code is initialized.
-  SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
+  window()->GetContentsView()->AddChildViewAt(web_contents_view->view(), 0);
 
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
