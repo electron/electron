@@ -45,11 +45,12 @@ class KeyWeakMap {
 
   // Returns all objects.
   std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
-    std::vector<v8::Local<v8::Object>> keys;
-    keys.reserve(map_.size());
+    std::vector<v8::Local<v8::Object>> values;
+    values.reserve(map_.size());
     for (const auto& it : map_)
-      keys.emplace_back(v8::Local<v8::Object>::New(isolate, it.second.second));
-    return keys;
+      values.emplace_back(
+          v8::Local<v8::Object>::New(isolate, it.second.second));
+    return values;
   }
 
   // Remove object with |key| in the WeakMap.
