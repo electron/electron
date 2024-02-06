@@ -26,10 +26,8 @@ class CertificateManagerModel {
       base::OnceCallback<void(std::unique_ptr<CertificateManagerModel>)>;
 
   // Creates a CertificateManagerModel. The model will be passed to the callback
-  // when it is ready. The caller must ensure the model does not outlive the
-  // |browser_context|.
-  static void Create(content::BrowserContext* browser_context,
-                     CreationCallback callback);
+  // when it is ready.
+  static void Create(CreationCallback callback);
 
   // disable copy
   CertificateManagerModel(const CertificateManagerModel&) = delete;

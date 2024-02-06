@@ -7,9 +7,7 @@
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/logging.h"
-#include "base/strings/utf_string_conversions.h"
-#include "content/public/browser/browser_context.h"
+#include "base/memory/ptr_util.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
@@ -67,8 +65,7 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 //               callback
 
 // static
-void CertificateManagerModel::Create(content::BrowserContext* browser_context,
-                                     CreationCallback callback) {
+void CertificateManagerModel::Create(CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
