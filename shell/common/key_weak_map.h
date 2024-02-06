@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/memory/raw_ptr.h"
 #include "v8/include/v8.h"
 
@@ -45,9 +44,6 @@ class KeyWeakMap {
     else
       return v8::Local<v8::Object>::New(isolate, iter->second.second);
   }
-
-  // Whether there is an object with |key| in this WeakMap.
-  constexpr bool Has(const K& key) const { return base::Contains(map_, key); }
 
   // Returns all objects.
   std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
