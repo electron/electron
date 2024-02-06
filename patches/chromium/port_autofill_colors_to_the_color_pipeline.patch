@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 854dd08d60100c3312cb48ee458e430c4c492cdc..663ad0b38cf0cb9705810cf4db2e7cbe382c24b1 100644
+index b6915564a74e5c2c2a6ee3f3b1042a7a47fc540a..9dd2cccc8c863b7f13faf051cba5b54850529809 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -409,6 +409,10 @@
@@ -31,7 +31,7 @@ index 854dd08d60100c3312cb48ee458e430c4c492cdc..663ad0b38cf0cb9705810cf4db2e7cbe
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 1bef8b4a80d2d244f469a0ca9bee9b8d67bb8767..3e911e5931301a279b6608d5cb1451ccb67f0806 100644
+index b4893b65b0955a76c8f4fb2d16ec21bfabe602b7..936462132d2c37a69272e11f922bcdcd71d426b9 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -200,6 +200,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {

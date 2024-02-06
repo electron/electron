@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8942ea199783870cdf09218fa8b06b289753a1e7..1be2fc3b7c556ad89968e38405778cf5112abb8b 100644
+index 685df9929e1a478fff9085bfcb3000a35da02f7d..82b0fa05502aa9f2e175a0c0b15efb847d399f61 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1049,6 +1049,7 @@ component("base") {
+@@ -1046,6 +1046,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 53fc78d8db822b965c61ec85172bf2720e2c5584..f68f6fa6736ef4cdb986ab4148e196361159029e 100644
+index 8187f3e35804284949e8478b13f8acd3180c67ef..94efa0b394cb3fc15515539ccc156b28bb58fe41 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -1556,7 +1556,7 @@ index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d147
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index f9859a7fa09adce6f578a0e4abbe94f00da7ce5e..62975745d3686edd25291fe4b1ec696081a8224e 100644
+index 9448138da14bd3cdf55c58d4cc40cec526214a54..b113050cd575b07e31d457eee11b006182e4bddc 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -704,6 +704,7 @@ component("views") {
