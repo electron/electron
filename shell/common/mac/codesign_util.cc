@@ -16,25 +16,40 @@
 
 namespace electron {
 
-std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
+base::apple::ScopedCFTypeRef<CFDictionaryRef> GetSigningInfo(SecCodeRef code,
+                                                             OSStatus* status) {
   base::apple::ScopedCFTypeRef<SecStaticCodeRef> static_code;
-  OSStatus status = SecCodeCopyStaticCode(code, kSecCSDefaultFlags,
-                                          static_code.InitializeInto());
-  if (status == errSecCSUnsigned) {
-    return true;
+  *status = SecCodeCopyStaticCode(code, kSecCSDefaultFlags,
+                                  static_code.InitializeInto());
+  if (*status == errSecCSUnsigned) {
+    return base::apple::ScopedCFTypeRef<CFDictionaryRef>();
   }
-  if (status != errSecSuccess) {
-    OSSTATUS_LOG(ERROR, status) << "SecCodeCopyStaticCode";
-    return std::optional<bool>();
+  if (*status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, *status) << "SecCodeCopyStaticCode";
+    return base::apple::ScopedCFTypeRef<CFDictionaryRef>();
   }
   // Copy the signing info from the SecStaticCodeRef.
   base::apple::ScopedCFTypeRef<CFDictionaryRef> signing_info;
-  status =
+  *status =
       SecCodeCopySigningInformation(static_code.get(), kSecCSSigningInformation,
                                     signing_info.InitializeInto());
-  if (status != errSecSuccess) {
-    OSSTATUS_LOG(ERROR, status) << "SecCodeCopySigningInformation";
-    return std::optional<bool>();
+  if (*status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, *status) << "SecCodeCopySigningInformation";
+    return base::apple::ScopedCFTypeRef<CFDictionaryRef>();
+  }
+  return signing_info;
+}
+
+std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
+  OSStatus status = errSecSuccess;
+  auto signing_info = GetSigningInfo(code, &status);
+  if (status == errSecCSUnsigned) {
+    // Code is unsigned.
+    return true;
+  }
+  if (!signing_info) {
+    // Error happened.
+    return std::nullopt;
   }
   // Look up the code signing flags. If the flags are absent treat this as
   // unsigned. This decision is consistent with the StaticCode source:
@@ -57,6 +72,30 @@ std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
     return true;
   }
   return false;
+}
+
+std::optional<bool> IsSandboxed(SecCodeRef code) {
+  OSStatus status = errSecSuccess;
+  auto signing_info = GetSigningInfo(code, &status);
+  if (status == errSecCSUnsigned) {
+    // Code is unsigned.
+    return false;
+  }
+  if (!signing_info) {
+    // Error happened, treat as sandboxed to go the strict checking route.
+    return true;
+  }
+  CFDictionaryRef entitlements =
+      base::apple::GetValueFromDictionary<CFDictionaryRef>(
+          signing_info.get(), kSecCodeInfoEntitlementsDict);
+  if (!entitlements) {
+    // No entitlements means un-sandboxed.
+    return false;
+  }
+  // Check the sandbox entry.
+  CFBooleanRef app_sandbox = base::apple::GetValueFromDictionary<CFBooleanRef>(
+      entitlements, CFSTR("com.apple.security.app-sandbox"));
+  return app_sandbox && CFBooleanGetValue(app_sandbox);
 }
 
 bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
@@ -92,6 +131,12 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
   if (status != errSecSuccess) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyGuestWithAttributes";
     return false;
+  }
+  if (!IsSandboxed(process_code.get())) {
+    // Parent app is not sandboxed, skip the check since it already has full
+    // permissions. This usually happens when user launches the 'code' command
+    // of VS Code from Terminal.
+    return true;
   }
   // Get the requirement of current app's code signature.
   base::apple::ScopedCFTypeRef<SecRequirementRef> self_requirement;

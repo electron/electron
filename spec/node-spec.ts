@@ -667,6 +667,15 @@ describe('node feature', () => {
   });
 
   ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', function () {
+    // Find system node.
+    const nodePath = process.env.PATH?.split(path.delimiter).find(dir => fs.existsSync(path.join(dir, 'node')));
+    if (!nodePath) {
+      // The tests rely on existence of system node to run.
+      return;
+    }
+    // The tests assume the system node is signed.
+    childProcess.spawnSync('codesign', ['--verify', path.join(nodePath, 'node')]);
+
     let identity = '';
 
     beforeEach(function () {
@@ -694,16 +703,11 @@ describe('node feature', () => {
       });
     });
 
-    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async function () {
+    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async () => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyApp(dir);
         await signApp(appPath, identity);
-        // Find system node and copy it to app bundle.
-        const nodePath = process.env.PATH?.split(path.delimiter).find(dir => fs.existsSync(path.join(dir, 'node')));
-        if (!nodePath) {
-          this.skip();
-          return;
-        }
+        // Copy system node to app bundle.
         const alienBinary = path.join(appPath, 'Contents/MacOS/node');
         await fs.copy(path.join(nodePath, 'node'), alienBinary);
         // Try to execute electron app from the alien node in app bundle.
@@ -722,6 +726,22 @@ describe('node feature', () => {
         expect(code).to.equal(1);
         expect(out).to.not.include(nodeOptionsWarning);
         expect(out).to.include('NODE_OPTIONS passed to child');
+      });
+    });
+
+    it('is respected when parent app is not signed', async () => {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copyApp(dir);
+        await signApp(appPath, identity);
+        // The system node is expected to be signed, remove its signature.
+        const newNode = path.join(dir, 'node');
+        await fs.copy(path.join(nodePath, 'node'), newNode);
+        childProcess.spawnSync('codesign', ['--remove-signature', newNode]);
+        // Invoke with the unsigned node binary.
+        const { code, out } = await spawn(newNode, [script, path.join(appPath, 'Contents/MacOS/Electron')]);
+        expect(out).to.not.include(nodeOptionsWarning);
+        expect(out).to.include('NODE_OPTIONS passed to child');
+        expect(code).to.equal(1);
       });
     });
   });
