@@ -16,7 +16,6 @@ env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   # TODO: this should be set to the correct GN_CONFIG for the build type.
   GN_CONFIG: //electron/build/args/testing.gn
-  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
 
@@ -143,6 +142,12 @@ jobs:
   build:
     runs-on: macos-13-xlarge
     needs: checkout
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: [darwin, mas]
+    env:
+      BUILD_TYPE: ${{ matrix.build-type }}
     steps:
     - name: Load Build Tools
       run: |
@@ -241,6 +246,13 @@ jobs:
     - name: Setup Environment Variables
       run: |
         echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
+
+        if [[ ${{ matrix.build-type }} == "darwin" ]]; then
+          echo "GN_EXTRA_ARGS='target_cpu = "arm64"'" >> $GITHUB_ENV
+        else
+          echo "GN_EXTRA_ARGS='is_mas_build = true target_cpu = "arm64"'" >> $GITHUB_ENV
+          echo "MAS_BUILD=true" >> $GITHUB_ENV
+        fi
     - name: Fix Sync
       # This step is required to correct for differences between "gclient sync"
       # on Linux and the expected state on macOS. This requires:
@@ -253,38 +265,31 @@ jobs:
       # 7. Ensuring we are using the correct ninja and adding it to PATH
       # 8. Fixing angle (wrong remote)
       run : |
-        SEDOPTION="-i"
-        if [ "`uname`" == "Darwin" ]; then
-          SEDOPTION="-i ''"
-          rm -rf src/third_party/llvm-build
-          python3 src/tools/clang/scripts/update.py
+        SEDOPTION="-i ''"
+        rm -rf src/third_party/llvm-build
+        python3 src/tools/clang/scripts/update.py
 
-          echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
-          # Remove extra output from calling gclient getdep which always calls update_depot_tools
-          sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
-          cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
+        echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
+        cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
 
-          rm -rf src/third_party/rust-toolchain
-          python3 src/tools/rust/update_rust.py
-          
-          # Prevent calling gclient getdep which always calls update_depot_tools
-          echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
-          sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
-          cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
+        rm -rf src/third_party/rust-toolchain
+        python3 src/tools/rust/update_rust.py
+        
+        # Prevent calling gclient getdep which always calls update_depot_tools
+        echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
+        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+        cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
 
-          # Prevent calling gclient getdep which always calls update_depot_tools
-          echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
-          sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
-          cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
-          python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
+        # Prevent calling gclient getdep which always calls update_depot_tools
+        echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
+        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+        cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
+        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
 
-          if  [ "$TARGET_ARCH" == "arm64" ]; then
-            export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
-          else
-            export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
-          fi
-          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
-        fi
+        DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+        python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
 
         echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
         sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
@@ -340,9 +345,6 @@ jobs:
             if [ "$MAS_BUILD" == x"true" ]; then
               target_os=mac_mas
             fi
-            if [ "$TARGET_ARCH" == "x64" ]; then
-              target_cpu=x64
-            fi
             electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
           fi
         fi
@@ -375,7 +377,7 @@ jobs:
           e build electron:electron_symbols
         fi
         cd src
-        export BUILD_PATH="$PWD/out/Default"
+        export BUILD_PATH="$(pwd)/out/Default"
         e build electron:licenses
         e build electron:electron_version_file
         electron/script/zip-symbols.py -b $BUILD_PATH
@@ -384,12 +386,12 @@ jobs:
       # tp ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
       run: |
-        rm -rf generated_artifacts_darwin-arm64
-        mkdir generated_artifacts_darwin-arm64
+        rm -rf generated_artifacts_$BUILD_TYPE
+        mkdir generated_artifacts_$BUILD_TYPE
         mv_if_exist() {
           if [ -f "$1" ] || [ -d "$1" ]; then
             echo Storing $1
-            mv $1 generated_artifacts_darwin-arm64
+            mv $1 generated_artifacts_$BUILD_TYPE
           else
             echo Skipping $1 - It is not present on disk
           fi
@@ -397,7 +399,7 @@ jobs:
         cp_if_exist() {
           if [ -f "$1" ] || [ -d "$1" ]; then
             echo Storing $1
-            cp $1 generated_artifacts_darwin-arm64
+            cp $1 generated_artifacts_$BUILD_TYPE
           else
             echo Skipping $1 - It is not present on disk
           fi
@@ -415,8 +417,8 @@ jobs:
     - name: Upload Generated Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: generated_artifacts_darwin-arm64
-        path: ./generated_artifacts_darwin-arm64
+        name: generated_artifacts_BUILD_TYPE
+        path: ./generated_artifacts_$BUILD_TYPE
     - name: Persist Build Artifacts
       uses: actions/cache/save@v4
       with:
@@ -437,9 +439,13 @@ jobs:
           src/out/Default/obj/buildtools/third_party
           src/v8/tools/builtins-pgo
         key: ${{ runner.os }}-build-artifacts-${{ github.sha }}
+    - name: Set Build Type for Test
+      run: echo "build-type=$BUILD_TYPE" >> $GITHUB_OUTPUT
   test:
     runs-on: macos-13-xlarge
     needs: build
+    env:
+      BUILD_TYPE: ${{ needs.build.outputs.build-type }}
     steps:
     - name: Load Build Tools
       run: |
@@ -485,8 +491,8 @@ jobs:
     - name: Download Generated Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: generated_artifacts_darwin-arm64
-        path: ./generated_artifacts_darwin-arm64
+        name: generated_artifacts_$BUILD_TYPE
+        path: ./generated_artifacts_$BUILD_TYPE
     - name: Restore Persisted Build Artifacts
       uses: actions/cache/restore@v4
       with:
@@ -510,10 +516,10 @@ jobs:
     - name: Restore Generated Artifacts
       run: |
         mv_if_exist() {
-          if [ -f "generated_artifacts_darwin-arm64/$1" ] || [ -d "generated_artifacts_darwin-arm64/$1" ]; then
+          if [ -f "generated_artifacts_$BUILD_TYPE/$1" ] || [ -d "generated_artifacts_$BUILD_TYPE/$1" ]; then
             echo Restoring $1 to $2
             mkdir -p $2
-            mv generated_artifacts_darwin-arm64/$1 $2
+            mv generated_artifacts_$BUILD_TYPE/$1 $2
           else
             echo Skipping $1 - It is not present on disk
           fi
