@@ -248,9 +248,9 @@ jobs:
         echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
 
         if [[ ${{ matrix.build-type }} == "darwin" ]]; then
-          echo "GN_EXTRA_ARGS='target_cpu = "arm64"'" >> $GITHUB_ENV
+          echo 'GN_EXTRA_ARGS=target_cpu = "arm64"' >> $GITHUB_ENV
         else
-          echo "GN_EXTRA_ARGS='is_mas_build = true target_cpu = "arm64"'" >> $GITHUB_ENV
+          echo 'GN_EXTRA_ARGS=is_mas_build = true target_cpu = "arm64"' >> $GITHUB_ENV
           echo "MAS_BUILD=true" >> $GITHUB_ENV
         fi
     - name: Fix Sync
