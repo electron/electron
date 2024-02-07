@@ -439,11 +439,14 @@ void NativeWindowMac::Close() {
   if ([window_ attachedSheet])
     [window_ endSheet:[window_ attachedSheet]];
 
+  // window_ could be nil after performClose.
+  bool should_notify = is_modal() && parent() && IsVisible();
+
   [window_ performClose:nil];
 
   // Closing a sheet doesn't trigger windowShouldClose,
   // so we need to manually call it ourselves here.
-  if (is_modal() && parent() && IsVisible()) {
+  if (should_notify) {
     NotifyWindowCloseButtonClicked();
   }
 }
