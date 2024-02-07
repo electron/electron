@@ -127,6 +127,8 @@ ELECTRON_TESTING_BINDINGS(V)
 #endif
 #undef V
 
+using node::loader::ModuleWrap;
+
 namespace {
 
 void stop_and_close_uv_loop(uv_loop_t* loop) {
@@ -217,16 +219,24 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
 void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
                                     v8::Local<v8::Module> module,
                                     v8::Local<v8::Object> meta) {
-  if (node::Environment::GetCurrent(context) == nullptr) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
     if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
       return;
     return blink::V8Initializer::HostGetImportMetaProperties(context, module,
                                                              meta);
   }
 
-  // If we're running with contextIsolation enabled in the renderer process,
-  // fall back to Blink's logic.
   if (electron::IsRendererProcess()) {
+    // If the module is created by Node.js, use Node.js' handling.
+    if (env != nullptr) {
+      ModuleWrap* wrap = ModuleWrap::GetFromModule(env, module);
+      if (wrap)
+        return ModuleWrap::HostInitializeImportMetaObjectCallback(context,
+                                                                  module, meta);
+    }
+
+    // If contextIsolation is enabled, fall back to Blink's handling.
     blink::WebLocalFrame* frame =
         blink::WebLocalFrame::FrameForContext(context);
     if (!frame || frame->GetScriptContextWorldId(context) !=
@@ -236,8 +246,8 @@ void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
     }
   }
 
-  return node::loader::ModuleWrap::HostInitializeImportMetaObjectCallback(
-      context, module, meta);
+  return ModuleWrap::HostInitializeImportMetaObjectCallback(context, module,
+                                                            meta);
 }
 
 v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(

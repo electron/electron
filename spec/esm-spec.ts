@@ -141,7 +141,7 @@ describe('esm', () => {
       const hostsUrl = pathToFileURL(process.platform === 'win32' ? 'C:\\Windows\\System32\\drivers\\etc\\hosts' : '/etc/hosts');
 
       describe('without context isolation', () => {
-        it('should use blinks dynamic loader in the main world', async () => {
+        it('should use Blinks dynamic loader in the main world', async () => {
           const [webContents] = await loadWindowWithPreload('', {
             nodeIntegration: true,
             sandbox: false,
@@ -156,13 +156,18 @@ describe('esm', () => {
           }
 
           expect(error).to.not.equal(null);
-          // This is a blink specific error message
+          // This is a Blink specific error message
           expect(error?.message).to.include('Failed to fetch dynamically imported module');
+        });
+
+        it('should use import.meta callback handling from Node.js for Node.js modules', async () => {
+          const result = await runFixture(path.resolve(fixturePath, 'import-meta'));
+          expect(result.code).to.equal(0);
         });
       });
 
       describe('with context isolation', () => {
-        it('should use nodes esm dynamic loader in the isolated context', async () => {
+        it('should use Node.js ESM dynamic loader in the isolated context', async () => {
           const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify(hostsUrl)})`, {
             nodeIntegration: true,
             sandbox: false,
@@ -174,7 +179,7 @@ describe('esm', () => {
           expect(preloadError!.toString()).to.include('Unknown file extension');
         });
 
-        it('should use blinks dynamic loader in the main world', async () => {
+        it('should use Blinks dynamic loader in the main world', async () => {
           const [webContents] = await loadWindowWithPreload('', {
             nodeIntegration: true,
             sandbox: false,
