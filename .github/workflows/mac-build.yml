@@ -250,7 +250,7 @@ jobs:
         if [[ ${{ matrix.build-type }} == "darwin" ]]; then
           echo 'GN_EXTRA_ARGS=target_cpu = "arm64"' >> $GITHUB_ENV
         else
-          echo 'GN_EXTRA_ARGS=is_mas_build = true target_cpu = "arm64"' >> $GITHUB_ENV
+          echo GN_EXTRA_ARGS=is_mas_build = true target_cpu = "arm64"' >> $GITHUB_ENV
           echo "MAS_BUILD=true" >> $GITHUB_ENV
         fi
     - name: Fix Sync
@@ -386,12 +386,12 @@ jobs:
       # tp ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
       run: |
-        rm -rf generated_artifacts_$BUILD_TYPE
-        mkdir generated_artifacts_$BUILD_TYPE
+        rm -rf generated_artifacts_${BUILD_TYPE}
+        mkdir generated_artifacts_${BUILD_TYPE}
         mv_if_exist() {
           if [ -f "$1" ] || [ -d "$1" ]; then
             echo Storing $1
-            mv $1 generated_artifacts_$BUILD_TYPE
+            mv $1 generated_artifacts_${BUILD_TYPE}
           else
             echo Skipping $1 - It is not present on disk
           fi
@@ -399,7 +399,7 @@ jobs:
         cp_if_exist() {
           if [ -f "$1" ] || [ -d "$1" ]; then
             echo Storing $1
-            cp $1 generated_artifacts_$BUILD_TYPE
+            cp $1 generated_artifacts_${BUILD_TYPE}
           else
             echo Skipping $1 - It is not present on disk
           fi
@@ -417,8 +417,8 @@ jobs:
     - name: Upload Generated Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: generated_artifacts_BUILD_TYPE
-        path: ./generated_artifacts_$BUILD_TYPE
+        name: generated_artifacts_${{ matrix.build-type }}
+        path: ./generated_artifacts_${{ matrix.build-type }}
     - name: Persist Build Artifacts
       uses: actions/cache/save@v4
       with:
@@ -491,8 +491,8 @@ jobs:
     - name: Download Generated Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: generated_artifacts_$BUILD_TYPE
-        path: ./generated_artifacts_$BUILD_TYPE
+        name: generated_artifacts_${{ env.BUILD_TYPE }}
+        path: ./generated_artifacts_${{ env.BUILD_TYPE }}
     - name: Restore Persisted Build Artifacts
       uses: actions/cache/restore@v4
       with:
@@ -516,10 +516,10 @@ jobs:
     - name: Restore Generated Artifacts
       run: |
         mv_if_exist() {
-          if [ -f "generated_artifacts_$BUILD_TYPE/$1" ] || [ -d "generated_artifacts_$BUILD_TYPE/$1" ]; then
+          if [ -f "generated_artifacts_${BUILD_TYPE}/$1" ] || [ -d "generated_artifacts_${BUILD_TYPE}/$1" ]; then
             echo Restoring $1 to $2
             mkdir -p $2
-            mv generated_artifacts_$BUILD_TYPE/$1 $2
+            mv generated_artifacts_${BUILD_TYPE}/$1 $2
           else
             echo Skipping $1 - It is not present on disk
           fi
