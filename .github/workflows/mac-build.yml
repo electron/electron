@@ -152,7 +152,7 @@ jobs:
     - name: Load Build Tools
       run: |
         npm i -g @electron/build-tools
-        e init --root=$PWD --out=Default testing
+        e init --root=$(pwd) --out=Default testing
     - name: Checkout Electron
       uses: actions/checkout@v4
       with:
@@ -250,7 +250,7 @@ jobs:
         if [[ ${{ matrix.build-type }} == "darwin" ]]; then
           echo 'GN_EXTRA_ARGS=target_cpu = "arm64"' >> $GITHUB_ENV
         else
-          echo GN_EXTRA_ARGS=is_mas_build = true target_cpu = "arm64"' >> $GITHUB_ENV
+          echo 'GN_EXTRA_ARGS=is_mas_build = true target_cpu = "arm64"' >> $GITHUB_ENV
           echo "MAS_BUILD=true" >> $GITHUB_ENV
         fi
     - name: Fix Sync
@@ -438,14 +438,15 @@ jobs:
           src/third_party/libc++abi
           src/out/Default/obj/buildtools/third_party
           src/v8/tools/builtins-pgo
-        key: ${{ runner.os }}-build-artifacts-${{ github.sha }}
-    - name: Set Build Type for Test
-      run: echo "build-type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+        key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ github.sha }}
   test:
     runs-on: macos-13-xlarge
     needs: build
+    strategy:
+      matrix:
+        build-type: [darwin, mas]
     env:
-      BUILD_TYPE: ${{ needs.build.outputs.build-type }}
+      BUILD_TYPE: ${{ matrix.build-type }}
     steps:
     - name: Load Build Tools
       run: |
@@ -491,8 +492,8 @@ jobs:
     - name: Download Generated Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: generated_artifacts_${{ env.BUILD_TYPE }}
-        path: ./generated_artifacts_${{ env.BUILD_TYPE }}
+        name: generated_artifacts_${{ matrix.build-type }}
+        path: ./generated_artifacts_${{ matrix.build-type }}
     - name: Restore Persisted Build Artifacts
       uses: actions/cache/restore@v4
       with:
@@ -512,7 +513,7 @@ jobs:
           src/third_party/libc++abi
           src/out/Default/obj/buildtools/third_party
           src/v8/tools/builtins-pgo
-        key: ${{ runner.os }}-build-artifacts-${{ github.sha }}
+        key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ github.sha }}
     - name: Restore Generated Artifacts
       run: |
         mv_if_exist() {
