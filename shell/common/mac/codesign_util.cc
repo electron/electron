@@ -105,6 +105,12 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
   // Check whether the process meets the signature requirement of current app.
   status = SecCodeCheckValidity(process_code.get(), kSecCSDefaultFlags,
                                 self_requirement.get());
+  if (status == errSecCSUnsigned) {
+    // For some users the API may return errSecCSUnsigned as failure even though
+    // the process is signed.
+    // See also https://github.com/microsoft/vscode/issues/204085.
+    return false;
+  }
   if (status != errSecSuccess && status != errSecCSReqFailed) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCheckValidity";
     return false;
