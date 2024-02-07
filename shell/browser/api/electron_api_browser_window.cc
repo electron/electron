@@ -94,6 +94,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 
   // Install the content view after BaseWindow's JS code is initialized.
   window()->GetContentsView()->AddChildViewAt(web_contents_view->view(), 0);
+  window()->GetContentsView()->Layout();
 
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
