@@ -42,10 +42,12 @@ RootView::RootView(NativeWindow* window)
     : window_(window),
       last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
   set_owned_by_client();
-  SetLayoutManager(std::make_unique<views::BoxLayout>(
-      views::BoxLayout::Orientation::kVertical));
+  views::BoxLayout* layout =
+      SetLayoutManager(std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical));
   main_view_ = AddChildView(std::make_unique<views::View>());
   main_view_->SetUseDefaultFillLayout(true);
+  layout->SetFlexForView(main_view_, 1);
 }
 
 RootView::~RootView() = default;

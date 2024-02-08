@@ -1674,7 +1674,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView{widget, GetContentsView(), this};
+  return new NativeWindowClientView{widget, &root_view_, this};
 }
 
 std::unique_ptr<views::NonClientFrameView>
