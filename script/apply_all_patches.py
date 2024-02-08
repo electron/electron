@@ -19,7 +19,7 @@ def apply_patches(target):
     committer_name="Electron Scripts",
     patch_data=patch_from_dir(patch_dir),
     repo=repo,
-    threeway=THREEWAY is not None,
+    threeway=THREEWAY,
   )
 
 def apply_config(config):
