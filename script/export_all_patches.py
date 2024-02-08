@@ -14,7 +14,10 @@ def export_patches(config, dry_run):
       repo = target.get('repo')
       grep = target.get('grep')
       if os.path.exists(repo):
-        git.export_patches(repo=repo, out_dir=out_dir, dry_run=dry_run, grep=grep)
+        git.export_patches(dry_run=dry_run,
+                           grep=grep,
+                           out_dir=out_dir,
+                           repo=repo)
     return
 
   # previous config format was an object of patch dir key -> repo dir vals
