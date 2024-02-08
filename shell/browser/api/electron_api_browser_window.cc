@@ -93,6 +93,12 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   InitWithArgs(args);
 
   // Install the content view after BaseWindow's JS code is initialized.
+  // The WebContentsView is added a sibling of BaseWindow's contentView (before
+  // it in the paint order) so that any views added to BrowserWindow's
+  // contentView will be painted on top of the BrowserWindow's WebContentsView.
+  // See https://github.com/electron/electron/pull/41256.
+  // Note that |GetContentsView|, confusingly, does not refer to the same thing
+  // as |BaseWindow::GetContentView|.
   window()->GetContentsView()->AddChildViewAt(web_contents_view->view(), 0);
   window()->GetContentsView()->Layout();
 
