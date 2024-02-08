@@ -51,8 +51,12 @@ Check the _Size requirements_ section in [this article][icons].
 
 [icons]: https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons
 
-EXIF meta-data is currently not supported and will not be taken into account during
+:::note
+
+EXIF metadata is currently not supported and will not be taken into account during
 image encoding and decoding.
+
+:::
 
 ## High Resolution Image
 
