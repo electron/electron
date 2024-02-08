@@ -1235,6 +1235,9 @@ Returns `boolean` - Whether the window's document has been edited.
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
   * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
+  * `outputSize` Object (optional)
+    * `height` number - Height of result image.
+    * `width` number - Width of result image.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
