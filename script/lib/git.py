@@ -182,6 +182,17 @@ def split_patches(patch_data):
     patches[-1].append(line)
   return patches
 
+def filter_patches(patches, key):
+  """Return patches that include the specified key"""
+  if key is None:
+    return patches
+  matches = []
+  for patch in patches:
+    for line in patch:
+      if key in line:
+        matches.append(patch)
+        continue
+  return matches
 
 def munge_subject_to_filename(subject):
   """Derive a suitable filename from a commit's subject"""
@@ -228,7 +239,7 @@ def remove_patch_filename(patch):
     force_keep_next_line = l.startswith('Subject: ')
 
 
-def export_patches(repo, out_dir, patch_range=None, dry_run=False):
+def export_patches(repo, out_dir, patch_range=None, dry_run=False, grep=None):
   if not os.path.exists(repo):
     sys.stderr.write(
       "Skipping patches in {} because it does not exist.\n".format(repo)
@@ -240,6 +251,8 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
         num_patches, repo, patch_range[0:7]))
   patch_data = format_patch(repo, patch_range)
   patches = split_patches(patch_data)
+  if grep is not None:
+    patches = filter_patches(patches, grep)
 
   try:
     os.mkdir(out_dir)
