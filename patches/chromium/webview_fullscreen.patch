@@ -15,7 +15,7 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e28f9a74c65d0..15f10a26eb510 100644
+index e28f9a74c65d0fdd7c09e89d0319f24992aa3b7e..15f10a26eb510785a1403970e9cc683e67593f3a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7505,6 +7505,17 @@ void RenderFrameHostImpl::EnterFullscreen(
@@ -37,7 +37,7 @@ index e28f9a74c65d0..15f10a26eb510 100644
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6986fcf0af066..a3eb2e5f022e4 100644
+index 6986fcf0af06686ab0857acd2e306416a4d4580e..a3eb2e5f022e4ccaf04e1b4cd540219efc0ce98d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3708,21 +3708,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
@@ -88,7 +88,7 @@ index 6986fcf0af066..a3eb2e5f022e4 100644
            features::kAutomaticFullscreenContentSetting)) {
      // Ensure the window is made active to take input focus. The user may have
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index 0135a5340b1d1..488d04a9c40de 100644
+index 0135a5340b1d1b81fc47a10abe362f5efdd0f222..488d04a9c40deabab47d6235dc36537f47b5d530 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -111,7 +111,7 @@ void FullscreenElementChanged(Document& document,

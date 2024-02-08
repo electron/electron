@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 685df9929e1a478fff9085bfcb3000a35da02f7d..82b0fa05502aa9f2e175a0c0b15efb847d399f61 100644
+index ced73d45baf8716b5232cb70fa828a9709ead31b..9f5c2554577c3770ec9b97ecd34fbff8f167bf03 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1046,6 +1046,7 @@ component("base") {
@@ -283,7 +283,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 085d9821933390c781fe11d441910501bf22d601..6c79434e2a5b59267c9801ac23c318c9c320f019 100644
+index 25672be4a7dac9a8cd53498184f537292e14d5c2..ef0844ae2845990832fc9777eade94550fb8ffaa 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -303,7 +303,7 @@ index 085d9821933390c781fe11d441910501bf22d601..6c79434e2a5b59267c9801ac23c318c9
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index eeeaec7e1064ca250ffc4ef5d5e174c562dcd640..7b0c310ab949140811031f68f0e7163e5329326f 100644
+index 4c60785c1998677abc8845c087f672f51dc2ce8f..4c06d59cefb630a2cf7f79f1b41bd8a53ae84643 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -104,7 +104,9 @@ void OrderChildWindow(NSWindow* child_window,
@@ -370,10 +370,10 @@ index c8b511ae1be7a3211cbde064ea8c9d896f073b65..4b176b5d95151314c633fe5ce5e01b87
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 5a5791600d1aac6d3792c997d59ba501965ff1b9..53428bbfddb82c38995b0ab727c995d325713189 100644
+index 5756139efd53eb9ec6e74007fc10d9f7dfe51d44..8faf652dee5720e066b6ab5f2d4997ee31bfbf1a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -358,6 +358,7 @@ viz_component("service") {
+@@ -356,6 +356,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -381,7 +381,7 @@ index 5a5791600d1aac6d3792c997d59ba501965ff1b9..53428bbfddb82c38995b0ab727c995d3
    }
  
    if (is_android || use_ozone) {
-@@ -618,6 +619,7 @@ viz_source_set("unit_tests") {
+@@ -622,6 +623,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -431,10 +431,10 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8187f3e35804284949e8478b13f8acd3180c67ef..94efa0b394cb3fc15515539ccc156b28bb58fe41 100644
+index 860dbc92dbd695d3fff56438630d94e862d00859..219950bac1e860e7b5b26eba5ba0a1f8ff650200 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -53,6 +53,7 @@ source_set("browser") {
+@@ -54,6 +54,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -580,7 +580,7 @@ index 250d68fe80384f4409e91dd94a37ebc6ad34d383..4f5f1021dcdf2ca45531b8f56fed44b4
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 8d978ba3c27d6399c1d03b5cb291dab0b5305e0e..026b9d7ff92e09e5cb98723ffc2c8998a34c0787 100644
+index 9bf9cbba106d8dba46cb3f79b49febb2aacdbd14..d7b82129669e44571655621b8a52f4d4b453ee6e 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 1c709c77ae140b88a32546d6a39e9f0ed4a9189d..b2ee605d507a9ab363c68184acc7a07c315e7701 100644
+index 90ef83d9b0389427d13251d810f9a22e18f45acc..dbcf75d6e4d140f2b74373224ff6fd9e9904ec08 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index 1c709c77ae140b88a32546d6a39e9f0ed4a9189d..b2ee605d507a9ab363c68184acc7a07c
    ]
  
    public_deps = [
-@@ -1059,6 +1060,7 @@ static_library("browsertest_support") {
+@@ -1060,6 +1061,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index 1c709c77ae140b88a32546d6a39e9f0ed4a9189d..b2ee605d507a9ab363c68184acc7a07c
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1672,6 +1674,7 @@ test("content_browsertests") {
+@@ -1673,6 +1675,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index 1c709c77ae140b88a32546d6a39e9f0ed4a9189d..b2ee605d507a9ab363c68184acc7a07c
  
    public_deps = [
      ":test_interfaces",
-@@ -2914,6 +2917,7 @@ test("content_unittests") {
+@@ -2915,6 +2918,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -802,7 +802,7 @@ index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 3cbf9f3aa356f933c8e0b8788cb6d6066934f769..570e4374413e61e1848d5ec7e6dc73f67325a110 100644
+index 3af7bb0fddf848f3c76d14c24730c6aba07fd83e..b23f152143d4958b7492cae47b8a3b01992e235f 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -75,12 +75,16 @@
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index bfa8b543a9d4705704cf6a8072b65f4d81f7c7a9..e984fb4c1814f10eff4e5140ca87a35674cfac18 100644
+index 421b11f8839a7304b0dd8a976b9f2176832c32bc..7738b5a04fb020681dfdd03dae5ac4331db08e4a 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
@@ -1477,7 +1477,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 9e75feafb09cd9d861459809ced9b01e8dbeb3ac..2751dd703497b3d0b9707ddb718212a9570d359f 100644
+index fb806dddc33f8dc880ae5fdefb9389bf38a18931..3d8c09b5deed91b1381793578e17afe2750bc3ee 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -69,6 +69,10 @@ component("display") {
@@ -1556,7 +1556,7 @@ index b28640bb4d89ba9508d4086c9e5ca9ed4a9a7023..15cb883b91f624c1f23f4458dbf8d147
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 9448138da14bd3cdf55c58d4cc40cec526214a54..b113050cd575b07e31d457eee11b006182e4bddc 100644
+index 1010939810d1e4b5adac7bfec66bf794ba9494b9..af1d4ac8de722cd282046d46c4d99d0085d2d744 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -704,6 +704,7 @@ component("views") {
