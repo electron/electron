@@ -473,7 +473,7 @@ void NativeWindowViews::SetContentView(views::View* view) {
   }
   set_content_view(view);
   focused_view_ = view;
-  root_view_.AddChildView(content_view());
+  root_view_.GetMainView()->AddChildView(content_view());
   root_view_.Layout();
 }
 
@@ -1664,7 +1664,7 @@ std::u16string NativeWindowViews::GetWindowTitle() const {
 }
 
 views::View* NativeWindowViews::GetContentsView() {
-  return &root_view_;
+  return root_view_.GetMainView();
 }
 
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
