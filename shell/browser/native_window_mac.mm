@@ -622,7 +622,7 @@ bool NativeWindowMac::IsMaximized() {
   if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
-  NSRect rectScreen = GetAspectRatio() > 0.0
+  NSRect rectScreen = aspect_ratio() > 0.0
                           ? default_frame_for_zoom()
                           : [[NSScreen mainScreen] visibleFrame];
 
