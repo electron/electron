@@ -4178,14 +4178,15 @@ describe('BrowserWindow module', () => {
     });
 
     it('returns false when the window is only partially obscured', async () => {
-      const w1 = new BrowserWindow({ width: 400, height: 400 });
-      const w2 = new BrowserWindow({ show: false, width: 450, height: 450 });
+      const w1 = new BrowserWindow({ x: 250, y: 250, width: 400, height: 400 });
+      const w2 = new BrowserWindow({ show: false, x: 200, y: 200, width: 500, height: 500 });
 
       const focused = once(w2, 'focus');
       w2.show();
       await focused;
 
-      await setTimeout(1000);
+      await setTimeout(2000);
+      console.log(w1.getBounds(), w2.getBounds());
       expect(w1.isOccluded()).to.be.true('window is not occluded');
 
       const pos = w2.getPosition();
@@ -4193,7 +4194,8 @@ describe('BrowserWindow module', () => {
       w2.setPosition(pos[0] - 100, pos[1]);
       await move;
 
-      await setTimeout(1000);
+      await setTimeout(2000);
+      console.log(w1.getBounds(), w2.getBounds());
       expect(w1.isOccluded()).to.be.false('window is occluded');
     });
 
@@ -4211,14 +4213,15 @@ describe('BrowserWindow module', () => {
     });
 
     it('returns true for an obscured window', async () => {
-      const w1 = new BrowserWindow({ width: 200, height: 200 });
-      const w2 = new BrowserWindow({ show: false });
+      const w1 = new BrowserWindow({ x: 200, y: 200, width: 200, height: 200 });
+      const w2 = new BrowserWindow({ show: false, x: 100, y: 100, width: 800, height: 800 });
 
       const focused = once(w2, 'focus');
       w2.show();
       await focused;
 
-      await setTimeout(1000);
+      await setTimeout(2000);
+      console.log(w1.getBounds(), w2.getBounds());
       expect(w1.isOccluded()).to.be.true('visible window');
     });
   });
