@@ -7,6 +7,10 @@ PATCH_DIR_PREFIX = "Patch-Dir: "
 PATCH_FILENAME_PREFIX = "Patch-Filename: "
 PATCH_LINE_PREFIXES = (PATCH_DIR_PREFIX, PATCH_FILENAME_PREFIX)
 
+
+def is_patch_location_line(line):
+  return line.startswith(PATCH_LINE_PREFIXES)
+
 def read_patch(patch_dir, patch_filename):
   """Read a patch from |patch_dir/filename| and amend the commit message with
   metadata about the patch file it came from."""
