@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index a6ea99bf9377b657b891d17eb266340de6a85110..62427deb5f0411afdb21b0ce0f0d7a863b709654 100644
+index 78c84e4ccefb90715d68de15d32d5245027ebb4d..99c80a0d2c23533f2858f61aca11d3b704e0735a 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -188,11 +188,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index a6ea99bf9377b657b891d17eb266340de6a85110..62427deb5f0411afdb21b0ce0f0d7a86
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index e2033c22d709e03ad42804b6ab5dd767916e59e7..15458020ac1162f9cfb091d87ff98ab66d59f7ca 100644
+index c36e93d92b2dfe8cc529a2c6e7c97225f6df3612..489fb82cb0048703b8534d1737565f15d646243b 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4775,7 +4775,7 @@ static_library("browser") {
+@@ -4788,7 +4788,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index e2033c22d709e03ad42804b6ab5dd767916e59e7..15458020ac1162f9cfb091d87ff98ab6
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index b3f22672c5fa75408cfd1d71686cd32abbb16501..6811e3e44158ebc3a3e12e8e7980de4c6128575a 100644
+index 3370fac0540823f0cfdb5fa3190aa90f3a4af87f..961eeb1851f3ed11bdcd804544603698cfb98ee8 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7071,9 +7071,12 @@ test("unit_tests") {
+@@ -7097,9 +7097,12 @@ test("unit_tests") {
        "//chrome/browser/safe_browsing/incident_reporting/verifier_test:verifier_test_dll_2",
      ]
  
@@ -63,7 +63,7 @@ index b3f22672c5fa75408cfd1d71686cd32abbb16501..6811e3e44158ebc3a3e12e8e7980de4c
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8037,6 +8040,10 @@ test("unit_tests") {
+@@ -8059,6 +8062,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index b3f22672c5fa75408cfd1d71686cd32abbb16501..6811e3e44158ebc3a3e12e8e7980de4c
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8106,7 +8113,6 @@ test("unit_tests") {
+@@ -8128,7 +8135,6 @@ test("unit_tests") {
      }
  
      deps += [

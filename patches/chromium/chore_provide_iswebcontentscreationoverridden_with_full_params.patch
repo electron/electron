@@ -246,10 +246,10 @@ index 8930b2f6c532418a5de97813645783bc2bbad1ba..cfa7dc3805897a7e7b09bcf3fa4ebde0
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index f7d73b550e0d46f77095ac685a9be8aa450795ca..986b9239f06fa655bddade7ca2858f8607d1d86a 100644
+index 7217c90d0c65203056c622120ae161206d341a83..681aa45b93e648157d018be425024dceef6a0708 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -327,8 +327,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -328,8 +328,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

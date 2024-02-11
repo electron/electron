@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index db8bbba552789..e2e0d381efa40 100644
+index db8bbba552789960a27c08d917ca838d30ede82a..e2e0d381efa406a3bc496819c1f1c0e4a389650b 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -566,6 +566,7 @@ void MenuController::Run(Widget* parent,
@@ -58,7 +58,7 @@ index db8bbba552789..e2e0d381efa40 100644
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 43668ea5b4fcf..845742ce8e7de 100644
+index 43668ea5b4fcf625d941d3205c084dab87f2626d..845742ce8e7de76c99c7ca1cf5a62eff2f1a155d 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
 @@ -139,6 +139,7 @@ class VIEWS_EXPORT MenuController
@@ -70,7 +70,7 @@ index 43668ea5b4fcf..845742ce8e7de 100644
  
    bool for_drop() const { return for_drop_; }
 diff --git a/ui/views/controls/menu/menu_runner.cc b/ui/views/controls/menu/menu_runner.cc
-index 9f746392f6d83..cb640f1ae930f 100644
+index 9f746392f6d83831a22d0ce8b2bb647a069d8692..cb640f1ae930f610c7eed18e3655ac2e1b2b19fa 100644
 --- a/ui/views/controls/menu/menu_runner.cc
 +++ b/ui/views/controls/menu/menu_runner.cc
 @@ -89,7 +89,7 @@ void MenuRunner::RunMenuAt(
@@ -83,7 +83,7 @@ index 9f746392f6d83..cb640f1ae930f 100644
  }
  
 diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
-index 0ef0f5ed80dcd..cc1e079afc741 100644
+index 0ef0f5ed80dcdbc2047d878811b45fa92a4bc7fc..cc1e079afc74169c438977f727c28e0b8a0819e5 100644
 --- a/ui/views/controls/menu/menu_runner_impl.cc
 +++ b/ui/views/controls/menu/menu_runner_impl.cc
 @@ -115,6 +115,7 @@ void MenuRunnerImpl::RunMenuAt(
@@ -104,7 +104,7 @@ index 0ef0f5ed80dcd..cc1e079afc741 100644
  
  void MenuRunnerImpl::Cancel() {
 diff --git a/ui/views/controls/menu/menu_runner_impl.h b/ui/views/controls/menu/menu_runner_impl.h
-index c36540ede44a1..1c3464af16aad 100644
+index c36540ede44a1ce83fc9b411a7639f9379f21977..1c3464af16aad2df09530efd889edc2e80bdc098 100644
 --- a/ui/views/controls/menu/menu_runner_impl.h
 +++ b/ui/views/controls/menu/menu_runner_impl.h
 @@ -52,6 +52,7 @@ class VIEWS_EXPORT MenuRunnerImpl : public MenuRunnerImplInterface,
@@ -116,7 +116,7 @@ index c36540ede44a1..1c3464af16aad 100644
                   std::optional<gfx::RoundedCornersF> corners = std::nullopt,
                   std::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_adapter.cc b/ui/views/controls/menu/menu_runner_impl_adapter.cc
-index 35f1542e2162d..59175a7b1ab31 100644
+index 35f1542e2162d08b164dfdda0ac3b4f78221f105..59175a7b1ab31af9b393a33f706168157e74d9fd 100644
 --- a/ui/views/controls/menu/menu_runner_impl_adapter.cc
 +++ b/ui/views/controls/menu/menu_runner_impl_adapter.cc
 @@ -35,11 +35,12 @@ void MenuRunnerImplAdapter::RunMenuAt(
@@ -134,7 +134,7 @@ index 35f1542e2162d..59175a7b1ab31 100644
  
  void MenuRunnerImplAdapter::Cancel() {
 diff --git a/ui/views/controls/menu/menu_runner_impl_adapter.h b/ui/views/controls/menu/menu_runner_impl_adapter.h
-index 546818cef0120..5a314986b6155 100644
+index 546818cef0120746366547aa2470e35def534195..5a314986b6155c7a427c5e39947a5b5c546d3477 100644
 --- a/ui/views/controls/menu/menu_runner_impl_adapter.h
 +++ b/ui/views/controls/menu/menu_runner_impl_adapter.h
 @@ -43,6 +43,7 @@ class VIEWS_EXPORT MenuRunnerImplAdapter : public MenuRunnerImplInterface {
@@ -146,7 +146,7 @@ index 546818cef0120..5a314986b6155 100644
                   std::optional<gfx::RoundedCornersF> corners = std::nullopt,
                   std::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.h b/ui/views/controls/menu/menu_runner_impl_cocoa.h
-index b0d0334939730..fde5c729a80fb 100644
+index b0d033493973054d3fb140c63da77eda46d60dce..fde5c729a80fbd513141c7d4db0d2e306aeb2cf2 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.h
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.h
 @@ -42,6 +42,7 @@ class VIEWS_EXPORT MenuRunnerImplCocoa : public MenuRunnerImplInterface {
@@ -158,10 +158,10 @@ index b0d0334939730..fde5c729a80fb 100644
        std::optional<gfx::RoundedCornersF> corners,
        std::optional<std::string> show_menu_host_duration_histogram) override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index c585f056973e2..ac9f99c986dec 100644
+index c585f056973e2f8b299e7af81c384b67ad74958b..ac9f99c986dec7cb5c4eb9fc6601eef5aa7c5eee 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-@@ -69,6 +69,7 @@ void MenuRunnerImplCocoa::RunMenuAt(
+@@ -69,6 +69,7 @@
      const gfx::Rect& bounds,
      MenuAnchorPosition anchor,
      int32_t run_types,
@@ -170,7 +170,7 @@ index c585f056973e2..ac9f99c986dec 100644
      std::optional<gfx::RoundedCornersF> corners,
      std::optional<std::string> show_menu_host_duration_histogram) {
 diff --git a/ui/views/controls/menu/menu_runner_impl_interface.h b/ui/views/controls/menu/menu_runner_impl_interface.h
-index 972abab3bf46f..b52a55f426717 100644
+index 972abab3bf46f815f6713b2e2e5b4db78ac4a432..b52a55f4267171ff5a907e0f76b8172b1b972271 100644
 --- a/ui/views/controls/menu/menu_runner_impl_interface.h
 +++ b/ui/views/controls/menu/menu_runner_impl_interface.h
 @@ -46,6 +46,7 @@ class MenuRunnerImplInterface {
