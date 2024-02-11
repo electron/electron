@@ -486,9 +486,13 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
   auto ui_task_runner = content::GetUIThreadTaskRunner({});
   if (!ui_task_runner->RunsTasksInCurrentSequence()) {
-    ui_task_runner->PostTask(
-        FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                  std::move(capture_handle), bitmap));
+    if (!ui_task_runner->PostTask(
+            FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
+                                      std::move(capture_handle), bitmap))) {
+      // When `PostTask` returns `false` the task definitely will not run.
+      promise.RejectWithErrorMessage("Unknown error");
+    }
+
     return;
   }
 
