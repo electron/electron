@@ -92,25 +92,11 @@ def update_ref(repo, ref, newvalue):
 
 
 def get_commit_for_ref(repo, ref):
-  args = [
-    'git',
-    '-C',
-    repo,
-    'rev-parse',
-    '--verify',
-    ref,
-  ]
+  args = ['git', '-C', repo, 'rev-parse', '--verify', ref]
   return subprocess.check_output(args).decode('utf-8').strip()
 
 def get_commit_count(repo, commit_range):
-  args = [
-    'git',
-    '-C',
-    repo,
-    'rev-list',
-    '--count',
-    commit_range
-  ]
+  args = ['git', '-C', repo, 'rev-list', '--count', commit_range]
   return int(subprocess.check_output(args).decode('utf-8').strip())
 
 def guess_base_commit(repo, ref):
@@ -227,10 +213,10 @@ def remove_patch_location(patch):
   force_keep_next_line = False
   n = len(patch)
   for i, l in enumerate(patch):
-    omit_line = is_patch_location_line(l)
-    omit_next = i < n - 1 and is_patch_location_line(patch[i + 1])
+    skip_line = is_patch_location_line(l)
+    skip_next = i < n - 1 and is_patch_location_line(patch[i + 1])
     if not force_keep_next_line and (
-      omit_line or (omit_next and len(l.rstrip()) == 0)
+      skip_line or (skip_next and len(l.rstrip()) == 0)
     ):
       pass  # drop this line
     else:
