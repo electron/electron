@@ -490,7 +490,7 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
             FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
                                       std::move(capture_handle), bitmap))) {
       // When `PostTask` returns `false` the task definitely will not run.
-      promise.RejectWithErrorMessage("Unknown error");
+      promise.RejectWithErrorMessage("Failed to capture page");
     }
 
     return;
