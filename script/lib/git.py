@@ -13,7 +13,7 @@ import re
 import subprocess
 import sys
 
-from .patches import PATCH_FILENAME_PREFIX, PATCH_LINE_PREFIXES
+from .patches import PATCH_FILENAME_PREFIX, is_patch_location_line
 
 UPSTREAM_HEAD='refs/patches/upstream-head'
 
@@ -204,9 +204,6 @@ def join_patch(patch):
   """Joins and formats patch contents"""
   return ''.join(remove_patch_location(patch)).rstrip('\n') + '\n'
 
-
-def is_patch_location_line(line):
-  return line.startswith(PATCH_LINE_PREFIXES)
 
 def remove_patch_location(patch):
   """Strip out the patch location lines from a patch's message body"""
