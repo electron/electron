@@ -264,7 +264,7 @@ index 2b84d4ef58986bb2eb8da1e62edd31769004bd98..7b213ad2757ece877d93e9f2cfdcaf66
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index b083cd89c46e676f26a7c28eda091cedbf9a5a97..c07db246a7ec4d637e70893bd3cb3d2338f8f0a4 100644
+index b083cd89c46e676f26a7c28eda091cedbf9a5a97..84736ba6b3ae6111f1cebad862989daadb838234 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -374,16 +374,14 @@ index b083cd89c46e676f26a7c28eda091cedbf9a5a97..c07db246a7ec4d637e70893bd3cb3d23
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -329,7 +354,8 @@ GeneratedCodeCache* CodeCacheHostImpl::GetCodeCache(
-   // from an ordinary web page to trusted WebUI, we use a completely separate
-   // GeneratedCodeCache instance for WebUI pages.
-   if (process_lock.matches_scheme(content::kChromeUIScheme) ||
--      process_lock.matches_scheme(content::kChromeUIUntrustedScheme)) {
-+      process_lock.matches_scheme(content::kChromeUIUntrustedScheme) ||
-+      ProcessLockURLIsCodeCacheScheme(process_lock)) {
-     if (cache_type == blink::mojom::CodeCacheType::kJavascript) {
-       return generated_code_cache_context_->generated_webui_js_code_cache();
-     }
+@@ -425,6 +450,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+       process_lock.matches_scheme(url::kHttpsScheme) ||
+       process_lock.matches_scheme(content::kChromeUIScheme) ||
+       process_lock.matches_scheme(content::kChromeUIUntrustedScheme) ||
++      ProcessLockURLIsCodeCacheScheme(process_lock) ||
+       blink::CommonSchemeRegistry::IsExtensionScheme(
+           process_lock.lock_url().scheme())) {
+     return process_lock.lock_url();
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
 index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9cebbd809f38 100644
 --- a/content/common/url_schemes.cc
