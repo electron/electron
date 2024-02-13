@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
@@ -11,8 +11,7 @@
 
 namespace electron {
 
-bool InspectableWebContentsViewViews::OnMousePressed(
-    const ui::MouseEvent& event) {
+bool InspectableWebContentsView::OnMousePressed(const ui::MouseEvent& event) {
   DCHECK(event.IsRightMouseButton() ||
          (event.IsLeftMouseButton() && event.IsControlDown()));
   content::WebContents* contents = inspectable_web_contents()->GetWebContents();

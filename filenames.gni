@@ -198,8 +198,6 @@ filenames = {
     "shell/common/node_bindings_mac.cc",
     "shell/common/node_bindings_mac.h",
     "shell/common/platform_util_mac.mm",
-    "shell/browser/ui/views/inspectable_web_contents_view_views.cc",
-    "shell/browser/ui/views/inspectable_web_contents_view_views.h",
     "shell/browser/ui/views/inspectable_web_contents_view_mac.mm",
   ]
 
@@ -215,8 +213,6 @@ filenames = {
     "shell/browser/ui/views/electron_views_delegate.h",
     "shell/browser/ui/views/frameless_view.cc",
     "shell/browser/ui/views/frameless_view.h",
-    "shell/browser/ui/views/inspectable_web_contents_view_views.cc",
-    "shell/browser/ui/views/inspectable_web_contents_view_views.h",
     "shell/browser/ui/views/menu_bar.cc",
     "shell/browser/ui/views/menu_bar.h",
     "shell/browser/ui/views/menu_delegate.cc",
