@@ -23,18 +23,17 @@ const appVeyorJobs = {
 };
 
 const circleCIPublishWorkflows = [
-  'linux-publish',
+  'linux-publish'
+];
+
+// TODO(vertedinde): standardize old 'macos-publish' name vs 'mac-build'
+const ghActionsPublishWorkflows = [
   'macos-publish'
 ];
 
 const circleCIPublishIndividualArches = {
-  'macos-publish': ['osx-x64', 'mas-x64', 'osx-arm64', 'mas-arm64'],
   'linux-publish': ['arm', 'arm64', 'x64']
 };
-
-const ghActionsPublishWorkflows = [
-  'macos-publish'
-];
 
 const ghActionsPublishIndividualArches = {
   'macos-publish': ['osx-x64', 'mas-x64', 'osx-arm64', 'mas-arm64']
@@ -429,6 +428,7 @@ function runRelease (targetBranch, options) {
     }
   } else {
     buildCircleCI(targetBranch, options);
+    buildGHActions(targetBranch, options);
     buildAppVeyor(targetBranch, options);
     // TODO(vertedinde): Enable GH Actions in defaults when ready
     // buildGHActions(targetBranch, options);
