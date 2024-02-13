@@ -41,12 +41,8 @@ class InspectableWebContentsView {
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
   // Returns the container control, which has devtools view attached.
   virtual views::View* GetView() = 0;
-#else
-  virtual gfx::NativeView GetNativeView() const = 0;
-#endif
 
   virtual void ShowDevTools(bool activate) = 0;
   // Hide the DevTools view.
