@@ -1,0 +1,375 @@
+name: Publish MacOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      macos-publish-arch-limit:
+        description: 'The allowed arches for macos-publish'
+        type: choice
+        default: all
+        options: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+      upload-to-storage:
+        description: 'True to print to STDOUT'
+        required: true
+        default: '0'
+        type: string
+      run-macos-publish:
+        description: 'Run the publish jobs vs just the build jobs'
+        type: boolean
+        default: false
+
+env:
+  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
+  GN_CONFIG: //electron/build/args/release.gn
+  STRIP_BINARIES: true
+  GENERATE_SYMBOLS: true
+  CHECK_DIST_MANIFEST: '1'
+  IS_RELEASE: true
+  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  # Disable pre-compiled headers to reduce out size - only useful for rebuilds
+  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+
+jobs:
+  # TODO(vertedinde): I don't know if there's actually value in having an entirely seperate publish config.
+  # It may be better to foil this into the `build` job and pass in the necessary environment variables,
+  # rather than duplicate 70% of the job steps.
+  # We'd need to handle the different env vars.
+  publish:
+    # if: ${{ startsWith(github.ref, 'refs/tags/') && inputs.run-macos-publish == true }}
+    if: ${{ inputs.run-macos-publish == true }}
+    needs: checkout
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: [darwin, mas]
+        runner: [macos-13-xlarge, macos-14-xlarge]
+    # TODO(vertedinde): enable the runners when we know tests are working
+    # runs-on: ${{ matrix.runner }}
+    runs-on: macos-13-xlarge
+    env:
+      BUILD_TYPE: ${{ matrix.build-type }}
+    steps:
+    - name: Load Build Tools
+      run: |
+        npm i -g @electron/build-tools
+        e init --root=$(pwd) --out=Default testing
+    - name: Checkout Electron
+      uses: actions/checkout@v4
+      with:
+        path: src/electron
+    - name: Install Azure CLI
+      run: |
+        brew update && brew install azure-cli
+    - name: Setup Node.js/npm
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.18.x
+        cache: yarn
+        cache-dependency-path: src/electron/yarn.lock
+    - name: Enable ssh Debugging
+      if: runner.debug == 1
+      uses: mxschmitt/action-tmate@v3
+      with:
+        detached: true
+        limit-access-to-actor: true
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Get Depot Tools
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        if [ "`uname`" == "Darwin" ]; then
+          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        else
+          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+          cd depot_tools
+          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        fi
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Download Src Cache
+      # The cache will always exist here as a result of the checkout job
+      # Either it was uploaded to Azure in the checkout job for this commit
+      # or it was uploaded in the checkout job for a previous commit.
+      run: |
+        az storage blob download \
+          --account-name $AZURE_STORAGE_ACCOUNT \
+          --account-key $AZURE_STORAGE_KEY \
+          --container-name $AZURE_STORAGE_CONTAINER_NAME \
+          --name $DEPSHASH \
+          --file $DEPSHASH.tar \
+    - name: Unzip and Ensure Src Cache
+      run: |
+        echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+        mkdir temp-cache
+        tar -xvf $DEPSHASH.tar -C temp-cache
+        echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
+
+        if [ -d "temp-cache/src" ]; then
+          echo "Relocating Cache"
+          rm -rf src
+          mv temp-cache/src src
+
+          echo "Deleting zip file"
+          rm -rf $DEPSHASH.tar
+        fi
+
+        if [ ! -d "src/third_party/blink" ]; then
+          echo "Cache was not correctly restored - exiting"
+          exit 1
+        fi
+
+        echo "Wiping Electron Directory"
+        rm -rf src/electron
+    - name: Checkout Electron
+      uses: actions/checkout@v4
+      with:
+        path: src/electron
+    - name: Run Electron Only Hooks
+      run: |
+        echo "Running Electron Only Hooks"
+        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    - name: Regenerate DEPS Hash
+      run: |
+        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Setup Environment Variables
+      run: |
+        echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
+
+        if [[ ${{ matrix.build-type }} == "darwin" ]]; then
+          echo 'GN_EXTRA_ARGS=target_cpu = "arm64"' >> $GITHUB_ENV
+        else
+          echo 'GN_EXTRA_ARGS=is_mas_build = true target_cpu = "arm64"' >> $GITHUB_ENV
+          echo "MAS_BUILD=true" >> $GITHUB_ENV
+        fi
+    - name: Fix Sync
+      # This step is required to correct for differences between "gclient sync"
+      # on Linux and the expected state on macOS. This requires:
+      # 1. Fixing Clang Install (wrong binary)
+      # 2. Fixing esbuild (wrong binary)
+      # 3. Fixing rustc (wrong binary)
+      # 4. Fixing gn (wrong binary)
+      # 5. Fix reclient (wrong binary)
+      # 6. Fixing dsymutil (wrong binary)
+      # 7. Ensuring we are using the correct ninja and adding it to PATH
+      # 8. Fixing angle (wrong remote)
+      run : |
+        SEDOPTION="-i ''"
+        rm -rf src/third_party/llvm-build
+        python3 src/tools/clang/scripts/update.py
+
+        echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
+        cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
+
+        rm -rf src/third_party/rust-toolchain
+        python3 src/tools/rust/update_rust.py
+        
+        # Prevent calling gclient getdep which always calls update_depot_tools
+        echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
+        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+        cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
+
+        # Prevent calling gclient getdep which always calls update_depot_tools
+        echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
+        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
+        cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
+        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
+
+        DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+        python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
+
+        echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
+        sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
+        cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
+
+        echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
+
+        cd src/third_party/angle
+        rm -f .git/objects/info/alternates
+        git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+        cp .git/config .git/config.backup
+        git remote remove origin
+        mv .git/config.backup .git/config
+        git fetch
+    - name: Install build-tools & Setup RBE
+      run: |
+        echo "NUMBER_OF_NINJA_PROCESSES=200" >> $GITHUB_ENV
+        cd ~/.electron_build_tools
+        npx yarn --ignore-engines
+        # Pull down credential helper and print status
+        node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
+        HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
+        $HELPER login
+        echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
+        echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $GITHUB_ENV
+        echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
+    - name: Default GN gen
+      run: |
+        cd src/electron
+        # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
+        git pack-refs
+        cd ..
+        gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+    - name: Build Electron
+      run: |
+        ulimit -n 10000
+        sudo launchctl limit maxfiles 65536 200000
+        cd src
+        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
+        cp out/Default/.ninja_log out/electron_ninja_log
+        node electron/script/check-symlinks.js
+    - name: Build Electron dist.zip
+      run: |
+        cd src
+        if [ "$SKIP_DIST_ZIP" != "1" ]; then
+          if [ "$IS_RELEASE"]; then
+            ADDITIONAL_TARGETS = "electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip"
+          fi
+          e build electron:electron_dist_zip $ADDITIONAL_TARGETS -j $NUMBER_OF_NINJA_PROCESSES
+          if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+            target_os=mac
+            target_cpu=arm64
+            if [ "$MAS_BUILD" == x"true" ]; then
+              target_os=mac_mas
+            fi
+            electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
+          fi
+        fi
+    - name: Build Mksnapshot
+      run: |
+        cd src
+        e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        # Remove unused args from mksnapshot_args
+        SEDOPTION="-i ''"
+        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/The gn arg use_goma=true .*/d' out/Default/mksnapshot_args
+        if [ "$SKIP_DIST_ZIP" != "1" ]; then
+          e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
+    - name: Build Chromedriver
+      run: |
+        cd src
+        e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+        e build electron:electron_chromedriver_zip
+    - name: Build Node Headers
+      run: |
+        cd src
+        e build electron:node_headers
+    # This differs from the build step in that we need to call
+    # DELETE_DSYMS_AFTER_ZIP=1 to clean the symbols
+    - name: Generate & Zip Symbols
+      run: |
+        if [ "$GENERATE_SYMBOLS" == "true" ]; then
+          # Generate breakpad symbols
+          e build electron:electron_symbols
+        fi
+        cd src
+        export BUILD_PATH="$(pwd)/out/Default"
+        e build electron:licenses
+        e build electron:electron_version_file
+        DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
+      # TODO(vertedinde): handle creating ffmpeg and hunspell for release builds
+      # Can we use build-tools for these instead of autoninja?
+    - name: Generate ffmpeg
+      run: |
+        cd src
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
+        autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Generate Hunspell Dictionaries
+      run: |
+        cd src
+        if [ "$SKIP_DIST_ZIP" != "1" ]; then
+          autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        fi
+    - name: Generate TypeScript Definitions
+      run: |
+        cd src/electron
+        node script/yarn create-typescript-definitions
+    - name: Move all Generated Artifacts to Upload Folder
+      run: |
+        rm -rf generated_artifacts_${BUILD_TYPE}
+        mkdir generated_artifacts_${BUILD_TYPE}
+        mv_if_exist() {
+          if [ -f "$1" ] || [ -d "$1" ]; then
+            echo Storing $1
+            mv $1 generated_artifacts_${BUILD_TYPE}
+          else
+            echo Skipping $1 - It is not present on disk
+          fi
+        }
+        cp_if_exist() {
+          if [ -f "$1" ] || [ -d "$1" ]; then
+            echo Storing $1
+            cp $1 generated_artifacts_${BUILD_TYPE}
+          else
+            echo Skipping $1 - It is not present on disk
+          fi
+        }
+        mv_if_exist src/out/Default/dist.zip
+        mv_if_exist src/out/Default/gen/node_headers.tar.gz
+        mv_if_exist src/out/Default/symbols.zip
+        mv_if_exist src/out/Default/mksnapshot.zip
+        mv_if_exist src/out/Default/chromedriver.zip
+        mv_if_exist src/out/ffmpeg/ffmpeg.zip
+        mv_if_exist src/out/Default/hunspell_dictionaries.zip
+        mv_if_exist src/cross-arch-snapshots
+        cp_if_exist src/out/electron_ninja_log
+        cp_if_exist src/out/Default/.ninja_log
+    # TODO(vertedinde): Don't actually do this yet lol
+    # - name: Publish Electron Dist
+    #   run: |
+    #     rm -rf src/out/Default/obj
+    #     cd src/electron
+    #     if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
+    #       echo 'Uploading Electron release distribution to Azure'
+    #       script/release/uploaders/upload.py --verbose --upload_to_storage
+    #     else
+    #       echo 'Uploading Electron release distribution to GitHub releases'
+    #       script/release/uploaders/upload.py --verbose
+    #     fi
+    - name: Upload Generated Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated_artifacts_${{ matrix.build-type }}
+        path: ./generated_artifacts_${{ matrix.build-type }}
+    # TODO(vertedinde): I don't think there's actually a reason to upload/persist
+    # the artifacts here. We do this in CircleCI, but I don't think it's actually needed.
+    - name: Persist Build Artifacts
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          src/out/Default/gen/node_headers
+          src/out/Default/overlapped-checker
+          src/electron
+          src/third_party/electron_node
+          src/third_party/nan
+          src/cross-arch-snapshots
+          src/third_party/llvm-build
+          src/build/linux
+          src/buildtools/mac
+          src/buildtools/third_party/libc++
+          src/buildtools/third_party/libc++abi
+          src/third_party/libc++
+          src/third_party/libc++abi
+          src/out/Default/obj/buildtools/third_party
+          src/v8/tools/builtins-pgo
+        key: ${{ runner.os }}-publish-artifacts-${{ matrix.build-type }}-${{ github.sha }}
