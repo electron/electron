@@ -28,11 +28,12 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
 
   PreCreateMainMessageLoopCommon();
 
-  // Prevent Cocoa from turning command-line arguments into
-  // |-application:openFiles:|, since we already handle them directly.
-  [[NSUserDefaults standardUserDefaults]
-      setObject:@"NO"
-         forKey:@"NSTreatUnknownArgumentsAsOpen"];
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  // Prevent Cocoa from turning command-line arguments into -[NSApplication
+  // application:openFile:], because they are handled directly. @"NO" looks
+  // like a mistake, but the value really is supposed to be a string.
+  [defaults setObject:@"NO" forKey:@"NSTreatUnknownArgumentsAsOpen"];
+  [defaults setBool:NO forKey:@"NSWindowRestoresWorkspaceAtLaunch"];
 
   if (!device::GeolocationSystemPermissionManager::GetInstance()) {
     device::GeolocationSystemPermissionManager::SetInstance(

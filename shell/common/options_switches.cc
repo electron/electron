@@ -26,6 +26,7 @@ const char kMovable[] = "movable";
 const char kMinimizable[] = "minimizable";
 const char kMaximizable[] = "maximizable";
 const char kFullScreenable[] = "fullscreenable";
+const char kRestoreOnRestart[] = "restoreOnRestart";
 const char kClosable[] = "closable";
 const char kFullscreen[] = "fullscreen";
 const char kTrafficLightPosition[] = "trafficLightPosition";

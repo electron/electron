@@ -29,6 +29,7 @@ extern const char kMovable[];
 extern const char kMinimizable[];
 extern const char kMaximizable[];
 extern const char kFullScreenable[];
+extern const char kRestoreOnRestart[];
 extern const char kClosable[];
 extern const char kHiddenInMissionControl[];
 extern const char kFullscreen[];

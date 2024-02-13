@@ -47,7 +47,6 @@
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
-#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/native_frame_view_mac.h"
 
@@ -261,6 +260,18 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   window_delegate_ = [[ElectronNSWindowDelegate alloc] initWithShell:this];
   [window_ setDelegate:window_delegate_];
 
+  if (options.Get(options::kRestoreOnRestart, &restore) && !restore) {
+    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+    NSData* restore_ns_data = [defaults objectForKey:@"state_restoration_data"];
+    if (restore_ns_data != nil) {
+      NSKeyedUnarchiver* decoder =
+          [[NSKeyedUnarchiver alloc] initForReadingFromData:restore_ns_data
+                                                      error:nil];
+      [window_ restoreStateWithCoder:decoder];
+      state_restoration_data_.clear();
+    }
+  }
+
   // Only use native parent window for non-modal windows.
   if (parent && !is_modal()) {
     SetParentWindow(parent);
@@ -355,7 +366,14 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   original_level_ = [window_ level];
 }
 
-NativeWindowMac::~NativeWindowMac() = default;
+NativeWindowMac::~NativeWindowMac() {
+  if (!state_restoration_data_.empty()) {
+    NSData* data = [NSData dataWithBytes:state_restoration_data_.data()
+                                  length:state_restoration_data_.size()];
+    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:data forKey:@"state_restoration_data"];
+  }
+}
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
@@ -1666,6 +1684,12 @@ void NativeWindowMac::NotifyWindowLeaveFullScreen() {
 
   if (transparent() || !has_frame())
     [window_ setTitlebarAppearsTransparent:YES];
+}
+
+void NativeWindowMac::OnWindowStateRestorationDataChanged(
+    const std::vector<uint8_t>& data) {
+  LOG(INFO) << "OnWindowStateRestorationDataChanged";
+  state_restoration_data_ = data;
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {

@@ -41,6 +41,7 @@
 * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
   Default is `false`.
 * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
+*  `restoreOnRelaunch` boolean (optional) _macOS_ - Whether the window should launch with full fidelity across app restarts.
 * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
 * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
 * `icon` ([NativeImage](../native-image.md) | string) (optional) - The window icon. On Windows it is

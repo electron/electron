@@ -29,9 +29,11 @@ class ScopedDisableResize {
 
 }  // namespace electron
 
-@interface ElectronNSWindow : NativeWidgetMacNSWindow {
+@interface ElectronNSWindow
+    : NativeWidgetMacNSWindow <NSKeyedArchiverDelegate> {
  @private
   raw_ptr<electron::NativeWindowMac> shell_;
+  BOOL _willUpdateRestorableState;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL enableLargerThanScreen;

@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 
+#include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
@@ -23,6 +24,7 @@ int ScopedDisableResize::disable_resize_ = 0;
 @interface NSWindow (PrivateAPI)
 - (NSImage*)_cornerMask;
 - (int64_t)_resizeDirectionForMouseLocation:(CGPoint)location;
+- (BOOL)_isConsideredOpenForPersistentState;
 @end
 
 // See components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
@@ -186,7 +188,63 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return nil;
 }
 
+// Called when the window is the delegate of the archiver passed to
+// |-encodeRestorableStateWithCoder:|, below. It prevents the archiver from
+// trying to encode the window or an NSView, say, to represent the first
+// responder. When AppKit calls |-encodeRestorableStateWithCoder:|, it
+// accomplishes the same thing by passing a custom coder.
+- (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+  if (object == self)
+    return nil;
+  if ([object isKindOfClass:[NSView class]])
+    return nil;
+  return object;
+}
+
+- (void)saveRestorableState {
+  if (![self _isConsideredOpenForPersistentState])
+    return;
+
+  // On macOS 12+, create restorable state archives with secure encoding.
+  NSKeyedArchiver* encoder = [[NSKeyedArchiver alloc]
+      initRequiringSecureCoding:base::mac::MacOSMajorVersion() >= 12];
+  encoder.delegate = self;
+  [self encodeRestorableStateWithCoder:encoder];
+  [encoder finishEncoding];
+  NSData* restorableStateData = encoder.encodedData;
+
+  auto* bytes = static_cast<uint8_t const*>(restorableStateData.bytes);
+  shell_->OnWindowStateRestorationDataChanged(
+      std::vector<uint8_t>(bytes, bytes + restorableStateData.length));
+
+  _willUpdateRestorableState = NO;
+}
+
+// AppKit calls -invalidateRestorableState when a property of the window which
+// affects its restorable state changes.
+- (void)invalidateRestorableState {
+  [super invalidateRestorableState];
+
+  if ([self _isConsideredOpenForPersistentState]) {
+    if (_willUpdateRestorableState)
+      return;
+    _willUpdateRestorableState = YES;
+    [self performSelectorOnMainThread:@selector(saveRestorableState)
+                           withObject:nil
+                        waitUntilDone:NO
+                                modes:@[ NSDefaultRunLoopMode ]];
+  } else if (_willUpdateRestorableState) {
+    _willUpdateRestorableState = NO;
+    [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  }
+}
+
 // NSWindow overrides.
+
+- (void)dealloc {
+  _willUpdateRestorableState = YES;
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+}
 
 - (void)rotateWithEvent:(NSEvent*)event {
   shell_->NotifyWindowRotateGesture(event.rotation);

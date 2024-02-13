@@ -164,6 +164,8 @@ class NativeWindowMac : public NativeWindow,
   // Detach window from parent without destroying it.
   void DetachChildren() override;
 
+  void OnWindowStateRestorationDataChanged(const std::vector<uint8_t>& data);
+
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
@@ -285,6 +287,8 @@ class NativeWindowMac : public NativeWindow,
   bool maximizable_ = true;
 
   bool user_set_bounds_maximized_ = false;
+
+  std::vector<uint8_t> state_restoration_data_;
 
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;
