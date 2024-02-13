@@ -1,6 +1,9 @@
 name: Publish MacOS
 
 on:
+  push:
+    branches:
+      - gh-mac-runner
   workflow_dispatch:
     inputs:
       macos-publish-arch-limit:
