@@ -1,9 +1,6 @@
 name: Publish MacOS
 
 on:
-  push:
-    branches:
-      - gh-mac-runner
   workflow_dispatch:
     inputs:
       macos-publish-arch-limit:
@@ -43,7 +40,6 @@ jobs:
   publish:
     # if: ${{ startsWith(github.ref, 'refs/tags/') && inputs.run-macos-publish == true }}
     if: ${{ inputs.run-macos-publish == true }}
-    needs: checkout
     strategy:
       fail-fast: false
       matrix:
