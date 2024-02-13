@@ -58,11 +58,10 @@ class InspectableWebContentsView : public views::View {
   bool OnMousePressed(const ui::MouseEvent& event) override;
 #endif
 
- protected:
+ private:
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
- private:
   raw_ptr<InspectableWebContentsViewDelegate> delegate_ =
       nullptr;  // weak references.
 
