@@ -627,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 6bf94fa65c5b69bedd4e19973ffa275521bc331b..7fa0f7aeffaa02f45774e9ff35065d44a37be9b0 100644
+index 6bf94fa65c5b69bedd4e19973ffa275521bc331b..512e97a8124bb3809fea9128d1446cf22e49f25c 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -747,11 +747,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -698,7 +698,7 @@ index 6bf94fa65c5b69bedd4e19973ffa275521bc331b..7fa0f7aeffaa02f45774e9ff35065d44
  
    ResultCode result = GeneratePolicyForSandboxedProcess(
 -      cmd_line, process_type, handles_to_inherit, delegate, policy.get());
-+      cmd_line, process_type, *options, delegate, policy.get());
++      cmd_line, process_type, options, delegate, policy.get());
    if (SBOX_ALL_OK != result)
      return result;
    timer.OnPolicyGenerated();
