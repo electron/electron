@@ -43,6 +43,9 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   // views::View:
   void Layout() override;
+#if BUILDFLAG(IS_MAC)
+  bool OnMousePressed(const ui::MouseEvent& event) override;
+#endif
 
  private:
   std::unique_ptr<views::Widget> devtools_window_;
