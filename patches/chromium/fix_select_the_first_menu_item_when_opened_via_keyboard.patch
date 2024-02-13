@@ -181,3 +181,27 @@ index 972abab3bf46f815f6713b2e2e5b4db78ac4a432..b52a55f4267171ff5a907e0f76b8172b
        gfx::NativeView native_view_for_gestures,
        std::optional<gfx::RoundedCornersF> corners = std::nullopt,
        std::optional<std::string> show_menu_host_duration_histogram =
+diff --git a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
+index fe26b1070d1fc36cfa718c4b3b6e651a77732575..11b6563503c0172f530d1d05b880e77e1eadafca 100644
+--- a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
++++ b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
+@@ -57,6 +57,7 @@ class VIEWS_EXPORT MenuRunnerImplRemoteCocoa
+       const gfx::Rect& bounds,
+       MenuAnchorPosition anchor,
+       int32_t run_types,
++      ui::MenuSourceType source_type,
+       gfx::NativeView native_view_for_gestures,
+       absl::optional<gfx::RoundedCornersF> corners,
+       absl::optional<std::string> show_menu_host_duration_histogram) override;
+diff --git a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm
+index 92e105c78dec5c944ecfd03332a6968191f25253..238294fb1d2a8ff324731ecbbec2c14f7fa9f771 100644
+--- a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm
++++ b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm
+@@ -69,6 +69,7 @@
+     const gfx::Rect& bounds,
+     MenuAnchorPosition anchor,
+     int32_t run_types,
++    ui::MenuSourceType source_type,
+     gfx::NativeView native_view_for_gestures,
+     absl::optional<gfx::RoundedCornersF> corners,
+     absl::optional<std::string> show_menu_host_duration_histogram) {
