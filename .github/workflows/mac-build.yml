@@ -95,7 +95,7 @@ jobs:
         gclient config \
           --name "src/electron" \
           --unmanaged \
-          $GCLIENT_EXTRA_ARGS \
+          ${GCLIENT_EXTRA_ARGS} \
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
@@ -322,7 +322,7 @@ jobs:
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
-        gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true ${GN_EXTRA_ARGS} ${GN_BUILDFLAG_ARGS}"
     - name: Build Electron
       run: |
         ulimit -n 10000
