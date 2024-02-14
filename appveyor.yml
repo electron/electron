@@ -92,6 +92,11 @@ for:
             Remove-Item -Recurse -Force $pwd\build-tools
           }
       - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: |
+          cd depot_tools
+          git fetch --depth 1 origin f76550541c751f956ef9287f2695a6c8a74bf709
+          git checkout f76550541c751f956ef9287f2695a6c8a74bf709
+          cd ..
       - ps: New-Item -Name depot_tools\.disable_auto_update -ItemType File
       - depot_tools\bootstrap\win_tools.bat
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
