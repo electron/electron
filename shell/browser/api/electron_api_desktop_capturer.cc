@@ -303,6 +303,10 @@ void DesktopCapturer::StartHandling(bool capture_window,
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kWindow, std::move(capturer));
         window_capturer_->SetThumbnailSize(thumbnail_size);
+#if BUILDFLAG(IS_MAC)
+        window_capturer_->skip_next_refresh_ =
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow);
+#endif
 
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
@@ -328,6 +332,10 @@ void DesktopCapturer::StartHandling(bool capture_window,
         screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
+#if BUILDFLAG(IS_MAC)
+        screen_capturer_->skip_next_refresh_ =
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen);
+#endif
 
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),

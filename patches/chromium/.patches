@@ -130,3 +130,4 @@ build_run_reclient_cfg_generator_after_chrome.patch
 fix_suppress_clang_-wimplicit-const-int-float-conversion_in.patch
 cherry-pick-e7ffe20ebfac.patch
 fix_getcursorscreenpoint_wrongly_returns_0_0.patch
+fix_add_support_for_skipping_first_no-op_refresh_in_thumb_cap.patch
