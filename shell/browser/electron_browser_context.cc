@@ -523,7 +523,8 @@ ElectronBrowserContext::GetReduceAcceptLanguageControllerDelegate() {
 
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
-    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
+    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(
+        GetDefaultStoragePartition()->GetNetworkContext());
   }
   return resolve_proxy_helper_.get();
 }
