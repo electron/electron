@@ -49,7 +49,7 @@ const asarRe = /\.asar/i;
 const { getValidatedPath } = __non_webpack_require__('internal/fs/utils');
 // In the renderer node internals use the node global URL but we do not set that to be
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
-const { URL: NodeURL } = __non_webpack_require__('internal/url');
+const { URL: NodeURL, fileURLToPath } = __non_webpack_require__('internal/url');
 
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
@@ -725,7 +725,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
     }
 
-    if (options && (options as ReaddirSyncOptions).withFileTypes) {
+    if ((options as ReaddirSyncOptions)?.withFileTypes) {
       const dirents = [];
       for (const file of files) {
         const childPath = path.join(filePath, file);
@@ -739,6 +739,26 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     return files;
+  };
+
+  const { legacyMainResolve } = internalBinding('fs');
+  internalBinding('fs').legacyMainResolve = (packageJSONUrl: any, packageConfig: any, base: any) => {
+    const pathInfo = splitPath(fileURLToPath(packageJSONUrl));
+    if (!pathInfo.isAsar) return legacyMainResolve(packageJSONUrl, packageConfig, base);
+    const { asarPath, filePath } = pathInfo;
+
+    const archive = getOrCreateArchive(asarPath);
+    if (!archive) {
+      throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+    }
+
+    const newPath = archive.copyFileOut(filePath);
+    if (!newPath) {
+      throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+    }
+
+    const newURL = new URL(`file://${newPath}/${filePath}`);
+    return legacyMainResolve(newURL, packageConfig, base);
   };
 
   const { internalModuleReadJSON } = internalBinding('fs');

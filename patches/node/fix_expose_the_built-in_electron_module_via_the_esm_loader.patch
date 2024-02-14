@@ -48,10 +48,10 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbc
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 06a34c11254a2fedd2ea59c4057bfb30c31082a6..66ecfbcdd4fb2c9986e2d4619a381337839979fe 100644
+index 827ade56abe2ebced589159604e697c29b66a96b..869725c2629784c48fab30475e6e44df8a409323 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -740,6 +740,8 @@ function packageImportsResolve(name, base, conditions) {
+@@ -739,6 +739,8 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
@@ -60,7 +60,7 @@ index 06a34c11254a2fedd2ea59c4057bfb30c31082a6..66ecfbcdd4fb2c9986e2d4619a381337
  /**
   * Returns the package type for a given URL.
   * @param {URL} url - The URL to get the package type for.
-@@ -800,6 +802,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -799,6 +801,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  

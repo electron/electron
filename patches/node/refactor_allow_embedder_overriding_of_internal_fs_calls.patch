@@ -42,6 +42,54 @@ index d4b70bab5e89300bfe6305263d556c986380e2e0..1f3b719048f2477de183e2856b9b8eee
    if (statCache !== null && result >= 0) {
      // Only set cache when `internalModuleStat(filename)` succeeds.
      statCache.set(filename, result);
+diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
+index 06a34c11254a2fedd2ea59c4057bfb30c31082a6..827ade56abe2ebced589159604e697c29b66a96b 100644
+--- a/lib/internal/modules/esm/resolve.js
++++ b/lib/internal/modules/esm/resolve.js
+@@ -39,7 +39,7 @@ const inputTypeFlag = getOptionValue('--input-type');
+ const { URL, pathToFileURL, fileURLToPath, isURL } = require('internal/url');
+ const { getCWDURL } = require('internal/util');
+ const { canParse: URLCanParse } = internalBinding('url');
+-const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
++const internalFsBinding = internalBinding('fs');
+ const {
+   ERR_INPUT_TYPE_NOT_ALLOWED,
+   ERR_INVALID_ARG_TYPE,
+@@ -58,7 +58,6 @@ const { Module: CJSModule } = require('internal/modules/cjs/loader');
+ const { getPackageScopeConfig } = require('internal/modules/esm/package_config');
+ const { getConditionsSet } = require('internal/modules/esm/utils');
+ const packageJsonReader = require('internal/modules/package_json_reader');
+-const { internalModuleStat } = internalBinding('fs');
+ 
+ /**
+  * @typedef {import('internal/modules/esm/package_config.js').PackageConfig} PackageConfig
+@@ -211,7 +210,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+ 
+   const baseStringified = isURL(base) ? base.href : base;
+ 
+-  const resolvedOption = FSLegacyMainResolve(packageJsonUrlString, packageConfig.main, baseStringified);
++  const resolvedOption = internalFsBinding.legacyMainResolve(packageJsonUrlString, packageConfig.main, baseStringified);
+ 
+   const baseUrl = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ? `./${packageConfig.main}` : '';
+   const resolvedUrl = new URL(baseUrl + legacyMainResolveExtensions[resolvedOption], packageJSONUrl);
+@@ -250,7 +249,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+     throw err;
+   }
+ 
+-  const stats = internalModuleStat(toNamespacedPath(StringPrototypeEndsWith(path, '/') ?
++  const stats = internalFsBinding.internalModuleStat(toNamespacedPath(StringPrototypeEndsWith(path, '/') ?
+     StringPrototypeSlice(path, -1) : path));
+ 
+   // Check for stats.isDirectory()
+@@ -818,7 +817,7 @@ function packageResolve(specifier, base, conditions) {
+   let packageJSONPath = fileURLToPath(packageJSONUrl);
+   let lastPath;
+   do {
+-    const stat = internalModuleStat(toNamespacedPath(StringPrototypeSlice(packageJSONPath, 0,
++    const stat = internalFsBinding.internalModuleStat(toNamespacedPath(StringPrototypeSlice(packageJSONPath, 0,
+                                                                           packageJSONPath.length - 13)));
+     // Check for !stat.isDirectory()
+     if (stat !== 1) {
 diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
 index 88c079d10d116107aa34dc9281f64c799c48c0b5..146e2e49dc46c7f5302638f75cca4af548509d77 100644
 --- a/lib/internal/modules/package_json_reader.js
