@@ -181,6 +181,41 @@ index 972abab3bf46f815f6713b2e2e5b4db78ac4a432..b52a55f4267171ff5a907e0f76b8172b
        gfx::NativeView native_view_for_gestures,
        std::optional<gfx::RoundedCornersF> corners = std::nullopt,
        std::optional<std::string> show_menu_host_duration_histogram =
+diff --git a/ui/views/controls/menu/menu_runner_impl_mac.h b/ui/views/controls/menu/menu_runner_impl_mac.h
+index 799e03fd15794a08be2503b50299b92bb083517e..d297da8da069d53e29892d2dcf3ef2e45a7b3373 100644
+--- a/ui/views/controls/menu/menu_runner_impl_mac.h
++++ b/ui/views/controls/menu/menu_runner_impl_mac.h
+@@ -39,6 +39,7 @@ class VIEWS_EXPORT MenuRunnerImplMac : public MenuRunnerImplInterface {
+       const gfx::Rect& bounds,
+       MenuAnchorPosition anchor,
+       int32_t run_types,
++      ui::MenuSourceType source_type,
+       gfx::NativeView native_view_for_gestures,
+       absl::optional<gfx::RoundedCornersF> corners,
+       absl::optional<std::string> show_menu_host_duration_histogram) override;
+diff --git a/ui/views/controls/menu/menu_runner_impl_mac.mm b/ui/views/controls/menu/menu_runner_impl_mac.mm
+index 0fb98f56e84c86fd6947d02c38853b5e997859df..312c651499f7b12708a1ca8694ce174bc5593074 100644
+--- a/ui/views/controls/menu/menu_runner_impl_mac.mm
++++ b/ui/views/controls/menu/menu_runner_impl_mac.mm
+@@ -46,6 +46,7 @@
+     const gfx::Rect& bounds,
+     MenuAnchorPosition anchor,
+     int32_t run_types,
++    ui::MenuSourceType source_type,
+     gfx::NativeView native_view_for_gestures,
+     absl::optional<gfx::RoundedCornersF> corners,
+     absl::optional<std::string> show_menu_host_duration_histogram) {
+@@ -59,8 +60,8 @@
+     }
+   }
+   implementation_->RunMenuAt(parent, button_controller, bounds, anchor,
+-                             run_types, native_view_for_gestures, corners,
+-                             show_menu_host_duration_histogram);
++                             run_types, source_type, native_view_for_gestures,
++                             corners, show_menu_host_duration_histogram);
+ }
+ 
+ void MenuRunnerImplMac::Cancel() {
 diff --git a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
 index fe26b1070d1fc36cfa718c4b3b6e651a77732575..11b6563503c0172f530d1d05b880e77e1eadafca 100644
 --- a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
