@@ -74,11 +74,6 @@ class DevToolsWindowDelegate : public views::ClientView,
 
 }  // namespace
 
-InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContents* inspectable_web_contents) {
-  return new InspectableWebContentsView(inspectable_web_contents);
-}
-
 InspectableWebContentsView::InspectableWebContentsView(
     InspectableWebContents* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
