@@ -272,8 +272,8 @@ gfx::Size ClientFrameViewLinux::GetMaximumSize() const {
   return SizeWithDecorations(FramelessView::GetMaximumSize());
 }
 
-void ClientFrameViewLinux::Layout() {
-  FramelessView::Layout();
+void ClientFrameViewLinux::Layout(PassKey) {
+  LayoutSuperclass<FramelessView>(this);
 
   if (frame_->IsFullscreen()) {
     // Just hide everything and return.

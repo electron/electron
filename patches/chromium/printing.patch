@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c7244284e098df 100644
+index 3f7ddb4b13cee1c0cf7dc6eaae03da0f2dd18242..59734318ca63408d6dbcd002b90991766dd5bf75 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -705,7 +705,7 @@ index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c72442
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2009,7 +2013,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2010,7 +2014,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
    }
  
    Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -715,7 +715,7 @@ index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c72442
    // Check if `this` is still valid.
    if (!weak_this) {
      return;
-@@ -2025,17 +2030,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2026,17 +2031,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -738,7 +738,7 @@ index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c72442
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2056,8 +2063,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2057,8 +2064,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -755,7 +755,7 @@ index ed88c8e0ff3e709dd1f09c464ec19fea19215c99..78713f68b12ffdc8083a4ef9b6c72442
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2314,25 +2328,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2316,25 +2330,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -830,10 +830,10 @@ index 50c05b02ebe6245cee5dbfd529d4eebbc4f57dde..1326edfcbe4c5eb0a8427071d1ed35c8
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c2440b7aeef4d517be35c09b18e4e69cef7b791c..edf0074e5da91297dd77bc879afb76df9b37ccb2 100644
+index 379325292db87e5b8f803bd0dc57d83ebf0f2daa..63b5a8c4d0b4a6f57b192d27477cffbb8a5adb4b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2984,8 +2984,9 @@ source_set("browser") {
+@@ -2993,8 +2993,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

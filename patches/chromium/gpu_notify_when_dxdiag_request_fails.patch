@@ -40,10 +40,10 @@ index 25896ab0f3ca233ae17bf509f2a6ae5a6cc3c54b..5a8e6d184e276833034c604be8c48e01
    // Called from BrowserMainLoop::PostCreateThreads().
    // TODO(content/browser/gpu/OWNERS): This should probably use a
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 4fa857fed71485898f4ba7c6e78cc8be37d8dbf7..3306a36044eed8395b3a13cffa4754cadee1048d 100644
+index 9edb66b907db7bb3c865ebbc4eb0d4b2630fb019..95822c53007880e3e364ed63779582bb89cd8a48 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1222,6 +1222,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1232,6 +1232,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }

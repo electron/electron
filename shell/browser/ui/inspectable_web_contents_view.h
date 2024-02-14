@@ -53,7 +53,7 @@ class InspectableWebContentsView : public views::View {
   const std::u16string GetTitle();
 
   // views::View:
-  void Layout() override;
+  void Layout(PassKey) override;
 #if BUILDFLAG(IS_MAC)
   bool OnMousePressed(const ui::MouseEvent& event) override;
 #endif

@@ -59,7 +59,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("domain", val.Domain());
     dict.Set("hostOnly", net::cookie_util::DomainIsHostOnly(val.Domain()));
     dict.Set("path", val.Path());
-    dict.Set("secure", val.IsSecure());
+    dict.Set("secure", val.SecureAttribute());
     dict.Set("httpOnly", val.IsHttpOnly());
     dict.Set("session", !val.IsPersistent());
     if (val.IsPersistent())
@@ -130,7 +130,7 @@ bool MatchesCookie(const base::Value::Dict& filter,
       !MatchesDomain(*str, cookie.Domain()))
     return false;
   std::optional<bool> secure_filter = filter.FindBool("secure");
-  if (secure_filter && *secure_filter != cookie.IsSecure())
+  if (secure_filter && *secure_filter != cookie.SecureAttribute())
     return false;
   std::optional<bool> session_filter = filter.FindBool("session");
   if (session_filter && *session_filter == cookie.IsPersistent())

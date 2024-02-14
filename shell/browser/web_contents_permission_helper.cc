@@ -36,6 +36,18 @@ namespace electron {
 
 namespace {
 
+[[nodiscard]] content::DesktopMediaID GetScreenId(
+    const std::vector<std::string>& requested_video_device_ids) {
+  if (!requested_video_device_ids.empty() &&
+      !requested_video_device_ids.front().empty())
+    return content::DesktopMediaID::Parse(requested_video_device_ids.front());
+
+  // If the device id wasn't specified then this is a screen capture request
+  // (i.e. chooseDesktopMedia() API wasn't used to generate device id).
+  return content::DesktopMediaID(content::DesktopMediaID::TYPE_SCREEN,
+                                 -1 /* kFullDesktopScreenId */);
+}
+
 // Handles requests for legacy-style `navigator.getUserMedia(...)` calls.
 // This includes desktop capture through the chromeMediaSource /
 // chromeMediaSourceId constraints.
@@ -65,20 +77,9 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
   }
   if (request.video_type ==
       blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
-    content::DesktopMediaID screen_id;
-    // If the device id wasn't specified then this is a screen capture request
-    // (i.e. chooseDesktopMedia() API wasn't used to generate device id).
-    if (request.requested_video_device_id.empty()) {
-      screen_id = content::DesktopMediaID(content::DesktopMediaID::TYPE_SCREEN,
-                                          -1 /* kFullDesktopScreenId */);
-    } else {
-      screen_id =
-          content::DesktopMediaID::Parse(request.requested_video_device_id);
-    }
-
     devices.video_device = blink::MediaStreamDevice(
         blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
-        screen_id.ToString(), "Screen");
+        GetScreenId(request.requested_video_device_ids).ToString(), "Screen");
   }
 
   bool empty =

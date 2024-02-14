@@ -242,6 +242,8 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
+      "//chrome/browser/media/webrtc/thumbnail_capturer_mac.h",
+      "//chrome/browser/media/webrtc/thumbnail_capturer_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
       "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
