@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 13 Feb 2024 17:40:15 -0800
+Subject: fix: add support for skipping first no-op refresh in thumb cap
+
+Fixes a bug in the SCK thumbnail capturer, will be reported upstream for a hopefully
+less hacky fix.
+
+diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
+index 0c6fccf16a11bbaff10115308e4b489490e5d3e6..3b541e6830ca902cf45483a3193376c0e559185e 100644
+--- a/chrome/browser/media/webrtc/desktop_media_list.h
++++ b/chrome/browser/media/webrtc/desktop_media_list.h
+@@ -143,6 +143,8 @@ class DesktopMediaList {
+   // important when IsSourceDelegated() returns true, as it helps to notify the
+   // delegated source list when it should be hidden.
+   virtual void HideList() = 0;
++
++  bool skip_next_refresh_ = false;
+ };
+ 
+ #endif  // CHROME_BROWSER_MEDIA_WEBRTC_DESKTOP_MEDIA_LIST_H_
+diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
+index 780927301744ea7312f230cec76a24a33d71f767..321d3ff46cbb67e880d5414d83a199fb16457038 100644
+--- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
++++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
+@@ -230,7 +230,11 @@ uint32_t DesktopMediaListBase::GetImageHash(const gfx::Image& image) {
+ void DesktopMediaListBase::OnRefreshComplete() {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   DCHECK(refresh_callback_);
+-  std::move(refresh_callback_).Run();
++  if (skip_next_refresh_) {
++    skip_next_refresh_ = false;
++  } else {
++    std::move(refresh_callback_).Run();
++  }
+ }
+ 
+ void DesktopMediaListBase::ScheduleNextRefresh() {
