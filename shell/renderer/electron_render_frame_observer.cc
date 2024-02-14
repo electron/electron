@@ -47,6 +47,14 @@ scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
   return nullptr;
 }
 
+[[nodiscard]] constexpr bool is_main_world(int world_id) {
+  return world_id == WorldIDs::MAIN_WORLD_ID;
+}
+
+[[nodiscard]] constexpr bool is_isolated_world(int world_id) {
+  return world_id == WorldIDs::ISOLATED_WORLD_ID;
+}
+
 }  // namespace
 
 ElectronRenderFrameObserver::ElectronRenderFrameObserver(
@@ -130,7 +138,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   // This logic matches the EXPLAINED logic in electron_renderer_client.cc
   // to avoid explaining it twice go check that implementation in
   // DidCreateScriptContext();
-  bool is_main_world = IsMainWorld(world_id);
+  bool is_main_world = electron::is_main_world(world_id);
   bool is_main_frame = render_frame_->IsMainFrame();
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
 
@@ -204,16 +212,8 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
       blink::BackForwardCacheAware::kPossiblyDisallow);
 }
 
-bool ElectronRenderFrameObserver::IsMainWorld(int world_id) {
-  return world_id == WorldIDs::MAIN_WORLD_ID;
-}
-
-bool ElectronRenderFrameObserver::IsIsolatedWorld(int world_id) {
-  return world_id == WorldIDs::ISOLATED_WORLD_ID;
-}
-
-bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  auto prefs = render_frame_->GetBlinkPreferences();
+bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) const {
+  const auto& prefs = render_frame_->GetBlinkPreferences();
 
   // This is necessary because if an iframe is created and a source is not
   // set, the iframe loads about:blank and creates a script context for the
@@ -221,17 +221,17 @@ bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
   // is later set, the JS necessary to do that triggers illegal access errors
   // when the initial about:blank Node.js environment is cleaned up. See:
   // https://source.chromium.org/chromium/chromium/src/+/main:content/renderer/render_frame_impl.h;l=870-892;drc=4b6001440a18740b76a1c63fa2a002cc941db394
-  GURL url = render_frame_->GetWebFrame()->GetDocument().Url();
-  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
-  if (allow_node_in_sub_frames && url.IsAboutBlank() &&
-      !render_frame_->IsMainFrame())
-    return false;
+  const bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
+  if (allow_node_in_sub_frames && !render_frame_->IsMainFrame()) {
+    if (GURL{render_frame_->GetWebFrame()->GetDocument().Url()}.IsAboutBlank())
+      return false;
+  }
 
   if (prefs.context_isolation &&
       (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
-    return IsIsolatedWorld(world_id);
+    return is_isolated_world(world_id);
 
-  return IsMainWorld(world_id);
+  return is_main_world(world_id);
 }
 
 }  // namespace electron
