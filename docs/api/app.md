@@ -1499,7 +1499,7 @@ details.
 
 Returns `Promise<void>` - Resolves when the proxy setting process is complete.
 
-Sets the proxy settings for networks requests made without an associated [Session][session.md].
+Sets the proxy settings for networks requests made without an associated [Session](session.md).
 Currently this will affect requests made with [Net](net.md) in the [utility process](../glossary.md#utility-process)
 and internal requests made by the runtime (ex: geolocation queries).
 
