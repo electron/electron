@@ -69,7 +69,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   menu_bar_->SetMenu(menu_model);
-  Layout();
+  InvalidateLayout();
 }
 
 bool RootView::HasMenu() const {
@@ -97,7 +97,7 @@ void RootView::SetMenuBarVisibility(bool visible) {
     RemoveChildView(menu_bar_.get());
   }
 
-  Layout();
+  InvalidateLayout();
 }
 
 void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
@@ -166,7 +166,7 @@ void RootView::ResetAltState() {
   menu_bar_alt_pressed_ = false;
 }
 
-void RootView::Layout() {
+void RootView::Layout(PassKey) {
   if (!window_->content_view())  // Not ready yet.
     return;
 

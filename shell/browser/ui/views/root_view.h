@@ -47,7 +47,7 @@ class RootView : public views::View {
   void UnregisterAcceleratorsWithFocusManager();
 
   // views::View:
-  void Layout() override;
+  void Layout(PassKey) override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;

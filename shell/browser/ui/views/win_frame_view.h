@@ -58,7 +58,7 @@ class WinFrameView : public FramelessView {
 
  protected:
   // views::View:
-  void Layout() override;
+  void Layout(PassKey) override;
 
  private:
   friend class WinCaptionButtonContainer;

@@ -11,7 +11,7 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index e447cae6e00efa8b0afa72f6d3887bedf9cb5a5c..3c55455c62c238029af783b3032e415739f71f79 100644
+index e209fa1848263e52d87cac8aa61e5c219e54a2e1..259dc1a97511864256085bf9cb5806f17fddad8c 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3665,14 +3665,29 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
@@ -34,7 +34,7 @@ index e447cae6e00efa8b0afa72f6d3887bedf9cb5a5c..3c55455c62c238029af783b3032e4157
 +      max_window_size.Enlarge(0, rect.bottom - rect.top);
 +  }
  
-   absl::optional<gfx::Size> max_size_param;
+   std::optional<gfx::Size> max_size_param;
    if (!max_window_size.IsEmpty())
      max_size_param = max_window_size;
  

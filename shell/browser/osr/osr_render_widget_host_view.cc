@@ -678,6 +678,10 @@ void OffScreenRenderWidgetHostView::ShowSharePicker(
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
   return false;
 }
+
+uint64_t OffScreenRenderWidgetHostView::GetNSViewId() const {
+  return 0;
+}
 #endif
 
 void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,

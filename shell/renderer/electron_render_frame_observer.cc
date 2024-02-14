@@ -23,6 +23,7 @@
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -70,8 +71,8 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
       static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
   if (has_delayed_node_initialization_ &&
       !web_frame->IsOnInitialEmptyDocument()) {
-    v8::Isolate* isolate = blink::MainThreadIsolate();
-    v8::HandleScope handle_scope(isolate);
+    v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
+    v8::HandleScope handle_scope{isolate};
     v8::Handle<v8::Context> context = web_frame->MainWorldScriptContext();
     v8::MicrotasksScope microtasks_scope(
         isolate, context->GetMicrotaskQueue(),

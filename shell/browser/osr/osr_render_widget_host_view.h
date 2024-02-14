@@ -114,6 +114,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const std::string& url,
       const std::vector<std::string>& file_paths,
       blink::mojom::ShareService::ShareCallback callback) override;
+  uint64_t GetNSViewId() const override;
   bool UpdateNSViewAndDisplay();
 #endif  // BUILDFLAG(IS_MAC)
 
