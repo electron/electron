@@ -17,10 +17,10 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 2e6e02d229b67bc97e0d15a2704e091d5289df9c..6fd0416820998bd0ba4c4cd4fe3093f144610f18 100644
+index 99a16a667baa20138715b0901e3255e41f5f1052..796611cb0856e3c18b78455b510b0e8215629cdf 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -27,7 +27,8 @@ using v8::Value;
+@@ -28,7 +28,8 @@ using v8::Value;
  namespace crypto {
  namespace {
  bool IsSupportedAuthenticatedMode(const EVP_CIPHER* cipher) {
