@@ -7,6 +7,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/containers/fixed_flat_map.h"
@@ -48,7 +49,7 @@ struct Converter<electron::ProtocolType> {
                      electron::ProtocolType* out) {
     using Val = electron::ProtocolType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             // note "free" is internal type, not allowed to be passed from user
             {"buffer", Val::kBuffer},
             {"file", Val::kFile},

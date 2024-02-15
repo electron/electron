@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 #define ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 
+#include <string_view>
 #include <utility>
 
 #include "gin/handle.h"
@@ -25,7 +26,7 @@ class EventEmitterMixin {
   // this.emit(name, new Event(), args...);
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
-  bool Emit(base::StringPiece name, Args&&... args) {
+  bool Emit(const std::string_view name, Args&&... args) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
@@ -39,7 +40,7 @@ class EventEmitterMixin {
 
   // this.emit(name, args...);
   template <typename... Args>
-  void EmitWithoutEvent(base::StringPiece name, Args&&... args) {
+  void EmitWithoutEvent(const std::string_view name, Args&&... args) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;

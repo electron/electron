@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -69,7 +70,7 @@ struct Converter<network::mojom::CredentialsMode> {
                      network::mojom::CredentialsMode* out) {
     using Val = network::mojom::CredentialsMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"include", Val::kInclude},
             {"omit", Val::kOmit},
             // Note: This only makes sense if the request
@@ -87,7 +88,7 @@ struct Converter<blink::mojom::FetchCacheMode> {
                      blink::mojom::FetchCacheMode* out) {
     using Val = blink::mojom::FetchCacheMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"default", Val::kDefault},
             {"force-cache", Val::kForceCache},
             {"no-cache", Val::kValidateCache},
@@ -107,7 +108,7 @@ struct Converter<net::ReferrerPolicy> {
     using Val = net::ReferrerPolicy;
     // clang-format off
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"", Val::REDUCE_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN},
             {"no-referrer", Val::NO_REFERRER},
             {"no-referrer-when-downgrade", Val::CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE},
@@ -547,7 +548,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   if (std::string mode; opts.Get("mode", &mode)) {
     using Val = network::mojom::RequestMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"cors", Val::kCors},
             {"navigate", Val::kNavigate},
             {"no-cors", Val::kNoCors},
@@ -560,7 +561,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   if (std::string destination; opts.Get("destination", &destination)) {
     using Val = network::mojom::RequestDestination;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"audio", Val::kAudio},
             {"audioworklet", Val::kAudioWorklet},
             {"document", Val::kDocument},
@@ -695,7 +696,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   return ret;
 }
 
-void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
+void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_piece,
                                             base::OnceClosure resume) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

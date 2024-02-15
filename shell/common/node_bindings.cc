@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -300,9 +301,9 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
 
 // Only allow a specific subset of options in non-ELECTRON_RUN_AS_NODE mode.
 // If node CLI inspect support is disabled, allow no debug options.
-bool IsAllowedOption(base::StringPiece option) {
+bool IsAllowedOption(const std::string_view option) {
   static constexpr auto debug_options =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
+      base::MakeFixedFlatSetSorted<std::string_view>({
           "--debug",
           "--debug-brk",
           "--debug-port",
@@ -315,7 +316,7 @@ bool IsAllowedOption(base::StringPiece option) {
 
   // This should be aligned with what's possible to set via the process object.
   static constexpr auto options =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
+      base::MakeFixedFlatSetSorted<std::string_view>({
           "--dns-result-order",
           "--no-deprecation",
           "--throw-deprecation",
@@ -334,7 +335,7 @@ bool IsAllowedOption(base::StringPiece option) {
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
   static constexpr auto disallowed =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
+      base::MakeFixedFlatSetSorted<std::string_view>({
           "--enable-fips",
           "--experimental-policy",
           "--force-fips",
@@ -344,7 +345,7 @@ void SetNodeOptions(base::Environment* env) {
       });
 
   static constexpr auto pkg_opts =
-      base::MakeFixedFlatSetSorted<base::StringPiece>({
+      base::MakeFixedFlatSetSorted<std::string_view>({
           "--http-parser",
           "--max-http-header-size",
       });
@@ -488,7 +489,7 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
 #else
     const auto& option = arg;
 #endif
-    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+    const auto stripped = std::string_view{option}.substr(0, option.find('='));
     // Only allow no-op or a small set of debug/trace related options.
     if (IsAllowedOption(stripped) || stripped == "--")
       args.push_back(option);

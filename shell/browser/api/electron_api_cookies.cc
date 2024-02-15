@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/electron_api_cookies.h"
 
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/time/time.h"
@@ -169,7 +171,7 @@ base::Time ParseTimeProperty(const absl::optional<double>& value) {
   return base::Time::FromSecondsSinceUnixEpoch(*value);
 }
 
-base::StringPiece InclusionStatusToString(net::CookieInclusionStatus status) {
+std::string_view InclusionStatusToString(net::CookieInclusionStatus status) {
   if (status.HasExclusionReason(net::CookieInclusionStatus::EXCLUDE_HTTP_ONLY))
     return "Failed to create httponly cookie";
   if (status.HasExclusionReason(

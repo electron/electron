@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -247,7 +248,7 @@ struct Converter<JumpListCategory::Type> {
 
  private:
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListCategory::Type>({
+      base::MakeFixedFlatMap<std::string_view, JumpListCategory::Type>({
           {"custom", JumpListCategory::Type::kCustom},
           {"frequent", JumpListCategory::Type::kFrequent},
           {"recent", JumpListCategory::Type::kRecent},
@@ -407,7 +408,7 @@ struct Converter<net::SecureDnsMode> {
                      v8::Local<v8::Value> val,
                      net::SecureDnsMode* out) {
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, net::SecureDnsMode>({
+        base::MakeFixedFlatMap<std::string_view, net::SecureDnsMode>({
             {"automatic", net::SecureDnsMode::kAutomatic},
             {"off", net::SecureDnsMode::kOff},
             {"secure", net::SecureDnsMode::kSecure},
@@ -433,9 +434,9 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 }
 
 // Return the path constant from string.
-int GetPathConstant(base::StringPiece name) {
+int GetPathConstant(std::string_view name) {
   // clang-format off
-  constexpr auto Lookup = base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+  constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
       {"appData", DIR_APP_DATA},
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},

@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
 #include "content/public/browser/context_menu_params.h"
@@ -24,7 +25,7 @@
 
 namespace {
 
-[[nodiscard]] constexpr base::StringPiece FormControlToInputFieldTypeString(
+[[nodiscard]] constexpr std::string_view FormControlToInputFieldTypeString(
     const absl::optional<blink::mojom::FormControlType> form_control_type) {
   if (!form_control_type)
     return "none";
@@ -323,7 +324,7 @@ bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 content::StopFindAction* out) {
   using Val = content::StopFindAction;
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+      base::MakeFixedFlatMapSorted<std::string_view, Val>({
           {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
           {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
           {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},

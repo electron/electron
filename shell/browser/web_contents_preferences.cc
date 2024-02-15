@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -45,7 +46,7 @@ struct Converter<blink::mojom::AutoplayPolicy> {
                      blink::mojom::AutoplayPolicy* out) {
     using Val = blink::mojom::AutoplayPolicy;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"document-user-activation-required",
              Val::kDocumentUserActivationRequired},
             {"no-user-gesture-required", Val::kNoUserGestureRequired},
@@ -62,7 +63,7 @@ struct Converter<blink::mojom::V8CacheOptions> {
                      blink::mojom::V8CacheOptions* out) {
     using Val = blink::mojom::V8CacheOptions;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"bypassHeatCheck", Val::kCodeWithoutHeatCheck},
             {"bypassHeatCheckAndEagerCompile", Val::kFullCodeWithoutHeatCheck},
             {"code", Val::kCode},

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/containers/fixed_flat_map.h"
@@ -135,7 +136,7 @@ struct Converter<blink::WebMouseEvent::Button> {
                      blink::WebMouseEvent::Button* out) {
     using Val = blink::WebMouseEvent::Button;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMapSorted<std::string_view, Val>({
             {"left", Val::kLeft},
             {"middle", Val::kMiddle},
             {"right", Val::kRight},
@@ -148,7 +149,7 @@ struct Converter<blink::WebMouseEvent::Button> {
 
 // these are the modifier names we both accept and return
 static constexpr auto Modifiers =
-    base::MakeFixedFlatMapSorted<base::StringPiece, blink::WebInputEvent::Modifiers>({
+    base::MakeFixedFlatMapSorted<std::string_view, blink::WebInputEvent::Modifiers>({
         {"alt", blink::WebInputEvent::Modifiers::kAltKey},
         {"capslock", blink::WebInputEvent::Modifiers::kCapsLockOn},
         {"control", blink::WebInputEvent::Modifiers::kControlKey},
@@ -167,14 +168,14 @@ static constexpr auto Modifiers =
 
 // these are the modifier names we accept but do not return
 static constexpr auto ModifierAliases =
-    base::MakeFixedFlatMapSorted<base::StringPiece, blink::WebInputEvent::Modifiers>({
+    base::MakeFixedFlatMapSorted<std::string_view, blink::WebInputEvent::Modifiers>({
         {"cmd", blink::WebInputEvent::Modifiers::kMetaKey},
         {"command", blink::WebInputEvent::Modifiers::kMetaKey},
         {"ctrl", blink::WebInputEvent::Modifiers::kControlKey},
 });
 
 static constexpr auto ReferrerPolicies =
-    base::MakeFixedFlatMapSorted<base::StringPiece, network::mojom::ReferrerPolicy>({
+    base::MakeFixedFlatMapSorted<std::string_view, network::mojom::ReferrerPolicy>({
         {"default", network::mojom::ReferrerPolicy::kDefault},
         {"no-referrer", network::mojom::ReferrerPolicy::kNever},
         {"no-referrer-when-downgrade", network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade},
@@ -197,8 +198,8 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   }
 };
 
-std::vector<base::StringPiece> ModifiersToArray(int modifiers) {
-  std::vector<base::StringPiece> modifier_strings;
+std::vector<std::string_view> ModifiersToArray(int modifiers) {
+  std::vector<std::string_view> modifier_strings;
 
   for (const auto& [name, mask] : Modifiers)
     if (mask & modifiers)
@@ -463,7 +464,7 @@ v8::Local<v8::Value>
 Converter<absl::optional<blink::mojom::FormControlType>>::ToV8(
     v8::Isolate* isolate,
     const absl::optional<blink::mojom::FormControlType>& in) {
-  base::StringPiece str{"none"};
+  std::string_view str{"none"};
   if (in.has_value()) {
     switch (*in) {
       case blink::mojom::FormControlType::kButtonButton:
