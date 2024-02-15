@@ -84,6 +84,18 @@ enum AsarFileType {
   kLink = (constants as any).UV_DIRENT_LINK,
 }
 
+type PackageTarget = string | string[] | Record<string, string | Record<string, string>>;
+
+type PackageConfig = {
+  pjsonPath: string;
+  exists: boolean;
+  type: 'module' | 'none' | 'commonjs';
+  name?: string;
+  main?: string;
+  exports?: PackageTarget;
+  imports?: Record<string, string | Record<string, string>>;
+}
+
 const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kFile, constants.S_IFREG],
   [AsarFileType.kDirectory, constants.S_IFDIR],
@@ -742,7 +754,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { legacyMainResolve } = internalBinding('fs');
-  internalBinding('fs').legacyMainResolve = (packageJSONUrl: any, packageConfig: any, base: any) => {
+  internalBinding('fs').legacyMainResolve = (packageJSONUrl: URL, packageConfig: PackageConfig, base: string | URL | undefined) => {
     const pathInfo = splitPath(fileURLToPath(packageJSONUrl));
     if (!pathInfo.isAsar) return legacyMainResolve(packageJSONUrl, packageConfig, base);
     const { asarPath, filePath } = pathInfo;
@@ -758,7 +770,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     const newURL = new URL(`file://${newPath}/${filePath}`);
-    return legacyMainResolve(newURL, packageConfig, base);
+    return legacyMainResolve(newURL.href, packageConfig, base);
   };
 
   const { internalModuleReadJSON } = internalBinding('fs');
