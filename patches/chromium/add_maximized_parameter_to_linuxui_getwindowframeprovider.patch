@@ -151,7 +151,7 @@ index 794efdb773422ddc12ccbe013a13aadeb980b487..a60bbd76141f06202343c68e78688a95
    // In GTK4, there's no way to obtain the frame thickness from CSS values
    // directly, so we must determine it experimentally based on the drawn
 diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
-index 91236ec07c01ca14248b997577ae887c0c396cd2..d70639d2ba40e325bbbbf6117741c13354984ed5 100644
+index bed28192daffe032fde3a74ca70f1298fb12b1b7..268acade8bd1075f3ce756cdf29bf50905ccb433 100644
 --- a/ui/gtk/window_frame_provider_gtk.h
 +++ b/ui/gtk/window_frame_provider_gtk.h
 @@ -18,7 +18,7 @@ namespace gtk {

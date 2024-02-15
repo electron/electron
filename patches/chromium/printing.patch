@@ -830,10 +830,10 @@ index 50c05b02ebe6245cee5dbfd529d4eebbc4f57dde..1326edfcbe4c5eb0a8427071d1ed35c8
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 379325292db87e5b8f803bd0dc57d83ebf0f2daa..63b5a8c4d0b4a6f57b192d27477cffbb8a5adb4b 100644
+index 1bf7a4425dad3d41df9d4a7ee715fbae61010aeb..2dde9ab5c641121787358e8360c9fdc51f63d3b4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2993,8 +2993,9 @@ source_set("browser") {
+@@ -2995,8 +2995,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -846,7 +846,7 @@ index 379325292db87e5b8f803bd0dc57d83ebf0f2daa..63b5a8c4d0b4a6f57b192d27477cffbb
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 9866f21c5530ac389f3392350de1f6f413df147a..8656f221a96622cd7684e4c4c4a4c080a3963362 100644
+index 87ffdf6f44029700ef615b16366e3a9805e7d3ff..ea407211ca4e33b87de5ed6002ebe1a2ef76372f 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -154,7 +154,6 @@ void PrintingContext::UsePdfSettings() {
