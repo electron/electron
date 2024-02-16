@@ -1617,6 +1617,31 @@ describe('protocol module', () => {
       }
     });
 
+    it('filters an illegal "origin: null" header', async () => {
+      protocol.handle('http', (req) => {
+        expect(new Headers(req.headers).get('origin')).to.not.equal('null');
+        return new Response();
+      });
+      defer(() => { protocol.unhandle('http'); });
+
+      const filePath = path.join(fixturesPath, 'pages', 'form-with-data.html');
+      await contents.loadFile(filePath);
+
+      const loadPromise = new Promise((resolve, reject) => {
+        contents.once('did-finish-load', resolve);
+        contents.once('did-fail-load', (_, errorCode, errorDescription) =>
+          reject(new Error(`did-fail-load: ${errorCode} ${errorDescription}. See AssertionError for details.`))
+        );
+      });
+      await contents.executeJavaScript(`
+        const form = document.querySelector('form');
+        form.action = 'http://cors.invalid';
+        form.method = 'POST';
+        form.submit();
+      `);
+      await loadPromise;
+    });
+
     // TODO(nornagon): this test doesn't pass on Linux currently, investigate.
     ifit(process.platform !== 'linux')('is fast', async () => {
       // 128 MB of spaces.
