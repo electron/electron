@@ -52,14 +52,16 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
   const chunks = [...uploadData] as any[]; // TODO: types are wrong
   let current: ReadableStreamDefaultReader | null = null;
   return new ReadableStream({
-    pull (controller) {
+    async pull (controller) {
       if (current) {
-        current.read().then(({ done, value }) => {
+        const { done, value } = await current.read();
+        // (done => value === undefined) as per WHATWG spec
+        if (done) {
+          current = null;
+          return this.pull!(controller);
+        } else {
           controller.enqueue(value);
-          if (done) current = null;
-        }, (err) => {
-          controller.error(err);
-        });
+        }
       } else {
         if (!chunks.length) { return controller.close(); }
         const chunk = chunks.shift()!;
@@ -67,10 +69,10 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
           controller.enqueue(chunk.bytes);
         } else if (chunk.type === 'file') {
           current = makeStreamFromFileInfo(chunk).getReader();
-          this.pull!(controller);
+          return this.pull!(controller);
         } else if (chunk.type === 'stream') {
           current = makeStreamFromPipe(chunk.body).getReader();
-          this.pull!(controller);
+          return this.pull!(controller);
         }
       }
     }

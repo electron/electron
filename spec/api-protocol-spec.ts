@@ -8,6 +8,7 @@ import * as http from 'node:http';
 import * as fs from 'node:fs';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
+import * as webStream from 'node:stream/web';
 import { EventEmitter, once } from 'node:events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { WebmGenerator } from './lib/video-helpers';
@@ -1545,6 +1546,74 @@ describe('protocol module', () => {
         await contents.loadURL(url + '?html');
         const doc = await contents.executeJavaScript('document.documentElement.outerHTML');
         expect(doc).to.equal('<html><head></head><body>hi</body></html>');
+      }
+    });
+
+    it('does not emit undefined chunks into the request body stream when uploading a stream', async () => {
+      protocol.handle('cors', async (request) => {
+        expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
+        for await (const value of request.body as webStream.ReadableStream<Uint8Array>) {
+          expect(value).to.not.be.undefined();
+        }
+        return new Response(undefined, { status: 200 });
+      });
+      defer(() => { protocol.unhandle('cors'); });
+
+      await contents.loadFile(path.resolve(fixturesPath, 'pages', 'base-page.html'));
+      contents.on('console-message', (e, level, message) => console.log(message));
+      const ok = await contents.executeJavaScript(`(async () => {
+        function wait(milliseconds) {
+          return new Promise((resolve) => setTimeout(resolve, milliseconds));
+        }
+
+        const stream = new ReadableStream({
+          async start(controller) {
+            await wait(4);
+            controller.enqueue('This ');
+            await wait(4);
+            controller.enqueue('is ');
+            await wait(4);
+            controller.enqueue('a ');
+            await wait(4);
+            controller.enqueue('slow ');
+            await wait(4);
+            controller.enqueue('request.');
+            controller.close();
+          }
+        }).pipeThrough(new TextEncoderStream());
+        return (await fetch('cors://url.invalid', { method: 'POST', body: stream, duplex: 'half' })).ok;
+      })()`);
+      expect(ok).to.be.true();
+    });
+
+    it('does not emit undefined chunks into the request body stream when uploading a file', async () => {
+      protocol.handle('cors', async (request) => {
+        expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
+        for await (const value of request.body as webStream.ReadableStream<Uint8Array>) {
+          expect(value).to.not.be.undefined();
+        }
+        return new Response(undefined, { status: 200 });
+      });
+      defer(() => { protocol.unhandle('cors'); });
+
+      await contents.loadFile(path.resolve(fixturesPath, 'pages', 'file-input.html'));
+      const { debugger: debug } = contents;
+      debug.attach();
+      try {
+        const { root: { nodeId } } = await debug.sendCommand('DOM.getDocument');
+        const { nodeId: inputNodeId } = await debug.sendCommand('DOM.querySelector', { nodeId, selector: 'input' });
+        await debug.sendCommand('DOM.setFileInputFiles', {
+          files: [path.join(fixturesPath, 'cat-spin.mp4')],
+          nodeId: inputNodeId
+        });
+        const ok = await contents.executeJavaScript(`(async () => {
+          const formData = new FormData();
+          formData.append("data", document.getElementById("file").files[0]);
+          return (await fetch('cors://url.invalid', { method: 'POST', body: formData })).ok;
+        })()`);
+        expect(ok).to.be.true();
+      } finally {
+        debug.detach();
       }
     });
 
