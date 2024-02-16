@@ -90,7 +90,7 @@ index 627a3df2debbc2a66be14556641f29232820ccf7..2a6a6e23244d9e1bc1b1f63279766e61
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 5803d57c1c85f219a1ee4675d1fc4bb0c5ee81d0..880d360cfd58f368eafbabd8c3abdb361dcfbc6f 100644
+index e1fb008d12ae863df30dbffb07c7ec53f29f1333..3f5074bde0de54dc3fd57da7569826349592e8e3 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -12,6 +12,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,7 +112,7 @@ index 5803d57c1c85f219a1ee4675d1fc4bb0c5ee81d0..880d360cfd58f368eafbabd8c3abdb36
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index ec0946f5fba6018ebf24da1e1a7f80dc434caeae..c1a68ed59c150c50d396e70a9de12e8c2da47cc7 100644
+index c0f613427ddfcc3e46daa4ee55dd51f89daf7b3a..80fe59a8cb0894469e229bdfc01e802fdcf9ef3f 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -674,6 +674,7 @@ URLLoader::URLLoader(
@@ -153,7 +153,7 @@ index ec0946f5fba6018ebf24da1e1a7f80dc434caeae..c1a68ed59c150c50d396e70a9de12e8c
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 97e1f35642fa5b2f8589220f3fbcaa3385c3726b..756b824df48bc361e3a9243c6a5ae1b9a1c03ef4 100644
+index e15f275a55aa49fef469ac1407f6334e2ba5e95e..28f796ff640b798a58b0b9f6827c0eeef5de7ebf 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -648,6 +648,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
