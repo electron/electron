@@ -79,7 +79,6 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
   }) as RequestInit['body'];
 }
 
-// TODO(codebytere): Use Object.hasOwn() once we update to ECMAScript 2022.
 function validateResponse (res: Response) {
   if (!res || typeof res !== 'object') return false;
 
