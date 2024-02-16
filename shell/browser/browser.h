@@ -85,7 +85,7 @@ struct LoginItemSettings {
 };
 
 // This class is used for control application-wide operations.
-class Browser : public WindowListObserver {
+class Browser : private WindowListObserver {
  public:
   Browser();
   ~Browser() override;
