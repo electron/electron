@@ -8,6 +8,7 @@ import * as http from 'node:http';
 import * as fs from 'node:fs';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
+import * as streamConsumers from 'node:stream/consumers';
 import * as webStream from 'node:stream/web';
 import { EventEmitter, once } from 'node:events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
@@ -1640,6 +1641,29 @@ describe('protocol module', () => {
         form.submit();
       `);
       await loadPromise;
+    });
+
+    it('does forward Blob chunks', async () => {
+      // we register the protocol on a separate session to validate the assumption
+      // that `getBlobData()` indeed returns the blob data from a global variable
+      const s = session.fromPartition('protocol-handle-forwards-blob-chunks');
+
+      s.protocol.handle('cors', async (request) => {
+        expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
+        return new Response(
+          `hello to ${await streamConsumers.text(request.body as webStream.ReadableStream<Uint8Array>)}`,
+          { status: 200 }
+        );
+      });
+      defer(() => { s.protocol.unhandle('cors'); });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: s } });
+      await w.webContents.loadFile(path.resolve(fixturesPath, 'pages', 'base-page.html'));
+      const response = await w.webContents.executeJavaScript(`(async () => {
+        const body = new Blob(["it's-a ", 'me! ', 'Mario!'], { type: 'text/plain' });
+        return await (await fetch('cors://url.invalid', { method: 'POST', body })).text();
+      })()`);
+      expect(response).to.be.string('hello to it\'s-a me! Mario!');
     });
 
     // TODO(nornagon): this test doesn't pass on Linux currently, investigate.

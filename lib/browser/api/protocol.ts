@@ -73,6 +73,13 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
         } else if (chunk.type === 'stream') {
           current = makeStreamFromPipe(chunk.body).getReader();
           return this.pull!(controller);
+        } else if (chunk.type === 'blob') {
+          // Note that even though `getBlobData()` is a `Session` API, it doesn't
+          // actually use the `Session` context. Its implementation solely relies
+          // on global variables which allows us to implement this feature without
+          // knowledge of the `Session` associated with the current request by
+          // always pulling `Blob` data out of the default `Session`.
+          controller.enqueue(await session.defaultSession.getBlobData(chunk.blobUUID));
         }
       }
     }
