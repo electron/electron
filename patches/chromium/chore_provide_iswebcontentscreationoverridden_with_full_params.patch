@@ -141,7 +141,7 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index e6f3267a7f57c2768af02f049c1c1b9ec0f7a16b..2d717040473c8dad1e643bb6b1db67e90398cf4c 100644
+index e785bdab92baf63d7df8886446716b16dfc2dfcd..fa57a97084015f02a250a068b15eb3ac8a68276e 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -78,8 +78,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {

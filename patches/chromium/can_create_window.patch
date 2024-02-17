@@ -148,10 +148,10 @@ index cce26ecaccbfde4259ccfcf73dc9508271b7364b..7217c90d0c65203056c622120ae16120
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 183ddaa1b61496a86d10fb5091495efcc31fc504..75492ae69562479aaf9bad5cfedac528a076e1dd 100644
+index a3f434bb7770ce58de5c66d7ca9a913ddecb0c96..910e483d53730b55fab87c2becff53a0747476a6 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6647,6 +6647,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6657,6 +6657,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -210,10 +210,10 @@ index 78956238f8d959580e928d2590866b2f4da3d218..806b3337ec8a8ad7c89681857b4e81dc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 22eb2e6c52ce6f2226ae1dab02b16ac41af55c4a..cde86cd2b5a00d7ea4f47b5460351387fc9425f1 100644
+index 86d2fba8e0ee3cb8ada3f0804b93140d0719288d..68f28996ef75ecf2a0ce0ce140b480f826e03caf 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2209,6 +2209,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2213,6 +2213,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

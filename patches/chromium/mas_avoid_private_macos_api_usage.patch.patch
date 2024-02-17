@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 96bc0c86805c86fbcfc6e1d54468fa9f6f6d2274..2537a9cd26a024d45e055bfec42d55570bf97d28 100644
+index 64d7c47759e9c7899aaf1c513d0b1b8ee6d97f98..6f885f7ea451310cca7c7686548cd3467984874f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index bfb6966afd7ab1dd96903ad90af0a5497d94eff1..30c4567fa9804e75cfb4ca5c2455585a02b07d29 100644
+index 8d0a789cccacc4d6a54d9bc499c606f076a3d3b6..0c9dc99d03928defceaae741d588d292301b6ba8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -479,6 +479,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index bfb6966afd7ab1dd96903ad90af0a5497d94eff1..30c4567fa9804e75cfb4ca5c2455585a
    ]
  
    public_deps = [
-@@ -1061,6 +1062,7 @@ static_library("browsertest_support") {
+@@ -1075,6 +1076,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index bfb6966afd7ab1dd96903ad90af0a5497d94eff1..30c4567fa9804e75cfb4ca5c2455585a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1676,6 +1678,7 @@ test("content_browsertests") {
+@@ -1690,6 +1692,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index bfb6966afd7ab1dd96903ad90af0a5497d94eff1..30c4567fa9804e75cfb4ca5c2455585a
  
    public_deps = [
      ":test_interfaces",
-@@ -2917,6 +2920,7 @@ test("content_unittests") {
+@@ -2932,6 +2935,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -696,7 +696,7 @@ index bfb6966afd7ab1dd96903ad90af0a5497d94eff1..30c4567fa9804e75cfb4ca5c2455585a
    public_deps = [ "//content:content_resources" ]
  
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 38e5fd5c3af79a9f0ed80b2e15d748e9144b7982..508816a935744166cbc15561de07d7e77a1f68af 100644
+index 24facc48c2b6b30db3a7cb36e4222019b471e84b..d1d3e72407682b01e6c2173cd34445dbc44cb86d 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -149,6 +149,8 @@ static_library("web_test_browser") {
@@ -1556,10 +1556,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 9ea053fd104ec1f027926539d1540270ab3c6a97..d9e2acedb8ea930727bef5468a99edcb56528379 100644
+index a64df51a061e4d1b1d923fab830e5b3be4c389ba..e0cb6abb7a5010c69f82a3edcea5700cda3895cf 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -708,6 +708,7 @@ component("views") {
+@@ -710,6 +710,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
