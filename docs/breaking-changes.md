@@ -26,6 +26,18 @@ more information.
 
 This switch was never formally documented but it's removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
 
+### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
+
+In Electron 30, BrowserView is now a wrapper around the new [WebContentsView](api/web-contents-view.md) API.
+
+Previously, the `setAutoResize` function of the `BrowserView` API was backed by [autoresizing](https://developer.apple.com/documentation/appkit/nsview/1483281-autoresizingmask?language=objc) on macOS, and by a custom algorithm on Windows and Linux.
+For simple use cases such as making a BrowserView fill the entire window, the behavior of these two approaches was identical.
+However, in more advanced cases, BrowserViews would be autoresized differently on macOS than they would be on other platforms, as the custom resizing algorithm for Windows and Linux did not perfectly match the behavior of macOS's autoresizing API.
+The autoresizing behavior is now standardized across all platforms.
+
+If your app uses `BrowserView.setAutoResize` to do anything more complex than making a BrowserView fill the entire window, it's likely you already had custom logic in place to handle this difference in behavior on macOS.
+If so, that logic will no longer be needed in Electron 30 as autoresizing behavior is consistent.
+
 ## Planned Breaking API Changes (29.0)
 
 ### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`
@@ -81,18 +93,6 @@ app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
 // Replace with
 app.on('child-process-gone', (event, details) => { /* ... */ })
 ```
-
-### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
-
-In Electron 29, BrowserView is now a wrapper around the new [WebContentsView](api/web-contents-view.md) API.
-
-Previously, the `setAutoResize` function of the `BrowserView` API was backed by [autoresizing](https://developer.apple.com/documentation/appkit/nsview/1483281-autoresizingmask?language=objc) on macOS, and by a custom algorithm on Windows and Linux.
-For simple use cases such as making a BrowserView fill the entire window, the behavior of these two approaches was identical.
-However, in more advanced cases, BrowserViews would be autoresized differently on macOS than they would be on other platforms, as the custom resizing algorithm for Windows and Linux did not perfectly match the behavior of macOS's autoresizing API.
-The autoresizing behavior is now standardized across all platforms.
-
-If your app uses `BrowserView.setAutoResize` to do anything more complex than making a BrowserView fill the entire window, it's likely you already had custom logic in place to handle this difference in behavior on macOS.
-If so, that logic will no longer be needed in Electron 29 as autoresizing behavior is consistent.
 
 ## Planned Breaking API Changes (28.0)
 
