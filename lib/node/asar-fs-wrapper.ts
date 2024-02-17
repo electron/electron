@@ -84,18 +84,6 @@ enum AsarFileType {
   kLink = (constants as any).UV_DIRENT_LINK,
 }
 
-type PackageTarget = string | string[] | Record<string, string | Record<string, string>>;
-
-type PackageConfig = {
-  pjsonPath: string;
-  exists: boolean;
-  type: 'module' | 'none' | 'commonjs';
-  name?: string;
-  main?: string;
-  exports?: PackageTarget;
-  imports?: Record<string, string | Record<string, string>>;
-}
-
 const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kFile, constants.S_IFREG],
   [AsarFileType.kDirectory, constants.S_IFDIR],
@@ -754,9 +742,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { legacyMainResolve } = internalBinding('fs');
-  internalBinding('fs').legacyMainResolve = (packageJSONUrl: URL, packageConfig: PackageConfig, base: string | URL | undefined) => {
+  internalBinding('fs').legacyMainResolve = (packageJSONUrl: URL, packageConfigMain: string, base: string) => {
     const pathInfo = splitPath(fileURLToPath(packageJSONUrl));
-    if (!pathInfo.isAsar) return legacyMainResolve(packageJSONUrl, packageConfig, base);
+    if (!pathInfo.isAsar) return legacyMainResolve(packageJSONUrl, packageConfigMain, base);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -764,13 +752,40 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
     }
 
-    const newPath = archive.copyFileOut(filePath);
-    if (!newPath) {
+    // Copy out the original package.json into a temp directory so
+    // it can be read.
+    const tempPackageJSON = archive.copyFileOut(filePath);
+    if (!tempPackageJSON) {
       throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
     }
 
-    const newURL = new URL(`file://${newPath}/${filePath}`);
-    return legacyMainResolve(newURL.href, packageConfig, base);
+    // Get the containing directory for the new faked package.json.
+    const tempDir = path.dirname(tempPackageJSON);
+
+    // Rename the new temp file to package.json so Node.js can find it.
+    const renamedPackageJson = path.join(tempDir, 'package.json');
+    fs.renameSync(tempPackageJSON, renamedPackageJson);
+
+    // Get the containing directory for |main| in package.json,
+    // then create it in the temp directory.
+    const mainFileDir = path.dirname(packageConfigMain);
+    const tempMainFileDir = path.join(tempDir, mainFileDir);
+    fs.mkdirSync(tempMainFileDir, { recursive: true });
+
+    // Copy the contents of |main| in package.json to a temporary directory.
+    const packagConfigMainPath = path.join(path.dirname(filePath), packageConfigMain);
+    const tempMainFile = archive.copyFileOut(packagConfigMainPath);
+    if (!tempMainFile) {
+      throw createError(AsarError.NOT_FOUND, { asarPath, filePath: packagConfigMainPath });
+    }
+
+    // Rename |main| in the temp directory to match |main| so Node.js can find it.
+    fs.renameSync(tempMainFile, path.join(tempMainFileDir, path.basename(packageConfigMain)));
+
+    // Create a file URL from the temporary package.json and
+    // pass that back to the Node.js implementation.
+    const newURL = new URL(`file://${renamedPackageJson}`);
+    return legacyMainResolve(newURL.href, packageConfigMain, base);
   };
 
   const { internalModuleReadJSON } = internalBinding('fs');
