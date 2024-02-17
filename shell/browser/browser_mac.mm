@@ -16,10 +16,9 @@
 #include "base/i18n/rtl.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/mac_util.mm"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "chrome/browser/browser_process.h"
-#include "net/base/mac/url_conversions.h"
+#include "net/base/apple/url_conversions.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/mac/dict_util.h"
@@ -266,7 +265,7 @@ std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   return app_display_name;
 }
 
-bool Browser::SetBadgeCount(absl::optional<int> count) {
+bool Browser::SetBadgeCount(std::optional<int> count) {
   DockSetBadgeText(!count.has_value() || count.value() != 0
                        ? badging::BadgeManager::GetBadgeString(count)
                        : "");

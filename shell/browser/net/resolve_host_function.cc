@@ -15,7 +15,10 @@
 #include "net/base/net_errors.h"
 #include "net/base/network_isolation_key.h"
 #include "net/dns/public/resolve_error_info.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/common/process_util.h"
+#include "shell/services/node/node_service.h"
 #include "url/origin.h"
 
 using content::BrowserThread;
@@ -30,15 +33,17 @@ ResolveHostFunction::ResolveHostFunction(
     : browser_context_(browser_context),
       host_(std::move(host)),
       params_(std::move(params)),
-      callback_(std::move(callback)) {}
+      callback_(std::move(callback)) {
+  DETACH_FROM_SEQUENCE(sequence_checker_);
+}
 
 ResolveHostFunction::~ResolveHostFunction() {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK(!receiver_.is_bound());
 }
 
 void ResolveHostFunction::Run() {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK(!receiver_.is_bound());
 
   // Start the request.
@@ -48,23 +53,32 @@ void ResolveHostFunction::Run() {
   receiver_.set_disconnect_handler(base::BindOnce(
       &ResolveHostFunction::OnComplete, this, net::ERR_NAME_NOT_RESOLVED,
       net::ResolveErrorInfo(net::ERR_FAILED),
-      /*resolved_addresses=*/absl::nullopt,
-      /*endpoint_results_with_metadata=*/absl::nullopt));
-  browser_context_->GetDefaultStoragePartition()
-      ->GetNetworkContext()
-      ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
-                        std::move(host_port_pair)),
-                    net::NetworkAnonymizationKey(), std::move(params_),
-                    std::move(resolve_host_client));
+      /*resolved_addresses=*/std::nullopt,
+      /*endpoint_results_with_metadata=*/std::nullopt));
+  if (electron::IsUtilityProcess()) {
+    URLLoaderBundle::GetInstance()->GetHostResolver()->ResolveHost(
+        network::mojom::HostResolverHost::NewHostPortPair(
+            std::move(host_port_pair)),
+        net::NetworkAnonymizationKey(), std::move(params_),
+        std::move(resolve_host_client));
+  } else {
+    DCHECK_CURRENTLY_ON(BrowserThread::UI);
+    browser_context_->GetDefaultStoragePartition()
+        ->GetNetworkContext()
+        ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
+                          std::move(host_port_pair)),
+                      net::NetworkAnonymizationKey(), std::move(params_),
+                      std::move(resolve_host_client));
+  }
 }
 
 void ResolveHostFunction::OnComplete(
     int result,
     const net::ResolveErrorInfo& resolve_error_info,
-    const absl::optional<net::AddressList>& resolved_addresses,
-    const absl::optional<net::HostResolverEndpointResults>&
+    const std::optional<net::AddressList>& resolved_addresses,
+    const std::optional<net::HostResolverEndpointResults>&
         endpoint_results_with_metadata) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   // Ensure that we outlive the `receiver_.reset()` call.
   scoped_refptr<ResolveHostFunction> self(this);

@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -482,7 +483,7 @@ class ChunkedDataPipeReadableStream
   mojo::Remote<network::mojom::ChunkedDataPipeGetter> chunked_data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
   mojo::SimpleWatcher handle_watcher_;
-  absl::optional<uint64_t> size_;
+  std::optional<uint64_t> size_;
   uint64_t bytes_read_ = 0;
   bool is_eof_ = false;
   v8::Global<v8::ArrayBufferView> buf_;
@@ -691,7 +692,7 @@ bool Converter<net::DnsQueryType>::FromV8(v8::Isolate* isolate,
                                           v8::Local<v8::Value> val,
                                           net::DnsQueryType* out) {
   static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, net::DnsQueryType>({
+      base::MakeFixedFlatMap<std::string_view, net::DnsQueryType>({
           {"A", net::DnsQueryType::A},
           {"AAAA", net::DnsQueryType::AAAA},
       });
@@ -703,14 +704,13 @@ bool Converter<net::HostResolverSource>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HostResolverSource* out) {
   using Val = net::HostResolverSource;
-  static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, Val>({
-          {"any", Val::ANY},
-          {"dns", Val::DNS},
-          {"localOnly", Val::LOCAL_ONLY},
-          {"mdns", Val::MULTICAST_DNS},
-          {"system", Val::SYSTEM},
-      });
+  static constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, Val>({
+      {"any", Val::ANY},
+      {"dns", Val::DNS},
+      {"localOnly", Val::LOCAL_ONLY},
+      {"mdns", Val::MULTICAST_DNS},
+      {"system", Val::SYSTEM},
+  });
   return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
@@ -720,12 +720,11 @@ bool Converter<network::mojom::ResolveHostParameters::CacheUsage>::FromV8(
     v8::Local<v8::Value> val,
     network::mojom::ResolveHostParameters::CacheUsage* out) {
   using Val = network::mojom::ResolveHostParameters::CacheUsage;
-  static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, Val>({
-          {"allowed", Val::ALLOWED},
-          {"disallowed", Val::DISALLOWED},
-          {"staleAllowed", Val::STALE_ALLOWED},
-      });
+  static constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, Val>({
+      {"allowed", Val::ALLOWED},
+      {"disallowed", Val::DISALLOWED},
+      {"staleAllowed", Val::STALE_ALLOWED},
+  });
   return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
@@ -735,11 +734,10 @@ bool Converter<network::mojom::SecureDnsPolicy>::FromV8(
     v8::Local<v8::Value> val,
     network::mojom::SecureDnsPolicy* out) {
   using Val = network::mojom::SecureDnsPolicy;
-  static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, Val>({
-          {"allow", Val::ALLOW},
-          {"disable", Val::DISABLE},
-      });
+  static constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, Val>({
+      {"allow", Val::ALLOW},
+      {"disable", Val::DISABLE},
+  });
   return FromV8WithLookup(isolate, val, Lookup, out);
 }
 

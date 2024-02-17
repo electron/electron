@@ -11,9 +11,10 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor, hasCapturableScreen } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+import { setTimeout as syncSetTimeout } from 'node:timers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -1807,6 +1808,36 @@ describe('BrowserWindow module', () => {
 
           expect(w.isMaximized()).to.equal(false);
           expect(w.isFullScreen()).to.equal(true);
+        });
+
+        it('does not crash if maximized, minimized, then restored to maximized state', (done) => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          let count = 0;
+
+          w.on('maximize', () => {
+            if (count === 0) syncSetTimeout(() => { w.minimize(); });
+            count++;
+          });
+
+          w.on('minimize', () => {
+            if (count === 1) syncSetTimeout(() => { w.restore(); });
+            count++;
+          });
+
+          w.on('restore', () => {
+            try {
+              throw new Error('hey!');
+            } catch (e: any) {
+              expect(e.message).to.equal('hey!');
+              done();
+            }
+          });
+
+          w.maximize();
         });
 
         it('checks normal bounds for maximized transparent window', async () => {
@@ -5611,6 +5642,19 @@ describe('BrowserWindow module', () => {
         expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
         expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
       });
+
+      it('does not disable maximize button if window is resizable', () => {
+        const w = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        expect(w.isMaximizable()).to.be.true('isMaximizable');
+
+        w.setResizable(false);
+
+        expect(w.isMaximizable()).to.be.false('isMaximizable');
+      });
     });
 
     ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
@@ -6553,6 +6597,54 @@ describe('BrowserWindow module', () => {
       });
 
       expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+    });
+  });
+
+  describe('draggable regions', () => {
+    afterEach(closeAllWindows);
+
+    ifit(hasCapturableScreen())('should allow the window to be dragged when enabled', async () => {
+      // WOA fails to load libnut so we're using require to defer loading only
+      // on supported platforms.
+      // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
+      // @ts-ignore: nut-js is an optional dependency so it may not be installed
+      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        x: 0,
+        y: 0,
+        width: display.bounds.width / 2,
+        height: display.bounds.height / 2,
+        frame: false,
+        titleBarStyle: 'hidden'
+      });
+
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      w.loadFile(overlayHTML);
+      await once(w, 'ready-to-show');
+
+      const winBounds = w.getBounds();
+      const titleBarHeight = 30;
+      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
+      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
+
+      const startPos = w.getPosition();
+
+      await mouse.setPosition(await centerOf(titleBarRegion));
+      await mouse.pressButton(Button.LEFT);
+      await mouse.drag(straightTo(centerOf(screenRegion)));
+
+      // Wait for move to complete
+      await Promise.race([
+        once(w, 'move'),
+        setTimeout(100) // fallback for possible race condition
+      ]);
+
+      const endPos = w.getPosition();
+
+      expect(startPos).to.not.deep.equal(endPos);
     });
   });
 });

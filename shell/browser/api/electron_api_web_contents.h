@@ -7,7 +7,9 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -164,14 +166,14 @@ class WebContents : public ExclusiveAccessContext,
   const char* GetTypeName() override;
 
   void Destroy();
-  void Close(absl::optional<gin_helper::Dictionary> options);
+  void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   bool GetBackgroundThrottling() const override;
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
-  Type GetType() const;
+  [[nodiscard]] Type type() const { return type_; }
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
@@ -290,7 +292,7 @@ class WebContents : public ExclusiveAccessContext,
   v8::Local<v8::Promise> CapturePage(gin::Arguments* args);
 
   // Methods for creating <webview>.
-  bool IsGuest() const;
+  [[nodiscard]] bool is_guest() const { return type_ == Type::kWebView; }
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);
   void DetachFromOuterFrame();
@@ -370,7 +372,7 @@ class WebContents : public ExclusiveAccessContext,
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
-  bool EmitWithSender(base::StringPiece name,
+  bool EmitWithSender(const std::string_view name,
                       content::RenderFrameHost* frame,
                       electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {
@@ -403,7 +405,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetOwnerWindow(NativeWindow* owner_window);
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
-  void SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window);
+  void SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
@@ -474,7 +476,7 @@ class WebContents : public ExclusiveAccessContext,
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
 
-  void SetBackgroundColor(absl::optional<SkColor> color);
+  void SetBackgroundColor(std::optional<SkColor> color);
 
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();
@@ -591,14 +593,14 @@ class WebContents : public ExclusiveAccessContext,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
-  void OnRequestToLockMouse(content::WebContents* web_contents,
+  void OnRequestPointerLock(content::WebContents* web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
                             bool allowed);
-  void RequestToLockMouse(content::WebContents* web_contents,
+  void RequestPointerLock(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
-  void LostMouseLock() override;
+  void LostPointerLock() override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);
@@ -800,6 +802,9 @@ class WebContents : public ExclusiveAccessContext,
 
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
+
+  // Weather the guest view should be transparent
+  bool guest_transparent_ = true;
 
   int32_t id_;
 

@@ -66,7 +66,7 @@ gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
     return gin::Handle<WebContents>();
 }
 
-void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
+void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   View::SetBackgroundColor(color);
   if (api_web_contents_) {
     api_web_contents_->SetBackgroundColor(color);
@@ -81,11 +81,14 @@ void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
 }
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
-  gfx::Point local_point(point);
-  views::View::ConvertPointFromWidget(view(), &local_point);
-  SkRegion* region = api_web_contents_->draggable_region();
-  if (region && region->contains(local_point.x(), local_point.y()))
-    return HTCAPTION;
+  if (api_web_contents_) {
+    gfx::Point local_point(point);
+    views::View::ConvertPointFromWidget(view(), &local_point);
+    SkRegion* region = api_web_contents_->draggable_region();
+    if (region && region->contains(local_point.x(), local_point.y()))
+      return HTCAPTION;
+  }
+
   return HTNOWHERE;
 }
 

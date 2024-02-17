@@ -42,7 +42,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   const std::u16string GetTitle() override;
 
   // views::View:
-  void Layout() override;
+  void Layout(PassKey) override;
 
  private:
   std::unique_ptr<views::Widget> devtools_window_;

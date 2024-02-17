@@ -519,6 +519,10 @@ describe('webContents module', () => {
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
     });
+
+    it('invalid URL load rejects', async () => {
+      await expect(w.loadURL('invalidURL')).to.eventually.be.rejected();
+    });
   });
 
   describe('getFocusedWebContents() API', () => {
@@ -2039,7 +2043,9 @@ describe('webContents module', () => {
         pageRanges: { oops: 'im-not-the-right-key' },
         headerTemplate: [1, 2, 3],
         footerTemplate: [4, 5, 6],
-        preferCSSPageSize: 'no'
+        preferCSSPageSize: 'no',
+        generateTaggedPDF: 'wtf',
+        generateDocumentOutline: [7, 8, 9]
       };
 
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
@@ -2049,6 +2055,20 @@ describe('webContents module', () => {
         const param = { [key]: value };
         await expect(w.webContents.printToPDF(param)).to.eventually.be.rejected();
       }
+    });
+
+    it('rejects when margins exceed physical page size', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      await expect(w.webContents.printToPDF({
+        pageSize: 'Letter',
+        margins: {
+          top: 100,
+          bottom: 100,
+          left: 5,
+          right: 5
+        }
+      })).to.eventually.be.rejectedWith('margins must be less than or equal to pageSize');
     });
 
     it('does not crash when called multiple times in parallel', async () => {

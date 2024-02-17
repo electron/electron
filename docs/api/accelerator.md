@@ -4,7 +4,7 @@
 
 Accelerators are strings that can contain multiple modifiers and a single key code,
 combined by the `+` character, and are used to define keyboard shortcuts
-throughout your application.
+throughout your application. Accelerators are case insensitive.
 
 Examples:
 

@@ -11,6 +11,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/sequence_checker.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "net/base/auth.h"
@@ -72,7 +73,7 @@ class SimpleURLLoaderWrapper
 
   // network::mojom::URLLoaderNetworkServiceObserver:
   void OnAuthRequired(
-      const absl::optional<base::UnguessableToken>& window_id,
+      const std::optional<base::UnguessableToken>& window_id,
       uint32_t request_id,
       const GURL& url,
       bool first_auth_attempt,
@@ -86,21 +87,21 @@ class SimpleURLLoaderWrapper
                              bool fatal,
                              OnSSLCertificateErrorCallback response) override;
   void OnCertificateRequested(
-      const absl::optional<base::UnguessableToken>& window_id,
+      const std::optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
   void OnPrivateNetworkAccessPermissionRequired(
       const GURL& url,
       const net::IPAddress& ip_address,
-      const absl::optional<std::string>& private_network_device_id,
-      const absl::optional<std::string>& private_network_device_name,
+      const std::optional<std::string>& private_network_device_id,
+      const std::optional<std::string>& private_network_device_name,
       OnPrivateNetworkAccessPermissionRequiredCallback callback) override {}
   void OnClearSiteData(
       const GURL& url,
       const std::string& header_value,
       int32_t load_flags,
-      const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+      const std::optional<net::CookiePartitionKey>& cookie_partition_key,
       bool partitioned_state_allowed_only,
       OnClearSiteDataCallback callback) override;
   void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
@@ -133,6 +134,7 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
+  SEQUENCE_CHECKER(sequence_checker_);
   raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;

@@ -15,6 +15,8 @@
 
 #include "base/environment.h"
 #include "base/logging.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -38,23 +40,22 @@ using Microsoft::WRL::Wrappers::HStringReference;
 
 namespace winui = ABI::Windows::UI;
 
-#define RETURN_IF_FAILED(hr) \
-  do {                       \
-    HRESULT _hrTemp = hr;    \
-    if (FAILED(_hrTemp)) {   \
-      return _hrTemp;        \
-    }                        \
+#define RETURN_IF_FAILED(hr)                           \
+  do {                                                 \
+    if (const HRESULT _hrTemp = hr; FAILED(_hrTemp)) { \
+      return _hrTemp;                                  \
+    }                                                  \
   } while (false)
-#define REPORT_AND_RETURN_IF_FAILED(hr, msg)                             \
-  do {                                                                   \
-    HRESULT _hrTemp = hr;                                                \
-    std::string _msgTemp = msg;                                          \
-    if (FAILED(_hrTemp)) {                                               \
-      std::string _err = _msgTemp + ",ERROR " + std::to_string(_hrTemp); \
-      DebugLog(_err);                                                    \
-      Notification::NotificationFailed(_err);                            \
-      return _hrTemp;                                                    \
-    }                                                                    \
+
+#define REPORT_AND_RETURN_IF_FAILED(hr, msg)                              \
+  do {                                                                    \
+    if (const HRESULT _hrTemp = hr; FAILED(_hrTemp)) {                    \
+      std::string _err =                                                  \
+          base::StrCat({msg, ", ERROR ", base::NumberToString(_hrTemp)}); \
+      DebugLog(_err);                                                     \
+      Notification::NotificationFailed(_err);                             \
+      return _hrTemp;                                                     \
+    }                                                                     \
   } while (false)
 
 namespace electron {

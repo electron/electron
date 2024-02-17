@@ -107,7 +107,7 @@ if (!inAppPurchase.canMakePayments()) {
 inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
   // Check the parameters.
   if (!Array.isArray(products) || products.length <= 0) {
-    console.log('Unable to retrieve the product informations.')
+    console.log('Unable to retrieve the product information.')
     return
   }
 

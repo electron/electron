@@ -18,10 +18,10 @@ index 384a59138db11ea38028f844dd67e328ebffbe7b..f153997c2afccef1fa1b64ee5f162c28
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index ce7b5e229789d606df5e74461f09e2e1db59fc95..b1bf2affa5b7f10d9b45d062a2ce0479f5a3b80a 100644
+index f10a9bf39de576dfdf97d9c14447cd0de2026b89..3decbdfad72f4a08d6039555f269bcd94a47c053 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
-@@ -40,6 +40,7 @@
+@@ -41,6 +41,7 @@
  #include "third_party/blink/renderer/core/execution_context/execution_context.h"
  #include "third_party/blink/renderer/core/fileapi/blob.h"
  #include "third_party/blink/renderer/core/fileapi/file_backed_blob_factory_dispatcher.h"
@@ -29,7 +29,7 @@ index ce7b5e229789d606df5e74461f09e2e1db59fc95..b1bf2affa5b7f10d9b45d062a2ce0479
  #include "third_party/blink/renderer/platform/blob/blob_data.h"
  #include "third_party/blink/renderer/platform/file_metadata.h"
  #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
-@@ -83,6 +84,14 @@ WebString WebBlob::Uuid() {
+@@ -84,6 +85,14 @@ WebString WebBlob::Uuid() {
    return private_->Uuid();
  }
  

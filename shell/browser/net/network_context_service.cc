@@ -72,7 +72,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
   // Enable the HTTP cache.
   network_context_params->http_cache_enabled =
-      browser_context_->CanUseHttpCache();
+      browser_context_->can_use_http_cache();
 
   network_context_params->cookie_manager_params =
       network::mojom::CookieManagerParams::New();
@@ -81,7 +81,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
   if (!in_memory) {
     // Configure the HTTP cache path and size.
     network_context_params->http_cache_max_size =
-        browser_context_->GetMaxCacheSize();
+        browser_context_->max_cache_size();
 
     network_context_params->file_paths =
         network::mojom::NetworkContextFilePaths::New();

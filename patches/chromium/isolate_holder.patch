@@ -15,10 +15,10 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 1c3536a183aad1965e834b1681e36a3fc46ae419..1923f18cf2d4fff5094e6fe60bbef06b3e2cb06b 100644
+index cb2529a65f62c40e39d7cd4c96e50e1b72abbd53..da16bf73c566b3fce3708ad0609c49c5841c8811 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -73,7 +73,8 @@ IsolateHolder::IsolateHolder(
+@@ -75,7 +75,8 @@ IsolateHolder::IsolateHolder(
      IsolateCreationMode isolate_creation_mode,
      v8::CreateHistogramCallback create_histogram_callback,
      v8::AddHistogramSampleCallback add_histogram_sample_callback,
@@ -28,7 +28,7 @@ index 1c3536a183aad1965e834b1681e36a3fc46ae419..1923f18cf2d4fff5094e6fe60bbef06b
      : IsolateHolder(std::move(task_runner),
                      access_mode,
                      isolate_type,
-@@ -82,7 +83,8 @@ IsolateHolder::IsolateHolder(
+@@ -84,7 +85,8 @@ IsolateHolder::IsolateHolder(
                                               create_histogram_callback,
                                               add_histogram_sample_callback),
                      isolate_creation_mode,
@@ -38,7 +38,7 @@ index 1c3536a183aad1965e834b1681e36a3fc46ae419..1923f18cf2d4fff5094e6fe60bbef06b
  
  IsolateHolder::IsolateHolder(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-@@ -90,7 +92,8 @@ IsolateHolder::IsolateHolder(
+@@ -92,7 +94,8 @@ IsolateHolder::IsolateHolder(
      IsolateType isolate_type,
      std::unique_ptr<v8::Isolate::CreateParams> params,
      IsolateCreationMode isolate_creation_mode,
@@ -48,7 +48,7 @@ index 1c3536a183aad1965e834b1681e36a3fc46ae419..1923f18cf2d4fff5094e6fe60bbef06b
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
        << "You need to invoke gin::IsolateHolder::Initialize first";
-@@ -101,7 +104,7 @@ IsolateHolder::IsolateHolder(
+@@ -103,7 +106,7 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
    DCHECK(allocator);
  

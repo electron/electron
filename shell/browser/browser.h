@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_BROWSER_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -108,8 +109,8 @@ class Browser : public WindowListObserver {
 #endif
 
   // Set/Get the badge count.
-  bool SetBadgeCount(absl::optional<int> count);
-  int GetBadgeCount();
+  bool SetBadgeCount(std::optional<int> count);
+  [[nodiscard]] int badge_count() const { return badge_count_; }
 
 #if BUILDFLAG(IS_WIN)
   struct LaunchItem {
@@ -374,7 +375,7 @@ class Browser : public WindowListObserver {
 
 #if BUILDFLAG(IS_WIN)
   void UpdateBadgeContents(HWND hwnd,
-                           const absl::optional<std::string>& badge_content,
+                           const std::optional<std::string>& badge_content,
                            const std::string& badge_alt_string);
 
   // In charge of running taskbar related APIs.

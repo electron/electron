@@ -71,7 +71,7 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Size CalculatePreferredSize() const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
-  void Layout() override;
+  void Layout(PassKey) override;
   void OnPaint(gfx::Canvas* canvas) override;
   const char* GetClassName() const override;
 

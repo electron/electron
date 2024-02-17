@@ -5,16 +5,16 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_
 #define ELECTRON_SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_
 
-#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "url/gurl.h"
 
@@ -29,9 +29,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     SharingItem(const SharingItem&) = delete;
     ~SharingItem();
 
-    absl::optional<std::vector<std::string>> texts;
-    absl::optional<std::vector<GURL>> urls;
-    absl::optional<std::vector<base::FilePath>> file_paths;
+    std::optional<std::vector<std::string>> texts;
+    std::optional<std::vector<GURL>> urls;
+    std::optional<std::vector<base::FilePath>> file_paths;
   };
 #endif
 
@@ -98,7 +98,10 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   bool GetSharingItemAt(size_t index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
   void SetSharingItem(SharingItem item);
-  const absl::optional<SharingItem>& GetSharingItem() const;
+  [[nodiscard]] const std::optional<SharingItem>& sharing_item() const {
+    return sharing_item_;
+  }
+
 #endif
 
   // ui::SimpleMenuModel:
@@ -116,12 +119,12 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   raw_ptr<Delegate> delegate_;  // weak ref.
 
 #if BUILDFLAG(IS_MAC)
-  absl::optional<SharingItem> sharing_item_;
+  std::optional<SharingItem> sharing_item_;
 #endif
 
-  std::map<int, std::u16string> toolTips_;   // command id -> tooltip
-  std::map<int, std::u16string> roles_;      // command id -> role
-  std::map<int, std::u16string> sublabels_;  // command id -> sublabel
+  base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
+  base::flat_map<int, std::u16string> roles_;      // command id -> role
+  base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};

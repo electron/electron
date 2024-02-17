@@ -15,6 +15,7 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/escape.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
@@ -29,12 +30,14 @@
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/cookie_change_notifier.h"
@@ -56,6 +59,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/media/capture_handle_config.mojom.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
@@ -150,6 +154,29 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
 }
 
 // Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
+absl::optional<int> GetZoomLevel(content::WebContents* capturer,
+                                 const url::Origin& capturer_origin,
+                                 const content::DesktopMediaID& captured_id) {
+  content::RenderFrameHost* const captured_rfh =
+      content::RenderFrameHost::FromID(
+          captured_id.web_contents_id.render_process_id,
+          captured_id.web_contents_id.main_render_frame_id);
+  if (!captured_rfh || !captured_rfh->IsActive()) {
+    return absl::nullopt;
+  }
+
+  content::WebContents* const captured_wc =
+      content::WebContents::FromRenderFrameHost(captured_rfh);
+  if (!captured_wc) {
+    return absl::nullopt;
+  }
+
+  double zoom_level = blink::PageZoomLevelToZoomFactor(
+      content::HostZoomMap::GetZoomLevel(captured_wc));
+  return std::round(100 * zoom_level);
+}
+
+// Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
 media::mojom::DisplayMediaInformationPtr
 DesktopMediaIDToDisplayMediaInformation(
     content::WebContents* capturer,
@@ -168,6 +195,7 @@ DesktopMediaIDToDisplayMediaInformation(
 #endif  // defined(USE_AURA)
 
   media::mojom::CaptureHandlePtr capture_handle;
+  int zoom_level = 100;
   switch (media_id.type) {
     case content::DesktopMediaID::TYPE_SCREEN:
       display_surface = media::mojom::DisplayCaptureSurfaceType::MONITOR;
@@ -183,18 +211,33 @@ DesktopMediaIDToDisplayMediaInformation(
       display_surface = media::mojom::DisplayCaptureSurfaceType::BROWSER;
       cursor = media::mojom::CursorCaptureType::MOTION;
       capture_handle = CreateCaptureHandle(capturer, capturer_origin, media_id);
+      zoom_level =
+          GetZoomLevel(capturer, capturer_origin, media_id).value_or(100);
       break;
     case content::DesktopMediaID::TYPE_NONE:
       break;
   }
 
   return media::mojom::DisplayMediaInformation::New(
-      display_surface, logical_surface, cursor, std::move(capture_handle));
+      display_surface, logical_surface, cursor, std::move(capture_handle),
+      zoom_level);
 }
 
 // Convert string to lower case and escape it.
 std::string MakePartitionName(const std::string& input) {
   return base::EscapePath(base::ToLowerASCII(input));
+}
+
+[[nodiscard]] content::DesktopMediaID GetAudioDesktopMediaId(
+    const std::vector<std::string>& audio_device_ids) {
+  // content::MediaStreamRequest provides a vector of ids
+  // to allow user preference to influence which stream is
+  // returned. This is a WIP upstream, so for now just use
+  // the first device in the list.
+  // Xref: https://chromium-review.googlesource.com/c/chromium/src/+/5132210
+  if (!audio_device_ids.empty())
+    return content::DesktopMediaID::Parse(audio_device_ids.front());
+  return {};
 }
 
 }  // namespace
@@ -269,9 +312,6 @@ ElectronBrowserContext::~ElectronBrowserContext() {
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
   ShutdownStoragePartitions();
-
-  BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                            std::move(resource_context_));
 }
 
 void ElectronBrowserContext::InitPrefs() {
@@ -357,20 +397,6 @@ bool ElectronBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
-bool ElectronBrowserContext::CanUseHttpCache() const {
-  return use_cache_;
-}
-
-int ElectronBrowserContext::GetMaxCacheSize() const {
-  return max_cache_size_;
-}
-
-content::ResourceContext* ElectronBrowserContext::GetResourceContext() {
-  if (!resource_context_)
-    resource_context_ = std::make_unique<content::ResourceContext>();
-  return resource_context_.get();
-}
-
 std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
@@ -436,9 +462,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   if (url_loader_factory_)
     return url_loader_factory_;
 
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> network_factory_remote;
-  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver =
-      network_factory_remote.InitWithNewPipeAndPassReceiver();
+  network::URLLoaderFactoryBuilder factory_builder;
 
   // Consult the embedder.
   mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
@@ -447,9 +471,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
-          &factory_receiver, &header_client, nullptr, nullptr, nullptr,
-          nullptr);
+          url::Origin(), std::nullopt, ukm::kInvalidSourceIdObj,
+          factory_builder, &header_client, nullptr, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -462,11 +485,9 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   params->disable_web_security = false;
 
   auto* storage_partition = GetDefaultStoragePartition();
-  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
-      std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
-      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
-          std::move(network_factory_remote));
+      std::move(factory_builder)
+          .Finish(storage_partition->GetNetworkContext(), std::move(params));
   return url_loader_factory_;
 }
 
@@ -620,7 +641,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       blink::MediaStreamDevice audio_device(request.audio_type, id, name);
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           nullptr, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+          GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
       bool enable_local_echo = false;
@@ -636,14 +657,14 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           "Tab audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           web_contents, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+          GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
       blink::MediaStreamDevice audio_device(request.audio_type, id,
                                             "System audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           nullptr, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+          GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else {
       gin_helper::ErrorThrower(args->isolate())

@@ -5,12 +5,12 @@
 #ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
 #define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
 
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/synchronization/lock.h"
@@ -201,7 +201,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
       int render_frame_id,
-      const absl::optional<url::Origin>& request_initiator_origin,
+      const std::optional<url::Origin>& request_initiator_origin,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkServiceWorkerUpdateURLLoaderFactories(
       content::BrowserContext* browser_context,
@@ -211,19 +211,19 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       WebSocketFactory factory,
       const GURL& url,
       const net::SiteForCookies& site_for_cookies,
-      const absl::optional<std::string>& user_agent,
+      const std::optional<std::string>& user_agent,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
           handshake_client) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
-  bool WillCreateURLLoaderFactory(
+  void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
       int render_process_id,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
-      absl::optional<int64_t> navigation_id,
+      std::optional<int64_t> navigation_id,
       ukm::SourceIdObj ukm_source_id,
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
+      network::URLLoaderFactoryBuilder& factory_builder,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
       bool* bypass_redirect_checks,
@@ -263,27 +263,30 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       network::mojom::WebSandboxFlags sandbox_flags,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      const absl::optional<url::Origin>& initiating_origin,
+      const std::optional<url::Origin>& initiating_origin,
       content::RenderFrameHost* initiator_document,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory)
       override;
   std::unique_ptr<content::LoginDelegate> CreateLoginDelegate(
       const net::AuthChallengeInfo& auth_info,
       content::WebContents* web_contents,
+      content::BrowserContext* browser_context,
       const content::GlobalRequestID& request_id,
       bool is_main_frame,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
       LoginAuthRequiredCallback auth_required_callback) override;
-  void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
+  void SiteInstanceGotProcessAndSite(
+      content::SiteInstance* site_instance) override;
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
   CreateURLLoaderThrottles(
       const network::ResourceRequest& request,
       content::BrowserContext* browser_context,
       const base::RepeatingCallback<content::WebContents*()>& wc_getter,
       content::NavigationUIData* navigation_ui_data,
-      int frame_tree_node_id) override;
+      int frame_tree_node_id,
+      absl::optional<int64_t> navigation_id) override;
   base::flat_set<std::string> GetPluginMimeTypesWithExternalHandlers(
       content::BrowserContext* browser_context) override;
   bool IsSuitableHost(content::RenderProcessHost* process_host,
@@ -313,9 +316,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool IsRendererSubFrame(int process_id) const;
 
   // pending_render_process => web contents.
-  std::map<int, content::WebContents*> pending_processes_;
+  base::flat_map<int, content::WebContents*> pending_processes_;
 
-  std::set<int> renderer_is_subframe_;
+  base::flat_set<int> renderer_is_subframe_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;

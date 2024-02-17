@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 83339edeacdc7d52093cfc8e8cf38dcafb0353c1..68acd0c99eda3f9103317abdfd8b3d8f5466963d 100644
+index 0c6f557a44b83a3a40e5dbde8a436272788680bc..9841d54a78da4b0695a93d1e56f092411c31315a 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -135,6 +135,7 @@ class KeyStorageLinux;
@@ -28,7 +28,7 @@ index 83339edeacdc7d52093cfc8e8cf38dcafb0353c1..68acd0c99eda3f9103317abdfd8b3d8f
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -563,6 +567,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
+@@ -575,6 +579,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
@@ -36,7 +36,7 @@ index 83339edeacdc7d52093cfc8e8cf38dcafb0353c1..68acd0c99eda3f9103317abdfd8b3d8f
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -601,6 +606,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
+@@ -614,6 +619,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class crosapi::LacrosThreadTypeDelegate;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;

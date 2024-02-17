@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
 
 #include <memory>
+#include <optional>
 
 #include "shell/browser/ui/autofill_popup.h"
 
@@ -14,7 +15,6 @@
 #include "content/public/common/input/native_web_keyboard_event.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/osr/osr_view_proxy.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_node_data.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
@@ -84,8 +84,8 @@ class AutofillPopupView : public views::WidgetDelegateView,
  private:
   friend class AutofillPopup;
 
-  void OnSelectedRowChanged(absl::optional<int> previous_row_selection,
-                            absl::optional<int> current_row_selection);
+  void OnSelectedRowChanged(std::optional<int> previous_row_selection,
+                            std::optional<int> current_row_selection);
 
   // Draw the given autofill entry in |entry_rect|.
   void DrawAutofillEntry(gfx::Canvas* canvas,
@@ -122,7 +122,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   void AcceptSuggestion(int index);
   bool AcceptSelectedLine();
   void AcceptSelection(const gfx::Point& point);
-  void SetSelectedLine(absl::optional<int> selected_line);
+  void SetSelectedLine(std::optional<int> selected_line);
   void SetSelection(const gfx::Point& point);
   void SelectNextLine();
   void SelectPreviousLine();
@@ -141,7 +141,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   base::Time show_time_;
 
   // The index of the currently selected line
-  absl::optional<int> selected_line_;
+  std::optional<int> selected_line_;
 
   std::unique_ptr<OffscreenViewProxy> view_proxy_;
 

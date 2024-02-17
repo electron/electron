@@ -6,8 +6,10 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -128,7 +130,6 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "storage/browser/file_system/isolated_context.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
@@ -205,7 +206,7 @@ struct Converter<printing::mojom::MarginType> {
                      printing::mojom::MarginType* out) {
     using Val = printing::mojom::MarginType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"custom", Val::kCustomMargins},
             {"default", Val::kDefaultMargins},
             {"none", Val::kNoMargins},
@@ -222,7 +223,7 @@ struct Converter<printing::mojom::DuplexMode> {
                      printing::mojom::DuplexMode* out) {
     using Val = printing::mojom::DuplexMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"longEdge", Val::kLongEdge},
             {"shortEdge", Val::kShortEdge},
             {"simplex", Val::kSimplex},
@@ -284,7 +285,7 @@ struct Converter<content::SavePageType> {
                      content::SavePageType* out) {
     using Val = content::SavePageType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"htmlcomplete", Val::SAVE_PAGE_TYPE_AS_COMPLETE_HTML},
             {"htmlonly", Val::SAVE_PAGE_TYPE_AS_ONLY_HTML},
             {"mhtml", Val::SAVE_PAGE_TYPE_AS_MHTML},
@@ -329,7 +330,7 @@ struct Converter<electron::api::WebContents::Type> {
                      electron::api::WebContents::Type* out) {
     using Val = electron::api::WebContents::Type;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMap<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"backgroundPage", Val::kBackgroundPage},
             {"browserView", Val::kBrowserView},
             {"offscreen", Val::kOffScreen},
@@ -357,7 +358,7 @@ namespace electron::api {
 
 namespace {
 
-constexpr base::StringPiece CursorTypeToString(
+constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
   switch (cursor_type) {
     case ui::mojom::CursorType::kPointer:
@@ -496,9 +497,9 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   capture_handle.RunAndReset();
 }
 
-absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
+std::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #if BUILDFLAG(IS_MAC)
-  absl::optional<base::TimeDelta> system_value(
+  std::optional<base::TimeDelta> system_value(
       ui::TextInsertionCaretBlinkPeriodFromDefaults());
   if (system_value)
     return *system_value;
@@ -512,7 +513,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
                                      : base::Milliseconds(system_msec);
   }
 #endif
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -822,6 +823,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
+  // Get transparent for guest view
+  options.Get("transparent", &guest_transparent_);
+
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::kOffScreen;
@@ -848,7 +852,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   session_.Reset(isolate, session.ToV8());
 
   std::unique_ptr<content::WebContents> web_contents;
-  if (IsGuest()) {
+  if (is_guest()) {
     scoped_refptr<content::SiteInstance> site_instance =
         content::SiteInstance::CreateForURL(session->browser_context(),
                                             GURL("chrome-guest://fake-host"));
@@ -918,7 +922,7 @@ void WebContents::InitWithSessionAndOptions(
     const gin_helper::Dictionary& options) {
   Observe(owned_web_contents.get());
   InitWithWebContents(std::move(owned_web_contents), session->browser_context(),
-                      IsGuest());
+                      is_guest());
 
   inspectable_web_contents_->GetView()->SetDelegate(this);
 
@@ -978,7 +982,7 @@ void WebContents::InitWithSessionAndOptions(
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
 
-  if (IsGuest()) {
+  if (is_guest()) {
     NativeWindow* owner_window = nullptr;
     if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
@@ -1013,7 +1017,7 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
   // Allow toggling DevTools for background pages
   Observe(web_contents);
   InitWithWebContents(std::unique_ptr<content::WebContents>(web_contents),
-                      GetBrowserContext(), IsGuest());
+                      GetBrowserContext(), is_guest());
   inspectable_web_contents_->GetView()->SetDelegate(this);
 }
 #endif
@@ -1062,7 +1066,7 @@ WebContents::~WebContents() {
 
   // For guest view based on OOPIF, the WebContents is released by the embedder
   // frame, and we need to clear the reference to the memory.
-  bool not_owned_by_this = IsGuest() && attached_;
+  bool not_owned_by_this = is_guest() && attached_;
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // And background pages are owned by extensions::ExtensionHost.
   if (type_ == Type::kBackgroundPage)
@@ -1092,7 +1096,7 @@ void WebContents::DeleteThisIfAlive() {
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asynchronously when possible
   // as user may choose to destroy WebContents during an event of it.
-  if (Browser::Get()->is_shutting_down() || IsGuest()) {
+  if (Browser::Get()->is_shutting_down() || is_guest()) {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -1101,7 +1105,7 @@ void WebContents::Destroy() {
   }
 }
 
-void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   bool dispatch_beforeunload = false;
   if (options)
     options->Get("waitForBeforeUnload", &dispatch_beforeunload);
@@ -1508,32 +1512,32 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result.GetHandle());
 }
 
-void WebContents::OnRequestToLockMouse(content::WebContents* web_contents,
+void WebContents::OnRequestPointerLock(content::WebContents* web_contents,
                                        bool user_gesture,
                                        bool last_unlocked_by_target,
                                        bool allowed) {
   if (allowed) {
-    exclusive_access_manager_.mouse_lock_controller()->RequestToLockMouse(
+    exclusive_access_manager_.pointer_lock_controller()->RequestToLockPointer(
         web_contents, user_gesture, last_unlocked_by_target);
   } else {
-    web_contents->GotResponseToLockMouseRequest(
+    web_contents->GotResponseToPointerLockRequest(
         blink::mojom::PointerLockResult::kPermissionDenied);
   }
 }
 
-void WebContents::RequestToLockMouse(content::WebContents* web_contents,
+void WebContents::RequestPointerLock(content::WebContents* web_contents,
                                      bool user_gesture,
                                      bool last_unlocked_by_target) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::OnRequestToLockMouse,
+      base::BindOnce(&WebContents::OnRequestPointerLock,
                      base::Unretained(this)));
 }
 
-void WebContents::LostMouseLock() {
-  exclusive_access_manager_.mouse_lock_controller()->LostMouseLock();
+void WebContents::LostPointerLock() {
+  exclusive_access_manager_.pointer_lock_controller()->LostPointerLock();
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -1672,7 +1676,7 @@ void WebContents::HandleNewRenderFrame(
 }
 
 void WebContents::OnBackgroundColorChanged() {
-  absl::optional<SkColor> color = web_contents()->GetBackgroundColor();
+  std::optional<SkColor> color = web_contents()->GetBackgroundColor();
   if (color.has_value()) {
     auto* const view = web_contents()->GetRenderWidgetHostView();
     static_cast<content::RenderWidgetHostViewBase*>(view)
@@ -2151,7 +2155,7 @@ void WebContents::DidFinishNavigation(
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
     }
-    if (IsGuest())
+    if (is_guest())
       Emit("load-commit", url, is_main_frame);
   } else {
     auto url = navigation_handle->GetURL();
@@ -2263,7 +2267,7 @@ void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
 }
 
-void WebContents::SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window) {
+void WebContents::SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window) {
   SetOwnerWindow(GetWebContents(),
                  owner_window ? (*owner_window)->window() : nullptr);
 }
@@ -2368,10 +2372,6 @@ base::ProcessId WebContents::GetOSProcessID() const {
                                            ->GetProcess()
                                            .Handle();
   return base::GetProcId(process_handle);
-}
-
-WebContents::Type WebContents::GetType() const {
-  return type_;
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
@@ -3145,7 +3145,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto landscape = settings.GetDict().FindBool("landscape");
   auto display_header_footer =
       settings.GetDict().FindBool("displayHeaderFooter");
-  auto print_background = settings.GetDict().FindBool("shouldPrintBackgrounds");
+  auto print_background = settings.GetDict().FindBool("printBackground");
   auto scale = settings.GetDict().FindDouble("scale");
   auto paper_width = settings.GetDict().FindDouble("paperWidth");
   auto paper_height = settings.GetDict().FindDouble("paperHeight");
@@ -3166,8 +3166,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
           web_contents()->GetPrimaryMainFrame()->GetLastCommittedURL(),
           landscape, display_header_footer, print_background, scale,
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
-          margin_right, absl::make_optional(header_template),
-          absl::make_optional(footer_template), prefer_css_page_size,
+          margin_right, std::make_optional(header_template),
+          std::make_optional(footer_template), prefer_css_page_size,
           generate_tagged_pdf, generate_document_outline);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
@@ -3367,7 +3367,7 @@ bool WebContents::IsFocused() const {
   if (!view)
     return false;
 
-  if (GetType() != Type::kBackgroundPage) {
+  if (type() != Type::kBackgroundPage) {
     auto* window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
@@ -3561,10 +3561,6 @@ void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   } else {
     Emit("cursor-changed", CursorTypeToString(cursor.type()));
   }
-}
-
-bool WebContents::IsGuest() const {
-  return type_ == Type::kWebView;
 }
 
 void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
@@ -3777,16 +3773,18 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
-void WebContents::SetBackgroundColor(absl::optional<SkColor> maybe_color) {
-  web_contents()->SetPageBaseBackgroundColor(maybe_color);
+void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
+  SkColor color = maybe_color.value_or((is_guest() && guest_transparent_) ||
+                                               type_ == Type::kBrowserView
+                                           ? SK_ColorTRANSPARENT
+                                           : SK_ColorWHITE);
+  web_contents()->SetPageBaseBackgroundColor(color);
 
   content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)
     return;
   content::RenderWidgetHostView* rwhv = rfh->GetView();
   if (rwhv) {
-    SkColor color =
-        maybe_color.value_or(IsGuest() ? SK_ColorTRANSPARENT : SK_ColorWHITE);
     rwhv->SetBackgroundColor(color);
     static_cast<content::RenderWidgetHostViewBase*>(rwhv)
         ->SetContentBackgroundColor(color);
@@ -4119,7 +4117,7 @@ void WebContents::DevToolsIndexPath(
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
   std::vector<std::string> excluded_folders;
-  absl::optional<base::Value> parsed_excluded_folders =
+  std::optional<base::Value> parsed_excluded_folders =
       base::JSONReader::Read(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
@@ -4298,7 +4296,7 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
   }
 
   // Make sure all child webviews quit html fullscreen.
-  if (!fullscreen && !IsGuest()) {
+  if (!fullscreen && !is_guest()) {
     auto* manager = WebViewManager::GetWebViewManager(web_contents());
     manager->ForEachGuest(web_contents(), [&](content::WebContents* guest) {
       WebContents* api_web_contents = WebContents::From(guest);
@@ -4410,7 +4408,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
-      .SetMethod("getType", &WebContents::GetType)
+      .SetMethod("getType", &WebContents::type)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)

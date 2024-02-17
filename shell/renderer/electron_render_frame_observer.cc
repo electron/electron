@@ -9,7 +9,6 @@
 
 #include "base/command_line.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
@@ -24,6 +23,7 @@
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -31,6 +31,7 @@
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_source.h"
+#include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "ui/base/resource/resource_bundle.h"
 
@@ -56,6 +57,11 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
       renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
+
+  // App regions are only supported in the main frame.
+  auto* main_frame = frame->GetMainRenderFrame();
+  if (main_frame && main_frame == frame)
+    render_frame_->GetWebView()->SetSupportsAppRegion(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
@@ -65,8 +71,8 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
       static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
   if (has_delayed_node_initialization_ &&
       !web_frame->IsOnInitialEmptyDocument()) {
-    v8::Isolate* isolate = blink::MainThreadIsolate();
-    v8::HandleScope handle_scope(isolate);
+    v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
+    v8::HandleScope handle_scope{isolate};
     v8::Handle<v8::Context> context = web_frame->MainWorldScriptContext();
     v8::MicrotasksScope microtasks_scope(
         isolate, context->GetMicrotaskQueue(),

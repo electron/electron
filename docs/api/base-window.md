@@ -345,6 +345,10 @@ A `Integer` property representing the unique ID of the window. Each ID is unique
 
 A `View` property for the content view of the window.
 
+#### `win.tabbingIdentifier` _macOS_ _Readonly_
+
+A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
+
 #### `win.autoHideMenuBar`
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
@@ -519,7 +523,7 @@ Hides the window.
 
 #### `win.isVisible()`
 
-Returns `boolean` - Whether the window is visible to the user.
+Returns `boolean` - Whether the window is visible to the user in the foreground of the app.
 
 #### `win.isModal()`
 
@@ -556,6 +560,8 @@ Returns `boolean` - Whether the window is minimized.
 * `flag` boolean
 
 Sets whether the window should be in fullscreen mode.
+
+**Note:** On macOS, fullscreen transitions take place asynchronously. If further actions depend on the fullscreen state, use the ['enter-full-screen'](base-window.md#event-enter-full-screen) or ['leave-full-screen'](base-window.md#event-leave-full-screen) events.
 
 #### `win.isFullScreen()`
 
@@ -669,9 +675,13 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
+**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
+
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
+
+**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
@@ -903,8 +913,8 @@ window.
 * `offsetX` Float (optional)
 
 Changes the attachment point for sheets on macOS. By default, sheets are
-attached just below the window frame, but you may want to offset them. For
-example:
+attached just below the window frame, but you may want to display them beneath
+a HTML-rendered toolbar. For example:
 
 ```js
 const { BaseWindow } = require('electron')
@@ -1289,6 +1299,10 @@ tabs in the window.
 Selects the next tab when native tabs are enabled and there are other
 tabs in the window.
 
+#### `win.showAllTabs()` _macOS_
+
+Shows or hides the tab overview when native tabs are enabled.
+
 #### `win.mergeAllWindows()` _macOS_
 
 Merges all windows into one window with multiple tabs when native tabs
@@ -1312,15 +1326,26 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` string | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
+* `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
-Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
-deprecated and will be removed in an upcoming version of macOS.
+#### `win.setBackgroundMaterial(material)` _Windows_
+
+* `material` string
+  * `auto` - Let the Desktop Window Manager (DWM) automatically decide the system-drawn backdrop material for this window. This is the default.
+  * `none` - Don't draw any system backdrop.
+  * `mica` - Draw the backdrop material effect corresponding to a long-lived window.
+  * `acrylic` - Draw the backdrop material effect corresponding to a transient window.
+  * `tabbed` - Draw the backdrop material effect corresponding to a window with a tabbed title bar.
+
+This method sets the browser window's system-drawn background material, including behind the non-client area.
+
+See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_systembackdrop_type) for more details.
+
+**Note:** This method is only supported on Windows 11 22H2 and up.
 
 #### `win.setWindowButtonPosition(position)` _macOS_
 
@@ -1333,25 +1358,6 @@ Passing `null` will reset the position to default.
 
 Returns `Point | null` - The custom position for the traffic light buttons in
 frameless window, `null` will be returned when there is no custom position.
-
-#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
-
-* `position` [Point](structures/point.md)
-
-Set a custom position for the traffic light buttons in frameless window.
-Passing `{ x: 0, y: 0 }` will reset the position to default.
-
-> **Note**
-> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
-
-#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
-
-Returns `Point` - The custom position for the traffic light buttons in
-frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
-position.
-
-> **Note**
-> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 

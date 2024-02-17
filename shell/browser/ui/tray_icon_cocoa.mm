@@ -422,7 +422,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(absl::optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(std::optional<UUID> guid) {
   return new TrayIconCocoa;
 }
 

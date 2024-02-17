@@ -17,18 +17,11 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
+#include "ui/ozone/public/ozone_platform.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/non_client_view.h"
-
-#if defined(USE_OZONE)
-#include "ui/ozone/buildflags.h"
-#if BUILDFLAG(OZONE_PLATFORM_X11)
-#define USE_OZONE_PLATFORM_X11
-#endif
-#include "ui/ozone/public/ozone_platform.h"
-#endif
 
 namespace electron {
 
@@ -44,7 +37,7 @@ ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
 
 bool ElectronDesktopWindowTreeHostLinux::SupportsClientFrameShadow() const {
   return platform_window()->CanSetDecorationInsets() &&
-         platform_window()->IsTranslucentWindowOpacitySupported();
+         views::Widget::IsWindowCompositingSupported();
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
@@ -57,7 +50,6 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
   UpdateFrameHints();
 
-#if defined(USE_OZONE_PLATFORM_X11)
   if (ui::OzonePlatform::GetInstance()
           ->GetPlatformProperties()
           .electron_can_call_x11) {
@@ -67,7 +59,6 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
     // X11Window::ToggleFullscreen in ui/ozone/platform/x11/x11_window.cc.
     UpdateWindowState(platform_window()->GetPlatformWindowState());
   }
-#endif
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
@@ -106,6 +97,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     case ui::PlatformWindowState::kSnappedPrimary:
     case ui::PlatformWindowState::kSnappedSecondary:
     case ui::PlatformWindowState::kFloated:
+    case ui::PlatformWindowState::kPinnedFullscreen:
+    case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
   }
   switch (new_state) {
@@ -123,6 +116,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     case ui::PlatformWindowState::kSnappedPrimary:
     case ui::PlatformWindowState::kSnappedSecondary:
     case ui::PlatformWindowState::kFloated:
+    case ui::PlatformWindowState::kPinnedFullscreen:
+    case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
   }
   window_state_ = new_state;
@@ -155,7 +150,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
   bool showing_frame = !native_window_view_->IsFullscreen();
   float scale = device_scale_factor();
 
-  bool should_set_opaque_region = window->IsTranslucentWindowOpacitySupported();
+  bool should_set_opaque_region = views::Widget::IsWindowCompositingSupported();
 
   gfx::Insets insets;
   gfx::Insets input_insets;

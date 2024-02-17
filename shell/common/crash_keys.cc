@@ -4,6 +4,7 @@
 
 #include "shell/common/crash_keys.h"
 
+#include <cstdint>
 #include <deque>
 #include <map>
 #include <string>
@@ -12,6 +13,7 @@
 #include "base/environment.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_split.h"
+#include "base/strings/stringprintf.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
@@ -55,11 +57,12 @@ void SetCrashKey(const std::string& key, const std::string& value) {
   if (key.size() >= kMaxCrashKeyNameLength) {
     node::Environment* env =
         node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-    EmitWarning(env,
-                "The crash key name, \"" + key + "\", is longer than " +
-                    std::to_string(kMaxCrashKeyNameLength) +
-                    " bytes, ignoring it.",
-                "electron");
+    EmitWarning(
+        env,
+        base::StringPrintf("The crash key name, \"%s\", is longer than %" PRIu32
+                           " bytes, ignoring it.",
+                           key.c_str(), kMaxCrashKeyNameLength),
+        "electron");
     return;
   }
 

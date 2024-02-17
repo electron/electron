@@ -8,7 +8,6 @@
 #include <string>
 #include <utility>
 
-#include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "extensions/browser/media_capture_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"

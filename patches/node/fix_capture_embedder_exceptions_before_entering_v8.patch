@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 26 Dec 2023 02:10:42 +0900
+Subject: fix: capture embedder exceptions before entering V8
+
+Upstrem bug: https://github.com/nodejs/node-v8/issues/274
+
+The patch only addresses the callsites that triggered failing DCHECKS
+in the nodejs test suite. Need to be followed-up with upstream
+on the broader change as there maybe other callsites.
+
+diff --git a/src/handle_wrap.cc b/src/handle_wrap.cc
+index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c201f6326a 100644
+--- a/src/handle_wrap.cc
++++ b/src/handle_wrap.cc
+@@ -148,6 +148,9 @@ void HandleWrap::OnClose(uv_handle_t* handle) {
+   wrap->OnClose();
+   wrap->handle_wrap_queue_.Remove();
+ 
++  if (env->isolate()->IsExecutionTerminating())
++    return;
++
+   if (!wrap->persistent().IsEmpty() &&
+       wrap->object()->Has(env->context(), env->handle_onclose_symbol())
+       .FromMaybe(false)) {
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index a68f6bb686768e2c5eaa4148741891926156883d..0239c64f80f4fb1870b452ed44e6ac36bfa0e3d2 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -472,6 +472,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
+ void ContextifyContext::PropertyGetterCallback(
+     Local<Name> property,
+     const PropertyCallbackInfo<Value>& args) {
++  Environment* env = Environment::GetCurrent(args);
+   ContextifyContext* ctx = ContextifyContext::Get(args);
+ 
+   // Still initializing
+@@ -479,6 +480,8 @@ void ContextifyContext::PropertyGetterCallback(
+ 
+   Local<Context> context = ctx->context();
+   Local<Object> sandbox = ctx->sandbox();
++
++  TryCatchScope try_catch(env);
+   MaybeLocal<Value> maybe_rv =
+       sandbox->GetRealNamedProperty(context, property);
+   if (maybe_rv.IsEmpty()) {
+@@ -488,6 +491,11 @@ void ContextifyContext::PropertyGetterCallback(
+ 
+   Local<Value> rv;
+   if (maybe_rv.ToLocal(&rv)) {
++    if (try_catch.HasCaught() &&
++        !try_catch.HasTerminated()) {
++      try_catch.ReThrow();
++    }
++
+     if (rv == sandbox)
+       rv = ctx->global_proxy();
+ 
+diff --git a/src/node_messaging.cc b/src/node_messaging.cc
+index 6c9a23e669b29d1fdbc4e371d903e77060fd1b74..7c9f6b004295433be6a4ce84621f2005a0b67e14 100644
+--- a/src/node_messaging.cc
++++ b/src/node_messaging.cc
+@@ -907,7 +907,7 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
+                                      const TransferList& transfer_v) {
+   Isolate* isolate = env->isolate();
+   Local<Object> obj = object(isolate);
+-
++  TryCatchScope try_catch(env);
+   std::shared_ptr<Message> msg = std::make_shared<Message>();
+ 
+   // Per spec, we need to both check if transfer list has the source port, and
+@@ -915,6 +915,10 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
+ 
+   Maybe<bool> serialization_maybe =
+       msg->Serialize(env, context, message_v, transfer_v, obj);
++  if (try_catch.HasCaught() &&
++      !try_catch.HasTerminated()) {
++    try_catch.ReThrow();
++  }
+   if (data_ == nullptr) {
+     return serialization_maybe;
+   }

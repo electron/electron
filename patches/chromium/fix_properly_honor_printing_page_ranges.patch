@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 0b21e7034392efa28d69c0d092086ae9bd1c43c4..c5824bdbdfbfab1c221f6bca3517d5404e0286d5 100644
+index 5b469b3b6bd11d8e0baa08e9be257990ac9bc438..c1410e5d8112f0319de40e4fbf41dbaea4b9733c 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -84,6 +84,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
@@ -25,7 +25,7 @@ index 0b21e7034392efa28d69c0d092086ae9bd1c43c4..c5824bdbdfbfab1c221f6bca3517d540
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index f40256615e1cef93b2677c0abcabe4574ec8d444..a752fd7461418938db71e7f3479455181523f5f7 100644
+index 0b3e9d694c47534996bc7de375a7a0b3fda47e15..67b19d37d582556b117b7f5f9caff29c6e30077f 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -486,7 +486,8 @@ void ApplySystemPrintDialogData(

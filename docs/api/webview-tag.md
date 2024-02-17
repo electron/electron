@@ -221,7 +221,9 @@ windows. Popups are disabled by default.
 ```
 
 A `string` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
-The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions).
+The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions). In addition, webview supports the following preferences:
+
+* `transparent` boolean (optional) - Whether to enable background transparency for the guest page. Default is `true`. **Note:** The guest page's text and background colors are derived from the [color scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme) of its root element. When transparency is enabled, the text color will still change accordingly but the background will remain transparent.
 
 The string follows the same format as the features string in `window.open`.
 A name by itself is given a `true` boolean value.
@@ -609,6 +611,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
   * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
+  * `generateDocumentOutline` boolean (optional) _Experimental_ - Whether or not to generate a PDF document outline from content headers. Defaults to false.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 

@@ -220,6 +220,16 @@ function parsePageSize (pageSize: string | ElectronInternal.PageSize) {
 let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
   const margins = checkType(options.margins ?? {}, 'object', 'margins');
+  const pageSize = parsePageSize(options.pageSize ?? 'letter');
+
+  const { top, bottom, left, right } = margins;
+  const validHeight = [top, bottom].every(u => u === undefined || u <= pageSize.paperHeight);
+  const validWidth = [left, right].every(u => u === undefined || u <= pageSize.paperWidth);
+
+  if (!validHeight || !validWidth) {
+    throw new Error('margins must be less than or equal to pageSize');
+  }
+
   const printSettings = {
     requestID: getNextId(),
     landscape: checkType(options.landscape ?? false, 'boolean', 'landscape'),
@@ -235,7 +245,8 @@ WebContents.prototype.printToPDF = async function (options) {
     pageRanges: checkType(options.pageRanges ?? '', 'string', 'pageRanges'),
     preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
     generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
-    ...parsePageSize(options.pageSize ?? 'letter')
+    generateDocumentOutline: checkType(options.generateDocumentOutline ?? false, 'boolean', 'generateDocumentOutline'),
+    ...pageSize
   };
 
   if (this._printToPDF) {
@@ -355,11 +366,6 @@ WebContents.prototype.loadURL = function (url, options) {
         resolveAndCleanup();
       }
     };
-    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
-      if (!error && isMainFrame) {
-        error = { errorCode, errorDescription, url: validatedURL };
-      }
-    };
 
     let navigationStarted = false;
     let browserInitiatedInPageNavigation = false;
@@ -379,6 +385,14 @@ WebContents.prototype.loadURL = function (url, options) {
         }
         browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
+      }
+    };
+    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+      if (!error && isMainFrame) {
+        error = { errorCode, errorDescription, url: validatedURL };
+      }
+      if (!navigationStarted && isMainFrame) {
+        finishListener();
       }
     };
     const stopLoadingListener = () => {

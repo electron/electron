@@ -9,7 +9,7 @@ import("//pdf/features.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
-import("//third_party/electron_node/node.gni")
+import("//third_party/electron_node/electron_node.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -166,15 +166,6 @@ npm_action("build_electron_definitions") {
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
-webpack_build("electron_asar_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.asar_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.asar.js"
-  out_file = "$target_gen_dir/js2c/asar_bundle.js"
-}
-
 webpack_build("electron_browser_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -220,6 +211,15 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
+webpack_build("electron_node_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.node_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.node.js"
+  out_file = "$target_gen_dir/js2c/node_init.js"
+}
+
 webpack_build("electron_utility_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -231,9 +231,9 @@ webpack_build("electron_utility_bundle") {
 
 action("electron_js2c") {
   deps = [
-    ":electron_asar_bundle",
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_node_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
@@ -242,9 +242,9 @@ action("electron_js2c") {
   ]
 
   sources = [
-    "$target_gen_dir/js2c/asar_bundle.js",
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/node_init.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
     "$target_gen_dir/js2c/utility_init.js",
@@ -414,8 +414,10 @@ action("electron_generate_node_defines") {
 }
 
 source_set("electron_lib") {
-  configs += [ "//v8:external_startup_data" ]
-  configs += [ "//third_party/electron_node:node_internals" ]
+  configs += [
+    "//v8:external_startup_data",
+    "//third_party/electron_node:node_internals",
+  ]
 
   public_configs = [
     ":branding",
@@ -492,6 +494,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
     "//ui/events:dom_keycode_converter",
@@ -659,6 +662,7 @@ source_set("electron_lib") {
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
+    sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",

@@ -7,7 +7,7 @@ This allows embedders to call SetDefersLoading without reaching into Blink inter
 This might be upstreamable?
 
 diff --git a/third_party/blink/public/web/web_document_loader.h b/third_party/blink/public/web/web_document_loader.h
-index 0960ab9c8361222cd4acf554e04dc3fc124d714e..524c7cf9032a249a30cc726019266ecddacac070 100644
+index f9d3219990dcf4f4a829567d567072df59a70ada..ca8281faaff601bf591cf5a2b185e4ba0aa32676 100644
 --- a/third_party/blink/public/web/web_document_loader.h
 +++ b/third_party/blink/public/web/web_document_loader.h
 @@ -38,6 +38,7 @@
@@ -28,11 +28,11 @@ index 0960ab9c8361222cd4acf554e04dc3fc124d714e..524c7cf9032a249a30cc726019266ecd
  
    // Returns the http referrer of original request which initited this load.
 diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
-index 1f85fd2cf0ecc359821d9b1a54ec6cf7a838d7cc..91ad58864a2ddb47e2f655e61e66da39fe5132a7 100644
+index 2782e47791ef0af261ea42a842bd9fbf83f97a79..8cdccf347671c2d42ce6f970a1b0045717463553 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.h
 +++ b/third_party/blink/renderer/core/loader/document_loader.h
-@@ -308,7 +308,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
-       absl::optional<scheduler::TaskAttributionId>
+@@ -311,7 +311,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+       std::optional<scheduler::TaskAttributionId>
            soft_navigation_heuristics_task_id);
  
 -  void SetDefersLoading(LoaderFreezeMode);

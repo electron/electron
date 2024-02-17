@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 28 Dec 2023 17:09:08 +1300
+Subject: build: run reclient cfg generator after chrome
+
+We can't run our generator after chromes in gclient hooks so instead we patch
+their generator to run ours immediately after.
+
+This can't be upstreamed though may be replaceable later with some upstream refactors
+around reclient config generation.
+
+diff --git a/buildtools/reclient_cfgs/configure_reclient_cfgs.py b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
+index 58be19cabdd33442dd552373883654ea7babdd5b..5529c57dd3970be2ea0b4e73774c27c7064ed5bc 100755
+--- a/buildtools/reclient_cfgs/configure_reclient_cfgs.py
++++ b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
+@@ -329,4 +329,13 @@ def main():
+ 
+ 
+ if __name__ == "__main__":
+-    sys.exit(main())
++    r = main()
++    if r != 0:
++        sys.exit(r)
++
++    electron_script = os.path.join(CHROMIUM_SRC, 'third_party', 'engflow-reclient-configs', 'configure_reclient.py')
++    r = subprocess.call([sys.executable, electron_script, '--src_dir=src', '--force'])
++    if r != 0:
++        sys.exit(r)
++
++    print('done')
