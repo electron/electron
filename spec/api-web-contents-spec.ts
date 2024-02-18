@@ -6,6 +6,7 @@ import * as http from 'node:http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
@@ -2405,6 +2406,7 @@ describe('webContents module', () => {
       expect(params.frame).to.be.an('object');
       expect(params.x).to.be.a('number');
       expect(params.y).to.be.a('number');
+      expectDeprecationMessages(() => expect(params.inputFieldType).to.be.a('string'));
     });
   });
 

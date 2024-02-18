@@ -606,6 +606,18 @@ WebContents.prototype._init = function () {
     }
   });
 
+  this.on('context-menu', (event, params) => {
+    const { inputFieldType } = params;
+    delete (params as any).inputFieldType;
+    Object.defineProperty(params, 'inputFieldType', {
+      get () {
+        deprecate.warn('inputFieldType', 'formControlType');
+        return inputFieldType;
+      },
+      enumerable: true
+    });
+  });
+
   this.on('-before-unload-fired' as any, function (this: Electron.WebContents, event: Electron.Event, proceed: boolean) {
     const type = this.getType();
     // These are the "interactive" types, i.e. ones a user might be looking at.
