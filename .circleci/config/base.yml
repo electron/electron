@@ -353,10 +353,10 @@ step-setup-rbe-for-build: &step-setup-rbe-for-build
       mkdir third_party
       # Pull down credential helper and print status
       node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
-      HELPER=$(node -p "require('./src/utils/reclient.js').helperPath")
+      HELPER=$(node -p "require('./src/utils/reclient.js').helperPath({})")
       $HELPER login
       echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $BASH_ENV
-      echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $BASH_ENV
+      echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath({}))"` >> $BASH_ENV
       echo 'export RBE_experimental_credentials_helper_args="print"' >> $BASH_ENV
 
 step-restore-brew-cache: &step-restore-brew-cache
