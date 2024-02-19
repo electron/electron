@@ -200,6 +200,10 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+  // Enable headless mode when we are invisible to allow rendering to happen
+  // when windows are hidden.
+  self.isHeadless = !self.visible;
+
   // Resizing is disabled.
   if (electron::ScopedDisableResize::IsResizeDisabled())
     return [self frame];
