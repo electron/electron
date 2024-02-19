@@ -259,6 +259,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "smart-card");
     case blink::PermissionType::WEB_PRINTING:
       return StringToV8(isolate, "web-printing");
+    case blink::PermissionType::SPEAKER_SELECTION:
+      return StringToV8(isolate, "speaker-selection");
     case blink::PermissionType::NUM:
       break;
   }
