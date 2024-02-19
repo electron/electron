@@ -1,0 +1,572 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Mon, 19 Feb 2024 12:05:42 -0800
+Subject: fix: revert "src,lb: reducing C++ calls of esm legacy main resolve"
+
+This switch to native legacyMainResolve doesn't take asar into account, and can
+cause errors when a project using ESM and asar tries to load a dependency which
+uses commonJS. This will need to be fixed forward, but revert for Electron 29's
+stable release to avoid potentially breaking apps with a riskier fix.
+
+This patch can be removed when node's
+native implementation has been patched
+to recognize asar files.
+
+This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
+
+diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
+index ce8092b96aee8d09ff382110db4be62dcd760cce..fe0b6591e4c86b5fcbda4a1aac9c116e17920f05 100644
+--- a/lib/internal/modules/esm/resolve.js
++++ b/lib/internal/modules/esm/resolve.js
+@@ -36,10 +36,9 @@ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
+ const experimentalNetworkImports =
+   getOptionValue('--experimental-network-imports');
+ const typeFlag = getOptionValue('--input-type');
+-const { URL, pathToFileURL, fileURLToPath, isURL } = require('internal/url');
++const { URL, pathToFileURL, fileURLToPath, isURL, toPathIfFileURL } = require('internal/url');
+ const { getCWDURL } = require('internal/util');
+ const { canParse: URLCanParse } = internalBinding('url');
+-const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
+ const {
+   ERR_INPUT_TYPE_NOT_ALLOWED,
+   ERR_INVALID_ARG_TYPE,
+@@ -136,34 +135,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
+ 
+ const realpathCache = new SafeMap();
+ 
+-const legacyMainResolveExtensions = [
+-  '',
+-  '.js',
+-  '.json',
+-  '.node',
+-  '/index.js',
+-  '/index.json',
+-  '/index.node',
+-  './index.js',
+-  './index.json',
+-  './index.node',
+-];
+-
+-const legacyMainResolveExtensionsIndexes = {
+-  // 0-6: when packageConfig.main is defined
+-  kResolvedByMain: 0,
+-  kResolvedByMainJs: 1,
+-  kResolvedByMainJson: 2,
+-  kResolvedByMainNode: 3,
+-  kResolvedByMainIndexJs: 4,
+-  kResolvedByMainIndexJson: 5,
+-  kResolvedByMainIndexNode: 6,
+-  // 7-9: when packageConfig.main is NOT defined,
+-  //      or when the previous case didn't found the file
+-  kResolvedByPackageAndJs: 7,
+-  kResolvedByPackageAndJson: 8,
+-  kResolvedByPackageAndNode: 9,
+-};
++/**
++ * @param {string | URL} url
++ * @returns {boolean}
++ */
++function fileExists(url) {
++  return internalModuleStat(toNamespacedPath(toPathIfFileURL(url))) === 0;
++}
+ 
+ /**
+  * Legacy CommonJS main resolution:
+@@ -178,22 +156,44 @@ const legacyMainResolveExtensionsIndexes = {
+  * @returns {URL}
+  */
+ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+-  const packageJsonUrlString = packageJSONUrl.href;
+-
+-  if (typeof packageJsonUrlString !== 'string') {
+-    throw new ERR_INVALID_ARG_TYPE('packageJSONUrl', ['URL'], packageJSONUrl);
++  let guess;
++  if (packageConfig.main !== undefined) {
++    // Note: fs check redundances will be handled by Descriptor cache here.
++    if (fileExists(guess = new URL(`./${packageConfig.main}`,
++                                   packageJSONUrl))) {
++      return guess;
++    } else if (fileExists(guess = new URL(`./${packageConfig.main}.js`,
++                                          packageJSONUrl)));
++    else if (fileExists(guess = new URL(`./${packageConfig.main}.json`,
++                                        packageJSONUrl)));
++    else if (fileExists(guess = new URL(`./${packageConfig.main}.node`,
++                                        packageJSONUrl)));
++    else if (fileExists(guess = new URL(`./${packageConfig.main}/index.js`,
++                                        packageJSONUrl)));
++    else if (fileExists(guess = new URL(`./${packageConfig.main}/index.json`,
++                                        packageJSONUrl)));
++    else if (fileExists(guess = new URL(`./${packageConfig.main}/index.node`,
++                                        packageJSONUrl)));
++    else guess = undefined;
++    if (guess) {
++      emitLegacyIndexDeprecation(guess, packageJSONUrl, base,
++                                 packageConfig.main);
++      return guess;
++    }
++    // Fallthrough.
+   }
+-
+-  const baseStringified = isURL(base) ? base.href : base;
+-
+-  const resolvedOption = FSLegacyMainResolve(packageJsonUrlString, packageConfig.main, baseStringified);
+-
+-  const baseUrl = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ? `./${packageConfig.main}` : '';
+-  const resolvedUrl = new URL(baseUrl + legacyMainResolveExtensions[resolvedOption], packageJSONUrl);
+-
+-  emitLegacyIndexDeprecation(resolvedUrl, packageJSONUrl, base, packageConfig.main);
+-
+-  return resolvedUrl;
++  if (fileExists(guess = new URL('./index.js', packageJSONUrl)));
++  // So fs.
++  else if (fileExists(guess = new URL('./index.json', packageJSONUrl)));
++  else if (fileExists(guess = new URL('./index.node', packageJSONUrl)));
++  else guess = undefined;
++  if (guess) {
++    emitLegacyIndexDeprecation(guess, packageJSONUrl, base, packageConfig.main);
++    return guess;
++  }
++  // Not found.
++  throw new ERR_MODULE_NOT_FOUND(
++    fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
+ }
+ 
+ const encodedSepRegEx = /%2F|%5C/i;
+diff --git a/src/node_file.cc b/src/node_file.cc
+index 59780dec1c4b6d157d2b04fea8c57cacce73ec3a..8f8629ed0b8cbc08a544211b63675ea0dcca1828 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -19,14 +19,11 @@
+ // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ // USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "node_file.h"  // NOLINT(build/include_inline)
+-#include "ada.h"
+ #include "aliased_buffer-inl.h"
+ #include "memory_tracker-inl.h"
+ #include "node_buffer.h"
+-#include "node_errors.h"
+ #include "node_external_reference.h"
+ #include "node_file-inl.h"
+-#include "node_metadata.h"
+ #include "node_process-inl.h"
+ #include "node_stat_watcher.h"
+ #include "permission/permission.h"
+@@ -3013,293 +3010,6 @@ static void Mkdtemp(const FunctionCallbackInfo<Value>& args) {
+   }
+ }
+ 
+-static bool FileURLToPath(
+-    Environment* env,
+-    const ada::url_aggregator& file_url,
+-    /* The linter can't detect the assign for result_file_path
+-       So we need to ignore since it suggest to put const */
+-    // NOLINTNEXTLINE(runtime/references)
+-    std::string& result_file_path) {
+-  if (file_url.type != ada::scheme::FILE) {
+-    env->isolate()->ThrowException(ERR_INVALID_URL_SCHEME(env->isolate()));
+-
+-    return false;
+-  }
+-
+-  std::string_view pathname = file_url.get_pathname();
+-#ifdef _WIN32
+-  size_t first_percent = std::string::npos;
+-  size_t pathname_size = pathname.size();
+-  std::string pathname_escaped_slash;
+-
+-  for (size_t i = 0; i < pathname_size; i++) {
+-    if (pathname[i] == '/') {
+-      pathname_escaped_slash += '\\';
+-    } else {
+-      pathname_escaped_slash += pathname[i];
+-    }
+-
+-    if (pathname[i] != '%') continue;
+-
+-    if (first_percent == std::string::npos) {
+-      first_percent = i;
+-    }
+-
+-    // just safe-guard against access the pathname
+-    // outside the bounds
+-    if ((i + 2) >= pathname_size) continue;
+-
+-    char third = pathname[i + 2] | 0x20;
+-
+-    bool is_slash = pathname[i + 1] == '2' && third == 102;
+-    bool is_forward_slash = pathname[i + 1] == '5' && third == 99;
+-
+-    if (!is_slash && !is_forward_slash) continue;
+-
+-    env->isolate()->ThrowException(ERR_INVALID_FILE_URL_PATH(
+-        env->isolate(),
+-        "File URL path must not include encoded \\ or / characters"));
+-
+-    return false;
+-  }
+-
+-  std::string_view hostname = file_url.get_hostname();
+-  std::string decoded_pathname = ada::unicode::percent_decode(
+-      std::string_view(pathname_escaped_slash), first_percent);
+-
+-  if (hostname.size() > 0) {
+-    // If hostname is set, then we have a UNC path
+-    // Pass the hostname through domainToUnicode just in case
+-    // it is an IDN using punycode encoding. We do not need to worry
+-    // about percent encoding because the URL parser will have
+-    // already taken care of that for us. Note that this only
+-    // causes IDNs with an appropriate `xn--` prefix to be decoded.
+-    result_file_path =
+-        "\\\\" + ada::unicode::to_unicode(hostname) + decoded_pathname;
+-
+-    return true;
+-  }
+-
+-  char letter = decoded_pathname[1] | 0x20;
+-  char sep = decoded_pathname[2];
+-
+-  // a..z A..Z
+-  if (letter < 'a' || letter > 'z' || sep != ':') {
+-    env->isolate()->ThrowException(ERR_INVALID_FILE_URL_PATH(
+-        env->isolate(), "File URL path must be absolute"));
+-
+-    return false;
+-  }
+-
+-  result_file_path = decoded_pathname.substr(1);
+-
+-  return true;
+-#else   // _WIN32
+-  std::string_view hostname = file_url.get_hostname();
+-
+-  if (hostname.size() > 0) {
+-    std::string error_message =
+-        std::string("File URL host must be \"localhost\" or empty on ") +
+-        std::string(per_process::metadata.platform);
+-    env->isolate()->ThrowException(
+-        ERR_INVALID_FILE_URL_HOST(env->isolate(), error_message.c_str()));
+-
+-    return false;
+-  }
+-
+-  size_t first_percent = std::string::npos;
+-  for (size_t i = 0; (i + 2) < pathname.size(); i++) {
+-    if (pathname[i] != '%') continue;
+-
+-    if (first_percent == std::string::npos) {
+-      first_percent = i;
+-    }
+-
+-    if (pathname[i + 1] == '2' && (pathname[i + 2] | 0x20) == 102) {
+-      env->isolate()->ThrowException(ERR_INVALID_FILE_URL_PATH(
+-          env->isolate(),
+-          "File URL path must not include encoded / characters"));
+-
+-      return false;
+-    }
+-  }
+-
+-  result_file_path = ada::unicode::percent_decode(pathname, first_percent);
+-
+-  return true;
+-#endif  // _WIN32
+-}
+-
+-BindingData::FilePathIsFileReturnType BindingData::FilePathIsFile(
+-    Environment* env, const std::string& file_path) {
+-  THROW_IF_INSUFFICIENT_PERMISSIONS(
+-      env,
+-      permission::PermissionScope::kFileSystemRead,
+-      file_path,
+-      BindingData::FilePathIsFileReturnType::kThrowInsufficientPermissions);
+-
+-  uv_fs_t req;
+-
+-  int rc = uv_fs_stat(env->event_loop(), &req, file_path.c_str(), nullptr);
+-
+-  if (rc == 0) {
+-    const uv_stat_t* const s = static_cast<const uv_stat_t*>(req.ptr);
+-    rc = !!(s->st_mode & S_IFDIR);
+-  }
+-
+-  uv_fs_req_cleanup(&req);
+-
+-  // rc is 0 if the path refers to a file
+-  if (rc == 0) return BindingData::FilePathIsFileReturnType::kIsFile;
+-
+-  return BindingData::FilePathIsFileReturnType::kIsNotFile;
+-}
+-
+-// the possible file extensions that should be tested
+-// 0-6: when packageConfig.main is defined
+-// 7-9: when packageConfig.main is NOT defined,
+-//      or when the previous case didn't found the file
+-const std::array<std::string, 10> BindingData::legacy_main_extensions = {
+-    "",
+-    ".js",
+-    ".json",
+-    ".node",
+-    "/index.js",
+-    "/index.json",
+-    "/index.node",
+-    ".js",
+-    ".json",
+-    ".node"};
+-
+-void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+-  CHECK_GE(args.Length(), 1);
+-  CHECK(args[0]->IsString());
+-
+-  Environment* env = Environment::GetCurrent(args);
+-
+-  Utf8Value utf8_package_json_url(env->isolate(), args[0].As<String>());
+-  auto package_json_url =
+-      ada::parse<ada::url_aggregator>(utf8_package_json_url.ToStringView());
+-
+-  if (!package_json_url) {
+-    env->isolate()->ThrowException(
+-        ERR_INVALID_URL(env->isolate(), "Invalid URL"));
+-
+-    return;
+-  }
+-
+-  ada::result<ada::url_aggregator> file_path_url;
+-  std::string initial_file_path;
+-  std::string file_path;
+-
+-  if (args.Length() >= 2 && !args[1]->IsNullOrUndefined() &&
+-      args[1]->IsString()) {
+-    std::string package_config_main =
+-        Utf8Value(env->isolate(), args[1].As<String>()).ToString();
+-
+-    file_path_url = ada::parse<ada::url_aggregator>(
+-        std::string("./") + package_config_main, &package_json_url.value());
+-
+-    if (!file_path_url) {
+-      env->isolate()->ThrowException(
+-          ERR_INVALID_URL(env->isolate(), "Invalid URL"));
+-
+-      return;
+-    }
+-
+-    if (!FileURLToPath(env, file_path_url.value(), initial_file_path)) return;
+-
+-    FromNamespacedPath(&initial_file_path);
+-
+-    for (int i = 0; i < BindingData::legacy_main_extensions_with_main_end;
+-         i++) {
+-      file_path = initial_file_path + BindingData::legacy_main_extensions[i];
+-
+-      switch (FilePathIsFile(env, file_path)) {
+-        case BindingData::FilePathIsFileReturnType::kIsFile:
+-          return args.GetReturnValue().Set(i);
+-        case BindingData::FilePathIsFileReturnType::kIsNotFile:
+-          continue;
+-        case BindingData::FilePathIsFileReturnType::
+-            kThrowInsufficientPermissions:
+-          // the default behavior when do not have permission is to return
+-          // and exit the execution of the method as soon as possible
+-          // the internal function will throw the exception
+-          return;
+-        default:
+-          UNREACHABLE();
+-      }
+-    }
+-  }
+-
+-  file_path_url =
+-      ada::parse<ada::url_aggregator>("./index", &package_json_url.value());
+-
+-  if (!file_path_url) {
+-    env->isolate()->ThrowException(
+-        ERR_INVALID_URL(env->isolate(), "Invalid URL"));
+-
+-    return;
+-  }
+-
+-  if (!FileURLToPath(env, file_path_url.value(), initial_file_path)) return;
+-
+-  FromNamespacedPath(&initial_file_path);
+-
+-  for (int i = BindingData::legacy_main_extensions_with_main_end;
+-       i < BindingData::legacy_main_extensions_package_fallback_end;
+-       i++) {
+-    file_path = initial_file_path + BindingData::legacy_main_extensions[i];
+-
+-    switch (FilePathIsFile(env, file_path)) {
+-      case BindingData::FilePathIsFileReturnType::kIsFile:
+-        return args.GetReturnValue().Set(i);
+-      case BindingData::FilePathIsFileReturnType::kIsNotFile:
+-        continue;
+-      case BindingData::FilePathIsFileReturnType::kThrowInsufficientPermissions:
+-        // the default behavior when do not have permission is to return
+-        // and exit the execution of the method as soon as possible
+-        // the internal function will throw the exception
+-        return;
+-      default:
+-        UNREACHABLE();
+-    }
+-  }
+-
+-  std::string module_path;
+-  std::string module_base;
+-
+-  if (!FileURLToPath(env, package_json_url.value(), module_path)) return;
+-
+-  if (args.Length() >= 3 && !args[2]->IsNullOrUndefined() &&
+-      args[2]->IsString()) {
+-    Utf8Value utf8_base_path(env->isolate(), args[2].As<String>());
+-    auto base_url =
+-        ada::parse<ada::url_aggregator>(utf8_base_path.ToStringView());
+-
+-    if (!base_url) {
+-      env->isolate()->ThrowException(
+-          ERR_INVALID_URL(env->isolate(), "Invalid URL"));
+-
+-      return;
+-    }
+-
+-    if (!FileURLToPath(env, base_url.value(), module_base)) return;
+-  } else {
+-    std::string err_arg_message =
+-        "The \"base\" argument must be of type string or an instance of URL.";
+-    env->isolate()->ThrowException(
+-        ERR_INVALID_ARG_TYPE(env->isolate(), err_arg_message.c_str()));
+-    return;
+-  }
+-
+-  env->isolate()->ThrowException(
+-      ERR_MODULE_NOT_FOUND(env->isolate(),
+-                           "Cannot find package '%s' imported from %s",
+-                           module_path,
+-                           module_base));
+-}
+-
+ void BindingData::MemoryInfo(MemoryTracker* tracker) const {
+   tracker->TrackField("stats_field_array", stats_field_array);
+   tracker->TrackField("stats_field_bigint_array", stats_field_bigint_array);
+@@ -3399,19 +3109,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+   return info;
+ }
+ 
+-void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
+-                                             Local<ObjectTemplate> target) {
+-  Isolate* isolate = isolate_data->isolate();
+-
+-  SetMethod(
+-      isolate, target, "legacyMainResolve", BindingData::LegacyMainResolve);
+-}
+-
+-void BindingData::RegisterExternalReferences(
+-    ExternalReferenceRegistry* registry) {
+-  registry->Register(BindingData::LegacyMainResolve);
+-}
+-
+ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+                                        Local<ObjectTemplate> target) {
+   Isolate* isolate = isolate_data->isolate();
+@@ -3468,7 +3165,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+   SetMethod(isolate, target, "mkdtemp", Mkdtemp);
+ 
+   StatWatcher::CreatePerIsolateProperties(isolate_data, target);
+-  BindingData::CreatePerIsolateProperties(isolate_data, target);
+ 
+   target->Set(
+       FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
+@@ -3542,7 +3238,6 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
+   registry->Register(Access);
+   registry->Register(AccessSync);
+   StatWatcher::RegisterExternalReferences(registry);
+-  BindingData::RegisterExternalReferences(registry);
+ 
+   registry->Register(Close);
+   registry->Register(CloseSync);
+diff --git a/src/node_file.h b/src/node_file.h
+index 4599546c5245300346557b68070c60292daaed23..7b43d027a2e6524f3ec6b7bccdb6e49a3c8790ea 100644
+--- a/src/node_file.h
++++ b/src/node_file.h
+@@ -63,13 +63,6 @@ class BindingData : public SnapshotableObject {
+     AliasedBufferIndex statfs_field_array;
+     AliasedBufferIndex statfs_field_bigint_array;
+   };
+-
+-  enum class FilePathIsFileReturnType {
+-    kIsFile = 0,
+-    kIsNotFile,
+-    kThrowInsufficientPermissions
+-  };
+-
+   explicit BindingData(Realm* realm,
+                        v8::Local<v8::Object> wrap,
+                        InternalFieldInfo* info = nullptr);
+@@ -86,30 +79,12 @@ class BindingData : public SnapshotableObject {
+   SERIALIZABLE_OBJECT_METHODS()
+   SET_BINDING_ID(fs_binding_data)
+ 
+-  static void LegacyMainResolve(
+-      const v8::FunctionCallbackInfo<v8::Value>& args);
+-
+-  static void CreatePerIsolateProperties(IsolateData* isolate_data,
+-                                         v8::Local<v8::ObjectTemplate> ctor);
+-  static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
+-
+   void MemoryInfo(MemoryTracker* tracker) const override;
+   SET_SELF_SIZE(BindingData)
+   SET_MEMORY_INFO_NAME(BindingData)
+ 
+  private:
+   InternalFieldInfo* internal_field_info_ = nullptr;
+-
+-  static FilePathIsFileReturnType FilePathIsFile(Environment* env,
+-                                                 const std::string& file_path);
+-
+-  static const std::array<std::string, 10> legacy_main_extensions;
+-  // define the final index of the algorithm resolution
+-  // when packageConfig.main is defined.
+-  static const uint8_t legacy_main_extensions_with_main_end = 7;
+-  // define the final index of the algorithm resolution
+-  // when packageConfig.main is NOT defined
+-  static const uint8_t legacy_main_extensions_package_fallback_end = 10;
+ };
+ 
+ // structure used to store state during a complex operation, e.g., mkdirp.
+diff --git a/test/es-module/test-cjs-legacyMainResolve.js b/test/es-module/test-cjs-legacyMainResolve.js
+index 1dc7d8faafe6eb5cea7e43e9783041f2a994be0d..d86d501689b2b72f2b964d6e2a91c5d36b6b62f5 100644
+--- a/test/es-module/test-cjs-legacyMainResolve.js
++++ b/test/es-module/test-cjs-legacyMainResolve.js
+@@ -82,7 +82,7 @@ describe('legacyMainResolve', () => {
+           {},
+           ''
+         ),
+-      { message: /instance of URL/, code: 'ERR_INVALID_ARG_TYPE' },
++      { message: 'Invalid URL', code: 'ERR_INVALID_URL' },
+     );
+   });
+ 
+@@ -129,7 +129,7 @@ describe('legacyMainResolve', () => {
+     );
+     assert.throws(
+       () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
+-      { code: 'ERR_MODULE_NOT_FOUND' },
++      { code: 'ERR_INTERNAL_ASSERTION' },
+     );
+   });
+ 
+@@ -137,7 +137,7 @@ describe('legacyMainResolve', () => {
+     const packageJsonUrl = pathToFileURL('/c/file%20with%20percents/package.json');
+     assert.throws(
+       () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
+-      { code: 'ERR_MODULE_NOT_FOUND' },
++      { code: 'ERR_INTERNAL_ASSERTION' },
+     );
+   });
+ 
+@@ -150,7 +150,7 @@ describe('legacyMainResolve', () => {
+     );
+     assert.throws(
+       () => legacyMainResolve(packageJsonUrl, { main: null }, undefined),
+-      { message: /"base" argument must be/, code: 'ERR_INVALID_ARG_TYPE' },
++      { message: 'The "path" argument must be of type string or an instance of URL. Received undefined', code: 'ERR_INVALID_ARG_TYPE' },
+     );
+   });
+ });
