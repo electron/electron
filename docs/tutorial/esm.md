@@ -75,14 +75,14 @@ app.whenReady().then(() => {
 You must not use a top-level `await` with the app's `whenReady` promise. Doing so will cause the app to hang.
 Instead, use the promise's `then` function.
 
-```js
+```js @ts-nocheck
 // Works ✅
 app.whenReady().then(() => {
   console.log('The app is ready')
 })
 
 // Hangs ❌
-await app.whenReady();
+await app.whenReady()
 console.log('The app is ready')
 ```
 
