@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index ce8092b96aee8d09ff382110db4be62dcd760cce..303f6b57a08e18de1d78a14b19cfba852bdffa47 100644
+index ce8092b96aee8d09ff382110db4be62dcd760cce..fe0b6591e4c86b5fcbda4a1aac9c116e17920f05 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -36,10 +36,9 @@ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
@@ -132,14 +132,6 @@ index ce8092b96aee8d09ff382110db4be62dcd760cce..303f6b57a08e18de1d78a14b19cfba85
  }
  
  const encodedSepRegEx = /%2F|%5C/i;
-@@ -1093,7 +1093,6 @@ module.exports = {
-   packageExportsResolve,
-   packageImportsResolve,
-   throwIfInvalidParentURL,
--  legacyMainResolve,
- };
- 
- // cycle
 diff --git a/src/node_file.cc b/src/node_file.cc
 index 59780dec1c4b6d157d2b04fea8c57cacce73ec3a..8f8629ed0b8cbc08a544211b63675ea0dcca1828 100644
 --- a/src/node_file.cc
