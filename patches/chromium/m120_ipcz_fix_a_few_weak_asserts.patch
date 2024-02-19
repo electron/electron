@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Tue, 30 Jan 2024 21:36:01 +0000
-Subject: [M120] ipcz: Fix a few weak asserts
+Subject: ipcz: Fix a few weak asserts
 
 DriverMemory cloning should not weakly assert success, as it can fail in
 real production scenarios. Now Clone() will return an invalid

@@ -106,14 +106,3 @@ index 063e5385d7f66c8fb31941fe29dfe8dd5bcfb2e1..b40c8aa5c1fe514c933daa7ac5dc9791
    DCHECK(success);
    buffer_->SetPixelsChanged(true);
  }
-diff --git a/third_party/blink/web_tests/images/resources/unnecessary-eof.bmp b/third_party/blink/web_tests/images/resources/unnecessary-eof.bmp
-new file mode 100644
-index 0000000000000000000000000000000000000000..3505ee335266a017c0975d24734a675a113d97b9
-GIT binary patch
-literal 235
-zcmZ{eD-M7#5Jaa0SHmv>S&8QYq@HV_&=m+c2Y2d;FlDxjL9of2nP#)Q^~(X^Bs<y2
-zOiBU_*(J9(a9i8iTou&4li5#&Q0P0*M&e!!cjXqPu}a0B5aWuJ5)-gq6Joj~8q~F4
-VWD%=Z`&Yf2Rqo2K9Wm7R?gRI%67T>3
-
-literal 0
-HcmV?d00001
