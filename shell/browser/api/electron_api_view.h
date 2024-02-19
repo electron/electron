@@ -17,7 +17,8 @@
 
 namespace electron::api {
 
-class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
+class View : public gin_helper::EventEmitter<View>,
+             private views::ViewObserver {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
   static gin::Handle<View> Create(v8::Isolate* isolate);

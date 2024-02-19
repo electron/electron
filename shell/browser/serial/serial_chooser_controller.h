@@ -28,8 +28,9 @@ namespace electron {
 class ElectronSerialDelegate;
 
 // SerialChooserController provides data for the Serial API permission prompt.
-class SerialChooserController final : public SerialChooserContext::PortObserver,
-                                      public content::WebContentsObserver {
+class SerialChooserController final
+    : private SerialChooserContext::PortObserver,
+      private content::WebContentsObserver {
  public:
   SerialChooserController(
       content::RenderFrameHost* render_frame_host,

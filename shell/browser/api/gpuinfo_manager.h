@@ -16,7 +16,7 @@
 namespace electron {
 
 // GPUInfoManager is a singleton used to manage and fetch GPUInfo
-class GPUInfoManager : public content::GpuDataManagerObserver {
+class GPUInfoManager : private content::GpuDataManagerObserver {
  public:
   static GPUInfoManager* GetInstance();
 
@@ -30,9 +30,10 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   bool NeedsCompleteGpuInfoCollection() const;
   void FetchCompleteInfo(gin_helper::Promise<base::Value> promise);
   void FetchBasicInfo(gin_helper::Promise<base::Value> promise);
-  void OnGpuInfoUpdate() override;
 
  private:
+  void OnGpuInfoUpdate() override;
+
   base::Value::Dict EnumerateGPUInfo(gpu::GPUInfo gpu_info) const;
 
   // These should be posted to the task queue

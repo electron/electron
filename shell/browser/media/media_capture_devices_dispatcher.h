@@ -22,6 +22,12 @@ class MediaCaptureDevicesDispatcher
  public:
   static MediaCaptureDevicesDispatcher* GetInstance();
 
+  // disable copy
+  MediaCaptureDevicesDispatcher(const MediaCaptureDevicesDispatcher&) = delete;
+  MediaCaptureDevicesDispatcher& operator=(
+      const MediaCaptureDevicesDispatcher&) = delete;
+
+ private:
   // Overridden from content::MediaObserver:
   void OnAudioCaptureDevicesChanged() override;
   void OnVideoCaptureDevicesChanged() override;
@@ -39,12 +45,6 @@ class MediaCaptureDevicesDispatcher
                                  blink::mojom::MediaStreamType stream_type,
                                  bool is_secure) override;
 
-  // disable copy
-  MediaCaptureDevicesDispatcher(const MediaCaptureDevicesDispatcher&) = delete;
-  MediaCaptureDevicesDispatcher& operator=(
-      const MediaCaptureDevicesDispatcher&) = delete;
-
- private:
   friend struct base::DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;
 
   MediaCaptureDevicesDispatcher();
