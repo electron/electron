@@ -226,7 +226,7 @@ void HandleAccessibilityRequestCallback(
   bool text = mode.has_mode(ui::AXMode::kInlineTextBoxes);
   bool screenreader = mode.has_mode(ui::AXMode::kScreenReader);
   bool html = mode.has_mode(ui::AXMode::kHTML);
-  bool pdf = mode.has_mode(ui::AXMode::kPDF);
+  bool pdf = mode.has_mode(ui::AXMode::kPDFPrinting);
 
   // The "native" and "web" flags are disabled if
   // --disable-renderer-accessibility is set.

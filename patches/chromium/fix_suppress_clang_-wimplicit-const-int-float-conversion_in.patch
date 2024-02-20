@@ -16,10 +16,10 @@ but doesn't appear to be reproducible in chrome.
 Given the nature of this code it appears safe to ignore this check.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h b/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h
-index c9d0030baec5b63832e812a4f5dc57ecd4c99f30..9a0022234d3a29f39b701cef26eff0a2cd84c0af 100644
+index baadef23f61099dfec4a2dcb254ece25a1961433..685b2744b00e819dfda9d9f67979c55745cde4ea 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h
-@@ -268,7 +268,10 @@ inline uint64_t DoubleToInteger(double d) {
+@@ -269,7 +269,10 @@ inline uint64_t DoubleToInteger(double d) {
    constexpr uint64_t kMaxULL = std::numeric_limits<uint64_t>::max();
  
    // -2^{64} < fmod_value < 2^{64}.

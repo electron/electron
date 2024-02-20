@@ -177,12 +177,12 @@ bool WinFrameView::ShouldCustomDrawSystemTitlebar() const {
   return window()->IsWindowControlsOverlayEnabled();
 }
 
-void WinFrameView::Layout() {
+void WinFrameView::Layout(PassKey) {
   LayoutCaptionButtons();
   if (window()->IsWindowControlsOverlayEnabled()) {
     LayoutWindowControlsOverlay();
   }
-  NonClientFrameView::Layout();
+  LayoutSuperclass<NonClientFrameView>(this);
 }
 
 int WinFrameView::FrameTopBorderThickness(bool restored) const {

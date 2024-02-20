@@ -171,6 +171,21 @@ void RootView::ResetAltState() {
   menu_bar_alt_pressed_ = false;
 }
 
+void RootView::Layout(PassKey) {
+  if (!window_->content_view())  // Not ready yet.
+    return;
+
+  const auto menu_bar_bounds =
+      menu_bar_visible_ ? gfx::Rect(0, 0, size().width(), kMenuBarHeight)
+                        : gfx::Rect();
+  if (menu_bar_)
+    menu_bar_->SetBoundsRect(menu_bar_bounds);
+
+  window_->content_view()->SetBoundsRect(
+      gfx::Rect(0, menu_bar_visible_ ? menu_bar_bounds.bottom() : 0,
+                size().width(), size().height() - menu_bar_bounds.height()));
+}
+
 gfx::Size RootView::GetMinimumSize() const {
   return window_->GetMinimumSize();
 }

@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index a543fb2ec5873da9d2b108748eaa5d52de4f0d50..a03f68e218dd540d3d1fd3d51e3fa67478198789 100644
+index 580de814872196f2766181d548a398387e1043d2..88bc7dbe1ef4814c39a1427b20e456eef41aaac4 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -139,10 +139,10 @@ index a543fb2ec5873da9d2b108748eaa5d52de4f0d50..a03f68e218dd540d3d1fd3d51e3fa674
    extension_caused_fullscreen_ = GURL();
  
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index c43ee31921ef8bce4214580ae6049d81e8ff9c06..fc7984332c680f2e045b1e083816be9db08b0c60 100644
+index 439f0aaceb443e650c82951bd1dffc937d58f2a2..781e02163bf11ac40bd82081465d08f5bb4be448 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -246,10 +246,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+@@ -248,10 +248,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
    // Used in testing to set the state to tab fullscreen.
    bool is_tab_fullscreen_for_testing_ = false;
  

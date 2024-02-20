@@ -9,24 +9,17 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/memory/raw_ptr.h"
 #include "v8/include/v8.h"
 
 namespace electron {
 
-// Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
+// Like ES6's WeakMap, with a K key and Weak Pointer value.
 template <typename K>
 class KeyWeakMap {
  public:
-  // Records the key and self, used by SetWeak.
-  struct KeyObject {
-    K key;
-    raw_ptr<KeyWeakMap> self;
-  };
-
   KeyWeakMap() {}
-  virtual ~KeyWeakMap() {
+  ~KeyWeakMap() {
     for (auto& p : map_)
       p.second.second.ClearWeak();
   }
@@ -45,23 +38,19 @@ class KeyWeakMap {
 
   // Gets the object from WeakMap by its |key|.
   v8::MaybeLocal<v8::Object> Get(v8::Isolate* isolate, const K& key) {
-    auto iter = map_.find(key);
-    if (iter == map_.end())
-      return v8::MaybeLocal<v8::Object>();
-    else
+    if (auto iter = map_.find(key); iter != map_.end())
       return v8::Local<v8::Object>::New(isolate, iter->second.second);
+    return {};
   }
-
-  // Whether there is an object with |key| in this WeakMap.
-  constexpr bool Has(const K& key) const { return base::Contains(map_, key); }
 
   // Returns all objects.
   std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
-    std::vector<v8::Local<v8::Object>> keys;
-    keys.reserve(map_.size());
+    std::vector<v8::Local<v8::Object>> values;
+    values.reserve(map_.size());
     for (const auto& it : map_)
-      keys.emplace_back(v8::Local<v8::Object>::New(isolate, it.second.second));
-    return keys;
+      values.emplace_back(
+          v8::Local<v8::Object>::New(isolate, it.second.second));
+    return values;
   }
 
   // Remove object with |key| in the WeakMap.
@@ -75,6 +64,12 @@ class KeyWeakMap {
   }
 
  private:
+  // Records the key and self, used by SetWeak.
+  struct KeyObject {
+    K key;
+    raw_ptr<KeyWeakMap> self;
+  };
+
   static void OnObjectGC(
       const v8::WeakCallbackInfo<typename KeyWeakMap<K>::KeyObject>& data) {
     KeyWeakMap<K>::KeyObject* key_object = data.GetParameter();

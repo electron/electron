@@ -49,6 +49,7 @@ class RootView : public views::View {
   views::View* GetMainView() { return main_view_; }
 
   // views::View:
+  void Layout(PassKey) override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;

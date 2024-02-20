@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-123.0.6264.0
+image: e-123.0.6296.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -104,7 +104,7 @@ for:
       - mkdir third_party
       - ps: >-
           node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
-      - ps: $env:RECLIENT_HELPER = node -p "require('./src/utils/reclient.js').helperPath"
+      - ps: $env:RECLIENT_HELPER = node -p "require('./src/utils/reclient.js').helperPath({})"
       - ps: >-
           & $env:RECLIENT_HELPER login
       - ps: >-
