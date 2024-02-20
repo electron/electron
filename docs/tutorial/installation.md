@@ -76,6 +76,20 @@ For instance, to use the China CDN mirror:
 ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
 ```
 
+To apply these configurations, you need to include them in the `.npmrc` file, which is npm's configuration file. If you're unsure where your `.npmrc` file is located, you can find it by running the command:
+
+```shell
+npm config ls -l
+```
+
+This command will display various configuration settings, including the path to your `userconfig` file, which is typically your `.npmrc` file. For instance, you might see something like:
+
+```
+userconfig = "/Users/william/.npmrc"
+```
+
+This path indicates where you should add your Electron binary configuration settings.
+
 By default, `ELECTRON_CUSTOM_DIR` is set to `v$VERSION`. To change the format,
 use the `{{ version }}` placeholder. For example, `version-{{ version }}`
 resolves to `version-5.0.0`, `{{ version }}` resolves to `5.0.0`, and
