@@ -157,14 +157,13 @@ constexpr content::BrowsingDataRemover::OriginType kClearOriginTypeAll =
     content::BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB |
     content::BrowsingDataRemover::ORIGIN_TYPE_PROTECTED_WEB;
 
-// Observes the BrowsingDataRemover that backs the `clearBrowsingData` method
-// and resolves/rejects that API's promise once it's done. This type manages its
-// own lifetime, deleting itself once it's done.
-class ClearBrowsingDataObserver
-    : public content::BrowsingDataRemover::Observer {
+// Observes the BrowsingDataRemover that backs the `clearData` method and
+// fulfills that API's promise once it's done. This type manages its own
+// lifetime, deleting itself once it's done.
+class ClearDataObserver : public content::BrowsingDataRemover::Observer {
  public:
-  ClearBrowsingDataObserver(gin_helper::Promise<void> promise,
-                            content::BrowsingDataRemover* remover)
+  ClearDataObserver(gin_helper::Promise<void> promise,
+                    content::BrowsingDataRemover* remover)
       : promise_(std::move(promise)) {
     observation_.Observe(remover);
   }
@@ -1139,7 +1138,7 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   return handle;
 }
 
-v8::Local<v8::Promise> Session::ClearBrowsingData(gin::Arguments* args) {
+v8::Local<v8::Promise> Session::ClearData(gin::Arguments* args) {
   auto* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> promise_handle = promise.GetHandle();
@@ -1147,7 +1146,7 @@ v8::Local<v8::Promise> Session::ClearBrowsingData(gin::Arguments* args) {
   content::BrowsingDataRemover* remover =
       browser_context_->GetBrowsingDataRemover();
 
-  auto* observer = new ClearBrowsingDataObserver(std::move(promise), remover);
+  auto* observer = new ClearDataObserver(std::move(promise), remover);
   remover->RemoveAndReply(base::Time::Min(), base::Time::Max(),
                           kClearDataTypeAll, kClearOriginTypeAll, observer);
 
@@ -1423,7 +1422,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getStoragePath", &Session::GetPath)
       .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
-      .SetMethod("clearBrowsingData", &Session::ClearBrowsingData)
+      .SetMethod("clearData", &Session::ClearData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)

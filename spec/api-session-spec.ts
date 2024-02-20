@@ -1608,7 +1608,7 @@ describe('session module', () => {
     });
   });
 
-  describe('ses.clearBrowsingData()', () => {
+  describe('ses.clearData()', () => {
     afterEach(closeAllWindows);
 
     // NOTE: This API clears more than localStorage, but localStorage is a
@@ -1619,7 +1619,7 @@ describe('session module', () => {
 
       expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
 
-      await w.webContents.session.clearBrowsingData();
+      await w.webContents.session.clearData();
 
       expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
     });
@@ -1630,8 +1630,8 @@ describe('session module', () => {
       expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
 
       // This first call is not awaited immediately
-      const clearDataPromise = w.webContents.session.clearBrowsingData();
-      await w.webContents.session.clearBrowsingData();
+      const clearDataPromise = w.webContents.session.clearData();
+      await w.webContents.session.clearData();
 
       expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
 

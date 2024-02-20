@@ -1513,7 +1513,7 @@ is emitted.
 Returns `string | null` - The absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
 
-#### `ses.clearBrowsingData()`
+#### `ses.clearData()`
 
 Returns `Promise<void>` - resolves when all data has been cleared.
 
@@ -1527,8 +1527,9 @@ This method clears many different types of data, inlcuding:
 * Service Workers
 * And more...
 
-This method clears more types of data than the `clearStorageData` method,
-however it is less configurable than that method.
+This method clears more types of data and is more thourough than the
+`clearStorageData` method, however it is currently less configurable than that
+method.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
 
