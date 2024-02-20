@@ -1614,6 +1614,7 @@ win.webContents.print(options, (success, errorType) => {
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
   * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
+  * `generateDocumentOutline` boolean (optional) _Experimental_ - Whether or not to generate a PDF document outline from content headers. Defaults to false.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -1624,24 +1625,26 @@ The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
 An example of `webContents.printToPDF`:
 
 ```js
-const { BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
 
-const win = new BrowserWindow()
-win.loadURL('https://github.com')
+app.whenReady().then(() => {
+  const win = new BrowserWindow()
+  win.loadURL('https://github.com')
 
-win.webContents.on('did-finish-load', () => {
-  // Use default printing options
-  const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
-  win.webContents.printToPDF({}).then(data => {
-    fs.writeFile(pdfPath, data, (error) => {
-      if (error) throw error
-      console.log(`Wrote PDF successfully to ${pdfPath}`)
+  win.webContents.on('did-finish-load', () => {
+    // Use default printing options
+    const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
+    win.webContents.printToPDF({}).then(data => {
+      fs.writeFile(pdfPath, data, (error) => {
+        if (error) throw error
+        console.log(`Wrote PDF successfully to ${pdfPath}`)
+      })
+    }).catch(error => {
+      console.log(`Failed to write PDF to ${pdfPath}: `, error)
     })
-  }).catch(error => {
-    console.log(`Failed to write PDF to ${pdfPath}: `, error)
   })
 })
 ```

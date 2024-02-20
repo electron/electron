@@ -15,6 +15,7 @@
 #include "base/json/string_escape.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
+#include "base/ranges/algorithm.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
@@ -108,32 +109,16 @@ base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
 }
 
 gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
-  const base::Value* found = dict.Find("x");
-  int x = found ? found->GetInt() : 0;
-
-  found = dict.Find("y");
-  int y = found ? found->GetInt() : 0;
-
-  found = dict.Find("width");
-  int width = found ? found->GetInt() : 800;
-
-  found = dict.Find("height");
-  int height = found ? found->GetInt() : 600;
-
-  return gfx::Rect(x, y, width, height);
-}
-
-bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
-  return point.x() > rect.x() && point.x() < (rect.width() + rect.x()) &&
-         point.y() > rect.y() && point.y() < (rect.height() + rect.y());
+  return gfx::Rect{dict.FindInt("x").value_or(0), dict.FindInt("y").value_or(0),
+                   dict.FindInt("width").value_or(800),
+                   dict.FindInt("height").value_or(600)};
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  for (const auto& display : display::Screen::GetScreen()->GetAllDisplays()) {
-    if (IsPointInRect(point, display.bounds()))
-      return true;
-  }
-  return false;
+  return base::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+                              [&point](auto const& display) {
+                                return display.bounds().Contains(point);
+                              });
 }
 
 void SetZoomLevelForWebContents(content::WebContents* web_contents,
@@ -399,10 +384,6 @@ InspectableWebContentsDelegate* InspectableWebContents::GetDelegate() const {
   return delegate_;
 }
 
-bool InspectableWebContents::IsGuest() const {
-  return is_guest_;
-}
-
 void InspectableWebContents::ReleaseWebContents() {
   web_contents_.release();
   WebContentsDestroyed();
@@ -469,7 +450,7 @@ void InspectableWebContents::CloseDevTools() {
       managed_devtools_web_contents_.reset();
     }
     embedder_message_dispatcher_.reset();
-    if (!IsGuest())
+    if (!is_guest())
       web_contents_->Focus();
   }
 }
@@ -529,10 +510,6 @@ void InspectableWebContents::CallClientFunction(
   GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScriptMethod(
       base::ASCIIToUTF16(object_name), base::ASCIIToUTF16(method_name),
       std::move(arguments), std::move(cb));
-}
-
-gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
-  return devtools_bounds_;
 }
 
 void InspectableWebContents::SaveDevToolsBounds(const gfx::Rect& bounds) {

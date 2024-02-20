@@ -159,8 +159,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
     request.Set("sessionId", session_id);
   }
 
-  std::string json_args;
-  base::JSONWriter::Write(request, &json_args);
+  const auto json_args = base::WriteJson(request).value_or("");
   agent_host_->DispatchProtocolMessage(
       this, base::as_bytes(base::make_span(json_args)));
 

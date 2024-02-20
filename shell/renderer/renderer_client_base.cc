@@ -37,6 +37,7 @@
 #include "shell/renderer/electron_autofill_agent.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/web_runtime_features.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -224,6 +225,14 @@ bool RendererClientBase::ShouldLoadPreload(
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  // Enable MessagePort close event by default.
+  // The feature got reverted from stable to test in
+  // https://chromium-review.googlesource.com/c/chromium/src/+/5276821
+  // We had the event supported through patch before upstream support,
+  // this is an alternative option than restoring our patch.
+  blink::WebRuntimeFeatures::EnableFeatureFromString("MessagePortCloseEvent",
+                                                     true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* thread = content::RenderThread::Get();

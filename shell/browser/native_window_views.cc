@@ -474,7 +474,7 @@ void NativeWindowViews::SetContentView(views::View* view) {
   set_content_view(view);
   focused_view_ = view;
   root_view_.AddChildView(content_view());
-  root_view_.Layout();
+  root_view_.DeprecatedLayoutImmediately();
 }
 
 void NativeWindowViews::Close() {
@@ -1405,7 +1405,7 @@ void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
 }
 
 bool NativeWindowViews::IsMenuBarAutoHide() const {
-  return root_view_.IsMenuBarAutoHide();
+  return root_view_.is_menu_bar_auto_hide();
 }
 
 void NativeWindowViews::SetMenuBarVisibility(bool visible) {
@@ -1413,7 +1413,7 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
 }
 
 bool NativeWindowViews::IsMenuBarVisible() const {
-  return root_view_.IsMenuBarVisible();
+  return root_view_.is_menu_bar_visible();
 }
 
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
@@ -1529,7 +1529,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   }
 #endif
 
-  if (root_view_.HasMenu() && root_view_.IsMenuBarVisible()) {
+  if (root_view_.HasMenu() && root_view_.is_menu_bar_visible()) {
     int menu_bar_height = root_view_.GetMenuBarHeight();
     window_bounds.set_y(window_bounds.y() - menu_bar_height);
     window_bounds.set_height(window_bounds.height() + menu_bar_height);
@@ -1556,7 +1556,7 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   content_bounds.set_size(ScreenToDIPRect(hwnd, content_bounds).size());
 #endif
 
-  if (root_view_.HasMenu() && root_view_.IsMenuBarVisible()) {
+  if (root_view_.HasMenu() && root_view_.is_menu_bar_visible()) {
     int menu_bar_height = root_view_.GetMenuBarHeight();
     content_bounds.set_y(content_bounds.y() + menu_bar_height);
     content_bounds.set_height(content_bounds.height() - menu_bar_height);

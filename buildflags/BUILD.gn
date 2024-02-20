@@ -14,4 +14,15 @@ buildflag_header("buildflags") {
     "ENABLE_BUILTIN_SPELLCHECKER=$enable_builtin_spellchecker",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
+
+  if (electron_vendor_version != "") {
+    result = string_split(electron_vendor_version, ":")
+    flags += [
+      "HAS_VENDOR_VERSION=true",
+      "VENDOR_VERSION_NAME=\"${result[0]}\"",
+      "VENDOR_VERSION_VALUE=\"${result[1]}\"",
+    ]
+  } else {
+    flags += [ "HAS_VENDOR_VERSION=false" ]
+  }
 }

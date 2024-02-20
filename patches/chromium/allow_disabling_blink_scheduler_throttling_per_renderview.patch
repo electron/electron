@@ -23,7 +23,7 @@ index c32059af794851fdea8aae15157f05acdcc60e0a..92340d0aa8d893fc781ed59cc4aa51b5
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index caa732b8f72d30b5dd87c40d02039d79dbf4b413..a760db11ecb79534345fe78ae83bc6bda977db9e 100644
+index 78beefbdd4df3e147e1176668211861cfef0f1b2..7de3ed5e3dfce543671de877cc14d6beac798b94 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -712,6 +712,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -51,10 +51,10 @@ index a94977d7a76ae9952bbba0efe59a7cb5021a1c84..11c4f890eaeae1329ca5a6634a698aef
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 8d07d5346afd62dd8b44b4ed4f7bc6c735fffea8..dbf1556cfae0e1ae18734e37f6b67acd34861180 100644
+index b6dfbd7f7c973ed839df9265b4927ee0a29833d4..0a5dd079fec3a6ab05dc394a2facc9e44446d5e2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -557,8 +557,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -553,8 +553,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -104,10 +104,10 @@ index ed73a6fe6d146eac904f0aa0d88facf055df503e..4bbc792068db75739a7ceb8ad01c85f9
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 2ba868f0efb2ee082d452bb011409f1b4c5c5e1e..6caab2df3cfc367c63839b7ac635d8d072ef8a57 100644
+index d98282b35beea63c2b8206a86533409da06a6e6b..db62c091239e8cf963ce44081516503fc04efa17 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -378,6 +378,7 @@ class BLINK_EXPORT WebView {
+@@ -379,6 +379,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -116,10 +116,10 @@ index 2ba868f0efb2ee082d452bb011409f1b4c5c5e1e..6caab2df3cfc367c63839b7ac635d8d0
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index aafdfd4fffd0bf18a1444202e9f92f63bd458997..1b1628b5ba7b6920e149f881e8d5086ac9be0132 100644
+index 4791cc7e62875b053a2e4ed1a969ec1962913457..d276871bddca3300ed607c0446193e3632a56a41 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2421,6 +2421,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2427,6 +2427,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index aafdfd4fffd0bf18a1444202e9f92f63bd458997..1b1628b5ba7b6920e149f881e8d5086a
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3912,10 +3916,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3918,10 +3922,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,7 +155,7 @@ index aafdfd4fffd0bf18a1444202e9f92f63bd458997..1b1628b5ba7b6920e149f881e8d5086a
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 25566d1e5a3671c698e7352bc7600005a8bfcf3c..8dfb3b5b9026df92e28271258870c9eb588a6526 100644
+index 0435e8bf952f1a7a6dd4efad7e7cfa453a9eaa7e..382cd1b854bdb95a7ec9586fbe79d6597972892d 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -453,6 +453,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,

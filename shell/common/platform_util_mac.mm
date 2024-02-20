@@ -20,7 +20,7 @@
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "net/base/mac/url_conversions.h"
+#include "net/base/apple/url_conversions.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 

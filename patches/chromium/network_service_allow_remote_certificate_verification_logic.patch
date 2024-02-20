@@ -7,11 +7,11 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 4547a0dc6956204da4a8b6d8ac203a78b678767a..8dd57dc6d943054bda0e3ab9d992732f36ec6d3e 100644
+index cdc8938a3777ab413f58e67e8ed62ec39f7e1c3c..52c1ddfd5378acf383225a0988a56459e80d3cec 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -150,6 +150,11 @@
- #include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
 +// Electron
@@ -147,10 +147,10 @@ index 4547a0dc6956204da4a8b6d8ac203a78b678767a..8dd57dc6d943054bda0e3ab9d992732f
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582cd20f36c4 100644
+index 651ed01e0e2c9888d604e93272e1af19fae2f8cd..2da35fd3348158b80ce150082224c465c99e4eaf 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -113,6 +113,7 @@ class URLMatcher;
+@@ -112,6 +112,7 @@ class URLMatcher;
  
  namespace network {
  class CertVerifierWithTrustAnchors;
@@ -158,7 +158,7 @@ index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582c
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -245,6 +246,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -244,6 +245,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -167,7 +167,7 @@ index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582c
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -880,6 +883,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -879,6 +882,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,10 +177,10 @@ index ebadb14137f7d3bc2a30d050dceaf90645a40e70..453ab6cf11c5fd5aea9f8e30f1d2582c
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 3096bd7d6719b99818ad2e5befefd4dbeee0ddb8..fee16e02e0160825e44c668672176546abe7d99d 100644
+index 321a9faf8f710b08a17f1007118be07211686fb6..c941788fe8b76557424c25d26143fc47f6d360b4 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -297,6 +297,16 @@ struct SocketBrokerRemotes {
+@@ -298,6 +298,16 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -197,7 +197,7 @@ index 3096bd7d6719b99818ad2e5befefd4dbeee0ddb8..fee16e02e0160825e44c668672176546
  
  // Parameters for constructing a network context.
  struct NetworkContextParams {
-@@ -970,6 +980,9 @@ interface NetworkContext {
+@@ -1001,6 +1011,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  
@@ -208,7 +208,7 @@ index 3096bd7d6719b99818ad2e5befefd4dbeee0ddb8..fee16e02e0160825e44c668672176546
    CreateURLLoaderFactory(pending_receiver<URLLoaderFactory> url_loader_factory,
                           URLLoaderFactoryParams params);
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index caf25a79cface282294e4646dcb8fd08d6ca6efd..381c00fbe1af5711860b3237be1165e1c58540c0 100644
+index 298d43af5a94e1a5a3653a74cfcaed262e803999..6cf559f8dd2b2b83e8af4bea3c38058a4856fe54 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -62,6 +62,8 @@ class TestNetworkContext : public mojom::NetworkContext {

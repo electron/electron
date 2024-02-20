@@ -139,7 +139,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
           : web_contents_impl->GetRenderWidgetHostView());
 
   return new OffScreenRenderWidgetHostView(transparent_, painting_,
-                                           view->GetFrameRate(), callback_,
+                                           view->frame_rate(), callback_,
                                            render_widget_host, view, GetSize());
 }
 
@@ -191,12 +191,9 @@ void OffScreenWebContentsView::SetPainting(bool painting) {
 }
 
 bool OffScreenWebContentsView::IsPainting() const {
-  auto* view = GetView();
-  if (view != nullptr) {
-    return view->IsPainting();
-  } else {
-    return painting_;
-  }
+  if (auto* view = GetView())
+    return view->is_painting();
+  return painting_;
 }
 
 void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
@@ -208,12 +205,9 @@ void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
 }
 
 int OffScreenWebContentsView::GetFrameRate() const {
-  auto* view = GetView();
-  if (view != nullptr) {
-    return view->GetFrameRate();
-  } else {
-    return frame_rate_;
-  }
+  if (auto* view = GetView())
+    return view->frame_rate();
+  return frame_rate_;
 }
 
 OffScreenRenderWidgetHostView* OffScreenWebContentsView::GetView() const {
@@ -228,5 +222,10 @@ void OffScreenWebContentsView::FullscreenStateChanged(bool is_fullscreen) {}
 
 void OffScreenWebContentsView::UpdateWindowControlsOverlay(
     const gfx::Rect& bounding_rect) {}
+
+content::BackForwardTransitionAnimationManager*
+OffScreenWebContentsView::GetBackForwardTransitionAnimationManager() {
+  return nullptr;
+}
 
 }  // namespace electron

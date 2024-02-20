@@ -7,35 +7,11 @@ Allow earlier access to newly created WebContents so that we can change
 WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
-diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 2afa734a8f0d500f2dedf6db5703f1167669f566..33a013252d4de19206a92b2762329b7ca1514e87 100644
---- a/third_party/blink/common/web_preferences/web_preferences.cc
-+++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -144,6 +144,19 @@ WebPreferences::WebPreferences()
-       v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
-       record_whole_document(false),
-       stylus_handwriting_enabled(false),
-+      // Begin Electron-specific WebPreferences.
-+      context_isolation(false),
-+      is_webview(false),
-+      hidden_page(false),
-+      offscreen(false),
-+      node_integration(false),
-+      node_integration_in_worker(false),
-+      node_integration_in_sub_frames(false),
-+      enable_spellcheck(false),
-+      enable_plugins(false),
-+      enable_websql(false),
-+      webview_tag(false),
-+      // End Electron-specific WebPreferences.
-       cookie_enabled(true),
-       accelerated_video_decode_enabled(false),
-       animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index 9909d43a76d8bf5bd8e9b3523fe5be5f8740ad54..69bc9db9304547b272393727432f81d3510dd9cd 100644
+index 346e10933be9d44db1ea664e45a8c5be5ae2085e..dbd3d7251e311b45c91f17da3c9758a20387288f 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -148,6 +148,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
    out->stylus_handwriting_enabled = data.stylus_handwriting_enabled();
@@ -56,7 +32,7 @@ index 9909d43a76d8bf5bd8e9b3523fe5be5f8740ad54..69bc9db9304547b272393727432f81d3
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 48134e1dd50c297ed987e4f8068612c420f038a3..a7902ae02436fe820feeb01a73ccd0a3e9b00946 100644
+index aabb4bd94bc5d9e003adcb43291765f2a45e479d..9b333916464ff6a2c3ad3b555064e6558e5cd765 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -67,28 +43,29 @@ index 48134e1dd50c297ed987e4f8068612c420f038a3..a7902ae02436fe820feeb01a73ccd0a3
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -159,6 +160,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
-   // If true, stylus handwriting recognition to text input will be available in
-   // editable input fields which are non-password type.
-   bool stylus_handwriting_enabled;
-+  // Begin Electron-specific WebPreferences.
-+  bool context_isolation;
-+  bool is_webview;
-+  bool hidden_page;
-+  bool offscreen;
-+  bool node_integration;
-+  bool node_integration_in_worker;
-+  bool node_integration_in_sub_frames;
-+  bool enable_spellcheck;
-+  bool enable_plugins;
-+  bool enable_websql;
-+  bool webview_tag;
-+  // End Electron-specific WebPreferences.
+@@ -415,6 +416,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+   // blocking user's access to the background web content.
+   bool modal_context_menu = true;
  
-   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
-   // only controls whether or not the "document.cookie" field is properly
++  // Begin Electron-specific WebPreferences.
++  bool context_isolation = false;
++  bool is_webview = false;
++  bool hidden_page = false;
++  bool offscreen = false;
++  bool node_integration = false;
++  bool node_integration_in_worker = false;
++  bool node_integration_in_sub_frames = false;
++  bool enable_spellcheck = false;
++  bool enable_plugins = false;
++  bool enable_websql = false;
++  bool webview_tag = false;
++  // End Electron-specific WebPreferences.
++
+   // We try to keep the default values the same as the default values in
+   // chrome, except for the cases where it would require lots of extra work for
+   // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 07d93df1824f4fb8d9b415f4cc1d6152d7f14355..c4fa257d9cbbe84065b8f092a78a91f52d64484e 100644
+index 72dc42a7ac0ee0e7f8c3f2e6dfdeed1c766c6ad5..b219d6bf0a9a67c74abd54ad788427debf8459d5 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -153,7 +130,7 @@ index 07d93df1824f4fb8d9b415f4cc1d6152d7f14355..c4fa257d9cbbe84065b8f092a78a91f5
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index e7c11ab3f46a12b860340f30dc09508c9e1af78b..e883537595b8b924faf121a4ce6866a4dc8b9567 100644
+index 418ad9eac5110174a736d1c89167f8637fd7dcb5..2a9423ec99a45929bc24ea42f30c28af8d940535 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";

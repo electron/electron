@@ -1228,13 +1228,10 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  auto* browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
-    CertificateManagerModel::Create(
-        browser_context,
-        base::BindOnce(&App::OnCertificateManagerModelCreated,
-                       base::Unretained(this), std::move(options),
-                       std::move(callback)));
+    CertificateManagerModel::Create(base::BindOnce(
+        &App::OnCertificateManagerModelCreated, base::Unretained(this),
+        std::move(options), std::move(callback)));
     return;
   }
 
@@ -1578,7 +1575,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   }
 
   bool enable_built_in_resolver =
-      base::FeatureList::IsEnabled(features::kAsyncDns);
+      base::FeatureList::IsEnabled(net::features::kAsyncDns);
   bool additional_dns_query_types_enabled = true;
 
   if (opts.Has("enableBuiltInResolver") &&
@@ -1684,7 +1681,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setBadgeCount",
                  base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount",
-                 base::BindRepeating(&Browser::GetBadgeCount, browser))
+                 base::BindRepeating(&Browser::badge_count, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))

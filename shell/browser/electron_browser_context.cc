@@ -37,6 +37,7 @@
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/cookie_change_notifier.h"
@@ -227,6 +228,18 @@ std::string MakePartitionName(const std::string& input) {
   return base::EscapePath(base::ToLowerASCII(input));
 }
 
+[[nodiscard]] content::DesktopMediaID GetAudioDesktopMediaId(
+    const std::vector<std::string>& audio_device_ids) {
+  // content::MediaStreamRequest provides a vector of ids
+  // to allow user preference to influence which stream is
+  // returned. This is a WIP upstream, so for now just use
+  // the first device in the list.
+  // Xref: https://chromium-review.googlesource.com/c/chromium/src/+/5132210
+  if (!audio_device_ids.empty())
+    return content::DesktopMediaID::Parse(audio_device_ids.front());
+  return {};
+}
+
 }  // namespace
 
 // static
@@ -384,14 +397,6 @@ bool ElectronBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
-bool ElectronBrowserContext::CanUseHttpCache() const {
-  return use_cache_;
-}
-
-int ElectronBrowserContext::GetMaxCacheSize() const {
-  return max_cache_size_;
-}
-
 std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
@@ -457,9 +462,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   if (url_loader_factory_)
     return url_loader_factory_;
 
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> network_factory_remote;
-  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver =
-      network_factory_remote.InitWithNewPipeAndPassReceiver();
+  network::URLLoaderFactoryBuilder factory_builder;
 
   // Consult the embedder.
   mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
@@ -469,8 +472,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), std::nullopt, ukm::kInvalidSourceIdObj,
-          &factory_receiver, &header_client, nullptr, nullptr, nullptr,
-          nullptr);
+          factory_builder, &header_client, nullptr, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -483,11 +485,9 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   params->disable_web_security = false;
 
   auto* storage_partition = GetDefaultStoragePartition();
-  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
-      std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
-      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
-          std::move(network_factory_remote));
+      std::move(factory_builder)
+          .Finish(storage_partition->GetNetworkContext(), std::move(params));
   return url_loader_factory_;
 }
 
@@ -641,7 +641,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       blink::MediaStreamDevice audio_device(request.audio_type, id, name);
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           nullptr, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+          GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
       bool enable_local_echo = false;
@@ -657,14 +657,14 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           "Tab audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           web_contents, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+          GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
       blink::MediaStreamDevice audio_device(request.audio_type, id,
                                             "System audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           nullptr, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+          GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else {
       gin_helper::ErrorThrower(args->isolate())

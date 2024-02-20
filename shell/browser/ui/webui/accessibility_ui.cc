@@ -226,7 +226,7 @@ void HandleAccessibilityRequestCallback(
   bool text = mode.has_mode(ui::AXMode::kInlineTextBoxes);
   bool screenreader = mode.has_mode(ui::AXMode::kScreenReader);
   bool html = mode.has_mode(ui::AXMode::kHTML);
-  bool pdf = mode.has_mode(ui::AXMode::kPDF);
+  bool pdf = mode.has_mode(ui::AXMode::kPDFPrinting);
 
   // The "native" and "web" flags are disabled if
   // --disable-renderer-accessibility is set.
@@ -295,11 +295,8 @@ void HandleAccessibilityRequestCallback(
 
   data.Set(kBrowsersField, std::move(window_list));
 
-  std::string json_string;
-  base::JSONWriter::Write(data, &json_string);
-
-  std::move(callback).Run(
-      base::MakeRefCounted<base::RefCountedString>(std::move(json_string)));
+  std::move(callback).Run(base::MakeRefCounted<base::RefCountedString>(
+      base::WriteJson(data).value_or("")));
 }
 
 }  // namespace
@@ -389,8 +386,9 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
 
   web_ui()->RegisterMessageCallback(
       "toggleAccessibility",
-      base::BindRepeating(&AccessibilityUIMessageHandler::ToggleAccessibility,
-                          base::Unretained(this)));
+      base::BindRepeating(
+          &AccessibilityUIMessageHandler::ToggleAccessibilityForWebContents,
+          base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setGlobalFlag",
       base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,

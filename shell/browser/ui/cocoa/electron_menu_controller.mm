@@ -14,7 +14,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "net/base/mac/url_conversions.h"
+#include "net/base/apple/url_conversions.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/electron_menu_model.h"
@@ -493,8 +493,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (menu_)
     return menu_;
 
-  if (model_ && model_->GetSharingItem()) {
-    NSMenu* menu = [self createShareMenuForItem:*model_->GetSharingItem()];
+  if (model_ && model_->sharing_item()) {
+    NSMenu* menu = [self createShareMenuForItem:*model_->sharing_item()];
     menu_ = menu;
   } else {
     menu_ = [[NSMenu alloc] initWithTitle:@""];

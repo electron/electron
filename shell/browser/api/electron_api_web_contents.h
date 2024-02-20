@@ -173,7 +173,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
-  Type GetType() const;
+  [[nodiscard]] Type type() const { return type_; }
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
@@ -292,7 +292,7 @@ class WebContents : public ExclusiveAccessContext,
   v8::Local<v8::Promise> CapturePage(gin::Arguments* args);
 
   // Methods for creating <webview>.
-  bool IsGuest() const;
+  [[nodiscard]] bool is_guest() const { return type_ == Type::kWebView; }
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);
   void DetachFromOuterFrame();
@@ -593,14 +593,14 @@ class WebContents : public ExclusiveAccessContext,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
-  void OnRequestToLockMouse(content::WebContents* web_contents,
+  void OnRequestPointerLock(content::WebContents* web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
                             bool allowed);
-  void RequestToLockMouse(content::WebContents* web_contents,
+  void RequestPointerLock(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
-  void LostMouseLock() override;
+  void LostPointerLock() override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);

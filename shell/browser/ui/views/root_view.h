@@ -36,9 +36,9 @@ class RootView : public views::View {
   bool HasMenu() const;
   int GetMenuBarHeight() const;
   void SetAutoHideMenuBar(bool auto_hide);
-  bool IsMenuBarAutoHide() const;
+  bool is_menu_bar_auto_hide() const { return menu_bar_autohide_; }
   void SetMenuBarVisibility(bool visible);
-  bool IsMenuBarVisible() const;
+  bool is_menu_bar_visible() const { return menu_bar_visible_; }
   void HandleKeyEvent(const content::NativeWebKeyboardEvent& event);
   void ResetAltState();
   void RestoreFocus();
@@ -47,7 +47,7 @@ class RootView : public views::View {
   void UnregisterAcceleratorsWithFocusManager();
 
   // views::View:
-  void Layout() override;
+  void Layout(PassKey) override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;

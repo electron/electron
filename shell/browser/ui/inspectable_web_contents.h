@@ -55,7 +55,7 @@ class InspectableWebContents
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
   InspectableWebContentsDelegate* GetDelegate() const;
-  bool IsGuest() const;
+  [[nodiscard]] bool is_guest() const { return is_guest_; }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
@@ -76,7 +76,9 @@ class InspectableWebContents
   void InspectElement(int x, int y);
 
   // Return the last position and size of devtools window.
-  gfx::Rect GetDevToolsBounds() const;
+  [[nodiscard]] const gfx::Rect& dev_tools_bounds() const {
+    return devtools_bounds_;
+  }
   void SaveDevToolsBounds(const gfx::Rect& bounds);
 
   // Return the last set zoom level of devtools window.
@@ -164,6 +166,7 @@ class InspectableWebContents
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
+  void RecordResize(const ResizeEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
   void RecordHover(const HoverEvent& event) override {}
   void RecordDrag(const DragEvent& event) override {}

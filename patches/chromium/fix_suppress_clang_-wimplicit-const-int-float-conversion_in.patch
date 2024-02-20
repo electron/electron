@@ -16,7 +16,7 @@ but doesn't appear to be reproducible in chrome.
 Given the nature of this code it appears safe to ignore this check.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h b/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h
-index 29d361a9e2784a9e44880dff08d8a769e12c7455..256792a3dbe3dcf0a71573d337386ead622358e9 100644
+index baadef23f61099dfec4a2dcb254ece25a1961433..685b2744b00e819dfda9d9f67979c55745cde4ea 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h
 @@ -269,7 +269,10 @@ inline uint64_t DoubleToInteger(double d) {

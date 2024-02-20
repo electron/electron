@@ -11,7 +11,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor, hasCapturableScreen } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { setTimeout as syncSetTimeout } from 'node:timers';
@@ -6597,6 +6597,54 @@ describe('BrowserWindow module', () => {
       });
 
       expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+    });
+  });
+
+  describe('draggable regions', () => {
+    afterEach(closeAllWindows);
+
+    ifit(hasCapturableScreen())('should allow the window to be dragged when enabled', async () => {
+      // WOA fails to load libnut so we're using require to defer loading only
+      // on supported platforms.
+      // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
+      // @ts-ignore: nut-js is an optional dependency so it may not be installed
+      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        x: 0,
+        y: 0,
+        width: display.bounds.width / 2,
+        height: display.bounds.height / 2,
+        frame: false,
+        titleBarStyle: 'hidden'
+      });
+
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      w.loadFile(overlayHTML);
+      await once(w, 'ready-to-show');
+
+      const winBounds = w.getBounds();
+      const titleBarHeight = 30;
+      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
+      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
+
+      const startPos = w.getPosition();
+
+      await mouse.setPosition(await centerOf(titleBarRegion));
+      await mouse.pressButton(Button.LEFT);
+      await mouse.drag(straightTo(centerOf(screenRegion)));
+
+      // Wait for move to complete
+      await Promise.race([
+        once(w, 'move'),
+        setTimeout(100) // fallback for possible race condition
+      ]);
+
+      const endPos = w.getPosition();
+
+      expect(startPos).to.not.deep.equal(endPos);
     });
   });
 });

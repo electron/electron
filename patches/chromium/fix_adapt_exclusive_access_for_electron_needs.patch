@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7fc9583395 100644
+index 580de814872196f2766181d548a398387e1043d2..88bc7dbe1ef4814c39a1427b20e456eef41aaac4 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -78,7 +78,7 @@ index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7f
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -486,18 +496,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -488,18 +498,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -102,7 +102,7 @@ index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7f
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -530,6 +539,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -532,6 +541,7 @@ void FullscreenController::EnterFullscreenModeInternal(
      if (!extension_caused_fullscreen_.is_empty())
        url = extension_caused_fullscreen_;
    }
@@ -110,7 +110,7 @@ index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7f
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER)
-@@ -549,6 +559,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -551,6 +561,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
    if (chrome::IsRunningInAppMode())
      return;
  
@@ -118,7 +118,7 @@ index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7f
    CHECK(fullscreen_start_time_);
    if (exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -560,15 +571,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -562,15 +573,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
@@ -139,10 +139,10 @@ index 5e0cd62415854a3aa9e89130eacb33ddfceb68d4..216121c84840ee97e666bd8934092f7f
    extension_caused_fullscreen_ = GURL();
  
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 4b70d96a71e79ea8a02d1ef4eef3fdbd9eb8bb57..c0668fe843ebd094c6f56076e53dd239fade60a1 100644
+index 439f0aaceb443e650c82951bd1dffc937d58f2a2..781e02163bf11ac40bd82081465d08f5bb4be448 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -244,10 +244,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+@@ -248,10 +248,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
    // Used in testing to set the state to tab fullscreen.
    bool is_tab_fullscreen_for_testing_ = false;
  

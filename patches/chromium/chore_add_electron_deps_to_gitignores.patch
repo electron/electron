@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 867b990689b5cbdf5ca22a83a0a51169109af943..1ade570e02b523b377ebf4139676a94c51c36784 100644
+index c74da107a1a0690b458df0ef5f6a72f607611eb9..899e121dd92010db0313feb21a1b1cc282be4a6e 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -208,6 +208,7 @@ vs-chromium-project.txt
+@@ -209,6 +209,7 @@ vs-chromium-project.txt
  /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml
@@ -18,10 +18,10 @@ index 867b990689b5cbdf5ca22a83a0a51169109af943..1ade570e02b523b377ebf4139676a94c
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 563c82b850ab9559c65719f3619a42feaed1fd69..9b6d8256ae1a8b92d4790da59fee4f8fa8df8411 100644
+index 8498a534a07bdd7cd1c8e23a9a3bb059d7fc103d..bbd56e8d8d4b5532ca2364978897efb5e6717c64 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -51,6 +51,7 @@
+@@ -50,6 +50,7 @@
  /custom_tabs_client/src
  /cygwin
  /directxsdk
@@ -29,7 +29,7 @@ index 563c82b850ab9559c65719f3619a42feaed1fd69..9b6d8256ae1a8b92d4790da59fee4f8f
  /elfutils/src
  /espresso/lib/
  /eyesfree/src
-@@ -104,6 +105,7 @@
+@@ -103,6 +104,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -37,7 +37,7 @@ index 563c82b850ab9559c65719f3619a42feaed1fd69..9b6d8256ae1a8b92d4790da59fee4f8f
  /ninja/ninja*
  /node/*.tar.gz
  /node/linux/
-@@ -148,6 +150,7 @@
+@@ -147,6 +149,7 @@
  /soda-win64
  /speex
  /sqlite4java/lib/
