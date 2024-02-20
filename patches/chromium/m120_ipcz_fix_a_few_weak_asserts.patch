@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Tue, 30 Jan 2024 21:36:01 +0000
+Subject: ipcz: Fix a few weak asserts
+
+DriverMemory cloning should not weakly assert success, as it can fail in
+real production scenarios. Now Clone() will return an invalid
+DriverMemory object if it fails to duplicate the internal handle.
+Existing callers of Clone() are already durable to an invalid output, so
+this change results in graceful failures instead of undefined behavior.
+
+This also replaces some weak asserts in DriverTransport creation with
+hardening asserts. We may want to fail more gracefully if these end
+up crashing a lot, but it seems unlikely.
+
+(cherry picked from commit 4bd18c5a3a7a935716bbed197fba6d45a1122894)
+
+Fixed: 1521571
+Change-Id: Id764b33ead8bbba58e61b3270920c839479eaa4a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5240312
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1252882}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5250958
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Ken Rockot <rockot@google.com>
+Cr-Commit-Position: refs/branch-heads/6099@{#1905}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/ipcz/src/ipcz/driver_memory.cc b/third_party/ipcz/src/ipcz/driver_memory.cc
+index f8761985b78409fdb5420456661b0d227030cc8f..3bdc3aaf52d166a7691b5f28ebc86cc47600f7cc 100644
+--- a/third_party/ipcz/src/ipcz/driver_memory.cc
++++ b/third_party/ipcz/src/ipcz/driver_memory.cc
+@@ -30,10 +30,11 @@ DriverMemory::DriverMemory(const IpczDriver& driver, size_t num_bytes)
+     : size_(num_bytes) {
+   ABSL_ASSERT(num_bytes > 0);
+   IpczDriverHandle handle;
+-  IpczResult result =
++  const IpczResult result =
+       driver.AllocateSharedMemory(num_bytes, IPCZ_NO_FLAGS, nullptr, &handle);
+-  ABSL_ASSERT(result == IPCZ_RESULT_OK);
+-  memory_ = DriverObject(driver, handle);
++  if (result == IPCZ_RESULT_OK) {
++    memory_ = DriverObject(driver, handle);
++  }
+ }
+ 
+ DriverMemory::DriverMemory(DriverMemory&& other) = default;
+@@ -43,12 +44,14 @@ DriverMemory& DriverMemory::operator=(DriverMemory&& other) = default;
+ DriverMemory::~DriverMemory() = default;
+ 
+ DriverMemory DriverMemory::Clone() {
+-  ABSL_ASSERT(is_valid());
++  ABSL_HARDENING_ASSERT(is_valid());
+ 
+   IpczDriverHandle handle;
+-  IpczResult result = memory_.driver()->DuplicateSharedMemory(
++  const IpczResult result = memory_.driver()->DuplicateSharedMemory(
+       memory_.handle(), 0, nullptr, &handle);
+-  ABSL_ASSERT(result == IPCZ_RESULT_OK);
++  if (result != IPCZ_RESULT_OK) {
++    return DriverMemory();
++  }
+ 
+   return DriverMemory(DriverObject(*memory_.driver(), handle));
+ }
+diff --git a/third_party/ipcz/src/ipcz/driver_transport.cc b/third_party/ipcz/src/ipcz/driver_transport.cc
+index 096f1b3bed3cfbe0074b074edba21bcfceacd897..dbeb69a0a881a82c9360118a017942ec6eb920f8 100644
+--- a/third_party/ipcz/src/ipcz/driver_transport.cc
++++ b/third_party/ipcz/src/ipcz/driver_transport.cc
+@@ -68,14 +68,14 @@ DriverTransport::Pair DriverTransport::CreatePair(
+   IpczDriverHandle target_transport0 = IPCZ_INVALID_DRIVER_HANDLE;
+   IpczDriverHandle target_transport1 = IPCZ_INVALID_DRIVER_HANDLE;
+   if (transport0) {
+-    ABSL_ASSERT(transport1);
++    ABSL_HARDENING_ASSERT(transport1);
+     target_transport0 = transport0->driver_object().handle();
+     target_transport1 = transport1->driver_object().handle();
+   }
+   IpczResult result = driver.CreateTransports(
+       target_transport0, target_transport1, IPCZ_NO_FLAGS, nullptr,
+       &new_transport0, &new_transport1);
+-  ABSL_ASSERT(result == IPCZ_RESULT_OK);
++  ABSL_HARDENING_ASSERT(result == IPCZ_RESULT_OK);
+   auto first =
+       MakeRefCounted<DriverTransport>(DriverObject(driver, new_transport0));
+   auto second =

@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Peter=20Bostr=C3=B6m?= <pbos@chromium.org>
+Date: Thu, 1 Feb 2024 21:24:43 +0000
+Subject: Fix racy iterator use in Node::AddConnection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Before this fix an iterator to `connections_` which requires a lock
+would be dereferenced outside an unlock operation because the `it` taken
+from the map isn't understood as guarded by the same lock.
+
+This takes a Ref<NodeLink> before unlocking which'll keep the link
+reference alive even if `connections_` is concurrently modified and the
+entry removed (or replaced).
+
+(cherry picked from commit 1f2cbf5833d7f00d3fcbfd1f3ef0c1aff10c04cd)
+
+Bug: 1523704
+Change-Id: I6f6fe4e34ec2c8268d4e7f33965a13e3b10f9f92
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5254025
+Commit-Queue: Peter Boström <pbos@chromium.org>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Auto-Submit: Peter Boström <pbos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1254709}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5260163
+Cr-Commit-Position: refs/branch-heads/6099@{#1916}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/ipcz/src/ipcz/node.cc b/third_party/ipcz/src/ipcz/node.cc
+index a7162f9017d86d3ab3369d04add98527189dd33f..3a8eef652cc3381b608d89cfb6acd006d4ba378b 100644
+--- a/third_party/ipcz/src/ipcz/node.cc
++++ b/third_party/ipcz/src/ipcz/node.cc
+@@ -168,9 +168,10 @@ bool Node::AddConnection(const NodeName& remote_node_name,
+       // handling an incoming NodeConnector message, we can err on the side of
+       // caution (i.e. less re-entrancy in event handlers) by treating every
+       // case like an API call.
++      const Ref<NodeLink> link = it->second.link;
+       mutex_.Unlock();
+       const OperationContext context{OperationContext::kAPICall};
+-      DropConnection(context, *it->second.link);
++      DropConnection(context, *link);
+       mutex_.Lock();
+     }
+ 

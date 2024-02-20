@@ -154,3 +154,6 @@ cherry-pick-91a02d67a83d.patch
 cherry-pick-8755f76bec32.patch
 cherry-pick-1f8bec968902.patch
 cherry-pick-4a98f9e304be.patch
+fix_racy_iterator_use_in_node_addconnection.patch
+fix_a_crash_when_a_bmp_image_contains_an_unnecessary_eof_code.patch
+m120_ipcz_fix_a_few_weak_asserts.patch
