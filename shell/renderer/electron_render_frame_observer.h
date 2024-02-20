@@ -37,10 +37,9 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
   void DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) override;
 
  private:
-  bool ShouldNotifyClient(int world_id);
+  [[nodiscard]] bool ShouldNotifyClient(int world_id) const;
+
   void CreateIsolatedWorldContext();
-  bool IsMainWorld(int world_id);
-  bool IsIsolatedWorld(int world_id);
   void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
                           const std::string& channel);
 
