@@ -15,6 +15,7 @@
 #include "base/win/windows_version.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/base/win/hwnd_metrics.h"
 #include "ui/display/win/dpi.h"
 #include "ui/display/win/screen_win.h"
@@ -286,6 +287,10 @@ void WinFrameView::LayoutWindowControlsOverlay() {
 
   window()->SetWindowControlsOverlayRect(bounding_rect);
   window()->NotifyLayoutWindowControlsOverlay();
+}
+
+BEGIN_METADATA(WinFrameView)
+END_METADATA
 }
 
 }  // namespace electron

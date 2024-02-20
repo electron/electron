@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/native_frame_view.h"
 
 #include "shell/browser/native_window.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 
 namespace electron {
 
@@ -21,5 +22,8 @@ gfx::Size NativeFrameView::GetMaximumSize() const {
   // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
 }
+
+BEGIN_METADATA(NativeFrameView)
+END_METADATA
 
 }  // namespace electron
