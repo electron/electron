@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 99a16a667baa20138715b0901e3255e41f5f1052..796611cb0856e3c18b78455b510b0e8215629cdf 100644
+index 99a16a667baa20138715b0901e3255e41f5f1052..a7f210031085a348f752e7e7e963d2f040bc2000 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -28,7 +28,8 @@ using v8::Value;
@@ -30,6 +30,23 @@ index 99a16a667baa20138715b0901e3255e41f5f1052..796611cb0856e3c18b78455b510b0e82
    case EVP_CIPH_CCM_MODE:
    case EVP_CIPH_GCM_MODE:
  #ifndef OPENSSL_NO_OCB
+@@ -1062,7 +1063,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+     if (EVP_PKEY_decrypt_init(ctx.get()) <= 0) {
+       return ThrowCryptoError(env, ERR_get_error());
+     }
+-
++#ifndef OPENSSL_IS_BORINGSSL
+     int rsa_pkcs1_implicit_rejection =
+         EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
+     // From the doc -2 means that the option is not supported.
+@@ -1078,6 +1079,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+           "RSA_PKCS1_PADDING is no longer supported for private decryption,"
+           " this can be reverted with --security-revert=CVE-2023-46809");
+     }
++#endif
+   }
+ 
+   const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index c6120a655ec853aef11c66ed37d7ca0ffb957dd3..a52ca15cb0ab592d4196d4bd0f1133240967d70c 100644
 --- a/src/crypto/crypto_common.cc

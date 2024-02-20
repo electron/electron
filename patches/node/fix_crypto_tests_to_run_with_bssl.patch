@@ -549,7 +549,7 @@ index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a5
    });
  
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..2827126a2a73aa294976eb9e296c6fbdb92a59ff 100644
+index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc3192b2f2 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -28,12 +28,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -570,6 +570,17 @@ index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..2827126a2a73aa294976eb9e296c6fbd
  };
  
  const decryptError = common.hasOpenSSL3 ?
+@@ -221,8 +220,8 @@ function test_rsa(padding, encryptOaepHash, decryptOaepHash) {
+     oaepHash: encryptOaepHash
+   }, bufferToEncrypt);
+ 
+-
+-  if (padding === constants.RSA_PKCS1_PADDING) {
++  // BoringSSL does not support RSA_PKCS1_PADDING.
++  if (false) {
+     assert.throws(() => {
+       crypto.privateDecrypt({
+         key: rsaKeyPem,
 @@ -415,7 +414,7 @@ assert.throws(() => {
    assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
  }
