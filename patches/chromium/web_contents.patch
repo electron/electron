@@ -35,7 +35,7 @@ index c726b36539a3adbfa05739a1c712b0119feec803..41c56be85c872d05b7b4300b24267965
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 8013e2d53da8559b278968f6021778660e39b84d..0400cdb124c562071b56856fde13429b1c2968e5 100644
+index 2880552f5303c5978f6b8240ac8a6893eb497db0..f11bee8c38e5df1b05fb056b6de8ff6b9785db20 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -101,10 +101,13 @@ class BrowserContext;
