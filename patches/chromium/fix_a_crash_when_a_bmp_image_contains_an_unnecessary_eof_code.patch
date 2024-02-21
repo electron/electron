@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Stiles <johnstiles@google.com>
+Date: Thu, 1 Feb 2024 20:40:55 +0000
+Subject: Fix a crash when a BMP image contains an unnecessary EOF code.
+
+Previously, this would try to perform color correction on a row
+one past the end of the image data.
+
+(cherry picked from commit 4bdd8d61bebbba9fab77fa86a8f66b305995199b)
+
+Bug: 1521893
+Change-Id: I425437005b9ef400138556705616095857d2cf0d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5241305
+Auto-Submit: John Stiles <johnstiles@google.com>
+Commit-Queue: John Stiles <johnstiles@google.com>
+Reviewed-by: Peter Kasting <pkasting@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1253633}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5259699
+Commit-Queue: Peter Kasting <pkasting@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#1915}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/third_party/blink/renderer/platform/blink_platform_unittests_bundle_data.filelist b/third_party/blink/renderer/platform/blink_platform_unittests_bundle_data.filelist
+index 74f34d801d7ad00a0b63731030fe32d9ed4e6595..48febaa9f2ea301d3928864d43ccb40f4f83d5c6 100644
+--- a/third_party/blink/renderer/platform/blink_platform_unittests_bundle_data.filelist
++++ b/third_party/blink/renderer/platform/blink_platform_unittests_bundle_data.filelist
+@@ -385,6 +385,7 @@
+ ../../web_tests/images/resources/truncated.webp
+ ../../web_tests/images/resources/truncated2.webp
+ ../../web_tests/images/resources/twitter_favicon.ico
++../../web_tests/images/resources/unnecessary-eof.bmp
+ ../../web_tests/images/resources/webp-animated-icc-xmp.webp
+ ../../web_tests/images/resources/webp-animated-large.webp
+ ../../web_tests/images/resources/webp-animated-no-blend.webp
+diff --git a/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_decoder_test.cc b/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_decoder_test.cc
+index a6e7353cd24ff4ec94f4ec068eaa94fa225f6537..287adb4410bfa91777f0def18e2cdf1bbbef1c25 100644
+--- a/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_decoder_test.cc
++++ b/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_decoder_test.cc
+@@ -98,6 +98,19 @@ TEST(BMPImageDecoderTest, crbug752898) {
+   decoder->DecodeFrameBufferAtIndex(0);
+ }
+ 
++// Verify that decoding an image with an unnecessary EOF marker does not crash.
++TEST(BMPImageDecoderTest, allowEOFWhenPastEndOfImage) {
++  static constexpr char kBmpFile[] = "/images/resources/unnecessary-eof.bmp";
++  scoped_refptr<SharedBuffer> data = ReadFile(kBmpFile);
++  ASSERT_TRUE(data.get());
++
++  std::unique_ptr<ImageDecoder> decoder = CreateBMPDecoder();
++  decoder->SetData(data.get(), true);
++  ImageFrame* frame = decoder->DecodeFrameBufferAtIndex(0);
++  EXPECT_EQ(ImageFrame::kFrameComplete, frame->GetStatus());
++  EXPECT_FALSE(decoder->Failed());
++}
++
+ class BMPImageDecoderCorpusTest : public ImageDecoderBaseTest {
+  public:
+   BMPImageDecoderCorpusTest() : ImageDecoderBaseTest("bmp") {}
+diff --git a/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_reader.cc b/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_reader.cc
+index 063e5385d7f66c8fb31941fe29dfe8dd5bcfb2e1..b40c8aa5c1fe514c933daa7ac5dc9791b73bf7e2 100644
+--- a/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_reader.cc
++++ b/third_party/blink/renderer/platform/image-decoders/bmp/bmp_image_reader.cc
+@@ -827,8 +827,10 @@ BMPImageReader::ProcessingResult BMPImageReader::ProcessRLEData() {
+     // the image.
+     const uint8_t count = ReadUint8(0);
+     const uint8_t code = ReadUint8(1);
+-    if ((count || (code != 1)) && PastEndOfImage(0))
++    const bool is_past_end_of_image = PastEndOfImage(0);
++    if ((count || (code != 1)) && is_past_end_of_image) {
+       return kFailure;
++    }
+ 
+     // Decode.
+     if (!count) {
+@@ -849,7 +851,9 @@ BMPImageReader::ProcessingResult BMPImageReader::ProcessRLEData() {
+               (is_top_down_ ? (coord_.y() < (parent_->Size().height() - 1))
+                             : (coord_.y() > 0)))
+             buffer_->SetHasAlpha(true);
+-          ColorCorrectCurrentRow();
++          if (!is_past_end_of_image) {
++            ColorCorrectCurrentRow();
++          }
+           // There's no need to move |coord_| here to trigger the caller
+           // to call SetPixelsChanged().  If the only thing that's changed
+           // is the alpha state, that will be properly written into the
+@@ -1061,6 +1065,13 @@ void BMPImageReader::ColorCorrectCurrentRow() {
+   const ColorProfileTransform* const transform = parent_->ColorTransform();
+   if (!transform)
+     return;
++  int decoder_width = parent_->Size().width();
++  // Enforce 0 ≤ current row < bitmap height.
++  CHECK_GE(coord_.y(), 0);
++  CHECK_LT(coord_.y(), buffer_->Bitmap().height());
++  // Enforce decoder width == bitmap width exactly. (The bitmap rowbytes might
++  // add a bit of padding, but we are only converting one row at a time.)
++  CHECK_EQ(decoder_width, buffer_->Bitmap().width());
+   ImageFrame::PixelData* const row = buffer_->GetAddr(0, coord_.y());
+   const skcms_PixelFormat fmt = XformColorFormat();
+   const skcms_AlphaFormat alpha =
+@@ -1069,7 +1080,7 @@ void BMPImageReader::ColorCorrectCurrentRow() {
+           : skcms_AlphaFormat_Unpremul;
+   const bool success =
+       skcms_Transform(row, fmt, alpha, transform->SrcProfile(), row, fmt, alpha,
+-                      transform->DstProfile(), parent_->Size().width());
++                      transform->DstProfile(), decoder_width);
+   DCHECK(success);
+   buffer_->SetPixelsChanged(true);
+ }
