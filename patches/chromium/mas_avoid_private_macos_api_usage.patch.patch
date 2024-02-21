@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5a17c48b632b951577cb7ab2ff3d885c1a87fa14..25d322de06a53b275d243445b80ab599615024d3 100644
+index 684239aa2c80c068324783e79cf8f48ee611a652..6918730afeeabba9a897680aef104588c592e5da 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1046,6 +1046,7 @@ component("base") {
+@@ -1051,6 +1051,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4b2dd7b09dd4f653337b4dbd4a6b9e29f7d36b61..379325292db87e5b8f803bd0dc57d83ebf0f2daa 100644
+index 3c1cd73eb4e783835c6c52a61eec83ff01837dd6..1bf7a4425dad3d41df9d4a7ee715fbae61010aeb 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -660,10 +660,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2864f65b22eb5a42b00ac923ae5ac592b14d1159..1e449cea2692c841d62cd0bec2f150fc9e288638 100644
+index 131f0dea24d9806c128b91ad0a10225c9eacad81..c5c243eb1543daaad0635491c982ec4a2637d97d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -479,6 +479,7 @@ static_library("test_support") {
+@@ -477,6 +477,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -889,10 +889,10 @@ index 8cd474c33e514fd0aa90daf68a56ed7fc902d713..9fff9cc7b00b257c3bebb02c75a3c2e8
  }  // namespace
  #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 675f49b730fc018525c1453191641f11eef56ce6..4d60ebcd028ad8cd9ec048b6cdb4cb7c59cba78b 100644
+index ac44f991c6cbe464d8867d8b3c77e1a5082793a7..7933a70a4b88b3cd00724aa025e82aecd867a5f3 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -970,7 +970,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -969,7 +969,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -1556,7 +1556,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 358af34f97cd62532dbc974eb825f8f18328fe63..cc0e29d8531ee763c94a0d9c74ab4352c05f5d68 100644
+index 9ea053fd104ec1f027926539d1540270ab3c6a97..d9e2acedb8ea930727bef5468a99edcb56528379 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -708,6 +708,7 @@ component("views") {
