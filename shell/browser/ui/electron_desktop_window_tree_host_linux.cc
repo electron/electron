@@ -176,7 +176,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
 
   gfx::Rect input_bounds(view->GetWidget()->GetWindowBoundsInScreen().size());
   input_bounds.Inset(insets + input_insets);
-  window->SetInputRegion(gfx::ScaleToEnclosingRect(input_bounds, scale));
+  window->SetInputRegion(std::optional<std::vector<gfx::Rect>>(
+      {gfx::ScaleToEnclosingRect(input_bounds, scale)}));
 
   if (should_set_opaque_region) {
     // The opaque region is a list of rectangles that contain only fully
