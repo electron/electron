@@ -30,10 +30,10 @@ This switch was never formally documented but it's removal is being noted here r
 
 ### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`
 
-Attempting to send `ipcRenderer` as an object over the `contextBridge` will now result in
+Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will now result in
 an empty object on the receiving side of the bridge. This change was made to remove / mitigate
-a security footgun, you should not directly expose ipcRenderer or it's methods over the bridge.
-Instead provide a safe wrapper like below:
+a security footgun. You should not directly expose ipcRenderer or its methods over the bridge.
+Instead, provide a safe wrapper like below:
 
 ```js
 contextBridge.exposeInMainWorld('app', {
