@@ -818,15 +818,19 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request.
+    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.
     * `externalURL` string (optional) - The url of the `openExternal` request.
     * `securityOrigin` string (optional) - The security origin of the `media` request.
     * `mediaTypes` string[] (optional) - The types of media access being requested, elements can be `video`
-      or `audio`
-    * `requestingUrl` string - The last URL the requesting frame loaded
-    * `isMainFrame` boolean - Whether the frame making the request is the main frame
+      or `audio`.
+    * `requestingUrl` string - The last URL the requesting frame loaded.
+    * `isMainFrame` boolean - Whether the frame making the request is the main frame.
+    * `path` string (optional) - The path of the `file-system` request.
+    * `isDirectory` boolean (optional) - Whether the `file-system` request is a directory.
+    * `accessType` string (optional) - The access type of the `file-system` request. Can be `writable` or `readable`.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
