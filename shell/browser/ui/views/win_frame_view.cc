@@ -291,6 +291,5 @@ void WinFrameView::LayoutWindowControlsOverlay() {
 
 BEGIN_METADATA(WinFrameView)
 END_METADATA
-}
 
 }  // namespace electron
