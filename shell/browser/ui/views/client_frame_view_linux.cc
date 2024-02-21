@@ -63,9 +63,6 @@ ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
 
 }  // namespace
 
-// static
-const char ClientFrameViewLinux::kViewClassName[] = "ClientFrameView";
-
 ClientFrameViewLinux::ClientFrameViewLinux()
     : theme_(ui::NativeTheme::GetInstanceForNativeUi()),
       nav_button_provider_(
@@ -308,10 +305,6 @@ void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
                                       GetTitlebarBounds().bottom(),
                                       ShouldPaintAsActive(), GetInputInsets());
   }
-}
-
-const char* ClientFrameViewLinux::GetClassName() const {
-  return kViewClassName;
 }
 
 void ClientFrameViewLinux::PaintAsActiveChanged() {

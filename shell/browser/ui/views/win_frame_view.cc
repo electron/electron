@@ -25,8 +25,6 @@
 
 namespace electron {
 
-const char WinFrameView::kViewClassName[] = "WinFrameView";
-
 WinFrameView::WinFrameView() = default;
 
 WinFrameView::~WinFrameView() = default;
@@ -163,10 +161,6 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
 
   // Use the parent class's hittest last
   return FramelessView::NonClientHitTest(point);
-}
-
-const char* WinFrameView::GetClassName() const {
-  return kViewClassName;
 }
 
 bool WinFrameView::IsMaximized() const {

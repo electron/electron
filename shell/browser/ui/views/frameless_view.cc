@@ -20,9 +20,6 @@ const int kResizeAreaCornerSize = 16;
 
 }  // namespace
 
-// static
-const char FramelessView::kViewClassName[] = "FramelessView";
-
 FramelessView::FramelessView() = default;
 
 FramelessView::~FramelessView() = default;
@@ -127,10 +124,6 @@ gfx::Size FramelessView::GetMaximumSize() const {
   // Electron public APIs returns (0, 0) when maximum size is not set, but it
   // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
-}
-
-const char* FramelessView::GetClassName() const {
-  return kViewClassName;
 }
 
 }  // namespace electron
