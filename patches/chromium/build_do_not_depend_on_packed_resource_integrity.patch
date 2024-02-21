@@ -33,10 +33,10 @@ index 78c84e4ccefb90715d68de15d32d5245027ebb4d..99c80a0d2c23533f2858f61aca11d3b7
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 673c4d84cab669aac6b2b78c6292dc46892314b9..be3c6f39067404329349941f5d1c7bd39408db2a 100644
+index e7f5cf5b8c62829a34d4cd1894df239eb09b2921..2390499b5feca8c222abc9f88572a6add89f0237 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4788,7 +4788,7 @@ static_library("browser") {
+@@ -4793,7 +4793,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 673c4d84cab669aac6b2b78c6292dc46892314b9..be3c6f39067404329349941f5d1c7bd3
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 98b78720d05a01ad2c33519c74a410f7efa4522d..9a24559857917665264b80fdc3802ec90589ad8f 100644
+index 0a7c3f256856df62ef9e7d890a79d5c5f005b164..3ce054618f8c514da85de7611b1e10752d03b613 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7118,9 +7118,12 @@ test("unit_tests") {
@@ -63,7 +63,7 @@ index 98b78720d05a01ad2c33519c74a410f7efa4522d..9a24559857917665264b80fdc3802ec9
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8080,6 +8083,10 @@ test("unit_tests") {
+@@ -8079,6 +8082,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 98b78720d05a01ad2c33519c74a410f7efa4522d..9a24559857917665264b80fdc3802ec9
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8149,7 +8156,6 @@ test("unit_tests") {
+@@ -8148,7 +8155,6 @@ test("unit_tests") {
      }
  
      deps += [

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 684239aa2c80c068324783e79cf8f48ee611a652..6918730afeeabba9a897680aef104588c592e5da 100644
+index a989a351a87650d33342cc8eea9d719bcad31fb6..6c8cfaec9e3034d7f05d257211bfdd8172b0136b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1051,6 +1051,7 @@ component("base") {
+@@ -1053,6 +1053,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -159,10 +159,10 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..0d830234edb5621f57e39f4a951d357a
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index db26459da52479751d042e89935d97c74c329c54..3d068770c0c06f5f042791731e394abd39248e32 100644
+index 4fe7a0bfaa5b3398372f55c6454e738f140efe6b..b1c70281c45aaca4ae483f1f28e9d21929d17815 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -48,6 +48,7 @@ component("os_crypt") {
+@@ -46,6 +46,7 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3c1cd73eb4e783835c6c52a61eec83ff01837dd6..1bf7a4425dad3d41df9d4a7ee715fbae61010aeb 100644
+index 96bc0c86805c86fbcfc6e1d54468fa9f6f6d2274..2537a9cd26a024d45e055bfec42d55570bf97d28 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -660,10 +660,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 131f0dea24d9806c128b91ad0a10225c9eacad81..c5c243eb1543daaad0635491c982ec4a2637d97d 100644
+index bfb6966afd7ab1dd96903ad90af0a5497d94eff1..30c4567fa9804e75cfb4ca5c2455585a02b07d29 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -477,6 +477,7 @@ static_library("test_support") {
+@@ -479,6 +479,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -671,7 +671,7 @@ index 131f0dea24d9806c128b91ad0a10225c9eacad81..c5c243eb1543daaad0635491c982ec4a
    ]
  
    public_deps = [
-@@ -1059,6 +1060,7 @@ static_library("browsertest_support") {
+@@ -1061,6 +1062,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index 131f0dea24d9806c128b91ad0a10225c9eacad81..c5c243eb1543daaad0635491c982ec4a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1673,6 +1675,7 @@ test("content_browsertests") {
+@@ -1676,6 +1678,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index 131f0dea24d9806c128b91ad0a10225c9eacad81..c5c243eb1543daaad0635491c982ec4a
  
    public_deps = [
      ":test_interfaces",
-@@ -2913,6 +2916,7 @@ test("content_unittests") {
+@@ -2917,6 +2920,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
