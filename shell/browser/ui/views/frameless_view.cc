@@ -8,6 +8,7 @@
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
@@ -19,9 +20,6 @@ const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
 }  // namespace
-
-// static
-const char FramelessView::kViewClassName[] = "FramelessView";
 
 FramelessView::FramelessView() = default;
 
@@ -129,8 +127,7 @@ gfx::Size FramelessView::GetMaximumSize() const {
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
 }
 
-const char* FramelessView::GetClassName() const {
-  return kViewClassName;
-}
+BEGIN_METADATA(FramelessView)
+END_METADATA
 
 }  // namespace electron
