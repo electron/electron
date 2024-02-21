@@ -390,11 +390,11 @@ index 5756139efd53eb9ec6e74007fc10d9f7dfe51d44..8faf652dee5720e066b6ab5f2d4997ee
  
    if (is_win) {
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index eaf077d33ca54a5394b1f1ab9024b22c4e496ae5..ac2b42196188bc32b9842f95df74aa4ca8ed54ae 100644
+index b15bca430f99aaf02733061d986b3ea78204e748..6ad3b61e20361a68f8d799b5826b0ff303d98b69 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -86,8 +86,10 @@ id GetFocusedBrowserAccessibilityElement() override {
-     return nil;
+@@ -90,8 +90,10 @@ id GetFocusedBrowserAccessibilityElement() override {
+     return [bridgedContentView accessibilityFocusedUIElement];
    }
    void SetAccessibilityWindow(NSWindow* window) override {
 +#if !IS_MAS_BUILD()
