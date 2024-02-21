@@ -1004,7 +1004,7 @@ std::string NativeWindowMac::GetTitle() const {
 
 void NativeWindowMac::FlashFrame(bool flash) {
   if (flash) {
-    attention_request_id_ = [NSApp requestUserAttention:NSInformationalRequest];
+    attention_request_id_ = [NSApp requestUserAttention:NSCriticalRequest];
   } else {
     [NSApp cancelUserAttentionRequest:attention_request_id_];
     attention_request_id_ = 0;
