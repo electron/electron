@@ -104,7 +104,7 @@ for:
       - mkdir third_party
       - ps: >-
           node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
-      - ps: $env:RECLIENT_HELPER = node -p "require('./src/utils/reclient.js').helperPath"
+      - ps: $env:RECLIENT_HELPER = node -p "require('./src/utils/reclient.js').helperPath({})"
       - ps: >-
           & $env:RECLIENT_HELPER login
       - ps: >-
