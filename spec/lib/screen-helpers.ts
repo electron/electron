@@ -91,3 +91,16 @@ export const areColorsSimilar = (
   const distance = colorDistance(hexColorA, hexColorB);
   return distance <= distanceThreshold;
 };
+
+/**
+ * Whether the current VM has a valid screen which can be used to capture.
+ *
+ * This is specific to Electron's CI test runners.
+ * - Linux: virtual screen display is 0x0
+ * - Win32 arm64 (WOA): virtual screen display is 0x0
+ * - Win32 ia32: skipped
+ */
+export const hasCapturableScreen = () => {
+  return process.platform === 'darwin' ||
+    (process.platform === 'win32' && process.arch === 'x64');
+};
