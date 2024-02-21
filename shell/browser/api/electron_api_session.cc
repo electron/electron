@@ -165,14 +165,13 @@ constexpr BrowsingDataRemover::OriginType kClearOriginTypeAll =
 constexpr auto kDataTypeLookup =
     base::MakeFixedFlatMap<std::string_view, BrowsingDataRemover::DataType>({
         {"backgroundFetch", BrowsingDataRemover::DATA_TYPE_BACKGROUND_FETCH},
-        {"cache", BrowsingDataRemover::DATA_TYPE_CACHE},
-        {"cacheStorage", BrowsingDataRemover::DATA_TYPE_CACHE_STORAGE},
+        {"cache", BrowsingDataRemover::DATA_TYPE_CACHE |
+                      BrowsingDataRemover::DATA_TYPE_CACHE_STORAGE},
         {"cookies", BrowsingDataRemover::DATA_TYPE_COOKIES},
         {"downloads", BrowsingDataRemover::DATA_TYPE_DOWNLOADS},
         {"fileSystems", BrowsingDataRemover::DATA_TYPE_FILE_SYSTEMS},
         {"indexedDB", BrowsingDataRemover::DATA_TYPE_INDEXED_DB},
         {"localStorage", BrowsingDataRemover::DATA_TYPE_LOCAL_STORAGE},
-        {"mediaLicenses", BrowsingDataRemover::DATA_TYPE_MEDIA_LICENSES},
         {"serviceWorkers", BrowsingDataRemover::DATA_TYPE_SERVICE_WORKERS},
         {"webSQL", BrowsingDataRemover::DATA_TYPE_WEB_SQL},
     });
