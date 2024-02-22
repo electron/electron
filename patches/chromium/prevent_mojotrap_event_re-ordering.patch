@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Thu, 15 Feb 2024 20:30:22 +0000
+Subject: Prevent MojoTrap event re-ordering
+
+(cherry picked from commit 3557a2fcbdd8167f97ca81171be2e0da9c4f0647)
+
+Fixed: 1508753
+Change-Id: I9ec14a12e7d1d147bda63703e1d6619fa30c8a51
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5253039
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1254840}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5299857
+Reviewed-by: Oksana Zhuravlova <oksamyt@chromium.org>
+Commit-Queue: Alex Gough <ajgo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6261@{#794}
+Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+
+diff --git a/mojo/core/ipcz_driver/mojo_trap.cc b/mojo/core/ipcz_driver/mojo_trap.cc
+index 7a5765a74a7f64e584b0a080e659c88c019adcbb..2c98335dd7846fe44fd048265078dfffcb0b63f6 100644
+--- a/mojo/core/ipcz_driver/mojo_trap.cc
++++ b/mojo/core/ipcz_driver/mojo_trap.cc
+@@ -544,7 +544,15 @@ void MojoTrap::DispatchOrQueueEvent(Trigger& trigger,
+   }
+ 
+   dispatching_thread_ = base::PlatformThread::CurrentRef();
+-  DispatchEvent(event);
++
++  // If `trigger.removed` is true, then either this is the cancellation event
++  // for the trigger (in which case it's OK to dispatch), or it was cancelled on
++  // some other thread while we were blocked above. In the latter case, this
++  // event is no longer valid and cannot be dispatched.
++  // See https://crbug.com/1508753.
++  if (!trigger.removed || event.result == MOJO_RESULT_CANCELLED) {
++    DispatchEvent(event);
++  }
+ 
+   // NOTE: This vector is only shrunk by the clear() below, but it may
+   // accumulate more events during each iteration. Hence we iterate by index.
+diff --git a/mojo/core/trap_unittest.cc b/mojo/core/trap_unittest.cc
+index 0fd449d9598810fd34372d69d1d1599a0c88b955..4058da72eef8b5a11432b9a17d6ff3ecfd1306e8 100644
+--- a/mojo/core/trap_unittest.cc
++++ b/mojo/core/trap_unittest.cc
+@@ -1747,6 +1747,111 @@ TEST_F(TrapTest, TriggerDuringDestruction) {
+   MojoClose(b);
+ }
+ 
++TEST_F(TrapTest, RaceDispatchAndBlockedCancel) {
++  // Regression test for https://crbug.com/1508753. This bug was caused by
++  // reordering of a MOJO_RESULT_CANCELLED event to before some other event for
++  // the same trap context, violating an API constraint that must be upheld for
++  // memory safety in application code. The scenario which could elicit the bug
++  // was as follows:
++  //
++  //   1. A single trap is watching two pipes, P and Q.
++  //   2. Thread A closes pipe P, triggering a CANCELLED event.
++  //   3. Thread A re-arms the trap from within the CANCELLED event handler.
++  //   4. Thread B changes Q's state to elicit a event for Q (not CANCELLED).
++  //   5. Thread B dispatch is blocked because thread A is still dispatching.
++  //   6. Before thread B gets a chance to be scheduled, thread A closes Q.
++  //   7. Thread A dispatches a CANCELLED event for Q.
++  //   8. Thread B is scheduled and proceeds to dispatch its Q event. [BAD]
++
++  struct State;
++
++  struct Pipe {
++    explicit Pipe(State* state) : state(state) { CreateMessagePipe(&a, &b); }
++
++    uintptr_t context() const { return reinterpret_cast<uintptr_t>(this); }
++
++    MojoHandle a;
++    MojoHandle b;
++    bool trigger_cancelled = false;
++
++    // Back-reference to common state so it's reachable from the event handler.
++    const raw_ptr<State> state;
++  };
++
++  struct State {
++    Pipe pipe0{this};
++    Pipe pipe1{this};
++    MojoHandle trap;
++    base::WaitableEvent event;
++  };
++  State state;
++
++  // NOTE: + to turn the lambda into a function pointer.
++  const MojoTrapEventHandler event_handler = +[](const MojoTrapEvent* event) {
++    auto& pipe = *reinterpret_cast<Pipe*>(event->trigger_context);
++    auto& state = *pipe.state;
++
++    // If the bug is present, this expectation can fail flakily. No event should
++    // fire for a pipe after its watch has been cancelled.
++    EXPECT_FALSE(pipe.trigger_cancelled);
++
++    if (event->result == MOJO_RESULT_CANCELLED) {
++      pipe.trigger_cancelled = true;
++
++      if (&pipe == &state.pipe0) {
++        // When pipe0's watch is cancelled (on the main thread by closure down
++        // below) we re-arm the trap immediately. This must succeed because
++        // `pipe1.a` is now the only handle being watched, and it's still in an
++        // uninteresting state.
++        EXPECT_EQ(MOJO_RESULT_OK,
++                  MojoArmTrap(state.trap, nullptr, nullptr, nullptr));
++
++        // Unblock the other thread so it can elicit a trap event on pipe1 now
++        // that the trap is re-armed. It will still block just before
++        // dispatching as long as we're still in this event handler on the main
++        // thread.
++        state.event.Signal();
++
++        // A nice long delay to make it very likely for the waiting
++        // ThreadedRunner to progress right up to its event dispatch.
++        base::PlatformThread::Sleep(base::Milliseconds(10));
++
++        // Trigger cancellation for pipe1 by closing its `a`. This will queue a
++        // CANCELLED event to fire on the same thread immediately after we
++        // return from this handler.
++        MojoClose(state.pipe1.a);
++      }
++    }
++  };
++
++  EXPECT_EQ(MOJO_RESULT_OK,
++            MojoCreateTrap(event_handler, nullptr, &state.trap));
++  EXPECT_EQ(
++      MOJO_RESULT_OK,
++      MojoAddTrigger(state.trap, state.pipe0.a, MOJO_HANDLE_SIGNAL_READABLE,
++                     MOJO_TRIGGER_CONDITION_SIGNALS_SATISFIED,
++                     state.pipe0.context(), nullptr));
++  EXPECT_EQ(
++      MOJO_RESULT_OK,
++      MojoAddTrigger(state.trap, state.pipe1.a, MOJO_HANDLE_SIGNAL_READABLE,
++                     MOJO_TRIGGER_CONDITION_SIGNALS_SATISFIED,
++                     state.pipe1.context(), nullptr));
++  EXPECT_EQ(MOJO_RESULT_OK, MojoArmTrap(state.trap, nullptr, nullptr, nullptr));
++
++  ThreadedRunner close_pipe1_b(base::BindLambdaForTesting([&] {
++    state.event.Wait();
++    MojoClose(state.pipe1.b);
++  }));
++  close_pipe1_b.Start();
++
++  // Trigger cancellation of the watch on `pipe0.a`. See event_handler above.
++  MojoClose(state.pipe0.a);
++
++  close_pipe1_b.Join();
++  MojoClose(state.pipe0.b);
++  MojoClose(state.trap);
++}
++
+ base::RepeatingClosure g_do_random_thing_callback;
+ 
+ void ReadAllMessages(const MojoTrapEvent* event) {
