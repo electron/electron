@@ -1506,16 +1506,12 @@ v8::Local<v8::Promise> App::SetProxy(gin::Arguments* args) {
     // pacScript takes precedence over proxyRules.
     if (!pac_url.empty()) {
       proxy_mode = ProxyPrefs::MODE_PAC_SCRIPT;
-    } else {
-      proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
     }
-  } else {
-    if (!ProxyPrefs::StringToProxyMode(mode, &proxy_mode)) {
-      promise.RejectWithErrorMessage(
-          "Invalid mode, must be one of direct, auto_detect, pac_script, "
-          "fixed_servers or system");
-      return handle;
-    }
+  } else if (!ProxyPrefs::StringToProxyMode(mode, &proxy_mode)) {
+    promise.RejectWithErrorMessage(
+        "Invalid mode, must be one of direct, auto_detect, pac_script, "
+        "fixed_servers or system");
+    return handle;
   }
 
   base::Value::Dict proxy_config;
