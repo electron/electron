@@ -29,6 +29,9 @@ class ProtocolRegistry {
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories,
       bool allow_file_access);
 
+  mojo::PendingRemote<network::mojom::URLLoaderFactory>
+  CreateNonNetworkNavigationURLLoaderFactory(const std::string& scheme);
+
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
   const HandlersMap& handlers() const { return handlers_; }
 
