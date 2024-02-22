@@ -721,6 +721,12 @@ void InspectableWebContents::OpenInNewTab(const std::string& url) {
     delegate_->DevToolsOpenInNewTab(url);
 }
 
+void InspectableWebContents::OpenSearchResultsInNewTab(
+    const std::string& query) {
+  if (delegate_)
+    delegate_->DevToolsOpenSearchResultsInNewTab(query);
+}
+
 void InspectableWebContents::ShowItemInFolder(
     const std::string& file_system_path) {
   if (file_system_path.empty())
