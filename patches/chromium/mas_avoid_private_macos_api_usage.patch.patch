@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a989a351a87650d33342cc8eea9d719bcad31fb6..6c8cfaec9e3034d7f05d257211bfdd8172b0136b 100644
+index cbdc40178eceec92c93d3c7b2064e7995f72238d..70b5b60e8ed45c3cdb8a8b81e824f9a7cfcacb61 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1053,6 +1053,7 @@ component("base") {
+@@ -1052,6 +1052,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -303,7 +303,7 @@ index 25672be4a7dac9a8cd53498184f537292e14d5c2..ef0844ae2845990832fc9777eade9455
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 4c60785c1998677abc8845c087f672f51dc2ce8f..4c06d59cefb630a2cf7f79f1b41bd8a53ae84643 100644
+index 568f0c23f1b276f36f1871f23e4a1c8ed7366e6c..e0a8d474cafb654b2bb420ee914ef4f596de2d6d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -104,7 +104,9 @@ void OrderChildWindow(NSWindow* child_window,
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 64d7c47759e9c7899aaf1c513d0b1b8ee6d97f98..6f885f7ea451310cca7c7686548cd3467984874f 100644
+index dbf7b6000665bbd751bf441fd390d49c3d4f42e0..324498d53bf057fd5cf0cac3eb6fbd627ce90e7f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -568,7 +568,7 @@ index 947af40d33f81c47ad7c3fa0ebcf3a45b697b530..e0fa7a8edcd3a71784d35cb3f18d0b2b
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 250d68fe80384f4409e91dd94a37ebc6ad34d383..4f5f1021dcdf2ca45531b8f56fed44b4c1097e8f 100644
+index 51b7dc4e0c0eb6638635681cca95dd614d2881d4..373e582399512f75348f83d31ba3ac468f005e8f 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -240,6 +240,7 @@ source_set("common") {
@@ -660,10 +660,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8d0a789cccacc4d6a54d9bc499c606f076a3d3b6..0c9dc99d03928defceaae741d588d292301b6ba8 100644
+index af8374479cd827df0ab9c5adfafabbe72a826bf4..784cde74a71232e7b6f381587cf4d97979cf8b3f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -479,6 +479,7 @@ static_library("test_support") {
+@@ -487,6 +487,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -671,7 +671,7 @@ index 8d0a789cccacc4d6a54d9bc499c606f076a3d3b6..0c9dc99d03928defceaae741d588d292
    ]
  
    public_deps = [
-@@ -1075,6 +1076,7 @@ static_library("browsertest_support") {
+@@ -1083,6 +1084,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index 8d0a789cccacc4d6a54d9bc499c606f076a3d3b6..0c9dc99d03928defceaae741d588d292
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1690,6 +1692,7 @@ test("content_browsertests") {
+@@ -1699,6 +1701,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index 8d0a789cccacc4d6a54d9bc499c606f076a3d3b6..0c9dc99d03928defceaae741d588d292
  
    public_deps = [
      ":test_interfaces",
-@@ -2932,6 +2935,7 @@ test("content_unittests") {
+@@ -2941,6 +2944,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -709,7 +709,7 @@ index 24facc48c2b6b30db3a7cb36e4222019b471e84b..d1d3e72407682b01e6c2173cd34445db
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index e09b425de7f7c799f675d385d6a8189baaeb13dd..3ddb0afe42879933c7a15c1bb82309736e78a15a 100644
+index ff6d030a46995536a7382ae67a0b7b783370ef7f..3aad6d951f9c51b5edb866238fa1c8e6ff4431ab 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -243,6 +243,7 @@ component("bluetooth") {
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 421b11f8839a7304b0dd8a976b9f2176832c32bc..7738b5a04fb020681dfdd03dae5ac4331db08e4a 100644
+index 7ac1237d974f31168582a3e1b7815cbe53095d03..115341ff1e42a25ccef9741c269001dd6907f205 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
