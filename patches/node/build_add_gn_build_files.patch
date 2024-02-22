@@ -2216,10 +2216,10 @@ index 9f2fbc1e53937448aa27c1f5fe110eabc7edc0df..ea77c7598153bb8a9ba20c89a4ece2c1
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..7848ddb1841b6d4f36e9376c73564eb4ff6d7c08
+index 0000000000000000000000000000000000000000..e620a64ad1fa0ac7fc517a87ceaf019b1ad616c6
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,98 @@
 +#!/usr/bin/env python3
 +import json
 +import os
@@ -2268,7 +2268,15 @@ index 0000000000000000000000000000000000000000..7848ddb1841b6d4f36e9376c73564eb4
 +
 +  def filter_v8_files(files):
 +    if any(f.startswith('deps/v8/') for f in files):
-+      files = [f.replace('deps/v8/', '../../v8/', 1) if f.endswith('js') else f.replace('deps/v8/', '//v8/') for f in files]
++      new_files = []
++      for f in files:
++        if f.startswith('deps/v8/tools'):
++          new_files.append(f)
++        elif f.endswith('js'):
++          new_files.append(f.replace('deps/v8/', '../../v8/', 1))
++        else:
++          new_files.append(f.replace('deps/v8/', '//v8/'))
++      files = new_files
 +
 +    if any(f == '<@(node_builtin_shareable_builtins)' for f in files):
 +      files.remove('<@(node_builtin_shareable_builtins)')
