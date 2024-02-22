@@ -200,5 +200,5 @@ export async function listen (server: http.Server | https.Server | http2.Http2Se
   await new Promise<void>(resolve => server.listen(0, hostname, () => resolve()));
   const { port } = server.address() as net.AddressInfo;
   const protocol = (server instanceof http.Server) ? 'http' : 'https';
-  return { port, url: url.format({ protocol, hostname, port }) };
+  return { port, hostname, url: url.format({ protocol, hostname, port }) };
 }
