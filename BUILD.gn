@@ -744,7 +744,7 @@ source_set("electron_lib") {
       "//chrome/browser/resources/pdf:resources",
       "//components/pdf/browser",
       "//components/pdf/browser:interceptors",
-      "//components/pdf/common",
+      "//components/pdf/common:constants",
       "//components/pdf/renderer",
       "//pdf",
     ]
