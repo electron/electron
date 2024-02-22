@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 421b11f8839a7304b0dd8a976b9f2176832c32bc..7738b5a04fb020681dfdd03dae5ac4331db08e4a 100644
+index bbf0dca729f7558fe0412ee681389efca6d39ad7..d7edb37cdbdc1640f25c4ff77256b40bf6ba0152 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {
