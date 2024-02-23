@@ -20,10 +20,10 @@ running the main script, for example:
    extensions.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 157a85623c7eb5338baa77aba5dc448a4614ded0..701f91f1c9603c1da03e0fe6d20c8627c8d644fb 100644
+index eb66f0e37b517a03be20e0829863e7572042c7ed..4d5646b6067a1409df5915cc744bdc38d0191bd9 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -185,6 +185,9 @@ function setupUserModules(forceDefaultLoader = false) {
+@@ -186,6 +186,9 @@ function setupUserModules(forceDefaultLoader = false) {
    initializeESMLoader(forceDefaultLoader);
    const CJSLoader = require('internal/modules/cjs/loader');
    assert(!CJSLoader.hasLoadedAnyUserCJSModule);
@@ -33,7 +33,7 @@ index 157a85623c7eb5338baa77aba5dc448a4614ded0..701f91f1c9603c1da03e0fe6d20c8627
    // Do not enable preload modules if custom loaders are disabled.
    // For example, loader workers are responsible for doing this themselves.
    // And preload modules are not supported in ShadowRealm as well.
-@@ -742,6 +745,10 @@ function initializeFrozenIntrinsics() {
+@@ -745,6 +748,10 @@ function initializeFrozenIntrinsics() {
    }
  }
  

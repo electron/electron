@@ -16,6 +16,8 @@
   "parallel/test-crypto-key-objects",
   "parallel/test-crypto-keygen",
   "parallel/test-crypto-keygen-deprecation",
+  "parallel/test-crypto-rsa-dsa-revert",
+  "parallel/test-crypto-rsa-dsa.js",
   "parallel/test-crypto-padding-aes256",
   "parallel/test-crypto-secure-heap",
   "parallel/test-dgram-send-cb-quelches-error",

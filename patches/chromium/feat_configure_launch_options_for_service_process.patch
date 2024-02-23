@@ -110,7 +110,7 @@ index 8736af0021dccba915e3d2303191ae3ec80f6e75..56f8384c3ff4959272363cb71e4c380e
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 4b7c732a6ee2771156120f7a6d43020013cdf209..493c53aeda0841af95de81eac262558494c8a675 100644
+index 1d6bc6590720cda38983203455cc20638710148f..8f965150db13d3f4fe1757a021b9a2f6446529d6 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -21,6 +21,8 @@
@@ -122,7 +122,7 @@ index 4b7c732a6ee2771156120f7a6d43020013cdf209..493c53aeda0841af95de81eac2625584
  namespace {
  
  // /prefetch:# arguments to use when launching various process types. It has
-@@ -190,6 +192,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -189,6 +191,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
      mojo_channel_->PrepareToPassRemoteEndpoint(&options->handles_to_inherit,
                                                 command_line());
    }
@@ -153,7 +153,7 @@ index 4b7c732a6ee2771156120f7a6d43020013cdf209..493c53aeda0841af95de81eac2625584
    return true;
  }
  
-@@ -217,7 +243,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
+@@ -216,7 +242,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
    ChildProcessLauncherHelper::Process process;
    *launch_result =
        StartSandboxedProcess(delegate_.get(), *command_line(),

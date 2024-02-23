@@ -214,7 +214,7 @@
 #include "components/pdf/browser/pdf_document_helper.h"             // nogncheck
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
-#include "components/pdf/common/internal_plugin_helpers.h"
+#include "components/pdf/common/constants.h"
 #include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
@@ -1397,7 +1397,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
     if (prefs && !prefs->IsWebSecurityEnabled()) {
-      factory_params->is_corb_enabled = false;
+      factory_params->is_orb_enabled = false;
       factory_params->disable_web_security = true;
     }
   }

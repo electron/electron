@@ -479,7 +479,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   params->header_client = std::move(header_client);
   params->process_id = network::mojom::kBrowserProcessId;
   params->is_trusted = true;
-  params->is_corb_enabled = false;
+  params->is_orb_enabled = false;
   // The tests of net module would fail if this setting is true, it seems that
   // the non-NetworkService implementation always has web security enabled.
   params->disable_web_security = false;
@@ -535,7 +535,8 @@ ElectronBrowserContext::GetReduceAcceptLanguageControllerDelegate() {
 
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
-    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
+    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(
+        GetDefaultStoragePartition()->GetNetworkContext());
   }
   return resolve_proxy_helper_.get();
 }

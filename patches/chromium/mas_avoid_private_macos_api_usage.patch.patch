@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5a17c48b632b951577cb7ab2ff3d885c1a87fa14..25d322de06a53b275d243445b80ab599615024d3 100644
+index a989a351a87650d33342cc8eea9d719bcad31fb6..6c8cfaec9e3034d7f05d257211bfdd8172b0136b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1046,6 +1046,7 @@ component("base") {
+@@ -1053,6 +1053,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -159,10 +159,10 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..0d830234edb5621f57e39f4a951d357a
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index db26459da52479751d042e89935d97c74c329c54..3d068770c0c06f5f042791731e394abd39248e32 100644
+index 4fe7a0bfaa5b3398372f55c6454e738f140efe6b..b1c70281c45aaca4ae483f1f28e9d21929d17815 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -48,6 +48,7 @@ component("os_crypt") {
+@@ -46,6 +46,7 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
@@ -390,11 +390,11 @@ index 5756139efd53eb9ec6e74007fc10d9f7dfe51d44..8faf652dee5720e066b6ab5f2d4997ee
  
    if (is_win) {
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index eaf077d33ca54a5394b1f1ab9024b22c4e496ae5..ac2b42196188bc32b9842f95df74aa4ca8ed54ae 100644
+index b15bca430f99aaf02733061d986b3ea78204e748..6ad3b61e20361a68f8d799b5826b0ff303d98b69 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -86,8 +86,10 @@ id GetFocusedBrowserAccessibilityElement() override {
-     return nil;
+@@ -90,8 +90,10 @@ id GetFocusedBrowserAccessibilityElement() override {
+     return [bridgedContentView accessibilityFocusedUIElement];
    }
    void SetAccessibilityWindow(NSWindow* window) override {
 +#if !IS_MAS_BUILD()
@@ -431,7 +431,7 @@ index 5f6e5b078672c0336cee72300a7a37d6284db226..76650bac392c650946636cedc2f5d9c3
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4b2dd7b09dd4f653337b4dbd4a6b9e29f7d36b61..379325292db87e5b8f803bd0dc57d83ebf0f2daa 100644
+index 64d7c47759e9c7899aaf1c513d0b1b8ee6d97f98..6f885f7ea451310cca7c7686548cd3467984874f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2864f65b22eb5a42b00ac923ae5ac592b14d1159..1e449cea2692c841d62cd0bec2f150fc9e288638 100644
+index 8d0a789cccacc4d6a54d9bc499c606f076a3d3b6..0c9dc99d03928defceaae741d588d292301b6ba8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -479,6 +479,7 @@ static_library("test_support") {
@@ -671,7 +671,7 @@ index 2864f65b22eb5a42b00ac923ae5ac592b14d1159..1e449cea2692c841d62cd0bec2f150fc
    ]
  
    public_deps = [
-@@ -1059,6 +1060,7 @@ static_library("browsertest_support") {
+@@ -1075,6 +1076,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -679,7 +679,7 @@ index 2864f65b22eb5a42b00ac923ae5ac592b14d1159..1e449cea2692c841d62cd0bec2f150fc
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1673,6 +1675,7 @@ test("content_browsertests") {
+@@ -1690,6 +1692,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -687,7 +687,7 @@ index 2864f65b22eb5a42b00ac923ae5ac592b14d1159..1e449cea2692c841d62cd0bec2f150fc
  
    public_deps = [
      ":test_interfaces",
-@@ -2913,6 +2916,7 @@ test("content_unittests") {
+@@ -2932,6 +2935,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -696,7 +696,7 @@ index 2864f65b22eb5a42b00ac923ae5ac592b14d1159..1e449cea2692c841d62cd0bec2f150fc
    public_deps = [ "//content:content_resources" ]
  
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 38e5fd5c3af79a9f0ed80b2e15d748e9144b7982..508816a935744166cbc15561de07d7e77a1f68af 100644
+index 24facc48c2b6b30db3a7cb36e4222019b471e84b..d1d3e72407682b01e6c2173cd34445dbc44cb86d 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -149,6 +149,8 @@ static_library("web_test_browser") {
@@ -889,10 +889,10 @@ index 8cd474c33e514fd0aa90daf68a56ed7fc902d713..9fff9cc7b00b257c3bebb02c75a3c2e8
  }  // namespace
  #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 675f49b730fc018525c1453191641f11eef56ce6..4d60ebcd028ad8cd9ec048b6cdb4cb7c59cba78b 100644
+index ac44f991c6cbe464d8867d8b3c77e1a5082793a7..7933a70a4b88b3cd00724aa025e82aecd867a5f3 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -970,7 +970,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -969,7 +969,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -1556,10 +1556,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 358af34f97cd62532dbc974eb825f8f18328fe63..cc0e29d8531ee763c94a0d9c74ab4352c05f5d68 100644
+index a64df51a061e4d1b1d923fab830e5b3be4c389ba..e0cb6abb7a5010c69f82a3edcea5700cda3895cf 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -708,6 +708,7 @@ component("views") {
+@@ -710,6 +710,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

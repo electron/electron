@@ -222,6 +222,8 @@ class App : public ElectronBrowserClient::Delegate,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
+  v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
+  v8::Local<v8::Promise> ResolveProxy(gin::Arguments* args);
 
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
