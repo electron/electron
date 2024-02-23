@@ -31,6 +31,10 @@ namespace printing {
 class PrintJobManager;
 }
 
+namespace electron {
+class ResolveProxyHelper;
+}
+
 // Empty definition for std::unique_ptr, rather than a forward declaration
 class BackgroundModeManager {};
 
@@ -53,9 +57,9 @@ class BrowserProcessImpl : public BrowserProcess {
   void PreMainMessageLoopRun();
   void PostDestroyThreads() {}
   void PostMainMessageLoopRun();
-
   void SetSystemLocale(const std::string& locale);
   const std::string& GetSystemLocale() const;
+  electron::ResolveProxyHelper* GetResolveProxyHelper();
 
 #if BUILDFLAG(IS_LINUX)
   void SetLinuxStorageBackend(os_crypt::SelectedLinuxBackend selected_backend);
@@ -123,6 +127,10 @@ class BrowserProcessImpl : public BrowserProcess {
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
 
+  ValueMapPrefStore* in_memory_pref_store() const {
+    return in_memory_pref_store_.get();
+  }
+
  private:
   void CreateNetworkQualityObserver();
   void CreateOSCryptAsync();
@@ -139,6 +147,8 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   embedder_support::OriginTrialsSettingsStorage origin_trials_settings_storage_;
 
+  scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
+  scoped_refptr<electron::ResolveProxyHelper> resolve_proxy_helper_;
   std::unique_ptr<network::NetworkQualityTracker> network_quality_tracker_;
   std::unique_ptr<
       network::NetworkQualityTracker::RTTAndThroughputEstimatesObserver>
