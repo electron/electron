@@ -899,7 +899,6 @@ describe('chromium features', () => {
 
     it('automatically grants permission to read and write to OFPS files', async () => {
       const w = new BrowserWindow({
-        // show: false,
         webPreferences: {
           nodeIntegration: true,
           partition: 'file-system-spec',
@@ -923,7 +922,7 @@ describe('chromium features', () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-writable.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
 
-      const window = new BrowserWindow({
+      const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
           contextIsolation: false,
@@ -931,15 +930,15 @@ describe('chromium features', () => {
         }
       });
 
-      session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
+      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         expect(permission).to.equal('fileSystem');
 
         const { href } = url.pathToFileURL(writablePath);
         expect(details).to.deep.equal({
-          accessType: 'writable',
+          fileAccessType: 'writable',
           isDirectory: false,
           isMainFrame: true,
-          path: testFile,
+          filePath: testFile,
           requestingUrl: href
         });
 
@@ -947,7 +946,7 @@ describe('chromium features', () => {
       });
 
       ipcMain.once('did-create-file-handle', async () => {
-        const result = await window.webContents.executeJavaScript(`
+        const result = await w.webContents.executeJavaScript(`
           new Promise((resolve, reject) => {
             try {
               const writable = fileHandle.createWritable();
@@ -961,12 +960,12 @@ describe('chromium features', () => {
         done();
       });
 
-      window.loadFile(writablePath);
+      w.loadFile(writablePath);
 
-      window.webContents.once('did-finish-load', () => {
+      w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
-        window.webContents.paste();
+        w.webContents.paste();
       });
     });
   });
