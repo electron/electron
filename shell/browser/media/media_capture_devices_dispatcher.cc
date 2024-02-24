@@ -3,7 +3,7 @@
 // found in the LICENSE-CHROMIUM file.
 
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
-
+// #include "base/no_destructor.h"
 #include "base/logging.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/media_capture_devices.h"
@@ -13,7 +13,8 @@ using content::BrowserThread;
 namespace electron {
 
 MediaCaptureDevicesDispatcher* MediaCaptureDevicesDispatcher::GetInstance() {
-  return base::Singleton<MediaCaptureDevicesDispatcher>::get();
+  static base::NoDestructor<MediaCaptureDevicesDispatcher> instance;
+  return instance.get();
 }
 
 MediaCaptureDevicesDispatcher::MediaCaptureDevicesDispatcher() {
