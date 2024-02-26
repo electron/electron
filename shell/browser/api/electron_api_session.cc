@@ -16,6 +16,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/raw_ptr.h"
+#include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/uuid.h"
@@ -32,6 +33,7 @@
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/browsing_data_remover.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
@@ -77,6 +79,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
@@ -148,6 +151,40 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   }
   return quota_mask;
 }
+
+constexpr content::BrowsingDataRemover::DataType kClearDataTypeAll = ~0ULL;
+constexpr content::BrowsingDataRemover::OriginType kClearOriginTypeAll =
+    content::BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB |
+    content::BrowsingDataRemover::ORIGIN_TYPE_PROTECTED_WEB;
+
+// Observes the BrowsingDataRemover that backs the `clearData` method and
+// fulfills that API's promise once it's done. This type manages its own
+// lifetime, deleting itself once it's done.
+class ClearDataObserver : public content::BrowsingDataRemover::Observer {
+ public:
+  ClearDataObserver(gin_helper::Promise<void> promise,
+                    content::BrowsingDataRemover* remover)
+      : promise_(std::move(promise)) {
+    observation_.Observe(remover);
+  }
+
+  void OnBrowsingDataRemoverDone(
+      content::BrowsingDataRemover::DataType failed_data_types) override {
+    if (failed_data_types == 0ULL) {
+      promise_.Resolve();
+    } else {
+      promise_.RejectWithErrorMessage(base::StringPrintf(
+          "Failed to clear browsing data (%" PRIu64 ")", failed_data_types));
+    }
+    delete this;
+  }
+
+ private:
+  gin_helper::Promise<void> promise_;
+  base::ScopedObservation<content::BrowsingDataRemover,
+                          content::BrowsingDataRemover::Observer>
+      observation_{this};
+};
 
 base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
                                     std::string const& pac_url,
@@ -1101,6 +1138,21 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   return handle;
 }
 
+v8::Local<v8::Promise> Session::ClearData(gin::Arguments* args) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> promise_handle = promise.GetHandle();
+
+  content::BrowsingDataRemover* remover =
+      browser_context_->GetBrowsingDataRemover();
+
+  auto* observer = new ClearDataObserver(std::move(promise), remover);
+  remover->RemoveAndReply(base::Time::Min(), base::Time::Max(),
+                          kClearDataTypeAll, kClearOriginTypeAll, observer);
+
+  return promise_handle;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -1370,6 +1422,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getStoragePath", &Session::GetPath)
       .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
+      .SetMethod("clearData", &Session::ClearData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
