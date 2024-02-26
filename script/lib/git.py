@@ -13,7 +13,10 @@ import re
 import subprocess
 import sys
 
-from .patches import PATCH_FILENAME_PREFIX, is_patch_location_line
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SCRIPT_DIR)
+
+from patches import PATCH_FILENAME_PREFIX, is_patch_location_line
 
 UPSTREAM_HEAD='refs/patches/upstream-head'
 
