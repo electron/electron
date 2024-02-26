@@ -9,25 +9,32 @@ This is an experimental commit; but if it's successful,
 This patch should be upstreamed and then removed from electron's code.
 
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index 88686b784dac3d28d1f51e1fac3783f5c8ea9347..7eb898f37d2f7a75be316ea2f2bd6ef229a44ed3 100644
+index 2a1498da8c9ce693403800d4c4b52fac6a7430e1..3121dbc0721ecfc4c0d5a586673bd139f44569ce 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
-@@ -42,7 +42,6 @@
+@@ -41,9 +41,7 @@
+ #include "chrome/browser/ui/views/tabs/tab.h"
  #include "chrome/browser/ui/views/user_education/browser_feature_promo_controller.h"
  #include "chrome/common/buildflags.h"
+-#include "components/enterprise/buildflags/buildflags.h"
  #include "components/infobars/core/infobar_container.h"
 -#include "components/segmentation_platform/public/result.h"
  #include "components/user_education/common/feature_promo_controller.h"
  #include "components/user_education/common/feature_promo_handle.h"
  #include "components/webapps/browser/banners/app_banner_manager.h"
-@@ -62,6 +61,10 @@
- #include "ui/views/widget/widget_observer.h"
+@@ -64,9 +62,14 @@
  #include "ui/views/window/client_view.h"
+ 
+ #if BUILDFLAG(ENTERPRISE_WATERMARK)
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "chrome/browser/enterprise/watermark/watermark_view.h"
+ #endif
  
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 +#include "components/segmentation_platform/public/result.h"
-+#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
++#endif
 +
  #if BUILDFLAG(IS_CHROMEOS_ASH)
  #include "ui/compositor/throughput_tracker.h"
  #endif
+
