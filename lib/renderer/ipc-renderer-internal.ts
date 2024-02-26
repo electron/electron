@@ -4,7 +4,9 @@ const { ipc } = process._linkedBinding('electron_renderer_ipc');
 
 const internal = true;
 
-class IpcRendererInternal extends EventEmitter implements ElectronInternal.IpcRendererInternal {
+type IPCHandler = (event: Electron.IpcRendererEvent, ...args: any[]) => any
+
+class IpcRendererInternal extends EventEmitter {
   send (channel: string, ...args: any[]) {
     return ipc.send(internal, channel, args);
   }
@@ -19,6 +21,27 @@ class IpcRendererInternal extends EventEmitter implements ElectronInternal.IpcRe
       throw new Error(`Error invoking remote method '${channel}': ${error}`);
     }
     return result;
+  };
+
+  invokeSync<T> (command: string, ...args: any[]): T {
+    const [error, result] = this.sendSync(command, ...args);
+
+    if (error) {
+      throw error;
+    } else {
+      return result;
+    }
+  }
+
+  handle<T extends IPCHandler> (channel: string, handler: T) {
+    this.on(channel, async (event, requestId, ...args) => {
+      const replyChannel = `${channel}_RESPONSE_${requestId}`;
+      try {
+        event.sender.send(replyChannel, null, await handler(event, ...args));
+      } catch (error) {
+        event.sender.send(replyChannel, error);
+      }
+    });
   };
 }
 

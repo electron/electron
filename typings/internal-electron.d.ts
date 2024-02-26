@@ -208,10 +208,6 @@ declare namespace ElectronInternal {
     appIcon: Electron.NativeImage | null;
   }
 
-  interface IpcRendererInternal extends NodeJS.EventEmitter, Pick<Electron.IpcRenderer, 'send' | 'sendSync' | 'invoke'> {
-    invoke<T>(channel: string, ...args: any[]): Promise<T>;
-  }
-
   interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
   }
 

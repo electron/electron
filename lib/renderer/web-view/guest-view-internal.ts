@@ -1,5 +1,4 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
@@ -32,7 +31,7 @@ export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: numbe
 }
 
 export function detachGuest (guestInstanceId: number) {
-  return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, guestInstanceId);
+  return ipcRendererInternal.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, guestInstanceId);
 }
 
 export function invoke (guestInstanceId: number, method: string, args: any[]) {
@@ -40,13 +39,13 @@ export function invoke (guestInstanceId: number, method: string, args: any[]) {
 }
 
 export function invokeSync (guestInstanceId: number, method: string, args: any[]) {
-  return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
+  return ipcRendererInternal.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
 }
 
 export function propertyGet (guestInstanceId: number, name: string) {
-  return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET, guestInstanceId, name);
+  return ipcRendererInternal.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET, guestInstanceId, name);
 }
 
 export function propertySet (guestInstanceId: number, name: string, value: any) {
-  return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, guestInstanceId, name, value);
+  return ipcRendererInternal.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, guestInstanceId, name, value);
 }

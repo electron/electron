@@ -1,6 +1,5 @@
 import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { webFrame } from 'electron/renderer';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
@@ -21,7 +20,7 @@ window.onload = function () {
 
 // The DOM implementation expects (message?: string) => boolean
 window.confirm = function (message?: string, title?: string) {
-  return ipcRendererUtils.invokeSync(IPC_MESSAGES.INSPECTOR_CONFIRM, message, title) as boolean;
+  return ipcRendererInternal.invokeSync(IPC_MESSAGES.INSPECTOR_CONFIRM, message, title) as boolean;
 };
 
 const useEditMenuItems = function (x: number, y: number, items: ContextMenuItem[]) {

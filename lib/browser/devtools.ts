@@ -1,8 +1,7 @@
 import { dialog, Menu } from 'electron/main';
 import * as fs from 'fs';
 
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { ipcMainInternal, handleSync } from '@electron/internal/browser/ipc-main-internal';
 import { IPC_MESSAGES } from '@electron/internal//common/ipc-messages';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
@@ -84,7 +83,7 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event
   return [path, data];
 });
 
-ipcMainUtils.handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, message: string = '', title: string = '') {
+handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, message: string = '', title: string = '') {
   assertChromeDevTools(event.sender, 'window.confirm()');
 
   const options = {

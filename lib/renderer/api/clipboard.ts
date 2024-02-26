@@ -1,10 +1,10 @@
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
 const clipboard = process._linkedBinding('electron_common_clipboard');
 
 const makeRemoteMethod = function (method: keyof Electron.Clipboard): any {
-  return (...args: any[]) => ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, method, ...args);
+  return (...args: any[]) => ipcRendererInternal.invokeSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, method, ...args);
 };
 
 if (process.platform === 'linux') {

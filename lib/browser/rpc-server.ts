@@ -1,7 +1,6 @@
 import { clipboard } from 'electron/common';
 import * as fs from 'fs';
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { ipcMainInternal, handleSync } from '@electron/internal/browser/ipc-main-internal';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 // Implements window.close()
@@ -33,7 +32,7 @@ const allowedClipboardMethods = (() => {
   }
 })();
 
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, method: string, ...args: any[]) {
+handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, method: string, ...args: any[]) {
   if (!allowedClipboardMethods.has(method)) {
     throw new Error(`Invalid method: ${method}`);
   }
@@ -52,7 +51,7 @@ const getPreloadScript = async function (preloadPath: string) {
   return { preloadPath, preloadSrc, preloadError };
 };
 
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event) {
+handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event) {
   const preloadPaths = event.sender._getPreloadPaths();
 
   return {
@@ -68,7 +67,7 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event
   };
 });
 
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
+handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
   return { preloadPaths: event.sender._getPreloadPaths() };
 });
 

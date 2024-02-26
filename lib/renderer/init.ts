@@ -3,7 +3,6 @@ import { pathToFileURL } from 'url';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -47,7 +46,6 @@ process.argv.splice(1, 1);
 require('@electron/internal/common/init');
 
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
-const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 process.getProcessMemoryInfo = () => {
   return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
@@ -133,7 +131,7 @@ if (nodeIntegration) {
 const { appCodeLoaded } = process;
 delete process.appCodeLoaded;
 
-const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+const { preloadPaths } = ipcRendererInternal.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
 const cjsPreloads = preloadPaths.filter(p => path.extname(p) !== '.mjs');
 const esmPreloads = preloadPaths.filter(p => path.extname(p) === '.mjs');
 if (cjsPreloads.length) {

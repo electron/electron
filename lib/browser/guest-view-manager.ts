@@ -1,6 +1,5 @@
 import { webContents } from 'electron/main';
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { ipcMainInternal, handleSync } from '@electron/internal/browser/ipc-main-internal';
 import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/browser/web-view-events';
@@ -281,7 +280,7 @@ const handleMessage = function (channel: string, handler: (event: Electron.IpcMa
 };
 
 const handleMessageSync = function (channel: string, handler: (event: ElectronInternal.IpcMainInternalEvent, ...args: any[]) => any) {
-  ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
+  handleSync(channel, makeSafeHandler(channel, handler));
 };
 
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, function (event, embedderFrameId: number, elementInstanceId: number, params) {
