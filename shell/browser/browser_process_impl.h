@@ -52,7 +52,7 @@ class BrowserProcessImpl : public BrowserProcess {
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
   BuildState* GetBuildState() override;
-  void PostEarlyInitialization();
+  void PreEarlyInitialization();
   void PreCreateThreads();
   void PreMainMessageLoopRun();
   void PostDestroyThreads() {}
