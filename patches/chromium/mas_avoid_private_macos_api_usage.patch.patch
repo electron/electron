@@ -390,10 +390,38 @@ index 5756139efd53eb9ec6e74007fc10d9f7dfe51d44..8faf652dee5720e066b6ab5f2d4997ee
  
    if (is_win) {
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index 0181e431874fcd9949be755e840af5afa32fdffa..cbd56c17ffce30a8df91b3f81aa6eb22c62c4c27 100644
+index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f89cffa25 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -104,8 +104,10 @@ id GetFocusedBrowserAccessibilityElement() override {
+@@ -64,7 +64,9 @@ explicit RenderWidgetHostNSViewBridgeOwner(
+       const RenderWidgetHostNSViewBridgeOwner&) = delete;
+ 
+  private:
++#if !IS_MAS_BUILD()
+   NSAccessibilityRemoteUIElement* __strong remote_accessibility_element_;
++#endif
+   void OnMojoDisconnect() { delete this; }
+ 
+   std::unique_ptr<blink::WebCoalescedInputEvent> TranslateEvent(
+@@ -76,6 +78,7 @@ explicit RenderWidgetHostNSViewBridgeOwner(
+   }
+ 
+   id GetAccessibilityElement() override {
++#if !IS_MAS_BUILD()
+     if (!remote_accessibility_element_) {
+       base::ProcessId browser_pid = base::kNullProcessId;
+       std::vector<uint8_t> element_token;
+@@ -86,6 +89,9 @@ id GetAccessibilityElement() override {
+           ui::RemoteAccessibility::GetRemoteElementFromToken(element_token);
+     }
+     return remote_accessibility_element_;
++#else
++    return nil;
++#endif
+   }
+ 
+   // RenderWidgetHostNSViewHostHelper implementation.
+@@ -104,8 +110,10 @@ id GetFocusedBrowserAccessibilityElement() override {
      return [bridgedContentView accessibilityFocusedUIElement];
    }
    void SetAccessibilityWindow(NSWindow* window) override {
@@ -515,7 +543,7 @@ index d4e154d08dc61e7240fbb564d942732d3eef7a1a..7b30649c6656107a9401475c745467dd
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 72b957cd89704085ad44d040e0826148d56881fb..2c9589628883d7e657ab16ebad212ac28c4a2846 100644
+index 72b957cd89704085ad44d040e0826148d56881fb..39e03b029c4ebf03020f6cc8b67922f73652772a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -552,7 +580,19 @@ index 72b957cd89704085ad44d040e0826148d56881fb..2c9589628883d7e657ab16ebad212ac2
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2217,12 +2223,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2209,20 +2215,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
+     GetRenderWidgetAccessibilityTokenCallback callback) {
+   base::ProcessId pid = getpid();
++#if !IS_MAS_BUILD()
+   id element_id = GetNativeViewAccessible();
+   std::vector<uint8_t> token =
+       ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
+   std::move(callback).Run(pid, token);
++#else
++  std::move(callback).Run(pid, std::vector<uint8_t>());
++#endif
+ }
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
