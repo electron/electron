@@ -47,4 +47,20 @@ void MediaCaptureDevicesDispatcher::OnSetCapturingLinkSecured(
     blink::mojom::MediaStreamType stream_type,
     bool is_secure) {}
 
+const std::optional<blink::MediaStreamDevice>
+MediaCaptureDevicesDispatcher::GetPreferredAudioDeviceForBrowserContext(
+    content::BrowserContext* browser_context,
+    const std::vector<std::string>& eligible_audio_device_ids) const {
+  const auto& devices = GetAudioCaptureDevices();
+  return devices.empty() ? std::nullopt : std::make_optional(devices.front());
+}
+
+const std::optional<blink::MediaStreamDevice>
+MediaCaptureDevicesDispatcher::GetPreferredVideoDeviceForBrowserContext(
+    content::BrowserContext* browser_context,
+    const std::vector<std::string>& eligible_video_device_ids) const {
+  const auto& devices = GetVideoCaptureDevices();
+  return devices.empty() ? std::nullopt : std::make_optional(devices.front());
+}
+
 }  // namespace electron
