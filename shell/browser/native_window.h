@@ -264,8 +264,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMenuBarVisible();
 
   // Set the aspect ratio when resizing window.
-  double GetAspectRatio();
-  gfx::Size GetAspectRatioExtraSize();
+  [[nodiscard]] double aspect_ratio() const { return aspect_ratio_; }
+  [[nodiscard]] gfx::Size aspect_ratio_extra_size() const {
+    return aspect_ratio_extraSize_;
+  }
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
   // File preview APIs.
