@@ -299,6 +299,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   const std::string* domain = details.FindString("domain");
   const std::string* path = details.FindString("path");
   bool http_only = details.FindBool("httpOnly").value_or(false);
+  bool same_party = details.FindBool("sameParty").value_or(false);
   const std::string* same_site_string = details.FindString("sameSite");
   net::CookieSameSite same_site;
   std::string error = StringToCookieSameSite(same_site_string, &same_site);
@@ -323,8 +324,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       path ? *path : "", ParseTimeProperty(details.FindDouble("creationDate")),
       ParseTimeProperty(details.FindDouble("expirationDate")),
       ParseTimeProperty(details.FindDouble("lastAccessDate")), secure,
-      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, std::nullopt,
-      &status);
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party,
+      std::nullopt, &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(InclusionStatusToString(
