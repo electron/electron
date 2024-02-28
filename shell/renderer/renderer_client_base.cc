@@ -69,7 +69,7 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/common/pdf_util.h"
-#include "components/pdf/common/internal_plugin_helpers.h"
+#include "components/pdf/common/constants.h"
 #include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)

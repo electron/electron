@@ -140,10 +140,10 @@ index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 2b84d4ef58986bb2eb8da1e62edd31769004bd98..7b213ad2757ece877d93e9f2cfdcaf666a6c054c 100644
+index f78d1ce2541de573aa53d253bf707f0234a25f55..02c4e48bf7ddc6325a3f09b39ed1f5ecb16465de 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
-@@ -8,12 +8,17 @@
+@@ -8,13 +8,18 @@
  #include "content/browser/code_cache/generated_code_cache.h"
  #include "content/browser/code_cache/generated_code_cache_context.h"
  #include "content/browser/renderer_host/code_cache_host_impl.h"
@@ -153,6 +153,7 @@ index 2b84d4ef58986bb2eb8da1e62edd31769004bd98..7b213ad2757ece877d93e9f2cfdcaf66
 +#include "content/public/browser/browser_thread.h"
  #include "content/public/browser/storage_partition.h"
  #include "content/public/test/browser_test.h"
+ #include "content/public/test/browser_test_utils.h"
  #include "content/public/test/content_browser_test.h"
  #include "content/public/test/content_browser_test_utils.h"
 +#include "content/public/test/test_browser_context.h"
@@ -161,7 +162,7 @@ index 2b84d4ef58986bb2eb8da1e62edd31769004bd98..7b213ad2757ece877d93e9f2cfdcaf66
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/common/page/v8_compile_hints_histograms.h"
-@@ -22,6 +27,8 @@ namespace content {
+@@ -23,6 +28,8 @@ namespace content {
  
  namespace {
  
@@ -170,7 +171,7 @@ index 2b84d4ef58986bb2eb8da1e62edd31769004bd98..7b213ad2757ece877d93e9f2cfdcaf66
  bool SupportsSharedWorker() {
  #if BUILDFLAG(IS_ANDROID)
    // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -115,8 +122,7 @@ class CodeCacheBrowserTest
+@@ -116,8 +123,7 @@ class CodeCacheBrowserTest
      // Worker scripts will fetch this once the cacheable resource has been
      // loaded and the test logic (checking histograms) can continue.
      if (absolute_url.path() == "/done.js") {
@@ -180,7 +181,7 @@ index 2b84d4ef58986bb2eb8da1e62edd31769004bd98..7b213ad2757ece877d93e9f2cfdcaf66
  
        auto http_response =
            std::make_unique<net::test_server::BasicHttpResponse>();
-@@ -629,4 +635,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -630,4 +636,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  

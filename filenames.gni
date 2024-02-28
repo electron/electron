@@ -383,6 +383,7 @@ filenames = {
     "shell/browser/extended_web_contents_observer.h",
     "shell/browser/feature_list.cc",
     "shell/browser/feature_list.h",
+    "shell/browser/feature_list_mac.mm",
     "shell/browser/file_select_helper.cc",
     "shell/browser/file_select_helper.h",
     "shell/browser/file_select_helper_mac.mm",

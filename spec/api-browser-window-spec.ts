@@ -11,7 +11,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor, hasCapturableScreen } from './lib/screen-helpers';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { setTimeout as syncSetTimeout } from 'node:timers';
@@ -1246,6 +1246,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
+      // FIXME: disabled in `disabled-tests.json`
       ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
         // Show to focus app, then remove existing window
         w.show();
@@ -6496,18 +6497,22 @@ describe('BrowserWindow module', () => {
       await foregroundWindow.loadFile(colorFile);
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const leftHalfColor = getPixelColor(screenCapture, {
-        x: display.size.width / 4,
-        y: display.size.height / 2
-      });
-      const rightHalfColor = getPixelColor(screenCapture, {
-        x: display.size.width - (display.size.width / 4),
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtPointOnDisplayMatches(
+        HexColors.GREEN,
+        (size) => ({
+          x: size.width / 4,
+          y: size.height / 2
+        })
+      );
+      await screenCapture.expectColorAtPointOnDisplayMatches(
+        HexColors.RED,
+        (size) => ({
+          x: size.width * 3 / 4,
+          y: size.height / 2
+        })
+      );
     });
 
     ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
@@ -6537,13 +6542,9 @@ describe('BrowserWindow module', () => {
       await once(ipcMain, 'set-transparent');
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -6560,15 +6561,11 @@ describe('BrowserWindow module', () => {
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
         await setTimeout(1000);
-        const screenCapture = await captureScreen();
-        const centerColor = getPixelColor(screenCapture, {
-          x: display.size.width / 2,
-          y: display.size.height / 2
-        });
-        window.close();
-
+        const screenCapture = await ScreenCapture.createForDisplay(display);
         // color-scheme is set to dark so background should not be white
-        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+        await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+
+        window.close();
       }
     });
   });
@@ -6590,13 +6587,9 @@ describe('BrowserWindow module', () => {
       await once(w, 'ready-to-show');
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });
 
@@ -6640,6 +6633,71 @@ describe('BrowserWindow module', () => {
       await Promise.race([
         once(w, 'move'),
         setTimeout(100) // fallback for possible race condition
+      ]);
+
+      const endPos = w.getPosition();
+
+      expect(startPos).to.not.deep.equal(endPos);
+    });
+
+    ifit(hasCapturableScreen())('should allow the window to be dragged when no WCO and --webkit-app-region: drag enabled', async () => {
+      // @ts-ignore: nut-js is an optional dependency so it may not be installed
+      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+
+      const display = screen.getPrimaryDisplay();
+      const w = new BrowserWindow({
+        x: 0,
+        y: 0,
+        width: display.bounds.width / 2,
+        height: display.bounds.height / 2,
+        frame: false
+      });
+
+      const basePageHTML = path.join(__dirname, 'fixtures', 'pages', 'base-page.html');
+      w.loadFile(basePageHTML);
+      await once(w, 'ready-to-show');
+
+      await w.webContents.executeJavaScript(`
+        const style = document.createElement('style');
+        style.innerHTML = \`
+        #titlebar {
+            
+          background-color: red;
+          height: 30px;
+          width: 100%;
+          -webkit-user-select: none;
+          -webkit-app-region: drag;
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 1000000000000;
+        }
+        \`;
+        
+        const titleBar = document.createElement('title-bar');
+        titleBar.id = 'titlebar';
+        titleBar.textContent = 'test-titlebar';
+        
+        document.body.append(style);
+        document.body.append(titleBar);
+      `);
+      // allow time for titlebar to finish loading
+      await setTimeout(2000);
+
+      const winBounds = w.getBounds();
+      const titleBarHeight = 30;
+      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
+      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
+
+      const startPos = w.getPosition();
+      await mouse.setPosition(await centerOf(titleBarRegion));
+      await mouse.pressButton(Button.LEFT);
+      await mouse.drag(straightTo(centerOf(screenRegion)));
+
+      // Wait for move to complete
+      await Promise.race([
+        once(w, 'move'),
+        setTimeout(1000) // fallback for possible race condition
       ]);
 
       const endPos = w.getPosition();

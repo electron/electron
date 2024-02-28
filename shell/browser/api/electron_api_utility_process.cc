@@ -198,7 +198,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   network::mojom::URLLoaderFactoryParamsPtr loader_params =
       network::mojom::URLLoaderFactoryParams::New();
   loader_params->process_id = pid_;
-  loader_params->is_corb_enabled = false;
+  loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   network::mojom::NetworkContext* network_context =
       g_browser_process->system_network_context_manager()->GetContext();

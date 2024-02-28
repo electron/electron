@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as url from 'node:url';
-import { BrowserWindow, session, ipcMain, app, WebContents, screen } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedUntil } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
@@ -9,7 +9,7 @@ import * as http from 'node:http';
 import * as auth from 'basic-auth';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
+import { HexColors, ScreenCapture } from './lib/screen-helpers';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -804,14 +804,8 @@ describe('<webview> tag', function () {
 
       await setTimeout(1000);
 
-      const display = screen.getPrimaryDisplay();
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
-
-      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+      const screenCapture = await ScreenCapture.create();
+      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -823,14 +817,8 @@ describe('<webview> tag', function () {
 
       await setTimeout(1000);
 
-      const display = screen.getPrimaryDisplay();
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
-
-      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+      const screenCapture = await ScreenCapture.create();
+      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -842,14 +830,8 @@ describe('<webview> tag', function () {
 
       await setTimeout(1000);
 
-      const display = screen.getPrimaryDisplay();
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
-
-      expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.true();
+      const screenCapture = await ScreenCapture.create();
+      await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });
 

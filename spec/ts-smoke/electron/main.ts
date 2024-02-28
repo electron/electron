@@ -1319,6 +1319,11 @@ win4.webContents.on('scroll-touch-end', () => {});
 // @ts-expect-error Removed API
 win4.webContents.on('crashed', () => {});
 
+win4.webContents.on('context-menu', (event, params) => {
+  // @ts-expect-error Removed API
+  console.log(params.inputFieldType);
+});
+
 // TouchBar
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md
 
