@@ -98,6 +98,18 @@ index ed00b8e7e9dcd36e0347290172892e3b58b8cb3d..a63fdb27bbf9c6c3d9c5c5d4b4976453
          content::FirstPartySetsHandler::GetInstance()->SetPublicFirstPartySets(
              version, std::move(sets_file));
        }));
+diff --git a/chrome/browser/extensions/api/cookies/cookies_api.cc b/chrome/browser/extensions/api/cookies/cookies_api.cc
+index 37704856cf800a479cf20774047f6694e2374405..724e22a18bac78baeaca3ceac8435100ebf6463f 100644
+--- a/chrome/browser/extensions/api/cookies/cookies_api.cc
++++ b/chrome/browser/extensions/api/cookies/cookies_api.cc
+@@ -501,6 +501,7 @@ ExtensionFunction::ResponseAction CookiesSetFunction::Run() {
+           parsed_args_->details.http_only.value_or(false),       //
+           same_site,                                             //
+           net::COOKIE_PRIORITY_DEFAULT,                          //
++          same_party,                                            //
+           partition_key));
+   if (!cc) {
+     // Return error through callbacks so that the proper error message
 diff --git a/chrome/browser/first_party_sets/first_party_sets_policy_service.cc b/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
 index 0509dabf8f42123851e5eea62d0f8f9575784f7c..bd37482e962d2d06a0303fd04fc9dc8a26081b13 100644
 --- a/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
@@ -235,8 +247,20 @@ index 796307897e89b979689398db639bd95e89e13dc2..c52cff9c19a250e411db3b0deb0f614c
            base::BindOnce(&TopLevelStorageAccessPermissionContext::
                               CheckForAutoGrantOrAutoDenial,
                           weak_factory_.GetWeakPtr(), std::move(request_data),
+diff --git a/components/signin/internal/identity_manager/gaia_cookie_manager_service.cc b/components/signin/internal/identity_manager/gaia_cookie_manager_service.cc
+index 2e8e994bd86df365d15255d7214becc5d5db798c..35452ae459d52211cbd15e964566e8ee01e8182d 100644
+--- a/components/signin/internal/identity_manager/gaia_cookie_manager_service.cc
++++ b/components/signin/internal/identity_manager/gaia_cookie_manager_service.cc
+@@ -569,6 +569,7 @@ void GaiaCookieManagerService::ForceOnCookieChangeProcessing() {
+           "." + google_url.host(), "/", base::Time(), base::Time(),
+           base::Time(), true /* secure */, false /* httponly */,
+           net::CookieSameSite::NO_RESTRICTION, net::COOKIE_PRIORITY_DEFAULT,
++          /* same_party */ false,
+           absl::nullopt /* cookie_partition_key */);
+   OnCookieChange(
+       net::CookieChangeInfo(*cookie, net::CookieAccessResult(),
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 48f1cdd0a7763242b81c7a54cad72700c8a42af1..1b004d145a8313494937d0c44d538bca472a4ea3 100644
+index 48f1cdd0a7763242b81c7a54cad72700c8a42af1..7349441c41ec70834dc8a7c87d06693090921560 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -60,7 +60,6 @@
@@ -247,16 +271,24 @@ index 48f1cdd0a7763242b81c7a54cad72700c8a42af1..1b004d145a8313494937d0c44d538bca
  #include "content/browser/gpu/gpu_main_thread_factory.h"
  #include "content/browser/renderer_host/render_process_host_impl.h"
  #include "content/browser/scheduler/browser_task_executor.h"
-@@ -1253,8 +1252,7 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
+@@ -1253,14 +1252,9 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
      AndroidBatteryMetrics::CreateInstance();
  #endif
  
 -    GetContentClient()->browser()->SetIsMinimalMode(start_minimal_browser);
 -    if (start_minimal_browser) {
-+    if (start_minimal_browser)
-       ForceInProcessNetworkService();
-       // Minimal browser mode doesn't initialize First-Party Sets the "usual"
-       // way, so we do it manually.
+-      ForceInProcessNetworkService();
+-      // Minimal browser mode doesn't initialize First-Party Sets the "usual"
+-      // way, so we do it manually.
+-      content::FirstPartySetsHandlerImpl::GetInstance()->Init(
+-          base::FilePath(), net::LocalSetDeclaration());
+-    }
++    // if (start_minimal_browser)
++    //   ForceInProcessNetworkService();
++    // }
+ 
+     discardable_shared_memory_manager_ =
+         std::make_unique<discardable_memory::DiscardableSharedMemoryManager>();
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
 index 143c98e3294fb07b08c1d8e97013034f8453e074..60432c0c6d4618f184f86dd629dd1a50808f97c5 100644
 --- a/content/browser/BUILD.gn
@@ -320,11 +352,24 @@ index dbe3c5b8a6c83c5e8d26b109f24e77b4ab2e604e..fd51ab0f749b63fda2a7848594bb616f
        .status.IsInclude();
  }
  
+diff --git a/content/browser/devtools/protocol/network_handler.cc b/content/browser/devtools/protocol/network_handler.cc
+index 2bbc46fd4748246b7fa3e6a8cfe38b43684bf8d7..9b963b4dea16cc7f2e86e4efcbbfbed4c2da050f 100644
+--- a/content/browser/devtools/protocol/network_handler.cc
++++ b/content/browser/devtools/protocol/network_handler.cc
+@@ -424,7 +424,7 @@ MakeCookieFromProtocolValues(const std::string& name,
+       net::CanonicalCookie::CreateSanitizedCookie(
+           url, name, value, normalized_domain, path, base::Time(),
+           expiration_date, base::Time(), secure, http_only, css, cp,
+-          deserialized_partition_key);
++          /*same_party*/false, deserialized_partition_key);
+ 
+   if (!cookie)
+     return Response::InvalidParams("Sanitizing cookie failed");
 diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl_instance.cc b/content/browser/first_party_sets/first_party_sets_handler_impl.cc
-similarity index 74%
+similarity index 75%
 rename from content/browser/first_party_sets/first_party_sets_handler_impl_instance.cc
 rename to content/browser/first_party_sets/first_party_sets_handler_impl.cc
-index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3bbeae692a 100644
+index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..e13b63383bd35e3508f068da3bc04972955baa9c 100644
 --- a/content/browser/first_party_sets/first_party_sets_handler_impl_instance.cc
 +++ b/content/browser/first_party_sets/first_party_sets_handler_impl.cc
 @@ -1,8 +1,8 @@
@@ -402,8 +447,20 @@ index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3b
  }
  
 -FirstPartySetsHandlerImplInstance::FirstPartySetsHandlerImplInstance(
--    bool enabled,
--    bool embedder_will_provide_public_sets)
++// net::FirstPartySetsContextConfig
++// FirstPartySetsHandlerImpl::ComputeEnterpriseContextConfig(
++//     const net::GlobalFirstPartySets& global_sets,
++//     const FirstPartySetParser::ParsedPolicySetLists& policy) {
++//   return global_sets.ComputeConfig(
++//       /*replacement_sets=*/policy.replacements,
++//       /*addition_sets=*/
++//       policy.additions);
++// }
++
++FirstPartySetsHandlerImpl::FirstPartySetsHandlerImpl(
++    base::PassKey<ScopedMockFirstPartySetsHandler>,
+     bool enabled,
+     bool embedder_will_provide_public_sets)
 -    : enabled_(enabled) {
 -  if (enabled) {
 -    on_sets_ready_callbacks_ =
@@ -420,24 +477,12 @@ index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3b
 -    SetCompleteSets(net::GlobalFirstPartySets());
 -    CHECK(global_sets_.has_value());
 -  }
-+net::FirstPartySetsContextConfig
-+FirstPartySetsHandlerImpl::ComputeEnterpriseContextConfig(
-+    const net::GlobalFirstPartySets& global_sets,
-+    const FirstPartySetParser::ParsedPolicySetLists& policy) {
-+  return global_sets.ComputeConfig(
-+      /*replacement_sets=*/policy.replacements,
-+      /*addition_sets=*/
-+      policy.additions);
- }
+-}
++    : FirstPartySetsHandlerImpl(enabled, embedder_will_provide_public_sets) {}
  
 -FirstPartySetsHandlerImplInstance::~FirstPartySetsHandlerImplInstance() =
 -    default;
-+FirstPartySetsHandlerImpl::FirstPartySetsHandlerImpl(
-+    base::PassKey<ScopedMockFirstPartySetsHandler>,
-+    bool enabled,
-+    bool embedder_will_provide_public_sets)
-+    : FirstPartySetsHandlerImpl(enabled, embedder_will_provide_public_sets) {}
- 
+-
 -std::optional<net::GlobalFirstPartySets>
 -FirstPartySetsHandlerImplInstance::GetSets(
 -    base::OnceCallback<void(net::GlobalFirstPartySets)> callback) {
@@ -483,7 +528,7 @@ index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3b
 -    const base::FilePath& user_data_dir,
 -    const net::LocalSetDeclaration& local_set) {
 +void FirstPartySetsHandlerImpl::Init(const base::FilePath& user_data_dir,
-+                                     const LocalSetDeclaration& local_set) {
++                                     const net::LocalSetDeclaration& local_set) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 -  if (initialized_) {
 -    return;
@@ -744,7 +789,7 @@ index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3b
      const base::Value::Dict& policy,
      const std::optional<base::ElapsedTimer>& timer) const {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-@@ -522,22 +521,16 @@ FirstPartySetsHandlerImplInstance::GetContextConfigForPolicyInternal(
+@@ -522,22 +521,13 @@ FirstPartySetsHandlerImplInstance::GetContextConfigForPolicyInternal(
          timer->Elapsed());
    }
  
@@ -761,10 +806,7 @@ index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3b
 -
 -  FirstPartySetsOverridesPolicy& policy_result = parsed.value();
 -  return global_sets_->ComputeConfig(std::move(policy_result.mutation()));
-+  return parsed.has_value()
-+             ? FirstPartySetsHandlerImpl::ComputeEnterpriseContextConfig(
-+                   global_sets_.value(), parsed.value())
-+             : net::FirstPartySetsContextConfig();
++  return net::FirstPartySetsContextConfig();
  }
  
 -bool FirstPartySetsHandlerImplInstance::ForEachEffectiveSetEntry(
@@ -773,10 +815,10 @@ index 267e0786e139a7a1fc142b6fd1a92e3a5e8c716a..2b0860c2dacb5dae6fc574e2016bdf3b
      base::FunctionRef<bool(const net::SchemefulSite&,
                             const net::FirstPartySetEntry&)> f) const {
 diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl.h b/content/browser/first_party_sets/first_party_sets_handler_impl.h
-index b183d8841eda1fa05ecaf01f63d88fb4e6e7689d..12fa2adc03dc473ed38b462764504451258db2a1 100644
+index b183d8841eda1fa05ecaf01f63d88fb4e6e7689d..05317c24a2bee20bd112ec8af5227fd38c407001 100644
 --- a/content/browser/first_party_sets/first_party_sets_handler_impl.h
 +++ b/content/browser/first_party_sets/first_party_sets_handler_impl.h
-@@ -5,26 +5,64 @@
+@@ -5,26 +5,63 @@
  #ifndef CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_HANDLER_IMPL_H_
  #define CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_HANDLER_IMPL_H_
  
@@ -799,7 +841,6 @@ index b183d8841eda1fa05ecaf01f63d88fb4e6e7689d..12fa2adc03dc473ed38b462764504451
 +#include "content/browser/first_party_sets/first_party_set_parser.h"
 +#include "content/browser/first_party_sets/first_party_sets_handler_database_helper.h"
 +#include "content/browser/first_party_sets/first_party_sets_loader.h"
-+#include "content/browser/first_party_sets/local_set_declaration.h"
  #include "content/common/content_export.h"
  #include "content/public/browser/first_party_sets_handler.h"
 +#include "net/first_party_sets/first_party_sets_cache_filter.h"
@@ -845,14 +886,14 @@ index b183d8841eda1fa05ecaf01f63d88fb4e6e7689d..12fa2adc03dc473ed38b462764504451
    // This method reads the persisted First-Party Sets from the file under
    // `user_data_dir` and sets the First-Party Set that was provided via the
    // flag(s).
-@@ -34,8 +72,13 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+@@ -34,8 +71,13 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
    // invocation of Chromium which had First-Party Sets enabled.
    //
    // Only the first call has any effect.
 -  void virtual Init(const base::FilePath& user_data_dir,
 -                    const net::LocalSetDeclaration& local_set) = 0;
 +  void Init(const base::FilePath& user_data_dir,
-+            const LocalSetDeclaration& local_set);
++            const net::LocalSetDeclaration& local_set);
 +
 +  // Factory method that exposes the ctor for testing.
 +  static FirstPartySetsHandlerImpl CreateForTesting(
@@ -861,7 +902,7 @@ index b183d8841eda1fa05ecaf01f63d88fb4e6e7689d..12fa2adc03dc473ed38b462764504451
  
    // Returns the fully-parsed and validated global First-Party Sets data.
    // Returns the data synchronously via an std::optional if it's already
-@@ -49,8 +92,164 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+@@ -49,8 +91,164 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
    //
    // If First-Party Sets is disabled, this returns a populated optional with an
    // empty GlobalFirstPartySets instance.
@@ -913,12 +954,12 @@ index b183d8841eda1fa05ecaf01f63d88fb4e6e7689d..12fa2adc03dc473ed38b462764504451
 +    db_helper_.SynchronouslyResetForTest();  // IN-TEST
 +  }
 +
-+  // Computes information needed by the FirstPartySetsAccessDelegate in order
-+  // to update the browser's list of First-Party Sets to respect a profile's
-+  // setting for the per-profile FirstPartySetsOverrides policy.
-+  static net::FirstPartySetsContextConfig ComputeEnterpriseContextConfig(
-+      const net::GlobalFirstPartySets& browser_sets,
-+      const FirstPartySetParser::ParsedPolicySetLists& policy);
++//   // Computes information needed by the FirstPartySetsAccessDelegate in order
++//   // to update the browser's list of First-Party Sets to respect a profile's
++//   // setting for the per-profile FirstPartySetsOverrides policy.
++//   static net::FirstPartySetsContextConfig ComputeEnterpriseContextConfig(
++//       const net::GlobalFirstPartySets& browser_sets,
++//       const FirstPartySetParser::ParsedPolicySetLists& policy);
 +
 + protected:
 +  FirstPartySetsHandlerImpl(base::PassKey<ScopedMockFirstPartySetsHandler> key,
@@ -1519,23 +1560,43 @@ index 9ec93b54956dc17e0ad9e7383830761812199e2f..029c546412649326ac74e0de47b773ef
        const net::FirstPartySetsContextConfig& config,
        base::OnceCallback<void(net::FirstPartySetMetadata)> callback) = 0;
  
+diff --git a/google_apis/gaia/oauth2_mint_token_flow.cc b/google_apis/gaia/oauth2_mint_token_flow.cc
+index 4d7761e1d66665d4dbaa9d6b46f38fb0e2cfb288..b87dafb0ec13529ad1719d013430ac3166c84db2 100644
+--- a/google_apis/gaia/oauth2_mint_token_flow.cc
++++ b/google_apis/gaia/oauth2_mint_token_flow.cc
+@@ -475,6 +475,7 @@ bool OAuth2MintTokenFlow::ParseRemoteConsentResponse(
+               is_http_only ? *is_http_only : false,
+               net::StringToCookieSameSite(same_site ? *same_site : ""),
+               net::COOKIE_PRIORITY_DEFAULT,
++              /* same_partyy */ false,
+               /* partition_key */ std::nullopt);
+       cookies.push_back(*cookie);
+     }
+diff --git a/google_apis/gaia/oauth_multilogin_result.cc b/google_apis/gaia/oauth_multilogin_result.cc
+index 22a559059bc033ab3b2abd8a39e10671dd445cd4..6a2a32a7e2adf0448131d0ca6aa71977c3081bc2 100644
+--- a/google_apis/gaia/oauth_multilogin_result.cc
++++ b/google_apis/gaia/oauth_multilogin_result.cc
+@@ -138,6 +138,7 @@ void OAuthMultiloginResult::TryParseCookiesFromValue(
+             /*last_access=*/now, /*last_update=*/now, is_secure.value_or(true),
+             is_http_only.value_or(true), samesite_mode,
+             net::StringToCookiePriority(priority ? *priority : "medium"),
++            /* same_party */ false,
+             /*partition_key=*/std::nullopt, net::CookieSourceScheme::kUnset,
+             url::PORT_UNSPECIFIED);
+     // If the unique_ptr is null, it means the cookie was not canonical.
 diff --git a/net/BUILD.gn b/net/BUILD.gn
-index 65bc73a317778a9ec085bb5744a50c8bf271215a..acdb983a709c5b92b1d8966142a89f9fd636aad3 100644
+index 65bc73a317778a9ec085bb5744a50c8bf271215a..74091a15dfe0dcea453120ed099b00665373327c 100644
 --- a/net/BUILD.gn
 +++ b/net/BUILD.gn
-@@ -512,10 +512,8 @@ component("net") {
-     "first_party_sets/first_party_sets_context_config.h",
-     "first_party_sets/global_first_party_sets.cc",
+@@ -514,6 +514,8 @@ component("net") {
      "first_party_sets/global_first_party_sets.h",
--    "first_party_sets/local_set_declaration.cc",
--    "first_party_sets/local_set_declaration.h",
--    "first_party_sets/sets_mutation.cc",
--    "first_party_sets/sets_mutation.h",
+     "first_party_sets/local_set_declaration.cc",
+     "first_party_sets/local_set_declaration.h",
 +    "first_party_sets/same_party_context.cc",
 +    "first_party_sets/same_party_context.h",
+     "first_party_sets/sets_mutation.cc",
+     "first_party_sets/sets_mutation.h",
      "http/alternative_service.cc",
-     "http/alternative_service.h",
-     "http/bidirectional_stream.cc",
 diff --git a/net/base/features.cc b/net/base/features.cc
 index 84235adad43d182bd0471b9465557d293bffed1d..f5eae4b9b02f6297772de9062e138ee26871e946 100644
 --- a/net/base/features.cc
@@ -1569,7 +1630,7 @@ index f4afe84de8dc3b1f4cc1692af6fd0f7f7ae77816..79420b79a3e812140f1d02fee6a26760
  // Sets are initialized before issuing requests that use the HTTP cache or
  // cookies.
 diff --git a/net/base/isolation_info.cc b/net/base/isolation_info.cc
-index c58b63d3fc63a29b374ef60c80134354f28bf18d..6189eaacb3e9bccc97cb67caaa60c7bc07a0ea27 100644
+index c58b63d3fc63a29b374ef60c80134354f28bf18d..0605cb419b0e2fcc58867ebc0cda129de038c136 100644
 --- a/net/base/isolation_info.cc
 +++ b/net/base/isolation_info.cc
 @@ -48,11 +48,13 @@ bool IsConsistent(IsolationInfo::RequestType request_type,
@@ -1672,9 +1733,8 @@ index c58b63d3fc63a29b374ef60c80134354f28bf18d..6189eaacb3e9bccc97cb67caaa60c7bc
      const std::optional<url::Origin>& top_frame_origin,
      const std::optional<url::Origin>& frame_origin,
      const SiteForCookies& site_for_cookies,
--    const std::optional<base::UnguessableToken>& nonce) {
-+    std::nullopt<std::set<SchemefulSite>> party_context,
-+    const std::nullopt<base::UnguessableToken>& nonce) {
++    std::optional<std::set<SchemefulSite>> party_context,
+     const std::optional<base::UnguessableToken>& nonce) {
    if (!IsConsistent(request_type, top_frame_origin, frame_origin,
 -                    site_for_cookies, nonce)) {
 +                    site_for_cookies, party_context, nonce)) {
@@ -2009,7 +2069,7 @@ index 812f471436512a3e1f7ddef3d243b91b46a4288c..dd9ea88cf43f332668aec575ab135b9e
  
  }  // namespace net
 diff --git a/net/cookies/canonical_cookie.cc b/net/cookies/canonical_cookie.cc
-index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f9e121669 100644
+index 02636104eae6d2223d637a11a89f92fcaf1497cc..1b76fecd6b10291ab027f61f38fdca2a9bacfcc8 100644
 --- a/net/cookies/canonical_cookie.cc
 +++ b/net/cookies/canonical_cookie.cc
 @@ -364,9 +364,11 @@ void HistogramSessionCookieAge(const CanonicalCookie& cookie) {
@@ -2026,7 +2086,23 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
  
  CanonicalCookie::CanonicalCookie() = default;
  
-@@ -641,6 +643,12 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::Create(
+@@ -393,6 +395,7 @@ CanonicalCookie::CanonicalCookie(
+     bool httponly,
+     CookieSameSite same_site,
+     CookiePriority priority,
++    bool same_party,
+     absl::optional<CookiePartitionKey> partition_key,
+     CookieSourceScheme source_scheme,
+     int source_port)
+@@ -408,6 +411,7 @@ CanonicalCookie::CanonicalCookie(
+       httponly_(httponly),
+       same_site_(same_site),
+       priority_(priority),
++      same_party_(same_party),
+       partition_key_(std::move(partition_key)),
+       source_scheme_(source_scheme),
+       source_port_(source_port) {}
+@@ -641,6 +645,12 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::Create(
      status->AddExclusionReason(CookieInclusionStatus::EXCLUDE_INVALID_PREFIX);
    }
  
@@ -2039,7 +2115,25 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
    bool partition_has_nonce = CookiePartitionKey::HasNonce(cookie_partition_key);
    bool is_partitioned_valid =
        IsCookiePartitionedValid(url, parsed_cookie, partition_has_nonce);
-@@ -909,6 +917,10 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::CreateSanitizedCookie(
+@@ -715,7 +725,8 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::Create(
+       cookie_expires, creation_time,
+       /*last_update=*/base::Time::Now(), parsed_cookie.IsSecure(),
+       parsed_cookie.IsHttpOnly(), samesite, parsed_cookie.Priority(),
+-      cookie_partition_key, source_scheme, source_port);
++      parsed_cookie.IsSameParty(), cookie_partition_key, source_scheme,
++      source_port);
+ 
+   // TODO(chlily): Log metrics.
+   if (!cc->IsCanonical()) {
+@@ -762,6 +773,7 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::CreateSanitizedCookie(
+     bool http_only,
+     CookieSameSite same_site,
+     CookiePriority priority,
++    bool same_party,
+     absl::optional<CookiePartitionKey> partition_key,
+     CookieInclusionStatus* status) {
+   // Put a pointer on the stack so the rest of the function can assign to it if
+@@ -909,6 +921,10 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::CreateSanitizedCookie(
          net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX);
    }
  
@@ -2050,7 +2144,51 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
    if (!IsCookiePartitionedValid(url, secure,
                                  /*is_partitioned=*/partition_key.has_value(),
                                  /*partition_has_nonce=*/
-@@ -1252,10 +1264,56 @@ CookieAccessResult CanonicalCookie::IncludeForRequestURL(
+@@ -931,7 +947,7 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::CreateSanitizedCookie(
+       base::PassKey<CanonicalCookie>(), name, value, cookie_domain,
+       encoded_cookie_path, creation_time, expiration_time, last_access_time,
+       /*last_update=*/base::Time::Now(), secure, http_only, same_site, priority,
+-      partition_key, source_scheme, source_port);
++      same_party, partition_key, source_scheme, source_port);
+   DCHECK(cc->IsCanonical());
+ 
+   return cc;
+@@ -951,6 +967,7 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::FromStorage(
+     bool httponly,
+     CookieSameSite same_site,
+     CookiePriority priority,
++    bool same_party,
+     absl::optional<CookiePartitionKey> partition_key,
+     CookieSourceScheme source_scheme,
+     int source_port) {
+@@ -965,8 +982,8 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::FromStorage(
+   auto cc = std::make_unique<CanonicalCookie>(
+       base::PassKey<CanonicalCookie>(), std::move(name), std::move(value),
+       std::move(domain), std::move(path), creation, expiration, last_access,
+-      last_update, secure, httponly, same_site, priority, partition_key,
+-      source_scheme, validated_port);
++      last_update, secure, httponly, same_site, priority, same_party,
++      partition_key, source_scheme, validated_port);
+ 
+   if (cc->IsCanonicalForFromStorage()) {
+     // This will help capture the number of times a cookie is canonical but does
+@@ -996,13 +1013,14 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::CreateUnsafeCookieForTesting(
+     bool httponly,
+     CookieSameSite same_site,
+     CookiePriority priority,
++    bool same_party,
+     absl::optional<CookiePartitionKey> partition_key,
+     CookieSourceScheme source_scheme,
+     int source_port) {
+   return std::make_unique<CanonicalCookie>(
+       base::PassKey<CanonicalCookie>(), name, value, domain, path, creation,
+       expiration, last_access, last_update, secure, httponly, same_site,
+-      priority, partition_key, source_scheme, source_port);
++      priority, same_party, partition_key, source_scheme, source_port);
+ }
+ 
+ bool CanonicalCookie::IsFirstPartyPartitioned() const {
+@@ -1252,10 +1270,56 @@ CookieAccessResult CanonicalCookie::IncludeForRequestURL(
          CookieInclusionStatus::EXCLUDE_SAMESITE_NONE_INSECURE);
    }
  
@@ -2111,7 +2249,7 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
  
    if (status.IsInclude()) {
      UMA_HISTOGRAM_ENUMERATION("Cookie.IncludedRequestEffectiveSameSite",
-@@ -1425,10 +1483,59 @@ CookieAccessResult CanonicalCookie::IsSetPermittedInContext(
+@@ -1425,10 +1489,59 @@ CookieAccessResult CanonicalCookie::IsSetPermittedInContext(
        break;
    }
  
@@ -2175,7 +2313,7 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
  
    if (access_result.status.IsInclude()) {
      UMA_HISTOGRAM_ENUMERATION("Cookie.IncludedResponseEffectiveSameSite",
-@@ -1537,6 +1644,9 @@ bool CanonicalCookie::IsCanonicalForFromStorage() const {
+@@ -1537,6 +1650,9 @@ bool CanonicalCookie::IsCanonicalForFromStorage() const {
    if (name_ == "" && HasHiddenPrefixName(value_))
      return false;
  
@@ -2185,7 +2323,7 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
    if (IsPartitioned()) {
      if (CookiePartitionKey::HasNonce(partition_key_))
        return true;
-@@ -1783,6 +1893,23 @@ bool CanonicalCookie::IsRecentlyCreated(base::TimeDelta age_threshold) const {
+@@ -1783,6 +1899,23 @@ bool CanonicalCookie::IsRecentlyCreated(base::TimeDelta age_threshold) const {
    return (base::Time::Now() - creation_date_) <= age_threshold;
  }
  
@@ -2210,7 +2348,7 @@ index 02636104eae6d2223d637a11a89f92fcaf1497cc..1f460ae04c8f052150c63b739aa27d0f
  bool CanonicalCookie::IsCookiePartitionedValid(
      const GURL& url,
 diff --git a/net/cookies/canonical_cookie.h b/net/cookies/canonical_cookie.h
-index 599b17b834e6816f05f029014e2e53cb067a318d..923c8dc63b1f9dff787928aefeca41b7919d743d 100644
+index 599b17b834e6816f05f029014e2e53cb067a318d..272f70b3a25a2f93bd99b042db423591b03b0e54 100644
 --- a/net/cookies/canonical_cookie.h
 +++ b/net/cookies/canonical_cookie.h
 @@ -43,7 +43,8 @@ using CookieAccessResultList = std::vector<CookieWithAccessResult>;
@@ -2234,7 +2372,68 @@ index 599b17b834e6816f05f029014e2e53cb067a318d..923c8dc63b1f9dff787928aefeca41b7
  };
  
  class NET_EXPORT CanonicalCookie {
-@@ -603,6 +608,14 @@ class NET_EXPORT CanonicalCookie {
+@@ -107,6 +112,7 @@ class NET_EXPORT CanonicalCookie {
+                   bool httponly,
+                   CookieSameSite same_site,
+                   CookiePriority priority,
++                  bool same_party,
+                   absl::optional<CookiePartitionKey> partition_key,
+                   CookieSourceScheme scheme_secure = CookieSourceScheme::kUnset,
+                   int source_port = url::PORT_UNSPECIFIED);
+@@ -167,6 +173,7 @@ class NET_EXPORT CanonicalCookie {
+       bool http_only,
+       CookieSameSite same_site,
+       CookiePriority priority,
++      bool same_party,
+       absl::optional<CookiePartitionKey> partition_key,
+       CookieInclusionStatus* status = nullptr);
+ 
+@@ -190,6 +197,7 @@ class NET_EXPORT CanonicalCookie {
+       bool httponly,
+       CookieSameSite same_site,
+       CookiePriority priority,
++      bool same_party,
+       absl::optional<CookiePartitionKey> partition_key,
+       CookieSourceScheme source_scheme,
+       int source_port);
+@@ -209,6 +217,7 @@ class NET_EXPORT CanonicalCookie {
+       bool httponly,
+       CookieSameSite same_site,
+       CookiePriority priority,
++      bool same_party,
+       absl::optional<CookiePartitionKey> partition_key = absl::nullopt,
+       CookieSourceScheme scheme_secure = CookieSourceScheme::kUnset,
+       int source_port = url::PORT_UNSPECIFIED);
+@@ -240,6 +249,7 @@ class NET_EXPORT CanonicalCookie {
+   bool IsHttpOnly() const { return httponly_; }
+   CookieSameSite SameSite() const { return same_site_; }
+   CookiePriority Priority() const { return priority_; }
++  bool IsSameParty() const { return same_party_; }
+   bool IsPartitioned() const { return partition_key_.has_value(); }
+   const absl::optional<CookiePartitionKey>& PartitionKey() const {
+     return partition_key_;
+@@ -366,7 +376,7 @@ class NET_EXPORT CanonicalCookie {
+            last_access_date_ == other.last_access_date_ &&
+            expiry_date_ == other.expiry_date_ && secure_ == other.secure_ &&
+            httponly_ == other.httponly_ && same_site_ == other.same_site_ &&
+-           priority_ == other.priority_ &&
++           priority_ == other.priority_ && same_party_ == other.same_party_ &&
+            partition_key_ == other.partition_key_ && name_ == other.name_ &&
+            value_ == other.value_ && domain_ == other.domain_ &&
+            path_ == other.path_ &&
+@@ -380,8 +390,9 @@ class NET_EXPORT CanonicalCookie {
+     auto f = [](const CanonicalCookie& c) {
+       return std::tie(c.creation_date_, c.last_access_date_, c.expiry_date_,
+                       c.secure_, c.httponly_, c.same_site_, c.priority_,
+-                      c.partition_key_, c.name_, c.value_, c.domain_, c.path_,
+-                      c.last_update_date_, c.source_scheme_, c.source_port_);
++                      c.same_party_, c.partition_key_, c.name_, c.value_,
++                      c.domain_, c.path_, c.last_update_date_, c.source_scheme_,
++                      c.source_port_);
+     };
+     return f(*this) < f(other);
+   }
+@@ -603,6 +614,14 @@ class NET_EXPORT CanonicalCookie {
    // Returns whether the cookie was created at most |age_threshold| ago.
    bool IsRecentlyCreated(base::TimeDelta age_threshold) const;
  
@@ -2249,6 +2448,27 @@ index 599b17b834e6816f05f029014e2e53cb067a318d..923c8dc63b1f9dff787928aefeca41b7
    // Returns true iff the cookie is a partitioned cookie with a nonce or that
    // does not violate the semantics of the Partitioned attribute:
    // - Must have the Secure attribute OR the cookie partition contains a nonce.
+@@ -628,6 +647,7 @@ class NET_EXPORT CanonicalCookie {
+   bool httponly_{false};
+   CookieSameSite same_site_{CookieSameSite::NO_RESTRICTION};
+   CookiePriority priority_{COOKIE_PRIORITY_MEDIUM};
++  bool same_party_{false};
+   // This will be absl::nullopt for all cookies not set with the Partitioned
+   // attribute or without a nonce. If the value is non-null, then the cookie
+   // will only be delivered when the top-frame site matches the partition key
+diff --git a/net/cookies/canonical_cookie_fuzzer.cc b/net/cookies/canonical_cookie_fuzzer.cc
+index c2113af5acc47b720e13d9ddf605a1e223bcc420..0df06e5022a675de884ee35e69b5fcd17efa7ca7 100644
+--- a/net/cookies/canonical_cookie_fuzzer.cc
++++ b/net/cookies/canonical_cookie_fuzzer.cc
+@@ -66,7 +66,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+           url, name, value, domain, path, creation, expiration, last_access,
+           data_provider.ConsumeBool() /* secure */,
+           data_provider.ConsumeBool() /* httponly */, same_site, priority,
+-          partition_key);
++          data_provider.ConsumeBool() /* same_party */, partition_key);
+ 
+   if (sanitized_cookie) {
+     CHECK(sanitized_cookie->IsCanonical());
 diff --git a/net/cookies/cookie_access_delegate.cc b/net/cookies/cookie_access_delegate.cc
 index 256dd856cce9fb482926f7a0c8bb80676a37e0e7..9811f944fff0a20a1a7b431e214f3578ed30785b 100644
 --- a/net/cookies/cookie_access_delegate.cc
@@ -2810,6 +3030,125 @@ index 096ddb1b3c0c6c73ee0f918d9124813814dc7abf..e170851338dd98015392cb3212824c70
  // Takes a CookieAccessResult and returns a bool, returning true if the
  // CookieInclusionStatus in CookieAccessResult was set to "include", else
  // returning false.
+diff --git a/net/cookies/parse_cookie_line_fuzzer.cc b/net/cookies/parse_cookie_line_fuzzer.cc
+index ebc3fc7278667217816fd24993b3edc5579e2454..14097347b08ebf3e8d2ab41ae8ad59e94ef55ddf 100644
+--- a/net/cookies/parse_cookie_line_fuzzer.cc
++++ b/net/cookies/parse_cookie_line_fuzzer.cc
+@@ -80,6 +80,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+             GetArbitraryAttributeValueString(&data_provider));
+         break;
+       case 11:
++        parsed_cookie.SetIsSameParty(data_provider.ConsumeBool());
++        break;
++      case 12:
+         parsed_cookie.SetIsPartitioned(data_provider.ConsumeBool());
+         break;
+     }
+diff --git a/net/cookies/parsed_cookie.cc b/net/cookies/parsed_cookie.cc
+index 24b36dd569a325e20354ce90d07035c2f112864c..8998acd3e25ac39013c835fb046f37e6d9fa007d 100644
+--- a/net/cookies/parsed_cookie.cc
++++ b/net/cookies/parsed_cookie.cc
+@@ -63,6 +63,7 @@ const char kSecureTokenName[] = "secure";
+ const char kHttpOnlyTokenName[] = "httponly";
+ const char kSameSiteTokenName[] = "samesite";
+ const char kPriorityTokenName[] = "priority";
++const char kSamePartyTokenName[] = "sameparty";
+ const char kPartitionedTokenName[] = "partitioned";
+ 
+ const char kTerminator[] = "\n\r\0";
+@@ -270,6 +271,10 @@ bool ParsedCookie::SetPriority(const std::string& priority) {
+   return SetString(&priority_index_, kPriorityTokenName, priority);
+ }
+ 
++bool ParsedCookie::SetIsSameParty(bool is_same_party) {
++  return SetBool(&same_party_index_, kSamePartyTokenName, is_same_party);
++}
++
+ bool ParsedCookie::SetIsPartitioned(bool is_partitioned) {
+   return SetBool(&partitioned_index_, kPartitionedTokenName, is_partitioned);
+ }
+@@ -285,6 +290,7 @@ std::string ParsedCookie::ToCookieLine() const {
+     // we need to consider whether the name component is a special token.
+     if (it == pairs_.begin() ||
+         (it->first != kSecureTokenName && it->first != kHttpOnlyTokenName &&
++         it->first != kSamePartyTokenName &&
+          it->first != kPartitionedTokenName)) {
+       out.append("=");
+       out.append(it->second);
+@@ -668,6 +674,8 @@ void ParsedCookie::SetupAttributes() {
+       same_site_index_ = i;
+     } else if (pairs_[i].first == kPriorityTokenName) {
+       priority_index_ = i;
++    } else if (pairs_[i].first == kSamePartyTokenName) {
++      same_party_index_ = i;
+     } else if (pairs_[i].first == kPartitionedTokenName) {
+       partitioned_index_ = i;
+     } else {
+@@ -741,10 +749,10 @@ void ParsedCookie::ClearAttributePair(size_t index) {
+   if (index == 0)
+     return;
+ 
+-  size_t* indexes[] = {
+-      &path_index_,      &domain_index_,   &expires_index_,
+-      &maxage_index_,    &secure_index_,   &httponly_index_,
+-      &same_site_index_, &priority_index_, &partitioned_index_};
++  size_t* indexes[] = {&path_index_,       &domain_index_,   &expires_index_,
++                       &maxage_index_,     &secure_index_,   &httponly_index_,
++                       &same_site_index_,  &priority_index_, &same_party_index_,
++                       &partitioned_index_};
+   for (size_t* attribute_index : indexes) {
+     if (*attribute_index == index)
+       *attribute_index = 0;
+diff --git a/net/cookies/parsed_cookie.h b/net/cookies/parsed_cookie.h
+index ed84c8fc4328b5c96b84b40d3a56974cecb64c42..3fe624444cdf28a180cffce920dd3fd8057e368c 100644
+--- a/net/cookies/parsed_cookie.h
++++ b/net/cookies/parsed_cookie.h
+@@ -85,6 +85,7 @@ class NET_EXPORT ParsedCookie {
+   CookieSameSite SameSite(
+       CookieSameSiteString* samesite_string = nullptr) const;
+   CookiePriority Priority() const;
++  bool IsSameParty() const { return same_party_index_ != 0; }
+   bool IsPartitioned() const { return partitioned_index_ != 0; }
+   bool HasInternalHtab() const { return internal_htab_; }
+   TruncatingCharacterInCookieStringType
+@@ -115,6 +116,7 @@ class NET_EXPORT ParsedCookie {
+   bool SetIsHttpOnly(bool is_http_only);
+   bool SetSameSite(const std::string& same_site);
+   bool SetPriority(const std::string& priority);
++  bool SetIsSameParty(bool is_same_party);
+   bool SetIsPartitioned(bool is_partitioned);
+ 
+   // Returns the cookie description as it appears in a HTML response header.
+@@ -211,6 +213,7 @@ class NET_EXPORT ParsedCookie {
+   size_t httponly_index_ = 0;
+   size_t same_site_index_ = 0;
+   size_t priority_index_ = 0;
++  size_t same_party_index_ = 0;
+   size_t partitioned_index_ = 0;
+   TruncatingCharacterInCookieStringType truncating_char_in_cookie_string_type_ =
+       TruncatingCharacterInCookieStringType::kTruncatingCharNone;
+diff --git a/net/extras/sqlite/sqlite_persistent_cookie_store.cc b/net/extras/sqlite/sqlite_persistent_cookie_store.cc
+index 0adc6857266535320dedbeee8881f50b14d213f1..4addebdf963f0b09561a7abd5c4d56b66fb4a415 100644
+--- a/net/extras/sqlite/sqlite_persistent_cookie_store.cc
++++ b/net/extras/sqlite/sqlite_persistent_cookie_store.cc
+@@ -991,6 +991,7 @@ bool SQLitePersistentCookieStore::Backend::MakeCookiesFromSQLStatement(
+             statement.ColumnInt(14))),  // samesite
+         DBCookiePriorityToCookiePriority(static_cast<DBCookiePriority>(
+             statement.ColumnInt(12))),                    // priority
++        statement.ColumnBool(17),                         // is_same_party
+         std::move(cookie_partition_key),                  // top_frame_site_key
+         DBToCookieSourceScheme(statement.ColumnInt(15)),  // source_scheme
+         statement.ColumnInt(16));                         // source_port
+@@ -1444,7 +1445,8 @@ void SQLitePersistentCookieStore::Backend::DoCommit() {
+               14, CookieSameSiteToDBCookieSameSite(po->cc().SameSite()));
+           add_statement.BindInt(15, static_cast<int>(po->cc().SourceScheme()));
+           add_statement.BindInt(16, po->cc().SourcePort());
+-          add_statement.BindTime(17, po->cc().LastUpdateDate());
++          add_statement.BindBool(17, po->cc().IsSameParty());
++          add_statement.BindTime(18, po->cc().LastUpdateDate());
+           if (!add_statement.Run()) {
+             DLOG(WARNING) << "Could not add a cookie to the DB.";
+             RecordCookieCommitProblem(COOKIE_COMMIT_PROBLEM_ADD);
 diff --git a/net/first_party_sets/first_party_set_metadata.cc b/net/first_party_sets/first_party_set_metadata.cc
 index ba6fc9679184fda286fe32f7dd963b7371f0d8d5..fb2303c5851d547150e7a47266a9a602e6ea9f91 100644
 --- a/net/first_party_sets/first_party_set_metadata.cc
@@ -2890,7 +3229,7 @@ index b23e52575bc2ae0634075890782eb46716116217..77cf13c75599522be3efda658b8685b2
    absl::optional<FirstPartySetEntry> top_frame_entry_ = absl::nullopt;
  };
 diff --git a/net/first_party_sets/global_first_party_sets.cc b/net/first_party_sets/global_first_party_sets.cc
-index c916b0f4e106afdef92b3cd4d95cff3edf4d5594..af98230e407bb16afd223f21c8a64fa5c6547b2f 100644
+index c916b0f4e106afdef92b3cd4d95cff3edf4d5594..23cf2755f9c77bf5ddb3d6ff59650ecb9614ecfc 100644
 --- a/net/first_party_sets/global_first_party_sets.cc
 +++ b/net/first_party_sets/global_first_party_sets.cc
 @@ -29,6 +29,13 @@ namespace {
@@ -2958,7 +3297,7 @@ index c916b0f4e106afdef92b3cd4d95cff3edf4d5594..af98230e407bb16afd223f21c8a64fa5
  FirstPartySetMetadata GlobalFirstPartySets::ComputeMetadata(
      const SchemefulSite& site,
      const SchemefulSite* top_frame_site,
-+    const std::set<SchemefulSite>& party_context,
++    const std::set<net::SchemefulSite>& party_context,
      const FirstPartySetsContextConfig& fps_context_config) const {
 +  SamePartyContext::Type context_type =
 +      ContextTypeFromBool(IsContextSamePartyWithSite(
@@ -2979,7 +3318,7 @@ index c916b0f4e106afdef92b3cd4d95cff3edf4d5594..af98230e407bb16afd223f21c8a64fa5
 +bool GlobalFirstPartySets::IsContextSamePartyWithSite(
 +    const SchemefulSite& site,
 +    const SchemefulSite* top_frame_site,
-+    const std::set<SchemefulSite>& party_context,
++    const std::set<net::SchemefulSite>& party_context,
 +    const FirstPartySetsContextConfig& fps_context_config) const {
 +  const absl::optional<FirstPartySetEntry> site_entry =
 +      FindEntry(site, fps_context_config);
@@ -3005,18 +3344,27 @@ index c916b0f4e106afdef92b3cd4d95cff3edf4d5594..af98230e407bb16afd223f21c8a64fa5
      const LocalSetDeclaration& local_set_declaration) {
    CHECK(manual_config_.empty());
 diff --git a/net/first_party_sets/global_first_party_sets.h b/net/first_party_sets/global_first_party_sets.h
-index d87aaec1747738a29dc03cdfcb9266c48ef8b699..f3bea4ee18b5581924b8b81f812a0f1d54629e75 100644
+index d87aaec1747738a29dc03cdfcb9266c48ef8b699..d4cfd163cae7f2bd66249afcc57b55c748704126 100644
 --- a/net/first_party_sets/global_first_party_sets.h
 +++ b/net/first_party_sets/global_first_party_sets.h
-@@ -76,6 +76,7 @@ class NET_EXPORT GlobalFirstPartySets {
+@@ -5,6 +5,8 @@
+ #ifndef NET_FIRST_PARTY_SETS_GLOBAL_FIRST_PARTY_SETS_H_
+ #define NET_FIRST_PARTY_SETS_GLOBAL_FIRST_PARTY_SETS_H_
+ 
++#include <set>
++
+ #include "base/containers/flat_map.h"
+ #include "base/containers/flat_set.h"
+ #include "base/functional/function_ref.h"
+@@ -76,6 +78,7 @@ class NET_EXPORT GlobalFirstPartySets {
    FirstPartySetMetadata ComputeMetadata(
        const SchemefulSite& site,
        const SchemefulSite* top_frame_site,
-+      const std::set<SchemefulSite>& party_context,
++      const std::set<net::SchemefulSite>& party_context,
        const FirstPartySetsContextConfig& fps_context_config) const;
  
    // Modifies this instance such that it will respect the given
-@@ -159,6 +160,18 @@ class NET_EXPORT GlobalFirstPartySets {
+@@ -159,6 +162,18 @@ class NET_EXPORT GlobalFirstPartySets {
        const std::vector<base::flat_map<SchemefulSite, FirstPartySetEntry>>&
            addition_sets) const;
  
@@ -3029,7 +3377,7 @@ index d87aaec1747738a29dc03cdfcb9266c48ef8b699..f3bea4ee18b5581924b8b81f812a0f1d
 +  bool IsContextSamePartyWithSite(
 +      const SchemefulSite& site,
 +      const SchemefulSite* top_frame_site,
-+      const std::set<SchemefulSite>& party_context,
++      const std::set<net::SchemefulSite>& party_context,
 +      const FirstPartySetsContextConfig& fps_context_config) const;
 +
    // Same as the public version of ForEachEffectiveSetEntry, but is allowed to
@@ -3399,6 +3747,21 @@ index 72a96c033d0c3eb3555cff718c66d7775cf4800c..50c3a309db86e5f044e2bfc429ca82fc
    [[nodiscard]] absl::optional<FirstPartySetsAccessDelegate::EntriesResult>
    FindFirstPartySetEntries(
        const base::flat_set<net::SchemefulSite>& sites,
+diff --git a/services/network/cookie_manager.cc b/services/network/cookie_manager.cc
+index e5e410525d8a6ffe8f653fee3de4be1eaca504a9..7c11eb0558368aa2d94cf4e4f15d5b09f665719e 100644
+--- a/services/network/cookie_manager.cc
++++ b/services/network/cookie_manager.cc
+@@ -141,8 +141,8 @@ void CookieManager::SetCanonicalCookie(const net::CanonicalCookie& cookie,
+         cookie.Name(), cookie.Value(), cookie.Domain(), cookie.Path(),
+         cookie.CreationDate(), adjusted_expiry_date, cookie.LastAccessDate(),
+         cookie.LastUpdateDate(), cookie.IsSecure(), cookie.IsHttpOnly(),
+-        cookie.SameSite(), cookie.Priority(), cookie_partition_key,
+-        cookie.SourceScheme(), cookie.SourcePort());
++        cookie.SameSite(), cookie.Priority(), cookie.IsSameParty(),
++        cookie_partition_key, cookie.SourceScheme(), cookie.SourcePort());
+     if (!cookie_ptr) {
+       std::move(callback).Run(
+           net::CookieAccessResult(net::CookieInclusionStatus(
 diff --git a/services/network/first_party_sets/first_party_sets_access_delegate.cc b/services/network/first_party_sets/first_party_sets_access_delegate.cc
 index ed35e2dc6f5b0e2867cfdc5fb118e0dd45324a13..c07f0dc2d8a146cf187b204db4f2a9bceca6ceac 100644
 --- a/services/network/first_party_sets/first_party_sets_access_delegate.cc
@@ -3803,7 +4166,7 @@ index acfc4db5bf05115d8a3dcd274ba08838f7db5ee8..25c230b8d0d65c95ba6524c61ad44ee3
    int HandleClearSiteDataHeader(
        net::URLRequest* request,
 diff --git a/services/network/public/cpp/cookie_manager_mojom_traits.cc b/services/network/public/cpp/cookie_manager_mojom_traits.cc
-index bdf07a173b84ab6a4c3222ecbb2da84130950d06..645eaee8f15e0719368f973dff7c3dec2d6f048f 100644
+index bdf07a173b84ab6a4c3222ecbb2da84130950d06..2505b01a13c62f49ce73a539d5d452ea6ae340bd 100644
 --- a/services/network/public/cpp/cookie_manager_mojom_traits.cc
 +++ b/services/network/public/cpp/cookie_manager_mojom_traits.cc
 @@ -586,6 +586,17 @@ bool StructTraits<network::mojom::CookieOptionsDataView, net::CookieOptions>::
@@ -3824,8 +4187,19 @@ index bdf07a173b84ab6a4c3222ecbb2da84130950d06..645eaee8f15e0719368f973dff7c3dec
    return true;
  }
  
+@@ -692,8 +703,8 @@ bool StructTraits<
+       std::move(name), std::move(value), std::move(domain), std::move(path),
+       std::move(creation_time), std::move(expiry_time),
+       std::move(last_access_time), std::move(last_update_time), cookie.secure(),
+-      cookie.httponly(), site_restrictions, priority, partition_key,
+-      source_scheme, cookie.source_port());
++      cookie.httponly(), site_restrictions, priority, cookie.same_party(),
++      partition_key, source_scheme, cookie.source_port());
+   if (!cc)
+     return false;
+   *out = *cc;
 diff --git a/services/network/public/cpp/cookie_manager_mojom_traits.h b/services/network/public/cpp/cookie_manager_mojom_traits.h
-index 3f7d6369a4e107b71f9c20fe5e212a8ea7d45701..cd765b5674889265c6c5240ebe0aceadde05af97 100644
+index 3f7d6369a4e107b71f9c20fe5e212a8ea7d45701..d562b702b0f5a87017268e80d5941585609ccc3b 100644
 --- a/services/network/public/cpp/cookie_manager_mojom_traits.h
 +++ b/services/network/public/cpp/cookie_manager_mojom_traits.h
 @@ -16,6 +16,8 @@
@@ -3856,6 +4230,16 @@ index 3f7d6369a4e107b71f9c20fe5e212a8ea7d45701..cd765b5674889265c6c5240ebe0acead
    static bool Read(network::mojom::CookieOptionsDataView mojo_options,
                     net::CookieOptions* cookie_options);
  };
+@@ -270,6 +284,9 @@ struct StructTraits<network::mojom::CanonicalCookieDataView,
+   static net::CookieSourceScheme source_scheme(const net::CanonicalCookie& c) {
+     return c.SourceScheme();
+   }
++  static bool same_party(const net::CanonicalCookie& c) {
++    return c.IsSameParty();
++  }
+   static const absl::optional<net::CookiePartitionKey>& partition_key(
+       const net::CanonicalCookie& c) {
+     return c.PartitionKey();
 diff --git a/services/network/public/cpp/first_party_sets_mojom_traits.cc b/services/network/public/cpp/first_party_sets_mojom_traits.cc
 index b5d5d26e7d2362ba2a9d17be393cb70cb001b827..7a04526edc7b09b1e1d2cb0f9fc75a2898359282 100644
 --- a/services/network/public/cpp/first_party_sets_mojom_traits.cc
@@ -4061,7 +4445,7 @@ index 4cb2d01d09a2c0ba3acb3672b20b543cbb033aca..cacca86a2e8638d3e12d2a36f1404480
                mojom = "network.mojom.FirstPartySetMetadata"
                cpp = "::net::FirstPartySetMetadata"
 diff --git a/services/network/public/mojom/cookie_manager.mojom b/services/network/public/mojom/cookie_manager.mojom
-index de434341bd6328f5876fb8057d652582dbbf4802..a4f7d378f7d2f2a5090dc33331698e7154479382 100644
+index de434341bd6328f5876fb8057d652582dbbf4802..011f7b0e95bdbb2f3a370211cc38ba547d881540 100644
 --- a/services/network/public/mojom/cookie_manager.mojom
 +++ b/services/network/public/mojom/cookie_manager.mojom
 @@ -166,6 +166,12 @@ struct CookieOptions {
@@ -4077,6 +4461,14 @@ index de434341bd6328f5876fb8057d652582dbbf4802..a4f7d378f7d2f2a5090dc33331698e71
  };
  
  // See net/cookies/canonical_cookie.{h,cc} for documentation.
+@@ -184,6 +190,7 @@ struct CanonicalCookie {
+   CookieSameSite site_restrictions = NO_RESTRICTION;
+   CookiePriority priority = MEDIUM;
+   CookieSourceScheme source_scheme = kUnset;
++  bool same_party = false;
+   CookiePartitionKey? partition_key;
+   // -1 because of url::PORT_UNSPECIFIED
+   // url/third_party/mozilla/url_parse.h
 diff --git a/services/network/public/mojom/first_party_sets.mojom b/services/network/public/mojom/first_party_sets.mojom
 index 875138dee43ec8739c35fbab27e27ca0fc502e69..015510d0920eceb89e92f174292403160f725a23 100644
 --- a/services/network/public/mojom/first_party_sets.mojom
@@ -4118,19 +4510,18 @@ index 60b726cce8f05a8d0a89a310d00b467be519badc..407ea92cb29712fd89f7c40c6bb21090
 +  array<SchemefulSite>? party_context;
  };
 diff --git a/services/network/restricted_cookie_manager.cc b/services/network/restricted_cookie_manager.cc
-index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5b6157081 100644
+index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..57c62912126a000ab15d1658af2177031630738b 100644
 --- a/services/network/restricted_cookie_manager.cc
 +++ b/services/network/restricted_cookie_manager.cc
-@@ -38,8 +38,6 @@
+@@ -38,7 +38,6 @@
  #include "net/cookies/cookie_util.h"
  #include "net/cookies/site_for_cookies.h"
  #include "net/first_party_sets/first_party_set_metadata.h"
 -#include "net/first_party_sets/first_party_sets_cache_filter.h"
--#include "services/network/ad_heuristic_cookie_overrides.h"
+ #include "services/network/ad_heuristic_cookie_overrides.h"
  #include "services/network/cookie_settings.h"
  #include "services/network/public/cpp/features.h"
- #include "services/network/public/mojom/cookie_manager.mojom.h"
-@@ -109,11 +107,20 @@ constexpr base::TimeDelta kCookiesAccessedTimeout = base::Milliseconds(100);
+@@ -109,11 +108,20 @@ constexpr base::TimeDelta kCookiesAccessedTimeout = base::Milliseconds(100);
  constexpr size_t kMaxCookieCacheCount = 32u;
  constexpr size_t kIncreasedMaxCookieCacheCount = 100u;
  
@@ -4152,7 +4543,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
    net::CookieOptions options;
    bool force_ignore_site_for_cookies =
        cookie_settings.ShouldIgnoreSameSiteRestrictions(url, site_for_cookies);
-@@ -129,6 +136,14 @@ net::CookieOptions MakeOptionsForSet(
+@@ -129,6 +137,14 @@ net::CookieOptions MakeOptionsForSet(
          net::cookie_util::ComputeSameSiteContextForSubresource(
              url, site_for_cookies, force_ignore_site_for_cookies));
    }
@@ -4167,7 +4558,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
  
    return options;
  }
-@@ -137,7 +152,9 @@ net::CookieOptions MakeOptionsForGet(
+@@ -137,7 +153,9 @@ net::CookieOptions MakeOptionsForGet(
      mojom::RestrictedCookieManagerRole role,
      const GURL& url,
      const net::SiteForCookies& site_for_cookies,
@@ -4178,7 +4569,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
    // TODO(https://crbug.com/925311): Wire initiator here.
    net::CookieOptions options;
    bool force_ignore_site_for_cookies =
-@@ -155,6 +172,14 @@ net::CookieOptions MakeOptionsForGet(
+@@ -155,6 +173,14 @@ net::CookieOptions MakeOptionsForGet(
          net::cookie_util::ComputeSameSiteContextForSubresource(
              url, site_for_cookies, force_ignore_site_for_cookies));
    }
@@ -4193,7 +4584,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
  
    return options;
  }
-@@ -196,21 +221,13 @@ void RestrictedCookieManager::ComputeFirstPartySetMetadata(
+@@ -196,21 +222,13 @@ void RestrictedCookieManager::ComputeFirstPartySetMetadata(
    std::pair<base::OnceCallback<void(net::FirstPartySetMetadata)>,
              base::OnceCallback<void(net::FirstPartySetMetadata)>>
        callbacks = base::SplitOnceCallback(std::move(callback));
@@ -4222,7 +4613,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
  }
  
  bool CookieWithAccessResultComparer::operator()(
-@@ -342,7 +359,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -342,7 +360,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
             bool has_storage_access,
             const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
             net::CookieOptions options,
@@ -4232,7 +4623,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
        : cookie_store_(cookie_store),
          restricted_cookie_manager_(restricted_cookie_manager),
          url_(url),
-@@ -350,7 +368,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -350,7 +369,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
          top_frame_origin_(top_frame_origin),
          has_storage_access_(has_storage_access),
          options_(options),
@@ -4242,7 +4633,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
      // TODO(pwnall): add a constructor w/options to net::CookieChangeDispatcher.
      cookie_store_subscription_ =
          cookie_store->GetChangeDispatcher().AddCallbackForUrl(
-@@ -386,11 +405,16 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -386,11 +406,16 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
  
      // CookieChangeDispatcher doesn't check for inclusion against `options_`, so
      // we need to double-check that.
@@ -4260,7 +4651,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
               .status.IsInclude()) {
        return;
      }
-@@ -442,6 +466,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+@@ -442,6 +467,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
  
    mojo::Remote<mojom::CookieChangeListener> mojo_listener_;
  
@@ -4269,7 +4660,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
    SEQUENCE_CHECKER(sequence_checker_);
  };
  
-@@ -468,6 +494,8 @@ RestrictedCookieManager::RestrictedCookieManager(
+@@ -468,6 +495,8 @@ RestrictedCookieManager::RestrictedCookieManager(
        cookie_partition_key_collection_(
            net::CookiePartitionKeyCollection::FromOptional(
                cookie_partition_key_)),
@@ -4278,7 +4669,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
        receiver_(this),
        metrics_updater_(metrics_updater),
        max_cookie_cache_count_(
-@@ -594,7 +622,8 @@ void RestrictedCookieManager::GetAllForUrl(
+@@ -594,7 +623,8 @@ void RestrictedCookieManager::GetAllForUrl(
    // TODO(morlovich): Try to validate site_for_cookies as well.
  
    net::CookieOptions net_options =
@@ -4288,7 +4679,18 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
    // TODO(https://crbug.com/977040): remove set_return_excluded_cookies() once
    // removing deprecation warnings.
    net_options.set_return_excluded_cookies();
-@@ -867,7 +896,8 @@ void RestrictedCookieManager::SetCanonicalCookie(
+@@ -855,8 +885,8 @@ void RestrictedCookieManager::SetCanonicalCookie(
+       net::CanonicalCookie::FromStorage(
+           cookie.Name(), cookie.Value(), cookie.Domain(), cookie.Path(), now,
+           cookie.ExpiryDate(), now, now, cookie.IsSecure(), cookie.IsHttpOnly(),
+-          cookie.SameSite(), cookie.Priority(), cookie_partition_key,
+-          source_scheme, origin_.port());
++          cookie.SameSite(), cookie.Priority(), cookie.IsSameParty(),
++          cookie_partition_key, source_scheme, origin_.port());
+   DCHECK(sanitized_cookie);
+   // FromStorage() uses a less strict version of IsCanonical(), we need to check
+   // the stricter version as well here.
+@@ -867,7 +897,8 @@ void RestrictedCookieManager::SetCanonicalCookie(
  
    net::CanonicalCookie cookie_copy = *sanitized_cookie;
    net::CookieOptions options =
@@ -4298,7 +4700,7 @@ index b5b48a0ce69c7bbe7ce61028fc5d832875e59b7c..3188b21b029756ec40f37758c2769be5
  
    net::CookieAccessResult cookie_access_result(status);
    cookie_store_->SetCanonicalCookieAsync(
-@@ -925,11 +955,12 @@ void RestrictedCookieManager::AddChangeListener(
+@@ -925,11 +956,12 @@ void RestrictedCookieManager::AddChangeListener(
    }
  
    net::CookieOptions net_options =
@@ -4415,3 +4817,16 @@ index 5b863520514c1cb5011c6afa08d231a4047282e9..2712538e887b39035ac0b2718a98c5ee
  }
  
  // static
+diff --git a/third_party/blink/renderer/modules/cookie_store/cookie_store.cc b/third_party/blink/renderer/modules/cookie_store/cookie_store.cc
+index ba3ed0252770c90b83721752356d3e1146fcd9f5..15dff565c4841047f7625635345461ec2ffeeff3 100644
+--- a/third_party/blink/renderer/modules/cookie_store/cookie_store.cc
++++ b/third_party/blink/renderer/modules/cookie_store/cookie_store.cc
+@@ -167,7 +167,7 @@ std::unique_ptr<net::CanonicalCookie> ToCanonicalCookie(
+           path.Utf8(), base::Time() /*creation*/, expires,
+           base::Time() /*last_access*/, true /*secure*/, false /*http_only*/,
+           same_site, net::CookiePriority::COOKIE_PRIORITY_DEFAULT,
+-          cookie_partition_key, &status_out);
++          false /*same_party*/, cookie_partition_key, &status_out);
+ 
+   // TODO(crbug.com/1310444): Improve serialization validation comments and
+   // associate them with ExceptionState codes.
