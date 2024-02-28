@@ -131,5 +131,4 @@ fix_suppress_clang_-wimplicit-const-int-float-conversion_in.patch
 cherry-pick-e7ffe20ebfac.patch
 fix_getcursorscreenpoint_wrongly_returns_0_0.patch
 fix_add_support_for_skipping_first_2_no-op_refreshes_in_thumb_cap.patch
-feat_revert_upstream_sameparty_removal.patch
 revert_same_party_cookie_attribute_removal.patch
