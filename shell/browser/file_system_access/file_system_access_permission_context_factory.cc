@@ -8,13 +8,15 @@
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
-#include "shell/browser/file_system_access/electron_file_system_access_permission_context.h"
+#include "shell/browser/file_system_access/file_system_access_permission_context.h"
+
+namespace electron {
 
 // static
-ElectronFileSystemAccessPermissionContext*
+electron::FileSystemAccessPermissionContext*
 FileSystemAccessPermissionContextFactory::GetForBrowserContext(
     content::BrowserContext* context) {
-  return static_cast<ElectronFileSystemAccessPermissionContext*>(
+  return static_cast<electron::FileSystemAccessPermissionContext*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
 }
 
@@ -43,5 +45,7 @@ KeyedService* FileSystemAccessPermissionContextFactory::BuildServiceInstanceFor(
 std::unique_ptr<KeyedService>
 FileSystemAccessPermissionContextFactory::BuildInstanceFor(
     content::BrowserContext* context) {
-  return std::make_unique<ElectronFileSystemAccessPermissionContext>(context);
+  return std::make_unique<FileSystemAccessPermissionContext>(context);
 }
+
+}  // namespace electron

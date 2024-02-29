@@ -42,7 +42,7 @@ const base::Feature kFileSystemAccessLocalUNCPathBlock{
 namespace {
 
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
-using GrantType = FileSystemAccessPermissionContext::GrantType;
+using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
 using blink::mojom::PermissionStatus;
 
 #if BUILDFLAG(IS_WIN)
