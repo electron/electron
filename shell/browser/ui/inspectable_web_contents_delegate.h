@@ -32,6 +32,7 @@ class InspectableWebContentsDelegate {
                                  const std::string& file_system_path,
                                  const std::string& excluded_folders) {}
   virtual void DevToolsOpenInNewTab(const std::string& url) {}
+  virtual void DevToolsOpenSearchResultsInNewTab(const std::string& query) {}
   virtual void DevToolsStopIndexing(int request_id) {}
   virtual void DevToolsSearchInPath(int request_id,
                                     const std::string& file_system_path,
