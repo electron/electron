@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 00c95fbee7f40ecb7884097576fff128f081351f..f89eb9b871aefd9e06622fb897acb577a28ec96f 100644
+index 8f37cd237422b15b32a7f509fadb44e78bbe588c..e8479dacd6b732d3e21539184d5f96e5b94c10fc 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -974,7 +974,6 @@ if (is_win) {
@@ -830,10 +830,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 324498d53bf057fd5cf0cac3eb6fbd627ce90e7f..44fae3f3b4b9a9646062b7ea87aefec08c4acc22 100644
+index ac9c91c5b9048db4c33d8584dee96596e4aff68c..9ea6edb54fbb48d51572c6ca512a059ad677991a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2993,8 +2993,9 @@ source_set("browser") {
+@@ -2924,8 +2924,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

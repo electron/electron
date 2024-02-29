@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 36675dd68a3f0beec2d703178417fdf50de31f79..b07223aafe4d5b63a989802038f28c953842aaeb 100644
+index dcaabde395b859f13f238476d093279b644ca940..e9502fc39855d8f4f843dd3d5de925fa8a43c947 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1052,6 +1052,7 @@ component("base") {
+@@ -1050,6 +1050,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -431,7 +431,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index dbf7b6000665bbd751bf441fd390d49c3d4f42e0..324498d53bf057fd5cf0cac3eb6fbd627ce90e7f 100644
+index 193558166b9587eb62ea7a13ab71716d38277aec..ac9c91c5b9048db4c33d8584dee96596e4aff68c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -443,7 +443,7 @@ index dbf7b6000665bbd751bf441fd390d49c3d4f42e0..324498d53bf057fd5cf0cac3eb6fbd62
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 96979b61bb52b6b87ee31906bac3aef025cda8c7..786c0fb321055c23fa05fe9168654a3002e1be62 100644
+index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4fc3b51b53 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -660,7 +660,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f241340d0519cbf7ba40837f6b5e16fbf0d2f7e5..b5b8652eee72a41320629df6db7f9acc0122081f 100644
+index 7a0769c985c08a3b3834c9495b9ebcebad21e220..74a3b7da7024e468b0d0b0044b2137d59f0bf8e5 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -489,6 +489,7 @@ static_library("test_support") {
@@ -687,7 +687,7 @@ index f241340d0519cbf7ba40837f6b5e16fbf0d2f7e5..b5b8652eee72a41320629df6db7f9acc
  
    public_deps = [
      ":test_interfaces",
-@@ -2944,6 +2947,7 @@ test("content_unittests") {
+@@ -2945,6 +2948,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -889,10 +889,10 @@ index 8cd474c33e514fd0aa90daf68a56ed7fc902d713..9fff9cc7b00b257c3bebb02c75a3c2e8
  }  // namespace
  #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index ac44f991c6cbe464d8867d8b3c77e1a5082793a7..7933a70a4b88b3cd00724aa025e82aecd867a5f3 100644
+index 0c0243c2bb9e72c6eba6f9af554b99e2d5514a5d..f5f0e0ec951ccc8278b773c852134e4e29f53e8a 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -969,7 +969,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -959,7 +959,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -1278,7 +1278,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 7ac1237d974f31168582a3e1b7815cbe53095d03..115341ff1e42a25ccef9741c269001dd6907f205 100644
+index c6ab1b11b29d574234aae9f30401b1ff8a9023ce..ff94cb56f884811f6eaf3f9b15c534e3284c773b 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -312,6 +312,7 @@ component("core") {

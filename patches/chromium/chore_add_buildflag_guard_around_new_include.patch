@@ -37,4 +37,3 @@ index 2a1498da8c9ce693403800d4c4b52fac6a7430e1..3121dbc0721ecfc4c0d5a586673bd139
  #if BUILDFLAG(IS_CHROMEOS_ASH)
  #include "ui/compositor/throughput_tracker.h"
  #endif
-
