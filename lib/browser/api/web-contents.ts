@@ -263,12 +263,10 @@ WebContents.prototype.printToPDF = async function (options) {
 
 // TODO(codebytere): deduplicate argument sanitization by moving rest of
 // print param logic into new file shared between printToPDF and print
-WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions, callback) {
-  if (typeof options !== 'object') {
+WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
+  if (typeof options !== 'object' || options == null) {
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
-
-  const printSettings: Record<string, any> = { ...options };
 
   const pageSize = options.pageSize ?? 'A4';
   if (typeof pageSize === 'object') {
@@ -283,7 +281,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
       throw new RangeError('height and width properties must be minimum 352 microns.');
     }
 
-    printSettings.mediaSize = {
+    options.mediaSize = {
       name: 'CUSTOM',
       custom_display_name: 'Custom',
       height_microns: height,
@@ -295,7 +293,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     };
   } else if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
     const mediaSize = PDFPageSizes[pageSize];
-    printSettings.mediaSize = {
+    options.mediaSize = {
       ...mediaSize,
       imageable_area_left_microns: 0,
       imageable_area_bottom_microns: 0,
@@ -308,9 +306,9 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
 
   if (this._print) {
     if (callback) {
-      this._print(printSettings, callback);
+      this._print(options, callback);
     } else {
-      this._print(printSettings);
+      this._print(options);
     }
   } else {
     console.error('Error: Printing feature is disabled.');
