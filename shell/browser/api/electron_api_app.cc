@@ -480,23 +480,23 @@ int GetPathConstant(std::string_view name) {
 
 bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
-        void(const base::CommandLine& command_line,
+        void(base::CommandLine command_line,
              const base::FilePath& current_directory,
              const std::vector<const uint8_t> additional_data)>& callback,
-    const base::CommandLine& cmd,
+    base::CommandLine cmd,
     const base::FilePath& cwd,
     const std::vector<const uint8_t> additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, std::move(additional_data));
+    callback.Run(std::move(cmd), cwd, std::move(additional_data));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::SingleThreadTaskRunner::GetCurrentDefault());
 
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(FROM_HERE,
-                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                         std::move(additional_data)));
+    task_runner->PostTask(
+        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
+                                  cwd, std::move(additional_data)));
   }
   // ProcessSingleton needs to know whether current process is quitting.
   return !Browser::Get()->is_shutting_down();
@@ -1060,7 +1060,7 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnSecondInstance(const base::CommandLine& cmd,
+void App::OnSecondInstance(base::CommandLine cmd,
                            const base::FilePath& cwd,
                            const std::vector<const uint8_t> additional_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
