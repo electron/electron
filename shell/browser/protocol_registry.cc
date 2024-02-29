@@ -48,6 +48,23 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
   }
 }
 
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ProtocolRegistry::CreateNonNetworkNavigationURLLoaderFactory(
+    const std::string& scheme) {
+  if (scheme == url::kFileScheme) {
+    if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {
+      return AsarURLLoaderFactory::Create();
+    }
+  } else {
+    auto handler = handlers_.find(scheme);
+    if (handler != handlers_.end()) {
+      return ElectronURLLoaderFactory::Create(handler->second.first,
+                                              handler->second.second);
+    }
+  }
+  return {};
+}
+
 bool ProtocolRegistry::RegisterProtocol(ProtocolType type,
                                         const std::string& scheme,
                                         const ProtocolHandler& handler) {

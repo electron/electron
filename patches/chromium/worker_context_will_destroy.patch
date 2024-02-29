@@ -43,7 +43,7 @@ index 132aca6cb29e9968816e45cc567818818d555ad9..b40cb62c2f631ee3bd622c43f70da6aa
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index c1b86ec95d41c39d60002639596cb70cfcdd0d1c..4a41bf08164a53b436139be0e6d93dc172fcc0a6 100644
+index 89fd49fe34afaef4e36a2b0ac13e01fa98517f7d..f1af544c524680939847a4eca70e4d5aff1a91bf 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -187,6 +187,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {

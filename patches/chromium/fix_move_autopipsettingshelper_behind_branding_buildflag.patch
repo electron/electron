@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 865bb4928694b9476f875045a9de8daf3b9c367f..9d42736d53a21b7e1895f9e4e974a8d1a820ea41 100644
+index 5b0342be7e9732cdceb53b951c34dceb30e12da1..2f01a432540f603955b7809faeca51302b4286db 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -39,7 +39,7 @@ index 865bb4928694b9476f875045a9de8daf3b9c367f..9d42736d53a21b7e1895f9e4e974a8d1
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -176,7 +179,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -175,7 +178,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -48,7 +48,7 @@ index 865bb4928694b9476f875045a9de8daf3b9c367f..9d42736d53a21b7e1895f9e4e974a8d1
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -368,7 +371,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -367,7 +370,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -57,7 +57,7 @@ index 865bb4928694b9476f875045a9de8daf3b9c367f..9d42736d53a21b7e1895f9e4e974a8d1
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -440,6 +443,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -446,6 +449,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -65,7 +65,7 @@ index 865bb4928694b9476f875045a9de8daf3b9c367f..9d42736d53a21b7e1895f9e4e974a8d1
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -478,6 +482,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -484,6 +488,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
