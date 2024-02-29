@@ -435,14 +435,15 @@ WebContents.prototype.loadURL = function (url, options) {
   return p;
 };
 
-WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions, outlivesOpener?: boolean})) {
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse) {
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean, createWindow?: Electron.CreateWindowFunction} {
   const defaultResponse = {
     browserWindowConstructorOptions: null,
-    outlivesOpener: false
+    outlivesOpener: false,
+    createWindow: undefined
   };
   if (!this._windowOpenHandler) {
     return defaultResponse;
@@ -468,7 +469,8 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   } else if (response.action === 'allow') {
     return {
       browserWindowConstructorOptions: typeof response.overrideBrowserWindowOptions === 'object' ? response.overrideBrowserWindowOptions : null,
-      outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
+      outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false,
+      createWindow: typeof response.createWindow === 'function' ? response.createWindow : undefined
     };
   } else {
     event.preventDefault();
@@ -655,13 +657,16 @@ WebContents.prototype._init = function () {
           postData,
           overrideBrowserWindowOptions: options || {},
           windowOpenArgs: details,
-          outlivesOpener: result.outlivesOpener
+          outlivesOpener: result.outlivesOpener,
+          createWindow: result.createWindow
         });
       }
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
+    let createWindow: Electron.CreateWindowFunction | undefined;
+
     this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
@@ -686,6 +691,7 @@ WebContents.prototype._init = function () {
 
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
+      createWindow = result.createWindow;
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
@@ -715,6 +721,9 @@ WebContents.prototype._init = function () {
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
       const outlivesOpener = windowOpenOutlivesOpenerOption;
+      const windowOpenFunction = createWindow;
+
+      createWindow = undefined;
       windowOpenOverriddenOptions = null;
       // false is the default
       windowOpenOutlivesOpenerOption = false;
@@ -737,7 +746,8 @@ WebContents.prototype._init = function () {
           frameName,
           features: rawFeatures
         },
-        outlivesOpener
+        outlivesOpener,
+        createWindow: windowOpenFunction
       });
     });
   }
