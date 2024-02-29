@@ -177,7 +177,8 @@ class InspectableWebContents
   void CanShowSurvey(DispatchCallback callback,
                      const std::string& trigger) override {}
   void DoAidaConversation(DispatchCallback callback,
-                          const std::string& request) override {}
+                          const std::string& request,
+                          int stream_id) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
