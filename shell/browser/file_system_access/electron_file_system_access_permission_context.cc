@@ -4,22 +4,15 @@
 
 #include "shell/browser/file_system_access/electron_file_system_access_permission_context.h"
 
-#include <memory>
-#include <optional>
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include "base/base_paths.h"
 #include "base/files/file_path.h"
-#include "base/files/file_util.h"
 #include "base/json/values_util.h"
 #include "base/path_service.h"
-#include "base/ranges/algorithm.h"
-#include "base/strings/strcat.h"
 #include "base/task/bind_post_task.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
 #include "base/values.h"
 #include "build/build_config.h"
@@ -27,7 +20,6 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/disallow_activation_reason.h"
 #include "content/public/browser/render_frame_host.h"
@@ -254,13 +246,6 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 }
 
 }  // namespace
-
-ElectronFileSystemAccessPermissionContext::Grants::Grants() = default;
-ElectronFileSystemAccessPermissionContext::Grants::~Grants() = default;
-ElectronFileSystemAccessPermissionContext::Grants::Grants(Grants&&) = default;
-ElectronFileSystemAccessPermissionContext::Grants&
-ElectronFileSystemAccessPermissionContext::Grants::operator=(Grants&&) =
-    default;
 
 class ElectronFileSystemAccessPermissionContext::PermissionGrantImpl
     : public content::FileSystemAccessPermissionGrant {
