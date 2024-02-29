@@ -37,6 +37,14 @@ class MediaCaptureDevicesDispatcher
                                  int page_request_id,
                                  blink::mojom::MediaStreamType stream_type,
                                  bool is_secure) override;
+  const std::optional<blink::MediaStreamDevice>
+  GetPreferredAudioDeviceForBrowserContext(
+      content::BrowserContext* browser_context,
+      const std::vector<std::string>& eligible_audio_device_ids) const override;
+  const std::optional<blink::MediaStreamDevice>
+  GetPreferredVideoDeviceForBrowserContext(
+      content::BrowserContext* browser_context,
+      const std::vector<std::string>& eligible_video_device_ids) const override;
 
   // disable copy
   MediaCaptureDevicesDispatcher(const MediaCaptureDevicesDispatcher&) = delete;

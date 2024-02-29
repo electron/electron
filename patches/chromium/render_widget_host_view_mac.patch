@@ -8,10 +8,10 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 0825f3f1ef87120a9b82d3f52289dc54d2d6f233..5f6e5b078672c0336cee72300a7a37d6284db226 100644
+index 5649f120ccefae9e9d21fc05e0f67225a7609609..d520acc21839a63f5e1167c5ec3f119d89d43713 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -160,6 +160,15 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -162,6 +162,15 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -27,7 +27,7 @@ index 0825f3f1ef87120a9b82d3f52289dc54d2d6f233..5f6e5b078672c0336cee72300a7a37d6
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -742,6 +751,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -744,6 +753,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -37,7 +37,7 @@ index 0825f3f1ef87120a9b82d3f52289dc54d2d6f233..5f6e5b078672c0336cee72300a7a37d6
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -826,6 +838,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -828,6 +840,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -48,7 +48,7 @@ index 0825f3f1ef87120a9b82d3f52289dc54d2d6f233..5f6e5b078672c0336cee72300a7a37d6
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1154,6 +1170,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1156,6 +1172,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  

@@ -194,7 +194,7 @@ class App : public ElectronBrowserClient::Delegate,
   std::string GetLocale();
   std::string GetLocaleCountryCode();
   std::string GetSystemLocale(gin_helper::ErrorThrower thrower) const;
-  void OnSecondInstance(const base::CommandLine& cmd,
+  void OnSecondInstance(base::CommandLine cmd,
                         const base::FilePath& cwd,
                         const std::vector<const uint8_t> additional_data);
   bool HasSingleInstanceLock() const;

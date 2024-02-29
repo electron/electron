@@ -44,6 +44,10 @@ The `inputFormType` property of the params object in the `context-menu`
 event from `WebContents` has been removed. Use the new `formControlType`
 property instead.
 
+### Removed: `process.getIOCounters()`
+
+Chromium has removed access to this information.
+
 ## Planned Breaking API Changes (29.0)
 
 ### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`

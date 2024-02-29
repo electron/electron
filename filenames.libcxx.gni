@@ -431,6 +431,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__functional/weak_result_type.h",
   "//third_party/libc++/src/include/__fwd/array.h",
   "//third_party/libc++/src/include/__fwd/bit_reference.h",
+  "//third_party/libc++/src/include/__fwd/complex.h",
   "//third_party/libc++/src/include/__fwd/fstream.h",
   "//third_party/libc++/src/include/__fwd/hash.h",
   "//third_party/libc++/src/include/__fwd/ios.h",
