@@ -52,7 +52,7 @@ index b40cb62c2f631ee3bd622c43f70da6aaef8375c3..57b4ffcbe6bfd0bb1819fa2082e0cfcb
      const blink::WebSecurityOrigin& script_origin) {
    return GetContentClient()->renderer()->AllowScriptExtensionForServiceWorker(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 4a41bf08164a53b436139be0e6d93dc172fcc0a6..3e6718cd019e14ba8d406f4bbae6fa56f33ce2f8 100644
+index f1af544c524680939847a4eca70e4d5aff1a91bf..2c557fc2f50b5181e1e57caab6ed4b21e9dcdd62 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -187,6 +187,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {

@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 8428a296547e0c8ae55fe5916046cd120a57d7af..accc1a1672b7438dcdf0f96839e8c6bed3881215 100644
+index 34507957115c87610475b2bea6dd39d9e0dc2d15..c72057569c7c2eb9c34ca7cb11f3d446d44e6313 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -566,6 +566,7 @@ void MenuController::Run(Widget* parent,
+@@ -578,6 +578,7 @@ void MenuController::Run(Widget* parent,
                           MenuAnchorPosition position,
                           bool context_menu,
                           bool is_nested_drag,
@@ -17,7 +17,7 @@ index 8428a296547e0c8ae55fe5916046cd120a57d7af..accc1a1672b7438dcdf0f96839e8c6be
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -630,6 +631,14 @@ void MenuController::Run(Widget* parent,
+@@ -642,6 +643,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
@@ -32,7 +32,7 @@ index 8428a296547e0c8ae55fe5916046cd120a57d7af..accc1a1672b7438dcdf0f96839e8c6be
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2254,19 +2263,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2266,19 +2275,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -58,7 +58,7 @@ index 8428a296547e0c8ae55fe5916046cd120a57d7af..accc1a1672b7438dcdf0f96839e8c6be
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 43668ea5b4fcf625d941d3205c084dab87f2626d..845742ce8e7de76c99c7ca1cf5a62eff2f1a155d 100644
+index d77c256527f4051c9ff5d314c669a8d5f0b3c861..b4a61b63b8717996dc98b609ac65c41392c89151 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
 @@ -139,6 +139,7 @@ class VIEWS_EXPORT MenuController
@@ -182,7 +182,7 @@ index 972abab3bf46f815f6713b2e2e5b4db78ac4a432..b52a55f4267171ff5a907e0f76b8172b
        std::optional<gfx::RoundedCornersF> corners = std::nullopt,
        std::optional<std::string> show_menu_host_duration_histogram =
 diff --git a/ui/views/controls/menu/menu_runner_impl_mac.h b/ui/views/controls/menu/menu_runner_impl_mac.h
-index 799e03fd15794a08be2503b50299b92bb083517e..d297da8da069d53e29892d2dcf3ef2e45a7b3373 100644
+index db81eab045142c73de4fd751ece93ed8d6d653f7..2852652a7989abf417f9406eed5cbd98dd6c37f8 100644
 --- a/ui/views/controls/menu/menu_runner_impl_mac.h
 +++ b/ui/views/controls/menu/menu_runner_impl_mac.h
 @@ -39,6 +39,7 @@ class VIEWS_EXPORT MenuRunnerImplMac : public MenuRunnerImplInterface {
@@ -191,10 +191,10 @@ index 799e03fd15794a08be2503b50299b92bb083517e..d297da8da069d53e29892d2dcf3ef2e4
        int32_t run_types,
 +      ui::MenuSourceType source_type,
        gfx::NativeView native_view_for_gestures,
-       absl::optional<gfx::RoundedCornersF> corners,
-       absl::optional<std::string> show_menu_host_duration_histogram) override;
+       std::optional<gfx::RoundedCornersF> corners,
+       std::optional<std::string> show_menu_host_duration_histogram) override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_mac.mm b/ui/views/controls/menu/menu_runner_impl_mac.mm
-index 0fb98f56e84c86fd6947d02c38853b5e997859df..312c651499f7b12708a1ca8694ce174bc5593074 100644
+index 27f83d5eece36ec1230fbb2d840614b309aa7408..6e41b2dc2c9a7cb4d30d2679afaf8b51f055d46a 100644
 --- a/ui/views/controls/menu/menu_runner_impl_mac.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_mac.mm
 @@ -46,6 +46,7 @@
@@ -203,8 +203,8 @@ index 0fb98f56e84c86fd6947d02c38853b5e997859df..312c651499f7b12708a1ca8694ce174b
      int32_t run_types,
 +    ui::MenuSourceType source_type,
      gfx::NativeView native_view_for_gestures,
-     absl::optional<gfx::RoundedCornersF> corners,
-     absl::optional<std::string> show_menu_host_duration_histogram) {
+     std::optional<gfx::RoundedCornersF> corners,
+     std::optional<std::string> show_menu_host_duration_histogram) {
 @@ -59,8 +60,8 @@
      }
    }
@@ -217,7 +217,7 @@ index 0fb98f56e84c86fd6947d02c38853b5e997859df..312c651499f7b12708a1ca8694ce174b
  
  void MenuRunnerImplMac::Cancel() {
 diff --git a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
-index fe26b1070d1fc36cfa718c4b3b6e651a77732575..11b6563503c0172f530d1d05b880e77e1eadafca 100644
+index 7aaf6d82e09d47db1a209ae074638ccf56afc7c9..c1b0f6bb3d4b7c2f85aacccf2323c23df0b89e7d 100644
 --- a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
 +++ b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.h
 @@ -57,6 +57,7 @@ class VIEWS_EXPORT MenuRunnerImplRemoteCocoa
@@ -226,10 +226,10 @@ index fe26b1070d1fc36cfa718c4b3b6e651a77732575..11b6563503c0172f530d1d05b880e77e
        int32_t run_types,
 +      ui::MenuSourceType source_type,
        gfx::NativeView native_view_for_gestures,
-       absl::optional<gfx::RoundedCornersF> corners,
-       absl::optional<std::string> show_menu_host_duration_histogram) override;
+       std::optional<gfx::RoundedCornersF> corners,
+       std::optional<std::string> show_menu_host_duration_histogram) override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm
-index 92e105c78dec5c944ecfd03332a6968191f25253..238294fb1d2a8ff324731ecbbec2c14f7fa9f771 100644
+index e171461e288365f85892d429aad4895b0929a61d..6faf66a503e2f1c37322d8613b290c0ce4348439 100644
 --- a/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_remote_cocoa.mm
 @@ -69,6 +69,7 @@
@@ -238,5 +238,5 @@ index 92e105c78dec5c944ecfd03332a6968191f25253..238294fb1d2a8ff324731ecbbec2c14f
      int32_t run_types,
 +    ui::MenuSourceType source_type,
      gfx::NativeView native_view_for_gestures,
-     absl::optional<gfx::RoundedCornersF> corners,
-     absl::optional<std::string> show_menu_host_duration_histogram) {
+     std::optional<gfx::RoundedCornersF> corners,
+     std::optional<std::string> show_menu_host_duration_histogram) {

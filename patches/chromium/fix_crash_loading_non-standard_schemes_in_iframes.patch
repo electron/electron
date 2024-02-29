@@ -23,7 +23,7 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index b303b8bd70624038ed973d6b7a57311b22d5e6f4..16ae1aaf4c7badb49b12dd9bd5dca6b475ad4a45 100644
+index 998dd9cd9d6d996a6a030098d39483e2e3341667..78a08331781326d129a12fd52228e28f30222634 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -10219,6 +10219,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
@@ -40,10 +40,10 @@ index b303b8bd70624038ed973d6b7a57311b22d5e6f4..16ae1aaf4c7badb49b12dd9bd5dca6b4
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 901999fb1b6048aefe8ab6c4f0dc9bc8f3844889..4067aa000ba5e26ee81858e3280fafa8793cd081 100644
+index 2a8d1b1e081079c45b879a6de6e4e17eb4dd3020..5c9a34270a0ed93a5ca934c31d58edc54b00858b 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2124,6 +2124,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2140,6 +2140,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 901999fb1b6048aefe8ab6c4f0dc9bc8f3844889..4067aa000ba5e26ee81858e3280fafa8
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2171,6 +2175,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2187,6 +2191,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");
