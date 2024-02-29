@@ -13,7 +13,6 @@
 #include "base/logging.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
-#include "base/process/process_metrics_iocounters.h"
 #include "base/system/sys_info.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
@@ -55,7 +54,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
   process->SetMethod("getSystemVersion",
                      &base::SysInfo::OperatingSystemVersion);
-  process->SetMethod("getIOCounters", &GetIOCounters);
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
@@ -289,24 +287,6 @@ v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
 #else
   dict.Set("idleWakeupsPerSecond", 0);
 #endif
-
-  return dict.GetHandle();
-}
-
-// static
-v8::Local<v8::Value> ElectronBindings::GetIOCounters(v8::Isolate* isolate) {
-  auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
-  base::IoCounters io_counters;
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-
-  if (metrics->GetIOCounters(&io_counters)) {
-    dict.Set("readOperationCount", io_counters.ReadOperationCount);
-    dict.Set("writeOperationCount", io_counters.WriteOperationCount);
-    dict.Set("otherOperationCount", io_counters.OtherOperationCount);
-    dict.Set("readTransferCount", io_counters.ReadTransferCount);
-    dict.Set("writeTransferCount", io_counters.WriteTransferCount);
-    dict.Set("otherTransferCount", io_counters.OtherTransferCount);
-  }
 
   return dict.GetHandle();
 }
