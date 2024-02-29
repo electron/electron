@@ -1,0 +1,1027 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyeec9h3@gmail.com>
+Date: Tue, 13 Dec 2022 22:58:06 +0100
+Subject: module: rework of memory management in vm APIs with the
+ importModuleDynamically option
+
+module: use symbol in WeakMap to manage host defined options
+Previously when managing the importModuleDynamically callback of
+vm.compileFunction(), we use an ID number as the host defined option
+and maintain a per-Environment ID -> CompiledFnEntry map to retain
+the top-level referrer function returned by vm.compileFunction() in
+order to pass it back to the callback, but it would leak because with
+how we used v8::Persistent to maintain this reference, V8 would not
+be able to understand the cycle and would just think that the
+CompiledFnEntry was supposed to live forever. We made an attempt
+to make that reference known to V8 by making the CompiledFnEntry weak
+and using a private symbol to make CompiledFnEntry strongly
+references the top-level referrer function in
+unsound, because the there's no guarantee that the top-level function
+must be alive while import() can still be initiated from that
+function, since V8 could discard the top-level function and only keep
+inner functions alive, so relying on the top-level function to keep
+the CompiledFnEntry alive could result in use-after-free which caused
+a revert of that fix.
+
+With this patch we use a symbol in the host defined options instead of
+a number, because with the stage-3 symbol-as-weakmap-keys proposal
+we could directly use that symbol to keep the referrer alive using a
+WeakMap. As a bonus this also keeps the other kinds of referrers
+alive as long as import() can still be initiated from that
+Script/Module, so this also fixes the long-standing crash caused by
+vm.Script being GC'ed too early when its importModuleDynamically
+callback still needs it.
+
+module: fix leak of vm.SyntheticModule
+Previously we maintain a strong persistent reference to the
+ModuleWrap to retrieve the ID-to-ModuleWrap mapping from
+the HostImportModuleDynamicallyCallback using the number ID
+stored in the host-defined options. As a result the ModuleWrap
+would be kept alive until the Environment is shut down, which
+would be a leak for user code. With the new symbol-based
+host-defined option we can just get the ModuleWrap from the
+JS-land WeakMap so there's now no need to maintain this
+strong reference. This would at least fix the leak for
+vm.SyntheticModule. vm.SourceTextModule is still leaking
+due to the strong persistent reference to the v8::Module.
+
+module: fix the leak in SourceTextModule and ContextifySript
+Replace the persistent handles to v8::Module and
+v8::UnboundScript with an internal reference that V8's GC is
+aware of to fix the leaks.
+
+This is fixed in v20 and above.
+
+diff --git a/lib/internal/modules/esm/create_dynamic_module.js b/lib/internal/modules/esm/create_dynamic_module.js
+index c99da19d5c8271ba5a53e243840e7b58c894910e..6c4d3c4b3e79d9d641a11af5a7fc895b4af96b5b 100644
+--- a/lib/internal/modules/esm/create_dynamic_module.js
++++ b/lib/internal/modules/esm/create_dynamic_module.js
+@@ -35,7 +35,7 @@ ${ArrayPrototypeJoin(ArrayPrototypeMap(imports, createImport), '\n')}
+ ${ArrayPrototypeJoin(ArrayPrototypeMap(exports, createExport), '\n')}
+ import.meta.done();
+ `;
+-  const { ModuleWrap, callbackMap } = internalBinding('module_wrap');
++  const { ModuleWrap } = internalBinding('module_wrap');
+   const m = new ModuleWrap(`${url}`, undefined, source, 0, 0);
+ 
+   const readyfns = new SafeSet();
+@@ -46,8 +46,9 @@ import.meta.done();
+ 
+   if (imports.length)
+     reflect.imports = ObjectCreate(null);
+-
+-  callbackMap.set(m, {
++  const { registerModule } = require('internal/modules/esm/utils');
++  registerModule(m, {
++    __proto__: null,
+     initializeImportMeta: (meta, wrap) => {
+       meta.exports = reflect.exports;
+       if (reflect.imports)
+diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
+index 32b34ee8478e374bd5d433d79f370355d5003eaa..b1194f3ef22e711a87a41663631b7dd1e6192de7 100644
+--- a/lib/internal/modules/esm/loader.js
++++ b/lib/internal/modules/esm/loader.js
+@@ -46,7 +46,6 @@ const ModuleJob = require('internal/modules/esm/module_job');
+ 
+ const {
+   defaultResolve,
+-  DEFAULT_CONDITIONS,
+ } = require('internal/modules/esm/resolve');
+ const {
+   initializeImportMeta,
+@@ -54,6 +53,10 @@ const {
+ const { defaultLoad } = require('internal/modules/esm/load');
+ const { translators } = require(
+   'internal/modules/esm/translators');
++const {
++  getDefaultConditions,
++} = require('internal/modules/esm/utils');
++
+ const { getOptionValue } = require('internal/options');
+ 
+ /**
+@@ -374,9 +377,11 @@ class ESMLoader {
+     url = pathToFileURL(`${process.cwd()}/[eval${++this.evalIndex}]`).href,
+   ) {
+     const evalInstance = (url) => {
+-      const { ModuleWrap, callbackMap } = internalBinding('module_wrap');
++      const { ModuleWrap } = internalBinding('module_wrap');
++      const { registerModule } = require('internal/modules/esm/utils');
+       const module = new ModuleWrap(url, undefined, source, 0, 0);
+-      callbackMap.set(module, {
++      registerModule(module, {
++        __proto__: null,
+         importModuleDynamically: (specifier, { url }, importAssertions) => {
+           return this.import(specifier, url, importAssertions);
+         },
+@@ -799,7 +804,7 @@ class ESMLoader {
+     }
+     const chain = this.#hooks.resolve;
+     const context = {
+-      conditions: DEFAULT_CONDITIONS,
++      conditions: getDefaultConditions(),
+       importAssertions,
+       parentURL,
+     };
+diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
+index 4072321e6bc3c9f0c8428d8159670950886c3404..10a5124b11cd889144025a6f4887294454792959 100644
+--- a/lib/internal/modules/esm/resolve.js
++++ b/lib/internal/modules/esm/resolve.js
+@@ -6,7 +6,6 @@ const {
+   ArrayPrototypeShift,
+   JSONParse,
+   JSONStringify,
+-  ObjectFreeze,
+   ObjectGetOwnPropertyNames,
+   ObjectPrototypeHasOwnProperty,
+   RegExp,
+@@ -42,7 +41,6 @@ const typeFlag = getOptionValue('--input-type');
+ const { URL, pathToFileURL, fileURLToPath } = require('internal/url');
+ const {
+   ERR_INPUT_TYPE_NOT_ALLOWED,
+-  ERR_INVALID_ARG_VALUE,
+   ERR_INVALID_MODULE_SPECIFIER,
+   ERR_INVALID_PACKAGE_CONFIG,
+   ERR_INVALID_PACKAGE_TARGET,
+@@ -57,25 +55,13 @@ const {
+ const { Module: CJSModule } = require('internal/modules/cjs/loader');
+ const packageJsonReader = require('internal/modules/package_json_reader');
+ const { getPackageConfig, getPackageScopeConfig } = require('internal/modules/esm/package_config');
++const { getConditionsSet } = require('internal/modules/esm/utils');
+ 
+ /**
+  * @typedef {import('internal/modules/esm/package_config.js').PackageConfig} PackageConfig
+  */
+ 
+ 
+-const userConditions = getOptionValue('--conditions');
+-const noAddons = getOptionValue('--no-addons');
+-const addonConditions = noAddons ? [] : ['node-addons'];
+-
+-const DEFAULT_CONDITIONS = ObjectFreeze([
+-  'node',
+-  'import',
+-  ...addonConditions,
+-  ...userConditions,
+-]);
+-
+-const DEFAULT_CONDITIONS_SET = new SafeSet(DEFAULT_CONDITIONS);
+-
+ const emittedPackageWarnings = new SafeSet();
+ 
+ function emitTrailingSlashPatternDeprecation(match, pjsonUrl, base) {
+@@ -146,21 +132,6 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
+   }
+ }
+ 
+-/**
+- * @param {string[]} [conditions]
+- * @returns {Set<string>}
+- */
+-function getConditionsSet(conditions) {
+-  if (conditions !== undefined && conditions !== DEFAULT_CONDITIONS) {
+-    if (!ArrayIsArray(conditions)) {
+-      throw new ERR_INVALID_ARG_VALUE('conditions', conditions,
+-                                      'expected an array');
+-    }
+-    return new SafeSet(conditions);
+-  }
+-  return DEFAULT_CONDITIONS_SET;
+-}
+-
+ const realpathCache = new SafeMap();
+ 
+ /**
+@@ -1169,7 +1140,6 @@ async function defaultResolve(specifier, context = {}) {
+ }
+ 
+ module.exports = {
+-  DEFAULT_CONDITIONS,
+   defaultResolve,
+   encodedSepRegEx,
+   getPackageScopeConfig,
+diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
+index 347558c805c8ecd3f7ff4f6324ef7df68badc52f..4b47a010215e3c7ff9033ecc46962a18a8aa6363 100644
+--- a/lib/internal/modules/esm/translators.js
++++ b/lib/internal/modules/esm/translators.js
+@@ -117,7 +117,9 @@ translators.set('module', async function moduleStrategy(url, source, isMain) {
+   maybeCacheSourceMap(url, source);
+   debug(`Translating StandardModule ${url}`);
+   const module = new ModuleWrap(url, undefined, source, 0, 0);
+-  moduleWrap.callbackMap.set(module, {
++  const { registerModule } = require('internal/modules/esm/utils');
++  registerModule(module, {
++    __proto__: null,
+     initializeImportMeta: (meta, wrap) => this.importMetaInitialize(meta, { url }),
+     importModuleDynamically,
+   });
+diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
+index bf3edc86518b4c5966050efc53a612c8d61420b3..d3dd49cbbaf6c5b4b0b013774929e3a8553ab0b8 100644
+--- a/lib/internal/modules/esm/utils.js
++++ b/lib/internal/modules/esm/utils.js
+@@ -6,27 +6,25 @@ const {
+   ObjectFreeze,
+ } = primordials;
+ 
++const {
++  privateSymbols: {
++    host_defined_option_symbol,
++  },
++} = internalBinding('util');
++
+ const {
+   ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
+   ERR_INVALID_ARG_VALUE,
+ } = require('internal/errors').codes;
+ 
+-const { getOptionValue } = require('internal/options');
++const { getOptionValue, getEmbedderOptions } = require('internal/options');
+ 
+ const {
+   setImportModuleDynamicallyCallback,
+   setInitializeImportMetaObjectCallback,
+ } = internalBinding('module_wrap');
+-const {
+-  getModuleFromWrap,
+-} = require('internal/vm/module');
+ const assert = require('internal/assert');
+ 
+-const callbackMap = new SafeWeakMap();
+-function setCallbackForWrap(wrap, data) {
+-  callbackMap.set(wrap, data);
+-}
+-
+ let defaultConditions;
+ function getDefaultConditions() {
+   assert(defaultConditions !== undefined);
+@@ -69,21 +67,75 @@ function getConditionsSet(conditions) {
+   return getDefaultConditionsSet();
+ }
+ 
+-function initializeImportMetaObject(wrap, meta) {
+-  if (callbackMap.has(wrap)) {
+-    const { initializeImportMeta } = callbackMap.get(wrap);
+-    if (initializeImportMeta !== undefined) {
+-      initializeImportMeta(meta, getModuleFromWrap(wrap) || wrap);
+-    }
+-  }
++/**
++ * @callback ImportModuleDynamicallyCallback
++ * @param {string} specifier
++ * @param {ModuleWrap|ContextifyScript|Function|vm.Module} callbackReferrer
++ * @param {object} assertions
++ * @returns { Promise<void> }
++ */
++
++/**
++ * @callback InitializeImportMetaCallback
++ * @param {object} meta
++ * @param {ModuleWrap|ContextifyScript|Function|vm.Module} callbackReferrer
++ */
++
++/**
++ * @typedef {{
++ *   callbackReferrer: ModuleWrap|ContextifyScript|Function|vm.Module
++ *   initializeImportMeta? : InitializeImportMetaCallback,
++ *   importModuleDynamically? : ImportModuleDynamicallyCallback
++ * }} ModuleRegistry
++ */
++
++/**
++ * @type {WeakMap<symbol, ModuleRegistry>}
++ */
++const moduleRegistries = new SafeWeakMap();
++
++/**
++ * V8 would make sure that as long as import() can still be initiated from
++ * the referrer, the symbol referenced by |host_defined_option_symbol| should
++ * be alive, which in term would keep the settings object alive through the
++ * WeakMap, and in turn that keeps the referrer object alive, which would be
++ * passed into the callbacks.
++ * The reference goes like this:
++ * [v8::internal::Script] (via host defined options) ----1--> [idSymbol]
++ * [callbackReferrer] (via host_defined_option_symbol) ------2------^  |
++ *                                 ^----------3---- (via WeakMap)------
++ * 1+3 makes sure that as long as import() can still be initiated, the
++ * referrer wrap is still around and can be passed into the callbacks.
++ * 2 is only there so that we can get the id symbol to configure the
++ * weak map.
++ * @param {ModuleWrap|ContextifyScript|Function} referrer The referrer to
++ *   get the id symbol from. This is different from callbackReferrer which
++ *   could be set by the caller.
++ * @param {ModuleRegistry} registry
++ */
++function registerModule(referrer, registry) {
++  const idSymbol = referrer[host_defined_option_symbol];
++  // To prevent it from being GC'ed.
++  registry.callbackReferrer ??= referrer;
++  moduleRegistries.set(idSymbol, registry);
+ }
+ 
+-async function importModuleDynamicallyCallback(wrap, specifier, assertions) {
+-  if (callbackMap.has(wrap)) {
+-    const { importModuleDynamically } = callbackMap.get(wrap);
++// The native callback
++function initializeImportMetaObject(symbol, meta) {
++  if (moduleRegistries.has(symbol)) {
++    const { initializeImportMeta, callbackReferrer } = moduleRegistries.get(symbol);
++     if (initializeImportMeta !== undefined) {
++      meta = initializeImportMeta(meta, callbackReferrer);
++     }
++   }
++ }
++
++
++async function importModuleDynamicallyCallback(symbol, specifier, assertions) {
++  if (moduleRegistries.has(symbol)) {
++    const { importModuleDynamically, callbackReferrer } = moduleRegistries.get(symbol);
+     if (importModuleDynamically !== undefined) {
+-      return importModuleDynamically(
+-        specifier, getModuleFromWrap(wrap) || wrap, assertions);
++      return importModuleDynamically(specifier, callbackReferrer, assertions);
+     }
+   }
+   throw new ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING();
+@@ -93,12 +145,13 @@ function initializeESM() {
+   initializeDefaultConditions();
+   // Setup per-isolate callbacks that locate data or callbacks that we keep
+   // track of for different ESM modules.
+-  setInitializeImportMetaObjectCallback(initializeImportMetaObject);
+-  setImportModuleDynamicallyCallback(importModuleDynamicallyCallback);
++  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
++  setInitializeImportMetaObjectCallback(initializeImportMetaObject, shouldSetOnIsolate);
++  setImportModuleDynamicallyCallback(importModuleDynamicallyCallback, shouldSetOnIsolate);
+ }
+ 
+ module.exports = {
+-  setCallbackForWrap,
++  registerModule,
+   initializeESM,
+   getDefaultConditions,
+   getConditionsSet,
+diff --git a/lib/internal/process/esm_loader.js b/lib/internal/process/esm_loader.js
+index bb621d2aa255c3048726173e25b5344451f9ec2c..70f48c2f9ac965664895f569067fae1ea2d9edeb 100644
+--- a/lib/internal/process/esm_loader.js
++++ b/lib/internal/process/esm_loader.js
+@@ -5,40 +5,11 @@ const {
+   ObjectCreate,
+ } = primordials;
+ 
+-const {
+-  ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
+-} = require('internal/errors').codes;
+ const { ESMLoader } = require('internal/modules/esm/loader');
+ const {
+   hasUncaughtExceptionCaptureCallback,
+ } = require('internal/process/execution');
+ const { pathToFileURL } = require('internal/url');
+-const {
+-  getModuleFromWrap,
+-} = require('internal/vm/module');
+-
+-exports.initializeImportMetaObject = function(wrap, meta) {
+-  const { callbackMap } = internalBinding('module_wrap');
+-  if (callbackMap.has(wrap)) {
+-    const { initializeImportMeta } = callbackMap.get(wrap);
+-    if (initializeImportMeta !== undefined) {
+-      initializeImportMeta(meta, getModuleFromWrap(wrap) || wrap);
+-    }
+-  }
+-};
+-
+-exports.importModuleDynamicallyCallback =
+-async function importModuleDynamicallyCallback(wrap, specifier, assertions) {
+-  const { callbackMap } = internalBinding('module_wrap');
+-  if (callbackMap.has(wrap)) {
+-    const { importModuleDynamically } = callbackMap.get(wrap);
+-    if (importModuleDynamically !== undefined) {
+-      return importModuleDynamically(
+-        specifier, getModuleFromWrap(wrap) || wrap, assertions);
+-    }
+-  }
+-  throw new ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING();
+-};
+ 
+ const esmLoader = new ESMLoader();
+ exports.esmLoader = esmLoader;
+diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
+index cb53212069794eaac8ceaf28001f5db25e127f0a..e3daca3ba8cddac8db5fc73d78d869fedb4204af 100644
+--- a/lib/internal/process/pre_execution.js
++++ b/lib/internal/process/pre_execution.js
+@@ -6,7 +6,6 @@ const {
+   ObjectDefineProperty,
+   ObjectGetOwnPropertyDescriptor,
+   SafeMap,
+-  SafeWeakMap,
+   StringPrototypeStartsWith,
+   Symbol,
+   SymbolDispose,
+@@ -560,20 +559,8 @@ function initializeCJSLoader() {
+ }
+ 
+ function initializeESMLoader() {
+-  // Create this WeakMap in js-land because V8 has no C++ API for WeakMap.
+-  internalBinding('module_wrap').callbackMap = new SafeWeakMap();
+-
+-  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
+-
+-  const {
+-    setImportModuleDynamicallyCallback,
+-    setInitializeImportMetaObjectCallback,
+-  } = internalBinding('module_wrap');
+-  const esm = require('internal/process/esm_loader');
+-  // Setup per-isolate callbacks that locate data or callbacks that we keep
+-  // track of for different ESM modules.
+-  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject, shouldSetOnIsolate);
+-  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback, shouldSetOnIsolate);
++  const { initializeESM } = require('internal/modules/esm/utils');
++  initializeESM();
+ 
+   // Patch the vm module when --experimental-vm-modules is on.
+   // Please update the comments in vm.js when this block changes.
+diff --git a/lib/internal/vm.js b/lib/internal/vm.js
+index 4f87ce87cc29a26745cce897f1d5c5f0b6c9e390..ba5e2324667374c3d2d9dc0c9280a4428d6f4f22 100644
+--- a/lib/internal/vm.js
++++ b/lib/internal/vm.js
+@@ -97,13 +97,13 @@ function internalCompileFunction(code, params, options) {
+   if (importModuleDynamically !== undefined) {
+     validateFunction(importModuleDynamically,
+                      'options.importModuleDynamically');
+-    const { importModuleDynamicallyWrap } =
+-      require('internal/vm/module');
+-    const { callbackMap } = internalBinding('module_wrap');
++    const { importModuleDynamicallyWrap } = require('internal/vm/module');
+     const wrapped = importModuleDynamicallyWrap(importModuleDynamically);
+     const func = result.function;
+-    callbackMap.set(result.cacheKey, {
+-      importModuleDynamically: (s, _k, i) => wrapped(s, func, i),
++    const { registerModule } = require('internal/modules/esm/utils');
++    registerModule(func, {
++      __proto__: null,
++      importModuleDynamically: wrapped,
+     });
+   }
+ 
+diff --git a/lib/internal/vm/module.js b/lib/internal/vm/module.js
+index 109b2d7e5b650c9453e47766fdbf776319403a2e..6c13b1e418d1aa4829a175d8ef52d7aaea6585dc 100644
+--- a/lib/internal/vm/module.js
++++ b/lib/internal/vm/module.js
+@@ -12,7 +12,6 @@ const {
+   ObjectSetPrototypeOf,
+   ReflectApply,
+   SafePromiseAllReturnVoid,
+-  SafeWeakMap,
+   Symbol,
+   SymbolToStringTag,
+   TypeError,
+@@ -70,7 +69,6 @@ const STATUS_MAP = {
+ 
+ let globalModuleId = 0;
+ const defaultModuleName = 'vm:module';
+-const wrapToModuleMap = new SafeWeakMap();
+ 
+ const kWrap = Symbol('kWrap');
+ const kContext = Symbol('kContext');
+@@ -121,17 +119,18 @@ class Module {
+       });
+     }
+ 
++    let registry = { __proto__: null };
+     if (sourceText !== undefined) {
+       this[kWrap] = new ModuleWrap(identifier, context, sourceText,
+                                    options.lineOffset, options.columnOffset,
+                                    options.cachedData);
+-
+-      binding.callbackMap.set(this[kWrap], {
++      registry = {
++        __proto__: null,
+         initializeImportMeta: options.initializeImportMeta,
+         importModuleDynamically: options.importModuleDynamically ?
+           importModuleDynamicallyWrap(options.importModuleDynamically) :
+           undefined,
+-      });
++      };
+     } else {
+       assert(syntheticEvaluationSteps);
+       this[kWrap] = new ModuleWrap(identifier, context,
+@@ -139,7 +138,11 @@ class Module {
+                                    syntheticEvaluationSteps);
+     }
+ 
+-    wrapToModuleMap.set(this[kWrap], this);
++    // This will take precedence over the referrer as the object being
++    // passed into the callbacks.
++    registry.callbackReferrer = this;
++    const { registerModule } = require('internal/modules/esm/utils');
++    registerModule(this[kWrap], registry);
+ 
+     this[kContext] = context;
+   }
+@@ -446,5 +449,4 @@ module.exports = {
+   SourceTextModule,
+   SyntheticModule,
+   importModuleDynamicallyWrap,
+-  getModuleFromWrap: (wrap) => wrapToModuleMap.get(wrap),
+ };
+diff --git a/lib/vm.js b/lib/vm.js
+index 21acc55e2eff0a038fd4b46a238ceb60b0986bd3..5ca04d6fb41758b8323bb6576ca54776142e5575 100644
+--- a/lib/vm.js
++++ b/lib/vm.js
+@@ -105,10 +105,10 @@ class Script extends ContextifyScript {
+     if (importModuleDynamically !== undefined) {
+       validateFunction(importModuleDynamically,
+                        'options.importModuleDynamically');
+-      const { importModuleDynamicallyWrap } =
+-        require('internal/vm/module');
+-      const { callbackMap } = internalBinding('module_wrap');
+-      callbackMap.set(this, {
++      const { importModuleDynamicallyWrap } = require('internal/vm/module');
++      const { registerModule } = require('internal/modules/esm/utils');
++      registerModule(this, {
++        __proto__: null,
+         importModuleDynamically:
+           importModuleDynamicallyWrap(importModuleDynamically),
+       });
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 4d12e6e406c1078fd92f3cc837c2f8a926fadd1d..3483d9e45be74832ac832bbf366538c697b6fb99 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -345,16 +345,6 @@ inline AliasedInt32Array& Environment::stream_base_state() {
+   return stream_base_state_;
+ }
+ 
+-inline uint32_t Environment::get_next_module_id() {
+-  return module_id_counter_++;
+-}
+-inline uint32_t Environment::get_next_script_id() {
+-  return script_id_counter_++;
+-}
+-inline uint32_t Environment::get_next_function_id() {
+-  return function_id_counter_++;
+-}
+-
+ ShouldNotAbortOnUncaughtScope::ShouldNotAbortOnUncaughtScope(
+     Environment* env)
+     : env_(env) {
+diff --git a/src/env.h b/src/env.h
+index 1b11c4243d18f14f4aaaad2683295ffff49dfd04..7a361c47b2606a93244bcecdb56bb4648bec9ec2 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -701,14 +701,6 @@ class Environment : public MemoryRetainer {
+   std::vector<std::string> builtins_in_snapshot;
+ 
+   std::unordered_multimap<int, loader::ModuleWrap*> hash_to_module_map;
+-  std::unordered_map<uint32_t, loader::ModuleWrap*> id_to_module_map;
+-  std::unordered_map<uint32_t, contextify::ContextifyScript*>
+-      id_to_script_map;
+-  std::unordered_map<uint32_t, contextify::CompiledFnEntry*> id_to_function_map;
+-
+-  inline uint32_t get_next_module_id();
+-  inline uint32_t get_next_script_id();
+-  inline uint32_t get_next_function_id();
+ 
+   EnabledDebugList* enabled_debug_list() { return &enabled_debug_list_; }
+ 
+diff --git a/src/env_properties.h b/src/env_properties.h
+index 2a1843f68309e41fc6ec6e70f99ec402209fac27..c622b3b8c4d14d31cecbd9432228a148b85ea2e1 100644
+--- a/src/env_properties.h
++++ b/src/env_properties.h
+@@ -21,6 +21,7 @@
+   V(arrow_message_private_symbol, "node:arrowMessage")                         \
+   V(contextify_context_private_symbol, "node:contextify:context")              \
+   V(decorated_private_symbol, "node:decorated")                                \
++  V(host_defined_option_symbol, "node:host_defined_option_symbol")             \
+   V(napi_type_tag, "node:napi:type_tag")                                       \
+   V(napi_wrapper, "node:napi:wrapper")                                         \
+   V(untransferable_object_private_symbol, "node:untransferableObject")         \
+@@ -335,7 +336,6 @@
+   V(blocklist_constructor_template, v8::FunctionTemplate)                      \
+   V(contextify_global_template, v8::ObjectTemplate)                            \
+   V(contextify_wrapper_template, v8::ObjectTemplate)                           \
+-  V(compiled_fn_entry_template, v8::ObjectTemplate)                            \
+   V(crypto_key_object_handle_constructor, v8::FunctionTemplate)                \
+   V(env_proxy_template, v8::ObjectTemplate)                                    \
+   V(env_proxy_ctor_template, v8::FunctionTemplate)                             \
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index d2d9e06da8da068bb53f8d9a656e912d8b1fff3d..5fdf07a1fe9f33392309d375f567f70c5b727ca9 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -37,13 +37,13 @@ using v8::MaybeLocal;
+ using v8::MicrotaskQueue;
+ using v8::Module;
+ using v8::ModuleRequest;
+-using v8::Number;
+ using v8::Object;
+ using v8::PrimitiveArray;
+ using v8::Promise;
+ using v8::ScriptCompiler;
+ using v8::ScriptOrigin;
+ using v8::String;
++using v8::Symbol;
+ using v8::UnboundModuleScript;
+ using v8::Undefined;
+ using v8::Value;
+@@ -52,22 +52,23 @@ ModuleWrap::ModuleWrap(Environment* env,
+                        Local<Object> object,
+                        Local<Module> module,
+                        Local<String> url)
+-  : BaseObject(env, object),
+-    module_(env->isolate(), module),
+-    id_(env->get_next_module_id()) {
+-  env->id_to_module_map.emplace(id_, this);
++    : BaseObject(env, object),
++      module_(env->isolate(), module),
++      module_hash_(module->GetIdentityHash()) {
++  object->SetInternalField(kModuleSlot, module);
+ 
+   Local<Value> undefined = Undefined(env->isolate());
+   object->SetInternalField(kURLSlot, url);
+   object->SetInternalField(kSyntheticEvaluationStepsSlot, undefined);
+   object->SetInternalField(kContextObjectSlot, undefined);
++
++  MakeWeak();
++  module_.SetWeak();
+ }
+ 
+ ModuleWrap::~ModuleWrap() {
+   HandleScope scope(env()->isolate());
+-  Local<Module> module = module_.Get(env()->isolate());
+-  env()->id_to_module_map.erase(id_);
+-  auto range = env()->hash_to_module_map.equal_range(module->GetIdentityHash());
++  auto range = env()->hash_to_module_map.equal_range(module_hash_);
+   for (auto it = range.first; it != range.second; ++it) {
+     if (it->second == this) {
+       env()->hash_to_module_map.erase(it);
+@@ -93,14 +94,6 @@ ModuleWrap* ModuleWrap::GetFromModule(Environment* env,
+   return nullptr;
+ }
+ 
+-ModuleWrap* ModuleWrap::GetFromID(Environment* env, uint32_t id) {
+-  auto module_wrap_it = env->id_to_module_map.find(id);
+-  if (module_wrap_it == env->id_to_module_map.end()) {
+-    return nullptr;
+-  }
+-  return module_wrap_it->second;
+-}
+-
+ // new ModuleWrap(url, context, source, lineOffset, columnOffset)
+ // new ModuleWrap(url, context, exportNames, syntheticExecutionFunction)
+ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+@@ -145,8 +138,8 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+ 
+   Local<PrimitiveArray> host_defined_options =
+       PrimitiveArray::New(isolate, HostDefinedOptions::kLength);
+-  host_defined_options->Set(isolate, HostDefinedOptions::kType,
+-                            Number::New(isolate, ScriptType::kModule));
++  Local<Symbol> id_symbol = Symbol::New(isolate, url);
++  host_defined_options->Set(isolate, HostDefinedOptions::kID, id_symbol);
+ 
+   ShouldNotAbortOnUncaughtScope no_abort_scope(env);
+   TryCatchScope try_catch(env);
+@@ -233,6 +226,11 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+     obj->object()->SetInternalField(kSyntheticEvaluationStepsSlot, args[3]);
+   }
+ 
++  if (that->SetPrivate(context, env->host_defined_option_symbol(), id_symbol)
++          .IsNothing()) {
++    return;
++  }
++
+   // Use the extras object as an object whose GetCreationContext() will be the
+   // original `context`, since the `Context` itself strictly speaking cannot
+   // be stored in an internal field.
+@@ -242,9 +240,6 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+ 
+   env->hash_to_module_map.emplace(module->GetIdentityHash(), obj);
+ 
+-  host_defined_options->Set(isolate, HostDefinedOptions::kID,
+-                            Number::New(isolate, obj->id()));
+-
+   that->SetIntegrityLevel(context, IntegrityLevel::kFrozen);
+   args.GetReturnValue().Set(that);
+ }
+@@ -579,33 +574,14 @@ MaybeLocal<Promise> ImportModuleDynamically(
+ 
+   Local<Value> object;
+ 
+-  int type = options->Get(context, HostDefinedOptions::kType)
+-                 .As<Number>()
+-                 ->Int32Value(context)
+-                 .ToChecked();
+-  uint32_t id = options->Get(context, HostDefinedOptions::kID)
+-                    .As<Number>()
+-                    ->Uint32Value(context)
+-                    .ToChecked();
+-  if (type == ScriptType::kScript) {
+-    contextify::ContextifyScript* wrap = env->id_to_script_map.find(id)->second;
+-    object = wrap->object();
+-  } else if (type == ScriptType::kModule) {
+-    ModuleWrap* wrap = ModuleWrap::GetFromID(env, id);
+-    object = wrap->object();
+-  } else if (type == ScriptType::kFunction) {
+-    auto it = env->id_to_function_map.find(id);
+-    CHECK_NE(it, env->id_to_function_map.end());
+-    object = it->second->object();
+-  } else {
+-    UNREACHABLE();
+-  }
++  Local<Symbol> id =
++      options->Get(context, HostDefinedOptions::kID).As<Symbol>();
+ 
+   Local<Object> assertions =
+     createImportAssertionContainer(env, isolate, import_assertions);
+ 
+   Local<Value> import_args[] = {
+-    object,
++    id,
+     Local<Value>(specifier),
+     assertions,
+   };
+@@ -652,7 +628,13 @@ void ModuleWrap::HostInitializeImportMetaObjectCallback(
+   Local<Object> wrap = module_wrap->object();
+   Local<Function> callback =
+       env->host_initialize_import_meta_object_callback();
+-  Local<Value> args[] = { wrap, meta };
++  Local<Value> id;
++  if (!wrap->GetPrivate(context, env->host_defined_option_symbol())
++           .ToLocal(&id)) {
++    return;
++  }
++  DCHECK(id->IsSymbol());
++  Local<Value> args[] = {id, meta};
+   TryCatchScope try_catch(env);
+   USE(callback->Call(
+         context, Undefined(env->isolate()), arraysize(args), args));
+diff --git a/src/module_wrap.h b/src/module_wrap.h
+index 5f7ef75480a76761c6fa62061c8700c812a3fc6f..03f7024f296a309bcdafac9cdb70a36ce2f6acf3 100644
+--- a/src/module_wrap.h
++++ b/src/module_wrap.h
+@@ -25,9 +25,8 @@ enum ScriptType : int {
+ };
+ 
+ enum HostDefinedOptions : int {
+-  kType = 8,
+-  kID = 9,
+-  kLength = 10,
++  kID = 8,
++  kLength = 9,
+ };
+ 
+ NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamically(
+@@ -40,7 +39,7 @@ NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamically(
+ class NODE_EXTERN ModuleWrap : public BaseObject {
+  public:
+   enum InternalFields {
+-    kModuleWrapBaseField = BaseObject::kInternalFieldCount,
++    kModuleSlot = BaseObject::kInternalFieldCount,
+     kURLSlot,
+     kSyntheticEvaluationStepsSlot,
+     kContextObjectSlot,  // Object whose creation context is the target Context
+@@ -60,9 +59,7 @@ class NODE_EXTERN ModuleWrap : public BaseObject {
+     tracker->TrackField("resolve_cache", resolve_cache_);
+   }
+ 
+-  inline uint32_t id() { return id_; }
+   v8::Local<v8::Context> context() const;
+-  static ModuleWrap* GetFromID(node::Environment*, uint32_t id);
+ 
+   SET_MEMORY_INFO_NAME(ModuleWrap)
+   SET_SELF_SIZE(ModuleWrap)
+@@ -112,7 +109,7 @@ class NODE_EXTERN ModuleWrap : public BaseObject {
+   contextify::ContextifyContext* contextify_context_ = nullptr;
+   bool synthetic_ = false;
+   bool linked_ = false;
+-  uint32_t id_;
++  int module_hash_;
+ };
+ 
+ }  // namespace loader
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 3da8746e2c46bb7d05df18a51b38964806a26ae5..86ad8862ee04436725da9e0d907042a9ae7d6a1b 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -60,7 +60,6 @@ using v8::MicrotasksPolicy;
+ using v8::Name;
+ using v8::NamedPropertyHandlerConfiguration;
+ using v8::Nothing;
+-using v8::Number;
+ using v8::Object;
+ using v8::ObjectTemplate;
+ using v8::PrimitiveArray;
+@@ -73,11 +72,11 @@ using v8::Script;
+ using v8::ScriptCompiler;
+ using v8::ScriptOrigin;
+ using v8::String;
++using v8::Symbol;
+ using v8::Uint32;
+ using v8::UnboundScript;
+ using v8::Value;
+ using v8::WeakCallbackInfo;
+-using v8::WeakCallbackType;
+ 
+ // The vm module executes code in a sandboxed environment with a different
+ // global object than the rest of the code. This is achieved by applying
+@@ -833,10 +832,9 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+ 
+   Local<PrimitiveArray> host_defined_options =
+       PrimitiveArray::New(isolate, loader::HostDefinedOptions::kLength);
+-  host_defined_options->Set(isolate, loader::HostDefinedOptions::kType,
+-                            Number::New(isolate, loader::ScriptType::kScript));
+-  host_defined_options->Set(isolate, loader::HostDefinedOptions::kID,
+-                            Number::New(isolate, contextify_script->id()));
++  Local<Symbol> id_symbol = Symbol::New(isolate, filename);
++  host_defined_options->Set(
++      isolate, loader::HostDefinedOptions::kID, id_symbol);
+ 
+   ScriptOrigin origin(isolate,
+                       filename,
+@@ -873,13 +871,22 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+                      "ContextifyScript::New");
+     return;
+   }
++
+   contextify_script->script_.Reset(isolate, v8_script);
++  contextify_script->script_.SetWeak();
++  contextify_script->object()->SetInternalField(kUnboundScriptSlot, v8_script);
+ 
+   std::unique_ptr<ScriptCompiler::CachedData> new_cached_data;
+   if (produce_cached_data) {
+     new_cached_data.reset(ScriptCompiler::CreateCodeCache(v8_script));
+   }
+ 
++  if (contextify_script->object()
++          ->SetPrivate(context, env->host_defined_option_symbol(), id_symbol)
++          .IsNothing()) {
++    return;
++  }
++
+   if (StoreCodeCacheResult(env,
+                            args.This(),
+                            compile_options,
+@@ -1117,17 +1124,11 @@ bool ContextifyScript::EvalMachine(Local<Context> context,
+ 
+ 
+ ContextifyScript::ContextifyScript(Environment* env, Local<Object> object)
+-    : BaseObject(env, object),
+-      id_(env->get_next_script_id()) {
++    : BaseObject(env, object) {
+   MakeWeak();
+-  env->id_to_script_map.emplace(id_, this);
+-}
+-
+-
+-ContextifyScript::~ContextifyScript() {
+-  env()->id_to_script_map.erase(id_);
+ }
+ 
++ContextifyScript::~ContextifyScript() {}
+ 
+ void ContextifyContext::CompileFunction(
+     const FunctionCallbackInfo<Value>& args) {
+@@ -1197,18 +1198,12 @@ void ContextifyContext::CompileFunction(
+       data + cached_data_buf->ByteOffset(), cached_data_buf->ByteLength());
+   }
+ 
+-  // Get the function id
+-  uint32_t id = env->get_next_function_id();
+-
+   // Set host_defined_options
+   Local<PrimitiveArray> host_defined_options =
+       PrimitiveArray::New(isolate, loader::HostDefinedOptions::kLength);
++  Local<Symbol> id_symbol = Symbol::New(isolate, filename);
+   host_defined_options->Set(
+-      isolate,
+-      loader::HostDefinedOptions::kType,
+-      Number::New(isolate, loader::ScriptType::kFunction));
+-  host_defined_options->Set(
+-      isolate, loader::HostDefinedOptions::kID, Number::New(isolate, id));
++      isolate, loader::HostDefinedOptions::kID, id_symbol);
+ 
+   ScriptOrigin origin(isolate,
+                       filename,
+@@ -1274,20 +1269,14 @@ void ContextifyContext::CompileFunction(
+     return;
+   }
+ 
+-  Local<Object> cache_key;
+-  if (!env->compiled_fn_entry_template()->NewInstance(
+-           context).ToLocal(&cache_key)) {
++  if (fn->SetPrivate(context, env->host_defined_option_symbol(), id_symbol)
++          .IsNothing()) {
+     return;
+   }
+-  CompiledFnEntry* entry = new CompiledFnEntry(env, cache_key, id, fn);
+-  env->id_to_function_map.emplace(id, entry);
+ 
+   Local<Object> result = Object::New(isolate);
+   if (result->Set(parsing_context, env->function_string(), fn).IsNothing())
+     return;
+-  if (result->Set(parsing_context, env->cache_key_string(), cache_key)
+-          .IsNothing())
+-    return;
+   if (result
+           ->Set(parsing_context,
+                 env->source_map_url_string(),
+@@ -1312,25 +1301,6 @@ void ContextifyContext::CompileFunction(
+   args.GetReturnValue().Set(result);
+ }
+ 
+-void CompiledFnEntry::WeakCallback(
+-    const WeakCallbackInfo<CompiledFnEntry>& data) {
+-  CompiledFnEntry* entry = data.GetParameter();
+-  delete entry;
+-}
+-
+-CompiledFnEntry::CompiledFnEntry(Environment* env,
+-                                 Local<Object> object,
+-                                 uint32_t id,
+-                                 Local<Function> fn)
+-    : BaseObject(env, object), id_(id), fn_(env->isolate(), fn) {
+-  fn_.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
+-}
+-
+-CompiledFnEntry::~CompiledFnEntry() {
+-  env()->id_to_function_map.erase(id_);
+-  fn_.ClearWeak();
+-}
+-
+ static void StartSigintWatchdog(const FunctionCallbackInfo<Value>& args) {
+   int ret = SigintWatchdogHelper::GetInstance()->Start();
+   args.GetReturnValue().Set(ret == 0);
+@@ -1418,15 +1388,6 @@ void Initialize(Local<Object> target,
+   SetMethodNoSideEffect(
+       context, target, "watchdogHasPendingSigint", WatchdogHasPendingSigint);
+ 
+-  {
+-    Local<FunctionTemplate> tpl = FunctionTemplate::New(env->isolate());
+-    tpl->SetClassName(FIXED_ONE_BYTE_STRING(env->isolate(), "CompiledFnEntry"));
+-    tpl->InstanceTemplate()->SetInternalFieldCount(
+-        CompiledFnEntry::kInternalFieldCount);
+-
+-    env->set_compiled_fn_entry_template(tpl->InstanceTemplate());
+-  }
+-
+   Local<Object> constants = Object::New(env->isolate());
+   Local<Object> measure_memory = Object::New(env->isolate());
+   Local<Object> memory_execution = Object::New(env->isolate());
+diff --git a/src/node_contextify.h b/src/node_contextify.h
+index 76c89318bb6cbf62370628a2eea7db4fc2999f9f..771de6edb515d2015864d4a36b346fb711569149 100644
+--- a/src/node_contextify.h
++++ b/src/node_contextify.h
+@@ -149,6 +149,11 @@ class ContextifyContext : public BaseObject {
+ 
+ class ContextifyScript : public BaseObject {
+  public:
++  enum InternalFields {
++    kUnboundScriptSlot = BaseObject::kInternalFieldCount,
++    kInternalFieldCount
++  };
++
+   SET_NO_MEMORY_INFO()
+   SET_MEMORY_INFO_NAME(ContextifyScript)
+   SET_SELF_SIZE(ContextifyScript)
+@@ -171,32 +176,8 @@ class ContextifyScript : public BaseObject {
+                           std::shared_ptr<v8::MicrotaskQueue> microtask_queue,
+                           const v8::FunctionCallbackInfo<v8::Value>& args);
+ 
+-  inline uint32_t id() { return id_; }
+-
+  private:
+   v8::Global<v8::UnboundScript> script_;
+-  uint32_t id_;
+-};
+-
+-class CompiledFnEntry final : public BaseObject {
+- public:
+-  SET_NO_MEMORY_INFO()
+-  SET_MEMORY_INFO_NAME(CompiledFnEntry)
+-  SET_SELF_SIZE(CompiledFnEntry)
+-
+-  CompiledFnEntry(Environment* env,
+-                  v8::Local<v8::Object> object,
+-                  uint32_t id,
+-                  v8::Local<v8::Function> fn);
+-  ~CompiledFnEntry();
+-
+-  bool IsNotIndicativeOfMemoryLeakAtExit() const override { return true; }
+-
+- private:
+-  uint32_t id_;
+-  v8::Global<v8::Function> fn_;
+-
+-  static void WeakCallback(const v8::WeakCallbackInfo<CompiledFnEntry>& data);
+ };
+ 
+ v8::Maybe<bool> StoreCodeCacheResult(
+diff --git a/test/parallel/test-bootstrap-modules.js b/test/parallel/test-bootstrap-modules.js
+index b68a3d3da256a87dfe08048b7bd00267e8f281ba..5c9f2f7a4983772930c19735274c149604171c5d 100644
+--- a/test/parallel/test-bootstrap-modules.js
++++ b/test/parallel/test-bootstrap-modules.js
+@@ -89,6 +89,7 @@ const expectedModules = new Set([
+   'NativeModule internal/modules/esm/package_config',
+   'NativeModule internal/modules/esm/resolve',
+   'NativeModule internal/modules/esm/translators',
++  'NativeModule internal/modules/esm/utils',
+   'NativeModule internal/modules/package_json_reader',
+   'NativeModule internal/modules/run_main',
+   'NativeModule internal/net',
