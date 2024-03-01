@@ -917,6 +917,12 @@ describe('node feature', () => {
     });
   });
 
+  it('does not crash when dynamically importing inside a function', () => {
+    const file = path.resolve(fixtures, 'module', 'dynamic-import.js');
+    const { status } = childProcess.spawnSync(process.execPath, [file], { stdio: 'inherit' });
+    expect(status).to.equal(0);
+  });
+
   it('Can find a module using a package.json main field', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
     expect(result.status).to.equal(0);
