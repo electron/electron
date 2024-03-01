@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yang Guo <yangguo@chromium.org>
+Date: Tue, 19 Dec 2023 19:34:20 +0000
+Subject: Allowlist devtools:// for file access permission
+
+Otherwise DevTools features which save logs to the filesystem are
+affected by content permissions, which contradicts developer
+expectations.
+
+Fixed: 1483230
+Change-Id: Ia0848a9a192b2803a64f4104f4032219d6f3a885
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5132146
+Auto-Submit: Yang Guo <yangguo@chromium.org>
+Reviewed-by: Christian Dullweber <dullweber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1239281}
+
+diff --git a/chrome/browser/content_settings/host_content_settings_map_unittest.cc b/chrome/browser/content_settings/host_content_settings_map_unittest.cc
+index 38464529cc74e7b17373e1dd4f7bfd8cc68ff796..99323d6453749edd98f0cace905e9c5312620825 100644
+--- a/chrome/browser/content_settings/host_content_settings_map_unittest.cc
++++ b/chrome/browser/content_settings/host_content_settings_map_unittest.cc
+@@ -2354,3 +2354,26 @@ TEST_F(HostContentSettingsMapTest, IncognitoInheritSaaAndRenew) {
+                                ContentSetting::CONTENT_SETTING_ALLOW);
+   EXPECT_EQ(CONTENT_SETTING_ASK, otr_map->GetContentSetting(host, host, type));
+ }
++
++// File access is not implemented on Android. Luckily we don't need it for DevTools.
++#if !BUILDFLAG(IS_ANDROID)
++TEST_F(HostContentSettingsMapTest, DevToolsFileAccess) {
++  TestingProfile profile;
++  HostContentSettingsMap* host_content_settings_map =
++      HostContentSettingsMapFactory::GetForProfile(&profile);
++
++  GURL devtools_host("devtools://devtools/bundled/devtools_app.html");
++  GURL example_host("https://example.com");
++
++  host_content_settings_map->SetDefaultContentSetting(
++      ContentSettingsType::FILE_SYSTEM_WRITE_GUARD, CONTENT_SETTING_BLOCK);
++  EXPECT_EQ(CONTENT_SETTING_ALLOW,
++            host_content_settings_map->GetContentSetting(
++                devtools_host, devtools_host,
++                ContentSettingsType::FILE_SYSTEM_WRITE_GUARD));
++  EXPECT_EQ(CONTENT_SETTING_BLOCK,
++            host_content_settings_map->GetContentSetting(
++                example_host, example_host,
++                ContentSettingsType::FILE_SYSTEM_WRITE_GUARD));
++}
++#endif  // !BUILDFLAG(IS_ANDROID)
+diff --git a/components/content_settings/core/browser/content_settings_registry.cc b/components/content_settings/core/browser/content_settings_registry.cc
+index 8021bd809315debd7171350187bbd684c23fd882..69c66a5e68f6a137875df19993a959000c56a2e6 100644
+--- a/components/content_settings/core/browser/content_settings_registry.cc
++++ b/components/content_settings/core/browser/content_settings_registry.cc
+@@ -425,7 +425,8 @@ void ContentSettingsRegistry::Init() {
+ 
+   Register(ContentSettingsType::FILE_SYSTEM_WRITE_GUARD,
+            "file-system-write-guard", CONTENT_SETTING_ASK,
+-           WebsiteSettingsInfo::UNSYNCABLE, /*allowlisted_schemes=*/{},
++           WebsiteSettingsInfo::UNSYNCABLE,
++           /*allowlisted_primary_schemes=*/{kChromeDevToolsScheme},
+            /*valid_settings=*/
+            {CONTENT_SETTING_ALLOW, CONTENT_SETTING_ASK, CONTENT_SETTING_BLOCK},
+            WebsiteSettingsInfo::TOP_ORIGIN_ONLY_SCOPE,

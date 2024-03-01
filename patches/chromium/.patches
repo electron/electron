@@ -146,3 +146,4 @@ ensure_an_axcontext_before_painting.patch
 safely_crash_on_dangling_profile.patch
 prevent_mojotrap_event_re-ordering.patch
 m122_cherry_pick_cve-2024-25062_libxml_fix.patch
+allowlist_devtools_for_file_access_permission.patch
