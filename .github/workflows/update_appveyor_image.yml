@@ -68,6 +68,6 @@ jobs:
     - name: (Optionally) Create Pull Request
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
       run: |
-        printf "This PR updates appveyor.yml to the latest baked image, ${{ env.APPVEYOR_IMAGE_VERSION }}.\n\nNotes: none" | gh pr create --head bump-appveyor-image --reviewer electron/wg-releases --label no-backport --label semver/none --title 'build: update appveyor image to latest version' --body-file=-
+        printf "This PR updates appveyor.yml to the latest baked image, ${{ env.APPVEYOR_IMAGE_VERSION }}.\n\nNotes: none" | gh pr create --head bump-appveyor-image --label no-backport --label semver/none --title 'build: update appveyor image to latest version' --body-file=-
       env:
         GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
