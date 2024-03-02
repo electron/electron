@@ -35,12 +35,19 @@ class MessagePort : public gin::Wrappable<MessagePort>,
   void Start();
   void Close();
 
+  void OnConnectionError();
+
   void Entangle(blink::MessagePortDescriptor port);
   void Entangle(blink::MessagePortChannel channel);
 
   blink::MessagePortChannel Disentangle();
 
+  // A port starts out its life entangled, and remains entangled until it is
+  // closed or is cloned.
   bool IsEntangled() const { return !closed_ && !IsNeutered(); }
+
+  // A port gets neutered when it is transferred to a new owner via
+  // postMessage().
   bool IsNeutered() const { return !connector_ || !connector_->is_valid(); }
 
   static std::vector<gin::Handle<MessagePort>> EntanglePorts(
@@ -84,7 +91,7 @@ class MessagePort : public gin::Wrappable<MessagePort>,
 
   // The internal port owned by this class. The handle itself is moved into the
   // |connector_| while entangled.
-  blink::MessagePortDescriptor port_;
+  blink::MessagePortDescriptor port_descriptor_;
 
   base::WeakPtrFactory<MessagePort> weak_factory_{this};
 };

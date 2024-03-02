@@ -49,7 +49,9 @@ bool IsValidWrappable(const v8::Local<v8::Value>& obj) {
 gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 MessagePort::MessagePort() = default;
+
 MessagePort::~MessagePort() {
+  DCHECK(!started_ || !IsEntangled());
   if (!IsNeutered()) {
     // Disentangle before teardown. The MessagePortDescriptor will blow up if it
     // hasn't had its underlying handle returned to it before teardown.
@@ -65,6 +67,7 @@ gin::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
 void MessagePort::PostMessage(gin::Arguments* args) {
   if (!IsEntangled())
     return;
+
   DCHECK(!IsNeutered());
 
   blink::TransferableMessage transferable_message;
@@ -105,7 +108,12 @@ void MessagePort::PostMessage(gin::Arguments* args) {
 
   // Make sure we aren't connected to any of the passed-in ports.
   for (unsigned i = 0; i < wrapped_ports.size(); ++i) {
-    if (wrapped_ports[i].get() == this) {
+    auto* port = wrapped_ports[i].get();
+    if (!port) {
+      thrower.ThrowError("Port at index " + base::NumberToString(i) +
+                         " is null.");
+      return;
+    } else if (port == this) {
       thrower.ThrowError("Port at index " + base::NumberToString(i) +
                          " contains the source port.");
       return;
@@ -124,6 +132,7 @@ void MessagePort::PostMessage(gin::Arguments* args) {
 }
 
 void MessagePort::Start() {
+  // Do nothing if we've been cloned or closed.
   if (!IsEntangled())
     return;
 
@@ -133,21 +142,32 @@ void MessagePort::Start() {
   started_ = true;
   if (HasPendingActivity())
     Pin();
+
   connector_->ResumeIncomingMethodCallProcessing();
 }
 
 void MessagePort::Close() {
   if (closed_)
     return;
+
+  // A closed port should not be neutered, so rather than merely disconnecting
+  // from the mojo message pipe, also entangle with a new dangling message pipe.
   if (!IsNeutered()) {
     Disentangle().ReleaseHandle();
     blink::MessagePortDescriptorPair pipe;
     Entangle(pipe.TakePort0());
   }
+
   closed_ = true;
   if (!HasPendingActivity())
     Unpin();
+}
 
+void MessagePort::OnConnectionError() {
+  Close();
+  // When the entangled port is disconnected, this error handler is executed,
+  // so in this error handler, we dispatch the close event if close event is
+  // enabled.
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> self;
@@ -155,20 +175,25 @@ void MessagePort::Close() {
     gin_helper::EmitEvent(isolate, self, "close");
 }
 
-void MessagePort::Entangle(blink::MessagePortDescriptor port) {
-  DCHECK(port.IsValid());
+void MessagePort::Entangle(blink::MessagePortDescriptor port_descriptor) {
+  DCHECK(port_descriptor.IsValid());
   DCHECK(!connector_);
-  port_ = std::move(port);
+
+  port_descriptor_ = std::move(port_descriptor);
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   connector_ = std::make_unique<mojo::Connector>(
-      port_.TakeHandleToEntangleWithEmbedder(),
+      port_descriptor_.TakeHandleToEntangleWithEmbedder(),
       mojo::Connector::SINGLE_THREADED_SEND,
       base::SingleThreadTaskRunner::GetCurrentDefault());
-  connector_->PauseIncomingMethodCallProcessing();
+
+  connector_->ResumeIncomingMethodCallProcessing();
+
   connector_->set_incoming_receiver(this);
-  connector_->set_connection_error_handler(
-      base::BindOnce(&MessagePort::Close, weak_factory_.GetWeakPtr()));
+  connector_->set_connection_error_handler(base::BindOnce(
+      &MessagePort::OnConnectionError, weak_factory_.GetWeakPtr()));
+
   if (HasPendingActivity())
     Pin();
 }
@@ -179,11 +204,13 @@ void MessagePort::Entangle(blink::MessagePortChannel channel) {
 
 blink::MessagePortChannel MessagePort::Disentangle() {
   DCHECK(!IsNeutered());
-  port_.GiveDisentangledHandle(connector_->PassMessagePipe());
+  port_descriptor_.GiveDisentangledHandle(connector_->PassMessagePipe());
   connector_ = nullptr;
+
   if (!HasPendingActivity())
     Unpin();
-  return blink::MessagePortChannel(std::move(port_));
+
+  return blink::MessagePortChannel(std::move(port_descriptor_));
 }
 
 bool MessagePort::HasPendingActivity() const {
@@ -192,6 +219,10 @@ bool MessagePort::HasPendingActivity() const {
   // We'll also stipulate that the queue needs to be open (if the app drops its
   // reference to the port before start()-ing it, then it's not really entangled
   // as it's unreachable).
+  // Between close() and dispatching a close event, IsEntangled() starts
+  // returning false, but it is not garbage collected because a function on the
+  // MessagePort is running, and the MessagePort is retained on the stack at
+  // that time.
   return started_ && IsEntangled();
 }
 
