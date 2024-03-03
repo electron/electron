@@ -233,6 +233,23 @@ describe('ipc module', () => {
       expect(ev.senderFrame.routingId).to.equal(w.webContents.mainFrame.routingId);
     });
 
+    it('throws when the transferable is invalid', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      const p = once(ipcMain, 'port');
+      await w.webContents.executeJavaScript(`(${function () {
+        try {
+          const buffer = new ArrayBuffer(10);
+          // @ts-expect-error
+          require('electron').ipcRenderer.postMessage('port', '', [buffer]);
+        } catch (e) {
+          require('electron').ipcRenderer.postMessage('port', { error: (e as Error).message });
+        }
+      }})()`);
+      const [, msg] = await p;
+      expect(msg.error).to.eql('Invalid value for transfer');
+    });
+
     it('can communicate between main and renderer', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');

@@ -284,6 +284,20 @@ describe('utilityProcess module', () => {
       await exit;
     });
 
+    it('throws when an invalid transferrable is passed', () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message.js'));
+      expect(() => {
+        // @ts-expect-error
+        const buffer = new ArrayBuffer();
+        child.postMessage('Hello', [buffer as any]);
+      }).to.throw(/Port at index 0 is not a valid port/);
+
+      expect(() => {
+        // @ts-expect-error
+        child.postMessage('hey', [false]);
+      }).to.throw(/Port at index 0 is not a valid port/);
+    });
+
     it('supports queuing messages on the receiving end', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'post-message-queue.js'));
       const p = once(child, 'spawn');

@@ -65,14 +65,21 @@ gin::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
 void MessagePort::PostMessage(gin::Arguments* args) {
   if (!IsEntangled())
     return;
+
   DCHECK(!IsNeutered());
 
   blink::TransferableMessage transferable_message;
-  gin_helper::ErrorThrower thrower(args->isolate());
 
+  auto* isolate = args->isolate();
+  gin_helper::ErrorThrower thrower(isolate);
+
+  // |message| is any value that can be serialized to StructuredClone.
   v8::Local<v8::Value> message_value;
-  if (!args->GetNext(&message_value)) {
-    thrower.ThrowTypeError("Expected at least one argument to postMessage");
+  args->GetNext(&message_value);
+
+  if (!electron::SerializeV8Value(isolate, message_value,
+                                  &transferable_message)) {
+    // SerializeV8Value sets an exception.
     return;
   }
 
@@ -86,8 +93,7 @@ void MessagePort::PostMessage(gin::Arguments* args) {
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
     std::vector<v8::Local<v8::Value>> wrapped_port_values;
-    if (!gin::ConvertFromV8(args->isolate(), transferables,
-                            &wrapped_port_values)) {
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
       thrower.ThrowTypeError("transferables must be an array of MessagePorts");
       return;
     }
@@ -100,7 +106,7 @@ void MessagePort::PostMessage(gin::Arguments* args) {
       }
     }
 
-    if (!gin::ConvertFromV8(args->isolate(), transferables, &wrapped_ports)) {
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
       thrower.ThrowTypeError("Passed an invalid MessagePort");
       return;
     }
@@ -116,8 +122,8 @@ void MessagePort::PostMessage(gin::Arguments* args) {
   }
 
   bool threw_exception = false;
-  transferable_message.ports = MessagePort::DisentanglePorts(
-      args->isolate(), wrapped_ports, &threw_exception);
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
   if (threw_exception)
     return;
 

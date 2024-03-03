@@ -53,6 +53,25 @@ GetAllUtilityProcessWrappers() {
   return *s_all_utility_process_wrappers;
 }
 
+namespace {
+
+bool IsValidWrappable(const v8::Local<v8::Value>& obj) {
+  v8::Local<v8::Object> port = v8::Local<v8::Object>::Cast(obj);
+
+  if (!port->IsObject())
+    return false;
+
+  if (port->InternalFieldCount() != gin::kNumberOfInternalFields)
+    return false;
+
+  const auto* info = static_cast<gin::WrapperInfo*>(
+      port->GetAlignedPointerFromInternalField(gin::kWrapperInfoIndex));
+
+  return info && info->embedder == gin::kEmbedderNativeGin;
+}
+
+}  // namespace
+
 namespace api {
 
 gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
@@ -293,28 +312,46 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
     return;
 
   blink::TransferableMessage transferable_message;
+
+  auto* isolate = args->isolate();
+  gin_helper::ErrorThrower thrower(isolate);
+
+  // |message| is any value that can be serialized to StructuredClone.
   v8::Local<v8::Value> message_value;
-  if (args->GetNext(&message_value)) {
-    if (!electron::SerializeV8Value(args->isolate(), message_value,
-                                    &transferable_message)) {
-      // SerializeV8Value sets an exception.
-      return;
-    }
+  args->GetNext(&message_value);
+
+  if (!electron::SerializeV8Value(isolate, message_value,
+                                  &transferable_message)) {
+    // SerializeV8Value sets an exception.
+    return;
   }
 
   v8::Local<v8::Value> transferables;
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
-    if (!gin::ConvertFromV8(args->isolate(), transferables, &wrapped_ports)) {
-      gin_helper::ErrorThrower(args->isolate())
-          .ThrowTypeError("Invalid value for transfer");
+    std::vector<v8::Local<v8::Value>> wrapped_port_values;
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
+      thrower.ThrowTypeError("transferables must be an array of MessagePorts");
+      return;
+    }
+
+    for (unsigned i = 0; i < wrapped_port_values.size(); ++i) {
+      if (!IsValidWrappable(wrapped_port_values[i])) {
+        thrower.ThrowTypeError("Port at index " + base::NumberToString(i) +
+                               " is not a valid port");
+        return;
+      }
+    }
+
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
+      thrower.ThrowTypeError("Passed an invalid MessagePort");
       return;
     }
   }
 
   bool threw_exception = false;
-  transferable_message.ports = MessagePort::DisentanglePorts(
-      args->isolate(), wrapped_ports, &threw_exception);
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
   if (threw_exception)
     return;
 
