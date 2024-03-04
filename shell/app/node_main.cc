@@ -259,8 +259,7 @@ int NodeMain(int argc, char* argv[]) {
       env = node::CreateEnvironment(
           isolate_data, isolate->GetCurrentContext(), result->args(),
           result->exec_args(),
-          static_cast<node::EnvironmentFlags::Flags>(env_flags), {}, {},
-          &OnNodePreload);
+          static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
       node::SetIsolateUpForNode(isolate);
@@ -285,7 +284,7 @@ int NodeMain(int argc, char* argv[]) {
     }
 
     v8::HandleScope scope(isolate);
-    node::LoadEnvironment(env, node::StartExecutionCallback{});
+    node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env
     // is stopping, or the user hooks process.emit('exit').

@@ -405,7 +405,7 @@ index bb621d2aa255c3048726173e25b5344451f9ec2c..70f48c2f9ac965664895f569067fae1e
  const esmLoader = new ESMLoader();
  exports.esmLoader = esmLoader;
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index cb53212069794eaac8ceaf28001f5db25e127f0a..e3daca3ba8cddac8db5fc73d78d869fedb4204af 100644
+index fd5357997a4e05567146dc997e47af408e1fc8f4..2d892267a08772f4c37ee381c55f46b3a99f2232 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -6,7 +6,6 @@ const {
@@ -416,7 +416,7 @@ index cb53212069794eaac8ceaf28001f5db25e127f0a..e3daca3ba8cddac8db5fc73d78d869fe
    StringPrototypeStartsWith,
    Symbol,
    SymbolDispose,
-@@ -560,20 +559,8 @@ function initializeCJSLoader() {
+@@ -557,20 +556,8 @@ function initializeCJSLoader() {
  }
  
  function initializeESMLoader() {
@@ -543,7 +543,7 @@ index 21acc55e2eff0a038fd4b46a238ceb60b0986bd3..5ca04d6fb41758b8323bb6576ca54776
            importModuleDynamicallyWrap(importModuleDynamically),
        });
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 4d12e6e406c1078fd92f3cc837c2f8a926fadd1d..3483d9e45be74832ac832bbf366538c697b6fb99 100644
+index 103dc6711e71e15da640edc5e017bc638ddc6ad1..c68ea0fb1d45fadfa64f092a96ee04ecd9fe4c2d 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -345,16 +345,6 @@ inline AliasedInt32Array& Environment::stream_base_state() {
@@ -564,10 +564,10 @@ index 4d12e6e406c1078fd92f3cc837c2f8a926fadd1d..3483d9e45be74832ac832bbf366538c6
      Environment* env)
      : env_(env) {
 diff --git a/src/env.h b/src/env.h
-index 1b11c4243d18f14f4aaaad2683295ffff49dfd04..7a361c47b2606a93244bcecdb56bb4648bec9ec2 100644
+index 36e8e7d960a95a9040ad963c79a7f66c89233c87..9b5fcdaed5fdda44cd8103a0821a7b5358523f4e 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -701,14 +701,6 @@ class Environment : public MemoryRetainer {
+@@ -699,14 +699,6 @@ class Environment : public MemoryRetainer {
    std::vector<std::string> builtins_in_snapshot;
  
    std::unordered_multimap<int, loader::ModuleWrap*> hash_to_module_map;
