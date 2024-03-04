@@ -170,7 +170,7 @@ index 7ad8d80faee840e4dd224d946871b2ff08b0c23c..25842fd531fc7e1485bcd75f1f92aa9b
  }
  
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index bfa048a4a8aa183e747dec84b11b1c1d847db2dd..7aa4a5f1eeb116a7bf1bea82bff76bd3be66796e 100644
+index bfa048a4a8aa183e747dec84b11b1c1d847db2dd..970cec6c6e9c5e9646bfd758a2cf908e6b5799cf 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -1462,6 +1462,17 @@ void SerializeSnapshotableObjects(Realm* realm,
