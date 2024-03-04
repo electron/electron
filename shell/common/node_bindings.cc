@@ -651,8 +651,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::TryCatch try_catch(isolate);
     env = node::CreateEnvironment(
         static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(env_flags), {}, {},
-        &OnNodePreload);
+        static_cast<node::EnvironmentFlags::Flags>(env_flags));
 
     if (try_catch.HasCaught()) {
       std::string err_msg =
@@ -784,7 +783,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env, node::StartExecutionCallback{});
+  node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
