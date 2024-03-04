@@ -11,6 +11,11 @@
 
 namespace gin_helper {
 
+// WrapperInfo logic upstream doesn't take into account that an object
+// might have the correct number of internal fields but not be a WrappableBase.
+// We tried to upstream this, but were told to handle it on the embedder side.
+bool IsValidWrappable(const v8::Local<v8::Value>& obj);
+
 namespace internal {
 
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);

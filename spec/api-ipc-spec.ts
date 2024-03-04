@@ -425,6 +425,20 @@ describe('ipc module', () => {
         expect(port2).not.to.be.null();
       });
 
+      it('should not throw when supported values are passed as message', () => {
+        const { port1 } = new MessageChannelMain();
+
+        // @ts-expect-error - this shouldn't crash.
+        expect(() => { port1.postMessage(); }).to.not.throw();
+
+        expect(() => { port1.postMessage(undefined); }).to.not.throw();
+        expect(() => { port1.postMessage(42); }).to.not.throw();
+        expect(() => { port1.postMessage(false); }).to.not.throw();
+        expect(() => { port1.postMessage([]); }).to.not.throw();
+        expect(() => { port1.postMessage('hello'); }).to.not.throw();
+        expect(() => { port1.postMessage({ hello: 'goodbye' }); }).to.not.throw();
+      });
+
       it('throws an error when an invalid parameter is sent to postMessage', () => {
         const { port1 } = new MessageChannelMain();
 

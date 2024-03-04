@@ -284,6 +284,20 @@ describe('utilityProcess module', () => {
       await exit;
     });
 
+    it('does not throw when supported values are passed', () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message.js'));
+
+      // @ts-expect-error - this shouldn't crash.
+      expect(() => { child.postMessage(); }).to.not.throw();
+
+      expect(() => { child.postMessage(undefined); }).to.not.throw();
+      expect(() => { child.postMessage(42); }).to.not.throw();
+      expect(() => { child.postMessage(false); }).to.not.throw();
+      expect(() => { child.postMessage([]); }).to.not.throw();
+      expect(() => { child.postMessage('hello'); }).to.not.throw();
+      expect(() => { child.postMessage({ hello: 'goodbye' }); }).to.not.throw();
+    });
+
     it('throws when an invalid transferrable is passed', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'post-message.js'));
       expect(() => {
