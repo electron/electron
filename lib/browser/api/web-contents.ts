@@ -220,6 +220,16 @@ function parsePageSize (pageSize: string | ElectronInternal.PageSize) {
 let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
   const margins = checkType(options.margins ?? {}, 'object', 'margins');
+  const pageSize = parsePageSize(options.pageSize ?? 'letter');
+
+  const { top, bottom, left, right } = margins;
+  const validHeight = [top, bottom].every(u => u === undefined || u <= pageSize.paperHeight);
+  const validWidth = [left, right].every(u => u === undefined || u <= pageSize.paperWidth);
+
+  if (!validHeight || !validWidth) {
+    throw new Error('margins must be less than or equal to pageSize');
+  }
+
   const printSettings = {
     requestID: getNextId(),
     landscape: checkType(options.landscape ?? false, 'boolean', 'landscape'),
@@ -235,7 +245,8 @@ WebContents.prototype.printToPDF = async function (options) {
     pageRanges: checkType(options.pageRanges ?? '', 'string', 'pageRanges'),
     preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
     generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
-    ...parsePageSize(options.pageSize ?? 'letter')
+    generateDocumentOutline: checkType(options.generateDocumentOutline ?? false, 'boolean', 'generateDocumentOutline'),
+    ...pageSize
   };
 
   if (this._printToPDF) {
@@ -252,12 +263,10 @@ WebContents.prototype.printToPDF = async function (options) {
 
 // TODO(codebytere): deduplicate argument sanitization by moving rest of
 // print param logic into new file shared between printToPDF and print
-WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions, callback) {
-  if (typeof options !== 'object') {
+WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
+  if (typeof options !== 'object' || options == null) {
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
-
-  const printSettings: Record<string, any> = { ...options };
 
   const pageSize = options.pageSize ?? 'A4';
   if (typeof pageSize === 'object') {
@@ -272,7 +281,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
       throw new RangeError('height and width properties must be minimum 352 microns.');
     }
 
-    printSettings.mediaSize = {
+    options.mediaSize = {
       name: 'CUSTOM',
       custom_display_name: 'Custom',
       height_microns: height,
@@ -284,7 +293,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     };
   } else if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
     const mediaSize = PDFPageSizes[pageSize];
-    printSettings.mediaSize = {
+    options.mediaSize = {
       ...mediaSize,
       imageable_area_left_microns: 0,
       imageable_area_bottom_microns: 0,
@@ -297,9 +306,9 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
 
   if (this._print) {
     if (callback) {
-      this._print(printSettings, callback);
+      this._print(options, callback);
     } else {
-      this._print(printSettings);
+      this._print(options);
     }
   } else {
     console.error('Error: Printing feature is disabled.');
@@ -355,11 +364,6 @@ WebContents.prototype.loadURL = function (url, options) {
         resolveAndCleanup();
       }
     };
-    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
-      if (!error && isMainFrame) {
-        error = { errorCode, errorDescription, url: validatedURL };
-      }
-    };
 
     let navigationStarted = false;
     let browserInitiatedInPageNavigation = false;
@@ -379,6 +383,14 @@ WebContents.prototype.loadURL = function (url, options) {
         }
         browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
+      }
+    };
+    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+      if (!error && isMainFrame) {
+        error = { errorCode, errorDescription, url: validatedURL };
+      }
+      if (!navigationStarted && isMainFrame) {
+        finishListener();
       }
     };
     const stopLoadingListener = () => {
@@ -421,14 +433,15 @@ WebContents.prototype.loadURL = function (url, options) {
   return p;
 };
 
-WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions, outlivesOpener?: boolean})) {
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse) {
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean, createWindow?: Electron.CreateWindowFunction} {
   const defaultResponse = {
     browserWindowConstructorOptions: null,
-    outlivesOpener: false
+    outlivesOpener: false,
+    createWindow: undefined
   };
   if (!this._windowOpenHandler) {
     return defaultResponse;
@@ -454,7 +467,8 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   } else if (response.action === 'allow') {
     return {
       browserWindowConstructorOptions: typeof response.overrideBrowserWindowOptions === 'object' ? response.overrideBrowserWindowOptions : null,
-      outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
+      outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false,
+      createWindow: typeof response.createWindow === 'function' ? response.createWindow : undefined
     };
   } else {
     event.preventDefault();
@@ -641,13 +655,16 @@ WebContents.prototype._init = function () {
           postData,
           overrideBrowserWindowOptions: options || {},
           windowOpenArgs: details,
-          outlivesOpener: result.outlivesOpener
+          outlivesOpener: result.outlivesOpener,
+          createWindow: result.createWindow
         });
       }
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
+    let createWindow: Electron.CreateWindowFunction | undefined;
+
     this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
@@ -672,6 +689,7 @@ WebContents.prototype._init = function () {
 
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
+      createWindow = result.createWindow;
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
@@ -701,6 +719,9 @@ WebContents.prototype._init = function () {
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
       const outlivesOpener = windowOpenOutlivesOpenerOption;
+      const windowOpenFunction = createWindow;
+
+      createWindow = undefined;
       windowOpenOverriddenOptions = null;
       // false is the default
       windowOpenOutlivesOpenerOption = false;
@@ -723,7 +744,8 @@ WebContents.prototype._init = function () {
           frameName,
           features: rawFeatures
         },
-        outlivesOpener
+        outlivesOpener,
+        createWindow: windowOpenFunction
       });
     });
   }

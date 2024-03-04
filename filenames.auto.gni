@@ -91,7 +91,6 @@ auto_filenames = {
     "docs/api/structures/gpu-feature-status.md",
     "docs/api/structures/hid-device.md",
     "docs/api/structures/input-event.md",
-    "docs/api/structures/io-counters.md",
     "docs/api/structures/ipc-main-event.md",
     "docs/api/structures/ipc-main-invoke-event.md",
     "docs/api/structures/ipc-renderer-event.md",
@@ -118,6 +117,7 @@ auto_filenames = {
     "docs/api/structures/protocol-request.md",
     "docs/api/structures/protocol-response-upload-data.md",
     "docs/api/structures/protocol-response.md",
+    "docs/api/structures/proxy-config.md",
     "docs/api/structures/rectangle.md",
     "docs/api/structures/referrer.md",
     "docs/api/structures/render-process-gone-details.md",
@@ -144,6 +144,7 @@ auto_filenames = {
     "docs/api/structures/web-preferences.md",
     "docs/api/structures/web-request-filter.md",
     "docs/api/structures/web-source.md",
+    "docs/api/structures/window-open-handler-response.md",
   ]
 
   sandbox_bundle_deps = [
@@ -260,7 +261,6 @@ auto_filenames = {
     "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
     "package.json",
@@ -277,7 +277,6 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-provider.ts",
     "lib/renderer/api/clipboard.ts",
@@ -316,7 +315,6 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/webpack-provider.ts",
     "lib/renderer/api/clipboard.ts",
     "lib/renderer/api/context-bridge.ts",
@@ -336,10 +334,9 @@ auto_filenames = {
     "typings/internal-electron.d.ts",
   ]
 
-  asar_bundle_deps = [
-    "lib/asar/fs-wrapper.ts",
-    "lib/asar/init.ts",
-    "lib/common/webpack-provider.ts",
+  node_bundle_deps = [
+    "lib/node/asar-fs-wrapper.ts",
+    "lib/node/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
@@ -353,7 +350,6 @@ auto_filenames = {
     "lib/common/api/net-client-request.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
-    "lib/common/reset-search-paths.ts",
     "lib/common/webpack-globals-provider.ts",
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",

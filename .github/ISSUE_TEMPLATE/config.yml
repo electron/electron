@@ -1,0 +1,7 @@
+contact_links:
+  - name: Discord Chat
+    url: https://discord.gg/APGC3k5yaH
+    about: Have questions? Try asking on our Discord - this issue tracker is for reporting bugs or feature requests only
+  - name: Open Collective
+    url: https://opencollective.com/electron
+    about: Help support Electron by contributing to our Open Collective

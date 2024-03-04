@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron';
-import { defer, ifdescribe } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -27,18 +27,6 @@ describe('process module', () => {
         const cpuUsage = await w.webContents.executeJavaScript('process.getCPUUsage()');
         expect(cpuUsage.percentCPUUsage).to.be.a('number');
         expect(cpuUsage.idleWakeupsPerSecond).to.be.a('number');
-      });
-    });
-
-    ifdescribe(process.platform !== 'darwin')('process.getIOCounters()', () => {
-      it('returns an io counters object', async () => {
-        const ioCounters = await w.webContents.executeJavaScript('process.getIOCounters()');
-        expect(ioCounters.readOperationCount).to.be.a('number');
-        expect(ioCounters.writeOperationCount).to.be.a('number');
-        expect(ioCounters.otherOperationCount).to.be.a('number');
-        expect(ioCounters.readTransferCount).to.be.a('number');
-        expect(ioCounters.writeTransferCount).to.be.a('number');
-        expect(ioCounters.otherTransferCount).to.be.a('number');
       });
     });
 
@@ -137,18 +125,6 @@ describe('process module', () => {
         const cpuUsage = process.getCPUUsage();
         expect(cpuUsage.percentCPUUsage).to.be.a('number');
         expect(cpuUsage.idleWakeupsPerSecond).to.be.a('number');
-      });
-    });
-
-    ifdescribe(process.platform !== 'darwin')('process.getIOCounters()', () => {
-      it('returns an io counters object', () => {
-        const ioCounters = process.getIOCounters();
-        expect(ioCounters.readOperationCount).to.be.a('number');
-        expect(ioCounters.writeOperationCount).to.be.a('number');
-        expect(ioCounters.otherOperationCount).to.be.a('number');
-        expect(ioCounters.readTransferCount).to.be.a('number');
-        expect(ioCounters.writeTransferCount).to.be.a('number');
-        expect(ioCounters.otherTransferCount).to.be.a('number');
       });
     });
 

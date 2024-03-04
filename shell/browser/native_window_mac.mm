@@ -118,50 +118,8 @@ namespace electron {
 
 namespace {
 
-bool IsFramelessWindow(NSView* view) {
-  NSWindow* nswindow = [view window];
-  if (![nswindow respondsToSelector:@selector(shell)])
-    return false;
-  NativeWindow* window = [static_cast<ElectronNSWindow*>(nswindow) shell];
-  return window && !window->has_frame();
-}
-
 bool IsPanel(NSWindow* window) {
   return [window isKindOfClass:[NSPanel class]];
-}
-
-IMP original_set_frame_size = nullptr;
-IMP original_view_did_move_to_superview = nullptr;
-
-// This method is directly called by NSWindow during a window resize on OSX
-// 10.10.0, beta 2. We must override it to prevent the content view from
-// shrinking.
-void SetFrameSize(NSView* self, SEL _cmd, NSSize size) {
-  if (!IsFramelessWindow(self)) {
-    auto original =
-        reinterpret_cast<decltype(&SetFrameSize)>(original_set_frame_size);
-    return original(self, _cmd, size);
-  }
-  // For frameless window, resize the view to cover full window.
-  if ([self superview])
-    size = [[self superview] bounds].size;
-  auto super_impl = reinterpret_cast<decltype(&SetFrameSize)>(
-      [[self superclass] instanceMethodForSelector:_cmd]);
-  super_impl(self, _cmd, size);
-}
-
-// The contentView gets moved around during certain full-screen operations.
-// This is less than ideal, and should eventually be removed.
-void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
-  if (!IsFramelessWindow(self)) {
-    // [BridgedContentView viewDidMoveToSuperview];
-    auto original = reinterpret_cast<decltype(&ViewDidMoveToSuperview)>(
-        original_view_did_move_to_superview);
-    if (original)
-      original(self, _cmd);
-    return;
-  }
-  [self setFrame:[[self superview] bounds]];
 }
 
 // -[NSWindow orderWindow] does not handle reordering for children
@@ -284,6 +242,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
+  params.headless_mode = true;
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
@@ -410,7 +369,7 @@ void NativeWindowMac::SetContentView(views::View* view) {
   set_content_view(view);
   root_view->AddChildView(content_view());
 
-  root_view->Layout();
+  root_view->DeprecatedLayoutImmediately();
 }
 
 void NativeWindowMac::Close() {
@@ -439,11 +398,14 @@ void NativeWindowMac::Close() {
   if ([window_ attachedSheet])
     [window_ endSheet:[window_ attachedSheet]];
 
+  // window_ could be nil after performClose.
+  bool should_notify = is_modal() && parent() && IsVisible();
+
   [window_ performClose:nil];
 
   // Closing a sheet doesn't trigger windowShouldClose,
   // so we need to manually call it ourselves here.
-  if (is_modal() && parent() && IsVisible()) {
+  if (should_notify) {
     NotifyWindowCloseButtonClicked();
   }
 }
@@ -638,7 +600,7 @@ bool NativeWindowMac::IsMaximized() const {
   if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
-  NSRect rectScreen = GetAspectRatio() > 0.0
+  NSRect rectScreen = aspect_ratio() > 0.0
                           ? default_frame_for_zoom()
                           : [[NSScreen mainScreen] visibleFrame];
 
@@ -916,7 +878,8 @@ bool NativeWindowMac::IsMaximizable() const {
 
 void NativeWindowMac::UpdateZoomButton() {
   [[window_ standardWindowButton:NSWindowZoomButton]
-      setEnabled:IsResizable() && (CanMaximize() || IsFullScreenable())];
+      setEnabled:HasStyleMask(NSWindowStyleMaskResizable) &&
+                 (CanMaximize() || IsFullScreenable())];
 }
 
 void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
@@ -1401,14 +1364,15 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
   if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
     const int macos_version = base::mac::MacOSMajorVersion();
+    const bool modal = is_modal();
 
-    // Modal window corners are rounded on macOS >= 11 or higher if the user
-    // hasn't passed noRoundedCorners.
+    // If the window is modal, its corners are rounded on macOS >= 11 or higher
+    // unless the user has explicitly passed noRoundedCorners.
     bool should_round_modal =
-        !no_rounded_corner && (macos_version >= 11 ? true : !is_modal());
-    // Nonmodal window corners are rounded if they're frameless and the user
-    // hasn't passed noRoundedCorners.
-    bool should_round_nonmodal = !no_rounded_corner && !has_frame();
+        !no_rounded_corner && macos_version >= 11 && modal;
+    // If the window is nonmodal, its corners are rounded if it is frameless and
+    // the user hasn't passed noRoundedCorners.
+    bool should_round_nonmodal = !no_rounded_corner && !modal && !has_frame();
 
     if (should_round_nonmodal || should_round_modal) {
       CGFloat radius;

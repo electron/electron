@@ -325,7 +325,8 @@ describe('ipc module', () => {
             await new Promise<void>(resolve => {
               port2.start();
               port2.onclose = resolve;
-              process._linkedBinding('electron_common_v8_util').requestGarbageCollectionForTesting();
+              // @ts-ignore --expose-gc is enabled.
+              gc({ type: 'major', execution: 'async' });
             });
           }})()`);
         });
@@ -343,6 +344,59 @@ describe('ipc module', () => {
               require('electron').ipcRenderer.send('do-a-gc');
             });
           }})()`);
+        });
+      });
+
+      describe('when context destroyed', () => {
+        it('does not crash', async () => {
+          let count = 0;
+          const server = http.createServer((req, res) => {
+            switch (req.url) {
+              case '/index.html':
+                res.setHeader('content-type', 'text/html');
+                res.statusCode = 200;
+                count = count + 1;
+                res.end(`
+                  <title>Hello${count}</title>
+                  <script>
+                  var sharedWorker = new SharedWorker('worker.js');
+
+                  sharedWorker.port.addEventListener('close', function(event) {
+                     console.log('close event', event.data);
+                  });
+                  </script>`);
+
+                break;
+              case '/worker.js':
+                res.setHeader('content-type', 'application/javascript; charset=UTF-8');
+                res.statusCode = 200;
+                res.end(`
+                  self.addEventListener('connect', function(event) {
+                    var port = event.ports[0];
+
+                    port.addEventListener('message', function(event) {
+                      console.log('Message from main:', event.data);
+                      port.postMessage('Hello from SharedWorker!');
+                    });
+
+                  });`);
+                break;
+              default:
+                throw new Error(`unsupported endpoint: ${req.url}`);
+            }
+          });
+          const { port } = await listen(server);
+          defer(() => {
+            server.close();
+          });
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL(`http://localhost:${port}/index.html`);
+          expect(w.webContents.getTitle()).to.equal('Hello1');
+          // Before the fix, it would crash if reloaded, but now it doesn't
+          await w.loadURL(`http://localhost:${port}/index.html`);
+          expect(w.webContents.getTitle()).to.equal('Hello2');
+          // const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+          // await crashEvent;
         });
       });
     });

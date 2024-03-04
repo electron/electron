@@ -37,7 +37,7 @@ ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
 
 bool ElectronDesktopWindowTreeHostLinux::SupportsClientFrameShadow() const {
   return platform_window()->CanSetDecorationInsets() &&
-         platform_window()->IsTranslucentWindowOpacitySupported();
+         views::Widget::IsWindowCompositingSupported();
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
@@ -97,6 +97,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     case ui::PlatformWindowState::kSnappedPrimary:
     case ui::PlatformWindowState::kSnappedSecondary:
     case ui::PlatformWindowState::kFloated:
+    case ui::PlatformWindowState::kPinnedFullscreen:
+    case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
   }
   switch (new_state) {
@@ -114,6 +116,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     case ui::PlatformWindowState::kSnappedPrimary:
     case ui::PlatformWindowState::kSnappedSecondary:
     case ui::PlatformWindowState::kFloated:
+    case ui::PlatformWindowState::kPinnedFullscreen:
+    case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
   }
   window_state_ = new_state;
@@ -146,7 +150,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
   bool showing_frame = !native_window_view_->IsFullscreen();
   float scale = device_scale_factor();
 
-  bool should_set_opaque_region = window->IsTranslucentWindowOpacitySupported();
+  bool should_set_opaque_region = views::Widget::IsWindowCompositingSupported();
 
   gfx::Insets insets;
   gfx::Insets input_insets;
@@ -172,7 +176,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
 
   gfx::Rect input_bounds(view->GetWidget()->GetWindowBoundsInScreen().size());
   input_bounds.Inset(insets + input_insets);
-  window->SetInputRegion(gfx::ScaleToEnclosingRect(input_bounds, scale));
+  window->SetInputRegion(std::optional<std::vector<gfx::Rect>>(
+      {gfx::ScaleToEnclosingRect(input_bounds, scale)}));
 
   if (should_set_opaque_region) {
     // The opaque region is a list of rectangles that contain only fully

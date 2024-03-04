@@ -69,7 +69,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   menu_bar_->SetMenu(menu_model);
-  Layout();
+  InvalidateLayout();
 }
 
 bool RootView::HasMenu() const {
@@ -82,10 +82,6 @@ int RootView::GetMenuBarHeight() const {
 
 void RootView::SetAutoHideMenuBar(bool auto_hide) {
   menu_bar_autohide_ = auto_hide;
-}
-
-bool RootView::IsMenuBarAutoHide() const {
-  return menu_bar_autohide_;
 }
 
 void RootView::SetMenuBarVisibility(bool visible) {
@@ -101,11 +97,7 @@ void RootView::SetMenuBarVisibility(bool visible) {
     RemoveChildView(menu_bar_.get());
   }
 
-  Layout();
-}
-
-bool RootView::IsMenuBarVisible() const {
-  return menu_bar_visible_;
+  InvalidateLayout();
 }
 
 void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
@@ -174,7 +166,7 @@ void RootView::ResetAltState() {
   menu_bar_alt_pressed_ = false;
 }
 
-void RootView::Layout() {
+void RootView::Layout(PassKey) {
   if (!window_->content_view())  // Not ready yet.
     return;
 

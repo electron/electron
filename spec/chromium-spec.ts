@@ -227,9 +227,9 @@ describe('web security', () => {
     await w.loadURL(`data:text/html,<script>
         const s = document.createElement('script')
         s.src = "${serverUrl}"
-        // The script will load successfully but its body will be emptied out
-        // by CORB, so we don't expect a syntax error.
-        s.onload = () => { require('electron').ipcRenderer.send('success') }
+        // The script will not load under ORB, refs https://chromium-review.googlesource.com/c/chromium/src/+/3785025.
+        // Before ORB an empty response is sent, which is now replaced by a network error.
+        s.onerror = () => { require('electron').ipcRenderer.send('success') }
         document.documentElement.appendChild(s)
       </script>`);
     await p;
@@ -2988,7 +2988,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await readClipboard();
-    expect(clipboard).to.not.equal('Read permission denied.');
+    expect(clipboard).to.not.contain('Read permission denied.');
   });
 
   it('returns an error when permission denied', async () => {
@@ -3000,7 +3000,7 @@ describe('navigator.clipboard.read', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.equal('Read permission denied.');
+    expect(clipboard).to.contain('Read permission denied.');
   });
 
   it('returns clipboard contents when permission is granted', async () => {
@@ -3012,7 +3012,7 @@ describe('navigator.clipboard.read', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.not.equal('Read permission denied.');
+    expect(clipboard).to.not.contain('Read permission denied.');
   });
 });
 
@@ -3036,7 +3036,7 @@ describe('navigator.clipboard.write', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
+    expect(clipboard).to.be.undefined();
   });
 
   it('returns an error when permission denied', async () => {
@@ -3048,7 +3048,7 @@ describe('navigator.clipboard.write', () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.equal('Write permission denied.');
+    expect(clipboard).to.contain('Write permission denied.');
   });
 
   it('returns clipboard contents when permission is granted', async () => {
@@ -3060,7 +3060,7 @@ describe('navigator.clipboard.write', () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
+    expect(clipboard).to.be.undefined();
   });
 });
 

@@ -168,7 +168,7 @@ SystemNetworkContextManager::GetURLLoaderFactory() {
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
   params->process_id = network::mojom::kBrowserProcessId;
-  params->is_corb_enabled = false;
+  params->is_orb_enabled = false;
   url_loader_factory_.reset();
   GetContext()->CreateURLLoaderFactory(
       url_loader_factory_.BindNewPipeAndPassReceiver(), std::move(params));
@@ -281,7 +281,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      base::FeatureList::IsEnabled(features::kAsyncDns),
+      base::FeatureList::IsEnabled(net::features::kAsyncDns),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
   // The OSCrypt keys are process bound, so if network service is out of

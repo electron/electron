@@ -520,14 +520,6 @@ bool NativeWindow::IsMenuBarVisible() const {
   return true;
 }
 
-double NativeWindow::GetAspectRatio() const {
-  return aspect_ratio_;
-}
-
-gfx::Size NativeWindow::GetAspectRatioExtraSize() const {
-  return aspect_ratio_extraSize_;
-}
-
 void NativeWindow::SetAspectRatio(double aspect_ratio,
                                   const gfx::Size& extra_size) {
   aspect_ratio_ = aspect_ratio;
@@ -764,6 +756,11 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
       return border_hit;
   }
 #endif
+
+  // This is to disable dragging in HTML5 full screen mode.
+  // Details: https://github.com/electron/electron/issues/41002
+  if (GetWidget()->IsFullscreen())
+    return HTNOWHERE;
 
   for (auto* provider : draggable_region_providers_) {
     int hit = provider->NonClientHitTest(point);

@@ -9,25 +9,53 @@ This is an experimental commit; but if it's successful,
 This patch should be upstreamed and then removed from electron's code.
 
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index d028fb25d8f095243a2ff07a799091159d081679..708c47987973c9267ff4cab7781a1d923e91d268 100644
+index 2a1498da8c9ce693403800d4c4b52fac6a7430e1..95c1b5df170b368d58e57e22561da9ba7e83e1d8 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
-@@ -43,7 +43,6 @@
+@@ -41,9 +41,7 @@
+ #include "chrome/browser/ui/views/tabs/tab.h"
  #include "chrome/browser/ui/views/user_education/browser_feature_promo_controller.h"
  #include "chrome/common/buildflags.h"
+-#include "components/enterprise/buildflags/buildflags.h"
  #include "components/infobars/core/infobar_container.h"
 -#include "components/segmentation_platform/public/result.h"
  #include "components/user_education/common/feature_promo_controller.h"
  #include "components/user_education/common/feature_promo_handle.h"
  #include "components/webapps/browser/banners/app_banner_manager.h"
-@@ -63,6 +62,10 @@
+@@ -63,10 +61,15 @@
  #include "ui/views/widget/widget_observer.h"
  #include "ui/views/window/client_view.h"
  
+-#if BUILDFLAG(ENTERPRISE_WATERMARK)
++#if 0
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "chrome/browser/enterprise/watermark/watermark_view.h"
+ #endif
+ 
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 +#include "components/segmentation_platform/public/result.h"
-+#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
++#endif
 +
  #if BUILDFLAG(IS_CHROMEOS_ASH)
  #include "ui/compositor/throughput_tracker.h"
  #endif
+@@ -446,7 +449,7 @@ class BrowserView : public BrowserWindow,
+ 
+   void UpdateWebAppStatusIconsVisiblity();
+ 
+-#if BUILDFLAG(ENTERPRISE_WATERMARK)
++#if 0
+   // Sets the watermark string to the value specified in text if the view is
+   // not null.
+   void SetWatermarkString(const std::string& text);
+@@ -1182,8 +1185,10 @@ class BrowserView : public BrowserWindow,
+   raw_ptr<views::WebView, AcrossTasksDanglingUntriaged> devtools_web_view_ =
+       nullptr;
+ 
++#if 0
+   // The view that overlays a watermark on the contents container.
+   raw_ptr<enterprise_watermark::WatermarkView> watermark_view_ = nullptr;
++#endif
+ 
+   // The view managing the devtools and contents positions.
+   // Handled by ContentsLayoutManager.

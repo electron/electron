@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - uses: actions/stale@5ebf00ea0e4c1561e9b43a292ed34424fb1d4578 # tag: v6.0.1
+      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # tag: v9.0.0
         with:
           repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: 90
@@ -27,7 +27,7 @@ jobs:
             This issue has been automatically marked as stale. **If this issue is still affecting you, please leave any comment** (for example, "bump"), and we'll keep it open. If you have any new additional information—in particular, if this is still reproducible in the [latest version of Electron](https://www.electronjs.org/releases/stable) or in the [beta](https://www.electronjs.org/releases/beta)—please include it with your comment!
           close-issue-message: >
             This issue has been closed due to inactivity, and will not be monitored.  If this is a bug and you can reproduce this issue on a [supported version of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline) please open a new issue and include instructions for reproducing the issue.
-          exempt-issue-labels: "discussion,security \U0001F512,enhancement :sparkles:,status/confirmed"
+          exempt-issue-labels: "discussion,security \U0001F512,enhancement :sparkles:,status/confirmed,stale-exempt"
           only-pr-labels: not-a-real-label
   pending-repro:
     runs-on: ubuntu-latest
@@ -35,11 +35,11 @@ jobs:
     needs: stale
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - uses: actions/stale@5ebf00ea0e4c1561e9b43a292ed34424fb1d4578 # tag: v6.0.1
+      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # tag: v9.0.0
         with:
           repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: -1

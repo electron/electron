@@ -55,7 +55,7 @@ class InspectableWebContents
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
   InspectableWebContentsDelegate* GetDelegate() const;
-  bool IsGuest() const;
+  [[nodiscard]] bool is_guest() const { return is_guest_; }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
@@ -76,7 +76,9 @@ class InspectableWebContents
   void InspectElement(int x, int y);
 
   // Return the last position and size of devtools window.
-  gfx::Rect GetDevToolsBounds() const;
+  [[nodiscard]] const gfx::Rect& dev_tools_bounds() const {
+    return devtools_bounds_;
+  }
   void SaveDevToolsBounds(const gfx::Rect& bounds);
 
   // Return the last set zoom level of devtools window.
@@ -97,6 +99,7 @@ class InspectableWebContents
                            int stream_id) override;
   void SetIsDocked(DispatchCallback callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
+  void OpenSearchResultsInNewTab(const std::string& query) override;
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
@@ -164,6 +167,7 @@ class InspectableWebContents
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
+  void RecordResize(const ResizeEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
   void RecordHover(const HoverEvent& event) override {}
   void RecordDrag(const DragEvent& event) override {}
@@ -174,7 +178,9 @@ class InspectableWebContents
   void CanShowSurvey(DispatchCallback callback,
                      const std::string& trigger) override {}
   void DoAidaConversation(DispatchCallback callback,
-                          const std::string& request) override {}
+                          const std::string& request,
+                          int stream_id) override {}
+  void RegisterAidaClientEvent(const std::string& request) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);

@@ -26,6 +26,9 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/proxy_config/proxy_config_dictionary.h"
+#include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/gpu/compositor_util.h"        // nogncheck
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
@@ -477,23 +480,23 @@ int GetPathConstant(std::string_view name) {
 
 bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
-        void(const base::CommandLine& command_line,
+        void(base::CommandLine command_line,
              const base::FilePath& current_directory,
              const std::vector<const uint8_t> additional_data)>& callback,
-    const base::CommandLine& cmd,
+    base::CommandLine cmd,
     const base::FilePath& cwd,
     const std::vector<const uint8_t> additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, std::move(additional_data));
+    callback.Run(std::move(cmd), cwd, std::move(additional_data));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::SingleThreadTaskRunner::GetCurrentDefault());
 
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(FROM_HERE,
-                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                         std::move(additional_data)));
+    task_runner->PostTask(
+        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
+                                  cwd, std::move(additional_data)));
   }
   // ProcessSingleton needs to know whether current process is quitting.
   return !Browser::Get()->is_shutting_down();
@@ -1057,7 +1060,7 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnSecondInstance(const base::CommandLine& cmd,
+void App::OnSecondInstance(base::CommandLine cmd,
                            const base::FilePath& cwd,
                            const std::vector<const uint8_t> additional_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1228,13 +1231,10 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  auto* browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
-    CertificateManagerModel::Create(
-        browser_context,
-        base::BindOnce(&App::OnCertificateManagerModelCreated,
-                       base::Unretained(this), std::move(options),
-                       std::move(callback)));
+    CertificateManagerModel::Create(base::BindOnce(
+        &App::OnCertificateManagerModelCreated, base::Unretained(this),
+        std::move(options), std::move(callback)));
     return;
   }
 
@@ -1475,6 +1475,98 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+v8::Local<v8::Promise> App::SetProxy(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  gin_helper::Dictionary options;
+  args->GetNext(&options);
+
+  if (!Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "app.setProxy() can only be called after app is ready.");
+    return handle;
+  }
+
+  if (!g_browser_process->local_state()) {
+    promise.RejectWithErrorMessage(
+        "app.setProxy() failed due to internal error.");
+    return handle;
+  }
+
+  std::string mode, proxy_rules, bypass_list, pac_url;
+
+  options.Get("pacScript", &pac_url);
+  options.Get("proxyRules", &proxy_rules);
+  options.Get("proxyBypassRules", &bypass_list);
+
+  ProxyPrefs::ProxyMode proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
+  if (!options.Get("mode", &mode)) {
+    // pacScript takes precedence over proxyRules.
+    if (!pac_url.empty()) {
+      proxy_mode = ProxyPrefs::MODE_PAC_SCRIPT;
+    }
+  } else if (!ProxyPrefs::StringToProxyMode(mode, &proxy_mode)) {
+    promise.RejectWithErrorMessage(
+        "Invalid mode, must be one of direct, auto_detect, pac_script, "
+        "fixed_servers or system");
+    return handle;
+  }
+
+  base::Value::Dict proxy_config;
+  switch (proxy_mode) {
+    case ProxyPrefs::MODE_DIRECT:
+      proxy_config = ProxyConfigDictionary::CreateDirect();
+      break;
+    case ProxyPrefs::MODE_SYSTEM:
+      proxy_config = ProxyConfigDictionary::CreateSystem();
+      break;
+    case ProxyPrefs::MODE_AUTO_DETECT:
+      proxy_config = ProxyConfigDictionary::CreateAutoDetect();
+      break;
+    case ProxyPrefs::MODE_PAC_SCRIPT:
+      proxy_config = ProxyConfigDictionary::CreatePacScript(pac_url, true);
+      break;
+    case ProxyPrefs::MODE_FIXED_SERVERS:
+      proxy_config =
+          ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list);
+      break;
+    default:
+      NOTIMPLEMENTED();
+  }
+
+  static_cast<BrowserProcessImpl*>(g_browser_process)
+      ->in_memory_pref_store()
+      ->SetValue(proxy_config::prefs::kProxy,
+                 base::Value{std::move(proxy_config)},
+                 WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+
+  g_browser_process->system_network_context_manager()
+      ->GetContext()
+      ->ForceReloadProxyConfig(base::BindOnce(
+          gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> App::ResolveProxy(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<std::string> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  GURL url;
+  args->GetNext(&url);
+
+  static_cast<BrowserProcessImpl*>(g_browser_process)
+      ->GetResolveProxyHelper()
+      ->ResolveProxy(
+          url, base::BindOnce(gin_helper::Promise<std::string>::ResolvePromise,
+                              std::move(promise)));
+
+  return handle;
+}
+
 void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
@@ -1578,7 +1670,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   }
 
   bool enable_built_in_resolver =
-      base::FeatureList::IsEnabled(features::kAsyncDns);
+      base::FeatureList::IsEnabled(net::features::kAsyncDns);
   bool additional_dns_query_types_enabled = true;
 
   if (opts.Has("enableBuiltInResolver") &&
@@ -1684,7 +1776,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setBadgeCount",
                  base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount",
-                 base::BindRepeating(&Browser::GetBadgeCount, browser))
+                 base::BindRepeating(&Browser::badge_count, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
@@ -1779,7 +1871,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
-      .SetMethod("enableSandbox", &App::EnableSandbox);
+      .SetMethod("enableSandbox", &App::EnableSandbox)
+      .SetMethod("setProxy", &App::SetProxy)
+      .SetMethod("resolveProxy", &App::ResolveProxy);
 }
 
 const char* App::GetTypeName() {

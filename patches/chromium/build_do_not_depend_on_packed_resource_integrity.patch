@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 3611378c052813bd9c9ab9ce7d1840d6535576bf..b148e0acaf28197ee1da634b5e4c449ffcc30ddc 100644
+index 78c84e4ccefb90715d68de15d32d5245027ebb4d..99c80a0d2c23533f2858f61aca11d3b704e0735a 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -200,11 +200,16 @@ if (!is_android && !is_mac && !is_fuchsia) {
+@@ -188,11 +188,16 @@ if (!is_android && !is_mac) {
            "common/crash_keys.h",
          ]
  
@@ -33,10 +33,10 @@ index 3611378c052813bd9c9ab9ce7d1840d6535576bf..b148e0acaf28197ee1da634b5e4c449f
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 9e7f057a1c35d3e6ba3f144cfaf7dfe0ff1148a8..b2b2c49e745530b35b6ee7df080426afa4c64989 100644
+index dfba1dd0fcfa9a6c7aabcf7de8a64f5f67781bc9..e3cc6c12540d09ef8cdc9640a9eff6299bc55237 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4746,7 +4746,7 @@ static_library("browser") {
+@@ -4785,7 +4785,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,44 +46,39 @@ index 9e7f057a1c35d3e6ba3f144cfaf7dfe0ff1148a8..b2b2c49e745530b35b6ee7df080426af
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index f56b2c37e6176e3d796db6a0d75b9388691a1b1c..4f5b716570e8e235699c90b44ce14b367469e994 100644
+index b04036f9abac30760feae720f5e76b3f49ba1361..7801d5ae0878c0f56ed23bd4f132ad0fa51abe7a 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7190,7 +7190,6 @@ if (!is_fuchsia) {
+@@ -7150,9 +7150,12 @@ test("unit_tests") {
+       "//chrome/browser/safe_browsing/incident_reporting/verifier_test:verifier_test_dll_2",
+     ]
  
-       deps += [
-         "//chrome:other_version",
--        "//chrome:packed_resources_integrity_header",
-         "//chrome//services/util_win:unit_tests",
-         "//chrome/app:chrome_dll_resources",
-         "//chrome/app:win_unit_tests",
-@@ -7211,6 +7210,10 @@ if (!is_fuchsia) {
-         "//ui/resources",
-       ]
- 
-+      if (!is_electron_build) {
-+        deps += [ "//chrome:packed_resources_integrity_header" ]
-+      }
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_header" ]
++    }
 +
-       ldflags = [
-         "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
-         "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -8231,7 +8234,6 @@ if (!is_fuchsia) {
-       }
+     deps += [
+       "//chrome:other_version",
+-      "//chrome:packed_resources_integrity_header",
+       "//chrome//services/util_win:unit_tests",
+       "//chrome/app:chrome_dll_resources",
+       "//chrome/app:win_unit_tests",
+@@ -8116,6 +8119,10 @@ test("unit_tests") {
+       "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
+     ]
  
-       deps += [
--        "//chrome:packed_resources_integrity_header",
-         "//chrome/browser/apps:icon_standardizer",
-         "//chrome/browser/apps/app_service",
-         "//chrome/browser/apps/app_service:app_registry_cache_waiter",
-@@ -8324,6 +8326,10 @@ if (!is_fuchsia) {
-         "//ui/webui/resources/js/browser_command:mojo_bindings",
-       ]
- 
-+      if (!is_electron_build) {
-+        deps += [ "//chrome:packed_resources_integrity_header" ]
-+      }
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_header" ]
++    }
 +
-       data += [ "//ash/components/arc/test/data/icons/" ]
+     sources += [
+       # The importer code is not used on Android.
+       "../common/importer/firefox_importer_utils_unittest.cc",
+@@ -8185,7 +8192,6 @@ test("unit_tests") {
+     }
  
-       if (include_js2gtest_tests && is_chromeos_ash) {
+     deps += [
+-      "//chrome:packed_resources_integrity_header",
+       "//chrome/browser/apps:icon_standardizer",
+       "//chrome/browser/apps/app_service",
+       "//chrome/browser/apps/app_service:app_registry_cache_waiter",

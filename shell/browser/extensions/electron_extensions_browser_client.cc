@@ -268,6 +268,13 @@ ElectronExtensionsBrowserClient::GetProcessManagerDelegate() const {
   return process_manager_delegate_.get();
 }
 
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ElectronExtensionsBrowserClient::GetControlledFrameEmbedderURLLoader(
+    int frame_tree_node_id,
+    content::BrowserContext* browser_context) {
+  return mojo::PendingRemote<network::mojom::URLLoaderFactory>();
+}
+
 std::unique_ptr<extensions::ExtensionHostDelegate>
 ElectronExtensionsBrowserClient::
     CreateExtensionHostDelegate() {  // TODO(samuelmaddock):
