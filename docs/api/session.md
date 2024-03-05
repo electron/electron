@@ -1428,7 +1428,6 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 
 * `options` Object (optional)
   * `dataTypes` String[] (optional) - The types of data to clear. If undefined, will clear all types of data. See method details for possible values.
-  * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
     * `backgroundFetch` - Background Fetch
     * `cache` - Cache
     * `cookies` - Cookies
@@ -1438,6 +1437,7 @@ session is persisted on disk.  For in memory sessions this returns `null`.
     * `localStorage` - Local Storage
     * `serviceWorkers` - Service Workers
     * `webSQL` - WebSQL
+  * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
   * `excludeOrigins` String[] (optional) - Clear data for all origins except these ones. Cannot be used with `origins`.
   * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections.
   * `originMatchingMode` String (optional) - The behavior for matching data to origins. Valid values are `"third-parties-included"` and `"origin-in-all-contexts"`.
