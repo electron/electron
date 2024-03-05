@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c72848e7b7eaf5736ea2a7569709f27621d49293..c9017c920e05751e1461330f16cc9741c2e66ae9 100644
+index 8ffd60e5db7918318384ad18173d2e3dddb9b229..c915c6f00999d54c47d1b5a59a6e8361c0002ea4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1052,6 +1052,7 @@ component("base") {
@@ -283,7 +283,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234fc42d06b 100644
+index 25672be4a7dac9a8cd53498184f537292e14d5c2..ef0844ae2845990832fc9777eade94550fb8ffaa 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -303,7 +303,7 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index eca5cea5131601638c20a4d9a885461df54095da..5032994a576bd85a2aaa7723bbfec4d5f94f6812 100644
+index 568f0c23f1b276f36f1871f23e4a1c8ed7366e6c..e0a8d474cafb654b2bb420ee914ef4f596de2d6d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -104,7 +104,9 @@ void OrderChildWindow(NSWindow* child_window,
@@ -353,7 +353,7 @@ index eca5cea5131601638c20a4d9a885461df54095da..5032994a576bd85a2aaa7723bbfec4d5
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5535f9c56113f1f46a925d6cc16049a841d0b609..2845da60cf229e6899bc200218eda2e0961f9f21 100644
+index 3f4ac8e2455a2acf948777801deb0af5035251fa..9d218f927d99e32fcdd76f21d727b5c03856fb2f 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -620,10 +620,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index dfaaffe13b67e1d1639cdc626070fd64794b4d6f..f0b27e0aa7976ba676d14a0e6b079dbf728ed63b 100644
+index 9480a2453fc79a78143e10970cc7e479afcb818a..58acdffd6bf4c93d69b9e6f0565e567c377705a7 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0dad112416dbd297e9cfc6977896d28104733287..143b85a7296e404494a8bb2a96c875f2c5ed0934 100644
+index 2815030a81e1e3ffa5dd7399e7f4553b11d1af6a..ce8614a12cc421920876883d65b9b51e136394e4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -487,6 +487,7 @@ static_library("test_support") {
