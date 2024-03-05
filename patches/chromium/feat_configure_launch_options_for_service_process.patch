@@ -323,7 +323,7 @@ index 01a921c772f769c64ac97bfc5e74862a801e3e61..9bfc30138a01520d59760a49d15dd481
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 2f3977d62535e299ef3b5954b9d67291afae2a57..edc825c691f7b55cd38fa31a9229fdf02bb5ff24 100644
+index 086089dc5929cb98be9423a6c2a3a0c40876c8eb..4cd54d37f6480558b49a87a9fe3bfb2b71e3edd9 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -627,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 6bf94fa65c5b69bedd4e19973ffa275521bc331b..512e97a8124bb3809fea9128d1446cf22e49f25c 100644
+index 3a1e768c76689855dd2e0514f1b42a920d72a6cc..0c28807fb6fe58706c5982851ff96c10739ad2de 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -747,11 +747,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

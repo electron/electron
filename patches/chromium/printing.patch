@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 8f37cd237422b15b32a7f509fadb44e78bbe588c..e8479dacd6b732d3e21539184d5f96e5b94c10fc 100644
+index 28ba2fe1481518bb42eb79db4ab157fb6020b434..e8a2ed2b04007ba5f1135f49a156b5a6b37ae3ab 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -974,7 +974,6 @@ if (is_win) {
+@@ -973,7 +973,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 8f37cd237422b15b32a7f509fadb44e78bbe588c..e8479dacd6b732d3e21539184d5f96e5
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -983,6 +982,10 @@ if (is_win) {
+@@ -982,6 +981,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a8e51536c 100644
+index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0ae8d5460 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -651,7 +651,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1229,14 +1230,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1230,14 +1231,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -668,7 +668,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
    if (!weak_this) {
      return;
    }
-@@ -1267,7 +1268,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1268,7 +1269,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -677,7 +677,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1282,7 +1283,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1283,7 +1284,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -686,7 +686,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
  
    if (render_frame_gone_) {
      return;
-@@ -1371,7 +1372,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+@@ -1372,7 +1373,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
    }
  
    Print(frame, print_preview_context_.source_node(),
@@ -696,7 +696,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
    if (render_frame_gone_) {
      return;
    }
-@@ -1434,6 +1436,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1435,6 +1437,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -705,7 +705,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2011,7 +2015,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2012,7 +2016,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
    }
  
    Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -715,7 +715,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
    // Check if `this` is still valid.
    if (!weak_this) {
      return;
-@@ -2027,17 +2032,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2028,17 +2033,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -738,7 +738,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2058,8 +2065,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2059,8 +2066,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -755,7 +755,7 @@ index 6c0ad9f1a4fcb17ebb1604ce862b791ec8633484..345e7c15e241a4e4239e7b46b4e9922a
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2317,25 +2331,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2318,25 +2332,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -830,10 +830,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ac9c91c5b9048db4c33d8584dee96596e4aff68c..9ea6edb54fbb48d51572c6ca512a059ad677991a 100644
+index ed291b680121f48044bda3a920ad144ca1c075ff..e708934a0e865f05fc6d5d889d19fab869059dce 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2924,8 +2924,9 @@ source_set("browser") {
+@@ -2923,8 +2923,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -882,7 +882,7 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    virtual mojom::ResultCode OnError();
  
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 9f4e6a633cdba2f23f46405ca5118edf06796668..5f541dece15713507fc2f02af94f3e8921cb50d6 100644
+index e89fd87753bad3c5663fa53f8dcc4542e7e307e5..2b433a0705234af6f9808ee741a9795d5e251785 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
 @@ -38,6 +38,10 @@
