@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index fd4f8af05a78316870d64b54f2cd2a7917f5c78a..c3af34a6b831f16e6e1de2b328c9b0ae8d8d6b50 100644
+index 1b970800f368021f1da370059bfece390bfea573..a5a608c527c7cc59529881b6b4fa336c4426a525 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10293,6 +10293,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10349,6 +10349,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
      return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
    }
  
@@ -40,10 +40,10 @@ index fd4f8af05a78316870d64b54f2cd2a7917f5c78a..c3af34a6b831f16e6e1de2b328c9b0ae
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 01a4f9c0bc86903243b548a49df11d2111877a16..9086c0ef56b7bc1c3b1ebe5885905eaca1235b77 100644
+index a5940e242d4ff51b5c6699a16c623db679ed3f1a..697de2be45e8b095e51996619f10c22998965c54 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2139,6 +2139,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2159,6 +2159,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 01a4f9c0bc86903243b548a49df11d2111877a16..9086c0ef56b7bc1c3b1ebe5885905eac
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2186,6 +2190,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2206,6 +2210,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");

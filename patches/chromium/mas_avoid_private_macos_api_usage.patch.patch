@@ -283,7 +283,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 25672be4a7dac9a8cd53498184f537292e14d5c2..ef0844ae2845990832fc9777eade94550fb8ffaa 100644
+index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234fc42d06b 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -303,7 +303,7 @@ index 25672be4a7dac9a8cd53498184f537292e14d5c2..ef0844ae2845990832fc9777eade9455
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 568f0c23f1b276f36f1871f23e4a1c8ed7366e6c..e0a8d474cafb654b2bb420ee914ef4f596de2d6d 100644
+index eca5cea5131601638c20a4d9a885461df54095da..5032994a576bd85a2aaa7723bbfec4d5f94f6812 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -104,7 +104,9 @@ void OrderChildWindow(NSWindow* child_window,
@@ -353,7 +353,7 @@ index 568f0c23f1b276f36f1871f23e4a1c8ed7366e6c..e0a8d474cafb654b2bb420ee914ef4f5
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 3f4ac8e2455a2acf948777801deb0af5035251fa..9d218f927d99e32fcdd76f21d727b5c03856fb2f 100644
+index 5535f9c56113f1f46a925d6cc16049a841d0b609..2845da60cf229e6899bc200218eda2e0961f9f21 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -620,10 +620,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9480a2453fc79a78143e10970cc7e479afcb818a..58acdffd6bf4c93d69b9e6f0565e567c377705a7 100644
+index dfaaffe13b67e1d1639cdc626070fd64794b4d6f..f0b27e0aa7976ba676d14a0e6b079dbf728ed63b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2815030a81e1e3ffa5dd7399e7f4553b11d1af6a..ce8614a12cc421920876883d65b9b51e136394e4 100644
+index 0dad112416dbd297e9cfc6977896d28104733287..143b85a7296e404494a8bb2a96c875f2c5ed0934 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -487,6 +487,7 @@ static_library("test_support") {
@@ -1517,7 +1517,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 2dbfeb138a82d32859bb77018036bb0a2af45782..b02bf4b3480be9ce5a518610b652dff6ea1b025b 100644
+index 8fcf80911db2a84ed9f1f8e81ad0e3398719bba2..007d54e898d11b96356ef81cdf734304e98233fb 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -69,6 +69,10 @@ component("display") {
@@ -1596,7 +1596,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 7c81ce5c3835b578369338a5020cfa51520d431d..4290eccab77ce8225f30585f7d1a0d1c064e2365 100644
+index 7619ecbf75137288fcd5e143ca12fc7a5b61c243..041a99347346374d4412f8a0ffdd9eaa2c780a40 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -710,6 +710,7 @@ component("views") {
