@@ -948,15 +948,9 @@ ElectronBrowserClient::CreateThrottlesForNavigation(
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  std::unique_ptr<content::NavigationThrottle> pdf_iframe_throttle =
-      PDFIFrameNavigationThrottle::MaybeCreateThrottleFor(handle);
-  if (pdf_iframe_throttle)
-    throttles.push_back(std::move(pdf_iframe_throttle));
-  std::unique_ptr<content::NavigationThrottle> pdf_throttle =
-      pdf::PdfNavigationThrottle::MaybeCreateThrottleFor(
-          handle, std::make_unique<ChromePdfStreamDelegate>());
-  if (pdf_throttle)
-    throttles.push_back(std::move(pdf_throttle));
+  throttles.push_back(std::make_unique<PDFIFrameNavigationThrottle>(handle));
+  throttles.push_back(std::make_unique<pdf::PdfNavigationThrottle>(
+      handle, std::make_unique<ChromePdfStreamDelegate>()));
 #endif
 
   return throttles;
