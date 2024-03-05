@@ -54,10 +54,10 @@ index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 0c8ae51d15963796a8967dd1d47ff9f0d4ef733e..4fcfd6b900163b20420def8c92625b60cf687996 100644
+index 4b3ed41d771cad8f22bf74dfc8349dd4c18924fb..b0c826ff8f0b06e26447424d9c305c2ebcee5c5c 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -514,6 +514,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -508,6 +508,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -68,7 +68,7 @@ index 0c8ae51d15963796a8967dd1d47ff9f0d4ef733e..4fcfd6b900163b20420def8c92625b60
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -631,6 +635,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -625,6 +629,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

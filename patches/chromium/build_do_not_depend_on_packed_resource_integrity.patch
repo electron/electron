@@ -33,10 +33,10 @@ index 78c84e4ccefb90715d68de15d32d5245027ebb4d..99c80a0d2c23533f2858f61aca11d3b7
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index dfba1dd0fcfa9a6c7aabcf7de8a64f5f67781bc9..e3cc6c12540d09ef8cdc9640a9eff6299bc55237 100644
+index 9b8a614ec6805014d93b3090b47443734dfa9a10..85a348e20fb331323d25207f5773e34c5bb67d56 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4785,7 +4785,7 @@ static_library("browser") {
+@@ -4791,7 +4791,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index dfba1dd0fcfa9a6c7aabcf7de8a64f5f67781bc9..e3cc6c12540d09ef8cdc9640a9eff629
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index b04036f9abac30760feae720f5e76b3f49ba1361..7801d5ae0878c0f56ed23bd4f132ad0fa51abe7a 100644
+index 0e038a6064ecea2fd100c760966de6e0fd3c0d72..4b856057cde5a2e91777260f28dfb68d1b462607 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7150,9 +7150,12 @@ test("unit_tests") {
+@@ -7164,9 +7164,12 @@ test("unit_tests") {
        "//chrome/browser/safe_browsing/incident_reporting/verifier_test:verifier_test_dll_2",
      ]
  
@@ -63,7 +63,7 @@ index b04036f9abac30760feae720f5e76b3f49ba1361..7801d5ae0878c0f56ed23bd4f132ad0f
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8116,6 +8119,10 @@ test("unit_tests") {
+@@ -8131,6 +8134,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index b04036f9abac30760feae720f5e76b3f49ba1361..7801d5ae0878c0f56ed23bd4f132ad0f
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8185,7 +8192,6 @@ test("unit_tests") {
+@@ -8200,7 +8207,6 @@ test("unit_tests") {
      }
  
      deps += [
