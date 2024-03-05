@@ -11,36 +11,6 @@
 #include "shell/common/gin_helper/callback.h"
 #include "shell/common/v8_value_serializer.h"
 
-std::string GetPasswordFromArgs(gin::Arguments* args) {
-  if (args->Length() == 2) {
-    return "";
-  }
-
-  v8::Local<v8::Value> val;
-  args->GetNext(&val);
-  if (val->IsNull() || val->IsUndefined()) {
-    return "";
-  }
-
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  auto context = isolate->GetCurrentContext();
-  v8::Local<v8::String> strVal;
-  if (!val->ToString(context).ToLocal(&strVal)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "could not convert value to string");
-    return "";
-  }
-
-  std::string password;
-  if (!gin::ConvertFromV8(isolate, strVal, &password)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "could not convert value to string");
-    return "";
-  }
-
-  return password;
-}
-
 ChromeNSSCryptoModuleDelegate::ChromeNSSCryptoModuleDelegate(
     const net::HostPortPair& server)
     : server_(server),
@@ -73,18 +43,22 @@ void ChromeNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
     bool retry) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  bool prevent_default = electron::api::App::Get()->Emit(
-      "client-certificate-request-password", server_.host(), token_name, retry,
-      base::BindOnce(&ChromeNSSCryptoModuleDelegate::OnPassword,
-                     // FIXME: if the event is not handled, the delegate
-                     // will be leaked. But using weakptr would have the
-                     // following drawkback: if the user calls callback
-                     // without calling preventDefault, electron will
-                     // will trigger a debug assertion when trying to reference
-                     // the weak pointer sequence_checker.cc(21)] Check failed:
-                     // checker.CalledOnValidSequence(&bound_at)
-                     this));
-  if (!prevent_default && !event_.IsSignaled()) {
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("hostName", server_.host());
+  dict.Set("tokenName", token_name);
+  dict.Set("isRetry", retry);
+
+  electron::api::App::Get()->EmitWithoutEvent(
+      "-client-certificate-request-password", event_object,
+      base::BindOnce(&ChromeNSSCryptoModuleDelegate::OnPassword, this));
+
+  if (!event->GetDefaultPrevented()) {
     password_ = "";
     cancelled_ = true;
     event_.Signal();
@@ -92,7 +66,7 @@ void ChromeNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
 }
 
 void ChromeNSSCryptoModuleDelegate::OnPassword(gin::Arguments* args) {
-  password_ = GetPasswordFromArgs(args);
+  args->GetNext(&password_);
   cancelled_ = password_.empty();
   event_.Signal();
 }

@@ -313,39 +313,6 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 })
 ```
 
-### Event: 'client-certificate-request-password' _Linux_
-
-Returns:
-
-* `event` Event
-* `hostName` string - the hostname of the site requiring a client certificate
-* `tokenName` string - the token (or slot) name of the cryptographic device
-* `retry` boolean - whether there have been failed attempt at prompting the password
-
-Emitted when a password is needed to unlock a client certificate for
-`hostName`. You need to call `event.preventDefault()`, prompt the user for the
-password for the cryptographic device, and call `callback(password)`
-
-```js
-const { app } = require('electron')
-
-async function passwordPromptUI (text) {
-  return new Promise((resolve, reject) => {
-    // display UI to prompt user for password
-    // ...
-    // ...
-    resolve('the password')
-  })
-}
-
-app.on('client-certificate-request-password', async (event, hostName, tokenName, retry, callback) => {
-  event.preventDefault()
-  const text = `Please sign in to ${tokenName} to authenticate to ${hostName} with your certificate`
-  const password = await passwordPromptUI(text)
-  callback(password)
-})
-```
-
 ### Event: 'select-client-certificate'
 
 Returns:
@@ -1521,6 +1488,38 @@ This method can only be called after app is ready.
 * `url` URL
 
 Returns `Promise<string>` - Resolves with the proxy information for `url` that will be used when attempting to make requests using [Net](net.md) in the [utility process](../glossary.md#utility-process).
+
+### `app.setClientCertRequestPasswordHandler(handler)`  _Linux_
+
+* `handler` Function<Promise<string>>
+  * `clientCertRequestParams` Object
+    * `hostName` string - the hostname of the site requiring a client certificate
+    * `tokenName` string - the token (or slot) name of the cryptographic device
+    * `isRetry` boolean - whether there have been failed attempt at prompting the password
+
+  Returns `Promise<string>` - Resolves with the password
+
+The handler is called when a password is needed to unlock a client certificate for
+`hostName`.
+
+```js
+const { app } = require('electron')
+
+async function passwordPromptUI (text) {
+  return new Promise((resolve, reject) => {
+    // display UI to prompt user for password
+    // ...
+    // ...
+    resolve('the password')
+  })
+}
+
+app.setClientCertRequestPasswordHandler(async ({ hostName, tokenName, isRetry }) => {
+  const text = `Please sign in to ${tokenName} to authenticate to ${hostName} with your certificate`
+  const password = await passwordPromptUI(text)
+  return password
+})
+```
 
 ## Properties
 
