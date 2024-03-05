@@ -343,7 +343,7 @@ jobs:
           if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
             target_os=mac
             target_cpu=arm64
-            if [ "$MAS_BUILD" == x"true" ]; then
+            if [ "${{ matrix.build-type }}" == "mas" ]; then
               target_os=mac_mas
             fi
             electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
