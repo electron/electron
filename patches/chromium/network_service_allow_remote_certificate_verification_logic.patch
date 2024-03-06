@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index df900e46ab1e0b8deb2a0f80e3b45b36b8402654..f417639adad080aa59d3f64a3061f5298518f47d 100644
+index 8da37d8d92e6dc2e9ebc80e1d7929414c44b17a6..d3599d07ba2e5f78a1d507e8cd8c309d699d8a4a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -150,6 +150,11 @@
+@@ -151,6 +151,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index df900e46ab1e0b8deb2a0f80e3b45b36b8402654..f417639adad080aa59d3f64a3061f529
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -513,6 +518,99 @@ bool GetFullDataFilePath(
+@@ -514,6 +519,99 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index df900e46ab1e0b8deb2a0f80e3b45b36b8402654..f417639adad080aa59d3f64a3061f529
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -878,6 +976,13 @@ void NetworkContext::SetClient(
+@@ -879,6 +977,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index df900e46ab1e0b8deb2a0f80e3b45b36b8402654..f417639adad080aa59d3f64a3061f529
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2343,6 +2448,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2344,6 +2449,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)

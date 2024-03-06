@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8ffd60e5db7918318384ad18173d2e3dddb9b229..c915c6f00999d54c47d1b5a59a6e8361c0002ea4 100644
+index d300f0ce54bfd453d3ef7006847654d4abf3f502..c2399d112e006e734211757675acba79de4f8b59 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1052,6 +1052,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -805,10 +805,10 @@ index 3033b23a07041d375d5733bad1901f9a61bdf3b6..9dd6cb1aa49d03c167d1a92100d4ba5f
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index e321b406a8375986b41d64342919bb0e8c5e58eb..8081d53adab80a6fccfdb4cd6f608c3bf7112c47 100644
+index ea3578a727bdccfff74a4112529af9ac052165f2..a0f8573a4401922e4bc9de9b0faf11951efef741 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -133,6 +133,7 @@ component("service") {
+@@ -135,6 +135,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -1318,10 +1318,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c6ab1b11b29d574234aae9f30401b1ff8a9023ce..ff94cb56f884811f6eaf3f9b15c534e3284c773b 100644
+index c6a38a54eee355342fad2918cb5f7992415df2ce..bdebe67853c8509357889fd4ab977c553307ff89 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -312,6 +312,7 @@ component("core") {
+@@ -311,6 +311,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -1596,10 +1596,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 7619ecbf75137288fcd5e143ca12fc7a5b61c243..041a99347346374d4412f8a0ffdd9eaa2c780a40 100644
+index 5463bc60565462ba76b4df402a9c86f10e54ebc3..e7c50324c6d4d2b2dbf3a16cd6820f01717cbee9 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -710,6 +710,7 @@ component("views") {
+@@ -712,6 +712,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1607,7 +1607,7 @@ index 7619ecbf75137288fcd5e143ca12fc7a5b61c243..041a99347346374d4412f8a0ffdd9eaa
    }
  
    if (is_win) {
-@@ -1141,6 +1142,8 @@ source_set("test_support") {
+@@ -1143,6 +1144,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

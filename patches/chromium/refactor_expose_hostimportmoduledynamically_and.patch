@@ -7,7 +7,7 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 58f26914fe73e24367c1054273907887a08caffe..97f262f818079c68bffaf846a6e4a2e9b6cdf5ea 100644
+index cc58fc115b4a5b0183e5e11425d2b1a3e115d63c..24555855b0ef2ef3d2430a4e64a5147e076843f9 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -627,7 +627,9 @@ bool JavaScriptCompileHintsMagicEnabledCallback(
