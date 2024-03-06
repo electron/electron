@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index dcaabde395b859f13f238476d093279b644ca940..e9502fc39855d8f4f843dd3d5de925fa8a43c947 100644
+index 8ffd60e5db7918318384ad18173d2e3dddb9b229..c915c6f00999d54c47d1b5a59a6e8361c0002ea4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1050,6 +1050,7 @@ component("base") {
+@@ -1052,6 +1052,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -171,7 +171,7 @@ index 4fe7a0bfaa5b3398372f55c6454e738f140efe6b..b1c70281c45aaca4ae483f1f28e9d219
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index a5815d7c1cab4795dbaf20bfd152810cb78ce0a9..5bb13f382e08f66ed3cb8cd67512b86767e7368a 100644
+index bbc1938adb36d462cd7cd92e7389d2fc3f73321f..15c2e1457b577e769793823c9d61b179be144d33 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -353,10 +353,10 @@ index 568f0c23f1b276f36f1871f23e4a1c8ed7366e6c..e0a8d474cafb654b2bb420ee914ef4f5
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index fbc23284b997d80c31f6fb62d8de7fc3076b3195..2d264b95ef73d243fedfe12a24fb4c665805e630 100644
+index 3f4ac8e2455a2acf948777801deb0af5035251fa..9d218f927d99e32fcdd76f21d727b5c03856fb2f 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -601,10 +601,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -620,10 +620,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -370,7 +370,7 @@ index fbc23284b997d80c31f6fb62d8de7fc3076b3195..2d264b95ef73d243fedfe12a24fb4c66
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 5756139efd53eb9ec6e74007fc10d9f7dfe51d44..8faf652dee5720e066b6ab5f2d4997ee31bfbf1a 100644
+index 2cb7309131a42d8b374f2000cdd232ce48d561b8..fc67ca507ecbf39fabba4142e8a3ac618f3eeaf9 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -356,6 +356,7 @@ viz_component("service") {
@@ -381,7 +381,7 @@ index 5756139efd53eb9ec6e74007fc10d9f7dfe51d44..8faf652dee5720e066b6ab5f2d4997ee
    }
  
    if (is_android || use_ozone) {
-@@ -622,6 +623,7 @@ viz_source_set("unit_tests") {
+@@ -623,6 +624,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 193558166b9587eb62ea7a13ab71716d38277aec..ac9c91c5b9048db4c33d8584dee96596e4aff68c 100644
+index 9480a2453fc79a78143e10970cc7e479afcb818a..58acdffd6bf4c93d69b9e6f0565e567c377705a7 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -471,7 +471,7 @@ index 193558166b9587eb62ea7a13ab71716d38277aec..ac9c91c5b9048db4c33d8584dee96596
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index ce3623bd6353674fee92ba1c36eeda8da8906882..62746522bf5f398b12a8cee35f49bb4fc3b51b53 100644
+index 96979b61bb52b6b87ee31906bac3aef025cda8c7..786c0fb321055c23fa05fe9168654a3002e1be62 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -608,10 +608,10 @@ index 72b957cd89704085ad44d040e0826148d56881fb..39e03b029c4ebf03020f6cc8b67922f7
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index fdc1defcdd260872d4e5ce512dfea3bad48bb9e3..0f15dacce3c68e6122f5378050f019a9521bedfd 100644
+index 55765cb73b3e4c41ed785a9da8906741e62f4a21..f3e3cee3eb27b5c995404db9cbdbf6351546e7af 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -242,6 +242,7 @@ source_set("common") {
+@@ -244,6 +244,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7a0769c985c08a3b3834c9495b9ebcebad21e220..74a3b7da7024e468b0d0b0044b2137d59f0bf8e5 100644
+index 2815030a81e1e3ffa5dd7399e7f4553b11d1af6a..ce8614a12cc421920876883d65b9b51e136394e4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -489,6 +489,7 @@ static_library("test_support") {
+@@ -487,6 +487,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index 7a0769c985c08a3b3834c9495b9ebcebad21e220..74a3b7da7024e468b0d0b0044b2137d5
    ]
  
    public_deps = [
-@@ -1086,6 +1087,7 @@ static_library("browsertest_support") {
+@@ -1084,6 +1085,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 7a0769c985c08a3b3834c9495b9ebcebad21e220..74a3b7da7024e468b0d0b0044b2137d5
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1702,6 +1704,7 @@ test("content_browsertests") {
+@@ -1700,6 +1702,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 7a0769c985c08a3b3834c9495b9ebcebad21e220..74a3b7da7024e468b0d0b0044b2137d5
  
    public_deps = [
      ":test_interfaces",
-@@ -2945,6 +2948,7 @@ test("content_unittests") {
+@@ -2922,6 +2925,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1517,7 +1517,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index fb806dddc33f8dc880ae5fdefb9389bf38a18931..3d8c09b5deed91b1381793578e17afe2750bc3ee 100644
+index 2dbfeb138a82d32859bb77018036bb0a2af45782..b02bf4b3480be9ce5a518610b652dff6ea1b025b 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -69,6 +69,10 @@ component("display") {
@@ -1596,7 +1596,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a64df51a061e4d1b1d923fab830e5b3be4c389ba..e0cb6abb7a5010c69f82a3edcea5700cda3895cf 100644
+index 7c81ce5c3835b578369338a5020cfa51520d431d..4290eccab77ce8225f30585f7d1a0d1c064e2365 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -710,6 +710,7 @@ component("views") {
@@ -1607,7 +1607,7 @@ index a64df51a061e4d1b1d923fab830e5b3be4c389ba..e0cb6abb7a5010c69f82a3edcea5700c
    }
  
    if (is_win) {
-@@ -1139,6 +1140,8 @@ source_set("test_support") {
+@@ -1141,6 +1142,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
