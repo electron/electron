@@ -1073,6 +1073,8 @@ commands:
       - run:
           name: << parameters.step-name >>
           command: |
+            # Delete caches older than 30 days
+            find /mnt/cross-instance-cache -mtime +30 -not -type d -delete
             cache_key="<< parameters.cache_key >>"
             final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
             echo "Using cache key: $cache_key"
