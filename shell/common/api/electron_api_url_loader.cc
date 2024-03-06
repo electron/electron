@@ -182,6 +182,8 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
         .SetMethod("done", &JSChunkedDataPipeGetter::Done);
   }
 
+  const char* GetTypeName() override { return "JSChunkedDataPipeGetter"; }
+
   static gin::WrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
