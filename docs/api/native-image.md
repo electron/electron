@@ -1,6 +1,6 @@
 # nativeImage
 
-> Create Tray, Dock, and application icons using PNG or JPG files.
+> Create tray, dock, and application icons using PNG or JPG files.
 
 Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
