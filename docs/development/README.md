@@ -71,10 +71,3 @@ Details about each group and their responsibilities can be found in the [governa
 Electron is built on two major upstream projects: Chromium and Node.js. Each of these projects has several of their own dependencies, too. We try our best to use these dependencies exactly as they are but sometimes we can't achieve our goals without patching those upstream dependencies to fit our use cases.
 
 As such, we maintain a collection of patches as part of our source tree. The process for adding or altering one of these patches to Electron's source tree via a pull request can be found in [patches](patches.md).
-
-## Debugging
-
-There are many different approaches to debugging issues and bugs in Electron, many of which
-are platform specific.
-
-For an overview of information related to debugging Electron itself (and not an app _built with Electron_), see [debugging](debugging.md).
