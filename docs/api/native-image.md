@@ -194,7 +194,7 @@ Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the `NSImage` that maps to the
-given image name. See Apple's [`System Icons`](https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/system-icons/)
+given image name. See Apple's [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename#2901388)
 documentation for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules:
