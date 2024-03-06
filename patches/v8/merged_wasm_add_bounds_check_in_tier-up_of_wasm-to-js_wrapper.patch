@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Tue, 20 Feb 2024 16:27:22 +0100
+Subject: Merged: [wasm] Add bounds check in tier-up of wasm-to-js wrapper
+
+The entry index in the WasmApiFunctionRef was used to look for the given
+WasmApiFunctionRef in the indirect function tables, but it was not
+considered that the indirect function tables can have different lengths.
+
+R=clemensb@chromium.org
+
+Bug: 325893559
+
+(cherry picked from commit 7330f46163e8a2c10a3d40ecbf554656f0ac55e8)
+
+Change-Id: I52355890e21490c75566216985680c64e0b0db75
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5323850
+Commit-Queue: Andreas Haas <ahaas@chromium.org>
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.2@{#38}
+Cr-Branched-From: 6eb5a9616aa6f8c705217aeb7c7ab8c037a2f676-refs/heads/12.2.281@{#1}
+Cr-Branched-From: 44cf56d850167c6988522f8981730462abc04bcc-refs/heads/main@{#91934}
+
+diff --git a/src/runtime/runtime-wasm.cc b/src/runtime/runtime-wasm.cc
+index 60d9e0516847bba3b74e3b50774cbcf115158428..88e12b8b62cbe79763c2f73ec1b8f7176e3ec980 100644
+--- a/src/runtime/runtime-wasm.cc
++++ b/src/runtime/runtime-wasm.cc
+@@ -532,7 +532,8 @@ RUNTIME_FUNCTION(Runtime_TierUpWasmToJSWrapper) {
+     for (int table_index = 0; table_index < table_count; ++table_index) {
+       Handle<WasmIndirectFunctionTable> table =
+           instance->GetIndirectFunctionTable(isolate, table_index);
+-      if (table->refs()->get(entry_index) == *ref) {
++      if (entry_index < table->refs()->length() &&
++          table->refs()->get(entry_index) == *ref) {
+         table->targets()
+             ->set<ExternalPointerTag::kWasmIndirectFunctionTargetTag>(
+                 entry_index, isolate, wasm_code->instruction_start());
