@@ -38,7 +38,7 @@ index 6a15fcae677b3bda58fc85f705862bbcd9feec9d..449131b9af99744c08d62d73f8d124ce
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 66ecfbcdd4fb2c9986e2d4619a381337839979fe..102165af37a42ca0394ec0d4efc21d3b03efe5eb 100644
+index 66ecfbcdd4fb2c9986e2d4619a381337839979fe..06d23dac1d0f591893643ed2c32711eb2b5c0675 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {
@@ -50,6 +50,15 @@ index 66ecfbcdd4fb2c9986e2d4619a381337839979fe..102165af37a42ca0394ec0d4efc21d3b
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
+@@ -250,7 +250,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+     throw err;
+   }
+ 
+-  const stats = internalModuleStat(toNamespacedPath(StringPrototypeEndsWith(path, '/') ?
++  const stats = internalFsBinding.internalModuleStat(toNamespacedPath(StringPrototypeEndsWith(path, '/') ?
+     StringPrototypeSlice(path, -1) : path));
+ 
+   // Check for stats.isDirectory()
 @@ -266,7 +266,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
@@ -59,6 +68,15 @@ index 66ecfbcdd4fb2c9986e2d4619a381337839979fe..102165af37a42ca0394ec0d4efc21d3b
        [internalFS.realpathCacheKey]: realpathCache,
      });
      const { search, hash } = resolved;
+@@ -825,7 +825,7 @@ function packageResolve(specifier, base, conditions) {
+   let packageJSONPath = fileURLToPath(packageJSONUrl);
+   let lastPath;
+   do {
+-    const stat = internalModuleStat(toNamespacedPath(StringPrototypeSlice(packageJSONPath, 0,
++    const stat = internalFsBinding.internalModuleStat(toNamespacedPath(StringPrototypeSlice(packageJSONPath, 0,
+                                                                           packageJSONPath.length - 13)));
+     // Check for !stat.isDirectory()
+     if (stat !== 1) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
 index e5fea28126b1b810cd3e1e5a13c0fdc97b6b71f5..cea066d1073a31573e134d584f1991e7a06b1036 100644
 --- a/lib/internal/modules/esm/translators.js
