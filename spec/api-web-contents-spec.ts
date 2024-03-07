@@ -15,6 +15,7 @@ const fixturesPath = path.resolve(__dirname, 'fixtures');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
+// ADDING COMMENT HERE TO VERIFY WINDOWS CI - DO NOT MERGE AS IS.
 describe('webContents module', () => {
   describe('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
