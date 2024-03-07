@@ -99,6 +99,7 @@ class InspectableWebContents
                            int stream_id) override;
   void SetIsDocked(DispatchCallback callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
+  void OpenSearchResultsInNewTab(const std::string& query) override;
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
@@ -177,7 +178,9 @@ class InspectableWebContents
   void CanShowSurvey(DispatchCallback callback,
                      const std::string& trigger) override {}
   void DoAidaConversation(DispatchCallback callback,
-                          const std::string& request) override {}
+                          const std::string& request,
+                          int stream_id) override {}
+  void RegisterAidaClientEvent(const std::string& request) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);

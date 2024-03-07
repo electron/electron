@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 435ded6852c9799ff4a2f03c4f82c8178ac504e8..ddef77dcfacee2394cc439369fdb351e2d27649d 100644
+index 5c9cb57298e292b829c4efd62d8a17e6f0ed9431..b19d01a27364e9c84346523461b1eab0e766fb68 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -151,6 +151,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
+@@ -152,6 +152,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
    disable_secure_dns = other.disable_secure_dns;
    has_user_activation = other.has_user_activation;
    allow_cookies_from_browser = other.allow_cookies_from_browser;
@@ -28,7 +28,7 @@ index 435ded6852c9799ff4a2f03c4f82c8178ac504e8..ddef77dcfacee2394cc439369fdb351e
    cookie_observer =
        Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
            other.cookie_observer));
-@@ -177,6 +178,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -178,6 +179,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
@@ -112,10 +112,10 @@ index e1fb008d12ae863df30dbffb07c7ec53f29f1333..3f5074bde0de54dc3fd57da756982634
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index f18e2a5535e63b685c6ebe81633a9a9d169f856e..062c94a589c03276eb758ba9c411a33eb8665d6f 100644
+index 184c5e1354b52c82578ed7d92984e48d32c32d96..b969a1febabcde08aea7a0f78c449d0da8042637 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -673,6 +673,7 @@ URLLoader::URLLoader(
+@@ -675,6 +675,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index f18e2a5535e63b685c6ebe81633a9a9d169f856e..062c94a589c03276eb758ba9c411a33e
    }
  
    // Store any cookies passed from the browser process to later attach them to
-@@ -711,7 +712,7 @@ URLLoader::URLLoader(
+@@ -713,7 +714,7 @@ URLLoader::URLLoader(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +132,7 @@ index f18e2a5535e63b685c6ebe81633a9a9d169f856e..062c94a589c03276eb758ba9c411a33e
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1646,6 +1647,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1652,6 +1653,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,7 +153,7 @@ index f18e2a5535e63b685c6ebe81633a9a9d169f856e..062c94a589c03276eb758ba9c411a33e
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 232ca04981afb4ec5d3d8b6db57a837dfa2712b4..72d2679a60b19f73bdc631d46a78e68e702eac97 100644
+index 5529f9c5ffa79eab973b1bf5a896187a6aef349a..632308c2445a7425f79226819efc4b3707fe8112 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -647,6 +647,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

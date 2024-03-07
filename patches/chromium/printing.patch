@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 20ee94216cab0c7e2f93f965ee6e78371c3cf5f6..c032d3d16387f69b85d3bbfea2ccc2340c1c7efe 100644
+index 28ba2fe1481518bb42eb79db4ab157fb6020b434..e8a2ed2b04007ba5f1135f49a156b5a6b37ae3ab 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -974,7 +974,6 @@ if (is_win) {
+@@ -973,7 +973,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 20ee94216cab0c7e2f93f965ee6e78371c3cf5f6..c032d3d16387f69b85d3bbfea2ccc234
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -983,6 +982,10 @@ if (is_win) {
+@@ -982,6 +981,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 691993a94da64983abcc403785e03ccb753b0d7e..38f7f92bafb2baf59465dfde9ceb5e610843eeee 100644
+index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0ae8d5460 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -796,7 +796,7 @@ index 691993a94da64983abcc403785e03ccb753b0d7e..38f7f92bafb2baf59465dfde9ceb5e61
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 50c05b02ebe6245cee5dbfd529d4eebbc4f57dde..1326edfcbe4c5eb0a8427071d1ed35c8a895486a 100644
+index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df14c7fe4a 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -245,7 +245,7 @@ class PrintRenderFrameHelper
@@ -830,10 +830,10 @@ index 50c05b02ebe6245cee5dbfd529d4eebbc4f57dde..1326edfcbe4c5eb0a8427071d1ed35c8
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6f885f7ea451310cca7c7686548cd3467984874f..b2f9c3316262c15c2740266db6da8133ad2ac012 100644
+index 58acdffd6bf4c93d69b9e6f0565e567c377705a7..66ce92c8b5034e90467c5f1b035d2115636e52aa 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2995,8 +2995,9 @@ source_set("browser") {
+@@ -2926,8 +2926,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -882,7 +882,7 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    virtual mojom::ResultCode OnError();
  
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 9f4e6a633cdba2f23f46405ca5118edf06796668..5f541dece15713507fc2f02af94f3e8921cb50d6 100644
+index e89fd87753bad3c5663fa53f8dcc4542e7e307e5..2b433a0705234af6f9808ee741a9795d5e251785 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
 @@ -38,6 +38,10 @@

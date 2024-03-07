@@ -18,11 +18,11 @@ This patch adds a few changes to the Chromium code:
    admin permissions.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index b05c0157ecca222452fb38e3b28c9d7cc6bcfbfd..02d9eabfef9521722340739bf86df3dfc30018d7 100644
+index 23a8257aa2a0a671cf7af35aff9906891091606d..31f5b160e4cd755cfb56a62b04261ee1bee80277 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -102,12 +102,19 @@ class ProcessSingleton {
-       base::RepeatingCallback<bool(const base::CommandLine& command_line,
+       base::RepeatingCallback<bool(base::CommandLine command_line,
                                     const base::FilePath& current_directory)>;
  
 +#if BUILDFLAG(IS_WIN)

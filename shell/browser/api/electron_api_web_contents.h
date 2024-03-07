@@ -748,6 +748,7 @@ class WebContents : public ExclusiveAccessContext,
                          const std::string& file_system_path,
                          const std::string& excluded_folders_message) override;
   void DevToolsOpenInNewTab(const std::string& url) override;
+  void DevToolsOpenSearchResultsInNewTab(const std::string& query) override;
   void DevToolsStopIndexing(int request_id) override;
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,

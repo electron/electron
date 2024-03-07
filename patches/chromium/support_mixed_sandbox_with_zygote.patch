@@ -22,13 +22,13 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d0ed503fe92f1c00334d824bfe1b87276df24b31..d696bfd92f701bd844da95cc1bc9dc191bf45208 100644
+index 5f92d4ba208938de7c939b079cd3a328058a5d8c..068553e5fa06af4989c8e84d470366914e5661ce 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1722,9 +1722,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1725,9 +1725,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
-             *cmd_line, IsPdf(), IsJitDisabled());
+             *cmd_line, IsPdf(), /*is_jit_disabled=*/IsPdf());
 +#else
 +#if BUILDFLAG(USE_ZYGOTE)
 +    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);

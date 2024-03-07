@@ -18,18 +18,20 @@ index c74da107a1a0690b458df0ef5f6a72f607611eb9..899e121dd92010db0313feb21a1b1cc2
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 8498a534a07bdd7cd1c8e23a9a3bb059d7fc103d..bbd56e8d8d4b5532ca2364978897efb5e6717c64 100644
+index 8498a534a07bdd7cd1c8e23a9a3bb059d7fc103d..2b1e4a5da12fe388e73486ea55f20b1d29d4d478 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -50,6 +50,7 @@
+@@ -50,7 +50,9 @@
  /custom_tabs_client/src
  /cygwin
  /directxsdk
 +/electron_node
  /elfutils/src
++/engflow-reclient-configs/
  /espresso/lib/
  /eyesfree/src
-@@ -103,6 +104,7 @@
+ /fuchsia-sdk/images
+@@ -103,6 +105,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -37,7 +39,7 @@ index 8498a534a07bdd7cd1c8e23a9a3bb059d7fc103d..bbd56e8d8d4b5532ca2364978897efb5
  /ninja/ninja*
  /node/*.tar.gz
  /node/linux/
-@@ -147,6 +149,7 @@
+@@ -147,6 +150,7 @@
  /soda-win64
  /speex
  /sqlite4java/lib/

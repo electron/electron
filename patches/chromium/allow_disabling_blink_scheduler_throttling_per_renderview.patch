@@ -23,10 +23,10 @@ index c32059af794851fdea8aae15157f05acdcc60e0a..92340d0aa8d893fc781ed59cc4aa51b5
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 78beefbdd4df3e147e1176668211861cfef0f1b2..7de3ed5e3dfce543671de877cc14d6beac798b94 100644
+index 6ca0fb5ee9e96ecf86486cbc6103b5452fdb88a0..32a797530b20640ff1540f7bee71e9a9bbe52ed7 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -712,6 +712,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -714,6 +714,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -51,10 +51,10 @@ index a94977d7a76ae9952bbba0efe59a7cb5021a1c84..11c4f890eaeae1329ca5a6634a698aef
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 7e8498989366ca8938787e89f7f0e7fc66bbaf30..fcebf9670a8ae3ca5d80522431e6bfa346d7a6e5 100644
+index 95fb2a4b401ec57ed4492413a2607dba5ece1fa6..955a74fa895303a6e2db5f59a1f6a39fbe4c84bf 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -552,8 +552,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -553,8 +553,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.

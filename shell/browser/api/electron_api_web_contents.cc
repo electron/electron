@@ -4152,6 +4152,10 @@ void WebContents::DevToolsOpenInNewTab(const std::string& url) {
   Emit("devtools-open-url", url);
 }
 
+void WebContents::DevToolsOpenSearchResultsInNewTab(const std::string& query) {
+  Emit("devtools-search-query", query);
+}
+
 void WebContents::DevToolsSearchInPath(int request_id,
                                        const std::string& file_system_path,
                                        const std::string& query) {
