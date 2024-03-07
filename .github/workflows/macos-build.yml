@@ -145,7 +145,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: [mas]
+        build-type: [darwin, mas]
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
     steps:
@@ -467,7 +467,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        build-type: [mas]
+        build-type: [darwin, mas]
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
     steps:
