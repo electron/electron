@@ -52,9 +52,9 @@ quality, we recommend including at least the following sizes:
   * 64x64 (200% DPI scale)
   * 256x256
 
-Check the _Size Requirements_ section in the [Windows Icon documentation][icons].
+Check the _Icon Scaling_ section in the Windows [App Icon Construction][icons] reference.
 
-[icons]: https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons#size-requirements
+[icons]: https://learn.microsoft.com/en-us/windows/apps/design/style/iconography/app-icon-construction#icon-scaling
 
 :::note
 
