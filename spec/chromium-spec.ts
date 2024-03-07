@@ -2114,7 +2114,8 @@ describe('chromium features', () => {
       'chrome://gpu',
       'chrome://media-internals',
       'chrome://tracing',
-      'chrome://webrtc-internals'
+      'chrome://webrtc-internals',
+      'chrome://process-internals'
     ];
 
     for (const url of urls) {
@@ -2122,8 +2123,9 @@ describe('chromium features', () => {
         it('loads the page successfully', async () => {
           const w = new BrowserWindow({ show: false });
           await w.loadURL(url);
+          const host = url.substring('chrome://'.length);
           const pageExists = await w.webContents.executeJavaScript(
-            "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+            `window.hasOwnProperty('chrome') && window.location.host === '${host}'`
           );
           expect(pageExists).to.be.true();
         });
