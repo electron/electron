@@ -310,20 +310,17 @@ jobs:
         echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
     - name: Default GN gen
       run: |
-        if [[ "${{ matrix.build-type }}" == "darwin" ]]; then
-          GN_EXTRA_ARGS='target_cpu = "arm64"'
-        else
-          GN_EXTRA_ARGS='is_mas_build = true target_cpu = "arm64"'
-          echo "MAS_BUILD=true" >> $GITHUB_ENV
-        fi
-
-        echo "GN_EXTRA_ARGS is ${GN_EXTRA_ARGS}!"
-
         cd src/electron
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
-        gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true ${GN_EXTRA_ARGS} ${GN_BUILDFLAG_ARGS}"
+
+        if [[ "${{ matrix.build-type }}" == "darwin" ]]; then
+          gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true target_cpu = \"arm64\" ${GN_BUILDFLAG_ARGS}"
+        else
+          gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true is_mas_build = true target_cpu = \"arm64\" ${GN_BUILDFLAG_ARGS}"
+          echo "MAS_BUILD=true" >> $GITHUB_ENV
+        fi
     - name: Build Electron
       run: |
         ulimit -n 10000
@@ -445,7 +442,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        build-type: [darwin, mas]
+        build-type: [mas]
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
     steps:
