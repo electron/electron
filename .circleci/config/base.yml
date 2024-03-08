@@ -75,10 +75,6 @@ executors:
     resource_class: << parameters.size >>
 
   # Electron Runners
-  apple-silicon:
-    resource_class: electronjs/macos-arm64
-    machine: true
-
   linux-arm:
     resource_class: electronjs/aks-linux-arm-test
     docker:
@@ -2298,8 +2294,10 @@ jobs:
       - electron-tests:
           artifact-key: darwin-x64
 
-  darwin-testing-arm64-tests:
-    executor: apple-silicon
+  darwin-testing-arm64-tests:    
+    executor:
+      name: macos
+      size: macos.m1.medium.gen1
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2323,7 +2321,9 @@ jobs:
           artifact-key: mas-x64
 
   mas-testing-arm64-tests:
-    executor: apple-silicon
+    executor:
+      name: macos
+      size: macos.m1.medium.gen1
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
