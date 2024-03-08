@@ -46,6 +46,8 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   // SerialChooserContext::PortObserver:
   void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
+  void OnPortConnectedStateChanged(
+      const device::mojom::SerialPortInfo& port) override {}
   void OnPortManagerConnectionError() override;
   void OnPermissionRevoked(const url::Origin& origin) override {}
   void OnSerialChooserContextShutdown() override;
