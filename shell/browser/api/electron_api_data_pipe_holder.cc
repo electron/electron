@@ -162,6 +162,10 @@ v8::Local<v8::Promise> DataPipeHolder::ReadAll(v8::Isolate* isolate) {
   return handle;
 }
 
+const char* DataPipeHolder::GetTypeName() {
+  return "DataPipeHolder";
+}
+
 // static
 gin::Handle<DataPipeHolder> DataPipeHolder::Create(
     v8::Isolate* isolate,
