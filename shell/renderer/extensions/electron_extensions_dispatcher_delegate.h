@@ -24,19 +24,9 @@ class ElectronExtensionsDispatcherDelegate
 
  private:
   // extensions::DispatcherDelegate implementation.
-  void RegisterNativeHandlers(
-      extensions::Dispatcher* dispatcher,
-      extensions::ModuleSystem* module_system,
-      extensions::NativeExtensionBindingsSystem* bindings_system,
-      extensions::ScriptContext* context) override;
-  void PopulateSourceMap(
-      extensions::ResourceBundleSourceMap* source_map) override;
   void RequireWebViewModules(extensions::ScriptContext* context) override;
   void OnActiveExtensionsUpdated(
       const std::set<std::string>& extension_ids) override;
-  void InitializeBindingsSystem(
-      extensions::Dispatcher* dispatcher,
-      extensions::NativeExtensionBindingsSystem* bindings_system) override;
 };
 
 #endif  // ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_
