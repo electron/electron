@@ -326,7 +326,7 @@ jobs:
                         \"target_cpu = \\\"arm64\\\"\",
                         \"is_mas_build = true\"
                     ],
-                    \"out\": \"Testing\"
+                    \"out\": \"Default\"
                 },
                 \"env\": {
                     \"CHROMIUM_BUILDTOOLS_PATH\": \"/Users/runner/work/electron/electron/src/buildtools\",
