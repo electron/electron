@@ -34,7 +34,7 @@ index 28ba2fe1481518bb42eb79db4ab157fb6020b434..e8a2ed2b04007ba5f1135f49a156b5a6
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 874b9efcf9e70650728885519009360ee770a79f..6c4d24d44e69d796bc6bfec5f7092f5b3ae28703 100644
+index 0d8a53178e8d509a573ffdaadf2c4cec670522ac..8e7f9b92beb317888a5a3acb3bc2fa29f283ff03 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -96,6 +96,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0ae8d5460 100644
+index 5ae3a62b53fa3dac23ea187327a818006b9acc36..04eff4b7232dc649d98501d41ca3cb8b78a25793 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -830,10 +830,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f0b27e0aa7976ba676d14a0e6b079dbf728ed63b..25c8d9299ebe4c52d978d40c0271b155f4599b37 100644
+index 94478a56a6d252351ddfe8818fa20a01760b6800..b45b1c391a57d452143de145be8b258a8c41d580 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2931,8 +2931,9 @@ source_set("browser") {
+@@ -2933,8 +2933,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

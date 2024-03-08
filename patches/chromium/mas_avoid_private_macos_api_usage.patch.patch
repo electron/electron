@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d300f0ce54bfd453d3ef7006847654d4abf3f502..c2399d112e006e734211757675acba79de4f8b59 100644
+index f438eb888e72ac26d29b1cd980f0da9f5b31a3b2..4e58d8a83100cf830b79b8598eb198c7c0f457ff 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1048,6 +1048,7 @@ component("base") {
+@@ -1046,6 +1046,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -370,10 +370,10 @@ index 5535f9c56113f1f46a925d6cc16049a841d0b609..2845da60cf229e6899bc200218eda2e0
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2cb7309131a42d8b374f2000cdd232ce48d561b8..fc67ca507ecbf39fabba4142e8a3ac618f3eeaf9 100644
+index 578b712f9547432f71704bfc71051e15c9bb3ca2..17d4b2f0490894058f1896b694a558d387f25993 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -356,6 +356,7 @@ viz_component("service") {
+@@ -358,6 +358,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -381,7 +381,7 @@ index 2cb7309131a42d8b374f2000cdd232ce48d561b8..fc67ca507ecbf39fabba4142e8a3ac61
    }
  
    if (is_android || use_ozone) {
-@@ -623,6 +624,7 @@ viz_source_set("unit_tests") {
+@@ -625,6 +626,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index dfaaffe13b67e1d1639cdc626070fd64794b4d6f..f0b27e0aa7976ba676d14a0e6b079dbf728ed63b 100644
+index 70bb19643c2245451f8ab47b89a11c867296b8c9..94478a56a6d252351ddfe8818fa20a01760b6800 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -620,10 +620,10 @@ index 55765cb73b3e4c41ed785a9da8906741e62f4a21..f3e3cee3eb27b5c995404db9cbdbf635
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 6fae0b5280d5e5220f4e8695cb898a44de9dd22e..5dc89a6b06799e05051af025985964be4e2c9260 100644
+index d80cdfcc88d89155825c085558772617cf33ad7e..c48d2fa394ab2c39d15ff70ebbf5d3cd5046d804 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -227,6 +227,7 @@ target(link_target_type, "renderer") {
+@@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0dad112416dbd297e9cfc6977896d28104733287..143b85a7296e404494a8bb2a96c875f2c5ed0934 100644
+index c39ff76dcdf2ce24d67e624a17041451de5e9b39..38d0073773a93fe35373d6241e6e4d073dbb3d16 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -487,6 +487,7 @@ static_library("test_support") {
+@@ -488,6 +488,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index 0dad112416dbd297e9cfc6977896d28104733287..143b85a7296e404494a8bb2a96c875f2
    ]
  
    public_deps = [
-@@ -1084,6 +1085,7 @@ static_library("browsertest_support") {
+@@ -1086,6 +1087,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 0dad112416dbd297e9cfc6977896d28104733287..143b85a7296e404494a8bb2a96c875f2
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1700,6 +1702,7 @@ test("content_browsertests") {
+@@ -1702,6 +1704,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 0dad112416dbd297e9cfc6977896d28104733287..143b85a7296e404494a8bb2a96c875f2
  
    public_deps = [
      ":test_interfaces",
-@@ -2922,6 +2925,7 @@ test("content_unittests") {
+@@ -2927,6 +2930,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -749,10 +749,10 @@ index 24facc48c2b6b30db3a7cb36e4222019b471e84b..d1d3e72407682b01e6c2173cd34445db
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index ff6d030a46995536a7382ae67a0b7b783370ef7f..3aad6d951f9c51b5edb866238fa1c8e6ff4431ab 100644
+index 05cce11f233e04e22bf9166ee107661900686bea..70268a1ff7c59a03903072fafe8b62acc3454287 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -243,6 +243,7 @@ component("bluetooth") {
+@@ -248,6 +248,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
@@ -842,7 +842,7 @@ index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 3af7bb0fddf848f3c76d14c24730c6aba07fd83e..b23f152143d4958b7492cae47b8a3b01992e235f 100644
+index 59413520a9e2d601a80c90072089bed228460730..2ad023d3f9a2eb557a8f65c1727bf032a1aadbfd 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -75,12 +75,16 @@

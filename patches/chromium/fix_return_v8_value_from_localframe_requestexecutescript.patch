@@ -64,7 +64,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ecf2529921040b277c67435a4aac7e8692fa7f6b..ed4ea7b42aee95e42e0bd233015d5fb0f3a3118e 100644
+index e84ae764c9d47bfb78d01aa20695e03b07787136..6edb6bd6d8de5fdbd12473673262e05b218cd805 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -2966,6 +2966,7 @@ void LocalFrame::RequestExecuteScript(
@@ -85,7 +85,7 @@ index ecf2529921040b277c67435a4aac7e8692fa7f6b..ed4ea7b42aee95e42e0bd233015d5fb0
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index d3faff97afabdea774cfef8051e93fedd338d108..7e5122ca3ed329655470d14b09fa7a3384fcc98d 100644
+index 366f0d69c113b966686572f85c8a482e5b522f5b..e223af5aebd2f62947f5392ca7a622ec4e469417 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -821,6 +821,7 @@ class CORE_EXPORT LocalFrame final
@@ -216,7 +216,7 @@ index 7b3adb5b23720dd597698c7ea7672d63a926eb6c..e34095fcd5c025d3d27421b07cd41e2c
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 36b2ed12fb29dd9c58ae2475a48b7e23406264bd..91d16f3714713c180e76619942d160ba35fe7b05 100644
+index da1a3ea87b51810f340b0673c10b29ab1f7d9328..20aa0ea69f6689c648604c2822bc6a798d5b5230 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1120,14 +1120,15 @@ void WebLocalFrameImpl::RequestExecuteScript(

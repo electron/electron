@@ -9,7 +9,7 @@ This is an experimental commit; but if it's successful,
 This patch should be upstreamed and then removed from electron's code.
 
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index 09536883558d69c0dfd24085e80f8384f08f4b2c..320f833bf7c54a9742c5e3572dc9889a63404c96 100644
+index 836b5aa54918386346fb7c13b9aadecd254d9013..00f62440b02d7b89494ca4aede8677ed14f99c35 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
 @@ -41,9 +41,7 @@
@@ -48,7 +48,7 @@ index 09536883558d69c0dfd24085e80f8384f08f4b2c..320f833bf7c54a9742c5e3572dc9889a
    // Sets the watermark string to the value specified in text if the view is
    // not null.
    void SetWatermarkString(const std::string& text);
-@@ -1190,8 +1193,10 @@ class BrowserView : public BrowserWindow,
+@@ -1191,8 +1194,10 @@ class BrowserView : public BrowserWindow,
    raw_ptr<views::WebView, AcrossTasksDanglingUntriaged> devtools_web_view_ =
        nullptr;
  

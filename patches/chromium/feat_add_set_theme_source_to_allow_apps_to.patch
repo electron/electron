@@ -26,7 +26,7 @@ index c5bcbe62463a418cf78c4813678d7a1e39c4dd9d..f51e2e70bb249f5113ee592f121e53d6
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index bc00e5ca9e993df8dc633f41d2f53cdc30e8877e..e6cb1bdee4e2d186916a4bbd3ccb69b31b48494d 100644
+index ff836d0691c79188ea06a69e533b5aa75c0dafb9..9d240a7ebbfacddace61b1c8ad8f6aa344d0f912 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -442,6 +442,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -53,7 +53,7 @@ index bc00e5ca9e993df8dc633f41d2f53cdc30e8877e..e6cb1bdee4e2d186916a4bbd3ccb69b3
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -656,6 +673,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -657,6 +674,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool inverted_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;

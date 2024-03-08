@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8da37d8d92e6dc2e9ebc80e1d7929414c44b17a6..d3599d07ba2e5f78a1d507e8cd8c309d699d8a4a 100644
+index a919a27ec9736dfe085effeee750329866e1b4c0..46e5a70567b785bcbc3716d8a372abce295d2a79 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -151,6 +151,11 @@
@@ -136,7 +136,7 @@ index 8da37d8d92e6dc2e9ebc80e1d7929414c44b17a6..d3599d07ba2e5f78a1d507e8cd8c309d
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2344,6 +2449,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2343,6 +2448,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index 8da37d8d92e6dc2e9ebc80e1d7929414c44b17a6..d3599d07ba2e5f78a1d507e8cd8c309d
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 401fa9c5931479dc2c60f3b3d7c58a4899ae06d2..fdc0899c6ccf8ff23dfad6de24ce0afa2efa4695 100644
+index adde7c45c1efb37ca6e3848124fb0355b9a3c355..3656f50db07946ee2d3100e0510450f3fbe93a71 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -113,6 +113,7 @@ class URLMatcher;
@@ -175,7 +175,7 @@ index 401fa9c5931479dc2c60f3b3d7c58a4899ae06d2..fdc0899c6ccf8ff23dfad6de24ce0afa
 +
    // Created on-demand. Null if unused.
    std::unique_ptr<HostResolver> internal_host_resolver_;
-   // Map values set to non-null only if that HostResolver has its own private
+   std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
 index 8495a3c67ba02f38b55324e89b50d1eca97b48ca..4ddf7e5728ac11a65da76f9cda161a8ee01b6049 100644
 --- a/services/network/public/mojom/network_context.mojom
