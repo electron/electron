@@ -99,8 +99,8 @@ export const areColorsSimilar = (
  * - Linux: virtual screen display is 0x0
  * - Win32 arm64 (WOA): virtual screen display is 0x0
  * - Win32 ia32: skipped
+ * - Win32 x64: virtual screen display is 0x0
  */
 export const hasCapturableScreen = () => {
-  return process.platform === 'darwin' ||
-    (process.platform === 'win32' && process.arch === 'x64');
+  return process.platform === 'darwin';
 };
