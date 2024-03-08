@@ -311,35 +311,7 @@ jobs:
     - name: Create MAS Config
       if: ${{ matrix.build-type }} == 'mas'
       run: |
-        echo "
-            {
-                \"root\": \"/Users/runner/work/electron/electron/\",
-                \"remotes\": {
-                    \"electron\": {
-                        \"origin\": \"https://github.com/electron/electron.git\"
-                    }
-                },
-                \"gen\": {
-                    \"args\": [
-                        \"import(\\\"//electron/build/args/testing.gn\\\")\",
-                        \"use_remoteexec = true\",
-                        \"target_cpu = \\\"arm64\\\"\",
-                        \"is_mas_build = true\"
-                    ],
-                    \"out\": \"Default\"
-                },
-                \"env\": {
-                    \"CHROMIUM_BUILDTOOLS_PATH\": \"/Users/runner/work/electron/electron/src/buildtools\",
-                    \"GIT_CACHE_PATH\": \"/Users/runner/work/electron/electron/.git-cache\"
-                },
-                \"\$schema\": \"file:///home/builduser/.electron_build_tools/evm-config.schema.json\",
-                \"configValidationLevel\": \"strict\",
-                \"reclient\": \"remote_exec\",
-                \"goma\": \"none\",
-                \"preserveXcode\": 5
-            }
-        " >$HOME/.electron_build_tools/configs/evm.mas.json
-
+        mv src/electron/.github/workflows/config/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         e use mas
     - name: Build Electron
