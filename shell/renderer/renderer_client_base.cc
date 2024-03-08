@@ -243,9 +243,10 @@ void RendererClientBase::RenderThreadStarted() {
 
   extensions_renderer_client_ =
       std::make_unique<ElectronExtensionsRendererClient>();
-  extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
   extensions_renderer_client_->AddAPIProvider(
       std::make_unique<ElectronExtensionsRendererAPIProvider>());
+  extensions_renderer_client_->RenderThreadStarted();
+  extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 
