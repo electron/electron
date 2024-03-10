@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 83f86dae37bfb9fc057b5fa34c4d5302fea58482..7f69741c98e2d42c98ef56e2ea6b64dbaa4bfbe4 100644
+index 43f45a17a2d2556a12941fb431708ea9e0ce3ada..b5b143415450f02660901cf48c7ea2968ed67206 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10363,6 +10363,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10374,6 +10374,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
      return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
    }
  
@@ -40,7 +40,7 @@ index 83f86dae37bfb9fc057b5fa34c4d5302fea58482..7f69741c98e2d42c98ef56e2ea6b64db
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index a733a8efbf14739933a38d3c741f0e0c006f3757..a5f137bd353acbb9774d944c29ceb6d5acaf1046 100644
+index 1e94b973f4486e11ae05528b4a97c9fae74fe7f2..43ffe048aea73bd2fae57fb87ad1346296189d64 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2165,6 +2165,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
@@ -54,7 +54,7 @@ index a733a8efbf14739933a38d3c741f0e0c006f3757..a5f137bd353acbb9774d944c29ceb6d5
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2212,6 +2212,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2212,6 +2216,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");
@@ -65,4 +65,3 @@ index a733a8efbf14739933a38d3c741f0e0c006f3757..a5f137bd353acbb9774d944c29ceb6d5
    } else if (url_.IsAboutSrcdocURL()) {
      // If there's no owner_document and this is a srcdoc load, then get the
      // origin from the remote parent. A srcdoc navigation with no owner_document
-

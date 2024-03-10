@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f438eb888e72ac26d29b1cd980f0da9f5b31a3b2..4e58d8a83100cf830b79b8598eb198c7c0f457ff 100644
+index 53a6b1bde34b434691572b3e772520873b958375..f74ab4e0bdd12c5d280a63e589e5ed490275028f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1046,6 +1046,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 70bb19643c2245451f8ab47b89a11c867296b8c9..94478a56a6d252351ddfe8818fa20a01760b6800 100644
+index d27c794883426dd6a88ca158b7c24686d76ab19d..2f1b9d547a6f54746ff23031ee3586d4ea68dd0b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -471,7 +471,7 @@ index 70bb19643c2245451f8ab47b89a11c867296b8c9..94478a56a6d252351ddfe8818fa20a01
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..8d5acfd9723c3cfaf3bf436b2eeeb951f22216c7 100644
+index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..ec631b1f0925928546e855faa5e968f5aec2b225 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -500,7 +500,7 @@ index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..8d5acfd9723c3cfaf3bf436b2eeeb951
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -633,6 +637,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -620,6 +624,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -508,7 +508,7 @@ index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..8d5acfd9723c3cfaf3bf436b2eeeb951
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -661,6 +666,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -648,6 +653,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -608,10 +608,10 @@ index 72b957cd89704085ad44d040e0826148d56881fb..39e03b029c4ebf03020f6cc8b67922f7
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 55765cb73b3e4c41ed785a9da8906741e62f4a21..f3e3cee3eb27b5c995404db9cbdbf6351546e7af 100644
+index 7e67fb0c10bf7e3b99e94a4e026a1fb83ba0d133..cb9ece52b497ae1d22ac03f170b2696fe3a5f129 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -244,6 +244,7 @@ source_set("common") {
+@@ -242,6 +242,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c39ff76dcdf2ce24d67e624a17041451de5e9b39..38d0073773a93fe35373d6241e6e4d073dbb3d16 100644
+index 589dca8877f981de6ece305e7eb1e7234e3b692e..20dae672a928b8f44d4d073463367f184845fe26 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -488,6 +488,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index c39ff76dcdf2ce24d67e624a17041451de5e9b39..38d0073773a93fe35373d6241e6e4d07
  
    public_deps = [
      ":test_interfaces",
-@@ -2927,6 +2930,7 @@ test("content_unittests") {
+@@ -2924,6 +2927,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -901,10 +901,10 @@ index 90e093cd2d499ba0f37f3246bab288c758b51e19..6027134a4de53e6fe39fdbfdb67885e0
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 8cd474c33e514fd0aa90daf68a56ed7fc902d713..9fff9cc7b00b257c3bebb02c75a3c2e809ffdf0a 100644
+index 25dfcca1ba390548599a4a3667a2ed6943834392..23a0960c13448aa6c9f413f00c833753d51aab80 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
-@@ -33,19 +33,23 @@
+@@ -34,19 +34,23 @@
  
  namespace {
  extern "C" {
@@ -1596,7 +1596,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5463bc60565462ba76b4df402a9c86f10e54ebc3..e7c50324c6d4d2b2dbf3a16cd6820f01717cbee9 100644
+index d2a918d304afa5e540ab07a5d80887fe9ea6b60e..0fa6cc4314e7d2f16289b7bd7ab38d45cf5bed42 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -712,6 +712,7 @@ component("views") {

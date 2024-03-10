@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index a919a27ec9736dfe085effeee750329866e1b4c0..46e5a70567b785bcbc3716d8a372abce295d2a79 100644
+index ced5854f2f213e4be6606144823ed9089a687db8..a3308f1794295f9b5c3cbd97ec2c5ad3ea10f709 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -151,6 +151,11 @@
@@ -122,7 +122,7 @@ index a919a27ec9736dfe085effeee750329866e1b4c0..46e5a70567b785bcbc3716d8a372abce
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -879,6 +977,13 @@ void NetworkContext::SetClient(
+@@ -880,6 +978,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index a919a27ec9736dfe085effeee750329866e1b4c0..46e5a70567b785bcbc3716d8a372abce
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2343,6 +2448,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2344,6 +2449,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
