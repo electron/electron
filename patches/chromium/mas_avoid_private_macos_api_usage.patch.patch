@@ -471,12 +471,12 @@ index 70bb19643c2245451f8ab47b89a11c867296b8c9..94478a56a6d252351ddfe8818fa20a01
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 96979b61bb52b6b87ee31906bac3aef025cda8c7..786c0fb321055c23fa05fe9168654a3002e1be62 100644
+index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..8d5acfd9723c3cfaf3bf436b2eeeb951f22216c7 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
- #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
  #include "ui/accessibility/ax_role_properties.h"
+ #include "ui/accessibility/platform/ax_platform_tree_manager_delegate.h"
  #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
 +#if !IS_MAS_BUILD()
  #include "ui/base/cocoa/remote_accessibility_api.h"
