@@ -54,7 +54,7 @@ index a733a8efbf14739933a38d3c741f0e0c006f3757..a5f137bd353acbb9774d944c29ceb6d5
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2212,6 +2216,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2212,6 +2212,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");
@@ -62,6 +62,7 @@ index a733a8efbf14739933a38d3c741f0e0c006f3757..a5f137bd353acbb9774d944c29ceb6d5
 +             !is_standard) {
 +    debug_info_builder.Append("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
-   } else {
-     debug_info_builder.Append("use_url_with_precursor");
-     // Otherwise, create an origin that propagates precursor information
+   } else if (url_.IsAboutSrcdocURL()) {
+     // If there's no owner_document and this is a srcdoc load, then get the
+     // origin from the remote parent. A srcdoc navigation with no owner_document
+
