@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Tue, 12 Mar 2024 12:26:56 -0700
+Subject: fix: revert "Collect GPU memory on GPU process start on Windows"
+
+This patch reverts a CL that we believe is causing Electron crashes within GetWmiPerferredMonitorSourceMode. Reviewing the CL history, it seems as though this change has been reverted and relanded several times, and is suspected of causing a crash. This patch can be removed when the cause of the crash is either fixed upstream or pinpointed within Electron itself.
+
+This reverts commit a10ac33565e0e7ada7f828d52be8837a67b304f3.
+
+diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
+index 3306a36044eed8395b3a13cffa4754cadee1048d..a202d834a42d66b8a3aa66560e7b1d5dc06a51b1 100644
+--- a/content/browser/gpu/gpu_data_manager_impl_private.cc
++++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
+@@ -487,26 +487,6 @@ class HDRProxy {
+   }
+ };
+ 
+-int GetMaxMemory(const gpu::DxDiagNode& node) {
+-  int memory = 0;
+-  auto it = node.values.find("szDisplayMemoryEnglish");
+-  if (it != node.values.end()) {
+-    base::StringToInt(it->second, &memory);
+-  }
+-
+-  for (const auto& child : node.children) {
+-    memory = std::max(memory, GetMaxMemory(child.second));
+-  }
+-  return memory;
+-}
+-
+-void RecordDxDiagNodeHistograms(const gpu::DxDiagNode& dx_diagnostics) {
+-  int gpu_memory = GetMaxMemory(dx_diagnostics);
+-  if (gpu_memory != 0) {
+-    base::UmaHistogramMemoryLargeMB("GPU.Memory.Device", gpu_memory);
+-  }
+-}
+-
+ #endif  // BUILDFLAG(IS_WIN)
+ }  // anonymous namespace
+ 
+@@ -668,7 +648,9 @@ void GpuDataManagerImplPrivate::RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
+     GpuDataManagerImpl::GpuInfoRequest request,
+     bool delayed) {
+   if (request & GpuDataManagerImpl::kGpuInfoRequestDxDiag) {
+-    RequestDxDiagNodeData(delayed);
++    // Delay is not supported in DxDiag request
++    DCHECK(!delayed);
++    RequestDxDiagNodeData();
+   }
+ 
+   if (request & GpuDataManagerImpl::kGpuInfoRequestDx12)
+@@ -686,14 +668,11 @@ void GpuDataManagerImplPrivate::RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
+   }
+ }
+ 
+-void GpuDataManagerImplPrivate::RequestDxDiagNodeData(bool delayed) {
++void GpuDataManagerImplPrivate::RequestDxDiagNodeData() {
+ #if BUILDFLAG(IS_WIN)
+-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+-  base::TimeDelta delta;
+-  if (delayed &&
+-      !command_line->HasSwitch(switches::kNoDelayForDX12VulkanInfoCollection)) {
+-    delta = base::Seconds(120);
+-  }
++  if (gpu_info_dx_diag_requested_)
++    return;
++  gpu_info_dx_diag_requested_ = true;
+ 
+   base::OnceClosure task = base::BindOnce([]() {
+     GpuDataManagerImpl* manager = GpuDataManagerImpl::GetInstance();
+@@ -722,11 +701,10 @@ void GpuDataManagerImplPrivate::RequestDxDiagNodeData(bool delayed) {
+           GpuDataManagerImpl* manager = GpuDataManagerImpl::GetInstance();
+           manager->UpdateDxDiagNode(dx_diagnostics);
+           manager->TerminateInfoCollectionGpuProcess();
+-          RecordDxDiagNodeHistograms(dx_diagnostics);
+         }));
+   });
+ 
+-  GetUIThreadTaskRunner({})->PostDelayedTask(FROM_HERE, std::move(task), delta);
++  GetUIThreadTaskRunner({})->PostTask(FROM_HERE, std::move(task));
+ #endif
+ }
+ 
+@@ -1163,7 +1141,6 @@ void GpuDataManagerImplPrivate::UpdateDXGIInfo(
+ 
+ void GpuDataManagerImplPrivate::UpdateDxDiagNodeRequestStatus(
+     bool request_continues) {
+-  gpu_info_dx_diag_requested_ = true;
+   gpu_info_dx_diag_request_failed_ = !request_continues;
+ 
+   if (gpu_info_dx_diag_request_failed_)
+@@ -1244,21 +1221,13 @@ void GpuDataManagerImplPrivate::PostCreateThreads() {
+         GpuDataManagerImpl::kGpuInfoRequestDx12Vulkan,
+         /*delayed=*/false);
+   } else {
+-    GpuDataManagerImpl::GpuInfoRequest request =
+-        GpuDataManagerImpl::kGpuInfoRequestDx12;
+-
+-    static BASE_FEATURE(kCollectGpuMemoryMetrics, "CollectGpuMemoryMetrics",
+-                        base::FEATURE_ENABLED_BY_DEFAULT);
+-    if (base::FeatureList::IsEnabled(kCollectGpuMemoryMetrics)) {
+-      request = static_cast<GpuDataManagerImpl::GpuInfoRequest>(
+-          request | GpuDataManagerImpl::kGpuInfoRequestDxDiag);
+-    }
+-
+     // Launch the info collection GPU process to collect DX12 support
+     // information for UMA at the start of the browser.
+     // Not to affect Chrome startup, this is done in a delayed mode,  i.e., 120
+     // seconds after Chrome startup.
+-    RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(request, /*delayed=*/true);
++    RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
++        GpuDataManagerImpl::kGpuInfoRequestDx12,
++        /*delayed=*/true);
+   }
+ 
+   // Observer for display change.
+@@ -1540,7 +1509,7 @@ void GpuDataManagerImplPrivate::OnDisplayAdded(
+     gpu_info_.dx_diagnostics = gpu::DxDiagNode();
+     // This DxDiag request goes to the unsandboxed GPU info collection GPU
+     // process while the notification below goes to the sandboxed GPU process.
+-    RequestDxDiagNodeData(/*delayed=*/false);
++    RequestDxDiagNodeData();
+   }
+ #endif
+ 
+@@ -1566,7 +1535,7 @@ void GpuDataManagerImplPrivate::OnDisplayRemoved(
+     gpu_info_.dx_diagnostics = gpu::DxDiagNode();
+     // This DxDiag request goes to the unsandboxed GPU info collection GPU
+     // process while the notification below goes to the sandboxed GPU process.
+-    RequestDxDiagNodeData(/*delayed=*/false);
++    RequestDxDiagNodeData();
+   }
+ #endif
+ 
+@@ -1593,7 +1562,7 @@ void GpuDataManagerImplPrivate::OnDisplayMetricsChanged(
+     gpu_info_.dx_diagnostics = gpu::DxDiagNode();
+     // This DxDiag request goes to the unsandboxed GPU info collection GPU
+     // process while the notification below goes to the sandboxed GPU process.
+-    RequestDxDiagNodeData(/*delayed=*/false);
++    RequestDxDiagNodeData();
+   }
+ #endif
+ 
+diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
+index 28306624ec6f7f9a7848e65787d4dc5aa738a76c..290a948e28c8123bc47f91f0e77acbce759b6989 100644
+--- a/content/browser/gpu/gpu_data_manager_impl_private.h
++++ b/content/browser/gpu/gpu_data_manager_impl_private.h
+@@ -232,7 +232,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+   // Notify all observers whenever there is a GPU info update.
+   void NotifyGpuInfoUpdate();
+ 
+-  void RequestDxDiagNodeData(bool delayed);
++  void RequestDxDiagNodeData();
+   void RequestGpuSupportedDx12Version(bool delayed);
+   void RequestGpuSupportedVulkanVersion(bool delayed);
+   void RequestDawnInfo(bool delayed, bool collect_metrics);
