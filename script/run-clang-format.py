@@ -85,8 +85,8 @@ def make_diff(diff_file, original, reformatted):
         difflib.unified_diff(
             original,
             reformatted,
-            fromfile='a/{}'.format(diff_file),
-            tofile='b/{}'.format(diff_file),
+            fromfile=f'a/{diff_file}',
+            tofile=f'b/{diff_file}',
             n=3))
 
 
@@ -111,8 +111,7 @@ def run_clang_format_diff_wrapper(args, file_name):
         raise
     except Exception as e:
         # pylint: disable=W0707
-        raise UnexpectedError('{}: {}: {}'.format(
-            file_name, e.__class__.__name__, e), e)
+        raise UnexpectedError(f'{file_name}: {e.__class__.__name__}: {e}', e)
 
 
 def run_clang_format_diff(args, file_name):
@@ -140,9 +139,7 @@ def run_clang_format_diff(args, file_name):
     except OSError as exc:
         # pylint: disable=W0707
         raise DiffError(
-            "Command '{}' failed to start: {}".format(
-                subprocess.list2cmdline(invocation), exc
-            )
+            f"Command '{subprocess.list2cmdline(invocation)}' failed to start: {exc}"
         )
     outs = list(proc.stdout.readlines())
     errs = list(proc.stderr.readlines())
@@ -200,7 +197,7 @@ def print_trouble(prog, message, use_colors):
     error_text = 'error:'
     if use_colors:
         error_text = bold_red(error_text)
-    print("{}: {} {}".format(prog, error_text, message), file=sys.stderr)
+    print(f"{prog}: {error_text} {message}", file=sys.stderr)
 
 
 def main():
@@ -212,8 +209,7 @@ def main():
         default=get_buildtools_executable('clang-format'))
     parser.add_argument(
         '--extensions',
-        help='comma separated list of file extensions (default: {})'.format(
-            DEFAULT_EXTENSIONS),
+        help=f'comma separated list of file extensions (default: {DEFAULT_EXTENSIONS})',
         default=DEFAULT_EXTENSIONS)
     parser.add_argument(
         '--fix',
@@ -373,8 +369,7 @@ def main():
           patch_file.close()
           os.unlink(patch_file.name)
         else:
-          print("\nTo patch these files, run:\n$ git apply {}\n"
-                .format(patch_file.name))
+          print(f"\nTo patch these files, run:\n$ git apply {patch_file.name}\n")
 
     return retcode
 

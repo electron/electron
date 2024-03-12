@@ -65,7 +65,7 @@ class Platform:
       return Platform.WINDOWS
 
     raise AssertionError(
-        "unexpected current platform '{}'".format(platform))
+        f"unexpected current platform '{platform}'")
 
   @staticmethod
   def get_all():
@@ -146,7 +146,7 @@ class TestsList():
     if isinstance(value, str):
       return {value: None}
 
-    raise AssertionError("unexpected shorthand type: {}".format(type(value)))
+    raise AssertionError(f"unexpected shorthand type: {type(value)}")
 
   @staticmethod
   def __make_a_list(value):
@@ -166,7 +166,7 @@ class TestsList():
       return [list_item for key in value for list_item in value[key]]
 
     raise AssertionError(
-        "unexpected type for list merging: {}".format(type(value)))
+        f"unexpected type for list merging: {type(value)}")
 
   def __platform_supports(self, binary_name):
     return Platform.get_current() in self.tests[binary_name]['platforms']
@@ -194,8 +194,7 @@ class TestsList():
 
           for platform in platforms:
             assert Platform.is_valid(platform), \
-                "platform '{0}' is not supported, check {1} config" \
-                    .format(platform, binary_name)
+                f"platform '{platform}' is not supported, check {binary_name} config"
 
           test_data['platforms'] = platforms
 
@@ -231,7 +230,7 @@ class TestsList():
     if output_dir is None:
       return None
 
-    return os.path.join(output_dir, "results_{}.xml".format(binary_name))
+    return os.path.join(output_dir, f"results_{binary_name}.xml")
 
 
 class TestBinary():
@@ -255,7 +254,7 @@ class TestBinary():
       returncode = subprocess.call(args, stdout=stdout, stderr=stderr)
     except Exception as exception:
       if Verbosity.ge(verbosity, Verbosity.ERRORS):
-        print("An error occurred while running '{}':".format(self.binary_path),
+        print(f"An error occurred while running '{self.binary_path}':",
             '\n', exception, file=sys.stderr)
       returncode = 1
 
@@ -266,16 +265,14 @@ class TestBinary():
     included_tests_string = TestBinary.__list_tests(included_tests)
     excluded_tests_string = TestBinary.__list_tests(excluded_tests)
 
-    gtest_filter = "--gtest_filter={}-{}".format(included_tests_string,
-                                                 excluded_tests_string)
+    gtest_filter = f"--gtest_filter={included_tests_string}-{excluded_tests_string}"
     return gtest_filter
 
   @staticmethod
   def __get_gtest_output(output_file_path):
     gtest_output = ""
     if output_file_path is not None:
-      gtest_output = "--gtest_output={0}:{1}".format(TestBinary.output_format,
-                                                     output_file_path)
+      gtest_output = f"--gtest_output={TestBinary.output_format}:{output_file_path}"
     return gtest_output
 
   @staticmethod

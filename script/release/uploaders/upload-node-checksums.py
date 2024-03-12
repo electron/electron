@@ -29,7 +29,7 @@ def main():
   ]
 
   if args.target_dir is None:
-    store_artifact(directory, 'headers/dist/{0}'.format(args.version),
+    store_artifact(directory, f'headers/dist/{args.version}',
                    checksums)
   else:
     copy_files(checksums, args.target_dir)
@@ -51,10 +51,10 @@ def parse_args():
 
 def get_files_list(version):
   return [
-    { "filename": 'node-{0}.tar.gz'.format(version), "required": True },
-    { "filename": 'node-{0}-headers.tar.gz'.format(version), "required": True },
-    { "filename": 'iojs-{0}.tar.gz'.format(version), "required": True },
-    { "filename": 'iojs-{0}-headers.tar.gz'.format(version), "required": True },
+    { "filename": f'node-{version}.tar.gz', "required": True },
+    { "filename": f'node-{version}-headers.tar.gz', "required": True },
+    { "filename": f'iojs-{version}.tar.gz', "required": True },
+    { "filename": f'iojs-{version}-headers.tar.gz', "required": True },
     { "filename": 'node.lib', "required": False },
     { "filename": 'x64/node.lib', "required": False },
     { "filename": 'win-x86/iojs.lib', "required": False },

@@ -36,7 +36,7 @@ def scoped_cwd(path):
 def download(text, url, path):
   safe_mkdir(os.path.dirname(path))
   with open(path, 'wb') as local_file:
-    print("Downloading %s to %s" % (url, path))
+    print(f"Downloading {url} to {path}")
     web_file = urlopen(url)
     info = web_file.info()
     if hasattr(info, 'getheader'):
@@ -62,7 +62,7 @@ def download(text, url, path):
         print(status, end=' ')
 
     if ci:
-      print("%s done." % (text))
+      print(f"{text} done.")
     else:
       print()
   return path
@@ -173,14 +173,14 @@ def get_electron_exec():
   out_dir = get_out_dir()
 
   if sys.platform == 'darwin':
-    return '{0}/Electron.app/Contents/MacOS/Electron'.format(out_dir)
+    return f'{out_dir}/Electron.app/Contents/MacOS/Electron'
   if sys.platform == 'win32':
-    return '{0}/electron.exe'.format(out_dir)
+    return f'{out_dir}/electron.exe'
   if sys.platform == 'linux':
-    return '{0}/electron'.format(out_dir)
+    return f'{out_dir}/electron'
 
   raise Exception(
-      "get_electron_exec: unexpected platform '{0}'".format(sys.platform))
+      f"get_electron_exec: unexpected platform '{sys.platform}'")
 
 def get_buildtools_executable(name):
   buildtools = os.path.realpath(os.path.join(ELECTRON_DIR, '..', 'buildtools'))

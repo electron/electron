@@ -21,8 +21,8 @@ def read_patch(patch_dir, patch_filename):
     for l in f.readlines():
       line_has_correct_start = l.startswith('diff -') or l.startswith('---')
       if not added_patch_location and line_has_correct_start:
-        ret.append('{}{}\n'.format(PATCH_DIR_PREFIX, patch_dir))
-        ret.append('{}{}\n'.format(PATCH_FILENAME_PREFIX, patch_filename))
+        ret.append(f'{PATCH_DIR_PREFIX}{patch_dir}\n')
+        ret.append(f'{PATCH_FILENAME_PREFIX}{patch_filename}\n')
         added_patch_location = True
       ret.append(l)
   return ''.join(ret)

@@ -77,8 +77,7 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
       stdin=subprocess.PIPE)
   proc.communicate(patch_data.encode('utf-8'))
   if proc.returncode != 0:
-    raise RuntimeError("Command {} returned {}".format(command,
-      proc.returncode))
+    raise RuntimeError(f"Command {command} returned {proc.returncode}")
 
 
 def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
@@ -229,7 +228,7 @@ def export_patches(repo, out_dir,
                    dry_run=False, grep=None):
   if not os.path.exists(repo):
     sys.stderr.write(
-      "Skipping patches in {} because it does not exist.\n".format(repo)
+      f"Skipping patches in {repo} because it does not exist.\n"
     )
     return
   if patch_range is None:
@@ -241,7 +240,7 @@ def export_patches(repo, out_dir,
   if grep:
     olen = len(patches)
     patches = filter_patches(patches, grep)
-    sys.stderr.write("Exporting {} of {} patches\n".format(len(patches), olen))
+    sys.stderr.write(f"Exporting {len(patches)} of {olen} patches\n")
 
   try:
     os.mkdir(out_dir)
