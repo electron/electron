@@ -35,9 +35,8 @@ def scoped_cwd(path):
 
 def download(text, url, path):
   safe_mkdir(os.path.dirname(path))
-  with open(path, 'wb') as local_file:
+  with open(path, 'wb') as local_file, urlopen(url) as web_file:
     print(f"Downloading {url} to {path}")
-    web_file = urlopen(url)
     info = web_file.info()
     if hasattr(info, 'getheader'):
       file_size = int(info.getheaders("Content-Length")[0])
@@ -74,15 +73,16 @@ def make_zip(zip_file_path, files, dirs):
     allfiles = files + dirs
     execute(['zip', '-r', '-y', zip_file_path] + allfiles)
   else:
-    zip_file = zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED,
-                               allowZip64=True)
-    for filename in files:
-      zip_file.write(filename, filename)
-    for dirname in dirs:
-      for root, _, filenames in os.walk(dirname):
-        for f in filenames:
-          zip_file.write(os.path.join(root, f))
-    zip_file.close()
+    with zipfile.ZipFile(zip_file_path, "w",
+                         zipfile.ZIP_DEFLATED,
+                         allowZip64=True) as zip_file:
+      for filename in files:
+        zip_file.write(filename, filename)
+      for dirname in dirs:
+        for root, _, filenames in os.walk(dirname):
+          for f in filenames:
+            zip_file.write(os.path.join(root, f))
+      zip_file.close()
 
 
 def rm_rf(path):

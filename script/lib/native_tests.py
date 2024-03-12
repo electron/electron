@@ -247,16 +247,23 @@ class TestBinary():
     gtest_output = TestBinary.__get_gtest_output(output_file_path)
 
     args = [self.binary_path, gtest_filter, gtest_output]
-    stdout, stderr = TestBinary.__get_stdout_and_stderr(verbosity)
 
     returncode = 0
-    try:
-      returncode = subprocess.call(args, stdout=stdout, stderr=stderr)
-    except Exception as exception:
-      if Verbosity.ge(verbosity, Verbosity.ERRORS):
-        print(f"An error occurred while running '{self.binary_path}':",
-            '\n', exception, file=sys.stderr)
-      returncode = 1
+
+    with open(os.devnull, "w") as devnull:
+      stdout = stderr = None
+      if Verbosity.le(verbosity, Verbosity.ERRORS):
+        stdout = devnull
+        if verbosity == Verbosity.SILENT:
+          stderr = devnull
+
+      try:
+        returncode = subprocess.call(args, stdout=stdout, stderr=stderr)
+      except Exception as exception:
+        if Verbosity.ge(verbosity, Verbosity.ERRORS):
+          print(f"An error occurred while running '{self.binary_path}':",
+              '\n', exception, file=sys.stderr)
+        returncode = 1
 
     return returncode
 
@@ -280,15 +287,3 @@ class TestBinary():
     if tests is None:
       return ''
     return ':'.join(tests)
-
-  @staticmethod
-  def __get_stdout_and_stderr(verbosity):
-    stdout = stderr = None
-
-    if Verbosity.le(verbosity, Verbosity.ERRORS):
-      devnull = open(os.devnull, 'w')
-      stdout = devnull
-      if verbosity == Verbosity.SILENT:
-        stderr = devnull
-
-    return (stdout, stderr)

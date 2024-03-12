@@ -72,12 +72,10 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
     root_args += ['-c', 'user.email=' + committer_email]
   root_args += ['-c', 'commit.gpgsign=false']
   command = ['git'] + root_args + ['am'] + args
-  proc = subprocess.Popen(
-      command,
-      stdin=subprocess.PIPE)
-  proc.communicate(patch_data.encode('utf-8'))
-  if proc.returncode != 0:
-    raise RuntimeError(f"Command {command} returned {proc.returncode}")
+  with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
+    proc.communicate(patch_data.encode('utf-8'))
+    if proc.returncode != 0:
+      raise RuntimeError(f"Command {command} returned {proc.returncode}")
 
 
 def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
@@ -255,7 +253,8 @@ def export_patches(repo, out_dir,
     for patch in patches:
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
-      existing_patch = str(io.open(filepath, 'rb').read(), 'utf-8')
+      with io.open(filepath, 'rb') as inp:
+        existing_patch = str(inp.read(), 'utf-8')
       formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
         bad_patches.append(filename)

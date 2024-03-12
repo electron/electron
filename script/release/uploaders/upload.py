@@ -359,13 +359,14 @@ def upload_io_to_github(release, filename, filepath, version):
   print(f'Uploading {filename} to GitHub')
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
-  upload_process = subprocess.Popen([TS_NODE, script_path, filepath, filename, 
-          str(release['id']), version], stdout=subprocess.PIPE, 
-          stderr=subprocess.STDOUT)
-  if is_verbose_mode():
-    for c in iter(lambda: upload_process.stdout.read(1), b""):
-      sys.stdout.buffer.write(c)
-      sys.stdout.flush()
+  with subprocess.Popen([TS_NODE, script_path, filepath,
+                         filename, str(release['id']), version],
+                        stdout=subprocess.PIPE, 
+                        stderr=subprocess.STDOUT) as upload_process:
+    if is_verbose_mode():
+      for c in iter(lambda: upload_process.stdout.read(1), b""):
+        sys.stdout.buffer.write(c)
+        sys.stdout.flush()
 
 
 def upload_sha256_checksum(version, file_path, key_prefix=None):

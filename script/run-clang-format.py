@@ -130,23 +130,22 @@ def run_clang_format_diff(args, file_name):
         print(" ".join(invocation))
         return [], []
     try:
-        proc = subprocess.Popen(
-            ' '.join(invocation),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            shell=True)
+        with subprocess.Popen(' '.join(invocation),
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              universal_newlines=True,
+                              shell=True) as proc:
+            outs = list(proc.stdout.readlines())
+            errs = list(proc.stderr.readlines())
+            proc.wait()
+            if proc.returncode:
+                code = proc.returncode
+                msg = f"clang-format exited with code {code}: '{file_name}'"
+                raise DiffError(msg, errs)
     except OSError as exc:
-        # pylint: disable=W0707
-        raise DiffError(
-            f"Command '{subprocess.list2cmdline(invocation)}' failed to start: {exc}"
-        )
-    outs = list(proc.stdout.readlines())
-    errs = list(proc.stderr.readlines())
-    proc.wait()
-    if proc.returncode:
-        msg = f"clang-format exited with code {proc.returncode}: '{file_name}'"
-        raise DiffError(msg, errs)
+        # pylint: disable=raise-missing-from
+        cmd = subprocess.list2cmdline(invocation)
+        raise DiffError(f"Command '{cmd}' failed to start: {exc}")
     if args.fix:
         return None, errs
     if sys.platform == 'win32':
@@ -286,18 +285,18 @@ def main():
 
     parse_files = []
     if args.changed:
-        stdout = subprocess.Popen(
+        with subprocess.Popen(
             "git diff --name-only --cached",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             shell=True,
             universal_newlines=True
-        ).communicate()[0].split("\n")
-        for line in stdout:
-            file_name = line.rstrip()
-            # don't check deleted files
-            if os.path.isfile(file_name):
-                parse_files.append(file_name)
+        ) as child:
+            for line in child.communicate()[0].split("\n"):
+                file_name = line.rstrip()
+                # don't check deleted files
+                if os.path.isfile(file_name):
+                    parse_files.append(file_name)
 
     else:
         parse_files = args.files
@@ -320,6 +319,7 @@ def main():
     njobs = min(len(files), njobs)
 
     if not args.fix:
+        # pylint: disable=consider-using-with
         patch_file = tempfile.NamedTemporaryFile(delete=False,
                                                  prefix='electron-format-')
 
@@ -329,6 +329,7 @@ def main():
         it = (run_clang_format_diff_wrapper(args, file) for file in files)
         pool = None
     else:
+        # pylint: disable=consider-using-with
         pool = multiprocessing.Pool(njobs)
         it = pool.imap_unordered(
             partial(run_clang_format_diff_wrapper, args), files)
@@ -369,7 +370,11 @@ def main():
           patch_file.close()
           os.unlink(patch_file.name)
         else:
-          print(f"\nTo patch these files, run:\n$ git apply {patch_file.name}\n")
+          print(
+            'To patch these files, run:',
+            f"$ git apply {patch_file.name}", sep='\n')
+          filename=patch_file.name
+          print(f"\nTo patch these files, run:\n$ git apply {filename}\n")
 
     return retcode
 
