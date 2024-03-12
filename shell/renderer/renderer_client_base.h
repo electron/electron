@@ -102,7 +102,8 @@ class RendererClientBase : public content::ContentRendererClient
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
-  void GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) override;
+  std::unique_ptr<media::KeySystemSupportObserver> GetSupportedKeySystems(
+      media::GetSupportedKeySystemsCB cb) override;
   void DidSetUserAgent(const std::string& user_agent) override;
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
