@@ -2560,6 +2560,32 @@ int WebContents::GetActiveIndex() const {
   return web_contents()->GetController().GetCurrentEntryIndex();
 }
 
+v8::Local<v8::Value> WebContents::GetNavigationEntryForIndex(int index) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+
+  if (index >= GetHistoryLength() || index < 0) {
+    return v8::Null(isolate);
+  }
+
+  content::NavigationEntry* entry =
+      web_contents()->GetController().GetEntryAtIndex(index);
+  gin_helper::Dictionary navigation_entry_dict(isolate,
+                                               v8::Object::New(isolate));
+
+  content::FaviconStatus favicon = entry->GetFavicon();
+
+  GURL favicon_bitmap_url;
+  if (!favicon.image.IsEmpty()) {
+    const SkBitmap* favicon_bitmap = favicon.image.ToSkBitmap();
+    favicon_bitmap_url = GURL(webui::GetBitmapDataUrl(*favicon_bitmap));
+  }
+
+  navigation_entry_dict.Set("url", entry->GetURL().spec());
+  navigation_entry_dict.Set("title", entry->GetTitleForDisplay());
+
+  return navigation_entry_dict.GetHandle();
+}
+
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4354,6 +4380,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("goToIndex", &WebContents::GoToIndex)
       .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("getNavigationEntryForIndex",
+                 &WebContents::GetNavigationEntryForIndex)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
       .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
