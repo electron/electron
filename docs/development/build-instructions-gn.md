@@ -110,20 +110,49 @@ $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
 On Windows:
 
 ```sh
+# CMD
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
+
+# Powershell
+$ cd src
+$ $env:CHROMIUM_BUILDTOOLS_PATH = "$(Get-Location)\buildtools"
 ```
 
 **To generate Testing build config of Electron:**
+
+On Linux & MacOS
 
 ```sh
 $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
 ```
 
+On Windows:
+
+```sh
+# CMD
+$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
+
+# Powershell
+gn gen out/Testing --args="import(\`"//electron/build/args/testing.gn\`")"
+```
+
 **To generate Release build config of Electron:**
+
+On Linux & MacOS
 
 ```sh
 $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
+```
+
+On Windows:
+
+```sh
+# CMD
+$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
+
+# Powershell
+$ gn gen out/Release --args="import(\`"//electron/build/args/release.gn\`")"
 ```
 
 **Note:** This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
