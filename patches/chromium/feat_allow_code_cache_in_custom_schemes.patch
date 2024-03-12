@@ -140,7 +140,7 @@ index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 2578387d2e47a6b1e849097ed331c9b53289826c..c1cb9e260b68d7259f661a389da3a8b2ae1f83c0 100644
+index 50e0966199b18f88f85443016f57e8e217d7cf9c..fca44ad6a96981349a52dc2eeff4626e4dcb8bcd 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -8,13 +8,18 @@
@@ -171,7 +171,7 @@ index 2578387d2e47a6b1e849097ed331c9b53289826c..c1cb9e260b68d7259f661a389da3a8b2
  bool SupportsSharedWorker() {
  #if BUILDFLAG(IS_ANDROID)
    // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -628,4 +635,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -710,4 +717,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  

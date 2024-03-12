@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index a525dee9a568010d274ff9c6213b136cc81b2d88..f168d982452eb0e234ab63493edca6f468822708 100644
+index e680c3bb24c8ec764919561fd8da833c8a1601b9..5d082eeed73ef400de31f1413fea72c8c55e72ec 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -23,6 +23,7 @@
@@ -44,10 +44,10 @@ index 16f88856c10df7af52356ea5648c5062804fd769..6b83e02c88f71d6b330a9b330d31b659
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 09d791fbd4466c605dcb946b63b3dd3e7eba9fb0..df08d8a1b2232dcd9b926466f062b17b34dad446 100644
+index af90ef714bc17302ca9818a57a7d3a1decea9fe1..466580ea98c05f3e896343a4be4dd0669b86a2b2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5194,6 +5194,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5224,6 +5224,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 09d791fbd4466c605dcb946b63b3dd3e7eba9fb0..df08d8a1b2232dcd9b926466f062b17b
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index adf38641aa6e12f76b4b1f7fbc15198da6caacd1..5eaeacd405d07e03467554e9b05a137d33c81758 100644
+index e7f70d74e06ccfbec70b5d718936b8c67785e297..c3c36499004db3623246a2add141acf7161b16a8 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1035,6 +1035,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1034,6 +1034,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
