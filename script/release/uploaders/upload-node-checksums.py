@@ -91,8 +91,8 @@ def create_checksum(algorithm, directory, filename, files):
       lines.append(h.hexdigest() + '  ' + os.path.relpath(path, directory))
 
   checksum_file = os.path.join(directory, filename)
-  with open(checksum_file, 'w') as f:
-    f.write('\n'.join(lines) + '\n')
+  with open(checksum_file, 'w', encoding='utf-8') as fout:
+    fout.write('\n'.join(lines) + '\n')
   return checksum_file
 
 def copy_files(source_files, output_dir):

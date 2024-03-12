@@ -31,8 +31,8 @@ def read_patch(patch_dir, patch_filename):
 def patch_from_dir(patch_dir):
   """Read a directory of patches into a format suitable for passing to
   'git am'"""
-  with open(os.path.join(patch_dir, ".patches")) as f:
-    patch_list = [l.rstrip('\n') for l in f.readlines()]
+  with open(os.path.join(patch_dir, ".patches"), encoding='utf-8') as file_in:
+    patch_list = [line.rstrip('\n') for line in file_in.readlines()]
 
   return ''.join([
     read_patch(patch_dir, patch_filename)

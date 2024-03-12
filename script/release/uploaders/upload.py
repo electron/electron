@@ -378,7 +378,7 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
     sha256.update(f.read())
 
   filename = os.path.basename(file_path)
-  with open(checksum_path, 'w') as checksum:
+  with open(checksum_path, 'w', encoding='utf-8') as checksum:
     checksum.write(f'{sha256.hexdigest()} *{filename}')
   store_artifact(os.path.dirname(checksum_path), key_prefix, [checksum_path])
 

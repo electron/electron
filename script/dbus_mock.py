@@ -13,7 +13,7 @@ def stop():
     DBusTestCase.stop_dbus(DBusTestCase.session_bus_pid)
 
 def start():
-    with sys.stdout if is_verbose_mode() else open(os.devnull, 'w') as log:
+    with sys.stdout if is_verbose_mode() else open(os.devnull, 'w', encoding='utf-8') as log:
         DBusTestCase.start_system_bus()
         DBusTestCase.spawn_server_template('logind', None, log)
 

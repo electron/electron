@@ -134,7 +134,7 @@ class TestsList():
 
   @staticmethod
   def __get_config_data(config_path):
-    with open(config_path, 'r') as stream:
+    with open(config_path, 'r', encoding='utf-8') as stream:
       return yaml.load(stream)
 
   @staticmethod
@@ -250,7 +250,7 @@ class TestBinary():
 
     returncode = 0
 
-    with open(os.devnull, "w") as devnull:
+    with open(os.devnull, "w", encoding='utf-8') as devnull:
       stdout = stderr = None
       if Verbosity.le(verbosity, Verbosity.ERRORS):
         stdout = devnull
