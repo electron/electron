@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896536ef852 100644
+index 3bb35f0d0686df1718cc62c6d4ab42817477dd26..43a53e4b91747b3224ee8ac8002a4c8a9ed8a092 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -339,7 +339,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -39,7 +39,7 @@ index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896
  }
  
  bool Compositor::IsVisible() {
-@@ -957,4 +961,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
+@@ -959,4 +963,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
    return host_->GetSettings();
  }
  
@@ -54,7 +54,7 @@ index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 4b3ed41d771cad8f22bf74dfc8349dd4c18924fb..b0c826ff8f0b06e26447424d9c305c2ebcee5c5c 100644
+index 29e8cbde697ca4815275d87e04ee1311d14f1ecb..ecc0de0ecb32f7bfd5624b017588f75bb88ab7f3 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -508,6 +508,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,

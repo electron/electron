@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 53a6b1bde34b434691572b3e772520873b958375..f74ab4e0bdd12c5d280a63e589e5ed490275028f 100644
+index c9f0292cae20a3aa206092a44220d336cb511070..3330a093fb229b823c394440c40405ee628f28e9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1048,6 +1048,7 @@ component("base") {
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d27c794883426dd6a88ca158b7c24686d76ab19d..2f1b9d547a6f54746ff23031ee3586d4ea68dd0b 100644
+index 53801ccd1e8b2eadbe19d3eaf6b03186b2620a1c..c58175e595b98ed5a5e8c369e4c05f229edf5d2d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 589dca8877f981de6ece305e7eb1e7234e3b692e..20dae672a928b8f44d4d073463367f184845fe26 100644
+index ec5c896baa6c7ad16f4d43dcb86683dba465f8f4..113aa2da812903a46487092372084b89a710a5c2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -488,6 +488,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 589dca8877f981de6ece305e7eb1e7234e3b692e..20dae672a928b8f44d4d073463367f18
  
    public_deps = [
      ":test_interfaces",
-@@ -2924,6 +2927,7 @@ test("content_unittests") {
+@@ -2928,6 +2931,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -942,7 +942,7 @@ index 0c0243c2bb9e72c6eba6f9af554b99e2d5514a5d..f5f0e0ec951ccc8278b773c852134e4e
  }
  
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 0c5cb82b1248997ef3b97f17bef52f880fed26fd..8adecabe9aee119c7474834c038c79b271ad888e 100644
+index ebee73a859854299c1237b1190f4882bdd1c5121..67a818beb62a76a82a68313f3a27ab4e2ad780b5 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -183,6 +183,8 @@ source_set("dns") {
