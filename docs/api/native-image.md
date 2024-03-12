@@ -9,7 +9,7 @@ system images. These can be handy if you want to provide multiple scaled
 versions of the same icon or take advantage of macOS [template images][template-image].
 
 Electron APIs that take image files accept either file paths or
-`NativeImage` instances. An empty image will be used when `null` is passed.
+`NativeImage` instances. An empty and transparent image will be used when `null` is passed.
 
 For example, when creating a [Tray](../api/tray.md) or setting a [BrowserWindow](../api/browser-window.md)'s
 icon, you can either pass an image file path as a string:
