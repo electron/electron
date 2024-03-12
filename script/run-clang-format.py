@@ -208,7 +208,8 @@ def main():
         default=get_buildtools_executable('clang-format'))
     parser.add_argument(
         '--extensions',
-        help=f'comma separated list of file extensions (default: {DEFAULT_EXTENSIONS})',
+        help='comma-separated list of file extensions'
+             f' (default: {DEFAULT_EXTENSIONS})',
         default=DEFAULT_EXTENSIONS)
     parser.add_argument(
         '--fix',

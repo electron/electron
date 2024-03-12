@@ -194,7 +194,7 @@ class TestsList():
 
           for platform in platforms:
             assert Platform.is_valid(platform), \
-                f"platform '{platform}' is not supported, check {binary_name} config"
+                f"Unsupported platform {platform}, check {binary_name} config"
 
           test_data['platforms'] = platforms
 
@@ -269,18 +269,15 @@ class TestBinary():
 
   @staticmethod
   def __get_gtest_filter(included_tests, excluded_tests):
-    included_tests_string = TestBinary.__list_tests(included_tests)
-    excluded_tests_string = TestBinary.__list_tests(excluded_tests)
-
-    gtest_filter = f"--gtest_filter={included_tests_string}-{excluded_tests_string}"
-    return gtest_filter
+    included_str = TestBinary.__list_tests(included_tests)
+    excluded_str = TestBinary.__list_tests(excluded_tests)
+    return f"--gtest_filter={included_str}-{excluded_str}"
 
   @staticmethod
   def __get_gtest_output(output_file_path):
-    gtest_output = ""
-    if output_file_path is not None:
-      gtest_output = f"--gtest_output={TestBinary.output_format}:{output_file_path}"
-    return gtest_output
+    if output_file_path is None:
+      return ""
+    return f"--gtest_output={TestBinary.output_format}:{output_file_path}"
 
   @staticmethod
   def __list_tests(tests):
