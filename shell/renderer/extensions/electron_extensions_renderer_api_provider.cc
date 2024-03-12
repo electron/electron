@@ -20,7 +20,7 @@ namespace electron {
 void ElectronExtensionsRendererAPIProvider::RegisterNativeHandlers(
     extensions::ModuleSystem* module_system,
     extensions::NativeExtensionBindingsSystem* bindings_system,
-    extensions::ScriptContext* context) {
+    extensions::ScriptContext* context) const {
   module_system->RegisterNativeHandler(
       "lazy_background_page",
       std::make_unique<extensions::LazyBackgroundPageNativeHandler>(context));
@@ -28,7 +28,7 @@ void ElectronExtensionsRendererAPIProvider::RegisterNativeHandlers(
 
 void ElectronExtensionsRendererAPIProvider::AddBindingsSystemHooks(
     extensions::Dispatcher* dispatcher,
-    extensions::NativeExtensionBindingsSystem* bindings_system) {
+    extensions::NativeExtensionBindingsSystem* bindings_system) const {
   extensions::APIBindingsSystem* bindings = bindings_system->api_system();
   bindings->RegisterHooksDelegate(
       "extension", std::make_unique<extensions::ExtensionHooksDelegate>(
@@ -39,11 +39,12 @@ void ElectronExtensionsRendererAPIProvider::AddBindingsSystemHooks(
 }
 
 void ElectronExtensionsRendererAPIProvider::PopulateSourceMap(
-    extensions::ResourceBundleSourceMap* source_map) {}
+    extensions::ResourceBundleSourceMap* source_map) const {}
 
-void ElectronExtensionsRendererAPIProvider::EnableCustomElementAllowlist() {}
+void ElectronExtensionsRendererAPIProvider::EnableCustomElementAllowlist()
+    const {}
 
 void ElectronExtensionsRendererAPIProvider::RequireWebViewModules(
-    extensions::ScriptContext* context) {}
+    extensions::ScriptContext* context) const {}
 
 }  // namespace electron
