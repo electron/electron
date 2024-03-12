@@ -112,8 +112,8 @@ class TestsList():
         raise Exception(errmsg)
 
     suite_returncode = sum(
-        [self.__run(binary, output_dir, verbosity, disabled_tests_policy)
-        for binary in binaries])
+        self.__run(binary, output_dir, verbosity, disabled_tests_policy)
+        for binary in binaries)
     return suite_returncode
 
   def run_all(self, output_dir=None, verbosity=Verbosity.CHATTY,
