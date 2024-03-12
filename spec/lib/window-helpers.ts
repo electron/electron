@@ -46,8 +46,8 @@ export const closeWindow = async (
   }
 };
 
-export async function closeAllWindows () {
+export async function closeAllWindows (options = { assertNotWindows: false }) {
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows: false });
+    await closeWindow(w, options);
   }
 }

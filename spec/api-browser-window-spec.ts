@@ -6427,7 +6427,9 @@ describe('BrowserWindow module', () => {
   });
 
   describe('"transparent" option', () => {
-    afterEach(closeAllWindows);
+    afterEach(() => {
+      closeAllWindows({ assertNotWindows: true });
+    });
 
     ifit(process.platform !== 'linux')('correctly returns isMaximized() when the window is maximized then minimized', async () => {
       const w = new BrowserWindow({
@@ -6571,7 +6573,9 @@ describe('BrowserWindow module', () => {
   });
 
   describe('"backgroundColor" option', () => {
-    afterEach(closeAllWindows);
+    afterEach(() => {
+      closeAllWindows({ assertNotWindows: true });
+    });
 
     // Linux/WOA doesn't return any capture sources.
     ifit(process.platform === 'darwin')('should display the set color', async () => {
