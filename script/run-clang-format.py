@@ -145,8 +145,8 @@ def run_clang_format_diff(args, file_name):
     errs = list(proc.stderr.readlines())
     proc.wait()
     if proc.returncode:
-        raise DiffError("clang-format exited with status {}: '{}'".format(
-            proc.returncode, file_name), errs)
+        msg = f"clang-format exited with code {proc.returncode}: '{file_name}'"
+        raise DiffError(msg, errs)
     if args.fix:
         return None, errs
     if sys.platform == 'win32':

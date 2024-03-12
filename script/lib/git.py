@@ -232,9 +232,9 @@ def export_patches(repo, out_dir,
     )
     return
   if patch_range is None:
-    patch_range, num_patches = guess_base_commit(repo, ref)
-    sys.stderr.write("Exporting {} patches in {} since {}\n".format(
-        num_patches, repo, patch_range[0:7]))
+    patch_range, n_patches = guess_base_commit(repo, ref)
+    msg = f"Exporting {n_patches} patches in {repo} since {patch_range[0:7]}\n"
+    sys.stderr.write(msg)
   patch_data = format_patch(repo, patch_range)
   patches = split_patches(patch_data)
   if grep:

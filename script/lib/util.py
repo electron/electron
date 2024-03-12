@@ -58,7 +58,7 @@ def download(text, url, path):
 
       if not ci:
         percent = downloaded_size * 100. / file_size
-        status = "\r%s  %10d  [%3.1f%%]" % (text, downloaded_size, percent)
+        status = f"\r{text}  {downloaded_size:10d}  [{percent:3.1f}%]"
         print(status, end=' ')
 
     if ci:

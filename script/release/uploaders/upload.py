@@ -53,9 +53,8 @@ def main():
 
   build_version = get_electron_build_version()
   if not ELECTRON_VERSION.startswith(build_version):
-    error = 'Tag name ({0}) should match build version ({1})\n'.format(
-        ELECTRON_VERSION, build_version)
-    sys.stderr.write(error)
+    errmsg = f"Tag ({ELECTRON_VERSION}) should match build ({build_version})\n"
+    sys.stderr.write(errmsg)
     sys.stderr.flush()
     return 1
 

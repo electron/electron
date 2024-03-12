@@ -101,15 +101,15 @@ class TestsList():
     # First check that all names are present in the config.
     for binary_name in binaries:
       if binary_name not in self.tests:
-        raise Exception("binary {0} not found in config '{1}'".format(
-            binary_name, self.config_path))
+        msg = f"binary {binary_name} not found in config '{self.config_path}'"
+        raise Exception(msg)
 
     # Respect the "platform" setting.
     for binary_name in binaries:
       if not self.__platform_supports(binary_name):
-        raise Exception(
-            "binary {0} cannot be run on {1}, check the config".format(
-                binary_name, Platform.get_current()))
+        host = Platform.get_current()
+        errmsg = f"binary {binary_name} cannot run on {host}. Check the config"
+        raise Exception(errmsg)
 
     suite_returncode = sum(
         [self.__run(binary, output_dir, verbosity, disabled_tests_policy)
