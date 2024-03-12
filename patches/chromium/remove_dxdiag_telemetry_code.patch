@@ -199,7 +199,7 @@ index 5a8e6d184e276833034c604be8c48e01122207e2..ced6f932b5bb03d27780d80d158a2eac
    void UpdateVulkanRequestStatus(bool request_continues);
    bool Dx12Requested() const;
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 3306a36044eed8395b3a13cffa4754cadee1048d..c362ead262f408f66a8fa537273e2e0fbc9dc1b0 100644
+index c12a96390350b5bd14a43506d8a35e4b0dec4924..e166bf2c609e1881804908eae69a5018d39694eb 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
 @@ -487,26 +487,6 @@ class HDRProxy {
@@ -359,7 +359,7 @@ index 3306a36044eed8395b3a13cffa4754cadee1048d..c362ead262f408f66a8fa537273e2e0f
    // gpu_info_dx12_valid_ is always updated before device_perf_info
    if (gpu_info_dx12_requested_ && !gpu_info_dx12_request_failed_ &&
        !gpu::GetDevicePerfInfo().has_value())
-@@ -1240,25 +1148,16 @@ void GpuDataManagerImplPrivate::PostCreateThreads() {
+@@ -1238,25 +1146,16 @@ void GpuDataManagerImplPrivate::PostCreateThreads() {
    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
    if (command_line->HasSwitch(switches::kNoDelayForDX12VulkanInfoCollection)) {
      // This is for the info collection test of the gpu integration tests.
@@ -388,7 +388,7 @@ index 3306a36044eed8395b3a13cffa4754cadee1048d..c362ead262f408f66a8fa537273e2e0f
    }
  
    // Observer for display change.
-@@ -1533,17 +1432,6 @@ void GpuDataManagerImplPrivate::HandleGpuSwitch() {
+@@ -1531,17 +1430,6 @@ void GpuDataManagerImplPrivate::HandleGpuSwitch() {
  
  void GpuDataManagerImplPrivate::OnDisplayAdded(
      const display::Display& new_display) {
@@ -406,7 +406,7 @@ index 3306a36044eed8395b3a13cffa4754cadee1048d..c362ead262f408f66a8fa537273e2e0f
    base::AutoUnlock unlock(owner_->lock_);
  
    // Notify observers in the browser process.
-@@ -1559,17 +1447,6 @@ void GpuDataManagerImplPrivate::OnDisplayAdded(
+@@ -1557,17 +1445,6 @@ void GpuDataManagerImplPrivate::OnDisplayAdded(
  
  void GpuDataManagerImplPrivate::OnDisplayRemoved(
      const display::Display& old_display) {
@@ -424,7 +424,7 @@ index 3306a36044eed8395b3a13cffa4754cadee1048d..c362ead262f408f66a8fa537273e2e0f
    base::AutoUnlock unlock(owner_->lock_);
  
    // Notify observers in the browser process.
-@@ -1586,17 +1463,6 @@ void GpuDataManagerImplPrivate::OnDisplayRemoved(
+@@ -1584,17 +1461,6 @@ void GpuDataManagerImplPrivate::OnDisplayRemoved(
  void GpuDataManagerImplPrivate::OnDisplayMetricsChanged(
      const display::Display& display,
      uint32_t changed_metrics) {

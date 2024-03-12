@@ -40,18 +40,16 @@ index 25896ab0f3ca233ae17bf509f2a6ae5a6cc3c54b..5a8e6d184e276833034c604be8c48e01
    // Called from BrowserMainLoop::PostCreateThreads().
    // TODO(content/browser/gpu/OWNERS): This should probably use a
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 4fa857fed71485898f4ba7c6e78cc8be37d8dbf7..3306a36044eed8395b3a13cffa4754cadee1048d 100644
+index 4fa857fed71485898f4ba7c6e78cc8be37d8dbf7..c12a96390350b5bd14a43506d8a35e4b0dec4924 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1222,6 +1222,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1222,6 +1222,10 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
 +
 +bool GpuDataManagerImplPrivate::DxdiagDx12VulkanRequested() const {
-+  return !(gpu_info_vulkan_request_failed_ ||
-+           gpu_info_dx12_request_failed_ ||
-+           gpu_info_dx_diag_request_failed_);
++  return !(gpu_info_vulkan_request_failed_ || gpu_info_dx12_request_failed_);
 +}
  #endif
  
