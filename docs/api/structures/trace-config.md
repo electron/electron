@@ -19,7 +19,7 @@
   include in the trace. If not specified, trace all processes.
 * `histogram_names` string[] (optional) - a list of [histogram][] names to report
   with the trace.
-* `memory_dump_config` Record<string, any> (optional) - if the
+* `memory_dump_config` Record\<string, any\> (optional) - if the
   `disabled-by-default-memory-infra` category is enabled, this contains
   optional additional configuration for data collection. See the [Chromium
   memory-infra docs][memory-infra docs] for more information.

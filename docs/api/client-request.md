@@ -158,7 +158,7 @@ Returns:
 * `statusCode` Integer
 * `method` string
 * `redirectUrl` string
-* `responseHeaders` Record<string, string[]>
+* `responseHeaders` Record\<string, string[]\>
 
 Emitted when the server returns a redirect response (e.g. 301 Moved
 Permanently). Calling [`request.followRedirect`](#requestfollowredirect) will
