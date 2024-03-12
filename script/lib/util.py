@@ -128,8 +128,8 @@ def get_electron_branding():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
   branding_file_path = os.path.join(
     SOURCE_ROOT, 'shell', 'app', 'BRANDING.json')
-  with open(branding_file_path) as f:
-    return json.load(f)
+  with open(branding_file_path, encoding='utf-8') as file_in:
+    return json.load(file_in)
 
 
 cached_electron_version = None
