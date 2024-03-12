@@ -9,7 +9,7 @@ This is an experimental commit; but if it's successful,
 This patch should be upstreamed and then removed from electron's code.
 
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index 2a1498da8c9ce693403800d4c4b52fac6a7430e1..95c1b5df170b368d58e57e22561da9ba7e83e1d8 100644
+index 836b5aa54918386346fb7c13b9aadecd254d9013..97f4c56e5fcbdbbcae90b47ec5e42a020f178d94 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
 @@ -41,9 +41,7 @@
@@ -48,7 +48,16 @@ index 2a1498da8c9ce693403800d4c4b52fac6a7430e1..95c1b5df170b368d58e57e22561da9ba
    // Sets the watermark string to the value specified in text if the view is
    // not null.
    void SetWatermarkString(const std::string& text);
-@@ -1182,8 +1185,10 @@ class BrowserView : public BrowserWindow,
+@@ -726,7 +729,7 @@ class BrowserView : public BrowserWindow,
+ 
+   // content::WebContentsObserver:
+   void DidFirstVisuallyNonEmptyPaint() override;
+-#if BUILDFLAG(ENTERPRISE_WATERMARK)
++#if 0
+   void DidStartNavigation(
+       content::NavigationHandle* navigation_handle) override;
+ #endif
+@@ -1191,8 +1194,10 @@ class BrowserView : public BrowserWindow,
    raw_ptr<views::WebView, AcrossTasksDanglingUntriaged> devtools_web_view_ =
        nullptr;
  
