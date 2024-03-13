@@ -1955,6 +1955,35 @@ describe('<webview> tag', function () {
       }, [fixtures]);
     });
 
+    describe('<webview>.getNavigationEntryForIndex()', () => {
+      it('should fetch navigation entry given a valid index', async () => {
+        await loadWebViewAndWaitForEvent(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: 'https://www.google.com'
+        }, 'did-stop-loading');
+        expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(0)')).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
+      });
+
+      it('should return null navigation entry given an invalid index larger than total number of navigation entries', async () => {
+        await loadWebViewAndWaitForEvent(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: 'https://www.github.com'
+        }, 'did-stop-loading');
+        expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(5)')).to.be.null();
+      });
+
+      it('should return null navigation entry given an invalid negative index', async () => {
+        await loadWebViewAndWaitForEvent(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: 'https://www.github.com'
+        }, 'did-stop-loading');
+        expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(-1)')).to.be.null();
+      });
+    });
+
     describe('<webview>.clearHistory()', () => {
       it('should clear the navigation history', async () => {
         await loadWebView(w, {

@@ -12,6 +12,7 @@ export const syncMethods = new Set([
   'canGoForward',
   'canGoToOffset',
   'clearHistory',
+  'getNavigationEntryForIndex',
   'goBack',
   'goForward',
   'goToIndex',
