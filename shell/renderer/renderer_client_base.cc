@@ -402,13 +402,14 @@ bool RendererClientBase::OverrideCreatePlugin(
   return true;
 }
 
-void RendererClientBase::GetSupportedKeySystems(
-    media::GetSupportedKeySystemsCB cb) {
+std::unique_ptr<media::KeySystemSupportObserver>
+RendererClientBase::GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) {
 #if BUILDFLAG(ENABLE_WIDEVINE)
   GetChromeKeySystems(std::move(cb));
 #else
   std::move(cb).Run({});
 #endif
+  return nullptr;
 }
 
 void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {

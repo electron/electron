@@ -21,10 +21,10 @@ index 441cf9208e50ed4fab3e6392996bdbb511b0ad76..39b46b4f5bb3adb18d903c0ca4c65f21
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0e11a024bdd472e9a9041a2b86ab7116238ea3ee..af90ef714bc17302ca9818a57a7d3a1decea9fe1 100644
+index 275988bd9d0dbbe3360b081078149e3304d891ae..b2866d3d050b57f5b3f6483634dbe3facaee83dd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4558,6 +4558,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4580,6 +4580,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 0e11a024bdd472e9a9041a2b86ab7116238ea3ee..af90ef714bc17302ca9818a57a7d3a1d
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4599,12 +4605,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4621,12 +4627,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -122,7 +122,7 @@ index 3f445d481b7b1931eba7870f90ba8bc5e1206a8f..8930b2f6c532418a5de97813645783bc
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index cce26ecaccbfde4259ccfcf73dc9508271b7364b..7217c90d0c65203056c622120ae161206d341a83 100644
+index 6e73009a7a4263f8d910071be1b64ce0c6e1b7cc..db2a1bc02f7a90fba1eda99b444c64576df859a8 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -210,10 +210,10 @@ index 78956238f8d959580e928d2590866b2f4da3d218..806b3337ec8a8ad7c89681857b4e81dc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 475f782109990e38caca9a1760ad225727303b1a..a393d149bd0b880ba30abbe43b89c48d2c351d96 100644
+index 86d62960d31c31caff100bfefda6975b366a3197..813d4713fac7de050d16f81f187ea1e1d12cd473 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2213,6 +2213,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2231,6 +2231,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

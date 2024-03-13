@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ced5854f2f213e4be6606144823ed9089a687db8..a3308f1794295f9b5c3cbd97ec2c5ad3ea10f709 100644
+index ecefb420b45e9729fa97cb81362de36ccec4ae64..851280c5c26cb93a6a80977b0b3a9815ce2d5d11 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -151,6 +151,11 @@
@@ -122,7 +122,7 @@ index ced5854f2f213e4be6606144823ed9089a687db8..a3308f1794295f9b5c3cbd97ec2c5ad3
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -880,6 +978,13 @@ void NetworkContext::SetClient(
+@@ -878,6 +976,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -147,7 +147,7 @@ index ced5854f2f213e4be6606144823ed9089a687db8..a3308f1794295f9b5c3cbd97ec2c5ad3
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index adde7c45c1efb37ca6e3848124fb0355b9a3c355..3656f50db07946ee2d3100e0510450f3fbe93a71 100644
+index bf94d00d748c6b703081f49f9b1df8c7f906930a..7cb0642b4661c5415b4f8f4a934ef32f27b9eb28 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -113,6 +113,7 @@ class URLMatcher;
@@ -167,7 +167,7 @@ index adde7c45c1efb37ca6e3848124fb0355b9a3c355..3656f50db07946ee2d3100e0510450f3
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -880,6 +883,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -875,6 +878,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,7 +177,7 @@ index adde7c45c1efb37ca6e3848124fb0355b9a3c355..3656f50db07946ee2d3100e0510450f3
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 8495a3c67ba02f38b55324e89b50d1eca97b48ca..4ddf7e5728ac11a65da76f9cda161a8ee01b6049 100644
+index e6b9d328b94d229dcb5a6267d3e5f3f7d42d1baf..567d6f230e33b2e7d9ff8e3f768fc4c94704eaac 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -298,6 +298,16 @@ struct SocketBrokerRemotes {
@@ -197,7 +197,7 @@ index 8495a3c67ba02f38b55324e89b50d1eca97b48ca..4ddf7e5728ac11a65da76f9cda161a8e
  
  // Parameters for constructing a network context.
  struct NetworkContextParams {
-@@ -953,6 +963,9 @@ interface NetworkContext {
+@@ -956,6 +966,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

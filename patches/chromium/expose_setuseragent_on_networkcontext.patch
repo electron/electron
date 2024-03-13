@@ -33,7 +33,7 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index a3308f1794295f9b5c3cbd97ec2c5ad3ea10f709..1c078ca5664b5679e66bd8904c3779bfd9364365 100644
+index 851280c5c26cb93a6a80977b0b3a9815ce2d5d11..df7c34715576f27f20fb1850c8adb8c74bc88ff9 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1614,6 +1614,13 @@ void NetworkContext::SetNetworkConditions(
@@ -51,7 +51,7 @@ index a3308f1794295f9b5c3cbd97ec2c5ad3ea10f709..1c078ca5664b5679e66bd8904c3779bf
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 3656f50db07946ee2d3100e0510450f3fbe93a71..780dcbc101a6f61e067163b9d0b89fcffe93412f 100644
+index 7cb0642b4661c5415b4f8f4a934ef32f27b9eb28..382ee5ff8352fb0c4623fdb12b5673479231e8ea 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -315,6 +315,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index 3656f50db07946ee2d3100e0510450f3fbe93a71..780dcbc101a6f61e067163b9d0b89fcf
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 4ddf7e5728ac11a65da76f9cda161a8ee01b6049..450352f61fd6240d2b647775d7e03a6b16f9c116 100644
+index 567d6f230e33b2e7d9ff8e3f768fc4c94704eaac..7a4e4b3a60a868bb8848f701b77fea5229212506 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1249,6 +1249,9 @@ interface NetworkContext {
+@@ -1252,6 +1252,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
