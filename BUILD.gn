@@ -855,7 +855,7 @@ if (is_mac) {
     if (is_asan) {
       # crashpad_handler requires the ASan runtime at its @executable_path.
       sources += [ "$root_out_dir/libclang_rt.asan_osx_dynamic.dylib" ]
-      public_deps += [ "//build/config/sanitizers:copy_asan_runtime" ]
+      public_deps += [ "//build/config/sanitizers:copy_sanitizer_runtime" ]
     }
   }
 
