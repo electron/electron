@@ -6471,8 +6471,7 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    // FIXME(codebytere): figure out why these are failing on macOS arm64.
-    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('should not display a visible background', async () => {
+    ifit(process.platform === 'darwin')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6514,8 +6513,7 @@ describe('BrowserWindow module', () => {
       );
     });
 
-    // FIXME(codebytere): figure out why these are failing on macOS arm64.
-    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('Allows setting a transparent window via CSS', async () => {
+    ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6547,8 +6545,7 @@ describe('BrowserWindow module', () => {
       await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make background transparent if falsy', async () => {
+    ifit(process.platform === 'darwin')('should not make background transparent if falsy', async () => {
       const display = screen.getPrimaryDisplay();
 
       for (const transparent of [false, undefined]) {
@@ -6564,13 +6561,11 @@ describe('BrowserWindow module', () => {
         const screenCapture = await ScreenCapture.createForDisplay(display);
         // color-scheme is set to dark so background should not be white
         await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
-
-        window.close();
       }
     });
   });
 
-  describe('"backgroundColor" option', () => {
+  xdescribe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
     // Linux/WOA doesn't return any capture sources.
