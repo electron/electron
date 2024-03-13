@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index a6f1863cc5c8ad3cfcb32650544e6421675ac996..55da111ec29044c1e0a0b6284039e574718b0c68 100644
+index 577d2ad516dc748ff067f1bdcae35317bff602d1..252c754aa1f0145879d95a971af486512fc14fa0 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -717,6 +717,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
+@@ -718,6 +718,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
    return false;
  }
  

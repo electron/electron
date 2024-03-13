@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 53801ccd1e8b2eadbe19d3eaf6b03186b2620a1c..c58175e595b98ed5a5e8c369e4c05f229edf5d2d 100644
+index 782d1644f08a70cbb5ebb02d51e32461f4bf5024..80e0efe22eb80741e568280b07a6fcf72e57b6a4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ec5c896baa6c7ad16f4d43dcb86683dba465f8f4..113aa2da812903a46487092372084b89a710a5c2 100644
+index f7f6a8923572f39387bb99a388baa139e406e6b5..c9982187f00fdcce92dd83d8379543728a5db6bd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -488,6 +488,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index ec5c896baa6c7ad16f4d43dcb86683dba465f8f4..113aa2da812903a46487092372084b89
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1702,6 +1704,7 @@ test("content_browsertests") {
+@@ -1703,6 +1705,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index ec5c896baa6c7ad16f4d43dcb86683dba465f8f4..113aa2da812903a46487092372084b89
  
    public_deps = [
      ":test_interfaces",
-@@ -2928,6 +2931,7 @@ test("content_unittests") {
+@@ -2930,6 +2933,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -817,7 +817,7 @@ index ea3578a727bdccfff74a4112529af9ac052165f2..a0f8573a4401922e4bc9de9b0faf1195
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e76cdc5d2 100644
+index 88bac8b417b0618fdb3c14ec4eb3c5006edd58d9..16106d3122cfc18f32285e4f475b01a56095d3d5 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -23,7 +23,9 @@
@@ -830,7 +830,7 @@ index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e
  @class CALayer;
  
  namespace ui {
-@@ -76,8 +78,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
+@@ -78,8 +80,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
                         const gfx::PresentationFeedback& feedback);
    void PopulateCALayerParameters();
  
@@ -842,7 +842,7 @@ index b994079339dc0aebd86dac807645f81c2974fb96..b05e35c8eabccfd3147030d03453d78e
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 59413520a9e2d601a80c90072089bed228460730..2ad023d3f9a2eb557a8f65c1727bf032a1aadbfd 100644
+index 9599d5f3351942d9d71d4c019ecefa35370e8327..268e05efbf68fc556763d18d54934ee711fa1d45 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -75,12 +75,16 @@
