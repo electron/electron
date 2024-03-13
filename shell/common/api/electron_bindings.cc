@@ -277,8 +277,8 @@ v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
     v8::Isolate* isolate) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   int processor_count = base::SysInfo::NumberOfProcessors();
-  dict.Set("percentCPUUsage",
-           metrics->GetPlatformIndependentCPUUsage() / processor_count);
+  std::optional<double> usage = metrics->GetPlatformIndependentCPUUsage();
+  dict.Set("percentCPUUsage", usage.value_or(0) / processor_count);
 
   // NB: This will throw NOTIMPLEMENTED() on Windows
   // For backwards compatibility, we'll return 0
