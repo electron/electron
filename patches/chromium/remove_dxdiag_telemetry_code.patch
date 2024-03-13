@@ -1,0 +1,1118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rafael Cintron <rafael.cintron@microsoft.com>
+Date: Fri, 8 Mar 2024 17:50:29 +0000
+Subject: Remove DXDiag telemetry code.
+
+Code which gathers telemetry using the DxDiag APIs is causing crashes
+due to memory corruption issues in that code.
+
+Rather than attempting to work around, better to simply delete it.
+
+OBSOLETE_HISTOGRAM[GPU.Memory.Device]=Replaced by OnDeviceModel.DeviceHeapSize.*
+
+Bug: 40069218
+Change-Id: I393bbad55df2d15bb29d0eb9fc2d1a12ffb13cee
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5337304
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Rafael Cintron <rafael.cintron@microsoft.com>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Maggie Chen <magchen@chromium.org>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1270261}
+
+diff --git a/components/viz/service/gl/gpu_service_impl.cc b/components/viz/service/gl/gpu_service_impl.cc
+index 8993f0b96f37a513f8024c9a76092484d29968a2..feabdcb400e8daafd0dc3c4c21194069d150fc68 100644
+--- a/components/viz/service/gl/gpu_service_impl.cc
++++ b/components/viz/service/gl/gpu_service_impl.cc
+@@ -39,7 +39,6 @@
+ #include "gpu/command_buffer/service/shared_image/shared_image_manager.h"
+ #include "gpu/command_buffer/service/skia_utils.h"
+ #include "gpu/command_buffer/service/sync_point_manager.h"
+-#include "gpu/config/dx_diag_node.h"
+ #include "gpu/config/gpu_finch_features.h"
+ #include "gpu/config/gpu_info_collector.h"
+ #include "gpu/config/gpu_switches.h"
+diff --git a/components/viz/service/gl/info_collection_gpu_service_impl.cc b/components/viz/service/gl/info_collection_gpu_service_impl.cc
+index 20d56c44ac6c6b50a18d491fe1078b029784e38b..46adee18dd006023cc7d2c155fef5ae7d7097384 100644
+--- a/components/viz/service/gl/info_collection_gpu_service_impl.cc
++++ b/components/viz/service/gl/info_collection_gpu_service_impl.cc
+@@ -7,7 +7,6 @@
+ #include <utility>
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/task/thread_pool.h"
+-#include "gpu/config/dx_diag_node.h"
+ #include "gpu/config/gpu_info_collector.h"
+ 
+ namespace viz {
+@@ -90,40 +89,4 @@ void InfoCollectionGpuServiceImpl::GetGpuSupportedVulkanVersionInfoOnMain(
+                        base::BindOnce(std::move(callback), vulkan_version));
+ }
+ 
+-void InfoCollectionGpuServiceImpl::RequestDxDiagNodeInfo(
+-    RequestDxDiagNodeInfoCallback callback) {
+-  DCHECK(io_runner_->BelongsToCurrentThread());
+-
+-  main_runner_->PostTask(
+-      FROM_HERE,
+-      base::BindOnce(&InfoCollectionGpuServiceImpl::RequestDxDiagNodeInfoOnMain,
+-                     base::Unretained(this), std::move(callback)));
+-}
+-
+-void InfoCollectionGpuServiceImpl::RequestDxDiagNodeInfoOnMain(
+-    RequestDxDiagNodeInfoCallback callback) {
+-  DCHECK(main_runner_->BelongsToCurrentThread());
+-
+-  // We can continue on shutdown here because we're not writing any critical
+-  // state in this task.
+-  base::ThreadPool::CreateCOMSTATaskRunner(
+-      {base::TaskPriority::USER_VISIBLE,
+-       base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN})
+-      ->PostTaskAndReplyWithResult(
+-          FROM_HERE, base::BindOnce([]() {
+-            gpu::DxDiagNode dx_diag_node;
+-            gpu::GetDxDiagnostics(&dx_diag_node);
+-            return dx_diag_node;
+-          }),
+-          base::BindOnce(
+-              [](RequestDxDiagNodeInfoCallback callback,
+-                 scoped_refptr<base::SingleThreadTaskRunner> io_runner,
+-                 const gpu::DxDiagNode& dx_diag_node) {
+-                io_runner->PostTask(
+-                    FROM_HERE,
+-                    base::BindOnce(std::move(callback), dx_diag_node));
+-              },
+-              std::move(callback), io_runner_));
+-}
+-
+ }  // namespace viz
+diff --git a/components/viz/service/gl/info_collection_gpu_service_impl.h b/components/viz/service/gl/info_collection_gpu_service_impl.h
+index 46ac1eb1f5e67c760d1a239d085d66bdc5e4c205..2790d39d5be07fa1f3914fc44f4cdb7cad7e837c 100644
+--- a/components/viz/service/gl/info_collection_gpu_service_impl.h
++++ b/components/viz/service/gl/info_collection_gpu_service_impl.h
+@@ -37,8 +37,6 @@ class VIZ_SERVICE_EXPORT InfoCollectionGpuServiceImpl
+ 
+   ~InfoCollectionGpuServiceImpl() override;
+ 
+-  void RequestDxDiagNodeInfo(RequestDxDiagNodeInfoCallback callback) override;
+-
+   void GetGpuSupportedDx12VersionAndDevicePerfInfo(
+       GetGpuSupportedDx12VersionAndDevicePerfInfoCallback callback) override;
+ 
+@@ -49,7 +47,6 @@ class VIZ_SERVICE_EXPORT InfoCollectionGpuServiceImpl
+   void BindOnIO(
+       mojo::PendingReceiver<mojom::InfoCollectionGpuService> pending_receiver);
+ 
+-  void RequestDxDiagNodeInfoOnMain(RequestDxDiagNodeInfoCallback callback);
+ 
+   void GetGpuSupportedDx12VersionAndDevicePerfInfoOnMain(
+       GetGpuSupportedDx12VersionAndDevicePerfInfoCallback callback);
+diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
+index d94c18d16f5ad80f14120c249e83e795c50c5106..2a414e5b29791f9fac230555f44129eb1a632719 100644
+--- a/content/browser/gpu/gpu_data_manager_impl.cc
++++ b/content/browser/gpu/gpu_data_manager_impl.cc
+@@ -97,11 +97,11 @@ bool GpuDataManagerImpl::GpuAccessAllowed(std::string* reason) {
+   return private_->GpuAccessAllowed(reason);
+ }
+ 
+-void GpuDataManagerImpl::RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
++void GpuDataManagerImpl::RequestDx12VulkanVideoGpuInfoIfNeeded(
+     GpuInfoRequest request,
+     bool delayed) {
+   base::AutoLock auto_lock(lock_);
+-  private_->RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(request, delayed);
++  private_->RequestDx12VulkanVideoGpuInfoIfNeeded(request, delayed);
+ }
+ 
+ bool GpuDataManagerImpl::IsEssentialGpuInfoAvailable() {
+@@ -164,12 +164,6 @@ void GpuDataManagerImpl::UpdateGpuInfo(
+ }
+ 
+ #if BUILDFLAG(IS_WIN)
+-void GpuDataManagerImpl::UpdateDxDiagNode(
+-    const gpu::DxDiagNode& dx_diagnostics) {
+-  base::AutoLock auto_lock(lock_);
+-  private_->UpdateDxDiagNode(dx_diagnostics);
+-}
+-
+ void GpuDataManagerImpl::UpdateDx12Info(uint32_t d3d12_feature_level) {
+   base::AutoLock auto_lock(lock_);
+   private_->UpdateDx12Info(d3d12_feature_level);
+@@ -196,11 +190,6 @@ void GpuDataManagerImpl::UpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) {
+   private_->UpdateDXGIInfo(std::move(dxgi_info));
+ }
+ 
+-void GpuDataManagerImpl::UpdateDxDiagNodeRequestStatus(bool request_continues) {
+-  base::AutoLock auto_lock(lock_);
+-  private_->UpdateDxDiagNodeRequestStatus(request_continues);
+-}
+-
+ void GpuDataManagerImpl::UpdateDx12RequestStatus(bool request_continues) {
+   base::AutoLock auto_lock(lock_);
+   private_->UpdateDx12RequestStatus(request_continues);
+diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
+index 5a8e6d184e276833034c604be8c48e01122207e2..ced6f932b5bb03d27780d80d158a2eacf206e498 100644
+--- a/content/browser/gpu/gpu_data_manager_impl.h
++++ b/content/browser/gpu/gpu_data_manager_impl.h
+@@ -51,15 +51,13 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+                                           public display::DisplayObserver {
+  public:
+   enum GpuInfoRequest {
+-    kGpuInfoRequestDxDiag = 1 << 0,
+-    kGpuInfoRequestDx12 = 1 << 1,
+-    kGpuInfoRequestVulkan = 1 << 2,
+-    kGpuInfoRequestDawnInfo = 1 << 3,
++    kGpuInfoRequestDx12 = 1 << 0,
++    kGpuInfoRequestVulkan = 1 << 1,
++    kGpuInfoRequestDawnInfo = 1 << 2,
+     kGpuInfoRequestDx12Vulkan = kGpuInfoRequestVulkan | kGpuInfoRequestDx12,
+-    kGpuInfoRequestVideo = 1 << 4,
+-    kGpuInfoRequestAll = kGpuInfoRequestDxDiag | kGpuInfoRequestDx12 |
+-                         kGpuInfoRequestVulkan | kGpuInfoRequestDawnInfo |
+-                         kGpuInfoRequestVideo,
++    kGpuInfoRequestVideo = 1 << 3,
++    kGpuInfoRequestAll = kGpuInfoRequestDx12 | kGpuInfoRequestVulkan |
++                         kGpuInfoRequestDawnInfo | kGpuInfoRequestVideo,
+   };
+ 
+   // Getter for the singleton. This will return NULL on failure.
+@@ -98,7 +96,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+   void StartUmaTimer();
+ 
+   // Requests complete GPU info if it has not already been requested
+-  void RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
++  void RequestDx12VulkanVideoGpuInfoIfNeeded(
+       GpuDataManagerImpl::GpuInfoRequest request,
+       bool delayed);
+ 
+@@ -109,13 +107,11 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+       const gpu::GPUInfo& gpu_info,
+       const std::optional<gpu::GPUInfo>& gpu_info_for_hardware_gpu);
+ #if BUILDFLAG(IS_WIN)
+-  void UpdateDxDiagNode(const gpu::DxDiagNode& dx_diagnostics);
+   void UpdateDx12Info(uint32_t d3d12_feature_level);
+   void UpdateVulkanInfo(uint32_t vulkan_version);
+   void UpdateDevicePerfInfo(const gpu::DevicePerfInfo& device_perf_info);
+   void UpdateOverlayInfo(const gpu::OverlayInfo& overlay_info);
+   void UpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info);
+-  void UpdateDxDiagNodeRequestStatus(bool request_continues);
+   void UpdateDx12RequestStatus(bool request_continues);
+   void UpdateVulkanRequestStatus(bool request_continues);
+   bool Dx12Requested() const;
+diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
+index c12a96390350b5bd14a43506d8a35e4b0dec4924..e166bf2c609e1881804908eae69a5018d39694eb 100644
+--- a/content/browser/gpu/gpu_data_manager_impl_private.cc
++++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
+@@ -487,26 +487,6 @@ class HDRProxy {
+   }
+ };
+ 
+-int GetMaxMemory(const gpu::DxDiagNode& node) {
+-  int memory = 0;
+-  auto it = node.values.find("szDisplayMemoryEnglish");
+-  if (it != node.values.end()) {
+-    base::StringToInt(it->second, &memory);
+-  }
+-
+-  for (const auto& child : node.children) {
+-    memory = std::max(memory, GetMaxMemory(child.second));
+-  }
+-  return memory;
+-}
+-
+-void RecordDxDiagNodeHistograms(const gpu::DxDiagNode& dx_diagnostics) {
+-  int gpu_memory = GetMaxMemory(dx_diagnostics);
+-  if (gpu_memory != 0) {
+-    base::UmaHistogramMemoryLargeMB("GPU.Memory.Device", gpu_memory);
+-  }
+-}
+-
+ #endif  // BUILDFLAG(IS_WIN)
+ }  // anonymous namespace
+ 
+@@ -664,13 +644,9 @@ bool GpuDataManagerImplPrivate::GpuAccessAllowedForHardwareGpu(
+   return gpu_access_allowed_for_hardware_gpu_;
+ }
+ 
+-void GpuDataManagerImplPrivate::RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
++void GpuDataManagerImplPrivate::RequestDx12VulkanVideoGpuInfoIfNeeded(
+     GpuDataManagerImpl::GpuInfoRequest request,
+     bool delayed) {
+-  if (request & GpuDataManagerImpl::kGpuInfoRequestDxDiag) {
+-    RequestDxDiagNodeData(delayed);
+-  }
+-
+   if (request & GpuDataManagerImpl::kGpuInfoRequestDx12)
+     RequestGpuSupportedDx12Version(delayed);
+ 
+@@ -686,50 +662,6 @@ void GpuDataManagerImplPrivate::RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
+   }
+ }
+ 
+-void GpuDataManagerImplPrivate::RequestDxDiagNodeData(bool delayed) {
+-#if BUILDFLAG(IS_WIN)
+-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+-  base::TimeDelta delta;
+-  if (delayed &&
+-      !command_line->HasSwitch(switches::kNoDelayForDX12VulkanInfoCollection)) {
+-    delta = base::Seconds(120);
+-  }
+-
+-  base::OnceClosure task = base::BindOnce([]() {
+-    GpuDataManagerImpl* manager = GpuDataManagerImpl::GetInstance();
+-    // No info collection for software GL implementation (id == 0xffff) or
+-    // abnormal situation (id == 0). There are a few crash reports on
+-    // exit_or_terminate_process() during process teardown. The GPU ID
+-    // should be available by the time this task starts to run.
+-    // This request comes from chrome://gpu page.
+-    const gpu::GPUInfo::GPUDevice gpu = manager->GetGPUInfo().gpu;
+-    if ((gpu.vendor_id == 0xffff && gpu.device_id == 0xffff) ||
+-        (gpu.vendor_id == 0 && gpu.device_id == 0)) {
+-      manager->UpdateDxDiagNodeRequestStatus(false);
+-      return;
+-    }
+-
+-    GpuProcessHost* host = GpuProcessHost::Get(GPU_PROCESS_KIND_INFO_COLLECTION,
+-                                               true /* force_create */);
+-    if (!host) {
+-      manager->UpdateDxDiagNodeRequestStatus(false);
+-      return;
+-    }
+-
+-    manager->UpdateDxDiagNodeRequestStatus(true);
+-    host->info_collection_gpu_service()->RequestDxDiagNodeInfo(
+-        base::BindOnce([](const gpu::DxDiagNode& dx_diagnostics) {
+-          GpuDataManagerImpl* manager = GpuDataManagerImpl::GetInstance();
+-          manager->UpdateDxDiagNode(dx_diagnostics);
+-          manager->TerminateInfoCollectionGpuProcess();
+-          RecordDxDiagNodeHistograms(dx_diagnostics);
+-        }));
+-  });
+-
+-  GetUIThreadTaskRunner({})->PostDelayedTask(FROM_HERE, std::move(task), delta);
+-#endif
+-}
+-
+ void GpuDataManagerImplPrivate::RequestGpuSupportedDx12Version(bool delayed) {
+ #if BUILDFLAG(IS_WIN)
+   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+@@ -1047,18 +979,14 @@ void GpuDataManagerImplPrivate::UpdateGpuInfo(
+     const std::optional<gpu::GPUInfo>& gpu_info_for_hardware_gpu) {
+ #if BUILDFLAG(IS_WIN)
+   // If GPU process crashes and launches again, GPUInfo will be sent back from
+-  // the new GPU process again, and may overwrite the DX12, Vulkan, DxDiagNode
+-  // info we already collected. This is to make sure it doesn't happen.
+-  gpu::DxDiagNode dx_diagnostics = gpu_info_.dx_diagnostics;
++  // the new GPU process again, and may overwrite the DX12, Vulkan, info we
++  // already collected. This is to make sure it doesn't happen.
+   uint32_t d3d12_feature_level = gpu_info_.d3d12_feature_level;
+   uint32_t vulkan_version = gpu_info_.vulkan_version;
+ #endif
+   gpu_info_ = gpu_info;
+   RecordDiscreteGpuHistograms(gpu_info_);
+ #if BUILDFLAG(IS_WIN)
+-  if (!dx_diagnostics.IsEmpty()) {
+-    gpu_info_.dx_diagnostics = dx_diagnostics;
+-  }
+   if (d3d12_feature_level != 0) {
+     gpu_info_.d3d12_feature_level = d3d12_feature_level;
+   }
+@@ -1113,13 +1041,6 @@ void GpuDataManagerImplPrivate::UpdateGpuInfo(
+ }
+ 
+ #if BUILDFLAG(IS_WIN)
+-void GpuDataManagerImplPrivate::UpdateDxDiagNode(
+-    const gpu::DxDiagNode& dx_diagnostics) {
+-  gpu_info_.dx_diagnostics = dx_diagnostics;
+-  // No need to call GetContentClient()->SetGpuInfo().
+-  NotifyGpuInfoUpdate();
+-}
+-
+ void GpuDataManagerImplPrivate::UpdateDx12Info(uint32_t d3d12_feature_level) {
+   gpu_info_.d3d12_feature_level = d3d12_feature_level;
+   gpu_info_dx12_valid_ = true;
+@@ -1161,15 +1082,6 @@ void GpuDataManagerImplPrivate::UpdateDXGIInfo(
+       FROM_HERE, base::BindOnce(&HDRProxy::GotResult, std::move(dxgi_info)));
+ }
+ 
+-void GpuDataManagerImplPrivate::UpdateDxDiagNodeRequestStatus(
+-    bool request_continues) {
+-  gpu_info_dx_diag_requested_ = true;
+-  gpu_info_dx_diag_request_failed_ = !request_continues;
+-
+-  if (gpu_info_dx_diag_request_failed_)
+-    NotifyGpuInfoUpdate();
+-}
+-
+ void GpuDataManagerImplPrivate::UpdateDx12RequestStatus(
+     bool request_continues) {
+   gpu_info_dx12_requested_ = true;
+@@ -1197,11 +1109,7 @@ bool GpuDataManagerImplPrivate::VulkanRequested() const {
+ }
+ 
+ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+-  // Wait until DxDiag, DX12/Vulkan and DevicePerfInfo requests are all
+-  // complete.
+-  if (gpu_info_dx_diag_requested_ && !gpu_info_dx_diag_request_failed_ &&
+-      gpu_info_.dx_diagnostics.IsEmpty())
+-    return;
++  // Wait until DX12/Vulkan and DevicePerfInfo requests are all complete.
+   // gpu_info_dx12_valid_ is always updated before device_perf_info
+   if (gpu_info_dx12_requested_ && !gpu_info_dx12_request_failed_ &&
+       !gpu::GetDevicePerfInfo().has_value())
+@@ -1238,25 +1146,16 @@ void GpuDataManagerImplPrivate::PostCreateThreads() {
+   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+   if (command_line->HasSwitch(switches::kNoDelayForDX12VulkanInfoCollection)) {
+     // This is for the info collection test of the gpu integration tests.
+-    RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
++    RequestDx12VulkanVideoGpuInfoIfNeeded(
+         GpuDataManagerImpl::kGpuInfoRequestDx12Vulkan,
+         /*delayed=*/false);
+   } else {
+-    GpuDataManagerImpl::GpuInfoRequest request =
+-        GpuDataManagerImpl::kGpuInfoRequestDx12;
+-
+-    static BASE_FEATURE(kCollectGpuMemoryMetrics, "CollectGpuMemoryMetrics",
+-                        base::FEATURE_ENABLED_BY_DEFAULT);
+-    if (base::FeatureList::IsEnabled(kCollectGpuMemoryMetrics)) {
+-      request = static_cast<GpuDataManagerImpl::GpuInfoRequest>(
+-          request | GpuDataManagerImpl::kGpuInfoRequestDxDiag);
+-    }
+-
+     // Launch the info collection GPU process to collect DX12 support
+     // information for UMA at the start of the browser.
+     // Not to affect Chrome startup, this is done in a delayed mode,  i.e., 120
+     // seconds after Chrome startup.
+-    RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(request, /*delayed=*/true);
++    RequestDx12VulkanVideoGpuInfoIfNeeded(
++        GpuDataManagerImpl::kGpuInfoRequestDx12, /*delayed=*/true);
+   }
+ 
+   // Observer for display change.
+@@ -1531,17 +1430,6 @@ void GpuDataManagerImplPrivate::HandleGpuSwitch() {
+ 
+ void GpuDataManagerImplPrivate::OnDisplayAdded(
+     const display::Display& new_display) {
+-#if BUILDFLAG(IS_WIN)
+-  if (gpu_info_dx_diag_requested_) {
+-    // Reset DxDiag flags so the data can be updated again
+-    gpu_info_dx_diag_requested_ = false;
+-    gpu_info_.dx_diagnostics = gpu::DxDiagNode();
+-    // This DxDiag request goes to the unsandboxed GPU info collection GPU
+-    // process while the notification below goes to the sandboxed GPU process.
+-    RequestDxDiagNodeData(/*delayed=*/false);
+-  }
+-#endif
+-
+   base::AutoUnlock unlock(owner_->lock_);
+ 
+   // Notify observers in the browser process.
+@@ -1557,17 +1445,6 @@ void GpuDataManagerImplPrivate::OnDisplayAdded(
+ 
+ void GpuDataManagerImplPrivate::OnDisplayRemoved(
+     const display::Display& old_display) {
+-#if BUILDFLAG(IS_WIN)
+-  if (gpu_info_dx_diag_requested_) {
+-    // Reset DxDiag flags so the data can be updated again
+-    gpu_info_dx_diag_requested_ = false;
+-    gpu_info_.dx_diagnostics = gpu::DxDiagNode();
+-    // This DxDiag request goes to the unsandboxed GPU info collection GPU
+-    // process while the notification below goes to the sandboxed GPU process.
+-    RequestDxDiagNodeData(/*delayed=*/false);
+-  }
+-#endif
+-
+   base::AutoUnlock unlock(owner_->lock_);
+ 
+   // Notify observers in the browser process.
+@@ -1584,17 +1461,6 @@ void GpuDataManagerImplPrivate::OnDisplayRemoved(
+ void GpuDataManagerImplPrivate::OnDisplayMetricsChanged(
+     const display::Display& display,
+     uint32_t changed_metrics) {
+-#if BUILDFLAG(IS_WIN)
+-  if (gpu_info_dx_diag_requested_) {
+-    // Reset DxDiag flags so the data can be updated again
+-    gpu_info_dx_diag_requested_ = false;
+-    gpu_info_.dx_diagnostics = gpu::DxDiagNode();
+-    // This DxDiag request goes to the unsandboxed GPU info collection GPU
+-    // process while the notification below goes to the sandboxed GPU process.
+-    RequestDxDiagNodeData(/*delayed=*/false);
+-  }
+-#endif
+-
+   base::AutoUnlock unlock(owner_->lock_);
+ 
+   // Notify observers in the browser process.
+diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
+index 28306624ec6f7f9a7848e65787d4dc5aa738a76c..af68fc04861caf7b050f8afd65bbda0cc8685e45 100644
+--- a/content/browser/gpu/gpu_data_manager_impl_private.h
++++ b/content/browser/gpu/gpu_data_manager_impl_private.h
+@@ -54,7 +54,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+   std::vector<std::string> GetDawnInfoList() const;
+   bool GpuAccessAllowed(std::string* reason) const;
+   bool GpuAccessAllowedForHardwareGpu(std::string* reason) const;
+-  void RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
++  void RequestDx12VulkanVideoGpuInfoIfNeeded(
+       GpuDataManagerImpl::GpuInfoRequest request,
+       bool delayed);
+   bool IsEssentialGpuInfoAvailable() const;
+@@ -73,14 +73,12 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+       const gpu::GPUInfo& gpu_info,
+       const std::optional<gpu::GPUInfo>& optional_gpu_info_for_hardware_gpu);
+ #if BUILDFLAG(IS_WIN)
+-  void UpdateDxDiagNode(const gpu::DxDiagNode& dx_diagnostics);
+   void UpdateDx12Info(uint32_t d3d12_feature_level);
+   void UpdateVulkanInfo(uint32_t vulkan_version);
+   void UpdateDevicePerfInfo(const gpu::DevicePerfInfo& device_perf_info);
+ 
+   void UpdateOverlayInfo(const gpu::OverlayInfo& overlay_info);
+   void UpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info);
+-  void UpdateDxDiagNodeRequestStatus(bool request_continues);
+   void UpdateDx12RequestStatus(bool request_continues);
+   void UpdateVulkanRequestStatus(bool request_continues);
+   bool Dx12Requested() const;
+@@ -232,7 +230,6 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+   // Notify all observers whenever there is a GPU info update.
+   void NotifyGpuInfoUpdate();
+ 
+-  void RequestDxDiagNodeData(bool delayed);
+   void RequestGpuSupportedDx12Version(bool delayed);
+   void RequestGpuSupportedVulkanVersion(bool delayed);
+   void RequestDawnInfo(bool delayed, bool collect_metrics);
+@@ -246,8 +243,6 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+   gpu::GPUInfo gpu_info_;
+   gl::GpuPreference active_gpu_heuristic_ = gl::GpuPreference::kDefault;
+ #if BUILDFLAG(IS_WIN)
+-  bool gpu_info_dx_diag_requested_ = false;
+-  bool gpu_info_dx_diag_request_failed_ = false;
+   bool gpu_info_dx12_valid_ = false;
+   bool gpu_info_dx12_requested_ = false;
+   bool gpu_info_dx12_request_failed_ = false;
+diff --git a/content/browser/gpu/gpu_internals_ui.cc b/content/browser/gpu/gpu_internals_ui.cc
+index 65b12e86320c4c3c6b2b65fa59743a8effd53997..9943d7a03dd1f5cd52a2b4e3684451e33205424a 100644
+--- a/content/browser/gpu/gpu_internals_ui.cc
++++ b/content/browser/gpu/gpu_internals_ui.cc
+@@ -85,28 +85,6 @@ void CreateAndAddGpuHTMLSource(BrowserContext* browser_context) {
+   source->AddResourcePath("", IDR_GPU_GPU_INTERNALS_HTML);
+ }
+ 
+-#if BUILDFLAG(IS_WIN)
+-// Output DxDiagNode tree as nested array of {description,value} pairs
+-base::Value::List DxDiagNodeToList(const gpu::DxDiagNode& node) {
+-  base::Value::List list;
+-  for (std::map<std::string, std::string>::const_iterator it =
+-      node.values.begin();
+-      it != node.values.end();
+-      ++it) {
+-    list.Append(display::BuildGpuInfoEntry(it->first, it->second));
+-  }
+-
+-  for (std::map<std::string, gpu::DxDiagNode>::const_iterator it =
+-      node.children.begin();
+-      it != node.children.end();
+-      ++it) {
+-    base::Value sublist(DxDiagNodeToList(it->second));
+-    list.Append(display::BuildGpuInfoEntry(it->first, std::move(sublist)));
+-  }
+-  return list;
+-}
+-#endif  // BUILDFLAG(IS_WIN)
+-
+ std::string GPUDeviceToString(const gpu::GPUInfo::GPUDevice& gpu) {
+   std::string vendor = base::StringPrintf("0x%04x", gpu.vendor_id);
+   if (!gpu.vendor_string.empty())
+@@ -316,13 +294,6 @@ base::Value::Dict GetGpuInfo() {
+       GetBasicGpuInfo(gpu_info, gpu_feature_info, gpu_extra_info);
+   info.Set("basicInfo", std::move(basic_info));
+ 
+-#if BUILDFLAG(IS_WIN)
+-  base::Value::List dx_info;
+-  if (gpu_info.dx_diagnostics.children.size())
+-    dx_info = DxDiagNodeToList(gpu_info.dx_diagnostics);
+-  info.Set("diagnostics", std::move(dx_info));
+-#endif
+-
+ #if BUILDFLAG(ENABLE_VULKAN)
+   if (gpu_info.vulkan_info) {
+     auto blob = gpu_info.vulkan_info->Serialize();
+@@ -804,10 +775,9 @@ void GpuMessageHandler::HandleGetGpuInfo(const base::Value::List& args) {
+ 
+   // Tell GpuDataManager it should have full GpuInfo. If the
+   // Gpu process has not run yet, this will trigger its launch.
+-  GpuDataManagerImpl::GetInstance()
+-      ->RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
+-          GpuDataManagerImpl::kGpuInfoRequestAll,
+-          /*delayed=*/false);
++  GpuDataManagerImpl::GetInstance()->RequestDx12VulkanVideoGpuInfoIfNeeded(
++      GpuDataManagerImpl::kGpuInfoRequestAll,
++      /*delayed=*/false);
+ 
+   // Send current snapshot of gpu info. Any future updates will be communicated
+   // via the OnGpuInfoUpdate() callback.
+diff --git a/gpu/config/BUILD.gn b/gpu/config/BUILD.gn
+index 4ff377cd8efa85a74061255dad87cf08658fe38e..3af936f1f09f2b39b3bd964dd1f1e9b29a06f453 100644
+--- a/gpu/config/BUILD.gn
++++ b/gpu/config/BUILD.gn
+@@ -132,8 +132,6 @@ source_set("config_sources") {
+   sources = [
+     "device_perf_info.cc",
+     "device_perf_info.h",
+-    "dx_diag_node.cc",
+-    "dx_diag_node.h",
+     "gpu_blocklist.cc",
+     "gpu_blocklist.h",
+     "gpu_control_list.cc",
+@@ -234,10 +232,7 @@ source_set("config_sources") {
+     sources += [ "gpu_info_collector_android.cc" ]
+   }
+   if (is_win) {
+-    sources += [
+-      "gpu_dx_diagnostics_win.cc",
+-      "gpu_info_collector_win.cc",
+-    ]
++    sources += [ "gpu_info_collector_win.cc" ]
+     libs = [
+       "dxgi.lib",
+       "dxguid.lib",
+diff --git a/gpu/config/dx_diag_node.cc b/gpu/config/dx_diag_node.cc
+deleted file mode 100644
+index f221946fa28e2c6b607076c76a135606ef6126ee..0000000000000000000000000000000000000000
+--- a/gpu/config/dx_diag_node.cc
++++ /dev/null
+@@ -1,19 +0,0 @@
+-// Copyright 2010 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#include "gpu/config/dx_diag_node.h"
+-
+-namespace gpu {
+-
+-DxDiagNode::DxDiagNode() = default;
+-
+-DxDiagNode::DxDiagNode(const DxDiagNode& other) = default;
+-
+-DxDiagNode::~DxDiagNode() = default;
+-
+-bool DxDiagNode::IsEmpty() const {
+-  return values.empty() && children.empty();
+-}
+-
+-}  // namespace gpu
+diff --git a/gpu/config/dx_diag_node.h b/gpu/config/dx_diag_node.h
+deleted file mode 100644
+index 1612e6f71d253fb82f9bebe82178a8dff12a809b..0000000000000000000000000000000000000000
+--- a/gpu/config/dx_diag_node.h
++++ /dev/null
+@@ -1,30 +0,0 @@
+-// Copyright 2010 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-//
+-// A tree of name value pairs that report contain DirectX diagnostic
+-// information.
+-
+-#ifndef GPU_CONFIG_DX_DIAG_NODE_H_
+-#define GPU_CONFIG_DX_DIAG_NODE_H_
+-
+-#include <map>
+-#include <string>
+-
+-#include "gpu/gpu_export.h"
+-
+-namespace gpu {
+-
+-struct GPU_EXPORT DxDiagNode {
+-  DxDiagNode();
+-  DxDiagNode(const DxDiagNode& other);
+-  ~DxDiagNode();
+-  bool IsEmpty() const;
+-
+-  std::map<std::string, std::string> values;
+-  std::map<std::string, DxDiagNode> children;
+-};
+-
+-}  // namespace gpu
+-
+-#endif  // GPU_CONFIG_DX_DIAG_NODE_H_
+diff --git a/gpu/config/gpu_dx_diagnostics_win.cc b/gpu/config/gpu_dx_diagnostics_win.cc
+deleted file mode 100644
+index c808495630549ee74a7eccd6073722e326e15f8f..0000000000000000000000000000000000000000
+--- a/gpu/config/gpu_dx_diagnostics_win.cc
++++ /dev/null
+@@ -1,133 +0,0 @@
+-// Copyright 2011 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-//
+-// Functions to enumerate the Dx Diagnostic Tool hierarchy and build up
+-// a tree of nodes with name / value properties.
+-
+-#define INITGUID
+-#include <dxdiag.h>
+-#include <windows.h>
+-
+-#include "base/strings/string_number_conversions.h"
+-#include "base/strings/utf_string_conversions.h"
+-#include "base/win/com_init_util.h"
+-#include "gpu/config/gpu_info_collector.h"
+-
+-namespace gpu {
+-
+-namespace {
+-
+-// Traverses the IDxDiagContainer tree and populates a tree of DxDiagNode
+-// structures that contains property name / value pairs and subtrees of DirectX
+-// diagnostic information.
+-void RecurseDiagnosticTree(DxDiagNode* output,
+-                           IDxDiagContainer* container,
+-                           int depth) {
+-  HRESULT hr;
+-
+-  VARIANT variant;
+-  VariantInit(&variant);
+-
+-  DWORD prop_count;
+-  hr = container->GetNumberOfProps(&prop_count);
+-  if (SUCCEEDED(hr)) {
+-    for (DWORD i = 0; i < prop_count; i++) {
+-      WCHAR prop_name16[256];
+-      hr = container->EnumPropNames(i, prop_name16, std::size(prop_name16));
+-      if (SUCCEEDED(hr)) {
+-        std::string prop_name8 = base::WideToUTF8(prop_name16);
+-
+-        hr = container->GetProp(prop_name16, &variant);
+-        if (SUCCEEDED(hr)) {
+-          switch (variant.vt) {
+-            case VT_UI4:
+-              output->values[prop_name8] = base::NumberToString(variant.ulVal);
+-              break;
+-            case VT_I4:
+-              output->values[prop_name8] = base::NumberToString(variant.lVal);
+-              break;
+-            case VT_BOOL:
+-              output->values[prop_name8] = variant.boolVal ? "true" : "false";
+-              break;
+-            case VT_BSTR:
+-              output->values[prop_name8] = base::WideToUTF8(variant.bstrVal);
+-              break;
+-            default:
+-              break;
+-          }
+-
+-          // Clear the variant (this is needed to free BSTR memory).
+-          VariantClear(&variant);
+-        }
+-      }
+-    }
+-  }
+-
+-  if (depth > 0) {
+-    DWORD child_count;
+-    hr = container->GetNumberOfChildContainers(&child_count);
+-    if (SUCCEEDED(hr)) {
+-      for (DWORD i = 0; i < child_count; i++) {
+-        WCHAR child_name16[256];
+-        hr = container->EnumChildContainerNames(i, child_name16,
+-                                                std::size(child_name16));
+-        if (SUCCEEDED(hr)) {
+-          std::string child_name8 = base::WideToUTF8(child_name16);
+-          DxDiagNode* output_child = &output->children[child_name8];
+-
+-          IDxDiagContainer* child_container = nullptr;
+-          hr = container->GetChildContainer(child_name16, &child_container);
+-          if (SUCCEEDED(hr)) {
+-            RecurseDiagnosticTree(output_child, child_container, depth - 1);
+-
+-            child_container->Release();
+-          }
+-        }
+-      }
+-    }
+-  }
+-}
+-}  // namespace anonymous
+-
+-bool GetDxDiagnostics(DxDiagNode* output) {
+-  // CLSID_DxDiagProvider is configured as an STA only object.
+-  base::win::AssertComApartmentType(base::win::ComApartmentType::STA);
+-
+-  HRESULT hr;
+-  bool success = false;
+-  IDxDiagProvider* provider = nullptr;
+-  hr = CoCreateInstance(CLSID_DxDiagProvider, nullptr, CLSCTX_INPROC_SERVER,
+-                        IID_IDxDiagProvider,
+-                        reinterpret_cast<void**>(&provider));
+-  if (SUCCEEDED(hr)) {
+-    DXDIAG_INIT_PARAMS params = { sizeof(params) };
+-    params.dwDxDiagHeaderVersion = DXDIAG_DX9_SDK_VERSION;
+-    params.bAllowWHQLChecks = FALSE;
+-    params.pReserved = nullptr;
+-
+-    hr = provider->Initialize(&params);
+-    if (SUCCEEDED(hr)) {
+-      IDxDiagContainer* root = nullptr;
+-      hr = provider->GetRootContainer(&root);
+-      if (SUCCEEDED(hr)) {
+-        // Limit to the DisplayDevices subtree. The tree in its entirity is
+-        // enormous and only this branch contains useful information.
+-        IDxDiagContainer* display_devices = nullptr;
+-        hr = root->GetChildContainer(L"DxDiag_DisplayDevices",
+-                                     &display_devices);
+-        if (SUCCEEDED(hr)) {
+-          RecurseDiagnosticTree(output, display_devices, 1);
+-          success = true;
+-          display_devices->Release();
+-        }
+-
+-        root->Release();
+-      }
+-    }
+-    provider->Release();
+-  }
+-
+-  return success;
+-}
+-}  // namespace gpu
+diff --git a/gpu/config/gpu_info.cc b/gpu/config/gpu_info.cc
+index 2dde12c68ccc35f59606be857a7c91d8d19bf0f4..79e1b502cdd45d705796be60c56aaae6cdedd783 100644
+--- a/gpu/config/gpu_info.cc
++++ b/gpu/config/gpu_info.cc
+@@ -328,7 +328,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
+     uint32_t macos_specific_texture_target;
+ #endif  // BUILDFLAG(IS_MAC)
+ #if BUILDFLAG(IS_WIN)
+-    DxDiagNode dx_diagnostics;
+     uint32_t d3d12_feature_level;
+     uint32_t vulkan_version;
+     OverlayInfo overlay_info;
+diff --git a/gpu/config/gpu_info.h b/gpu/config/gpu_info.h
+index 93b3ea53fe2aa8a80daabb8524a94d1d866b25ae..699a859294ea026cb3c23bca57e1f7732f6b0f53 100644
+--- a/gpu/config/gpu_info.h
++++ b/gpu/config/gpu_info.h
+@@ -20,7 +20,6 @@
+ #include "base/time/time.h"
+ #include "base/version.h"
+ #include "build/build_config.h"
+-#include "gpu/config/dx_diag_node.h"
+ #include "gpu/gpu_export.h"
+ #include "gpu/vulkan/buildflags.h"
+ #include "ui/gfx/geometry/size.h"
+@@ -463,9 +462,6 @@ struct GPU_EXPORT GPUInfo {
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ #if BUILDFLAG(IS_WIN)
+-  // The information returned by the DirectX Diagnostics Tool.
+-  DxDiagNode dx_diagnostics;
+-
+   // The supported d3d feature level in the gpu driver;
+   uint32_t d3d12_feature_level = 0;
+ 
+diff --git a/gpu/config/gpu_info_collector.h b/gpu/config/gpu_info_collector.h
+index ef55eec6b2dc15ed09226b62cf1e1a713fc1f4ee..fd3e36dbfe1b6f7d274eaddb94bb75671f40361c 100644
+--- a/gpu/config/gpu_info_collector.h
++++ b/gpu/config/gpu_info_collector.h
+@@ -47,7 +47,6 @@ GPU_EXPORT bool CollectContextGraphicsInfo(GPUInfo* gpu_info);
+ 
+ #if BUILDFLAG(IS_WIN)
+ // Collect the DirectX Disagnostics information about the attached displays.
+-GPU_EXPORT bool GetDxDiagnostics(DxDiagNode* output);
+ GPU_EXPORT void GetGpuSupportedD3D12Version(
+     uint32_t& d3d12_feature_level,
+     uint32_t& highest_shader_model_version);
+diff --git a/gpu/ipc/common/BUILD.gn b/gpu/ipc/common/BUILD.gn
+index 02b27180e7ca4086183f8907033c68e3b6b13f17..f21d21198a23e42b0a19a3a867aab018b9ce8610 100644
+--- a/gpu/ipc/common/BUILD.gn
++++ b/gpu/ipc/common/BUILD.gn
+@@ -333,7 +333,6 @@ mojom("interfaces") {
+     "capabilities.mojom",
+     "context_result.mojom",
+     "device_perf_info.mojom",
+-    "dx_diag_node.mojom",
+     "gpu_disk_cache_type.mojom",
+     "gpu_feature_info.mojom",
+     "gpu_info.mojom",
+@@ -416,16 +415,6 @@ mojom("interfaces") {
+       traits_sources = [ "device_perf_info_mojom_traits.cc" ]
+       traits_headers = [ "device_perf_info_mojom_traits.h" ]
+     },
+-    {
+-      types = [
+-        {
+-          mojom = "gpu.mojom.DxDiagNode"
+-          cpp = "::gpu::DxDiagNode"
+-        },
+-      ]
+-      traits_sources = [ "dx_diag_node_mojom_traits.cc" ]
+-      traits_headers = [ "dx_diag_node_mojom_traits.h" ]
+-    },
+     {
+       types = [
+         {
+diff --git a/gpu/ipc/common/dx_diag_node.mojom b/gpu/ipc/common/dx_diag_node.mojom
+deleted file mode 100644
+index 4bf8ad7841111ef715958b12ab789efaa6f3ae05..0000000000000000000000000000000000000000
+--- a/gpu/ipc/common/dx_diag_node.mojom
++++ /dev/null
+@@ -1,11 +0,0 @@
+-// Copyright 2014 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-module gpu.mojom;
+-
+-// Corresponds to |gpu::DxDiagNode| in file gpu/config/dx_diag_node.h
+-struct DxDiagNode {
+-  map<string, string> values;
+-  map<string, DxDiagNode> children;
+-};
+diff --git a/gpu/ipc/common/dx_diag_node_mojom_traits.cc b/gpu/ipc/common/dx_diag_node_mojom_traits.cc
+deleted file mode 100644
+index da7e574f5e41a216389add12e69e271ff97cac44..0000000000000000000000000000000000000000
+--- a/gpu/ipc/common/dx_diag_node_mojom_traits.cc
++++ /dev/null
+@@ -1,16 +0,0 @@
+-// Copyright 2016 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#include "gpu/ipc/common/dx_diag_node_mojom_traits.h"
+-
+-namespace mojo {
+-
+-// static
+-bool StructTraits<gpu::mojom::DxDiagNodeDataView, gpu::DxDiagNode>::Read(
+-    gpu::mojom::DxDiagNodeDataView data,
+-    gpu::DxDiagNode* out) {
+-  return data.ReadValues(&out->values) && data.ReadChildren(&out->children);
+-}
+-
+-}  // namespace mojo
+diff --git a/gpu/ipc/common/dx_diag_node_mojom_traits.h b/gpu/ipc/common/dx_diag_node_mojom_traits.h
+deleted file mode 100644
+index e80146f74ff85c3461f27eebe6a9546cdd6a1a3d..0000000000000000000000000000000000000000
+--- a/gpu/ipc/common/dx_diag_node_mojom_traits.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-// Copyright 2016 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#ifndef GPU_IPC_COMMON_DX_DIAG_NODE_MOJOM_TRAITS_H_
+-#define GPU_IPC_COMMON_DX_DIAG_NODE_MOJOM_TRAITS_H_
+-
+-#include "gpu/ipc/common/dx_diag_node.mojom-shared.h"
+-
+-#include "gpu/config/dx_diag_node.h"
+-#include "gpu/gpu_export.h"
+-
+-namespace mojo {
+-
+-template <>
+-struct GPU_EXPORT
+-    StructTraits<gpu::mojom::DxDiagNodeDataView, gpu::DxDiagNode> {
+-  static bool Read(gpu::mojom::DxDiagNodeDataView data, gpu::DxDiagNode* out);
+-
+-  static const std::map<std::string, std::string>& values(
+-      const gpu::DxDiagNode& node) {
+-    return node.values;
+-  }
+-
+-  static const std::map<std::string, gpu::DxDiagNode>& children(
+-      const gpu::DxDiagNode& node) {
+-    return node.children;
+-  }
+-};
+-
+-}  // namespace mojo
+-
+-#endif  // GPU_IPC_COMMON_DX_DIAG_NODE_MOJOM_TRAITS_H_
+diff --git a/gpu/ipc/common/gpu_info.mojom b/gpu/ipc/common/gpu_info.mojom
+index 4c6d224451ad6cc94760d3a24e6fd02c1ebcfd63..a5b3623aec31849fcfced820dd5b8bc3864eaa4e 100644
+--- a/gpu/ipc/common/gpu_info.mojom
++++ b/gpu/ipc/common/gpu_info.mojom
+@@ -5,7 +5,6 @@
+ // gpu/config/gpu_info.h
+ module gpu.mojom;
+ 
+-import "gpu/ipc/common/dx_diag_node.mojom";
+ [EnableIf=is_win]
+ import "gpu/ipc/common/luid.mojom";
+ import "mojo/public/mojom/base/time.mojom";
+@@ -188,8 +187,6 @@ struct GpuInfo {
+   [EnableIf=is_mac]
+   uint32 macos_specific_texture_target;
+ 
+-  [EnableIf=is_win]
+-  DxDiagNode dx_diagnostics;
+   [EnableIf=is_win]
+   uint32 d3d12_feature_level;
+   [EnableIf=is_win]
+diff --git a/gpu/ipc/common/gpu_info_mojom_traits.cc b/gpu/ipc/common/gpu_info_mojom_traits.cc
+index 12fffb104aafe52f412e07614f5acdac6d47b99b..894299b2e10aa1ed2af8da5cae3e2ead32bc5074 100644
+--- a/gpu/ipc/common/gpu_info_mojom_traits.cc
++++ b/gpu/ipc/common/gpu_info_mojom_traits.cc
+@@ -536,7 +536,6 @@ bool StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo>::Read(
+          data.ReadDirectRenderingVersion(&out->direct_rendering_version) &&
+ #if BUILDFLAG(IS_WIN)
+          data.ReadOverlayInfo(&out->overlay_info) &&
+-         data.ReadDxDiagnostics(&out->dx_diagnostics) &&
+ #endif
+          data.ReadVideoDecodeAcceleratorSupportedProfiles(
+              &out->video_decode_accelerator_supported_profiles) &&
+diff --git a/gpu/ipc/common/gpu_info_mojom_traits.h b/gpu/ipc/common/gpu_info_mojom_traits.h
+index 33ea2f05bd2b385db12011e8e8bb0eec68ff096e..e40952b22bdd262d4f09503c3e324df6afff9c7d 100644
+--- a/gpu/ipc/common/gpu_info_mojom_traits.h
++++ b/gpu/ipc/common/gpu_info_mojom_traits.h
+@@ -10,7 +10,6 @@
+ #include "build/build_config.h"
+ #include "gpu/config/gpu_info.h"
+ #include "gpu/gpu_export.h"
+-#include "gpu/ipc/common/dx_diag_node_mojom_traits.h"
+ #include "gpu/ipc/common/gpu_info.mojom.h"
+ #include "ui/gfx/buffer_types.h"
+ #include "ui/gfx/geometry/mojom/geometry_mojom_traits.h"
+@@ -375,10 +374,6 @@ struct GPU_EXPORT StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo> {
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ #if BUILDFLAG(IS_WIN)
+-  static const gpu::DxDiagNode& dx_diagnostics(const gpu::GPUInfo& input) {
+-    return input.dx_diagnostics;
+-  }
+-
+   static uint32_t d3d12_feature_level(const gpu::GPUInfo& input) {
+     return input.d3d12_feature_level;
+   }
+diff --git a/gpu/ipc/common/mojom_traits_unittest.cc b/gpu/ipc/common/mojom_traits_unittest.cc
+index 53d7fd91b3210fa9ce4678f6ede8ae0594be2aa8..59ff6ea033a496e7b301ffef0c7677d9d9d6592f 100644
+--- a/gpu/ipc/common/mojom_traits_unittest.cc
++++ b/gpu/ipc/common/mojom_traits_unittest.cc
+@@ -35,11 +35,6 @@ class StructTraitsTest : public testing::Test, public mojom::TraitsTestService {
+ 
+  private:
+   // TraitsTestService:
+-  void EchoDxDiagNode(const DxDiagNode& d,
+-                      EchoDxDiagNodeCallback callback) override {
+-    std::move(callback).Run(d);
+-  }
+-
+   void EchoGpuDevice(const GPUInfo::GPUDevice& g,
+                      EchoGpuDeviceCallback callback) override {
+     std::move(callback).Run(g);
+@@ -92,18 +87,6 @@ class StructTraitsTest : public testing::Test, public mojom::TraitsTestService {
+ 
+ }  // namespace
+ 
+-TEST_F(StructTraitsTest, DxDiagNode) {
+-  gpu::DxDiagNode input;
+-  input.values["abc"] = "123";
+-  mojo::Remote<mojom::TraitsTestService> remote = GetTraitsTestRemote();
+-  gpu::DxDiagNode output;
+-  remote->EchoDxDiagNode(input, &output);
+-
+-  gpu::DxDiagNode test_dx_diag_node;
+-  test_dx_diag_node.values["abc"] = "123";
+-  EXPECT_EQ(test_dx_diag_node.values, output.values);
+-}
+-
+ TEST_F(StructTraitsTest, GPUDevice) {
+   gpu::GPUInfo::GPUDevice input;
+   // Using the values from gpu/config/gpu_info_collector_unittest.cc::nvidia_gpu
+@@ -173,7 +156,6 @@ TEST_F(StructTraitsTest, GpuInfo) {
+   const bool supports_overlays = true;
+   const OverlaySupport yuy2_overlay_support = OverlaySupport::kScaling;
+   const OverlaySupport nv12_overlay_support = OverlaySupport::kNone;
+-  const DxDiagNode dx_diagnostics;
+ #endif
+   const VideoDecodeAcceleratorSupportedProfiles
+       video_decode_accelerator_supported_profiles;
+@@ -212,7 +194,6 @@ TEST_F(StructTraitsTest, GpuInfo) {
+   input.overlay_info.supports_overlays = supports_overlays;
+   input.overlay_info.yuy2_overlay_support = yuy2_overlay_support;
+   input.overlay_info.nv12_overlay_support = nv12_overlay_support;
+-  input.dx_diagnostics = dx_diagnostics;
+ #endif
+   input.video_decode_accelerator_supported_profiles =
+       video_decode_accelerator_supported_profiles;
+@@ -275,7 +256,6 @@ TEST_F(StructTraitsTest, GpuInfo) {
+   EXPECT_EQ(supports_overlays, output.overlay_info.supports_overlays);
+   EXPECT_EQ(yuy2_overlay_support, output.overlay_info.yuy2_overlay_support);
+   EXPECT_EQ(nv12_overlay_support, output.overlay_info.nv12_overlay_support);
+-  EXPECT_EQ(dx_diagnostics.values, output.dx_diagnostics.values);
+ #endif
+   for (size_t i = 0; i < video_decode_accelerator_supported_profiles.size();
+        i++) {
+diff --git a/gpu/ipc/common/traits_test_service.mojom b/gpu/ipc/common/traits_test_service.mojom
+index a1872e195e196379615004e7f11e4b2efd1d3fa8..b6e01456a16b9306b4452fc8fe1d1d21b8e4b50b 100644
+--- a/gpu/ipc/common/traits_test_service.mojom
++++ b/gpu/ipc/common/traits_test_service.mojom
+@@ -4,7 +4,6 @@
+ 
+ module gpu.mojom;
+ 
+-import "gpu/ipc/common/dx_diag_node.mojom";
+ import "gpu/ipc/common/gpu_info.mojom";
+ import "gpu/ipc/common/gpu_preferences.mojom";
+ import "gpu/ipc/common/mailbox.mojom";
+@@ -15,9 +14,6 @@ import "gpu/ipc/common/sync_token.mojom";
+ // serialization and deserialization.
+ interface TraitsTestService {
+ 
+-  [Sync]
+-  EchoDxDiagNode(DxDiagNode d) => (DxDiagNode pass);
+-
+   [Sync]
+   EchoGpuDevice(GpuDevice g) => (GpuDevice pass);
+ 
+diff --git a/services/viz/privileged/mojom/gl/gpu_service.mojom b/services/viz/privileged/mojom/gl/gpu_service.mojom
+index f42bb1e2aad2ac75cb625a3b87e2bccc9af840e9..a2e7aef304491e9e7bec1f0ec898ce27df4969e9 100644
+--- a/services/viz/privileged/mojom/gl/gpu_service.mojom
++++ b/services/viz/privileged/mojom/gl/gpu_service.mojom
+@@ -19,7 +19,6 @@ import "components/chromeos_camera/common/mjpeg_decode_accelerator.mojom";
+ [EnableIf=is_chromeos_ash]
+ import "components/chromeos_camera/common/jpeg_encode_accelerator.mojom";
+ import "gpu/ipc/common/device_perf_info.mojom";
+-import "gpu/ipc/common/dx_diag_node.mojom";
+ import "gpu/ipc/common/gpu_disk_cache_type.mojom";
+ import "gpu/ipc/common/gpu_feature_info.mojom";
+ import "gpu/ipc/common/gpu_info.mojom";
+diff --git a/services/viz/privileged/mojom/gl/info_collection_gpu_service.mojom b/services/viz/privileged/mojom/gl/info_collection_gpu_service.mojom
+index 9d85f0f18e6a65cda1c7222c780b7ef59d2eb988..8bb9a62822ef2a95bd295e28db447f674f650405 100644
+--- a/services/viz/privileged/mojom/gl/info_collection_gpu_service.mojom
++++ b/services/viz/privileged/mojom/gl/info_collection_gpu_service.mojom
+@@ -5,15 +5,10 @@
+ module viz.mojom;
+ 
+ import "gpu/ipc/common/device_perf_info.mojom";
+-import "gpu/ipc/common/dx_diag_node.mojom";
+ import "gpu/ipc/common/gpu_info.mojom";
+ 
+ // This InfoCollectionGpuService is provided by the info-collection GPU process.
+ interface InfoCollectionGpuService {
+-  // Requests DX diagnostic data on Windows for about:gpu.
+-  [EnableIf=is_win]
+-  RequestDxDiagNodeInfo() => (gpu.mojom.DxDiagNode dx_diagnostics);
+-
+   // Requests DX12 version and device performance info on Windows.
+   // Returning whether DX12 are supported, and if yes, the supported feature
+   // level, together with a few metrics related to the device's performance for
+diff --git a/tools/metrics/histograms/metadata/gpu/histograms.xml b/tools/metrics/histograms/metadata/gpu/histograms.xml
+index c8ff0d04eafd25803e503c3bbb494c339d1f42be..cea35d834553dfd720282976ea8231885d18cf88 100644
+--- a/tools/metrics/histograms/metadata/gpu/histograms.xml
++++ b/tools/metrics/histograms/metadata/gpu/histograms.xml
+@@ -991,16 +991,6 @@ chromium-metrics-reviews@google.com.
+   </summary>
+ </histogram>
+ 
+-<histogram name="GPU.Memory.Device" units="MB" expires_after="2024-08-30">
+-  <owner>cduvall@chromium.org</owner>
+-  <owner>swarm-team@google.com</owner>
+-  <summary>
+-    The GPU memory reported by the system as the
+-    &quot;szDisplayMemoryEnglish&quot; property from DxDiagnostics. This is only
+-    reported on Windows after a 2 minute delay after startup.
+-  </summary>
+-</histogram>
+-
+ <histogram name="Gpu.Metal.ReadWriteTextureSupport"
+     enum="MetalReadWriteTextureSupportTier" expires_after="2024-06-30">
+   <owner>cwallez@chromium.org</owner>
