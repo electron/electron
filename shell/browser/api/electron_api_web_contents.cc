@@ -2572,14 +2572,6 @@ v8::Local<v8::Value> WebContents::GetNavigationEntryForIndex(int index) const {
   gin_helper::Dictionary navigation_entry_dict(isolate,
                                                v8::Object::New(isolate));
 
-  content::FaviconStatus favicon = entry->GetFavicon();
-
-  GURL favicon_bitmap_url;
-  if (!favicon.image.IsEmpty()) {
-    const SkBitmap* favicon_bitmap = favicon.image.ToSkBitmap();
-    favicon_bitmap_url = GURL(webui::GetBitmapDataUrl(*favicon_bitmap));
-  }
-
   navigation_entry_dict.Set("url", entry->GetURL().spec());
   navigation_entry_dict.Set("title", entry->GetTitleForDisplay());
 
