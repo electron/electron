@@ -1965,7 +1965,7 @@ describe('<webview> tag', function () {
         expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(0)')).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
       });
 
-      it('should return null navigation entry given an invalid index larger than total number of navigation entries', async () => {
+      it('should return null given an invalid index larger than history length', async () => {
         await loadWebViewAndWaitForEvent(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
