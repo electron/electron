@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 12 Mar 2024 12:18:24 +0100
+Subject: fix: add missing perfetto::Flow and TRACE_EVENT includes
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/5022285
+
+Fixes the following build errors:
+
+../../third_party/blink/renderer/core/workers/worker_global_scope.cc:581:19: error: no member named 'Flow' in namespace 'perfetto'
+  581 |         perfetto::Flow::Global(message_event->GetTraceId()));
+      |         ~~~~~~~~~~^
+
+../../third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc:245:19: error: no member named 'Flow' in namespace 'perfetto'
+  245 |         perfetto::Flow::Global(event->GetTraceId()));
+      |         ~~~~~~~~~~^
+
+../../third_party/blink/renderer/core/workers/worker_global_scope.cc:576:5: error: use of undeclared identifier 'TRACE_EVENT'
+  576 |     TRACE_EVENT(
+      |     ^
+
+../../third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc:240:5: error: use of undeclared identifier 'TRACE_EVENT'
+  240 |     TRACE_EVENT(
+      |     ^
+
+resultant of missing includes for:
+
+- base/trace_event/typed_macros.h
+- third_party/perfetto/include/perfetto/tracing/track_event_args.h
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/5365462.
+
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
+index c45d61a923ab391933bf3852add770fc18942bf5..c4af39b8b29dcf8f59214bb2054c74b9988253ff 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <memory>
+ #include "base/feature_list.h"
++#include "base/trace_event/typed_macros.h"
+ #include "services/network/public/mojom/fetch_api.mojom-blink.h"
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/tokens/tokens.h"
+@@ -33,6 +34,7 @@
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/wtf.h"
++#include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
+ 
+ namespace blink {
+ 
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+index 996e5b563ee486f50aada96aaa9f25ac392e6424..3422670a53aeb8cd55174cc1af482aef086005e1 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+@@ -28,6 +28,7 @@
+ #include "third_party/blink/renderer/core/workers/worker_global_scope.h"
+ 
+ #include "base/memory/scoped_refptr.h"
++#include "base/trace_event/typed_macros.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "services/metrics/public/cpp/mojo_ukm_recorder.h"
+ #include "third_party/blink/public/common/privacy_budget/identifiability_study_settings.h"
+@@ -88,6 +89,7 @@
+ #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ #include "third_party/blink/renderer/platform/weborigin/security_policy.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
++#include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
+ 
+ namespace blink {
+ namespace {
