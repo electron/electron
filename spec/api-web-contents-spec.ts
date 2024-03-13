@@ -553,6 +553,11 @@ describe('webContents module', () => {
       w = new BrowserWindow({ show: false });
     });
     afterEach(closeAllWindows);
+    it('should fetch default navigation entry when no urls are loaded', async () => {
+      const result = w.webContents.getNavigationEntryForIndex(0);
+      expect(result).to.deep.equal({ url: '', title: '' });
+    });
+
     it('should fetch navigation entry given a valid index', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
