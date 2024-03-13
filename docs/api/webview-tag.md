@@ -345,7 +345,7 @@ Clears the navigation history.
 
 #### `<webview>.length()`
 
-Returns `Integer` - history length.
+Returns `Integer` - History length.
 
 #### `<webview>.getActiveIndex()`
 

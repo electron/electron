@@ -1146,7 +1146,7 @@ Clears the navigation history.
 
 #### `contents.length()`
 
-Returns `Integer` - history length.
+Returns `Integer` - History length.
 
 #### `contents.getActiveIndex()`
 
