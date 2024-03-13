@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <watfordcalvin@gmail.com>
+Date: Tue, 12 Mar 2024 20:37:32 +0000
+Subject: Fix primary display race condition crash on Windows
+
+In rare cases, it's possible for the OS to provide us a list of displays
+that doesn't contain the primary display. This situation causes
+undefined behavior (dereference past vector end) and a crash to occur in
+|display::win::(anon)::DisplayInfosToScreenWinDisplays| on builds
+without DCHECK enabled.
+
+Bug: 40265302
+Change-Id: I2154bedea84478a84147c380610c85d4ea3f703a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5353255
+Reviewed-by: David Bienvenu <davidbienvenu@chromium.org>
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1271793}
+
+diff --git a/ui/display/win/screen_win.cc b/ui/display/win/screen_win.cc
+index 6b6189a124e3fde423b129ef34f2c96186b4e86d..1040e583c6c50ba01efc44faa1882657ff8f63b2 100644
+--- a/ui/display/win/screen_win.cc
++++ b/ui/display/win/screen_win.cc
+@@ -324,7 +324,13 @@ std::vector<ScreenWinDisplay> DisplayInfosToScreenWinDisplays(
+       display_infos_remaining, [](const internal::DisplayInfo& display_info) {
+         return display_info.screen_rect().origin().IsOrigin();
+       });
+-  DCHECK(primary_display_iter != display_infos_remaining.end());
++
++  // If we can't find the primary display, we likely witnessed a race condition
++  // when querying the OS for display info. We expect another OS notification to
++  // trigger this lookup again soon, so just return an empty list for now.
++  if (primary_display_iter == display_infos_remaining.end()) {
++    return {};
++  }
+ 
+   // Build the tree and determine DisplayPlacements along the way.
+   DisplayLayoutBuilder builder(primary_display_iter->id());
