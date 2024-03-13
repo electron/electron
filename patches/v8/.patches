@@ -7,3 +7,4 @@ merged_turboshaft_fix_structuraloptimization_because_of_ignored.patch
 cherry-pick-389ea9be7d68.patch
 cherry-pick-46cb67e3b296.patch
 cherry-pick-78dd4b31847a.patch
+merged_wasm_add_bounds_check_in_tier-up_of_wasm-to-js_wrapper.patch
