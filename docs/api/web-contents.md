@@ -1144,6 +1144,25 @@ Returns `boolean` - Whether the web page can go to `offset`.
 
 Clears the navigation history.
 
+#### `contents.length()`
+
+Returns `Integer` - history length.
+
+#### `contents.getActiveIndex()`
+
+Returns `Integer` - The index from which we would go back/forward or reload.
+
+#### `contents.getNavigationEntryForIndex(index)`
+
+* `index` Integer
+
+Returns `Object`:
+
+* `url` string - The url of the navigation entry at the given index.
+* `title` string - The app title set by the page to be displayed on the tab.
+
+If index is invalid (greater than history length or less than 0), then null will be returned.
+
 #### `contents.goBack()`
 
 Makes the browser go back a web page.
