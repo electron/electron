@@ -21,7 +21,7 @@ index ed3e6adb24447099cd0029cc3f0664fa16170500..ae375c62f00d1e0ae4de5aa67bcf6dd0
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6ec4fe3d7ebbd62ddefc85c23feccd275e8adb9e..b73497742bd973cfc08c603367a18fcb44756caf 100644
+index 94bdb6af22750141e5d35188567cd459569b3573..948657302bed48eccdefad5d833a7f1335950aca 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4577,6 +4577,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -66,7 +66,7 @@ index 268f150c1cc987ea020192a86ab886ed206a0064..05856b853112072a18ec16589f2b442f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 97be51019b36fef0b95b4812f682ff41544cbfe3..f013173e680898584561734942364755d3676363 100644
+index 30dbccab08ea62edd8d6ed99eb768a4d9d37e793..635c5cf91b6429fe2baf22e9141b8b6c5cd20ef2 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -725,6 +725,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 97be51019b36fef0b95b4812f682ff41544cbfe3..f013173e680898584561734942364755
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ac3754651b1569a07b666d8a101a08386393137c..25641beab08c2f575494f23850b1e22f1958569b 100644
+index d94e6dc4c4c5e6d09d42a18b51faca74e99d9047..5cf32c86f88ed385242fac7b0dc9a912650ee2a1 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -183,6 +183,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index ac3754651b1569a07b666d8a101a08386393137c..25641beab08c2f575494f23850b1e22f
  }  // namespace network
  
  namespace sandbox {
-@@ -1219,6 +1220,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1221,6 +1222,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

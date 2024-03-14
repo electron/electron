@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c9f0292cae20a3aa206092a44220d336cb511070..3330a093fb229b823c394440c40405ee628f28e9 100644
+index 32cc658fd3fb617fb293906cec8b7b36902b716c..11e2ea571304bfffc7b6467417e2d24f9cf9009b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1048,6 +1048,7 @@ component("base") {
+@@ -1050,6 +1050,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 782d1644f08a70cbb5ebb02d51e32461f4bf5024..80e0efe22eb80741e568280b07a6fcf72e57b6a4 100644
+index 7c53d9b2015c6c57f19c23c52c1aab3ffeea15ea..f6b7ba2f3512dcd2528323bb6853452cc9eab1a6 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -471,7 +471,7 @@ index 782d1644f08a70cbb5ebb02d51e32461f4bf5024..80e0efe22eb80741e568280b07a6fcf7
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..ec631b1f0925928546e855faa5e968f5aec2b225 100644
+index abdf8a8d28639dc3735d3dc5bd309c237917f087..c08c84c3b243a6bafd358a34cbb391a6d6a9262a 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -500,7 +500,7 @@ index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..ec631b1f0925928546e855faa5e968f5
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -620,6 +624,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -621,6 +625,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -508,7 +508,7 @@ index 4655ac4756f8655a5a21ef21a1a7286b2c5f0e46..ec631b1f0925928546e855faa5e968f5
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -648,6 +653,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -649,6 +654,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f7f6a8923572f39387bb99a388baa139e406e6b5..c9982187f00fdcce92dd83d8379543728a5db6bd 100644
+index f8b1c7ebd90d032411b1885a183403162ec3ff0c..ec30a59330641562d0e3597a4fe12368408dadde 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -488,6 +488,7 @@ static_library("test_support") {
@@ -1318,7 +1318,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c6a38a54eee355342fad2918cb5f7992415df2ce..bdebe67853c8509357889fd4ab977c553307ff89 100644
+index 45f575dead4a033161fa6f585fa83cd79663899f..627c68574176af4931a5e5e1c6fcaf673d5ffba5 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -311,6 +311,7 @@ component("core") {
