@@ -95,6 +95,7 @@
 #include "extensions/renderer/extension_web_view_helper.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
+#include "shell/renderer/extensions/electron_extensions_renderer_api_provider.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -242,6 +243,9 @@ void RendererClientBase::RenderThreadStarted() {
 
   extensions_renderer_client_ =
       std::make_unique<ElectronExtensionsRendererClient>();
+  extensions_renderer_client_->AddAPIProvider(
+      std::make_unique<ElectronExtensionsRendererAPIProvider>());
+  extensions_renderer_client_->RenderThreadStarted();
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
@@ -398,13 +402,14 @@ bool RendererClientBase::OverrideCreatePlugin(
   return true;
 }
 
-void RendererClientBase::GetSupportedKeySystems(
-    media::GetSupportedKeySystemsCB cb) {
+std::unique_ptr<media::KeySystemSupportObserver>
+RendererClientBase::GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) {
 #if BUILDFLAG(ENABLE_WIDEVINE)
   GetChromeKeySystems(std::move(cb));
 #else
   std::move(cb).Run({});
 #endif
+  return nullptr;
 }
 
 void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {

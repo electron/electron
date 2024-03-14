@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 10 Mar 2024 16:59:30 +0100
+Subject: Deprecate vector<v8::Local> in v8
+
+Adapts for changes in https://chromium-review.googlesource.com/c/v8/v8/+/4866222.
+
+This patch can be removed when Electron upgrades to a version of Node.js that
+contains the above CL.
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 3182a5e4aad2ba0be2b6769edb696b815ce39a61..e73f129d5f9ca3ea872fd5934d9d31a952a4a3fe 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -169,7 +169,9 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+         export_names[i] = export_name_val.As<String>();
+       }
+ 
+-      module = Module::CreateSyntheticModule(isolate, url, export_names,
++
++      module = Module::CreateSyntheticModule(isolate, url,
++        v8::MemorySpan<const Local<String>>(export_names.begin(), export_names.end()),
+         SyntheticModuleEvaluationStepsCallback);
+     } else {
+       ScriptCompiler::CachedData* cached_data = nullptr;

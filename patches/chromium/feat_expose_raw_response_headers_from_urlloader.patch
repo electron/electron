@@ -112,10 +112,10 @@ index e1fb008d12ae863df30dbffb07c7ec53f29f1333..3f5074bde0de54dc3fd57da756982634
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 184c5e1354b52c82578ed7d92984e48d32c32d96..b969a1febabcde08aea7a0f78c449d0da8042637 100644
+index 82b5b7332864bc317d867d17a6a112d24cc12ceb..7dd4325014a19b7ffe43c45d42c38530c3c6bdc1 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -675,6 +675,7 @@ URLLoader::URLLoader(
+@@ -692,6 +692,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index 184c5e1354b52c82578ed7d92984e48d32c32d96..b969a1febabcde08aea7a0f78c449d0d
    }
  
    // Store any cookies passed from the browser process to later attach them to
-@@ -713,7 +714,7 @@ URLLoader::URLLoader(
+@@ -730,7 +731,7 @@ URLLoader::URLLoader(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +132,7 @@ index 184c5e1354b52c82578ed7d92984e48d32c32d96..b969a1febabcde08aea7a0f78c449d0d
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1652,6 +1653,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1669,6 +1670,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,10 +153,10 @@ index 184c5e1354b52c82578ed7d92984e48d32c32d96..b969a1febabcde08aea7a0f78c449d0d
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 5529f9c5ffa79eab973b1bf5a896187a6aef349a..632308c2445a7425f79226819efc4b3707fe8112 100644
+index 054f08e0e6169512436ef0ed3735c940a90984cb..7e4eb7d9ce6537e5e4386b931a8208aa1d30590d 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -647,6 +647,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -650,6 +650,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

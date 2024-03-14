@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index 31c4d7c5d17763a38fd8a814efbc599663e6c816..c7e705030b39a961cd98610908e231cc71158002 100644
+index 0f386b68028a8398bdf6b851b16e244e5ba918bd..7a9519c2c172178ace67251151363ac0611e8503 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -32,7 +32,7 @@ index 31c4d7c5d17763a38fd8a814efbc599663e6c816..c7e705030b39a961cd98610908e231cc
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 5c33a83513e528ada518751899a7c640c14dacf7..4b14c0fa75e65fca91e100969fb9707120d199ca 100644
+index 90a6a0bf5c0e2d21f23badb284292a4f0c90178f..4f1b6acaa503cd085ff607d292ad0d4ee6731a56 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -43,7 +43,7 @@ index 5c33a83513e528ada518751899a7c640c14dacf7..4b14c0fa75e65fca91e100969fb97071
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -420,6 +421,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -425,6 +426,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // blocking user's access to the background web content.
    bool modal_context_menu = true;
  
@@ -65,7 +65,7 @@ index 5c33a83513e528ada518751899a7c640c14dacf7..4b14c0fa75e65fca91e100969fb97071
    // chrome, except for the cases where it would require lots of extra work for
    // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index f54089ad64fa5a3c19d084821d188be1a623d548..7129aa8c9c63d31b6eede9e57fa37e2ec3efd257 100644
+index 9960a1180a8e64d6e369936ab93aeb3417af5e8a..3f38e6e1289e1387e5fa54268c8efacda8fc3186 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -130,7 +130,7 @@ index f54089ad64fa5a3c19d084821d188be1a623d548..7129aa8c9c63d31b6eede9e57fa37e2e
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 54f3a206c8ab571563a5ac70ea32edbe844d2057..8376c8f8d5f56adea2ffce3d8d66a6dbc16a6ee6 100644
+index c3ff064deb240a16f2d9adcb233426fbc4795324..7fd096a61e3dd33de09a25ce2926b010486b2dc2 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";
