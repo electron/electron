@@ -17,7 +17,6 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/raw_ptr.h"
-#include "base/memory/scoped_refptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -202,11 +201,8 @@ std::vector<std::string> GetDataTypesFromMask(
 //
 // This type manages its own lifetime, deleting itself once the task finishes
 // completely.
-class ClearDataTask : public BrowsingDataRemover::Observer,
-                      public base::RefCountedThreadSafe<ClearDataTask> {
+class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
  public:
-  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
-
   // Starts running a task. This function will return before the task is
   // finished, but will resolve or reject the |promise| when it finishes.
   static void Run(
@@ -216,8 +212,7 @@ class ClearDataTask : public BrowsingDataRemover::Observer,
       std::vector<url::Origin> origins,
       BrowsingDataFilterBuilder::Mode filter_mode,
       BrowsingDataFilterBuilder::OriginMatchingMode origin_matching_mode) {
-    auto task =
-        base::MakeRefCounted<ClearDataTask>(remover, std::move(promise));
+    auto task = std::make_shared<ClearDataTask>(std::move(promise));
 
     // This method counts as an operation. This is important so we can call
     // `OnOperationFinished` at the end of this method as a fallback if all the
@@ -256,91 +251,106 @@ class ClearDataTask : public BrowsingDataRemover::Observer,
       for (auto const& origin : origins) {
         filter_builder->AddOrigin(origin);
       }
-      // TODO: if only one origin, should we set the storage key?
 
       task->StartOperation(remover, data_type_mask, std::move(filter_builder));
     }
 
-    // This static method counts as an operation. Note that this class should
-    // start out with a reference count of 1, so this call also balances out the
-    // reference count.
-    task->OnOperationFinished();
-  }
-
-  // BrowsingDataRemover::Observer:
-  void OnBrowsingDataRemoverDone(
-      BrowsingDataRemover::DataType failed_data_types) override {
-    failed_data_types_ |= failed_data_types;
-    OnOperationFinished();
-
-    // Matches the increment in |StartOperation|
-    Release();
+    // This static method counts as an operation.
+    task->OnOperationFinished(std::nullopt);
   }
 
  private:
-  // Friending |base::MakeRefCounted| so it can call the constructor
-  template <typename T, typename... Args>
-  friend scoped_refptr<T> base::MakeRefCounted(Args&&... args);
+  // An individiual |content::BrowsingDataRemover::Remove...| operation as part
+  // of a full |ClearDataTask|. This class manages its own lifetime, cleaning
+  // itself up after the operation completes and notifies the task of the
+  // result.
+  class ClearDataOperation : public BrowsingDataRemover::Observer {
+   public:
+    static void Run(std::shared_ptr<ClearDataTask> task,
+                    BrowsingDataRemover* remover,
+                    BrowsingDataRemover::DataType data_type_mask,
+                    std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
+      auto operation = new ClearDataOperation(task, remover);
 
-  ClearDataTask(BrowsingDataRemover* remover, gin_helper::Promise<void> promise)
-      : promise_(std::move(promise)) {
-    observation_.Observe(remover);
-  }
+      remover->RemoveWithFilterAndReply(base::Time::Min(), base::Time::Max(),
+                                        data_type_mask, kClearOriginTypeAll,
+                                        std::move(filter_builder), operation);
+    }
 
-  // Friending |base::RefCountedThreadSafe| so it can call the destructor
-  friend class base::RefCountedThreadSafe<ClearDataTask>;
-  ~ClearDataTask() override = default;
+    // BrowsingDataRemover::Observer:
+    void OnBrowsingDataRemoverDone(
+        BrowsingDataRemover::DataType failed_data_types) override {
+      task_->OnOperationFinished(failed_data_types);
+      delete this;
+    }
+
+   private:
+    ClearDataOperation(std::shared_ptr<ClearDataTask> task,
+                       BrowsingDataRemover* remover)
+        : task_(task) {
+      observation_.Observe(remover);
+    }
+
+    std::shared_ptr<ClearDataTask> task_;
+    base::ScopedObservation<BrowsingDataRemover, BrowsingDataRemover::Observer>
+        observation_{this};
+  };
+
+  explicit ClearDataTask(gin_helper::Promise<void> promise)
+      : promise_(std::move(promise)) {}
 
   void StartOperation(
       BrowsingDataRemover* remover,
       BrowsingDataRemover::DataType data_type_mask,
       std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
-    // This is matched with a release in |OnBrowsingDataRemoverDone|, for the
-    // reference to |this| given to |RemoveWithFilterAndReply| below.
-    AddRef();
     // Track this operation
     operations_running_ += 1;
 
-    remover->RemoveWithFilterAndReply(base::Time::Min(), base::Time::Max(),
-                                      data_type_mask, kClearOriginTypeAll,
-                                      std::move(filter_builder), this);
+    ClearDataOperation::Run(shared_from_this(), remover, data_type_mask,
+                            std::move(filter_builder));
   }
 
-  void OnOperationFinished() {
+  void OnOperationFinished(
+      std::optional<BrowsingDataRemover::DataType> failed_data_types) {
     DCHECK_GT(operations_running_, 0);
     operations_running_ -= 1;
 
-    // If this is the last operation, then return the result before releasing
-    // the last reference and being destroyed
+    if (failed_data_types.has_value()) {
+      failed_data_types_ |= failed_data_types.value();
+    }
+
+    // If this is the last operation, then the task is finished
     if (operations_running_ == 0) {
-      if (failed_data_types_ == 0ULL) {
-        promise_.Resolve();
-      } else {
-        v8::Isolate* isolate = promise_.isolate();
+      OnTaskFinished();
+    }
+  }
 
-        v8::Local<v8::Value> failed_data_types_array =
-            gin::ConvertToV8(isolate, GetDataTypesFromMask(failed_data_types_));
+  void OnTaskFinished() {
+    if (failed_data_types_ == 0ULL) {
+      promise_.Resolve();
+    } else {
+      v8::Isolate* isolate = promise_.isolate();
 
-        // Create a rich error object with extra detail about what data types
-        // failed
-        auto error = v8::Exception::Error(
-            gin::StringToV8(isolate, "Failed to clear data"));
-        error.As<v8::Object>()
-            ->Set(promise_.GetContext(),
-                  gin::StringToV8(isolate, "failedDataTypes"),
-                  failed_data_types_array)
-            .Check();
+      v8::Local<v8::Value> failed_data_types_array =
+          gin::ConvertToV8(isolate, GetDataTypesFromMask(failed_data_types_));
 
-        promise_.Reject(error);
-      }
+      // Create a rich error object with extra detail about what data types
+      // failed
+      auto error = v8::Exception::Error(
+          gin::StringToV8(isolate, "Failed to clear data"));
+      error.As<v8::Object>()
+          ->Set(promise_.GetContext(),
+                gin::StringToV8(isolate, "failedDataTypes"),
+                failed_data_types_array)
+          .Check();
+
+      promise_.Reject(error);
     }
   }
 
   int operations_running_ = 0;
   BrowsingDataRemover::DataType failed_data_types_ = 0ULL;
   gin_helper::Promise<void> promise_;
-  base::ScopedObservation<BrowsingDataRemover, BrowsingDataRemover::Observer>
-      observation_{this};
 };
 
 base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
