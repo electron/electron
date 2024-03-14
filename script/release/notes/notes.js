@@ -505,7 +505,9 @@ const removeSupercededStackUpdates = (commits) => {
     const newestSplit = newest[dep].version.split('.');
     const replacementSplit = version.split('.');
     for (let i = 0; i < newestSplit.length; i++) {
-      if (parseInt(replacementSplit[i]) > parseInt(newestSplit[i])) {
+      if (parseInt(replacementSplit[i]) < parseInt(newestSplit[i])) {
+        break;
+      } else if (parseInt(replacementSplit[i]) > parseInt(newestSplit[i])) {
         newest[dep] = { commit, version };
         break;
       }
