@@ -497,8 +497,18 @@ const removeSupercededStackUpdates = (commits) => {
       continue;
     }
     const [, dep, version] = match;
-    if (!newest[dep] || newest[dep].version < version) {
+    if (!newest[dep]) {
       newest[dep] = { commit, version };
+      continue;
+    }
+
+    const newestSplit = newest[dep].version.split('.');
+    const replacementSplit = version.split('.');
+    for (let i = 0; i < newestSplit.length; i++) {
+      if (parseInt(replacementSplit[i]) > parseInt(newestSplit[i])) {
+        newest[dep] = { commit, version };
+        break;
+      }
     }
   }
 
