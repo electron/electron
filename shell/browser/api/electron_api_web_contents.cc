@@ -2560,7 +2560,7 @@ int WebContents::GetActiveIndex() const {
   return web_contents()->GetController().GetCurrentEntryIndex();
 }
 
-v8::Local<v8::Value> WebContents::GetNavigationEntryForIndex(int index) const {
+v8::Local<v8::Value> WebContents::GetNavigationEntryAtIndex(int index) const {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   if (index >= GetHistoryLength() || index < 0) {
@@ -4372,8 +4372,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("goToIndex", &WebContents::GoToIndex)
       .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
-      .SetMethod("getNavigationEntryForIndex",
-                 &WebContents::GetNavigationEntryForIndex)
+      .SetMethod("getNavigationEntryAtIndex",
+                 &WebContents::GetNavigationEntryAtIndex)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
       .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)

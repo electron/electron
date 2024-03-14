@@ -1152,7 +1152,7 @@ Returns `Integer` - History length.
 
 Returns `Integer` - The index from which we would go back/forward or reload.
 
-#### `contents.getNavigationEntryForIndex(index)`
+#### `contents.getNavigationEntryAtIndex(index)`
 
 * `index` Integer
 

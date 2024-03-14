@@ -351,7 +351,7 @@ Returns `Integer` - History length.
 
 Returns `Integer` - The index from which we would go back/forward or reload.
 
-#### `<webview>.getNavigationEntryForIndex(index)`
+#### `<webview>.getNavigationEntryAtIndex(index)`
 
 * `index` Integer
 

@@ -546,7 +546,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getNavigationEntryForIndex() API', () => {
+  describe('getNavigationEntryAtIndex() API', () => {
     let w: BrowserWindow;
 
     beforeEach(async () => {
@@ -554,14 +554,14 @@ describe('webContents module', () => {
     });
     afterEach(closeAllWindows);
     it('should fetch default navigation entry when no urls are loaded', async () => {
-      const result = w.webContents.getNavigationEntryForIndex(0);
+      const result = w.webContents.getNavigationEntryAtIndex(0);
       expect(result).to.deep.equal({ url: '', title: '' });
     });
 
     it('should fetch navigation entry given a valid index', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.getNavigationEntryForIndex(0);
+        const result = w.webContents.getNavigationEntryAtIndex(0);
         expect(result).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
       });
     });
@@ -569,7 +569,7 @@ describe('webContents module', () => {
     it('should return null given an invalid index larger than history length', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.getNavigationEntryForIndex(5);
+        const result = w.webContents.getNavigationEntryAtIndex(5);
         expect(result).to.be.null();
       });
     });
@@ -577,7 +577,7 @@ describe('webContents module', () => {
     it('should return null given an invalid negative index', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.getNavigationEntryForIndex(-1);
+        const result = w.webContents.getNavigationEntryAtIndex(-1);
         expect(result).to.be.null();
       });
     });

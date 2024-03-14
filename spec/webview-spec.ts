@@ -1955,14 +1955,14 @@ describe('<webview> tag', function () {
       }, [fixtures]);
     });
 
-    describe('<webview>.getNavigationEntryForIndex()', () => {
+    describe('<webview>.getNavigationEntryAtIndex()', () => {
       it('should fetch navigation entry given a valid index', async () => {
         await loadWebViewAndWaitForEvent(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
           src: 'https://www.google.com'
         }, 'did-stop-loading');
-        expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(0)')).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
+        expect(await w.executeJavaScript('webview.getNavigationEntryAtIndex(0)')).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
       });
 
       it('should return null given an invalid index larger than history length', async () => {
@@ -1971,7 +1971,7 @@ describe('<webview> tag', function () {
           webpreferences: 'contextIsolation=no',
           src: 'https://www.github.com'
         }, 'did-stop-loading');
-        expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(5)')).to.be.null();
+        expect(await w.executeJavaScript('webview.getNavigationEntryAtIndex(5)')).to.be.null();
       });
 
       it('should return null navigation entry given an invalid negative index', async () => {
@@ -1980,7 +1980,7 @@ describe('<webview> tag', function () {
           webpreferences: 'contextIsolation=no',
           src: 'https://www.github.com'
         }, 'did-stop-loading');
-        expect(await w.executeJavaScript('webview.getNavigationEntryForIndex(-1)')).to.be.null();
+        expect(await w.executeJavaScript('webview.getNavigationEntryAtIndex(-1)')).to.be.null();
       });
     });
 
