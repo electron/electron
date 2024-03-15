@@ -504,6 +504,9 @@ const removeSupercededStackUpdates = (commits) => {
 
     const newestSplit = newest[dep].version.split('.');
     const replacementSplit = version.split('.');
+    if (newestSplit.length !== replacementSplit.length) {
+      throw new Error(`Expected version strings to have same number of sections: ${newest[dep].version} and ${version}`);
+    }
     for (let i = 0; i < newestSplit.length; i++) {
       if (parseInt(replacementSplit[i]) < parseInt(newestSplit[i])) {
         break;
