@@ -90,6 +90,7 @@
 #include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
+#include "extensions/renderer/api/core_extensions_renderer_api_provider.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
 #include "extensions/renderer/extension_web_view_helper.h"
@@ -243,6 +244,8 @@ void RendererClientBase::RenderThreadStarted() {
 
   extensions_renderer_client_ =
       std::make_unique<ElectronExtensionsRendererClient>();
+  extensions_renderer_client_->AddAPIProvider(
+      std::make_unique<extensions::CoreExtensionsRendererAPIProvider>());
   extensions_renderer_client_->AddAPIProvider(
       std::make_unique<ElectronExtensionsRendererAPIProvider>());
   extensions_renderer_client_->RenderThreadStarted();
