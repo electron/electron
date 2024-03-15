@@ -1537,7 +1537,8 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
 }
 
 void WebContents::LostPointerLock() {
-  exclusive_access_manager_.pointer_lock_controller()->LostPointerLock();
+  exclusive_access_manager_.pointer_lock_controller()
+      ->ExitExclusiveAccessToPreviousState();
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,

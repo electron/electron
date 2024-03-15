@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 1db5e8e422b62d6d92b50d600b1490bc5ac6042e..00aac10693e51c5e296bacc4fda9d801f803af73 100644
+index 48d3c60ac1b5691da1b5ae28aed9fd4085f71325..1213080cce1a3d456bc2ee08024b175b2c517e30 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -102,10 +102,10 @@ index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb5
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 0b8e6108b3ae445ddecc5d9dc1fcb03cf16c6619..18eb32143645730afdf823a2ea8c6ee1aa8b3179 100644
+index bf101d76e22d80fe909d0eebe1f5c2c399cb09b9..3f8ca1e015e88a5d50d80903ecd0526778af0d58 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -570,8 +570,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -575,8 +575,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index 0b8e6108b3ae445ddecc5d9dc1fcb03cf16c6619..18eb32143645730afdf823a2ea8c6ee1
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -580,10 +579,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -585,10 +584,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =

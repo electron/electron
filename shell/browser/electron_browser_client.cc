@@ -64,7 +64,7 @@
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
-#include "services/device/public/cpp/geolocation/geolocation_manager.h"
+#include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
@@ -1721,8 +1721,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
-  return device::GeolocationManager::GetInstance();
+device::GeolocationSystemPermissionManager*
+ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
+  return device::GeolocationSystemPermissionManager::GetInstance();
 }
 #endif
 
