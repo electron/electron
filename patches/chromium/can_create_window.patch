@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 441cf9208e50ed4fab3e6392996bdbb511b0ad76..39b46b4f5bb3adb18d903c0ca4c65f212138590b 100644
+index 06360bebe3baaa7571c412c7182ccd1fd1078fda..c36367b28a627f7e6e77bcf3fc10f907b131523b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8383,6 +8383,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8389,6 +8389,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 441cf9208e50ed4fab3e6392996bdbb511b0ad76..39b46b4f5bb3adb18d903c0ca4c65f21
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 275988bd9d0dbbe3360b081078149e3304d891ae..b2866d3d050b57f5b3f6483634dbe3facaee83dd 100644
+index bfb696d17099ce153366f031a56b6ac74ce28d38..6475b9fd000fb83c4562f7d91a30c80e5dddf35e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4580,6 +4580,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4585,6 +4585,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 275988bd9d0dbbe3360b081078149e3304d891ae..b2866d3d050b57f5b3f6483634dbe3fa
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4621,12 +4627,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4626,12 +4632,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,7 +66,7 @@ index 268f150c1cc987ea020192a86ab886ed206a0064..05856b853112072a18ec16589f2b442f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 97be51019b36fef0b95b4812f682ff41544cbfe3..f013173e680898584561734942364755d3676363 100644
+index 05d036b9262689f2103a3df1ee30b7ec16c96a34..952356fa426c6cb7df85b837ccdff3661fa90531 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -725,6 +725,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 97be51019b36fef0b95b4812f682ff41544cbfe3..f013173e680898584561734942364755
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ac3754651b1569a07b666d8a101a08386393137c..25641beab08c2f575494f23850b1e22f1958569b 100644
+index 48e6a6c74004650b5b07ce24f6476d7c9a306236..b777041ec1111444d690d1d188dd622ce4677d4c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -183,6 +183,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index ac3754651b1569a07b666d8a101a08386393137c..25641beab08c2f575494f23850b1e22f
  }  // namespace network
  
  namespace sandbox {
-@@ -1219,6 +1220,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1221,6 +1222,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -100,7 +100,7 @@ index ac3754651b1569a07b666d8a101a08386393137c..25641beab08c2f575494f23850b1e22f
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 3f445d481b7b1931eba7870f90ba8bc5e1206a8f..8930b2f6c532418a5de97813645783bc2bbad1ba 100644
+index a354e100b04423b9793bc17473711fab9ca91c7e..2b03b5b0152678a4f2fa64cabab0dc511cea0f79 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -30,6 +30,17 @@ namespace content {
@@ -122,7 +122,7 @@ index 3f445d481b7b1931eba7870f90ba8bc5e1206a8f..8930b2f6c532418a5de97813645783bc
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 6e73009a7a4263f8d910071be1b64ce0c6e1b7cc..db2a1bc02f7a90fba1eda99b444c64576df859a8 100644
+index c44ef9991cbb07ab2895a28a890466ce1bc8235f..1384a322617b4be4b4ffbda5c44b41ac05bc8977 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -133,7 +133,7 @@ index 6e73009a7a4263f8d910071be1b64ce0c6e1b7cc..db2a1bc02f7a90fba1eda99b444c6457
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/invalidate_type.h"
-@@ -349,6 +350,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -347,6 +348,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -148,10 +148,10 @@ index 6e73009a7a4263f8d910071be1b64ce0c6e1b7cc..db2a1bc02f7a90fba1eda99b444c6457
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 115a9e0e74969e224acb15f4b37d0d280b129f32..9012fbd732b8e134609b187f3718652888c31af4 100644
+index e131d7d256bad0ce6080e9817f196e60ca6c883c..0eed4c5645d4e119393e9e0fbd770847eaf01030 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6685,6 +6685,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6686,6 +6686,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
