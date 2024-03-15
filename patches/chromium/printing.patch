@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 6ba4d1584f12bb3b064e1cfe17ceaacfde8b4c16..cf263d8e7d3ce07fa57d4259f8d33b36e93d1f9b 100644
+index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a95306c72e2d 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -830,10 +830,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c58175e595b98ed5a5e8c369e4c05f229edf5d2d..f2c0fd0aadbc34b400f91e230dc994c7eb9ab8e8 100644
+index 80e0efe22eb80741e568280b07a6fcf72e57b6a4..65fed59350c21bf02a99d8426279633101d8ab52 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2930,8 +2930,9 @@ source_set("browser") {
+@@ -2932,8 +2932,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

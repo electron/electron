@@ -33,10 +33,10 @@ index 4af5b8d5da1c0ae4c5603f49e3a1dbfec422f55e..d21e450d1ee387a72bbe601412856260
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 55cf82494dcdb97adda4816c349e224eb33213ed..731f56fcabacf4280bab9a7f7fae14ae96277add 100644
+index 5395ebed95694a6beb5021c288e4268ae66a6382..e01ea74a77b4bf3479be20a060fe2b25ae359150 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4791,7 +4791,7 @@ static_library("browser") {
+@@ -4786,7 +4786,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 55cf82494dcdb97adda4816c349e224eb33213ed..731f56fcabacf4280bab9a7f7fae14ae
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 07795d851c5a8d55f94d17dac471c287837e0863..5bebaf9fe6a845b1df8364a332857bf5dc49ee70 100644
+index 8c21d520f5b778c3a90bdff9b0579235c757f37b..1f22712ce219303801b0cb563026ec9964611d6e 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7179,9 +7179,12 @@ test("unit_tests") {
