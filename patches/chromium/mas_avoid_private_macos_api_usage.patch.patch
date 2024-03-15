@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 32cc658fd3fb617fb293906cec8b7b36902b716c..11e2ea571304bfffc7b6467417e2d24f9cf9009b 100644
+index 353b3e7c6a519570af5a4842135388a8cc01e130..a836d7380a396813ec0a7a294c91ae0d09cc889f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1050,6 +1050,7 @@ component("base") {
@@ -942,10 +942,10 @@ index 0c0243c2bb9e72c6eba6f9af554b99e2d5514a5d..f5f0e0ec951ccc8278b773c852134e4e
  }
  
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index ebee73a859854299c1237b1190f4882bdd1c5121..67a818beb62a76a82a68313f3a27ab4e2ad780b5 100644
+index 9c10bfed595d0f6ac1a633594da791845cff2196..ff4d40d2e2589a40830cb51cee3d8216744ad87e 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -183,6 +183,8 @@ source_set("dns") {
+@@ -185,6 +185,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
