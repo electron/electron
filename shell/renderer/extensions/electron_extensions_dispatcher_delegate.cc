@@ -10,8 +10,5 @@ ElectronExtensionsDispatcherDelegate::ElectronExtensionsDispatcherDelegate() =
 ElectronExtensionsDispatcherDelegate::~ElectronExtensionsDispatcherDelegate() =
     default;
 
-void ElectronExtensionsDispatcherDelegate::RequireWebViewModules(
-    extensions::ScriptContext* context) {}
-
 void ElectronExtensionsDispatcherDelegate::OnActiveExtensionsUpdated(
     const std::set<std::string>& extension_ids) {}
