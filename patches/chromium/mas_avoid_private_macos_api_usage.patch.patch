@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 353b3e7c6a519570af5a4842135388a8cc01e130..a836d7380a396813ec0a7a294c91ae0d09cc889f 100644
+index ae88c7cc44133b04b00ff328b7c63e834617298a..aaeaa6ae0dfc10720796b6d6dcbdc1bf454e6095 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1050,6 +1050,7 @@ component("base") {
+@@ -1058,6 +1058,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -471,7 +471,7 @@ index 7c53d9b2015c6c57f19c23c52c1aab3ffeea15ea..f6b7ba2f3512dcd2528323bb6853452c
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index abdf8a8d28639dc3735d3dc5bd309c237917f087..c08c84c3b243a6bafd358a34cbb391a6d6a9262a 100644
+index 8a2227aaa837aa92674382d57f82bdf669b04b09..4fa918b2c4a4beea7f0ef37904895c6f7487bd94 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -500,7 +500,7 @@ index abdf8a8d28639dc3735d3dc5bd309c237917f087..c08c84c3b243a6bafd358a34cbb391a6
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -621,6 +625,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -620,6 +624,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -508,7 +508,7 @@ index abdf8a8d28639dc3735d3dc5bd309c237917f087..c08c84c3b243a6bafd358a34cbb391a6
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -649,6 +654,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -648,6 +653,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -805,7 +805,7 @@ index 3033b23a07041d375d5733bad1901f9a61bdf3b6..9dd6cb1aa49d03c167d1a92100d4ba5f
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index ea3578a727bdccfff74a4112529af9ac052165f2..a0f8573a4401922e4bc9de9b0faf11951efef741 100644
+index cfbc983b13130aba988524e0c6df26b2f57a7b64..08fbb117787293a6a14604349267cb73cc20e362 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -135,6 +135,7 @@ component("service") {
@@ -1596,10 +1596,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index d2a918d304afa5e540ab07a5d80887fe9ea6b60e..0fa6cc4314e7d2f16289b7bd7ab38d45cf5bed42 100644
+index ebc3920648cd0c02ad53ec97884a8906dc2d7321..43844bb1d2fb2daa4a8e9fd18e10fc0e8a3fb817 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -712,6 +712,7 @@ component("views") {
+@@ -714,6 +714,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1607,7 +1607,7 @@ index d2a918d304afa5e540ab07a5d80887fe9ea6b60e..0fa6cc4314e7d2f16289b7bd7ab38d45
    }
  
    if (is_win) {
-@@ -1143,6 +1144,8 @@ source_set("test_support") {
+@@ -1147,6 +1148,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
