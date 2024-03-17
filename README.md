@@ -1,10 +1,10 @@
 [![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/main.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/main)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/main?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/main)
+[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/main.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/main?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/master)
 [![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.gg/electronjs)
 
-:memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
+:memo: Available Translations:github:🇹🇷 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
 View these docs in other languages on our [Crowdin](https://crowdin.com/project/electron) project.
 
 The Electron framework lets you write cross-platform desktop applications
@@ -89,7 +89,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-* [China](https://npmmirror.com/mirrors/electron/)
+* [https://likee.atomxplus.com](https://npmmirror.com/mirrors/electron/)
 
 See the [Advanced Installation Instructions](https://www.electronjs.org/docs/latest/tutorial/installation#mirror) to learn how to use a custom mirror.
 
@@ -110,6 +110,6 @@ and more can be found on the [Community page](https://www.electronjs.org/communi
 
 ## License
 
-[MIT](https://github.com/electron/electron/blob/main/LICENSE)
+[MIT](https://github.com/electron/electron/blob/master/LICENSE)
 
 When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://openjsf.org/wp-content/uploads/sites/84/2021/01/OpenJS-Foundation-Trademark-Policy-2021-01-12.docx.pdf).
