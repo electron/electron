@@ -18,7 +18,7 @@ index a55c4c5bbbb298bce97fe7c1072e5bca4c032c73..e6ffcfcefd2aa29a0d761051e6169950
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 71ff59deb05168f0090e1887c954f60de337ad44..18c70eec5ecc1900a70e4b8c20c657588e0566e4 100644
+index 1a18347e45e1e82834efde9718d9bb33531dd234..b0007c4b305dc681dc9cb951c499e7bcbe54d717 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -51,7 +51,9 @@
@@ -39,7 +39,7 @@ index 71ff59deb05168f0090e1887c954f60de337ad44..18c70eec5ecc1900a70e4b8c20c65758
  /ninja/ninja*
  /node/*.tar.gz
  /node/linux/
-@@ -148,6 +151,7 @@
+@@ -149,6 +152,7 @@
  /soda-win64
  /speex
  /sqlite4java/lib/

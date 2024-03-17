@@ -66,7 +66,7 @@ index 268f150c1cc987ea020192a86ab886ed206a0064..05856b853112072a18ec16589f2b442f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 05d036b9262689f2103a3df1ee30b7ec16c96a34..952356fa426c6cb7df85b837ccdff3661fa90531 100644
+index f697700af13bb7f889d16e26a11dd4ba566f9840..ee5c4ac09ce90139c830511ed7d49958a2bb692e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -725,6 +725,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 05d036b9262689f2103a3df1ee30b7ec16c96a34..952356fa426c6cb7df85b837ccdff366
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 48e6a6c74004650b5b07ce24f6476d7c9a306236..b777041ec1111444d690d1d188dd622ce4677d4c 100644
+index 6135759cb7f39b0d459d2a7c0d1560a43256cfac..d5b05ada6566b07b4232f1d20d1670e87502d03e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -183,6 +183,7 @@ class NetworkService;
@@ -148,10 +148,10 @@ index c44ef9991cbb07ab2895a28a890466ce1bc8235f..1384a322617b4be4b4ffbda5c44b41ac
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e131d7d256bad0ce6080e9817f196e60ca6c883c..0eed4c5645d4e119393e9e0fbd770847eaf01030 100644
+index 26d71550270ffd5e58bab5a9e947c80def47570a..0ba40a2efd5d8e04d1237ec94046c36904560a2a 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6686,6 +6686,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6688,6 +6688,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
