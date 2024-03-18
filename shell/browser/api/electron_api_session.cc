@@ -201,7 +201,7 @@ std::vector<std::string> GetDataTypesFromMask(
 //
 // This type manages its own lifetime, deleting itself once the task finishes
 // completely.
-class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
+class ClearDataTask {
  public:
   // Starts running a task. This function will return before the task is
   // finished, but will resolve or reject the |promise| when it finishes.
@@ -238,8 +238,8 @@ class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
         cookies_filter_builder->AddRegisterableDomain(domain);
       }
 
-      task->StartOperation(remover, BrowsingDataRemover::DATA_TYPE_COOKIES,
-                           std::move(cookies_filter_builder));
+      StartOperation(task, remover, BrowsingDataRemover::DATA_TYPE_COOKIES,
+                     std::move(cookies_filter_builder));
     }
 
     // If cookies aren't the only data type and weren't handled above, then we
@@ -252,7 +252,7 @@ class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
         filter_builder->AddOrigin(origin);
       }
 
-      task->StartOperation(remover, data_type_mask, std::move(filter_builder));
+      StartOperation(task, remover, data_type_mask, std::move(filter_builder));
     }
 
     // This static method counts as an operation.
@@ -299,14 +299,15 @@ class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
   explicit ClearDataTask(gin_helper::Promise<void> promise)
       : promise_(std::move(promise)) {}
 
-  void StartOperation(
+  static void StartOperation(
+      std::shared_ptr<ClearDataTask> task,
       BrowsingDataRemover* remover,
       BrowsingDataRemover::DataType data_type_mask,
       std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
     // Track this operation
-    operations_running_ += 1;
+    task->operations_running_ += 1;
 
-    ClearDataOperation::Run(shared_from_this(), remover, data_type_mask,
+    ClearDataOperation::Run(task, remover, data_type_mask,
                             std::move(filter_builder));
   }
 
