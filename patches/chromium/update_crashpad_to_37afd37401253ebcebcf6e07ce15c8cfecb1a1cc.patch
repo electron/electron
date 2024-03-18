@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joshua Peraza <jperaza@chromium.org>
+Date: Tue, 5 Mar 2024 18:09:48 +0000
+Subject: Update Crashpad to 37afd37401253ebcebcf6e07ce15c8cfecb1a1cc
+
+29ac83caeb94 [Fuchsia] remove use of fuchsia mac sdk
+37afd3740125 Properly update iterator
+
+(cherry picked from commit 80b0e498bec1722e8cc310fe52698e7b690956f2)
+
+Bug: 325296797
+Change-Id: I7eb39d1bccec802f1b043eebd20ec0e658fe0e04
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5311633
+Reviewed-by: Nico Weber <thakis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1264232}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5335538
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Joshua Peraza <jperaza@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6261@{#1024}
+Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+
+diff --git a/third_party/crashpad/README.chromium b/third_party/crashpad/README.chromium
+index e6eb8320371f0f367c131d1712cc0f4d1f410b77..3c3c141e10522d782cd13b5aaa32a640897323e7 100644
+--- a/third_party/crashpad/README.chromium
++++ b/third_party/crashpad/README.chromium
+@@ -2,7 +2,7 @@ Name: Crashpad
+ Short Name: crashpad
+ URL: https://crashpad.chromium.org/
+ Version: N/A
+-Revision: 4a93d7f4c407fee2168ea23195d0e30fbfc1f90c
++Revision: 37afd37401253ebcebcf6e07ce15c8cfecb1a1cc
+ License: Apache 2.0
+ License File: crashpad/LICENSE
+ Security Critical: yes
+diff --git a/third_party/crashpad/crashpad/DEPS b/third_party/crashpad/crashpad/DEPS
+index 909ef7dce53d53486a21cd87e00dc63d3eb79b43..cea46fda079b0bd2aca4bfaeb53158d672cb2b31 100644
+--- a/third_party/crashpad/crashpad/DEPS
++++ b/third_party/crashpad/crashpad/DEPS
+@@ -121,16 +121,6 @@ deps = {
+            '0d6902558d92fe3d49ba9a8f638ddea829be595b',
+     'condition': 'checkout_fuchsia',
+   },
+-  'crashpad/third_party/fuchsia/sdk/mac-amd64': {
+-    'packages': [
+-      {
+-        'package': 'fuchsia/sdk/core/mac-amd64',
+-        'version': 'latest'
+-      },
+-    ],
+-    'condition': 'checkout_fuchsia and host_os == "mac"',
+-    'dep_type': 'cipd'
+-  },
+   'crashpad/third_party/fuchsia/sdk/linux-amd64': {
+     'packages': [
+       {
+diff --git a/third_party/crashpad/crashpad/snapshot/sanitized/module_snapshot_sanitized.cc b/third_party/crashpad/crashpad/snapshot/sanitized/module_snapshot_sanitized.cc
+index 0ad2ee97540174be07110f08e519b530aae045f5..c76722683ddf1ae1a562b3705d909a337a23621b 100644
+--- a/third_party/crashpad/crashpad/snapshot/sanitized/module_snapshot_sanitized.cc
++++ b/third_party/crashpad/crashpad/snapshot/sanitized/module_snapshot_sanitized.cc
+@@ -99,9 +99,11 @@ ModuleSnapshotSanitized::AnnotationsSimpleMap() const {
+   std::map<std::string, std::string> annotations =
+       snapshot_->AnnotationsSimpleMap();
+   if (allowed_annotations_) {
+-    for (auto kv = annotations.begin(); kv != annotations.end(); ++kv) {
+-      if (!KeyIsAllowed(kv->first, *allowed_annotations_)) {
+-        annotations.erase(kv);
++    for (auto kv = annotations.begin(); kv != annotations.end();) {
++      if (KeyIsAllowed(kv->first, *allowed_annotations_)) {
++        ++kv;
++      } else {
++        kv = annotations.erase(kv);
+       }
+     }
+   }
