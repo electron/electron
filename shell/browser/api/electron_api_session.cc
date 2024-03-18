@@ -212,7 +212,7 @@ class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
       std::vector<url::Origin> origins,
       BrowsingDataFilterBuilder::Mode filter_mode,
       BrowsingDataFilterBuilder::OriginMatchingMode origin_matching_mode) {
-    auto task = std::make_shared<ClearDataTask>(std::move(promise));
+    std::shared_ptr<ClearDataTask> task(new ClearDataTask(std::move(promise)));
 
     // This method counts as an operation. This is important so we can call
     // `OnOperationFinished` at the end of this method as a fallback if all the
@@ -270,7 +270,7 @@ class ClearDataTask : private std::enable_shared_from_this<ClearDataTask> {
                     BrowsingDataRemover* remover,
                     BrowsingDataRemover::DataType data_type_mask,
                     std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
-      auto operation = new ClearDataOperation(task, remover);
+      auto* operation = new ClearDataOperation(task, remover);
 
       remover->RemoveWithFilterAndReply(base::Time::Min(), base::Time::Max(),
                                         data_type_mask, kClearOriginTypeAll,
