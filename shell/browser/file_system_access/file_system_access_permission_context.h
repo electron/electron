@@ -95,6 +95,11 @@ class FileSystemAccessPermissionContext
       const GURL& file_picker_binding_context,
       const storage::FileSystemURL& url) override;
 
+  void CheckPathsAgainstEnterprisePolicy(
+      std::vector<PathInfo> entries,
+      content::GlobalRenderFrameHostId frame_id,
+      EntriesAllowedByEnterprisePolicyCallback callback) override;
+
   enum class Access { kRead, kWrite, kReadWrite };
 
   enum class RequestType { kNewPermission, kRestorePermissions };
