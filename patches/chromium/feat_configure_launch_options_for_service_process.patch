@@ -110,19 +110,19 @@ index 8736af0021dccba915e3d2303191ae3ec80f6e75..56f8384c3ff4959272363cb71e4c380e
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 1d6bc6590720cda38983203455cc20638710148f..8f965150db13d3f4fe1757a021b9a2f6446529d6 100644
+index 220eab3370bb2632150f845d29ab7babf44472f5..6f055560ecfe480de1c7c8f4f2c22a5977043b9c 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
-@@ -21,6 +21,8 @@
- #include "sandbox/policy/win/sandbox_win.h"
+@@ -25,6 +25,8 @@
+ #include "mojo/public/cpp/platform/platform_channel.h"
  #include "sandbox/win/src/sandbox_types.h"
  
 +#include <windows.h>
 +
  namespace {
  
- // /prefetch:# arguments to use when launching various process types. It has
-@@ -189,6 +191,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+ // Helper to avoid marking the log file as non-executable every time we launch a
+@@ -259,6 +261,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
      mojo_channel_->PrepareToPassRemoteEndpoint(&options->handles_to_inherit,
                                                 command_line());
    }
@@ -153,7 +153,7 @@ index 1d6bc6590720cda38983203455cc20638710148f..8f965150db13d3f4fe1757a021b9a2f6
    return true;
  }
  
-@@ -216,7 +242,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
+@@ -286,7 +312,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
    ChildProcessLauncherHelper::Process process;
    *launch_result =
        StartSandboxedProcess(delegate_.get(), *command_line(),
