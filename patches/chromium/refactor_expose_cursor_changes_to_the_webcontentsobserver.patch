@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index a525dee9a568010d274ff9c6213b136cc81b2d88..f168d982452eb0e234ab63493edca6f468822708 100644
+index a1dcd0c0eab747f144188b8faea21fb1cf2b1558..20cc65ba206a8b3d988b51f9459de1572eb3b99f 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -23,6 +23,7 @@
@@ -19,7 +19,7 @@ index a525dee9a568010d274ff9c6213b136cc81b2d88..f168d982452eb0e234ab63493edca6f4
  #include "ui/gfx/native_widget_types.h"
  
  namespace blink {
-@@ -269,6 +270,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -270,6 +271,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -30,10 +30,10 @@ index a525dee9a568010d274ff9c6213b136cc81b2d88..f168d982452eb0e234ab63493edca6f4
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index ac9dd558cb072e60b3036114914865ed66190306..cb157510e71d3a60513240125d8f7669ce931543 100644
+index df4a7d191281af4602517ecc7300235ceb4e6799..8718ad62ca50b8426814af3a41553263921cf069 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2148,6 +2148,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -2074,6 +2074,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,10 +44,10 @@ index ac9dd558cb072e60b3036114914865ed66190306..cb157510e71d3a60513240125d8f7669
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 29cdeafec88d9fff021868b96429fe605bfd4380..d1ba45523d4a3ca1c2797bdffcc4091512becafc 100644
+index 6475b9fd000fb83c4562f7d91a30c80e5dddf35e..94cdebc2ae552106bdeb7d3619dc9281c4fb4063 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5174,6 +5174,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5268,6 +5268,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 29cdeafec88d9fff021868b96429fe605bfd4380..d1ba45523d4a3ca1c2797bdffcc40915
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 128d8109d393d7755b24711da0ca17f36d91f88d..b0bafa2e3b9dc1866441acd24cc78e499cdd3d26 100644
+index 4cb27cbd808dafde72c82f3e907c6b45654813e7..6612ecd6d98dc071cf598dffc64d5593911925b8 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1031,6 +1031,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1044,6 +1044,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index 128d8109d393d7755b24711da0ca17f36d91f88d..b0bafa2e3b9dc1866441acd24cc78e49
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 67a814a07af1e7294134eaa90893318e8c202730..c863f0dd1d90dfe3035b65ce1b00920679b78615 100644
+index ede7dc05810649698b30efe7b0889420225a0f2b..e9cd2da6c1343aa03ef97a0c42d3393a8c74dc20 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@

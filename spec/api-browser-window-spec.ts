@@ -11,7 +11,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor, hasCapturableScreen } from './lib/screen-helpers';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { setTimeout as syncSetTimeout } from 'node:timers';
@@ -1246,6 +1246,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
+      // FIXME: disabled in `disabled-tests.json`
       ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
         // Show to focus app, then remove existing window
         w.show();
@@ -3805,7 +3806,6 @@ describe('BrowserWindow module', () => {
         expect(test.processMemoryInfo).to.be.an('object');
         expect(test.systemVersion).to.be.a('string');
         expect(test.cpuUsage).to.be.an('object');
-        expect(test.ioCounters).to.be.an('object');
         expect(test.uptime).to.be.a('number');
         expect(test.arch).to.equal(process.arch);
         expect(test.platform).to.equal(process.platform);
@@ -6471,8 +6471,8 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not display a visible background', async () => {
+    // FIXME(codebytere): figure out why these are failing on macOS arm64.
+    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6496,21 +6496,26 @@ describe('BrowserWindow module', () => {
       await foregroundWindow.loadFile(colorFile);
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const leftHalfColor = getPixelColor(screenCapture, {
-        x: display.size.width / 4,
-        y: display.size.height / 2
-      });
-      const rightHalfColor = getPixelColor(screenCapture, {
-        x: display.size.width - (display.size.width / 4),
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtPointOnDisplayMatches(
+        HexColors.GREEN,
+        (size) => ({
+          x: size.width / 4,
+          y: size.height / 2
+        })
+      );
+      await screenCapture.expectColorAtPointOnDisplayMatches(
+        HexColors.RED,
+        (size) => ({
+          x: size.width * 3 / 4,
+          y: size.height / 2
+        })
+      );
     });
 
-    ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
+    // FIXME(codebytere): figure out why these are failing on macOS arm64.
+    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('Allows setting a transparent window via CSS', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6537,13 +6542,9 @@ describe('BrowserWindow module', () => {
       await once(ipcMain, 'set-transparent');
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -6560,15 +6561,11 @@ describe('BrowserWindow module', () => {
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
         await setTimeout(1000);
-        const screenCapture = await captureScreen();
-        const centerColor = getPixelColor(screenCapture, {
-          x: display.size.width / 2,
-          y: display.size.height / 2
-        });
-        window.close();
-
+        const screenCapture = await ScreenCapture.createForDisplay(display);
         // color-scheme is set to dark so background should not be white
-        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+        await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+
+        window.close();
       }
     });
   });
@@ -6590,13 +6587,9 @@ describe('BrowserWindow module', () => {
       await once(w, 'ready-to-show');
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });
 

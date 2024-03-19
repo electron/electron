@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896536ef852 100644
+index 58c898eae10ecca9741d89e5a211b7c25c6d5a0b..ddd00f284e3e1efb810bf0202eb3b7838ac4d7e6 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -339,7 +339,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -39,7 +39,7 @@ index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896
  }
  
  bool Compositor::IsVisible() {
-@@ -957,4 +961,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
+@@ -959,4 +963,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
    return host_->GetSettings();
  }
  
@@ -54,10 +54,10 @@ index 33f68e9a42b5d4dd9a25309ea8b1d3955d2c4550..16660be85a2ac25bacbaf95d40acb896
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 0c8ae51d15963796a8967dd1d47ff9f0d4ef733e..4fcfd6b900163b20420def8c92625b60cf687996 100644
+index 579b7f45fabdbf326995e3a20b5e509c859f178f..c6b9846574afdf6d6badaca8263221894b4763f8 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -514,6 +514,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -508,6 +508,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -68,7 +68,7 @@ index 0c8ae51d15963796a8967dd1d47ff9f0d4ef733e..4fcfd6b900163b20420def8c92625b60
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -631,6 +635,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -625,6 +629,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/containers/contains.h"
-#include "base/containers/cxx20_erase.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "base/scoped_observation.h"
@@ -33,8 +32,6 @@
 #endif
 
 namespace {
-
-using ::content::UsbChooser;
 
 electron::UsbChooserContext* GetChooserContext(
     content::BrowserContext* browser_context) {
@@ -159,7 +156,7 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
   classes = permission_manager->CheckProtectedUSBClasses(classes);
 }
 
-std::unique_ptr<UsbChooser> ElectronUsbDelegate::RunChooser(
+std::unique_ptr<content::UsbChooser> ElectronUsbDelegate::RunChooser(
     content::RenderFrameHost& frame,
     blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {

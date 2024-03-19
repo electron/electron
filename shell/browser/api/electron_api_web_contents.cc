@@ -1537,7 +1537,8 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
 }
 
 void WebContents::LostPointerLock() {
-  exclusive_access_manager_.pointer_lock_controller()->LostPointerLock();
+  exclusive_access_manager_.pointer_lock_controller()
+      ->ExitExclusiveAccessToPreviousState();
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -4150,6 +4151,10 @@ void WebContents::DevToolsStopIndexing(int request_id) {
 
 void WebContents::DevToolsOpenInNewTab(const std::string& url) {
   Emit("devtools-open-url", url);
+}
+
+void WebContents::DevToolsOpenSearchResultsInNewTab(const std::string& query) {
+  Emit("devtools-search-query", query);
 }
 
 void WebContents::DevToolsSearchInPath(int request_id,
