@@ -194,7 +194,7 @@ class WebContents : public ExclusiveAccessContext,
   bool CanGoToIndex(int index) const;
   void GoToIndex(int index);
   int GetActiveIndex() const;
-  v8::Local<v8::Value> GetNavigationEntryAtIndex(int index) const;
+  content::NavigationEntry* GetNavigationEntryAtIndex(int index) const;
   void ClearHistory();
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;

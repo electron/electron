@@ -352,6 +352,20 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   }
 };
 
+template <>
+struct Converter<content::NavigationEntry*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::NavigationEntry* entry) {
+    if (!entry) {
+      return v8::Null(isolate);
+    }
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("url", entry->GetURL().spec());
+    dict.Set("title", entry->GetTitleForDisplay());
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace gin
 
 namespace electron::api {
@@ -2560,22 +2574,9 @@ int WebContents::GetActiveIndex() const {
   return web_contents()->GetController().GetCurrentEntryIndex();
 }
 
-v8::Local<v8::Value> WebContents::GetNavigationEntryAtIndex(int index) const {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-
-  if (index >= GetHistoryLength() || index < 0) {
-    return v8::Null(isolate);
-  }
-
-  content::NavigationEntry* entry =
-      web_contents()->GetController().GetEntryAtIndex(index);
-  gin_helper::Dictionary navigation_entry_dict(isolate,
-                                               v8::Object::New(isolate));
-
-  navigation_entry_dict.Set("url", entry->GetURL().spec());
-  navigation_entry_dict.Set("title", entry->GetTitleForDisplay());
-
-  return navigation_entry_dict.GetHandle();
+content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
+    int index) const {
+  return web_contents()->GetController().GetEntryAtIndex(index);
 }
 
 void WebContents::ClearHistory() {
