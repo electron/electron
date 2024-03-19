@@ -42,7 +42,7 @@ jobs:
     - name: Setup Node.js/npm
       uses: actions/setup-node@v3
       with:
-        node-version: 18.18.x
+        node-version: 20.11.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
@@ -157,7 +157,7 @@ jobs:
     - name: Setup Node.js/npm
       uses: actions/setup-node@v3
       with:
-        node-version: 18.18.x
+        node-version: 20.11.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable ssh Debugging
@@ -360,7 +360,7 @@ jobs:
       # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
       # tp ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
-      run: ./src/electron/.github/workflows/config/move_artifacts.sh
+      run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -495,7 +495,7 @@ jobs:
     - name: Setup Node.js/npm
       uses: actions/setup-node@v3
       with:
-        node-version: 18.18.x
+        node-version: 20.11.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable ssh Debugging
