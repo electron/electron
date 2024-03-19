@@ -40,6 +40,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
+#include "skia/ext/font_utils.h"
 #include "skia/ext/legacy_display_globals.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkFont.h"
@@ -591,7 +592,7 @@ void Browser::UpdateBadgeContents(
     paint.reset();
     paint.setColor(kForegroundColor);
 
-    SkFont font;
+    SkFont font = skia::DefaultFont();
 
     SkRect bounds;
     int text_size = kMaxTextSize;
