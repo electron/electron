@@ -4372,11 +4372,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("goToOffset", &WebContents::GoToOffset)
       .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("goToIndex", &WebContents::GoToIndex)
-      .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
-      .SetMethod("getNavigationEntryAtIndex",
+      .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getNavigationEntryAtIndex",
                  &WebContents::GetNavigationEntryAtIndex)
+      .SetMethod("_length", &WebContents::GetHistoryLength)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
-      .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)

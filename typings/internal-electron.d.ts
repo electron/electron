@@ -85,6 +85,9 @@ declare namespace Electron {
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
+    _getNavigationEntryAtIndex(index: number): NavigationEntry | null;
+    _getActiveIndex(): number;
+    _length(): number;
     canGoToIndex(index: number): boolean;
     destroy(): void;
     // <webview>
@@ -93,6 +96,11 @@ declare namespace Electron {
     setEmbedder(embedder: Electron.WebContents): void;
     viewInstanceId: number;
     _setOwnerWindow(w: BaseWindow | null): void;
+  }
+
+  interface NavigationEntry {
+    url: string,
+    title: string
   }
 
   interface WebFrameMain {

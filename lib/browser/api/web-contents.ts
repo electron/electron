@@ -533,6 +533,16 @@ WebContents.prototype._init = function () {
     enumerable: true
   });
 
+  // Add navigationHistory property which handles session history,
+  // maintaining a list of navigation entries for backward and forward navigation.
+  Object.defineProperty(this, 'navigationHistory', {
+    get: () => ({
+      getActiveIndex: this._getActiveIndex,
+      length: this._length,
+      getEntryAtIndex: this._getNavigationEntryAtIndex
+    })
+  });
+
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
     addSenderToEvent(event, this);
