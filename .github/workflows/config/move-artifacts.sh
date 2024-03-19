@@ -2,6 +2,12 @@
 
 set -eo pipefail
 
+if [ -z "$MAS_BUILD" ]; then
+  BUILD_TYPE="darwin"
+else
+  BUILD_TYPE="mas"
+fi
+
 rm -rf generated_artifacts_${BUILD_TYPE}
 mkdir generated_artifacts_${BUILD_TYPE}
 

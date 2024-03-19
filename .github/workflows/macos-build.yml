@@ -142,12 +142,6 @@ jobs:
   build:
     runs-on: macos-13-xlarge
     needs: checkout
-    strategy:
-      fail-fast: false
-      matrix:
-        build-type: [darwin, mas]
-    env:
-      BUILD_TYPE: ${{ matrix.build-type }}
     steps:
     - name: Load Build Tools
       run: |
@@ -308,13 +302,7 @@ jobs:
         echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
         echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath({}))"` >> $GITHUB_ENV
         echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
-    - name: Create MAS Config
-      if: ${{ matrix.build-type }} == 'mas'
-      run: |
-        mv src/electron/.github/workflows/config/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
-        echo "MAS_BUILD=true" >> $GITHUB_ENV
-        e use mas
-    - name: Build Electron
+    - name: Build Electron (darwin)
       run: |
         cd src/electron
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
@@ -326,24 +314,16 @@ jobs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
-    - name: Build Electron dist.zip
+    - name: Build Electron dist.zip (darwin)
       run: |
         cd src
-        if [ "$SKIP_DIST_ZIP" != "1" ]; then
-          if [ "$IS_RELEASE"]; then
-            ADDITIONAL_TARGETS = "electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip"
-          fi
-          e build electron:electron_dist_zip $ADDITIONAL_TARGETS -j $NUMBER_OF_NINJA_PROCESSES
-          if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
-            target_os=mac
-            target_cpu=arm64
-            if [ "${{ matrix.build-type }}" == "mas" ]; then
-              target_os=mac_mas
-            fi
-            electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
-          fi
+        e build electron:electron_dist_zip $ADDITIONAL_TARGETS -j $NUMBER_OF_NINJA_PROCESSES
+        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+          target_os=mac
+          target_cpu=arm64
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
         fi
-    - name: Build Mksnapshot
+    - name: Build Mksnapshot (darwin)
       run: |
         cd src
         e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
@@ -357,16 +337,16 @@ jobs:
           e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
         fi
-    - name: Build Chromedriver
+    - name: Build Chromedriver (darwin)
       run: |
         cd src
         e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build electron:electron_chromedriver_zip
-    - name: Build Node Headers
+    - name: Build Node Headers (darwin)
       run: |
         cd src
         e build electron:node_headers
-    - name: Generate & Zip Symbols
+    - name: Generate & Zip Symbols (darwin)
       run: |
         if [ "$GENERATE_SYMBOLS" == "true" ]; then
           e build electron:electron_symbols
@@ -380,12 +360,12 @@ jobs:
       # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
       # tp ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
-      run: ./src/electron/script/move-artifacts.sh
+      run: ./src/electron/.github/workflows/config/move_artifacts.sh
     - name: Upload Generated Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: generated_artifacts_${{ matrix.build-type }}
-        path: ./generated_artifacts_${{ matrix.build-type }}
+        name: generated_artifacts_darwin
+        path: ./generated_artifacts_darwin
     - name: Persist Build Artifacts
       uses: actions/cache/save@v4
       with:
@@ -405,7 +385,96 @@ jobs:
           src/third_party/libc++abi
           src/out/Default/obj/buildtools/third_party
           src/v8/tools/builtins-pgo
-        key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ github.sha }}
+        key: ${{ runner.os }}-build-artifacts-darwin-${{ github.sha }}
+    - name: Create MAS Config
+      run: |
+        mv src/electron/.github/workflows/config/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
+        echo "MAS_BUILD=true" >> $GITHUB_ENV
+        e use mas
+    - name: Build Electron (mas)
+      run: |
+        rm -rf "src/out/Default/Electron Framework.framework"
+        rm -rf src/out/Default/Electron*.app
+
+        cd src/electron
+        # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
+        git pack-refs
+        cd ..
+
+        ulimit -n 10000
+        sudo launchctl limit maxfiles 65536 200000
+        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
+        cp out/Default/.ninja_log out/electron_ninja_log
+        node electron/script/check-symlinks.js
+    - name: Build Electron dist.zip (mas)
+      run: |
+        cd src
+        e build electron:electron_dist_zip $ADDITIONAL_TARGETS -j $NUMBER_OF_NINJA_PROCESSES
+        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+          target_os=mac_mas
+          target_cpu=arm64
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
+        fi
+    - name: Build Mksnapshot (mas)
+      run: |
+        cd src
+        e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        # Remove unused args from mksnapshot_args
+        SEDOPTION="-i ''"
+        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/The gn arg use_goma=true .*/d' out/Default/mksnapshot_args
+        if [ "$SKIP_DIST_ZIP" != "1" ]; then
+          e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
+    - name: Build Chromedriver (mas)
+      run: |
+        cd src
+        e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+        e build electron:electron_chromedriver_zip
+    - name: Build Node Headers
+      run: |
+        cd src
+        e build electron:node_headers
+    - name: Generate & Zip Symbols (mas)
+      run: |
+        if [ "$GENERATE_SYMBOLS" == "true" ]; then
+          e build electron:electron_symbols
+        fi
+        cd src
+        export BUILD_PATH="$(pwd)/out/Default"
+        e build electron:licenses
+        e build electron:electron_version_file
+        electron/script/zip-symbols.py -b $BUILD_PATH
+    - name: Move all Generated Artifacts to Upload Folder (mas)
+      run: ./src/electron/.github/workflows/config/move-artifacts.sh
+    - name: Upload Generated Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated_artifacts_mas
+        path: ./generated_artifacts_mas
+    - name: Persist Build Artifacts
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          src/out/Default/gen/node_headers
+          src/out/Default/overlapped-checker
+          src/electron
+          src/third_party/electron_node
+          src/third_party/nan
+          src/cross-arch-snapshots
+          src/third_party/llvm-build
+          src/build/linux
+          src/buildtools/mac
+          src/buildtools/third_party/libc++
+          src/buildtools/third_party/libc++abi
+          src/third_party/libc++
+          src/third_party/libc++abi
+          src/out/Default/obj/buildtools/third_party
+          src/v8/tools/builtins-pgo
+        key: ${{ runner.os }}-build-artifacts-mas-${{ github.sha }}
   test:
     runs-on: macos-13-xlarge
     needs: build
@@ -482,7 +551,7 @@ jobs:
           src/v8/tools/builtins-pgo
         key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ github.sha }}
     - name: Restore Generated Artifacts
-      run: ./src/electron/script/restore-artifacts.sh
+      run: ./src/electron/.github/workflows/config/restore-artifacts.sh
     - name: Unzip Dist, Mksnapshot & Chromedriver
       run: |
         cd src/out/Default
