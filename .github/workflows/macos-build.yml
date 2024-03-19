@@ -50,6 +50,7 @@ jobs:
         cd src/electron
         node script/yarn install
     - name: Get Depot Tools
+      timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         if [ "`uname`" == "Darwin" ]; then
@@ -171,6 +172,7 @@ jobs:
         cd src/electron
         node script/yarn install
     - name: Get Depot Tools
+      timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         if [ "`uname`" == "Darwin" ]; then
@@ -479,6 +481,7 @@ jobs:
     runs-on: macos-13-xlarge
     needs: build
     strategy:
+      fail-fast: false
       matrix:
         build-type: [darwin, mas]
     env:
@@ -509,6 +512,7 @@ jobs:
         cd src/electron
         node script/yarn install
     - name: Get Depot Tools
+      timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         if [ "`uname`" == "Darwin" ]; then
