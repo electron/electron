@@ -343,25 +343,6 @@ Returns `boolean` - Whether the guest page can go to `offset`.
 
 Clears the navigation history.
 
-#### `<webview>.length()`
-
-Returns `Integer` - History length.
-
-#### `<webview>.getActiveIndex()`
-
-Returns `Integer` - The index from which we would go back/forward or reload.
-
-#### `<webview>.getNavigationEntryAtIndex(index)`
-
-* `index` Integer
-
-Returns `Object`:
-
-* `url` string - The url of the navigation entry at the given index.
-* `title` string - The app title set by the page to be displayed on the tab.
-
-If index is invalid (greater than history length or less than 0), then null will be returned.
-
 ### `<webview>.goBack()`
 
 Makes the guest page go back.

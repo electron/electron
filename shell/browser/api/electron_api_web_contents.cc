@@ -4375,7 +4375,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
       .SetMethod("_getNavigationEntryAtIndex",
                  &WebContents::GetNavigationEntryAtIndex)
-      .SetMethod("_length", &WebContents::GetHistoryLength)
+      .SetMethod("_historyLength", &WebContents::GetHistoryLength)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
