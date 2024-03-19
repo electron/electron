@@ -554,14 +554,14 @@ describe('webContents module', () => {
     });
     afterEach(closeAllWindows);
     it('should fetch default navigation entry when no urls are loaded', async () => {
-      const result = w.webContents.getNavigationEntryAtIndex(0);
+      const result = w.webContents.navigationHistory.getEntryAtIndex(0);
       expect(result).to.deep.equal({ url: '', title: '' });
     });
 
     it('should fetch navigation entry given a valid index', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.getNavigationEntryAtIndex(0);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(0);
         expect(result).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
       });
     });
@@ -569,7 +569,7 @@ describe('webContents module', () => {
     it('should return null given an invalid index larger than history length', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.getNavigationEntryAtIndex(5);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(5);
         expect(result).to.be.null();
       });
     });
@@ -577,7 +577,7 @@ describe('webContents module', () => {
     it('should return null given an invalid negative index', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.getNavigationEntryAtIndex(-1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
         expect(result).to.be.null();
       });
     });
@@ -593,7 +593,7 @@ describe('webContents module', () => {
     it('should return valid active index after a single page visit', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        expect(w.webContents.getActiveIndex()).to.equal(0);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
     });
 
@@ -606,11 +606,11 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
       await loadPromise;
 
-      expect(w.webContents.getActiveIndex()).to.equal(2);
+      expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
     });
 
     it('should return valid active index given no page visits', async () => {
-      expect(w.webContents.getActiveIndex()).to.equal(0);
+      expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
     });
   });
 
@@ -624,7 +624,7 @@ describe('webContents module', () => {
     it('should return valid history length after a single page visit', async () => {
       await w.loadURL('https://www.google.com');
       w.webContents.on('did-finish-load', async () => {
-        expect(w.webContents.length()).to.equal(1);
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
       });
     });
 
@@ -637,13 +637,13 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
       await loadPromise;
 
-      expect(w.webContents.length()).to.equal(3);
+      expect(w.webContents.navigationHistory.length()).to.equal(3);
     });
 
     it('should return valid history length given no page visits', async () => {
       // Note: Even if no navigation has committed, the history list will always start with an initial navigation entry
       // Ref: https://source.chromium.org/chromium/chromium/src/+/main:ceontent/public/browser/navigation_controller.h;l=381
-      expect(w.webContents.length()).to.equal(1);
+      expect(w.webContents.navigationHistory.length()).to.equal(1);
     });
   });
 
