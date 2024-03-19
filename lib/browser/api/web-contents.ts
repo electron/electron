@@ -536,13 +536,14 @@ WebContents.prototype._init = function () {
   // Add navigationHistory property which handles session history,
   // maintaining a list of navigation entries for backward and forward navigation.
   Object.defineProperty(this, 'navigationHistory', {
-    get: function () {
+    get () {
       return {
-        getActiveIndex: this._getActiveIndex(),
-        length: this._length(),
-        getEntryAtIndex: this._getNavigationEntryAtIndex()
+        getActiveIndex: this._getActiveIndex.bind(this),
+        length: this._length.bind(this),
+        getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this)
       };
-    }
+    },
+    enumerable: true
   });
 
   // Dispatch IPC messages to the ipc module.

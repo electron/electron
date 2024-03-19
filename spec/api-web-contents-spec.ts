@@ -546,104 +546,91 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getNavigationEntryAtIndex() API', () => {
+  describe('navigationHistory', () => {
     let w: BrowserWindow;
 
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
     afterEach(closeAllWindows);
-    it('should fetch default navigation entry when no urls are loaded', async () => {
-      const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-      expect(result).to.deep.equal({ url: '', title: '' });
-    });
-
-    it('should fetch navigation entry given a valid index', async () => {
-      await w.loadURL('https://www.google.com');
-      w.webContents.on('did-finish-load', async () => {
+    describe('navigationHistory.getEntryAtIndex(index) API ', () => {
+      it('should fetch default navigation entry when no urls are loaded', async () => {
         const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-        expect(result).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
+        expect(result).to.deep.equal({ url: '', title: '' });
+      });
+      it('should fetch navigation entry given a valid index', async () => {
+        await w.loadURL('https://www.google.com');
+        w.webContents.on('did-finish-load', async () => {
+          const result = w.webContents.navigationHistory.getEntryAtIndex(0);
+          expect(result).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
+        });
+      });
+      it('should return null given an invalid index larger than history length', async () => {
+        await w.loadURL('https://www.google.com');
+        w.webContents.on('did-finish-load', async () => {
+          const result = w.webContents.navigationHistory.getEntryAtIndex(5);
+          expect(result).to.be.null();
+        });
+      });
+      it('should return null given an invalid negative index', async () => {
+        await w.loadURL('https://www.google.com');
+        w.webContents.on('did-finish-load', async () => {
+          const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
+          expect(result).to.be.null();
+        });
       });
     });
 
-    it('should return null given an invalid index larger than history length', async () => {
-      await w.loadURL('https://www.google.com');
-      w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.navigationHistory.getEntryAtIndex(5);
-        expect(result).to.be.null();
+    describe('navigationHistory.getActiveIndex() API', () => {
+      it('should return valid active index after a single page visit', async () => {
+        await w.loadURL('https://www.google.com');
+        w.webContents.on('did-finish-load', async () => {
+          expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+        });
       });
-    });
 
-    it('should return null given an invalid negative index', async () => {
-      await w.loadURL('https://www.google.com');
-      w.webContents.on('did-finish-load', async () => {
-        const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
-        expect(result).to.be.null();
+      it('should return valid active index after a multiple page visits', async () => {
+        const loadPromise = once(w.webContents, 'did-finish-load');
+        await w.loadURL('https://www.github.com');
+        await loadPromise;
+        await w.loadURL('https://www.google.com');
+        await loadPromise;
+        await w.loadURL('about:blank');
+        await loadPromise;
+
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
       });
-    });
-  });
 
-  describe('getActiveIndex() API', () => {
-    let w: BrowserWindow;
-
-    beforeEach(async () => {
-      w = new BrowserWindow({ show: false });
-    });
-    afterEach(closeAllWindows);
-    it('should return valid active index after a single page visit', async () => {
-      await w.loadURL('https://www.google.com');
-      w.webContents.on('did-finish-load', async () => {
+      it('should return valid active index given no page visits', async () => {
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
     });
 
-    it('should return valid active index after a multiple page visits', async () => {
-      const loadPromise = once(w.webContents, 'did-finish-load');
-      await w.loadURL('https://www.github.com');
-      await loadPromise;
-      await w.loadURL('https://www.google.com');
-      await loadPromise;
-      await w.loadURL('about:blank');
-      await loadPromise;
+    describe('navigationHistory.length() API', () => {
+      it('should return valid history length after a single page visit', async () => {
+        await w.loadURL('https://www.google.com');
+        w.webContents.on('did-finish-load', async () => {
+          expect(w.webContents.navigationHistory.length()).to.equal(1);
+        });
+      });
 
-      expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
-    });
+      it('should return valid history length after a multiple page visits', async () => {
+        const loadPromise = once(w.webContents, 'did-finish-load');
+        await w.loadURL('https://www.github.com');
+        await loadPromise;
+        await w.loadURL('https://www.google.com');
+        await loadPromise;
+        await w.loadURL('about:blank');
+        await loadPromise;
 
-    it('should return valid active index given no page visits', async () => {
-      expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
-    });
-  });
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+      });
 
-  describe('length() API', () => {
-    let w: BrowserWindow;
-
-    beforeEach(async () => {
-      w = new BrowserWindow({ show: false });
-    });
-    afterEach(closeAllWindows);
-    it('should return valid history length after a single page visit', async () => {
-      await w.loadURL('https://www.google.com');
-      w.webContents.on('did-finish-load', async () => {
+      it('should return valid history length given no page visits', async () => {
+        // Note: Even if no navigation has committed, the history list will always start with an initial navigation entry
+        // Ref: https://source.chromium.org/chromium/chromium/src/+/main:ceontent/public/browser/navigation_controller.h;l=381
         expect(w.webContents.navigationHistory.length()).to.equal(1);
       });
-    });
-
-    it('should return valid history length after a multiple page visits', async () => {
-      const loadPromise = once(w.webContents, 'did-finish-load');
-      await w.loadURL('https://www.github.com');
-      await loadPromise;
-      await w.loadURL('https://www.google.com');
-      await loadPromise;
-      await w.loadURL('about:blank');
-      await loadPromise;
-
-      expect(w.webContents.navigationHistory.length()).to.equal(3);
-    });
-
-    it('should return valid history length given no page visits', async () => {
-      // Note: Even if no navigation has committed, the history list will always start with an initial navigation entry
-      // Ref: https://source.chromium.org/chromium/chromium/src/+/main:ceontent/public/browser/navigation_controller.h;l=381
-      expect(w.webContents.navigationHistory.length()).to.equal(1);
     });
   });
 

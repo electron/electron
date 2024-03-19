@@ -118,7 +118,7 @@ declare namespace Electron {
     embedder?: Electron.WebContents;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
-  
+
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   interface Menu {
@@ -170,7 +170,6 @@ declare namespace Electron {
   interface IpcMainInvokeEvent {
     _replyChannel: ReplyChannel;
   }
-
 
   // Deprecated / undocumented BrowserWindow methods
   interface BrowserWindow {
