@@ -388,7 +388,7 @@ jobs:
         key: ${{ runner.os }}-build-artifacts-darwin-${{ github.sha }}
     - name: Create MAS Config
       run: |
-        mv src/electron/.github/workflows/config/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
+        mv src/electron/script/actions/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         e use mas
     - name: Build Electron (mas)
@@ -449,7 +449,7 @@ jobs:
         e build electron:electron_version_file
         electron/script/zip-symbols.py -b $BUILD_PATH
     - name: Move all Generated Artifacts to Upload Folder (mas)
-      run: ./src/electron/.github/workflows/config/move-artifacts.sh
+      run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -551,7 +551,7 @@ jobs:
           src/v8/tools/builtins-pgo
         key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ github.sha }}
     - name: Restore Generated Artifacts
-      run: ./src/electron/.github/workflows/config/restore-artifacts.sh
+      run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist, Mksnapshot & Chromedriver
       run: |
         cd src/out/Default
