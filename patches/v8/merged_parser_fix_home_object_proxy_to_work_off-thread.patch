@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Thu, 7 Mar 2024 14:55:28 -0800
+Subject: Merged: [parser] Fix home object proxy to work off-thread
+
+Because the home object has special scope lookup rules due to class
+heritage position, VariableProxies of the home object are currently
+directly created on the correct scope during parsing. However, during
+off-thread parsing the main thread is parked, and the correct scope
+may try to dereference a main-thread Handle.
+
+This CL moves the logic into ResolveVariable instead, which happens
+during postprocessing, with the main thread unparked.
+
+Fixed: chromium:327740539
+
+(cherry picked from commit 8f477f936c9b9e6b4c9f35a8ccc5e65bd4cb7f4e)
+
+Change-Id: I16805ad35f5d70d1acadaf1f5440dfc159dbfa6c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5363634
+Reviewed-by: Deepti Gandluri <gdeepti@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.2@{#44}
+Cr-Branched-From: 6eb5a9616aa6f8c705217aeb7c7ab8c037a2f676-refs/heads/12.2.281@{#1}
+Cr-Branched-From: 44cf56d850167c6988522f8981730462abc04bcc-refs/heads/main@{#91934}
+
+diff --git a/src/ast/ast.h b/src/ast/ast.h
+index cf9d52eeed67a3d7685916987b540950385f98ce..7bb30723607ec9a3cef9d45b032c3edfa55bdc9c 100644
+--- a/src/ast/ast.h
++++ b/src/ast/ast.h
+@@ -1534,6 +1534,12 @@ class VariableProxy final : public Expression {
+     bit_field_ = IsRemovedFromUnresolvedField::update(bit_field_, true);
+   }
+ 
++  bool is_home_object() const { return IsHomeObjectField::decode(bit_field_); }
++
++  void set_is_home_object() {
++    bit_field_ = IsHomeObjectField::update(bit_field_, true);
++  }
++
+   // Provides filtered access to the unresolved variable proxy threaded list.
+   struct UnresolvedNext {
+     static VariableProxy** filter(VariableProxy** t) {
+@@ -1565,6 +1571,7 @@ class VariableProxy final : public Expression {
+     bit_field_ |= IsAssignedField::encode(false) |
+                   IsResolvedField::encode(false) |
+                   IsRemovedFromUnresolvedField::encode(false) |
++                  IsHomeObjectField::encode(false) |
+                   HoleCheckModeField::encode(HoleCheckMode::kElided);
+   }
+ 
+@@ -1574,7 +1581,8 @@ class VariableProxy final : public Expression {
+   using IsResolvedField = IsAssignedField::Next<bool, 1>;
+   using IsRemovedFromUnresolvedField = IsResolvedField::Next<bool, 1>;
+   using IsNewTargetField = IsRemovedFromUnresolvedField::Next<bool, 1>;
+-  using HoleCheckModeField = IsNewTargetField::Next<HoleCheckMode, 1>;
++  using IsHomeObjectField = IsNewTargetField::Next<bool, 1>;
++  using HoleCheckModeField = IsHomeObjectField::Next<HoleCheckMode, 1>;
+ 
+   union {
+     const AstRawString* raw_name_;  // if !is_resolved_
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 672440a2b4b9ad6262c49be50d03377b413452a6..6dfcd45cf208e58a2fc0cd18ba3b115bae35a0d5 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -491,7 +491,6 @@ Scope* Scope::DeserializeScopeChain(IsolateT* isolate, Zone* zone,
+     if (cache_scope_found) {
+       outer_scope->set_deserialized_scope_uses_external_cache();
+     } else {
+-      DCHECK(!cache_scope_found);
+       cache_scope_found =
+           outer_scope->is_declaration_scope() && !outer_scope->is_eval_scope();
+     }
+@@ -970,9 +969,14 @@ Variable* Scope::LookupInScopeInfo(const AstRawString* name, Scope* cache) {
+   DCHECK(!cache->deserialized_scope_uses_external_cache());
+   // The case where where the cache can be another scope is when the cache scope
+   // is the last scope that doesn't use an external cache.
++  //
++  // The one exception to this is when looking up the home object, which may
++  // skip multiple scopes that don't use an external cache (e.g., several arrow
++  // functions).
+   DCHECK_IMPLIES(
+       cache != this,
+-      cache->outer_scope()->deserialized_scope_uses_external_cache());
++      cache->outer_scope()->deserialized_scope_uses_external_cache() ||
++          cache->GetHomeObjectScope() == this);
+   DCHECK_NULL(cache->variables_.Lookup(name));
+   DisallowGarbageCollection no_gc;
+ 
+@@ -2282,7 +2286,33 @@ Variable* Scope::LookupSloppyEval(VariableProxy* proxy, Scope* scope,
+ 
+ void Scope::ResolveVariable(VariableProxy* proxy) {
+   DCHECK(!proxy->is_resolved());
+-  Variable* var = Lookup<kParsedScope>(proxy, this, nullptr);
++  Variable* var;
++  if (V8_UNLIKELY(proxy->is_home_object())) {
++    // VariableProxies of the home object cannot be resolved like a normal
++    // variable. Consider the case of a super.property usage in heritage
++    // position:
++    //
++    //   class C extends super.foo { m() { super.bar(); } }
++    //
++    // The super.foo property access is logically nested under C's class scope,
++    // which also has a home object due to its own method m's usage of
++    // super.bar(). However, super.foo must resolve super in C's outer scope.
++    //
++    // Because of the above, start resolving home objects directly at the home
++    // object scope instead of the current scope.
++    Scope* scope = GetDeclarationScope()->GetHomeObjectScope();
++    DCHECK_NOT_NULL(scope);
++    if (scope->scope_info_.is_null()) {
++      var = Lookup<kParsedScope>(proxy, scope, nullptr);
++    } else {
++      Scope* entry_cache = scope->deserialized_scope_uses_external_cache()
++                               ? GetNonEvalDeclarationScope()
++                               : scope;
++      var = Lookup<kDeserializedScope>(proxy, scope, nullptr, entry_cache);
++    }
++  } else {
++    var = Lookup<kParsedScope>(proxy, this, nullptr);
++  }
+   DCHECK_NOT_NULL(var);
+   ResolveTo(proxy, var);
+ }
+@@ -2752,48 +2782,6 @@ int Scope::ContextLocalCount() const {
+          (is_function_var_in_context ? 1 : 0);
+ }
+ 
+-VariableProxy* Scope::NewHomeObjectVariableProxy(AstNodeFactory* factory,
+-                                                 const AstRawString* name,
+-                                                 int start_pos) {
+-  // VariableProxies of the home object cannot be resolved like a normal
+-  // variable. Consider the case of a super.property usage in heritage position:
+-  //
+-  //   class C extends super.foo { m() { super.bar(); } }
+-  //
+-  // The super.foo property access is logically nested under C's class scope,
+-  // which also has a home object due to its own method m's usage of
+-  // super.bar(). However, super.foo must resolve super in C's outer scope.
+-  //
+-  // Because of the above, home object VariableProxies are always made directly
+-  // on the Scope that needs the home object instead of the innermost scope.
+-  DCHECK(needs_home_object());
+-  if (!scope_info_.is_null()) {
+-    // This is a lazy compile, so the home object's context slot is already
+-    // known.
+-    Variable* home_object = variables_.Lookup(name);
+-    if (home_object == nullptr) {
+-      VariableLookupResult lookup_result;
+-      int index = scope_info_->ContextSlotIndex(name->string(), &lookup_result);
+-      DCHECK_GE(index, 0);
+-      bool was_added;
+-      home_object = variables_.Declare(zone(), this, name, lookup_result.mode,
+-                                       NORMAL_VARIABLE, lookup_result.init_flag,
+-                                       lookup_result.maybe_assigned_flag,
+-                                       IsStaticFlag::kNotStatic, &was_added);
+-      DCHECK(was_added);
+-      home_object->AllocateTo(VariableLocation::CONTEXT, index);
+-    }
+-    return factory->NewVariableProxy(home_object, start_pos);
+-  }
+-  // This is not a lazy compile. Add the unresolved home object VariableProxy to
+-  // the unresolved list of the home object scope, which is not necessarily the
+-  // innermost scope.
+-  VariableProxy* proxy =
+-      factory->NewVariableProxy(name, NORMAL_VARIABLE, start_pos);
+-  AddUnresolved(proxy);
+-  return proxy;
+-}
+-
+ bool IsComplementaryAccessorPair(VariableMode a, VariableMode b) {
+   switch (a) {
+     case VariableMode::kPrivateGetterOnly:
+diff --git a/src/ast/scopes.h b/src/ast/scopes.h
+index b4c2e8b2136813985231a722c6dbcd26e2c17336..751aaee3d11ecc0da71e2171dd42ed4b85d00219 100644
+--- a/src/ast/scopes.h
++++ b/src/ast/scopes.h
+@@ -603,10 +603,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
+     needs_home_object_ = true;
+   }
+ 
+-  VariableProxy* NewHomeObjectVariableProxy(AstNodeFactory* factory,
+-                                            const AstRawString* name,
+-                                            int start_pos);
+-
+   bool RemoveInnerScope(Scope* inner_scope) {
+     DCHECK_NOT_NULL(inner_scope);
+     if (inner_scope == inner_scope_) {
+@@ -865,7 +861,7 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
+   FunctionKind function_kind() const { return function_kind_; }
+ 
+   // Inform the scope that the corresponding code uses "super".
+-  Scope* RecordSuperPropertyUsage() {
++  void RecordSuperPropertyUsage() {
+     DCHECK(IsConciseMethod(function_kind()) ||
+            IsAccessorFunction(function_kind()) ||
+            IsClassConstructor(function_kind()));
+@@ -873,7 +869,6 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
+     Scope* home_object_scope = GetHomeObjectScope();
+     DCHECK_NOT_NULL(home_object_scope);
+     home_object_scope->set_needs_home_object();
+-    return home_object_scope;
+   }
+ 
+   bool uses_super_property() const { return uses_super_property_; }
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index af7add9aa8231233dffd5f04ca491b3f614c3f97..232a6bdae48d5d6300b53bfd05b42841d2eae664 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -3823,9 +3823,9 @@ ParserBase<Impl>::ParseSuperExpression() {
+         impl()->ReportMessage(MessageTemplate::kOptionalChainingNoSuper);
+         return impl()->FailureExpression();
+       }
+-      Scope* home_object_scope = scope->RecordSuperPropertyUsage();
++      scope->RecordSuperPropertyUsage();
+       UseThis();
+-      return impl()->NewSuperPropertyReference(home_object_scope, pos);
++      return impl()->NewSuperPropertyReference(pos);
+     }
+     // super() is only allowed in derived constructor. new super() is never
+     // allowed; it's reported as an error by
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index d42cd361d230de2b7da93a05785b2b721ff372cd..4c1ce5360f2b7f8a9c8a19fcee25e65b3a433db5 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -300,18 +300,17 @@ Expression* Parser::NewThrowError(Runtime::FunctionId id,
+   return factory()->NewThrow(call_constructor, pos);
+ }
+ 
+-Expression* Parser::NewSuperPropertyReference(Scope* home_object_scope,
+-                                              int pos) {
++Expression* Parser::NewSuperPropertyReference(int pos) {
+   const AstRawString* home_object_name;
+   if (IsStatic(scope()->GetReceiverScope()->function_kind())) {
+     home_object_name = ast_value_factory_->dot_static_home_object_string();
+   } else {
+     home_object_name = ast_value_factory_->dot_home_object_string();
+   }
+-  return factory()->NewSuperPropertyReference(
+-      home_object_scope->NewHomeObjectVariableProxy(factory(), home_object_name,
+-                                                    pos),
+-      pos);
++
++  VariableProxy* proxy = NewUnresolved(home_object_name, pos);
++  proxy->set_is_home_object();
++  return factory()->NewSuperPropertyReference(proxy, pos);
+ }
+ 
+ Expression* Parser::NewSuperCallReference(int pos) {
+diff --git a/src/parsing/parser.h b/src/parsing/parser.h
+index 8aede5d6a2cd38b2ad02fa2d7542ea8163c29aa9..0e92f0350b5989781bda0eeb9746cfa18cd5e179 100644
+--- a/src/parsing/parser.h
++++ b/src/parsing/parser.h
+@@ -798,7 +798,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
+     return factory()->NewThisExpression(pos);
+   }
+ 
+-  Expression* NewSuperPropertyReference(Scope* home_object_scope, int pos);
++  Expression* NewSuperPropertyReference(int pos);
+   Expression* NewSuperCallReference(int pos);
+   Expression* NewTargetExpression(int pos);
+   Expression* ImportMetaExpression(int pos);
+diff --git a/src/parsing/preparser.h b/src/parsing/preparser.h
+index 6c4996bd06be782bd0f767a2bfb6d413cfc1ae82..2ca6b9ac407b0862d82be466eec624280b241b09 100644
+--- a/src/parsing/preparser.h
++++ b/src/parsing/preparser.h
+@@ -1536,8 +1536,7 @@ class PreParser : public ParserBase<PreParser> {
+     return PreParserExpression::This();
+   }
+ 
+-  V8_INLINE PreParserExpression
+-  NewSuperPropertyReference(Scope* home_object_scope, int pos) {
++  V8_INLINE PreParserExpression NewSuperPropertyReference(int pos) {
+     return PreParserExpression::Default();
+   }
+ 
