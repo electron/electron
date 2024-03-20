@@ -26,10 +26,10 @@ index d466e72df7e2c7094ed80d6b70b78eab7a93ba4c..a9a10f2c91a473c41d5e2a0ce7ce2608
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 3385e9e9d5690d746d4935f3ddc74bc09746c017..278663682017393b1cd52475d8fffb601d0cbe25 100644
+index f0994a41bc5d1cb1a2bcbb7fd2521485fc51d140..5c92cc3f9a8b3fa873bd0861cddb660467c88380 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -443,6 +443,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -444,6 +444,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index 3385e9e9d5690d746d4935f3ddc74bc09746c017..278663682017393b1cd52475d8fffb60
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -672,6 +689,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -673,6 +690,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
@@ -62,10 +62,10 @@ index 3385e9e9d5690d746d4935f3ddc74bc09746c017..278663682017393b1cd52475d8fffb60
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 566230f830edec321ec3032b81e3478f155912c6..65d4d09c1e9e50197244a3e0f79ace8498463774 100644
+index 848d7f5002d2bed918072b62c29dad8d189bf81b..2bb4ffcd3238558ddb3bad64be894345f56972b0 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -673,6 +673,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -674,6 +674,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;

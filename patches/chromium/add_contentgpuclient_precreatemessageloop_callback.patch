@@ -10,7 +10,7 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index c5155af40194660e4a9dc0e5351bdf4f0886265d..c8371a3ac10af6ba57769c1a574ebe8a0c2836b4 100644
+index bec9509b40bbd686d3979716ed1f81040d36727a..9b9dff6fdb1728a6b77a3c2ee9923521f3b66ad4 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -264,6 +264,10 @@ int GpuMain(MainFunctionParams parameters) {
@@ -24,8 +24,8 @@ index c5155af40194660e4a9dc0e5351bdf4f0886265d..c8371a3ac10af6ba57769c1a574ebe8a
    // We are experiencing what appear to be memory-stomp issues in the GPU
    // process. These issues seem to be impacting the task executor and listeners
    // registered to it. Create the task executor on the heap to guard against
-@@ -358,7 +362,6 @@ int GpuMain(MainFunctionParams parameters) {
-       const_cast<base::CommandLine*>(&command_line), gpu_preferences);
+@@ -361,7 +365,6 @@ int GpuMain(MainFunctionParams parameters) {
+ #endif
    const bool dead_on_arrival = !init_success;
  
 -  auto* client = GetContentClient()->gpu();

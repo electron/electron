@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 25356ec40cdbf63c89ccc4b05245b00d65e0739a..0c347ca1a75a9c894a0dc067ef87c34ae5a5b495 100644
+index 843990b56832179de88f1760f8c1ef6409b015b2..ae3b097a3530e8a3c63e36a37b8151228a361b54 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1058,6 +1058,7 @@ component("base") {
@@ -459,7 +459,7 @@ index d520acc21839a63f5e1167c5ec3f119d89d43713..8b2f3c6cfa2615452fd43b7accd26ce8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7c53d9b2015c6c57f19c23c52c1aab3ffeea15ea..f6b7ba2f3512dcd2528323bb6853452cc9eab1a6 100644
+index 3e40fdd3a60a998be2b3fe9c085f61041ba5ecd3..d424d897b307771568c57a0921154a49135b3c17 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4d747913c7c3904f5e3f463580523907f758dcbe..d3b6b24ee7ca6ccc6e45b492735b21836b715102 100644
+index 56e3d66e62aee8cd99368817d75227ab5dad1866..997340197c70c54402c9b76f4e88cec7096e8273 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -488,6 +488,7 @@ static_library("test_support") {
+@@ -490,6 +490,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index 4d747913c7c3904f5e3f463580523907f758dcbe..d3b6b24ee7ca6ccc6e45b492735b2183
    ]
  
    public_deps = [
-@@ -1086,6 +1087,7 @@ static_library("browsertest_support") {
+@@ -1088,6 +1089,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 4d747913c7c3904f5e3f463580523907f758dcbe..d3b6b24ee7ca6ccc6e45b492735b2183
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1702,6 +1704,7 @@ test("content_browsertests") {
+@@ -1704,6 +1706,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 4d747913c7c3904f5e3f463580523907f758dcbe..d3b6b24ee7ca6ccc6e45b492735b2183
  
    public_deps = [
      ":test_interfaces",
-@@ -2929,6 +2932,7 @@ test("content_unittests") {
+@@ -2931,6 +2934,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
