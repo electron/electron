@@ -17,6 +17,7 @@
 #include "gin/dictionary.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -40,6 +41,34 @@ class Arguments;
 namespace electron {
 
 class ElectronMenuModel;
+
+struct LoginItemSettings {
+  bool open_at_login = false;
+  bool open_as_hidden = false;
+  bool restore_state = false;
+  bool opened_at_login = false;
+  bool opened_as_hidden = false;
+  std::u16string path;
+  std::vector<std::u16string> args;
+
+#if BUILDFLAG(IS_MAC)
+  std::string type = "mainAppService";
+  std::string service_name;
+  std::string status;
+#elif BUILDFLAG(IS_WIN)
+  // used in browser::setLoginItemSettings
+  bool enabled = true;
+  std::wstring name;
+
+  // used in browser::getLoginItemSettings
+  bool executable_will_launch_at_login = false;
+  std::vector<LaunchItem> launch_items;
+#endif
+
+  LoginItemSettings();
+  ~LoginItemSettings();
+  LoginItemSettings(const LoginItemSettings&);
+};
 
 // This class is used for control application-wide operations.
 class Browser : public WindowListObserver {
@@ -126,36 +155,8 @@ class Browser : public WindowListObserver {
   };
 #endif
 
-  // Set/Get the login item settings of the app
-  struct LoginItemSettings {
-    bool open_at_login = false;
-    bool open_as_hidden = false;
-    bool restore_state = false;
-    bool opened_at_login = false;
-    bool opened_as_hidden = false;
-    std::u16string path;
-    std::vector<std::u16string> args;
-
-#if BUILDFLAG(IS_MAC)
-    std::string type = "mainAppService";
-    std::string service_name;
-    std::string status;
-#elif BUILDFLAG(IS_WIN)
-    // used in browser::setLoginItemSettings
-    bool enabled = true;
-    std::wstring name;
-
-    // used in browser::getLoginItemSettings
-    bool executable_will_launch_at_login = false;
-    std::vector<LaunchItem> launch_items;
-#endif
-
-    LoginItemSettings();
-    ~LoginItemSettings();
-    LoginItemSettings(const LoginItemSettings&);
-  };
   void SetLoginItemSettings(LoginItemSettings settings);
-  LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
+  v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
 
 #if BUILDFLAG(IS_MAC)
   // Set the handler which decides whether to shutdown.
