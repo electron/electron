@@ -345,9 +345,11 @@ void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
 
   base::ThreadPool::CreateCOMSTATaskRunner(
       {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-      ->PostTaskAndReplyWithResult(FROM_HERE,
-                                   base::BindOnce(&OpenPathOnThread, full_path),
-                                   std::move(callback));
+      ->PostTaskAndReplyWithResult(
+          FROM_HERE,
+          base::BindOnce(&OpenPathOnThread,
+                         full_path.NormalizePathSeparators()),
+          std::move(callback));
 }
 
 void OpenExternal(const GURL& url,
