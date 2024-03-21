@@ -48,7 +48,7 @@ There are a few rules to follow for the purposes of this tutorial:
 
 * `entry point` should be `main.js`.
 * `author` and `description` can be any value, but are necessary for
-[app packaging](#package-and-distribute-your-application).
+  [app packaging](#package-and-distribute-your-application).
 
 Your `package.json` file should look something like this:
 
@@ -336,12 +336,13 @@ any arbitrary scripts you want:
 <script src="./renderer.js"></script>
 ```
 
-The code contained in `renderer.js` can then use the same JavaScript APIs and tooling
+The code contained in `renderer.js` can then use the same [`JavaScript APIs`][javascript apis] and tooling
 you use for typical front-end development, such as using [`webpack`][webpack] to bundle
-and minify your code or [React][react] to manage your user interfaces.
+and minify your code or [`React`][react] to manage your user interfaces.
 
 [webpack]: https://webpack.js.org
 [react]: https://reactjs.org
+[javascript apis]: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API
 
 ### Recap
 
@@ -466,7 +467,7 @@ To build an RPM package for Linux, you will need to [install its required system
 
 1. Add a description to your `package.json` file, otherwise rpmbuild will fail. Blank description are not valid.
 2. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
-Forge's scaffolding:
+   Forge's scaffolding:
 
    ```sh npm2yarn
    npm install --save-dev @electron-forge/cli
