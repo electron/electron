@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index a543fb2ec5873da9d2b108748eaa5d52de4f0d50..a03f68e218dd540d3d1fd3d51e3fa67478198789 100644
+index 1a131cf3a34b32cae6180a6744c0169431d866a5..f57c698fe21e54c0687fe26093224d677fdc2c34 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -115,8 +115,8 @@ index a543fb2ec5873da9d2b108748eaa5d52de4f0d50..a03f68e218dd540d3d1fd3d51e3fa674
      return;
  
 +#if 0
-   CHECK(fullscreen_start_time_);
-   if (exclusive_access_tab()) {
+   // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
+   if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
 @@ -562,15 +573,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
