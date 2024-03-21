@@ -42,6 +42,20 @@ namespace electron {
 
 class ElectronMenuModel;
 
+#if BUILDFLAG(IS_WIN)
+struct LaunchItem {
+  std::wstring name;
+  std::wstring path;
+  std::wstring scope;
+  std::vector<std::wstring> args;
+  bool enabled = true;
+
+  LaunchItem();
+  ~LaunchItem();
+  LaunchItem(const LaunchItem&);
+};
+#endif
+
 struct LoginItemSettings {
   bool open_at_login = false;
   bool open_as_hidden = false;
@@ -140,20 +154,6 @@ class Browser : public WindowListObserver {
   // Set/Get the badge count.
   bool SetBadgeCount(std::optional<int> count);
   [[nodiscard]] int badge_count() const { return badge_count_; }
-
-#if BUILDFLAG(IS_WIN)
-  struct LaunchItem {
-    std::wstring name;
-    std::wstring path;
-    std::wstring scope;
-    std::vector<std::wstring> args;
-    bool enabled = true;
-
-    LaunchItem();
-    ~LaunchItem();
-    LaunchItem(const LaunchItem&);
-  };
-#endif
 
   void SetLoginItemSettings(LoginItemSettings settings);
   v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
