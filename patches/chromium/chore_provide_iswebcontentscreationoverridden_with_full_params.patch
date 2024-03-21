@@ -80,10 +80,10 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 0791cc8f55a922c6c9e0bd6b69d863ed0e0b8dd0..7a423f19ffdb6819c7ca8973fe08221bc27b5ee4 100644
+index 3d985470f60d1c8f63d6794ad2bcf5954defe8db..cf96fc1321da45bcf1efa8e0b1655bbc924d7d41 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1935,12 +1935,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1933,12 +1933,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 0791cc8f55a922c6c9e0bd6b69d863ed0e0b8dd0..7a423f19ffdb6819c7ca8973fe08221b
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 36ae82017f790810f58eb85b478c5d26acd20e05..42bbd163d82e99054435ec0459282c0c5fb61cbd 100644
+index 4f393fa78e991fbaf5eed7a5a21414c0399753d6..5fe424e119fd843ba9245354a2cf409532252b49 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -924,8 +924,7 @@ class Browser : public TabStripModelObserver,
+@@ -923,8 +923,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index df08d8a1b2232dcd9b926466f062b17b34dad446..6addf2f57f08a9c1a6702b777d965c1d99ce59a1 100644
+index 94cdebc2ae552106bdeb7d3619dc9281c4fb4063..257b9f8ae014f577a9e2de35a3b251efda451fbe 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4438,8 +4438,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4491,8 +4491,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -232,7 +232,7 @@ index df08d8a1b2232dcd9b926466f062b17b34dad446..6addf2f57f08a9c1a6702b777d965c1d
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 8930b2f6c532418a5de97813645783bc2bbad1ba..cfa7dc3805897a7e7b09bcf3fa4ebde05092c510 100644
+index 2b03b5b0152678a4f2fa64cabab0dc511cea0f79..35fbc8503bb5a153e9b640e3a68dfab6e0f046f2 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -138,8 +138,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,10 +246,10 @@ index 8930b2f6c532418a5de97813645783bc2bbad1ba..cfa7dc3805897a7e7b09bcf3fa4ebde0
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 7217c90d0c65203056c622120ae161206d341a83..681aa45b93e648157d018be425024dceef6a0708 100644
+index 1384a322617b4be4b4ffbda5c44b41ac05bc8977..dc586cd35ec336d5843447320520e433404e169d 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -328,8 +328,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -326,8 +326,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -260,10 +260,10 @@ index 7217c90d0c65203056c622120ae161206d341a83..681aa45b93e648157d018be425024dce
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index 871d4bf48e3267cb518ebf2d4b2aaebdf9f4b0dc..d1f434fd9e23a172928aed23ca194b0b7bc2d884 100644
+index cd9920e21bddc26fe051c4b5638424e03534f849..9dacac9df4bdc06f7d73f37e852d6cf13f68413b 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-@@ -213,8 +213,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
+@@ -216,8 +216,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -274,10 +274,10 @@ index 871d4bf48e3267cb518ebf2d4b2aaebdf9f4b0dc..d1f434fd9e23a172928aed23ca194b0b
    // view is used for displaying embedded extension options, we want any
    // external links to be opened in a new tab, not in a new guest view so we
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.h b/extensions/browser/guest_view/extension_options/extension_options_guest.h
-index 2578fa3fe9709cccd116290b4646c4426c41f8c8..32e7f992af1830e619b80f454051044ad80a77c2 100644
+index 792f0cfa8475360ab58434d6b7bca1d36f674234..21665eb04d85fded5a9fb3a3c3069e4edfd1a73c 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.h
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.h
-@@ -62,8 +62,7 @@ class ExtensionOptionsGuest
+@@ -63,8 +63,7 @@ class ExtensionOptionsGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -288,10 +288,10 @@ index 2578fa3fe9709cccd116290b4646c4426c41f8c8..32e7f992af1830e619b80f454051044a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 39def4c0d8ad58b51a6a71f5ad46b308bf7ff3a5..2357963cc6f83eb5536c01e1a25a7d12d8efce06 100644
+index cb8f896ebe8a229245d4b69bf9d0a7e9b598b0d2..a76610cc2de970f4d9eee1695e613ec1f1752f25 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -386,8 +386,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -388,8 +388,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -302,10 +302,10 @@ index 39def4c0d8ad58b51a6a71f5ad46b308bf7ff3a5..2357963cc6f83eb5536c01e1a25a7d12
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 5709e978f2d8e6e287beb0b152595b937ebaeaf9..bf4e162439e6143470b24335ffb87381a79aae98 100644
+index 1cf22ee486d411fd35cfc8040f3e9e51eb3b087f..040e3d37eca88e84fe41a217472a0c9e4ba7d593 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-@@ -174,8 +174,7 @@ class MimeHandlerViewGuest
+@@ -175,8 +175,7 @@ class MimeHandlerViewGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

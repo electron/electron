@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 28ba2fe1481518bb42eb79db4ab157fb6020b434..e8a2ed2b04007ba5f1135f49a156b5a6b37ae3ab 100644
+index 69e759c3b34692beac06ceeddf4b3f1637fb7788..42d0da7f936626aa8bb90057723deeaafce8744d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -973,7 +973,6 @@ if (is_win) {
@@ -34,7 +34,7 @@ index 28ba2fe1481518bb42eb79db4ab157fb6020b434..e8a2ed2b04007ba5f1135f49a156b5a6
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 874b9efcf9e70650728885519009360ee770a79f..6c4d24d44e69d796bc6bfec5f7092f5b3ae28703 100644
+index 0d8a53178e8d509a573ffdaadf2c4cec670522ac..8e7f9b92beb317888a5a3acb3bc2fa29f283ff03 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -96,6 +96,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0ae8d5460 100644
+index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a95306c72e2d 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -651,7 +651,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1230,14 +1231,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1229,14 +1230,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -668,7 +668,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
    if (!weak_this) {
      return;
    }
-@@ -1268,7 +1269,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1267,7 +1268,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -677,7 +677,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1283,7 +1284,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1282,7 +1283,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -686,7 +686,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
  
    if (render_frame_gone_) {
      return;
-@@ -1372,7 +1373,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+@@ -1371,7 +1372,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
    }
  
    Print(frame, print_preview_context_.source_node(),
@@ -696,7 +696,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
    if (render_frame_gone_) {
      return;
    }
-@@ -1435,6 +1437,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1434,6 +1436,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -705,7 +705,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2012,7 +2016,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2011,7 +2015,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
    }
  
    Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -715,7 +715,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
    // Check if `this` is still valid.
    if (!weak_this) {
      return;
-@@ -2028,17 +2033,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2027,17 +2032,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -738,7 +738,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2059,8 +2066,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2058,8 +2065,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -755,7 +755,7 @@ index 1fafad1543a007873aca7157798fe7ca8a1afea6..d69134f785b9fb39130959f0a38e0ab0
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2318,25 +2332,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2317,25 +2331,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -830,10 +830,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 58acdffd6bf4c93d69b9e6f0565e567c377705a7..66ce92c8b5034e90467c5f1b035d2115636e52aa 100644
+index f6b7ba2f3512dcd2528323bb6853452cc9eab1a6..288d9219efa0ea8683fe86c5b339bbf9b829d712 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2926,8 +2926,9 @@ source_set("browser") {
+@@ -2933,8 +2933,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

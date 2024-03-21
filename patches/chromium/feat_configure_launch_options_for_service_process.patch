@@ -163,13 +163,14 @@ index 1d6bc6590720cda38983203455cc20638710148f..8f965150db13d3f4fe1757a021b9a2f6
  }
  
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index 7c9548bc25fa3a886806e1611791f2a74aa94d1a..d61ce98e754c2546987bf2cbe0ed6bf9332cf46a 100644
+index 1987b9539e6d393334e0a9b1e4145fa816e14559..73d8c2fcbed9db89161ad3fabd5cbfb6b3761a4d 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
-@@ -203,6 +203,15 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
-     host->SetPinUser32();
+@@ -207,6 +207,16 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+       options.allow_gpu_client.value()) {
+     host->SetAllowGpuClient();
    }
- #endif  // BUILDFLAG(IS_WIN)
++
 +#if BUILDFLAG(IS_WIN)
 +  host->SetStdioHandles(std::move(options.stdout_handle), std::move(options.stderr_handle));
 +#elif BUILDFLAG(IS_POSIX)
@@ -183,10 +184,10 @@ index 7c9548bc25fa3a886806e1611791f2a74aa94d1a..d61ce98e754c2546987bf2cbe0ed6bf9
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 009e97487209e3ebe811d061d5e8a44df7eb9eb3..3ae41211ea66161a5117262907d9fc70f33e4c8a 100644
+index 3cca937cc1af689df506bce8f31baee7968e7798..9b99a3caf366368917c39ae5c12a11f5294c3948 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -177,11 +177,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -178,11 +178,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -202,7 +203,7 @@ index 009e97487209e3ebe811d061d5e8a44df7eb9eb3..3ae41211ea66161a5117262907d9fc70
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -247,6 +249,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -254,6 +256,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -227,7 +228,7 @@ index 009e97487209e3ebe811d061d5e8a44df7eb9eb3..3ae41211ea66161a5117262907d9fc70
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -460,9 +480,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -463,9 +483,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -252,7 +253,7 @@ index 009e97487209e3ebe811d061d5e8a44df7eb9eb3..3ae41211ea66161a5117262907d9fc70
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 01a921c772f769c64ac97bfc5e74862a801e3e61..9bfc30138a01520d59760a49d15dd4819feb0556 100644
+index cba1933af784da5e3afd12b7695a734158a5db1b..ecb0b0e02870386f3ad4365461325ba0627ba1ce 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@
@@ -282,7 +283,7 @@ index 01a921c772f769c64ac97bfc5e74862a801e3e61..9bfc30138a01520d59760a49d15dd481
  
    // Starts the utility process.
    bool Start();
-@@ -154,6 +162,16 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -157,6 +165,16 @@ class CONTENT_EXPORT UtilityProcessHost
    void SetZygoteForTesting(ZygoteCommunication* handle);
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -299,7 +300,7 @@ index 01a921c772f769c64ac97bfc5e74862a801e3e61..9bfc30138a01520d59760a49d15dd481
    // Returns a control interface for the running child process.
    mojom::ChildProcess* GetChildProcess();
  
-@@ -209,6 +227,22 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -212,6 +230,22 @@ class CONTENT_EXPORT UtilityProcessHost
    std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -436,7 +437,7 @@ index 498f60227d13eb2e476413f88eaa58cc0babf461..619639ad5d22a1121b0e0d5f2c9e3c10
  
  }  // namespace content
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
-index e6bd27288a8d29dcf263a0677d2629d0aa7cf7c4..24d5acf41ea3fb825d813a040644aef1c9d6d4ee 100644
+index 556d27b78e6b2bf96c9951cee6bda323ecca675e..7ba6b859e8c27da7f267e988efaac1d54f8b57b8 100644
 --- a/content/public/browser/service_process_host.cc
 +++ b/content/public/browser/service_process_host.cc
 @@ -52,12 +52,45 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
@@ -486,7 +487,7 @@ index e6bd27288a8d29dcf263a0677d2629d0aa7cf7c4..24d5acf41ea3fb825d813a040644aef1
  ServiceProcessHost::Options&
  ServiceProcessHost::Options::WithPreloadedLibraries(
 diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
-index b737083c3a3a80ae408c69d4831fb7a0304d93ff..425845c33523135988c646bd75465b9a33d658ba 100644
+index acac8d4bf5e256e5c05e8c7c9592f9857d5a493d..4895ba5c305c898bb21472a2408ecd62afb46fd6 100644
 --- a/content/public/browser/service_process_host.h
 +++ b/content/public/browser/service_process_host.h
 @@ -14,6 +14,7 @@
@@ -508,7 +509,7 @@ index b737083c3a3a80ae408c69d4831fb7a0304d93ff..425845c33523135988c646bd75465b9a
  namespace base {
  class Process;
  }  // namespace base
-@@ -94,11 +99,30 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -96,11 +101,30 @@ class CONTENT_EXPORT ServiceProcessHost {
      // Specifies extra command line switches to append before launch.
      Options& WithExtraCommandLineSwitches(std::vector<std::string> switches);
  
@@ -539,7 +540,7 @@ index b737083c3a3a80ae408c69d4831fb7a0304d93ff..425845c33523135988c646bd75465b9a
  #if BUILDFLAG(IS_WIN)
      // Specifies libraries to preload before the sandbox is locked down. Paths
      // should be absolute paths. Libraries will be preloaded before sandbox
-@@ -125,11 +149,20 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -133,12 +157,21 @@ class CONTENT_EXPORT ServiceProcessHost {
      std::optional<GURL> site;
      std::optional<int> child_flags;
      std::vector<std::string> extra_switches;
@@ -552,8 +553,9 @@ index b737083c3a3a80ae408c69d4831fb7a0304d93ff..425845c33523135988c646bd75465b9a
      base::OnceCallback<void(const base::Process&)> process_callback;
  #if BUILDFLAG(IS_WIN)
      std::vector<base::FilePath> preload_libraries;
-     bool pin_user32;
+     std::optional<bool> pin_user32;
  #endif  // BUILDFLAG(IS_WIN)
+     std::optional<bool> allow_gpu_client;
 +    base::FilePath current_directory;
 +    base::EnvironmentMap environment;
 +    bool clear_environment = false;

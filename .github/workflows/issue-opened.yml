@@ -25,3 +25,42 @@ jobs:
           field-value: ${{ github.event.issue.user.login }}
           project-number: 90
           token: ${{ steps.generate-token.outputs.token }}
+  set-labels:
+    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - run: npm install mdast-util-from-markdown@2.0.0 unist-util-select@5.1.0
+      - name: Add labels
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const { fromMarkdown } = await import('${{ github.workspace }}/node_modules/mdast-util-from-markdown/index.js');
+            const { select } = await import('${{ github.workspace }}/node_modules/unist-util-select/index.js');
+
+            const [ owner, repo ] = '${{ github.repository }}'.split('/');
+            const issue_number = ${{ github.event.issue.number }};
+
+            const tree = fromMarkdown(`${{ github.event.issue.body }}`);
+
+            const labels = [];
+
+            const gistUrl = select('heading:has(> text[value="Testcase Gist URL"]) + paragraph > text', tree)?.value.trim();
+            if (gistUrl !== undefined && gistUrl.startsWith('https://gist.github.com/')) {
+              labels.push('has-repro-gist');
+            }
+
+            if (labels.length) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels,
+              });
+            }
