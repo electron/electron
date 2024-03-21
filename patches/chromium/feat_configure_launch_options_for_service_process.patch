@@ -18,10 +18,10 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 7d449854cb60c184baba2cc17ae3d47fba3d3f7a..b76d963a0232fdbc27ddc52598860b35b6853034 100644
+index d8ae896ee02888ee4ab375c4fd3569de27be925e..d4e97e92d353e298978a094aec2769474496c260 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
-@@ -33,6 +33,7 @@
+@@ -32,6 +32,7 @@
  
  #if BUILDFLAG(IS_WIN)
  #include "base/win/windows_types.h"
@@ -29,7 +29,7 @@ index 7d449854cb60c184baba2cc17ae3d47fba3d3f7a..b76d963a0232fdbc27ddc52598860b35
  #endif
  
  #if BUILDFLAG(IS_POSIX)
-@@ -166,7 +167,10 @@ struct ChildProcessLauncherFileData {
+@@ -165,7 +166,10 @@ struct ChildProcessLauncherFileData {
        delete;
    ~ChildProcessLauncherFileData();
  
@@ -41,7 +41,7 @@ index 7d449854cb60c184baba2cc17ae3d47fba3d3f7a..b76d963a0232fdbc27ddc52598860b35
    // Files opened by the browser and passed as corresponding file descriptors
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
-@@ -181,6 +185,15 @@ struct ChildProcessLauncherFileData {
+@@ -180,6 +184,15 @@ struct ChildProcessLauncherFileData {
    std::map<std::string, absl::variant<base::FilePath, base::ScopedFD>>
        files_to_preload;
  #endif
@@ -629,10 +629,10 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb766185113aae 100644
+index 0dae67583099a8981153e088b4136882e308a257..a4d96fbdb0de7b413b34646a48667f95c3212122 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
-@@ -732,11 +732,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
+@@ -743,11 +743,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
  // command line flag.
  ResultCode LaunchWithoutSandbox(
      const base::CommandLine& cmd_line,
@@ -645,7 +645,7 @@ index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb7661
    // Network process runs in a job even when unsandboxed. This is to ensure it
    // does not outlive the browser, which could happen if there is a lot of I/O
    // on process shutdown, in which case TerminateProcess can fail. See
-@@ -960,7 +958,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
+@@ -971,7 +969,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
  ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
      const base::CommandLine& cmd_line,
      const std::string& process_type,
@@ -654,7 +654,7 @@ index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb7661
      SandboxDelegate* delegate,
      TargetPolicy* policy) {
    const base::CommandLine& launcher_process_command_line =
-@@ -974,7 +972,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -985,7 +983,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    }
  
    // Add any handles to be inherited to the policy.
@@ -663,7 +663,7 @@ index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb7661
      policy->AddHandleToShare(handle);
  
    if (!policy->GetConfig()->IsConfigured()) {
-@@ -989,6 +987,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -1000,6 +998,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    // have no effect. These calls can fail with SBOX_ERROR_BAD_PARAMS.
    policy->SetStdoutHandle(GetStdHandle(STD_OUTPUT_HANDLE));
    policy->SetStderrHandle(GetStdHandle(STD_ERROR_HANDLE));
@@ -677,7 +677,7 @@ index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb7661
  #endif
  
    if (!delegate->PreSpawnTarget(policy))
-@@ -1001,7 +1006,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -1012,7 +1017,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
  ResultCode SandboxWin::StartSandboxedProcess(
      const base::CommandLine& cmd_line,
      const std::string& process_type,
@@ -686,7 +686,7 @@ index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb7661
      SandboxDelegate* delegate,
      base::Process* process) {
    SandboxLaunchTimer timer;
-@@ -1009,7 +1014,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1020,7 +1025,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    // Avoid making a policy if we won't use it.
    if (IsUnsandboxedProcess(delegate->GetSandboxType(), cmd_line,
                             *base::CommandLine::ForCurrentProcess())) {
@@ -695,7 +695,7 @@ index 1e075c1bc953982ad3c296b1eacabebf61f44739..69a963e709eeb673148b5fd6cecb7661
                                  process);
    }
  
-@@ -1017,7 +1022,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1028,7 +1033,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    timer.OnPolicyCreated();
  
    ResultCode result = GeneratePolicyForSandboxedProcess(
