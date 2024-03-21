@@ -1427,7 +1427,7 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 #### `ses.clearData([options])`
 
 * `options` Object (optional)
-  * `dataTypes` String[] (optional) - The types of data to clear. If undefined, will clear all types of data. See method details for possible values.
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
     * `backgroundFetch` - Background Fetch
     * `cache` - Cache
     * `cookies` - Cookies
@@ -1439,8 +1439,10 @@ session is persisted on disk.  For in memory sessions this returns `null`.
     * `webSQL` - WebSQL
   * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
   * `excludeOrigins` String[] (optional) - Clear data for all origins except these ones. Cannot be used with `origins`.
-  * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections.
-  * `originMatchingMode` String (optional) - The behavior for matching data to origins. Valid values are `"third-parties-included"` and `"origin-in-all-contexts"`.
+  * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections. (Default: `false`)
+  * `originMatchingMode` String (optional) - The behavior for matching data to origins.
+    * `third-parties-included` (default) - Storage is matched on origin in first-party contexts and top-level-site in third-party contexts.
+    * `origin-in-all-contexts` - Storage is matched on origin only in all contexts.
 
 Returns `Promise<void>` - resolves when all data has been cleared.
 
