@@ -89,18 +89,19 @@ const gid = process.getgid?.() ?? 0;
 const fakeTime = new Date();
 
 function getDirents (p: string, { 0: names, 1: types }: any[][]): Dirent[] {
-  const info = splitPath(p);
-  const len = names.length;
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < names.length; i++) {
+    let type = types[i];
+    const info = splitPath(path.join(p, names[i]));
     if (info.isAsar) {
       const archive = getOrCreateArchive(info.asarPath);
-      const stats = archive!.stat(p);
+      if (!archive) continue;
+      const stats = archive.stat(info.filePath);
       if (!stats) continue;
-      names[i] = getDirent(p, names[i], stats.type);
-    } else {
-      names[i] = getDirent(p, names[i], types[i]);
+      type = stats.type;
     }
+    names[i] = getDirent(p, names[i], type);
   }
+
   return names;
 }
 
@@ -883,6 +884,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const pathInfo = splitPath(originalPath);
     let queue: [string, string[]][] = [];
+    const withFileTypes = Boolean(options?.withFileTypes);
 
     let initialItem = [];
     if (pathInfo.isAsar) {
@@ -890,19 +892,29 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       if (!archive) return result;
       const files = archive.readdir(pathInfo.filePath);
       if (!files) return result;
+
+      // If we're in an asar dir, we need to ensure the result is in the same format as the
+      // native call to readdir withFileTypes i.e. an array of arrays.
       initialItem = files;
+      if (withFileTypes) {
+        initialItem = [
+          [...initialItem], initialItem.map((p: string) => {
+            return internalBinding('fs').internalModuleStat(path.join(originalPath, p));
+          })
+        ];
+      }
     } else {
       initialItem = await binding.readdir(
         path.toNamespacedPath(originalPath),
         options!.encoding,
-        !!options!.withFileTypes,
+        withFileTypes,
         kUsePromises
       );
     }
 
     queue = [[originalPath, initialItem]];
 
-    if (options?.withFileTypes) {
+    if (withFileTypes) {
       while (queue.length > 0) {
         // @ts-expect-error this is a valid array destructure assignment.
         const { 0: pathArg, 1: readDir } = queue.pop();
@@ -911,16 +923,22 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           if (dirent.isDirectory()) {
             const direntPath = path.join(pathArg, dirent.name);
             const info = splitPath(direntPath);
-            let archive;
             let readdirResult;
             if (info.isAsar) {
-              archive = getOrCreateArchive(info.asarPath);
+              const archive = getOrCreateArchive(info.asarPath);
               if (!archive) continue;
-              readdirResult = archive.readdir(info.filePath);
+              const files = archive.readdir(info.filePath);
+              if (!files) continue;
+
+              readdirResult = [
+                [...files], files.map((p: string) => {
+                  return internalBinding('fs').internalModuleStat(path.join(direntPath, p));
+                })
+              ];
             } else {
               readdirResult = await binding.readdir(
                 direntPath,
-                options.encoding,
+                options!.encoding,
                 true,
                 kUsePromises
               );
@@ -973,15 +991,24 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     function read (pathArg: string) {
       let readdirResult;
-      const pathInfo = splitPath(pathArg);
 
-      let archive;
+      const pathInfo = splitPath(pathArg);
       if (pathInfo.isAsar) {
         const { asarPath, filePath } = pathInfo;
-        archive = getOrCreateArchive(asarPath);
+        const archive = getOrCreateArchive(asarPath);
         if (!archive) return;
 
         readdirResult = archive.readdir(filePath);
+        if (!readdirResult) return;
+        // If we're in an asar dir, we need to ensure the result is in the same format as the
+        // native call to readdir withFileTypes i.e. an array of arrays.
+        if (withFileTypes) {
+          readdirResult = [
+            [...readdirResult], readdirResult.map((p: string) => {
+              return internalBinding('fs').internalModuleStat(path.join(pathArg, p));
+            })
+          ];
+        }
       } else {
         readdirResult = binding.readdir(
           path.toNamespacedPath(pathArg),
@@ -993,20 +1020,21 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       if (readdirResult === undefined) return;
 
       if (withFileTypes) {
-        // Calling `readdir` with `withFileTypes=true`, the result is an array of arrays.
-        // The first array is the names, and the second array is the types.
-        // They are guaranteed to be the same length; hence, setting `length` to the length
-        // of the first array within the result.
         const length = readdirResult[0].length;
         for (let i = 0; i < length; i++) {
-          let dirent;
-          if (pathInfo.isAsar) {
-            const stats = archive!.stat(pathArg);
+          const resultPath = path.join(pathArg, readdirResult[0][i]);
+          const info = splitPath(resultPath);
+
+          let type = readdirResult[1][i];
+          if (info.isAsar) {
+            const archive = getOrCreateArchive(info.asarPath);
+            if (!archive) return;
+            const stats = archive.stat(info.filePath);
             if (!stats) continue;
-            dirent = getDirent(pathArg, readdirResult[0][i], stats.type);
-          } else {
-            dirent = getDirent(pathArg, readdirResult[0][i], readdirResult[1][i]);
+            type = stats.type;
           }
+
+          const dirent = getDirent(pathArg, readdirResult[0][i], type);
 
           readdirResults.push(dirent);
           if (dirent.isDirectory()) {
@@ -1018,12 +1046,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           const resultPath = path.join(pathArg, readdirResult[i]);
           const relativeResultPath = path.relative(basePath, resultPath);
           const stat = internalBinding('fs').internalModuleStat(resultPath);
-          readdirResults.push(relativeResultPath);
 
-          // 1 indicates directory
-          if (stat === 1) {
-            pathsQueue.push(resultPath);
-          }
+          readdirResults.push(relativeResultPath);
+          if (stat === 1) pathsQueue.push(resultPath);
         }
       }
     }
