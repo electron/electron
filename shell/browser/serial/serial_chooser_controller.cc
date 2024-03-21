@@ -93,6 +93,9 @@ api::Session* SerialChooserController::GetSession() {
 
 void SerialChooserController::OnPortAdded(
     const device::mojom::SerialPortInfo& port) {
+  if (!FilterMatchesAny(port))
+    return;
+
   ports_.push_back(port.Clone());
   api::Session* session = GetSession();
   if (session) {
