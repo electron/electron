@@ -71,6 +71,18 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
   return handle;
 }
 
+v8::Local<v8::Promise> ShowItemInFolder(v8::Isolate* isolate,
+                                        const base::FilePath& full_path) {
+  gin_helper::Promise<const std::string&> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  base::FilePath normalized_full_path = full_path.NormalizePathSeparators();
+
+  platform_util::ShowItemInFolder(normalized_full_path);
+
+  return handle;
+}
+
 v8::Local<v8::Promise> OpenPath(v8::Isolate* isolate,
                                 const base::FilePath& full_path) {
   gin_helper::Promise<const std::string&> promise(isolate);
@@ -172,7 +184,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
+  dict.SetMethod("showItemInFolder", &ShowItemInFolder);
   dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("trashItem", &TrashItem);
