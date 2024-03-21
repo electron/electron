@@ -760,8 +760,7 @@ describe('app module', () => {
         }).to.throw(/'name' is required when type is not mainAppService/);
       });
 
-      // TODO this test does not work on CircleCI arm64 macs
-      ifit(isVenturaOrHigher && process.arch !== 'arm64')('throws when getting non-default type with no name', () => {
+      ifit(isVenturaOrHigher)('throws when getting non-default type with no name', () => {
         expect(() => {
           app.getLoginItemSettings({
             type: 'daemonService'
