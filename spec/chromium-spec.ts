@@ -2068,13 +2068,13 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         // History should have current page by now.
-        expect(w.webContents.length()).to.equal(1);
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
 
         const waitCommit = once(w.webContents, 'navigation-entry-committed');
         w.webContents.executeJavaScript('window.history.pushState({}, "")');
         await waitCommit;
         // Initial page + pushed state.
-        expect(w.webContents.length()).to.equal(2);
+        expect(w.webContents.navigationHistory.length()).to.equal(2);
       });
     });
 
@@ -2102,7 +2102,7 @@ describe('chromium features', () => {
         });
         await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
         expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
-        expect(w.webContents.getActiveIndex()).to.equal(1);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
       });
     });
   });
