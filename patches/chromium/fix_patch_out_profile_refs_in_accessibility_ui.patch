@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 45b085ebb5096b2cdd083337371539a249c7a0a8..510d416b735f672debb7d2b1b5f09529ca62f82e 100644
+index 45b085ebb5096b2cdd083337371539a249c7a0a8..404a0a8d99eb68a35c0c06fe1b1dbfa3086e8794 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -23,7 +23,10 @@
@@ -84,7 +84,18 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..510d416b735f672debb7d2b1b5f09529
    data.Set(kBrowsersField, std::move(browser_list));
  
    base::Value::List widgets_list;
-@@ -700,9 +707,13 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -647,8 +654,10 @@ void AccessibilityUIMessageHandler::SetGlobalString(
+   const std::string value = CheckJSValue(data.FindString(kValueField));
+ 
+   if (string_name == kApiTypeField) {
++#if 0
+     PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
+     pref->SetString(prefs::kShownAccessibilityApiType, value);
++#endif
+   }
+ }
+ 
+@@ -700,9 +709,13 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -93,12 +104,12 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..510d416b735f672debb7d2b1b5f09529
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
 +#else
-+  ui::AXApiType::Type api_type = ux::AXApiType::kBlink;
++  ui::AXApiType::Type api_type = ui::AXApiType::kBlink;
 +#endif
    std::string accessibility_contents =
        web_contents->DumpAccessibilityTree(api_type, property_filters);
    result.Set(kTreeField, accessibility_contents);
-@@ -727,6 +738,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -727,6 +740,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -106,7 +117,7 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..510d416b735f672debb7d2b1b5f09529
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        base::Value::Dict result = BuildTargetDescriptor(browser);
-@@ -739,6 +751,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -739,6 +753,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -114,7 +125,25 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..510d416b735f672debb7d2b1b5f09529
  #endif  // !BUILDFLAG(IS_ANDROID)
    // No browser with the specified |session_id| was found.
    base::Value::Dict result;
-@@ -881,8 +894,11 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -807,11 +822,15 @@ void AccessibilityUIMessageHandler::StopRecording(
+ }
+ 
+ ui::AXApiType::Type AccessibilityUIMessageHandler::GetRecordingApiType() {
++#if 0
+   PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
+-  const std::vector<ui::AXApiType::Type> supported_types =
+-      content::AXInspectFactory::SupportedApis();
+   ui::AXApiType::Type api_type =
+       ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
++#else
++  ui::AXApiType::Type api_type = ui::AXApiType::kBlink;
++#endif
++  const std::vector<ui::AXApiType::Type> supported_types =
++      content::AXInspectFactory::SupportedApis();
+   // Check to see if it is in the supported types list.
+   if (std::find(supported_types.begin(), supported_types.end(), api_type) ==
+       supported_types.end()) {
+@@ -881,8 +900,11 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {
