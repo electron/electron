@@ -1,3 +1,2 @@
 chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
-merged_parser_fix_home_object_proxy_to_work_off-thread.patch
