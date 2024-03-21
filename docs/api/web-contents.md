@@ -237,7 +237,7 @@ See [`window.open()`](window-open.md) for more details and how to use this in co
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
@@ -270,7 +270,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
@@ -300,7 +300,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -324,7 +324,7 @@ Emitted when any frame (including main) starts navigating.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -355,7 +355,7 @@ redirect).
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -683,7 +683,7 @@ Emitted when media is paused or done playing.
 
 Returns:
 
-* `event` Event<>
+* `event` Event\<\>
   * `audible` boolean - True if one or more frames or child `webContents` are emitting audio.
 
 Emitted when media becomes audible or inaudible.
