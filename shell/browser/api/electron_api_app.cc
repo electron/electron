@@ -1281,7 +1281,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
   if (!delete_jump_list &&
       !gin::ConvertFromV8(args->isolate(), val, &categories)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Argument must be null or an array of categories");
+        .ThrowTypeError("Argument must be null or an array of categories");
     return JumpListResult::kArgumentError;
   }
 
