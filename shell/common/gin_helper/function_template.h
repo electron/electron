@@ -79,7 +79,10 @@ class CallbackHolderBase {
     void OnDisposed() override;
 
    private:
-    const raw_ref<gin::PerIsolateData> per_isolate_data_;
+    // Unlike in Chromium, it's possible for PerIsolateData to be null
+    // for a given isolate - e.g. in a Node.js Worker. Thus this
+    // needs to be a raw_ptr instead of a raw_ref.
+    const raw_ptr<gin::PerIsolateData> per_isolate_data_;
     const raw_ref<CallbackHolderBase> holder_;
   };
 

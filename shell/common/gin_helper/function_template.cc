@@ -12,11 +12,13 @@ namespace gin_helper {
 CallbackHolderBase::DisposeObserver::DisposeObserver(
     gin::PerIsolateData* per_isolate_data,
     CallbackHolderBase* holder)
-    : per_isolate_data_(*per_isolate_data), holder_(*holder) {
-  per_isolate_data_->AddDisposeObserver(this);
+    : per_isolate_data_(per_isolate_data), holder_(*holder) {
+  if (per_isolate_data_)
+    per_isolate_data_->AddDisposeObserver(this);
 }
 CallbackHolderBase::DisposeObserver::~DisposeObserver() {
-  per_isolate_data_->RemoveDisposeObserver(this);
+  if (per_isolate_data_)
+    per_isolate_data_->RemoveDisposeObserver(this);
 }
 void CallbackHolderBase::DisposeObserver::OnBeforeDispose(
     v8::Isolate* isolate) {
