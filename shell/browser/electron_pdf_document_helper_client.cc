@@ -4,7 +4,7 @@
 
 #include "shell/browser/electron_pdf_document_helper_client.h"
 
-#include "chrome/browser/pdf/pdf_frame_util.h"
+#include "components/pdf/browser/pdf_frame_util.h"
 #include "content/public/browser/web_contents.h"
 
 ElectronPDFDocumentHelperClient::ElectronPDFDocumentHelperClient() = default;
