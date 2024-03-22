@@ -29,6 +29,7 @@
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -88,8 +89,8 @@ bool CheckLoginItemStatus(bool* is_hidden) {
   return true;
 }
 
-Browser::LoginItemSettings GetLoginItemSettingsDeprecated() {
-  Browser::LoginItemSettings settings;
+LoginItemSettings GetLoginItemSettingsDeprecated() {
+  LoginItemSettings settings;
   settings.open_at_login = CheckLoginItemStatus(&settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
@@ -375,13 +376,15 @@ void Browser::ApplyForcedRTL() {
   }
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings(
+v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+
   if (options.type != "mainAppService" && options.service_name.empty()) {
-    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
-        .ThrowTypeError("'name' is required when type is not mainAppService");
-    return settings;
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "'name' is required when type is not mainAppService");
+    return v8::Local<v8::Value>();
   }
 
 #if IS_MAS_BUILD()
@@ -408,7 +411,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
     settings = settings_deprecated;
   }
 #endif
-  return settings;
+  return gin::ConvertToV8(isolate, settings);
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {

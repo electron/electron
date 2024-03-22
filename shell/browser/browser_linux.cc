@@ -11,9 +11,11 @@
 #include "base/environment.h"
 #include "base/process/launch.h"
 #include "electron/electron_version.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -138,9 +140,10 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings(
+v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
-  return LoginItemSettings();
+  LoginItemSettings settings;
+  return gin::ConvertToV8(JavascriptEnvironment::GetIsolate(), settings);
 }
 
 std::string Browser::GetExecutableFileVersion() const {
