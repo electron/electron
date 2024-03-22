@@ -13,6 +13,35 @@
 
 namespace gin {
 
+#if BUILDFLAG(IS_WIN)
+bool Converter<electron::LaunchItem>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             electron::LaunchItem* out) {
+  gin_helper::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  dict.Get("name", &(out->name));
+  dict.Get("path", &(out->path));
+  dict.Get("args", &(out->args));
+  dict.Get("scope", &(out->scope));
+  dict.Get("enabled", &(out->enabled));
+  return true;
+}
+
+v8::Local<v8::Value> Converter<electron::LaunchItem>::ToV8(
+    v8::Isolate* isolate,
+    electron::LaunchItem val) {
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("name", val.name);
+  dict.Set("path", val.path);
+  dict.Set("args", val.args);
+  dict.Set("scope", val.scope);
+  dict.Set("enabled", val.enabled);
+  return dict.GetHandle();
+}
+#endif
+
 bool Converter<electron::LoginItemSettings>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
@@ -35,7 +64,6 @@ bool Converter<electron::LoginItemSettings>::FromV8(
   return true;
 }
 
-// static
 v8::Local<v8::Value> Converter<electron::LoginItemSettings>::ToV8(
     v8::Isolate* isolate,
     electron::LoginItemSettings val) {

@@ -156,12 +156,12 @@ bool FormatCommandLineString(std::wstring* exe,
 // a list of launchItem with matching paths to our application.
 // if a launchItem with a matching path also has a matching entry within the
 // startup_approved_key_path, set executable_will_launch_at_login to be `true`
-std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
+std::vector<LaunchItem> GetLoginItemSettingsHelper(
     base::win::RegistryValueIterator* it,
     boolean* executable_will_launch_at_login,
     std::wstring scope,
     const LoginItemSettings& options) {
-  std::vector<Browser::LaunchItem> launch_items;
+  std::vector<LaunchItem> launch_items;
 
   base::FilePath lookup_exe_path;
   if (options.path.empty()) {
@@ -185,7 +185,7 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
 
       // add launch item to vector if it has a matching path (case-insensitive)
       if (exe_match) {
-        Browser::LaunchItem launch_item;
+        LaunchItem launch_item;
         launch_item.name = it->Name();
         launch_item.path = registry_launch_path.value();
         launch_item.args = registry_launch_cmd.GetArgs();
@@ -677,7 +677,7 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
   // if there exists a launch entry with property enabled=='true',
   // set executable_will_launch_at_login to 'true'.
   boolean executable_will_launch_at_login = false;
-  std::vector<Browser::LaunchItem> launch_items;
+  std::vector<LaunchItem> launch_items;
   base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
                                                  keyPath.c_str());
   base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
@@ -685,10 +685,8 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
 
   launch_items = GetLoginItemSettingsHelper(
       &hkcu_iterator, &executable_will_launch_at_login, L"user", options);
-  std::vector<Browser::LaunchItem> launch_items_hklm =
-      GetLoginItemSettingsHelper(&hklm_iterator,
-                                 &executable_will_launch_at_login, L"machine",
-                                 options);
+  std::vector<LaunchItem> launch_items_hklm = GetLoginItemSettingsHelper(
+      &hklm_iterator, &executable_will_launch_at_login, L"machine", options);
   launch_items.insert(launch_items.end(), launch_items_hklm.begin(),
                       launch_items_hklm.end());
 

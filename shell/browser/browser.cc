@@ -31,6 +31,12 @@ LoginItemSettings::LoginItemSettings() = default;
 LoginItemSettings::~LoginItemSettings() = default;
 LoginItemSettings::LoginItemSettings(const LoginItemSettings& other) = default;
 
+#if BUILDFLAG(IS_WIN)
+LaunchItem::LaunchItem() = default;
+LaunchItem::~LaunchItem() = default;
+LaunchItem::LaunchItem(const LaunchItem& other) = default;
+#endif
+
 namespace {
 
 // Call |quit| after Chromium is fully started.
@@ -46,12 +52,6 @@ void RunQuitClosure(base::OnceClosure quit) {
 }
 
 }  // namespace
-
-#if BUILDFLAG(IS_WIN)
-Browser::LaunchItem::LaunchItem() = default;
-Browser::LaunchItem::~LaunchItem() = default;
-Browser::LaunchItem::LaunchItem(const LaunchItem& other) = default;
-#endif
 
 Browser::Browser() {
   WindowList::AddObserver(this);

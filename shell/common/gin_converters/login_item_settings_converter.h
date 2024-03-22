@@ -9,9 +9,21 @@
 
 namespace electron {
 struct LoginItemSettings;
+struct LaunchItem;
 }  // namespace electron
 
 namespace gin {
+
+#if BUILDFLAG(IS_WIN)
+template <>
+struct Converter<electron::LaunchItem> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::LaunchItem val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::LaunchItem* out);
+};
+#endif
 
 template <>
 struct Converter<electron::LoginItemSettings> {

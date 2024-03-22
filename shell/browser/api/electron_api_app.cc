@@ -323,37 +323,6 @@ struct Converter<JumpListResult> {
 };
 #endif
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct Converter<Browser::LaunchItem> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     Browser::LaunchItem* out) {
-    gin_helper::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-
-    dict.Get("name", &(out->name));
-    dict.Get("path", &(out->path));
-    dict.Get("args", &(out->args));
-    dict.Get("scope", &(out->scope));
-    dict.Get("enabled", &(out->enabled));
-    return true;
-  }
-
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   Browser::LaunchItem val) {
-    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.Set("name", val.name);
-    dict.Set("path", val.path);
-    dict.Set("args", val.args);
-    dict.Set("scope", val.scope);
-    dict.Set("enabled", val.enabled);
-    return dict.GetHandle();
-  }
-};
-#endif
-
 template <>
 struct Converter<content::CertificateRequestResultType> {
   static bool FromV8(v8::Isolate* isolate,
