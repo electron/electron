@@ -2331,6 +2331,7 @@ jobs:
     executor:
       name: macos
       size: macos.m1.medium.gen1
+      version: 14.0.0
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2357,6 +2358,7 @@ jobs:
     executor:
       name: macos
       size: macos.m1.medium.gen1
+      version: 14.0.0
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
