@@ -159,3 +159,4 @@ fix_a_crash_when_a_bmp_image_contains_an_unnecessary_eof_code.patch
 m120_ipcz_fix_a_few_weak_asserts.patch
 prevent_mojotrap_event_re-ordering.patch
 m122_cherry_pick_cve-2024-25062_libxml_fix.patch
+update_crashpad_to_37afd37401253ebcebcf6e07ce15c8cfecb1a1cc.patch
