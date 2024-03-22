@@ -223,9 +223,6 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   ui::ColorProviderManager::Get().AppendColorProviderInitializer(
       base::BindRepeating(AddChromeColorMixers));
 
-  // Initialize after user script environment creation.
-  fake_browser_process_->PreEarlyInitialization();
-
   return GetExitCode();
 }
 
@@ -279,6 +276,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // and/or user data directory.
   logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
                                /* is_preinit = */ false);
+
+  // Initialize after user script environment creation.
+  fake_browser_process_->PostEarlyInitialization();
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {

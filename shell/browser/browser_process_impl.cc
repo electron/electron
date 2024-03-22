@@ -93,7 +93,7 @@ BuildState* BrowserProcessImpl::GetBuildState() {
   return nullptr;
 }
 
-void BrowserProcessImpl::PreEarlyInitialization() {
+void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());

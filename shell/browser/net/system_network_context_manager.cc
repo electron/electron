@@ -226,6 +226,7 @@ SystemNetworkContextManager* SystemNetworkContextManager::GetInstance() {
     // ElectronBrowserClient::OnNetworkServiceCreated(), which calls
     // CreateInstance() to initialize |g_system_network_context_manager|.
     content::GetNetworkService();
+    DCHECK(g_system_network_context_manager);
   }
 
   return g_system_network_context_manager;
