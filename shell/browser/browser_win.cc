@@ -30,12 +30,14 @@
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
@@ -158,7 +160,7 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
     base::win::RegistryValueIterator* it,
     boolean* executable_will_launch_at_login,
     std::wstring scope,
-    const Browser::LoginItemSettings& options) {
+    const LoginItemSettings& options) {
   std::vector<Browser::LaunchItem> launch_items;
 
   base::FilePath lookup_exe_path;
@@ -656,7 +658,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   }
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings(
+v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
   std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -692,7 +694,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 
   settings.executable_will_launch_at_login = executable_will_launch_at_login;
   settings.launch_items = launch_items;
-  return settings;
+  return gin::ConvertToV8(JavascriptEnvironment::GetIsolate(), settings);
 }
 
 PCWSTR Browser::GetAppUserModelID() {
