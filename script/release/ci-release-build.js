@@ -23,8 +23,8 @@ const appVeyorJobs = {
 };
 
 const circleCIPublishWorkflows = [
-  'macos-publish',
-  'linux-publish'
+  'linux-publish',
+  'macos-publish'
 ];
 
 const circleCIPublishIndividualArches = {
