@@ -106,8 +106,6 @@ declare namespace Electron {
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
-  type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
-
   interface Menu {
     _init(): void;
     _isCommandIdChecked(id: string): boolean;
