@@ -336,7 +336,8 @@ void ShowItemInFolder(const base::FilePath& full_path) {
   base::ThreadPool::CreateCOMSTATaskRunner(
       {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
       ->PostTask(FROM_HERE,
-                 base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
+                 base::BindOnce(&ShowItemInFolderOnWorkerThread,
+                                full_path.NormalizePathSeparators()));
 }
 
 void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
