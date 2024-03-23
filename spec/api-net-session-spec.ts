@@ -616,6 +616,25 @@ describe('net module (session)', () => {
         });
       }).to.throw('`partition` should be a string');
     });
+
+    it('should throw if given a header value that is empty(null/undefined)', () => {
+      const emptyHeaderValues = [null, undefined];
+      const errorMsg = '`value` required in setHeader("foo", value)';
+
+      for (const emptyValue of emptyHeaderValues) {
+        expect(() => {
+          net.request({
+            url: 'https://foo',
+            headers: { foo: emptyValue }
+          });
+        }).to.throw(errorMsg);
+
+        const request = net.request({ url: 'https://foo' });
+        expect(() => {
+          request.setHeader('foo', emptyValue);
+        }).to.throw(errorMsg);
+      }
+    });
   });
 
   describe('net.fetch', () => {
