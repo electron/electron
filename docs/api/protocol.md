@@ -111,7 +111,7 @@ expect streaming responses.
 
 * `scheme` string - scheme to handle, for example `https` or `my-app`. This is
   the bit before the `:` in a URL.
-* `handler` Function<[GlobalResponse](https://nodejs.org/api/globals.html#response) | Promise<GlobalResponse>>
+* `handler` Function\<[GlobalResponse](https://nodejs.org/api/globals.html#response) | Promise\<GlobalResponse\>\>
   * `request` [GlobalRequest](https://nodejs.org/api/globals.html#request)
 
 Register a protocol handler for `scheme`. Requests made to URLs with this
