@@ -39,6 +39,14 @@
     "contexts": ["blessed_extension", "unblessed_extension", "content_script"],
     "max_manifest_version": 2
   },
+  "extension.lastError": {
+    "contexts": [
+      "blessed_extension",
+      "unblessed_extension",
+      "content_script"
+    ],
+    "max_manifest_version": 2
+  },
   "i18n": {
     "channel": "stable",
     "extension_types": ["extension"],
@@ -68,5 +76,10 @@
   "scripting": {
     "dependencies": ["permission:scripting"],
     "contexts": ["blessed_extension"]
+  },
+  "scripting.globalParams": {
+    "channel": "trunk",
+    "dependencies": ["permission:scripting"],
+    "contexts": ["content_script"]
   }
 }
