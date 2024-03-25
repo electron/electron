@@ -373,6 +373,38 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }
  }  // namespace
  
+diff --git a/src/node.cc b/src/node.cc
+index 524f80ee69ee5248e045a2b61faf5610c9ba4285..2bed5aec6a1bc362ef4e1e0d6715951537676270 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -1027,7 +1027,8 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+   }
+ 
+   if (!(flags & ProcessInitializationFlags::kNoInitOpenSSL)) {
+-#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
++#if HAVE_OPENSSL
++#if !defined(OPENSSL_IS_BORINGSSL)
+     auto GetOpenSSLErrorString = []() -> std::string {
+       std::string ret;
+       ERR_print_errors_cb(
+@@ -1118,7 +1119,7 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+ 
+     // Ensure CSPRNG is properly seeded.
+     CHECK(crypto::CSPRNG(nullptr, 0).is_ok());
+-
++#endif // !defined(OPENSSL_IS_BORINGSSL)
+     V8::SetEntropySource([](unsigned char* buffer, size_t length) {
+       // V8 falls back to very weak entropy when this function fails
+       // and /dev/urandom isn't available. That wouldn't be so bad if
+@@ -1133,7 +1134,7 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+       if (credentials::SafeGetenv("NODE_EXTRA_CA_CERTS", &extra_ca_certs))
+         crypto::UseExtraCaCerts(extra_ca_certs);
+     }
+-#endif  // HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
++#endif  // HAVE_OPENSSL
+   }
+ 
+   if (!(flags & ProcessInitializationFlags::kNoInitializeNodeV8Platform)) {
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
 index b88cfb98e75aca426224e19376b3ff4c23b92e53..b66f4e2b5cbd8f36af42f82a8921207302360e39 100644
 --- a/src/node_metadata.cc
