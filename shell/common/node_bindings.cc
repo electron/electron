@@ -353,6 +353,14 @@ void SetNodeOptions(base::Environment* env) {
       "--max-http-header-size",
   });
 
+  if (env->HasVar("NODE_EXTRA_CA_CERTS")) {
+    if (!electron::fuses::IsNodeOptionsEnabled()) {
+      LOG(ERROR) << "The NODE_OPTIONS fuse must be enabled in order to use "
+                    "NODE_EXTRA_CA_CERTS";
+      env->SetVar("NODE_EXTRA_CA_CERTS", "");
+    }
+  }
+
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
       std::string options;
