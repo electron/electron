@@ -47,7 +47,7 @@ jobs:
             const [ owner, repo ] = '${{ github.repository }}'.split('/');
             const issue_number = ${{ github.event.issue.number }};
 
-            const tree = fromMarkdown(`${{ github.event.issue.body }}`);
+            const tree = fromMarkdown(${{ toJSON(github.event.issue.body) }});
 
             const labels = [];
 
