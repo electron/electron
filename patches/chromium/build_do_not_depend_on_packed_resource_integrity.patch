@@ -33,7 +33,7 @@ index 4af5b8d5da1c0ae4c5603f49e3a1dbfec422f55e..d21e450d1ee387a72bbe601412856260
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index c3c2b9ebefa18167c797086dcf4a4aedbbae86b2..3cdc04900d8d215764e214ad0b0b7b1b8d238a07 100644
+index b92c50c136a3a754a41c7b0644d5388ee7654d10..ea4369aa06ff126e029303772cb8d3b0db29dca4 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4800,7 +4800,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index c3c2b9ebefa18167c797086dcf4a4aedbbae86b2..3cdc04900d8d215764e214ad0b0b7b1b
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index a2dc02feffad501dee29ac1eafb75119674679b0..3e0ffa0d4c5efade54689fb9f5cf179bf8514ae4 100644
+index f2ac24b07599e40a581da0c91687be847e814d1b..bf00e90675e6b1f10d5f0915aa964fcf1a2c3b5f 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7196,9 +7196,12 @@ test("unit_tests") {
+@@ -7201,9 +7201,12 @@ test("unit_tests") {
        "//chrome/browser/safe_browsing/incident_reporting/verifier_test:verifier_test_dll_2",
      ]
  
@@ -63,7 +63,7 @@ index a2dc02feffad501dee29ac1eafb75119674679b0..3e0ffa0d4c5efade54689fb9f5cf179b
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8179,6 +8182,10 @@ test("unit_tests") {
+@@ -8183,6 +8186,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index a2dc02feffad501dee29ac1eafb75119674679b0..3e0ffa0d4c5efade54689fb9f5cf179b
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8248,7 +8255,6 @@ test("unit_tests") {
+@@ -8252,7 +8259,6 @@ test("unit_tests") {
      }
  
      deps += [

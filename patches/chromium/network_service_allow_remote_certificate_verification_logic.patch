@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 511d1385f5432dc5eab692ab71a79f622e75f69a..300d5c3946fb813883817a5609e8c3df653923ad 100644
+index 55770b301d6b5e2726fde275d88fe7184681665e..5aea716e01564a96fb6dc761129aba702109bd94 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -151,6 +151,11 @@
@@ -147,7 +147,7 @@ index 511d1385f5432dc5eab692ab71a79f622e75f69a..300d5c3946fb813883817a5609e8c3df
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 77878fe20391ca85346c168d4da104826ee60f09..9a67ee4d6cda6b3ee247446620133f8033e0e1c1 100644
+index 598cd51e619cf2de8f32caaadcb78e9535f043de..9c72964d312b4ed43a2e007b5b8bbddbfe44e78b 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -113,6 +113,7 @@ class URLMatcher;
@@ -177,7 +177,7 @@ index 77878fe20391ca85346c168d4da104826ee60f09..9a67ee4d6cda6b3ee247446620133f80
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 8d28c219e7f6cfa2f631cf798821accfc05dc527..6cee22af8590a03038db4863d91b280f8ef522d9 100644
+index 5010e07dc35aef4122639045dddcef9782ede33d..162968a08f9829001acc98c1f0d3c3c3aa95856d 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -298,6 +298,16 @@ struct SocketBrokerRemotes {
@@ -208,7 +208,7 @@ index 8d28c219e7f6cfa2f631cf798821accfc05dc527..6cee22af8590a03038db4863d91b280f
    CreateURLLoaderFactory(pending_receiver<URLLoaderFactory> url_loader_factory,
                           URLLoaderFactoryParams params);
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 5868a904e53b2df6ea2cf6864ac1300bdc9bd967..981fc599cee08d36387ef4265a6c7c5816c174ac 100644
+index 4cdfb896665ef3a5c16040543f05f36e4b42924d..deaa04a9c0439385cab82998156d6c2bc378208c 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -62,6 +62,8 @@ class TestNetworkContext : public mojom::NetworkContext {

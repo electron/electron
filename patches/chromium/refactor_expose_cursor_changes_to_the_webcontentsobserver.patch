@@ -60,7 +60,7 @@ index a9953bebc1fabf8935ee1bf017b01c9c8429f66b..d2248170f60b0bfd669cde47fef3f7d8
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index a346302effb91d3191f5f17b8baa321fea121624..ae26a2345161036af8d599ba3218adc2dcf6ea9e 100644
+index f695c9fc45a696e3c1c0f78eef53c374b78442d5..7ce919e5e492a59d0c2dadeb6916f75bdb13e1cc 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1046,6 +1046,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,

@@ -97,10 +97,10 @@ index fe3a87df88b5959cdc388123738d836625ccfaad..328cd42b4c7595181f6477a9d6b3a63a
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 1e7c9c5e99d33b1153cdf3af41a5abc58cbcbafb..d07c5b65c70236c5739186b6d3b32882b1bf330e 100644
+index 73f6f138719b05111d66186c1ec93595a5fe97ec..34b2e4332680e05482ea6ba0d25d50ef5f005b7b 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -969,6 +969,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -951,6 +951,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),

@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index c81cc364a7bf478b69f17525702e92c8b7fd6ba1..c721088eb6ea29270ee2345a59f9327bce760d9d 100644
+index 37ebd298e815f5bd5557074edf2c96d41c5f5216..7725ded42c3c84a12978b5e01de1318d0fc973fd 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -8381,6 +8381,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -66,10 +66,10 @@ index 268f150c1cc987ea020192a86ab886ed206a0064..05856b853112072a18ec16589f2b442f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 465de2f945f3afff3107ce750a320696c4db920f..6635f7d3932a8cfa133d830860b69915690b91ad 100644
+index f6c30d16e85caab371536d69659447c283b40d44..0aced8133800ebd334dc571dbfa7518674a13453 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -718,6 +718,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -717,6 +717,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index 465de2f945f3afff3107ce750a320696c4db920f..6635f7d3932a8cfa133d830860b69915
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 9e1cf142f77d221aad87cdbc17054f06ce7f28cf..1d5e065aa06bc3175f9abdce25e31864aa06f78d 100644
+index a299f0894295129df46683e2d8930e2811a0905e..9ae02c9a62730bd7e440087563a64894835a21ba 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -183,6 +183,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index 9e1cf142f77d221aad87cdbc17054f06ce7f28cf..1d5e065aa06bc3175f9abdce25e31864
  }  // namespace network
  
  namespace sandbox {
-@@ -1210,6 +1211,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1209,6 +1210,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -148,10 +148,10 @@ index 67f7fe85a4c98da644b0170a6499e64f313a6d8f..b2c397a96f493d463809152e6f760f73
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c4057f9e97a2cab7a824f5614316f06aadf33514..f1a5319c2247c711bcefe36670e71eda112d8052 100644
+index e25aefdd305f38d099b77aeef22ae65bccc0a62f..0bed63acf080da4acd640f0cbb93770e597766d7 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6690,6 +6690,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6696,6 +6696,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -210,10 +210,10 @@ index 78956238f8d959580e928d2590866b2f4da3d218..806b3337ec8a8ad7c89681857b4e81dc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 9b95629672b234bf31c0e5d6d16681482217ed4a..b208708b24080385167067354edfe13f8427ed1d 100644
+index dd289563cc6c63817a6cee059385950779aa7215..7a4a0b07341f363910f39528272497c98d8f3bcd 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2230,6 +2230,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2222,6 +2222,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

@@ -80,10 +80,10 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 3d985470f60d1c8f63d6794ad2bcf5954defe8db..cf96fc1321da45bcf1efa8e0b1655bbc924d7d41 100644
+index 7a14f39deed320d59ef4436f5b001ec864bc4f65..001be0442fe7a74e7a600dec70b0f503e448eab6 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1933,12 +1933,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1936,12 +1936,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
