@@ -303,7 +303,7 @@ open a window that displays your web page!
 
 Each web page your app displays in a window will run in a separate process called a
 **renderer** process (or simply _renderer_ for short). Renderer processes have access
-to the same JavaScript APIs and tooling you use for typical front-end web
+to the same [JavaScript APIs][Javscript-apis] and tooling you use for typical front-end web
 development, such as using [webpack][] to bundle and minify your code or [React][react]
 to build your user interfaces.
 
@@ -442,7 +442,7 @@ If you want to dig deeper in the debugging area, the following guides provide mo
 
 ## Summary
 
-Electron applications are set up using npm packages. The Electron executable should be installed
+Electron applications are set up using [npm][npm-packages] packages. The Electron executable should be installed
 in your project's `devDependencies` and can be run in development mode using a script in your
 package.json file.
 
@@ -473,7 +473,9 @@ privileged APIs and how to communicate between processes.
 [gitignore]: https://git-scm.com/docs/gitignore
 [gitignore-template]: https://github.com/github/gitignore/blob/main/Node.gitignore
 [installation]: ./installation.md
+[Javscript-apis]:https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API
 [node-platform]: https://nodejs.org/api/process.html#process_process_platform
+[npm-packages]:https://www.npmjs.com/
 [package-json-main]: https://docs.npmjs.com/cli/v7/configuring-npm/package-json#main
 [package-scripts]: https://docs.npmjs.com/cli/v7/using-npm/scripts
 [process-model]: process-model.md
