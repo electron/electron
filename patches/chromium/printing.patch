@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 69e759c3b34692beac06ceeddf4b3f1637fb7788..42d0da7f936626aa8bb90057723deeaafce8744d 100644
+index 4b37258f1bbba1d37e414ea7ec9a93cbd7a1efc4..4667f496f093cb7df71c5e5756fc61bb06053a8b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -973,7 +973,6 @@ if (is_win) {
@@ -640,7 +640,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..e8150c95fafd83d7e2fe1f472a35acec
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a95306c72e2d 100644
+index 5df31ec780ae5388b431e6fd63cee5de705a177a..ed520b130544a3854c4dcf98b04ada0cc2a14587 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -651,7 +651,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1229,14 +1230,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1231,14 +1232,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -668,7 +668,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
    if (!weak_this) {
      return;
    }
-@@ -1267,7 +1268,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1269,7 +1270,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -677,7 +677,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1282,7 +1283,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1284,7 +1285,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -686,7 +686,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
  
    if (render_frame_gone_) {
      return;
-@@ -1371,7 +1372,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+@@ -1373,7 +1374,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
    }
  
    Print(frame, print_preview_context_.source_node(),
@@ -696,7 +696,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
    if (render_frame_gone_) {
      return;
    }
-@@ -1434,6 +1436,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1436,6 +1438,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -705,7 +705,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2011,7 +2015,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2013,7 +2017,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
    }
  
    Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -715,7 +715,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
    // Check if `this` is still valid.
    if (!weak_this) {
      return;
-@@ -2027,17 +2032,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2029,17 +2034,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -738,7 +738,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2058,8 +2065,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2060,8 +2067,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -755,7 +755,7 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2317,25 +2331,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2319,25 +2333,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -785,11 +785,11 @@ index a0ec654b13f82d9c5ff4eb838585485a59c45924..e24f2e209e547685daf18570c0a8a953
      return false;
    }
  
-   bool fit_to_paper_size = !IsPrintingPdfFrame(frame, node);
+   bool center_on_paper = !IsPrintingPdfFrame(frame, node);
 -  settings.params->print_scaling_option =
 +  settings->params->print_scaling_option =
-       fit_to_paper_size ? mojom::PrintScalingOption::kFitToPrintableArea
-                         : mojom::PrintScalingOption::kSourceSize;
+       center_on_paper ? mojom::PrintScalingOption::kCenterShrinkToFitPaper
+                       : mojom::PrintScalingOption::kSourceSize;
 -  SetPrintPagesParams(settings);
 +  SetPrintPagesParams(*settings);
    return true;
