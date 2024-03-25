@@ -206,7 +206,7 @@ class App : public ElectronBrowserClient::Delegate,
   bool IsAccessibilitySupportEnabled();
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                       bool enabled);
-  Browser::LoginItemSettings GetLoginItemSettings(gin::Arguments* args);
+  v8::Local<v8::Value> GetLoginItemSettings(gin::Arguments* args);
 #if BUILDFLAG(USE_NSS_CERTS)
   void ImportCertificate(gin_helper::ErrorThrower thrower,
                          base::Value options,
