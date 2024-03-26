@@ -626,7 +626,6 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(AfterWriteCheckResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  // TODO(codebytere): What do we want to do here?
   std::move(callback).Run(AfterWriteCheckResult::kAllow);
 }
 
@@ -646,15 +645,11 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     return;
   }
 
+  // Chromium opens a dialog here, but in Electron's case we log and abort.
   if (should_block) {
-    // TODO(codebytere): figure out what to do here.
-    // auto result_callback =
-    //     base::BindPostTaskToCurrentDefault(std::move(callback));
-    // content::GetUIThreadTaskRunner({})->PostTask(
-    //     FROM_HERE,
-    //     base::BindOnce(&ShowFileSystemAccessRestrictedDirectoryDialogOnUIThread,
-    //                    frame_id, origin, handle_type,
-    //                    std::move(result_callback)));
+    LOG(INFO) << path.value()
+              << " is blocked by the blocklis and cannot be accessed";
+    std::move(callback).Run(SensitiveEntryResult::kAbort);
     return;
   }
 
