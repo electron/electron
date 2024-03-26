@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..15a264d9c33a4f5277578f08e5f692982746cebe 100644
+index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe47609b0d2f5 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -20,12 +20,16 @@
@@ -137,6 +137,19 @@ index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..15a264d9c33a4f5277578f08e5f69298
    exclusive_access_manager()->context()->ExitFullscreen();
    extension_caused_fullscreen_ = GURL();
  
+@@ -718,8 +730,12 @@ GURL FullscreenController::GetEmbeddingOrigin() const {
+ void FullscreenController::RecordMetricsOnFullscreenApiRequested(
+     content::RenderFrameHost* requesting_frame) {
+   history::HistoryService* service =
++  #if 0
+       HistoryServiceFactory::GetForProfileWithoutCreating(
+           exclusive_access_manager()->context()->GetProfile());
++  #else
++      nullptr;
++  #endif
+   if (service) {
+     // Check if the origin has been visited more than a day ago and whether it's
+     // on an allowlist, then record those bits of information in a metric.
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 index 4b30e9a8759b4a948308f4edb618b630cc0d56e7..4fde9921ccc4b4f797596873ac1658e05c984566 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
