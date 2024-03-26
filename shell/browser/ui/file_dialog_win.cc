@@ -23,6 +23,7 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "ui/shell_dialogs/auto_close_dialog_event_handler_win.h"
 
 namespace file_dialog {
 
@@ -31,6 +32,37 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
+
+// RAII wrapper around AutoCloseDialogEventHandler.
+class ScopedAutoCloseDialogEventHandler {
+ public:
+  ScopedAutoCloseDialogEventHandler(HWND owner_window, IFileDialog* file_dialog)
+      : file_dialog_(file_dialog) {
+    CHECK(file_dialog_);
+
+    if (!owner_window) {
+      return;
+    }
+
+    Microsoft::WRL::ComPtr<IFileDialogEvents> dialog_event_handler =
+        Microsoft::WRL::Make<ui::AutoCloseDialogEventHandler>(owner_window);
+    if (!dialog_event_handler) {
+      return;
+    }
+
+    file_dialog_->Advise(dialog_event_handler.Get(), &cookie_);
+  }
+
+  ~ScopedAutoCloseDialogEventHandler() {
+    if (cookie_) {
+      file_dialog_->Unadvise(cookie_);
+    }
+  }
+
+ private:
+  Microsoft::WRL::ComPtr<IFileDialog> file_dialog_;
+  DWORD cookie_ = 0;
+};
 
 // Distinguish directories from regular files.
 bool IsDirectory(const base::FilePath& path) {
@@ -101,13 +133,23 @@ static void SetDefaultFolder(IFileDialog* dialog,
 
 static HRESULT ShowFileDialog(IFileDialog* dialog,
                               const DialogSettings& settings) {
+  // This handler auto-closes the file dialog if its owner window is closed.
   HWND parent_window =
       settings.parent_window
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
                 ->GetAcceleratedWidget()
           : nullptr;
 
-  return dialog->Show(parent_window);
+  auto auto_close_dialog_event_handler =
+      std::make_unique<ScopedAutoCloseDialogEventHandler>(parent_window,
+                                                          dialog);
+
+  HRESULT hr = dialog->Show(parent_window);
+
+  // Remove the event handler regardless of the return value of Show().
+  auto_close_dialog_event_handler = nullptr;
+
+  return hr;
 }
 
 static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
