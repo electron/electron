@@ -103,7 +103,7 @@ The `autoUpdater` object has the following methods:
 
 * `options` Object
   * `url` string
-  * `headers` Record<string, string> (optional) _macOS_ - HTTP request headers.
+  * `headers` Record\<string, string\> (optional) _macOS_ - HTTP request headers.
   * `serverType` string (optional) _macOS_ - Can be `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
     README for more information.
 
