@@ -62,4 +62,7 @@ bool ElectronSpeechRecognitionManagerDelegate::FilterProfanities(
   return false;
 }
 
+void ElectronSpeechRecognitionManagerDelegate::BindSpeechRecognitionContext(
+    mojo::PendingReceiver<media::mojom::SpeechRecognitionContext> receiver) {}
+
 }  // namespace electron
