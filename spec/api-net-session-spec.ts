@@ -625,13 +625,13 @@ describe('net module (session)', () => {
         expect(() => {
           net.request({
             url: 'https://foo',
-            headers: { foo: emptyValue }
-          });
+            headers: { foo: emptyValue as any }
+          } as any);
         }).to.throw(errorMsg);
 
         const request = net.request({ url: 'https://foo' });
         expect(() => {
-          request.setHeader('foo', emptyValue);
+          request.setHeader('foo', emptyValue as any);
         }).to.throw(errorMsg);
       }
     });

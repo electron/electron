@@ -210,7 +210,7 @@ type ExtraURLLoaderOptions = {
    allowNonHttpProtocols: boolean;
 }
 
-function headerValidation (name: any, value: any): void {
+function validateHeader (name: any, value: any): void {
   if (typeof name !== 'string') {
     throw new TypeError('`name` should be a string in setHeader(name, value)');
   }
@@ -291,7 +291,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
   };
   const headers: Record<string, string | string[]> = options.headers || {};
   for (const [name, value] of Object.entries(headers)) {
-    headerValidation(name, value);
+    validateHeader(name, value);
     const key = name.toLowerCase();
     urlLoaderOptions.headers[key] = { name, value };
   }
@@ -365,7 +365,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     if (this._started || this._firstWrite) {
       throw new Error('Can\'t set headers after they are sent');
     }
-    headerValidation(name, value);
+    validateHeader(name, value);
 
     const key = name.toLowerCase();
     this._urlLoaderOptions.headers[key] = { name, value };
