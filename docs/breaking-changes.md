@@ -1664,7 +1664,7 @@ folder
 └── file3
 ```
 
-In Electron <=6, this would return a `FileList` with a `File` object for:
+In Electron &lt;=6, this would return a `FileList` with a `File` object for:
 
 ```console
 path/to/folder
