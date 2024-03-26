@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 03916655897e26d5f1b4500c2052d90f25dfcf1a..5502cddeffa45f9f9e4711065f4c96565d859913 100644
+index 7b1a5654a50916ff2f7f629168d99d8c2891c0e6..78a960042ef73c279e167c5813d2c4492d848f06 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1062,6 +1062,7 @@ component("base") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 28e66c147be723bb744e12a2b04c6d36fe3be8d5..49c17f1c5775428e05c873a7db79d19fd559e7d0 100644
+index 644a63629317bc0a6ca0f3b127c1c7fb277f6f9c..270720b2fd4fd427edae4122f2c51ca2d7e8d9d0 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -490,6 +490,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index 28e66c147be723bb744e12a2b04c6d36fe3be8d5..49c17f1c5775428e05c873a7db79d19f
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1711,6 +1713,7 @@ test("content_browsertests") {
+@@ -1710,6 +1712,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 28e66c147be723bb744e12a2b04c6d36fe3be8d5..49c17f1c5775428e05c873a7db79d19f
  
    public_deps = [
      ":test_interfaces",
-@@ -2943,6 +2946,7 @@ test("content_unittests") {
+@@ -2942,6 +2945,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
