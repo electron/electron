@@ -38,6 +38,8 @@ jobs:
       - run: npm install mdast-util-from-markdown@2.0.0 unist-util-select@5.1.0
       - name: Add labels
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
           script: |
@@ -47,7 +49,7 @@ jobs:
             const [ owner, repo ] = '${{ github.repository }}'.split('/');
             const issue_number = ${{ github.event.issue.number }};
 
-            const tree = fromMarkdown(`${{ github.event.issue.body }}`);
+            const tree = fromMarkdown(process.env.ISSUE_BODY);
 
             const labels = [];
 
