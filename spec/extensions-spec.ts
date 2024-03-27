@@ -1285,6 +1285,16 @@ describe('chrome extensions', () => {
         });
       });
 
+      it('globalParams', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'globalParams' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({ changed: true });
+      });
+
       it('insertCSS', async () => {
         await w.loadURL(url);
 
