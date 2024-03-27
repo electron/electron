@@ -571,10 +571,8 @@ describe('webContents module', () => {
 
     describe('navigationHistory.getActiveIndex() API', () => {
       it('should return valid active index after a single page visit', async () => {
-        await w.loadURL('https://www.google.com');
-        w.webContents.on('did-finish-load', async () => {
-          expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
-        });
+        await w.loadURL(urlPage1);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
 
       it('should return valid active index after a multiple page visits', async () => {
