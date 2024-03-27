@@ -14,7 +14,7 @@
 #include "base/task/thread_pool.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h" // nogncheck
+#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_context.h"
@@ -29,13 +29,6 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
-
-#if BUILDFLAG(IS_WIN)
-namespace features {
-const base::Feature kFileSystemAccessLocalUNCPathBlock{
-    "kFileSystemAccessLocalUNCPathBlock", base::FEATURE_ENABLED_BY_DEFAULT};
-}
-#endif
 
 namespace {
 
@@ -111,7 +104,8 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 #endif
 
   // Add the hard-coded rules to the dynamic rules.
-  for (auto const& [key, rule_path, type] : ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
+  for (auto const& [key, rule_path, type] :
+       ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
     if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
       rules.emplace_back(base::FilePath{rule_path}, type);
     } else if (base::FilePath path; base::PathService::Get(key, &path)) {
