@@ -548,6 +548,9 @@ describe('webContents module', () => {
 
   describe('navigationHistory', () => {
     let w: BrowserWindow;
+    const urlPage1 = 'data:text/html,<html><head><script>document.title = "Page 1";</script></head><body></body></html>';
+    const urlPage2 = 'data:text/html,<html><head><script>document.title = "Page 2";</script></head><body></body></html>';
+    const urlPage3 = 'data:text/html,<html><head><script>document.title = "Page 3";</script></head><body></body></html>';
 
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -559,25 +562,19 @@ describe('webContents module', () => {
         expect(result).to.deep.equal({ url: '', title: '' });
       });
       it('should fetch navigation entry given a valid index', async () => {
-        await w.loadURL('https://www.google.com');
-        w.webContents.on('did-finish-load', async () => {
-          const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-          expect(result).to.deep.equal({ url: 'https://www.google.com/', title: 'Google' });
-        });
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(0);
+        expect(result).to.deep.equal({ url: urlPage1, title: 'Page 1' });
       });
       it('should return null given an invalid index larger than history length', async () => {
-        await w.loadURL('https://www.google.com');
-        w.webContents.on('did-finish-load', async () => {
-          const result = w.webContents.navigationHistory.getEntryAtIndex(5);
-          expect(result).to.be.null();
-        });
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(5);
+        expect(result).to.be.null();
       });
       it('should return null given an invalid negative index', async () => {
-        await w.loadURL('https://www.google.com');
-        w.webContents.on('did-finish-load', async () => {
-          const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
-          expect(result).to.be.null();
-        });
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
+        expect(result).to.be.null();
       });
     });
 
@@ -590,13 +587,9 @@ describe('webContents module', () => {
       });
 
       it('should return valid active index after a multiple page visits', async () => {
-        const loadPromise = once(w.webContents, 'did-finish-load');
-        await w.loadURL('https://www.github.com');
-        await loadPromise;
-        await w.loadURL('https://www.google.com');
-        await loadPromise;
-        await w.loadURL('about:blank');
-        await loadPromise;
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
 
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
       });
@@ -608,20 +601,14 @@ describe('webContents module', () => {
 
     describe('navigationHistory.length() API', () => {
       it('should return valid history length after a single page visit', async () => {
-        await w.loadURL('https://www.google.com');
-        w.webContents.on('did-finish-load', async () => {
-          expect(w.webContents.navigationHistory.length()).to.equal(1);
-        });
+        await w.loadURL(urlPage1);
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
       });
 
       it('should return valid history length after a multiple page visits', async () => {
-        const loadPromise = once(w.webContents, 'did-finish-load');
-        await w.loadURL('https://www.github.com');
-        await loadPromise;
-        await w.loadURL('https://www.google.com');
-        await loadPromise;
-        await w.loadURL('about:blank');
-        await loadPromise;
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
 
         expect(w.webContents.navigationHistory.length()).to.equal(3);
       });
