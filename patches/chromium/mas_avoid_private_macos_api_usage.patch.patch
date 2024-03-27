@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7b1a5654a50916ff2f7f629168d99d8c2891c0e6..78a960042ef73c279e167c5813d2c4492d848f06 100644
+index 8192c3f27bb4d3210b3be33be248c24c6f3d9387..5733024924cc76452cdb44c4e94860c9b9bd9ee7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1062,6 +1062,7 @@ component("base") {
+@@ -1061,6 +1061,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -73,7 +73,7 @@ index 2bad2ed2f5205b3a2599aa3a620812aa32d52f87..ab3d4c953556d4f94075671436565a6c
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index b267bc2272fa82334a70d897a900f1ea37b1a598..967e22699bf565368704972c021f9b425a570f08 100644
+index 99d801d0fe89804bd87851c87f1ce76acff9f894..327c93478f491d098464f40dac7b936492f6e6fa 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,13 +21,18 @@
@@ -459,7 +459,7 @@ index e1ccb471c286f41d38673c4cb1326a6bed19d733..4b64a87464aefc04df107a64155e1f6f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index def67b5715b378a7b50ea0af3ab355673af132d4..9e4317e55096d79a59fd97cc0c7d77c212e9edc8 100644
+index 60dda2e8da8e70a96520058408b73cc1d2171d52..605bf18e8ea2d6fdbc76950db904d19c2ce5e0dd 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -608,7 +608,7 @@ index a2c2c78947c5e3e64632fd0f128745a80ce45fa8..96283a4f72b32eb45357eb6ec1f5b807
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 7e67fb0c10bf7e3b99e94a4e026a1fb83ba0d133..cb9ece52b497ae1d22ac03f170b2696fe3a5f129 100644
+index deb960892c575e43c0f4b8af3d8343a60a1102c9..79aec653c3124906c6eebcf864fc195526abdfbc 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -242,6 +242,7 @@ source_set("common") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 644a63629317bc0a6ca0f3b127c1c7fb277f6f9c..270720b2fd4fd427edae4122f2c51ca2d7e8d9d0 100644
+index ce414a81740254613c657ef378682e3dec6f3951..85ecae862070eca4b97f2d871ff876c6c37e05c6 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -490,6 +490,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 644a63629317bc0a6ca0f3b127c1c7fb277f6f9c..270720b2fd4fd427edae4122f2c51ca2
  
    public_deps = [
      ":test_interfaces",
-@@ -2942,6 +2945,7 @@ test("content_unittests") {
+@@ -2943,6 +2946,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

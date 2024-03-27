@@ -86,7 +86,7 @@ index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e3
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index 932e49a9d2a1ffd821b7da3de55c64267bfc58b8..6091d26a9ba13a47d1b7914b4f595aa7e8d35849 100644
+index 5dcd3515a6685d31cf5ecd89b37d7b850caf887e..1148f2012c4f93a4a4b41a7ef597fdbe09fc7a16 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
 @@ -180,7 +180,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {

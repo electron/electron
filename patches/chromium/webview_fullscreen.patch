@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7725ded42c3c84a12978b5e01de1318d0fc973fd..2631bf5431d98d2c77e37be0d0a0376cf2091f44 100644
+index fe25aceb9b9a3e59703fa951bc2a692eff2b03a4..6bc3b8c4ae57d384eff8316973514893a8cb3dc9 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7540,6 +7540,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -7552,6 +7552,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,10 +37,10 @@ index 7725ded42c3c84a12978b5e01de1318d0fc973fd..2631bf5431d98d2c77e37be0d0a0376c
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8c734d7f7cffec5cdbe90cf9487ec6c97d632ade..6e6fb5f08136b4e756f0fef8105aaa199051be2a 100644
+index 75fbeeb13f33431baba1e836b16f74409cd10337..5ab17aa7e1a8d572db13cdfd816e7f35ec7fa33a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3787,21 +3787,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -3792,21 +3792,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -78,7 +78,7 @@ index 8c734d7f7cffec5cdbe90cf9487ec6c97d632ade..6e6fb5f08136b4e756f0fef8105aaa19
  }
  
  bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
-@@ -3937,7 +3941,7 @@ void WebContentsImpl::EnterFullscreenMode(
+@@ -3942,7 +3946,7 @@ void WebContentsImpl::EnterFullscreenMode(
    OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
    DCHECK(CanEnterFullscreenMode(requesting_frame, options));
    DCHECK(requesting_frame->IsActive());
@@ -88,7 +88,7 @@ index 8c734d7f7cffec5cdbe90cf9487ec6c97d632ade..6e6fb5f08136b4e756f0fef8105aaa19
            features::kAutomaticFullscreenContentSetting)) {
      // Ensure the window is made active to take input focus. The user may have
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index 5d781ae16277c01cbc4e4c9ccff2ffccf6bc1ac5..289385ba2d48b258db3728e34154ad4e623d624f 100644
+index 9c5f3d99ce5dfa9414c032db11c09301fa93b9fe..5d25fc0a8be43791d64c47dad6e95e423c133411 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -111,7 +111,7 @@ void FullscreenElementChanged(Document& document,

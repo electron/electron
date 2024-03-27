@@ -40,10 +40,10 @@ index 7d8573ff6a42f23cbe6fdfdead3411b09bd43364..c6d0b183a91d61c7c3b3ae7d3f7eba77
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 15c696731f42b6095e6fff66c3619d5301f807ca..d74a940cdaee0576135e2ceeffa3bdba1583f6be 100644
+index c2133f8e818910dd18ba6bceef1ddc78d420f06c..c8f4b3c84cb9b27ae4b8ad10888ae7e92a08b9c2 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2169,6 +2169,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2167,6 +2167,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 15c696731f42b6095e6fff66c3619d5301f807ca..d74a940cdaee0576135e2ceeffa3bdba
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2216,6 +2220,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2214,6 +2218,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");

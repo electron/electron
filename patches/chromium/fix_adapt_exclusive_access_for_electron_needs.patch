@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe47609b0d2f5 100644
+index 81a0f64d1d98c8970fdfde4221cd5a2da09c8a7c..b461787eb58b5c8c46cc3b9138e69e6733f83df6 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -20,12 +20,16 @@
@@ -77,7 +77,7 @@ index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe476
  }
  
  void FullscreenController::RunOrDeferUntilTransitionIsComplete(
-@@ -572,18 +582,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -574,18 +584,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -101,7 +101,7 @@ index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe476
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -616,6 +625,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -618,6 +627,7 @@ void FullscreenController::EnterFullscreenModeInternal(
      if (!extension_caused_fullscreen_.is_empty())
        url = extension_caused_fullscreen_;
    }
@@ -109,7 +109,7 @@ index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe476
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER)
-@@ -635,6 +645,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -637,6 +647,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
    if (chrome::IsRunningInAppMode())
      return;
  
@@ -117,7 +117,7 @@ index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe476
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -646,15 +657,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -648,15 +659,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
@@ -137,7 +137,7 @@ index 3fc41072a63da8912f19d5a3a2f1d27b031e844c..a54f31060486f952cca407c0ef7fe476
    exclusive_access_manager()->context()->ExitFullscreen();
    extension_caused_fullscreen_ = GURL();
  
-@@ -718,8 +730,12 @@ GURL FullscreenController::GetEmbeddingOrigin() const {
+@@ -720,8 +732,12 @@ GURL FullscreenController::GetEmbeddingOrigin() const {
  void FullscreenController::RecordMetricsOnFullscreenApiRequested(
      content::RenderFrameHost* requesting_frame) {
    history::HistoryService* service =

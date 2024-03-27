@@ -6,16 +6,16 @@ Subject: build: make libcxx_abi_unstable false for electron
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index 642050581293640d8c4107f910f0f4726e5cba21..959b6fc7c4438796422b1b400a8dfa3cb6eac050 100644
+index 58bd468bf15edc6c2d2388d3c7dbdae80a26a1ba..50bc4fc39451a4650b34b8ed2abb089a91800d40 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
-@@ -94,7 +94,9 @@
- #    define _LIBCPP_ABI_DO_NOT_EXPORT_TO_CHARS_BASE_10
+@@ -13,7 +13,9 @@
+ //    _LIBCPP_ABI_NAMESPACE to a shorter value.
+ #define _LIBCPP_ABI_NAMESPACE __Cr
  
- #else
 +#if 0
  #define _LIBCPP_ABI_VERSION 2
 +#endif
- #endif // ifdef __Fuchsia__
  
  /* #undef _LIBCPP_ABI_FORCE_ITANIUM */
+ /* #undef _LIBCPP_ABI_FORCE_MICROSOFT */
