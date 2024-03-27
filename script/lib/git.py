@@ -181,7 +181,7 @@ def munge_subject_to_filename(subject):
   """Derive a suitable filename from a commit's subject"""
   if subject.endswith('.patch'):
     subject = subject[:-6]
-  return re.sub(r'[^A-Za-z0-9-]+', '_', subject).strip('_').lower() + '.patch'
+  return re.sub(r'[^-\w]+', '_', subject).strip('_').lower() + '.patch'
 
 
 def get_file_name(patch):
