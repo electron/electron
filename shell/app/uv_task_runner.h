@@ -10,6 +10,7 @@
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/task/single_thread_task_runner.h"
+#include "shell/common/node_bindings.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 
 namespace base {
@@ -40,11 +41,10 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
  private:
   ~UvTaskRunner() override;
   static void OnTimeout(uv_timer_t* timer);
-  static void OnClose(uv_handle_t* handle);
 
-  raw_ptr<uv_loop_t> loop_;
+  const raw_ptr<uv_loop_t> loop_;
 
-  std::map<uv_timer_t*, base::OnceClosure> tasks_;
+  std::map<electron::UvHandle<uv_timer_t>, base::OnceClosure> tasks_;
 };
 
 }  // namespace electron
