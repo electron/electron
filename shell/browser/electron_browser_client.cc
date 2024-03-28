@@ -962,7 +962,8 @@ content::MediaObserver* ElectronBrowserClient::GetMediaObserver() {
 
 std::unique_ptr<content::DevToolsManagerDelegate>
 ElectronBrowserClient::CreateDevToolsManagerDelegate() {
-  return std::make_unique<DevToolsManagerDelegate>();
+  auto* context = ElectronBrowserContext::From("", false);
+  return std::make_unique<DevToolsManagerDelegate>(context);
 }
 
 NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
