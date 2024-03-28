@@ -15,7 +15,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/chrome_paths.h"
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"
@@ -29,6 +28,7 @@
 #include "net/socket/stream_socket.h"
 #include "net/socket/tcp_server_socket.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/common/electron_paths.h"
 #include "third_party/inspector_protocol/crdtp/dispatch.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -98,9 +98,7 @@ void DevToolsManagerDelegate::StartHttpHandler() {
       CreateSocketFactory(), session_data, base::FilePath());
 }
 
-DevToolsManagerDelegate::DevToolsManagerDelegate(
-    content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {}
+DevToolsManagerDelegate::DevToolsManagerDelegate() = default;
 
 DevToolsManagerDelegate::~DevToolsManagerDelegate() = default;
 
@@ -143,7 +141,7 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
 }
 
 content::BrowserContext* DevToolsManagerDelegate::GetDefaultBrowserContext() {
-  return browser_context_;
+  return ElectronBrowserContext::From("", false);
 }
 
 }  // namespace electron

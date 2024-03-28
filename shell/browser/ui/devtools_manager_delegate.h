@@ -20,7 +20,7 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
   static void StartHttpHandler();
 
-  explicit DevToolsManagerDelegate(content::BrowserContext* browser_context);
+  DevToolsManagerDelegate();
   ~DevToolsManagerDelegate() override;
 
   // disable copy
@@ -38,9 +38,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   std::string GetDiscoveryPageHTML() override;
   bool HasBundledFrontendResources() override;
   content::BrowserContext* GetDefaultBrowserContext() override;
-
- private:
-  raw_ptr<content::BrowserContext> browser_context_;
 };
 
 }  // namespace electron
