@@ -33,6 +33,7 @@ auto_filenames = {
     "docs/api/message-port-main.md",
     "docs/api/native-image.md",
     "docs/api/native-theme.md",
+    "docs/api/navigation-history.md",
     "docs/api/net-log.md",
     "docs/api/net.md",
     "docs/api/notification.md",
