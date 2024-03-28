@@ -9,6 +9,7 @@
 #include "content/public/common/input/native_web_keyboard_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
+#include "ui/views/layout/box_layout.h"
 
 namespace electron {
 
@@ -41,6 +42,12 @@ RootView::RootView(NativeWindow* window)
     : window_(window),
       last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
   set_owned_by_client();
+  views::BoxLayout* layout =
+      SetLayoutManager(std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical));
+  main_view_ = AddChildView(std::make_unique<views::View>());
+  main_view_->SetUseDefaultFillLayout(true);
+  layout->SetFlexForView(main_view_, 1);
 }
 
 RootView::~RootView() = default;
@@ -90,10 +97,8 @@ void RootView::SetMenuBarVisibility(bool visible) {
 
   menu_bar_visible_ = visible;
   if (visible) {
-    DCHECK_EQ(children().size(), 1ul);
-    AddChildView(menu_bar_.get());
+    AddChildViewAt(menu_bar_.get(), 0);
   } else {
-    DCHECK_EQ(children().size(), 2ul);
     RemoveChildView(menu_bar_.get());
   }
 
