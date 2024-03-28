@@ -154,7 +154,7 @@ void ElectronManagementAPIDelegate::InstallOrLaunchReplacementWebApp(
 
 void ElectronManagementAPIDelegate::EnableExtension(
     content::BrowserContext* context,
-    const std::string& extension_id) const {
+    const extensions::ExtensionId& extension_id) const {
   // const extensions::Extension* extension =
   //     extensions::ExtensionRegistry::Get(context)->GetExtensionById(
   //         extension_id, extensions::ExtensionRegistry::EVERYTHING);
@@ -171,7 +171,7 @@ void ElectronManagementAPIDelegate::EnableExtension(
 void ElectronManagementAPIDelegate::DisableExtension(
     content::BrowserContext* context,
     const extensions::Extension* source_extension,
-    const std::string& extension_id,
+    const extensions::ExtensionId& extension_id,
     extensions::disable_reason::DisableReason disable_reason) const {
   // TODO(sentialx): we don't have ExtensionService
   // extensions::ExtensionSystem::Get(context)
@@ -182,7 +182,7 @@ void ElectronManagementAPIDelegate::DisableExtension(
 
 bool ElectronManagementAPIDelegate::UninstallExtension(
     content::BrowserContext* context,
-    const std::string& transient_extension_id,
+    const extensions::ExtensionId& transient_extension_id,
     extensions::UninstallReason reason,
     std::u16string* error) const {
   // TODO(sentialx): we don't have ExtensionService
@@ -194,7 +194,7 @@ bool ElectronManagementAPIDelegate::UninstallExtension(
 
 void ElectronManagementAPIDelegate::SetLaunchType(
     content::BrowserContext* context,
-    const std::string& extension_id,
+    const extensions::ExtensionId& extension_id,
     extensions::LaunchType launch_type) const {
   // TODO(sentialx)
   // extensions::SetLaunchType(context, extension_id, launch_type);
