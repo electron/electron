@@ -15,6 +15,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"
@@ -97,7 +98,9 @@ void DevToolsManagerDelegate::StartHttpHandler() {
       CreateSocketFactory(), session_data, base::FilePath());
 }
 
-DevToolsManagerDelegate::DevToolsManagerDelegate() = default;
+DevToolsManagerDelegate::DevToolsManagerDelegate(
+    content::BrowserContext* browser_context)
+    : browser_context_(browser_context) {}
 
 DevToolsManagerDelegate::~DevToolsManagerDelegate() = default;
 
@@ -137,6 +140,10 @@ std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
 
 bool DevToolsManagerDelegate::HasBundledFrontendResources() {
   return true;
+}
+
+content::BrowserContext* DevToolsManagerDelegate::GetDefaultBrowserContext() {
+  return browser_context_;
 }
 
 }  // namespace electron
