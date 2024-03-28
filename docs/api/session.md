@@ -1428,23 +1428,34 @@ is emitted.
 Returns `string | null` - The absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
 
-#### `ses.clearData()`
+#### `ses.clearData([options])`
+
+* `options` Object (optional)
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
+    * `backgroundFetch` - Background Fetch
+    * `cache` - Cache
+    * `cookies` - Cookies
+    * `downloads` - Downloads
+    * `fileSystems` - File Systems
+    * `indexedDB` - IndexedDB
+    * `localStorage` - Local Storage
+    * `serviceWorkers` - Service Workers
+    * `webSQL` - WebSQL
+  * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
+  * `excludeOrigins` String[] (optional) - Clear data for all origins except these ones. Cannot be used with `origins`.
+  * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections. (Default: `false`)
+  * `originMatchingMode` String (optional) - The behavior for matching data to origins.
+    * `third-parties-included` (default) - Storage is matched on origin in first-party contexts and top-level-site in third-party contexts.
+    * `origin-in-all-contexts` - Storage is matched on origin only in all contexts.
 
 Returns `Promise<void>` - resolves when all data has been cleared.
 
-This method clears many different types of data, inlcuding:
-
-* Cache
-* Cookies
-* Downloads
-* IndexedDB
-* Local Storage
-* Service Workers
-* And more...
+Clears various different types of data.
 
 This method clears more types of data and is more thourough than the
-`clearStorageData` method, however it is currently less configurable than that
-method.
+`clearStorageData` method.
+
+**Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
 
