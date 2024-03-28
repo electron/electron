@@ -546,6 +546,79 @@ describe('webContents module', () => {
     });
   });
 
+  describe('navigationHistory', () => {
+    let w: BrowserWindow;
+    const urlPage1 = 'data:text/html,<html><head><script>document.title = "Page 1";</script></head><body></body></html>';
+    const urlPage2 = 'data:text/html,<html><head><script>document.title = "Page 2";</script></head><body></body></html>';
+    const urlPage3 = 'data:text/html,<html><head><script>document.title = "Page 3";</script></head><body></body></html>';
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+    });
+    afterEach(closeAllWindows);
+    describe('navigationHistory.getEntryAtIndex(index) API ', () => {
+      it('should fetch default navigation entry when no urls are loaded', async () => {
+        const result = w.webContents.navigationHistory.getEntryAtIndex(0);
+        expect(result).to.deep.equal({ url: '', title: '' });
+      });
+      it('should fetch navigation entry given a valid index', async () => {
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(0);
+        expect(result).to.deep.equal({ url: urlPage1, title: 'Page 1' });
+      });
+      it('should return null given an invalid index larger than history length', async () => {
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(5);
+        expect(result).to.be.null();
+      });
+      it('should return null given an invalid negative index', async () => {
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
+        expect(result).to.be.null();
+      });
+    });
+
+    describe('navigationHistory.getActiveIndex() API', () => {
+      it('should return valid active index after a single page visit', async () => {
+        await w.loadURL(urlPage1);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+
+      it('should return valid active index after a multiple page visits', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+      });
+
+      it('should return valid active index given no page visits', async () => {
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+    });
+
+    describe('navigationHistory.length() API', () => {
+      it('should return valid history length after a single page visit', async () => {
+        await w.loadURL(urlPage1);
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
+      });
+
+      it('should return valid history length after a multiple page visits', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+      });
+
+      it('should return valid history length given no page visits', async () => {
+        // Note: Even if no navigation has committed, the history list will always start with an initial navigation entry
+        // Ref: https://source.chromium.org/chromium/chromium/src/+/main:ceontent/public/browser/navigation_controller.h;l=381
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
+      });
+    });
+  });
+
   describe('getFocusedWebContents() API', () => {
     afterEach(closeAllWindows);
 

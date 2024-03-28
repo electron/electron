@@ -352,6 +352,20 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   }
 };
 
+template <>
+struct Converter<content::NavigationEntry*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::NavigationEntry* entry) {
+    if (!entry) {
+      return v8::Null(isolate);
+    }
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("url", entry->GetURL().spec());
+    dict.Set("title", entry->GetTitleForDisplay());
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace gin
 
 namespace electron::api {
@@ -2560,6 +2574,11 @@ int WebContents::GetActiveIndex() const {
   return web_contents()->GetController().GetCurrentEntryIndex();
 }
 
+content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
+    int index) const {
+  return web_contents()->GetController().GetEntryAtIndex(index);
+}
+
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4353,9 +4372,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("goToOffset", &WebContents::GoToOffset)
       .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("goToIndex", &WebContents::GoToIndex)
-      .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getNavigationEntryAtIndex",
+                 &WebContents::GetNavigationEntryAtIndex)
+      .SetMethod("_historyLength", &WebContents::GetHistoryLength)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
-      .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)
