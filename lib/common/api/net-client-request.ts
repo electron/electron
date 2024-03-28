@@ -209,47 +209,20 @@ type ExtraURLLoaderOptions = {
    headers: Record<string, { name: string, value: string | string[] }>;
    allowNonHttpProtocols: boolean;
 }
+
+function validatedURL (url: string) {
+  return (new URL(url)).toString();
+}
+
+function urlFromOptions (options: ClientRequestConstructorOptions) {
+  if (options.url != null) return options.url;
+  return url.format(options);
+}
+
 function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & ExtraURLLoaderOptions {
-  // eslint-disable-next-line node/no-deprecated-api
-  const options: any = typeof optionsIn === 'string' ? url.parse(optionsIn) : { ...optionsIn };
+  const options = typeof optionsIn === 'string' ? { url: validatedURL(optionsIn) } : optionsIn;
 
-  let urlStr: string = options.url;
-
-  if (!urlStr) {
-    const urlObj: url.UrlObject = {};
-    const protocol = options.protocol || 'http:';
-    urlObj.protocol = protocol;
-
-    if (options.host) {
-      urlObj.host = options.host;
-    } else {
-      if (options.hostname) {
-        urlObj.hostname = options.hostname;
-      } else {
-        urlObj.hostname = 'localhost';
-      }
-
-      if (options.port) {
-        urlObj.port = options.port;
-      }
-    }
-
-    if (options.path && / /.test(options.path)) {
-      // The actual regex is more like /[^A-Za-z0-9\-._~!$&'()*+,;=/:@]/
-      // with an additional rule for ignoring percentage-escaped characters
-      // but that's a) hard to capture in a regular expression that performs
-      // well, and b) possibly too restrictive for real-world usage. That's
-      // why it only scans for spaces because those are guaranteed to create
-      // an invalid request.
-      throw new TypeError('Request path contains unescaped characters');
-    }
-    // eslint-disable-next-line node/no-deprecated-api
-    const pathObj = url.parse(options.path || '/');
-    urlObj.pathname = pathObj.pathname;
-    urlObj.search = pathObj.search;
-    urlObj.hash = pathObj.hash;
-    urlStr = url.format(urlObj);
-  }
+  const url = urlFromOptions(options);
 
   const redirectPolicy = options.redirect || 'follow';
   if (!['follow', 'error', 'manual'].includes(redirectPolicy)) {
@@ -262,7 +235,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
 
   const urlLoaderOptions: NodeJS.CreateURLLoaderOptions & { redirectPolicy: RedirectPolicy, headers: Record<string, { name: string, value: string | string[] }>, allowNonHttpProtocols: boolean } = {
     method: (options.method || 'GET').toUpperCase(),
-    url: urlStr,
+    url,
     redirectPolicy,
     headers: {},
     body: null as any,
