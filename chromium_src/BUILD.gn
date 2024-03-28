@@ -297,6 +297,8 @@ static_library("chrome") {
 
     if (enable_oop_printing) {
       sources += [
+        "//chrome/browser/printing/oop_features.cc",
+        "//chrome/browser/printing/oop_features.h",
         "//chrome/browser/printing/print_backend_service_manager.cc",
         "//chrome/browser/printing/print_backend_service_manager.h",
       ]
