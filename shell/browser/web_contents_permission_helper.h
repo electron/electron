@@ -30,7 +30,9 @@ class WebContentsPermissionHelper
     OPEN_EXTERNAL,
     SERIAL,
     HID,
-    USB
+    USB,
+    KEYBOARD_LOCK,
+    FILE_SYSTEM
   };
 
   // Asynchronous Requests
