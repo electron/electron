@@ -91,7 +91,7 @@ index 0d8a53178e8d509a573ffdaadf2c4cec670522ac..8e7f9b92beb317888a5a3acb3bc2fa29
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 9d763c3dd5cabded0e37eb11ddc23a536427c0c9..576c02d06899a421e6ce09ef2d4550317325f20f 100644
+index 855ffcf6b6455c9e903a6c638c09752d03530fd5..0de6b99e3753b7a1368105c396b46433445475e5 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -24,7 +24,9 @@
@@ -538,7 +538,7 @@ index 24a2bc8b26462e6cafbcd5eb89e838b73266ec70..402aab3b14e6987bde0e22e6c82ac438
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 418f53b0db3a2b2624298fca5628aacdd2a99c94..4a110fda692e16ec887cb90c6a2fa611c67b8d6f 100644
+index 0e48a7582d86c85a826de08af655b29a3ef74fd2..2e67a73611ca2c55ffc002341b0878de7191c932 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -830,10 +830,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..271bd9949a802a370b3619340f3364df
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 605bf18e8ea2d6fdbc76950db904d19c2ce5e0dd..52ff7230308204a30f63ae68e4b62524bfd0ae3d 100644
+index 4c03cdf85bf55731ecfb970765c8cf25be8782f0..17a1f0492f951ebdb2be2e516722159341d45f2b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2932,8 +2932,9 @@ source_set("browser") {
+@@ -2933,8 +2933,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

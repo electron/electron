@@ -459,7 +459,7 @@ index e1ccb471c286f41d38673c4cb1326a6bed19d733..4b64a87464aefc04df107a64155e1f6f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 60dda2e8da8e70a96520058408b73cc1d2171d52..605bf18e8ea2d6fdbc76950db904d19c2ce5e0dd 100644
+index 00db6efd1cb6a0d41f32d2043edd521906b17a85..4c03cdf85bf55731ecfb970765c8cf25be8782f0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ce414a81740254613c657ef378682e3dec6f3951..85ecae862070eca4b97f2d871ff876c6c37e05c6 100644
+index 5f211d4c2ca4bcbf87cfe93d4ea9b0220f5f0534..11810f0b199d0b2222b0020d2859839f4581118c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -490,6 +490,7 @@ static_library("test_support") {
+@@ -494,6 +494,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index ce414a81740254613c657ef378682e3dec6f3951..85ecae862070eca4b97f2d871ff876c6
    ]
  
    public_deps = [
-@@ -1096,6 +1097,7 @@ static_library("browsertest_support") {
+@@ -1100,6 +1101,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index ce414a81740254613c657ef378682e3dec6f3951..85ecae862070eca4b97f2d871ff876c6
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1710,6 +1712,7 @@ test("content_browsertests") {
+@@ -1714,6 +1716,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1329,7 +1329,7 @@ index 4da580c4c2eb558858021420a7d0b55574f7e449..f6eabd522c49e4dfe118c16720159a7c
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index 161d4973a2f605349164e560dd9a05fc859e7ea2..b6f8adfa8767d7340eb15883f5c76e7e74a9ec3f 100644
+index 4efcff17f550fc245ad13a1c80cecb40a1596f6d..d4862996b99662ca7f29d87d122a4e91f523692b 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -33,6 +33,7 @@
