@@ -338,7 +338,7 @@ bool IsAllowedOption(const std::string_view option) {
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
-  // Options that are unilaterally disallowed
+  // Options that are expressly disallowed
   static constexpr auto disallowed = base::MakeFixedFlatSet<std::string_view>({
       "--enable-fips",
       "--experimental-policy",
@@ -352,6 +352,14 @@ void SetNodeOptions(base::Environment* env) {
       "--http-parser",
       "--max-http-header-size",
   });
+
+  if (env->HasVar("NODE_EXTRA_CA_CERTS")) {
+    if (!electron::fuses::IsNodeOptionsEnabled()) {
+      LOG(ERROR) << "The NODE_OPTIONS fuse must be enabled in order to use "
+                    "NODE_EXTRA_CA_CERTS";
+      env->UnSetVar("NODE_EXTRA_CA_CERTS");
+    }
+  }
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
@@ -384,7 +392,7 @@ void SetNodeOptions(base::Environment* env) {
       env->SetVar("NODE_OPTIONS", options);
     } else {
       LOG(ERROR) << "NODE_OPTIONS have been disabled in this app";
-      env->SetVar("NODE_OPTIONS", "");
+      env->UnSetVar("NODE_OPTIONS");
     }
   }
 }
