@@ -46,7 +46,8 @@ WebWorkerObserver::WebWorkerObserver()
 WebWorkerObserver::~WebWorkerObserver() = default;
 
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
-    v8::Local<v8::Context> worker_context) {
+    v8::Local<v8::Context> worker_context,
+    std::optional<base::FilePath> node_preload) {
   v8::Context::Scope context_scope(worker_context);
   auto* isolate = worker_context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
@@ -70,7 +71,7 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   electron_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env.get());
+  node_bindings_->LoadEnvironment(env.get(), std::move(node_preload));
 
   // Make uv loop being wrapped by window context.
   node_bindings_->set_uv_env(env.get());

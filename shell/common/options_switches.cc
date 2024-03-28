@@ -236,6 +236,9 @@ const char kAppUserModelId[] = "app-user-model-id";
 // The application path
 const char kAppPath[] = "app-path";
 
+// Used to pass preload script to node and renderer processes.
+const char kNodePreload[] = "node-preload";
+
 // The command line switch versions of the options.
 const char kScrollBounce[] = "scroll-bounce";
 

@@ -107,7 +107,8 @@ class NodeBindings {
           std::nullopt);
 
   // Load node.js in the environment.
-  void LoadEnvironment(node::Environment* env);
+  void LoadEnvironment(node::Environment* env,
+                       std::optional<base::FilePath> preload);
 
   // Prepare embed thread for message loop integration.
   void PrepareEmbedThread();
@@ -219,11 +220,9 @@ class NodeBindings {
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };
 
-// A thread-safe function responsible for loading preload script which runs for
-// all node environments (including child processes and workers).
-void OnNodePreload(node::Environment* env,
-                   v8::Local<v8::Value> process,
-                   v8::Local<v8::Value> require);
+// Return Electron's EmbedderPreloadCallback.
+node::EmbedderPreloadCallback GetNodePreloadCallback(
+    std::optional<base::FilePath> preload);
 
 }  // namespace electron
 

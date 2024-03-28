@@ -13,6 +13,10 @@
 
 #include <string>
 
+namespace base {
+class FilePath;
+}
+
 namespace electron {
 
 std::string& OverriddenApplicationName();
@@ -24,6 +28,9 @@ std::string GetApplicationName();
 std::string GetApplicationVersion();
 // Returns the user agent of Electron.
 std::string GetApplicationUserAgent();
+
+// Get the path to app's resources dir, i.e. process.resourcesPath.
+base::FilePath GetResourcesPath();
 
 bool IsAppRTL();
 

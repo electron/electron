@@ -130,7 +130,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // the exit handler set above will be triggered and it expects
   // both Node Env and JavaScriptEnvironment are setup to perform
   // a clean shutdown of this process.
-  node_bindings_->LoadEnvironment(node_env_.get());
+  node_bindings_->LoadEnvironment(node_env_.get(), std::move(params->preload));
 
   // Run entry script.
   node_bindings_->PrepareEmbedThread();

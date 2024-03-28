@@ -28,6 +28,7 @@
 #include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/application_info.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -35,8 +36,8 @@
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
-#include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_util.h"
+#include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
@@ -392,21 +393,6 @@ void SetNodeOptions(base::Environment* env) {
 }  // namespace
 
 namespace electron {
-
-namespace {
-
-base::FilePath GetResourcesPath() {
-#if BUILDFLAG(IS_MAC)
-  return MainApplicationBundlePath().Append("Contents").Append("Resources");
-#else
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath exec_path(command_line->GetProgram());
-  base::PathService::Get(base::FILE_EXE, &exec_path);
-
-  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
-#endif
-}
-}  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_{browser_env},
@@ -782,8 +768,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   return CreateEnvironment(context, platform, args, {}, on_app_code_ready);
 }
 
-void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
+void NodeBindings::LoadEnvironment(node::Environment* env,
+                                   std::optional<base::FilePath> preload) {
+  node::LoadEnvironment(env, node::StartExecutionCallback{},
+                        GetNodePreloadCallback(std::move(preload)));
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
@@ -928,9 +916,12 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
   }
 }
 
+// A thread-safe function responsible for loading preload script which runs for
+// all node environments (including child processes and workers).
 void OnNodePreload(node::Environment* env,
                    v8::Local<v8::Value> process,
-                   v8::Local<v8::Value> require) {
+                   v8::Local<v8::Value> require,
+                   std::optional<base::FilePath> preload) {
   // Set custom process properties.
   gin_helper::Dictionary dict(env->isolate(), process.As<v8::Object>());
   dict.SetReadOnly("resourcesPath", GetResourcesPath());
@@ -947,6 +938,12 @@ void OnNodePreload(node::Environment* env,
 #endif
   }
 
+  // Pass the preload script to node/init.ts script by setting a hidden
+  // process.preload property.
+  if (preload) {
+    dict.SetHidden("preload", *preload);
+  }
+
   // Execute lib/node/init.ts.
   std::vector<v8::Local<v8::String>> bundle_params = {
       node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
@@ -955,6 +952,12 @@ void OnNodePreload(node::Environment* env,
   std::vector<v8::Local<v8::Value>> bundle_args = {process, require};
   electron::util::CompileAndCall(env->context(), "electron/js2c/node_init",
                                  &bundle_params, &bundle_args);
+}
+
+node::EmbedderPreloadCallback GetNodePreloadCallback(
+    std::optional<base::FilePath> preload) {
+  using namespace std::placeholders;
+  return std::bind(&OnNodePreload, _1, _2, _3, std::move(preload));
 }
 
 }  // namespace electron

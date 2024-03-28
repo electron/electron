@@ -257,7 +257,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->set_uv_env(node_env_.get());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(node_env_.get());
+  // Note that we are not passing preload script here, it is impossible for
+  // users to set preload script before we load app's main script.
+  node_bindings_->LoadEnvironment(node_env_.get(), std::nullopt);
 
   // Wait for app
   node_bindings_->JoinAppCode();
