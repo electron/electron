@@ -475,6 +475,7 @@ source_set("electron_lib") {
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",
+    "//services/device/public/cpp/bluetooth:bluetooth",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",

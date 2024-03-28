@@ -67,6 +67,7 @@ class ElectronSerialDelegate : public content::SerialDelegate,
   SerialChooserController* AddControllerForFrame(
       content::RenderFrameHost* render_frame_host,
       std::vector<blink::mojom::SerialPortFilterPtr> filters,
+      std::vector<device::BluetoothUUID> allowed_bluetooth_service_class_ids,
       content::SerialChooser::Callback callback);
 
   base::ScopedObservation<SerialChooserContext,
