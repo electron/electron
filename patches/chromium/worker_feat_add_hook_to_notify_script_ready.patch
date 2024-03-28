@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 1b0e7abf7db8cb2c4df4955f6f5547c63902f14e..ee60a9cbc78858528f3d77e035e0bc11b7e7a57f 100644
+index 1fa92fa48af154f02adb198f2d3c62519949be79..92bb21ae8c35ec086c4a5fc06f2c2af94639cd45 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -385,6 +385,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -389,6 +389,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  

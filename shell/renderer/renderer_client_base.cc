@@ -20,6 +20,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
+#include "media/base/key_systems_support_registration.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -68,8 +69,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/common/pdf_util.h"
 #include "components/pdf/common/constants.h"
+#include "components/pdf/common/pdf_util.h"
 #include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -405,7 +406,7 @@ bool RendererClientBase::OverrideCreatePlugin(
   return true;
 }
 
-std::unique_ptr<media::KeySystemSupportObserver>
+std::unique_ptr<media::KeySystemSupportRegistration>
 RendererClientBase::GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) {
 #if BUILDFLAG(ENABLE_WIDEVINE)
   GetChromeKeySystems(std::move(cb));

@@ -11,16 +11,14 @@
 #include "extensions/common/manifest_handlers/background_info.h"
 #include "extensions/renderer/dispatcher.h"
 #include "shell/common/world_ids.h"
-#include "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h"
 
 namespace electron {
 
 ElectronExtensionsRendererClient::ElectronExtensionsRendererClient() {}
 
 void ElectronExtensionsRendererClient::RenderThreadStarted() {
-  dispatcher_ = std::make_unique<extensions::Dispatcher>(
-      std::make_unique<ElectronExtensionsDispatcherDelegate>(),
-      std::move(api_providers_));
+  dispatcher_ =
+      std::make_unique<extensions::Dispatcher>(std::move(api_providers_));
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 

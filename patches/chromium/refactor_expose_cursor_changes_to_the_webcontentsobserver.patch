@@ -8,10 +8,10 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index a1dcd0c0eab747f144188b8faea21fb1cf2b1558..20cc65ba206a8b3d988b51f9459de1572eb3b99f 100644
+index a3f999654e191d925936c6dd9f041340c1d5cd30..db8a4efd188509f126962e240e9bc1f356962533 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -23,6 +23,7 @@
+@@ -24,6 +24,7 @@
  #include "third_party/blink/public/mojom/input/input_handler.mojom-shared.h"
  #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
  #include "ui/base/ui_base_types.h"
@@ -19,7 +19,7 @@ index a1dcd0c0eab747f144188b8faea21fb1cf2b1558..20cc65ba206a8b3d988b51f9459de157
  #include "ui/gfx/native_widget_types.h"
  
  namespace blink {
-@@ -270,6 +271,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -271,6 +272,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -44,10 +44,10 @@ index df4a7d191281af4602517ecc7300235ceb4e6799..8718ad62ca50b8426814af3a41553263
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6475b9fd000fb83c4562f7d91a30c80e5dddf35e..94cdebc2ae552106bdeb7d3619dc9281c4fb4063 100644
+index 82d13e8e1c3bd2f0d717bc497581261150846c4b..397dc862de9e9ec71f5b94ec33b0232c94ced1eb 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5268,6 +5268,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5286,6 +5286,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 6475b9fd000fb83c4562f7d91a30c80e5dddf35e..94cdebc2ae552106bdeb7d3619dc9281
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 4cb27cbd808dafde72c82f3e907c6b45654813e7..6612ecd6d98dc071cf598dffc64d5593911925b8 100644
+index 29d77ad18178c1d53eda05fe70c2f8c12646ea17..e634c1fed613ea153e0f11086eef38e7f9e03963 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1044,6 +1044,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1050,6 +1050,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index 4cb27cbd808dafde72c82f3e907c6b45654813e7..6612ecd6d98dc071cf598dffc64d5593
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index ede7dc05810649698b30efe7b0889420225a0f2b..e9cd2da6c1343aa03ef97a0c42d3393a8c74dc20 100644
+index 2176bcc3adc34cad4b9f95a139ded422bf3adfb7..a579f764777a221d05e81d028755597e1d1c5754 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@

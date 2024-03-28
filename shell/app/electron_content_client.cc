@@ -39,7 +39,6 @@
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/common/pdf_util.h"
 #include "components/pdf/common/constants.h"
 #include "pdf/pdf.h"  // nogncheck
 #include "shell/common/electron_constants.h"
