@@ -125,24 +125,10 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);
   bool has_content_type = false;
 
-  base::Value::Dict headers;
-  if (dict.Get("headers", &headers)) {
+  if (base::Value::Dict headers; dict.Get("headers", &headers)) {
     for (const auto iter : headers) {
-      if (iter.second.is_string()) {
-        // key, value
-        head->headers->AddHeader(iter.first, iter.second.GetString());
-      } else if (iter.second.is_list()) {
-        // key: [values...]
-        for (const auto& item : iter.second.GetList()) {
-          if (item.is_string())
-            head->headers->AddHeader(iter.first, item.GetString());
-        }
-      } else {
-        continue;
-      }
-      auto header_name_lowercase = base::ToLowerASCII(iter.first);
-
-      if (header_name_lowercase == "content-type") {
+      if (const auto header_name_lowercase = base::ToLowerASCII(iter.first);
+          header_name_lowercase == "content-type") {
         // Some apps are passing content-type via headers, which is not accepted
         // in NetworkService.
         head->headers->GetMimeTypeAndCharset(&head->mime_type, &head->charset);
@@ -150,6 +136,20 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
       } else if (header_name_lowercase == "content-length" &&
                  iter.second.is_string()) {
         base::StringToInt64(iter.second.GetString(), &head->content_length);
+      }
+
+      if (iter.second.is_string()) {
+        // key, value
+        head->headers->AddHeader(iter.first,
+                                 std::move(iter.second).TakeString());
+      } else if (iter.second.is_list()) {
+        // key: [values...]
+        for (auto& item : iter.second.GetList()) {
+          if (item.is_string())
+            head->headers->AddHeader(iter.first, std::move(item).TakeString());
+        }
+      } else {
+        continue;
       }
     }
   }
