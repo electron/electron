@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Eugene Zemtsov <eugene@chromium.org>
 Date: Mon, 25 Mar 2024 19:28:44 +0000
-Subject: [M122] webcodecs: Disable async VideoFrame readback to mitigate a
- race
+Subject: webcodecs: Disable async VideoFrame readback to mitigate a race
 
 (cherry picked from commit fdc363eb7a1c1c194a02a4cb340534b1501b0f95)
 
