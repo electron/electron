@@ -1496,6 +1496,24 @@ details.
 
 **Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
 
+### `app.setProxy(config)`
+
+* `config` [ProxyConfig](structures/proxy-config.md)
+
+Returns `Promise<void>` - Resolves when the proxy setting process is complete.
+
+Sets the proxy settings for networks requests made without an associated [Session](session.md).
+Currently this will affect requests made with [Net](net.md) in the [utility process](../glossary.md#utility-process)
+and internal requests made by the runtime (ex: geolocation queries).
+
+This method can only be called after app is ready.
+
+#### `app.resolveProxy(url)`
+
+* `url` URL
+
+Returns `Promise<string>` - Resolves with the proxy information for `url` that will be used when attempting to make requests using [Net](net.md) in the [utility process](../glossary.md#utility-process).
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_

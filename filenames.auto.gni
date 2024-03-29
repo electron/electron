@@ -113,6 +113,7 @@ auto_filenames = {
     "docs/api/structures/protocol-request.md",
     "docs/api/structures/protocol-response-upload-data.md",
     "docs/api/structures/protocol-response.md",
+    "docs/api/structures/proxy-config.md",
     "docs/api/structures/rectangle.md",
     "docs/api/structures/referrer.md",
     "docs/api/structures/render-process-gone-details.md",

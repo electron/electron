@@ -25,6 +25,9 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/proxy_config/proxy_config_dictionary.h"
+#include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/gpu/compositor_util.h"        // nogncheck
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
@@ -1469,6 +1472,98 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+v8::Local<v8::Promise> App::SetProxy(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  gin_helper::Dictionary options;
+  args->GetNext(&options);
+
+  if (!Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "app.setProxy() can only be called after app is ready.");
+    return handle;
+  }
+
+  if (!g_browser_process->local_state()) {
+    promise.RejectWithErrorMessage(
+        "app.setProxy() failed due to internal error.");
+    return handle;
+  }
+
+  std::string mode, proxy_rules, bypass_list, pac_url;
+
+  options.Get("pacScript", &pac_url);
+  options.Get("proxyRules", &proxy_rules);
+  options.Get("proxyBypassRules", &bypass_list);
+
+  ProxyPrefs::ProxyMode proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
+  if (!options.Get("mode", &mode)) {
+    // pacScript takes precedence over proxyRules.
+    if (!pac_url.empty()) {
+      proxy_mode = ProxyPrefs::MODE_PAC_SCRIPT;
+    }
+  } else if (!ProxyPrefs::StringToProxyMode(mode, &proxy_mode)) {
+    promise.RejectWithErrorMessage(
+        "Invalid mode, must be one of direct, auto_detect, pac_script, "
+        "fixed_servers or system");
+    return handle;
+  }
+
+  base::Value::Dict proxy_config;
+  switch (proxy_mode) {
+    case ProxyPrefs::MODE_DIRECT:
+      proxy_config = ProxyConfigDictionary::CreateDirect();
+      break;
+    case ProxyPrefs::MODE_SYSTEM:
+      proxy_config = ProxyConfigDictionary::CreateSystem();
+      break;
+    case ProxyPrefs::MODE_AUTO_DETECT:
+      proxy_config = ProxyConfigDictionary::CreateAutoDetect();
+      break;
+    case ProxyPrefs::MODE_PAC_SCRIPT:
+      proxy_config = ProxyConfigDictionary::CreatePacScript(pac_url, true);
+      break;
+    case ProxyPrefs::MODE_FIXED_SERVERS:
+      proxy_config =
+          ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list);
+      break;
+    default:
+      NOTIMPLEMENTED();
+  }
+
+  static_cast<BrowserProcessImpl*>(g_browser_process)
+      ->in_memory_pref_store()
+      ->SetValue(proxy_config::prefs::kProxy,
+                 base::Value{std::move(proxy_config)},
+                 WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+
+  g_browser_process->system_network_context_manager()
+      ->GetContext()
+      ->ForceReloadProxyConfig(base::BindOnce(
+          gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> App::ResolveProxy(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<std::string> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  GURL url;
+  args->GetNext(&url);
+
+  static_cast<BrowserProcessImpl*>(g_browser_process)
+      ->GetResolveProxyHelper()
+      ->ResolveProxy(
+          url, base::BindOnce(gin_helper::Promise<std::string>::ResolvePromise,
+                              std::move(promise)));
+
+  return handle;
+}
+
 void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
@@ -1773,7 +1868,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
-      .SetMethod("enableSandbox", &App::EnableSandbox);
+      .SetMethod("enableSandbox", &App::EnableSandbox)
+      .SetMethod("setProxy", &App::SetProxy)
+      .SetMethod("resolveProxy", &App::ResolveProxy);
 }
 
 const char* App::GetTypeName() {
