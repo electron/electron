@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8192c3f27bb4d3210b3be33be248c24c6f3d9387..5733024924cc76452cdb44c4e94860c9b9bd9ee7 100644
+index 646e3d8a69977d2f46aa2d933f0bfbd61bff7dc5..4d779ac3cb84623a206764b86a35d74f974d5c4f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1061,6 +1061,7 @@ component("base") {
+@@ -1065,6 +1065,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -353,7 +353,7 @@ index eca5cea5131601638c20a4d9a885461df54095da..5032994a576bd85a2aaa7723bbfec4d5
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5535f9c56113f1f46a925d6cc16049a841d0b609..2845da60cf229e6899bc200218eda2e0961f9f21 100644
+index 8b37a7c4150b4013e1763cadc6303dcf6d950738..5721dd765dc5cfff9867720fa8f0d214876b6797 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -620,10 +620,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -459,7 +459,7 @@ index e1ccb471c286f41d38673c4cb1326a6bed19d733..4b64a87464aefc04df107a64155e1f6f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 00db6efd1cb6a0d41f32d2043edd521906b17a85..4c03cdf85bf55731ecfb970765c8cf25be8782f0 100644
+index c071c648896920ee9373b9c7fcd6870169788d58..7bdea86578abe441759a92428242bceefcd40945 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5f211d4c2ca4bcbf87cfe93d4ea9b0220f5f0534..11810f0b199d0b2222b0020d2859839f4581118c 100644
+index ba30f1d3ac56ca007f6c38883f0dec872eb77928..96a72e70cba0fd2f78484e8b70f65d0a7f041874 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -494,6 +494,7 @@ static_library("test_support") {

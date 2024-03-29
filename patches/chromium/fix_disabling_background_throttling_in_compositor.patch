@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 5433cabfce5db3acfb892f2184c0f48844eff8bb..3de530165af3f6cf8eb91c34af7d032e5a68cde1 100644
+index 72dbd0f625514ae8b0ba7c61d07d9434ae927d08..4f2314153f8454443de050df979d2599ee1847e6 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -343,7 +343,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -36,7 +36,7 @@ index 5433cabfce5db3acfb892f2184c0f48844eff8bb..3de530165af3f6cf8eb91c34af7d032e
  
    if (changed) {
      for (auto& observer : observer_list_) {
-@@ -1012,4 +1015,13 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1009,4 +1012,13 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -51,7 +51,7 @@ index 5433cabfce5db3acfb892f2184c0f48844eff8bb..3de530165af3f6cf8eb91c34af7d032e
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c0e09f204f5e171e9e942ea3a411b137b21d44e5..a7fbc73cd96cd9a637226182694e2a8b09c0be2c 100644
+index 47d6368a6139446d6ef4fdb0838d76a328eade68..5e013c0083fa65e9ada59e6f9761cbf13ebda31b 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -509,6 +509,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
@@ -65,7 +65,7 @@ index c0e09f204f5e171e9e942ea3a411b137b21d44e5..a7fbc73cd96cd9a637226182694e2a8b
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -638,6 +642,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -637,6 +641,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

@@ -58,10 +58,10 @@ index d8ae896ee02888ee4ab375c4fd3569de27be925e..d4e97e92d353e298978a094aec276947
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 795ad47165f2f02e816f424ce74391a435c61a32..ace57135682f4372814acfbd202d1b077ecb1c0c 100644
+index 7dfa87a8e33a389c3dabef6b651cf251532d3177..98c150f0bd4a1a33e189ac57d4885c59bd8ec2ca 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -63,6 +63,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -64,6 +64,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
      }
  
@@ -73,7 +73,7 @@ index 795ad47165f2f02e816f424ce74391a435c61a32..ace57135682f4372814acfbd202d1b07
      // (For Electron), if we're launching without zygote, that means we're
      // launching an unsandboxed process (since all sandboxed processes are
      // forked from the zygote). Relax the allow_new_privs option to permit
-@@ -72,7 +77,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -73,7 +78,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->allow_new_privs = true;
      }
  
