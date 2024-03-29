@@ -11,10 +11,10 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 003ae7eb987f03611444f02695bc8582e0ac6a67..bbf1df480bc6ec90ee3ac29312dc89ff8bf94ab3 100644
+index 39e87338dc5a799a8a30bd2399b8ec5d6b554fad..7b1939fa25379b333f2be07f4ff483f53d8a2ac6 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
-@@ -23,7 +23,7 @@ const {
+@@ -24,7 +24,7 @@ const {
    ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
    ERR_INVALID_ARG_VALUE,
  } = require('internal/errors').codes;
@@ -23,7 +23,7 @@ index 003ae7eb987f03611444f02695bc8582e0ac6a67..bbf1df480bc6ec90ee3ac29312dc89ff
  const {
    loadPreloadModules,
    initializeFrozenIntrinsics,
-@@ -221,12 +221,13 @@ let _forceDefaultLoader = false;
+@@ -239,12 +239,13 @@ let _forceDefaultLoader = false;
   * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
   */
  function initializeESM(forceDefaultLoader = false) {
@@ -40,10 +40,10 @@ index 003ae7eb987f03611444f02695bc8582e0ac6a67..bbf1df480bc6ec90ee3ac29312dc89ff
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 895ff3a5948add3513700ecc2f32fce4c2fbe4eb..3182a5e4aad2ba0be2b6769edb696b815ce39a61 100644
+index 501e4d7b7ea180588737fcbb2bf6ff79abfb9d9a..cce67100588bf6b47d26ee9168a123cb813b822e 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -554,7 +554,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -561,7 +561,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
@@ -52,7 +52,7 @@ index 895ff3a5948add3513700ecc2f32fce4c2fbe4eb..3182a5e4aad2ba0be2b6769edb696b81
      Local<Context> context,
      Local<v8::Data> host_defined_options,
      Local<Value> resource_name,
-@@ -618,12 +618,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -626,12 +626,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -68,7 +68,7 @@ index 895ff3a5948add3513700ecc2f32fce4c2fbe4eb..3182a5e4aad2ba0be2b6769edb696b81
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -665,13 +666,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -673,13 +674,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
