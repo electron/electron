@@ -110,11 +110,11 @@ $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
 On Windows:
 
 ```sh
-# CMD
+# cmd
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
 
-# Powershell
+# PowerShell
 $ cd src
 $ $env:CHROMIUM_BUILDTOOLS_PATH = "$(Get-Location)\buildtools"
 ```
@@ -130,10 +130,10 @@ $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
 On Windows:
 
 ```sh
-# CMD
+# cmd
 $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
 
-# Powershell
+# PowerShell
 gn gen out/Testing --args="import(\`"//electron/build/args/testing.gn\`")"
 ```
 
@@ -148,10 +148,10 @@ $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
 On Windows:
 
 ```sh
-# CMD
+# cmd
 $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
 
-# Powershell
+# PowerShell
 $ gn gen out/Release --args="import(\`"//electron/build/args/release.gn\`")"
 ```
 
