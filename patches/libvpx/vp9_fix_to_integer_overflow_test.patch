@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Paniconi <marpan@google.com>
+Date: Sat, 16 Mar 2024 10:39:28 -0700
+Subject: vp9: fix to integer overflow test
+
+failure for the 16k test: issue introduced
+in: c29e637283
+
+Bug: b/329088759, b/329674887, b/329179808
+
+Change-Id: I88e8a36b7f13223997c3006c84aec9cfa48c0bcf
+(cherry picked from commit 19832b1702d5b0adf616a0e080abd5207c8445b5)
+
+diff --git a/vp9/encoder/vp9_bitstream.c b/vp9/encoder/vp9_bitstream.c
+index 88a031e5fc1cf7b6cf0a441664dbbc62006c1790..d3c029da4bacafdb19aa6bfb9865ccbf2db33393 100644
+--- a/vp9/encoder/vp9_bitstream.c
++++ b/vp9/encoder/vp9_bitstream.c
+@@ -967,7 +967,9 @@ static int encode_tiles_buffer_alloc_size(VP9_COMP *const cpi) {
+   const int image_bps =
+       (8 + 2 * (8 >> (cm->subsampling_x + cm->subsampling_y))) *
+       (1 + (cm->bit_depth > 8));
+-  return cpi->oxcf.width * cpi->oxcf.height * image_bps / 8;
++  const int64_t size =
++      (int64_t)cpi->oxcf.width * cpi->oxcf.height * image_bps / 8;
++  return (int)size;
+ }
+ 
+ static void encode_tiles_buffer_alloc(VP9_COMP *const cpi) {
