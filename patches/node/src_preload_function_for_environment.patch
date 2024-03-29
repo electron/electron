@@ -6,20 +6,20 @@ Subject: src: preload function for Environment
 Backport https://github.com/nodejs/node/pull/51539
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index eb66f0e37b517a03be20e0829863e7572042c7ed..4d5646b6067a1409df5915cc744bdc38d0191bd9 100644
+index 2fc9e2da8aa920acffc101b2c341a5d9b16fe90a..b4272f01e84d7fec263dcad444d92459743780a8 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -186,6 +186,9 @@ function setupUserModules(forceDefaultLoader = false) {
-   initializeESMLoader(forceDefaultLoader);
-   const CJSLoader = require('internal/modules/cjs/loader');
-   assert(!CJSLoader.hasLoadedAnyUserCJSModule);
+@@ -196,6 +196,9 @@ function setupUserModules(forceDefaultLoader = false) {
+   } = require('internal/modules/helpers');
+   assert(!hasStartedUserCJSExecution());
+   assert(!hasStartedUserESMExecution());
 +  if (getEmbedderOptions().hasEmbedderPreload) {
 +    runEmbedderPreload();
 +  }
    // Do not enable preload modules if custom loaders are disabled.
    // For example, loader workers are responsible for doing this themselves.
    // And preload modules are not supported in ShadowRealm as well.
-@@ -745,6 +748,10 @@ function initializeFrozenIntrinsics() {
+@@ -713,6 +716,10 @@ function initializeFrozenIntrinsics() {
    }
  }
  
@@ -31,10 +31,10 @@ index eb66f0e37b517a03be20e0829863e7572042c7ed..4d5646b6067a1409df5915cc744bdc38
    // For user code, we preload modules if `-r` is passed
    const preloadModules = getOptionValue('--require');
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9045de3b17c93c4864a1bb1024b08f7d1ffa83be..e8669ba2a1ede090fea1869c476cac19a2aebbc6 100644
+index 7c2e4430299e0d78539d43070942ea3a585b559c..7741b9358a965231671bce004de581f1c6665c2d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -556,25 +556,31 @@ NODE_EXTERN std::unique_ptr<InspectorParentHandle> GetInspectorParentHandle(
+@@ -549,25 +549,31 @@ NODE_EXTERN std::unique_ptr<InspectorParentHandle> GetInspectorParentHandle(
  #endif
  }
  
@@ -73,11 +73,11 @@ index 9045de3b17c93c4864a1bb1024b08f7d1ffa83be..e8669ba2a1ede090fea1869c476cac19
  
  Environment* GetCurrentEnvironment(Local<Context> context) {
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 564de2990c09a54693686666f9ad66398ff76ab5..cc448abbc650b5abb7f555872fd8c15bc09fd643 100644
+index ac4295f495e240331a183b4a0a22d7437fc85271..63ce35ba68b48a55d8150395304bf86c2bf23aae 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -438,6 +438,14 @@ inline void Environment::set_embedder_entry_point(StartExecutionCallback&& fn) {
-   embedder_entry_point_ = std::move(fn);
+@@ -430,6 +430,14 @@ inline builtins::BuiltinLoader* Environment::builtin_loader() {
+   return &builtin_loader_;
  }
  
 +inline const EmbedderPreloadCallback& Environment::embedder_preload() const {
@@ -92,31 +92,32 @@ index 564de2990c09a54693686666f9ad66398ff76ab5..cc448abbc650b5abb7f555872fd8c15b
    async_hooks()->async_id_fields()[AsyncHooks::kAsyncIdCounter] += 1;
    return async_hooks()->async_id_fields()[AsyncHooks::kAsyncIdCounter];
 diff --git a/src/env.h b/src/env.h
-index 448075e354c760a2dbd1dd763f40b7a645730250..d6956873b1b7bdf49ed0217587729aaa974ae89f 100644
+index dc4b3628a351aef0f3895dee07548df1dee29d91..3b3724d6c7156b87555be31470e75b1cf28b5e3f 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -985,6 +985,8 @@ class Environment : public MemoryRetainer {
+@@ -1003,6 +1003,9 @@ class Environment : public MemoryRetainer {
  
-   inline const StartExecutionCallback& embedder_entry_point() const;
-   inline void set_embedder_entry_point(StartExecutionCallback&& fn);
+ #endif  // HAVE_INSPECTOR
+ 
 +  inline const EmbedderPreloadCallback& embedder_preload() const;
 +  inline void set_embedder_preload(EmbedderPreloadCallback fn);
- 
++
    inline void set_process_exit_handler(
        std::function<void(Environment*, ExitCode)>&& handler);
-@@ -1186,6 +1188,7 @@ class Environment : public MemoryRetainer {
+ 
+@@ -1213,6 +1216,7 @@ class Environment : public MemoryRetainer {
+   std::unique_ptr<PrincipalRealm> principal_realm_ = nullptr;
  
    builtins::BuiltinLoader builtin_loader_;
-   StartExecutionCallback embedder_entry_point_;
 +  EmbedderPreloadCallback embedder_preload_;
  
    // Used by allocate_managed_buffer() and release_managed_buffer() to keep
    // track of the BackingStore for a given pointer.
 diff --git a/src/node.h b/src/node.h
-index 36da93a7b41ea450a5f288ec17b61adae46ae178..c65c96342d7d02ddb37565477f67a93ef55a78ba 100644
+index 5ade64874ec08474f05db226cf19a043fa26592e..b3cc7a9f1866111c197b20068275c496fd4aace0 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -718,12 +718,33 @@ struct StartExecutionCallbackInfo {
+@@ -746,12 +746,33 @@ struct StartExecutionCallbackInfo {
  
  using StartExecutionCallback =
      std::function<v8::MaybeLocal<v8::Value>(const StartExecutionCallbackInfo&)>;
@@ -153,10 +154,10 @@ index 36da93a7b41ea450a5f288ec17b61adae46ae178..c65c96342d7d02ddb37565477f67a93e
  
  // Set a callback that is called when process.exit() is called from JS,
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 48ce3f3b68a94fc35e5ce93a385ddbebb03741b9..39d34e18e483882a71145110962109711a1566e2 100644
+index a02dcca456556a7cbb2a262edc5fa4a3b25297ed..92adb8323abac2c7ab956fe1adf95cfab62bef6a 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1290,6 +1290,12 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1304,6 +1304,12 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
            .IsNothing())
      return;
  
@@ -170,11 +171,11 @@ index 48ce3f3b68a94fc35e5ce93a385ddbebb03741b9..39d34e18e483882a7114511096210971
  }
  
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index 562a47ddcc9c8e61590b7b09d84dc08ab4b3653d..431cbe1c2cb77669ceb10602a7b3ef1c2f7e8718 100644
+index 0309aba6bdc24afe0d1fd24e7af6f472910363d7..55a65deeea6e74b77cb5b97da88e37779f336ce2 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
-@@ -1369,6 +1369,17 @@ static void RunEmbedderEntryPoint(const FunctionCallbackInfo<Value>& args) {
-   }
+@@ -1417,6 +1417,17 @@ void SerializeSnapshotableObjects(Realm* realm,
+   });
  }
  
 +void RunEmbedderPreload(const FunctionCallbackInfo<Value>& args) {
@@ -191,27 +192,27 @@ index 562a47ddcc9c8e61590b7b09d84dc08ab4b3653d..431cbe1c2cb77669ceb10602a7b3ef1c
  void CompileSerializeMain(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsString());
    Local<String> filename = args[0].As<String>();
-@@ -1493,6 +1504,7 @@ void CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -1540,6 +1551,7 @@ void CreatePerContextProperties(Local<Object> target,
+ void CreatePerIsolateProperties(IsolateData* isolate_data,
                                  Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-   SetMethod(isolate, target, "runEmbedderEntryPoint", RunEmbedderEntryPoint);
 +  SetMethod(isolate, target, "runEmbedderPreload", RunEmbedderPreload);
    SetMethod(isolate, target, "compileSerializeMain", CompileSerializeMain);
    SetMethod(isolate, target, "setSerializeCallback", SetSerializeCallback);
    SetMethod(isolate, target, "setDeserializeCallback", SetDeserializeCallback);
-@@ -1506,6 +1518,7 @@ void CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -1552,6 +1564,7 @@ void CreatePerIsolateProperties(IsolateData* isolate_data,
+ }
  
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
-   registry->Register(RunEmbedderEntryPoint);
 +  registry->Register(RunEmbedderPreload);
    registry->Register(CompileSerializeMain);
    registry->Register(SetSerializeCallback);
    registry->Register(SetDeserializeCallback);
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 900674bbe4c90e9aeb2013c06c9979864b06dcd5..52d7473b05ccb49e5fc915224b6d2972a14191da 100644
+index 8b45c0265befaf68af07622d220ebdf96dc94ac4..196eb3bccaee87b52a46b693a061864ae6a5e3b9 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -63,6 +63,7 @@ Worker::Worker(Environment* env,
+@@ -62,6 +62,7 @@ Worker::Worker(Environment* env,
        thread_id_(AllocateEnvironmentThreadId()),
        name_(name),
        env_vars_(env_vars),
@@ -219,7 +220,7 @@ index 900674bbe4c90e9aeb2013c06c9979864b06dcd5..52d7473b05ccb49e5fc915224b6d2972
        snapshot_data_(snapshot_data) {
    Debug(this, "Creating new worker instance with thread id %llu",
          thread_id_.id);
-@@ -381,8 +382,12 @@ void Worker::Run() {
+@@ -386,8 +387,12 @@ void Worker::Run() {
          }
  
          Debug(this, "Created message port for worker %llu", thread_id_.id);
@@ -246,10 +247,10 @@ index 531e2b5287010f9206ab4fd7f4dd0f3dec9fe55c..07fd7b460654e169e8b6822474dc3cc7
    // A raw flag that is used by creator and worker threads to
    // sync up on pre-mature termination of worker  - while in the
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index 2e747c7be58922897abd0424b797f3f12a89ada1..fcffaca89cf5aa24be6e539bfb4d9d6df690a709 100644
+index 9b8124081542876ce7245e4aede6810e9bf0e2eb..64e38c83006a004ebc3519a5e9f8b04263244514 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
-@@ -773,3 +773,31 @@ TEST_F(EnvironmentTest, RequestInterruptAtExit) {
+@@ -778,3 +778,31 @@ TEST_F(EnvironmentTest, RequestInterruptAtExit) {
  
    context->Exit();
  }
