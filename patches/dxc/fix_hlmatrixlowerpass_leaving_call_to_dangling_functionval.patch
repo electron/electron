@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Wed, 20 Mar 2024 17:15:40 -0400
+Subject: Fix HLMatrixLowerPass leaving call to dangling FunctionVal
+
+When lowering an hl.cast, when the operand was an undef matrix, the pass would insert a call to a mat2vec stub, but since the undef value is not
+an alloca, it never gets handled, and the call to the temporary stub
+remains. Since the stub FunctionVal gets deleted, when the instruction
+is accessed in a future pass, it reads a dangling pointer.
+
+The fix is to handle undef similarly to how constant 0 is handled, and
+to return an undef vector from lowerHLCast.
+
+Bug: chromium:328958020
+Change-Id: Id31e3aa326d9cb9f03ea97139f14dc5292cd6f7b
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5383595
+Reviewed-by: Ben Clayton <bclayton@chromium.org>
+Reviewed-by: David Neto <dneto@google.com>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/lib/HLSL/HLMatrixLowerPass.cpp b/lib/HLSL/HLMatrixLowerPass.cpp
+index e35ff832ecff9f2e46eecbd74f4b8b2f7cc7f700..c3a7254ef2b2f894a36ba8499b4aa9ace0afb8fa 100644
+--- a/lib/HLSL/HLMatrixLowerPass.cpp
++++ b/lib/HLSL/HLMatrixLowerPass.cpp
+@@ -381,6 +381,11 @@ Value* HLMatrixLowerPass::getLoweredByValOperand(Value *Val, IRBuilder<> &Builde
+   if (isa<ConstantAggregateZero>(Val))
+     return ConstantAggregateZero::get(LoweredTy);
+ 
++  // Lower undef mat as undef vec
++  if (isa<UndefValue>(Val)) {
++      return UndefValue::get(LoweredTy);
++  }
++
+   // Return a mat-to-vec translation stub
+   FunctionType *TranslationStubTy = FunctionType::get(LoweredTy, { Ty }, /* isVarArg */ false);
+   Function *TranslationStub = m_matToVecStubs->get(TranslationStubTy);
