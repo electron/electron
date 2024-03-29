@@ -355,8 +355,7 @@ void SetNodeOptions(base::Environment* env) {
 
   if (env->HasVar("NODE_EXTRA_CA_CERTS")) {
     if (!electron::fuses::IsNodeOptionsEnabled()) {
-      LOG(ERROR) << "The NODE_OPTIONS fuse must be enabled in order to use "
-                    "NODE_EXTRA_CA_CERTS";
+      LOG(WARNING) << "NODE_OPTIONS ignored due to disabled nodeOptions fuse.";
       env->UnSetVar("NODE_EXTRA_CA_CERTS");
     }
   }
@@ -391,7 +390,7 @@ void SetNodeOptions(base::Environment* env) {
       // overwrite new NODE_OPTIONS without unsupported variables
       env->SetVar("NODE_OPTIONS", options);
     } else {
-      LOG(ERROR) << "NODE_OPTIONS have been disabled in this app";
+      LOG(WARNING) << "NODE_OPTIONS ignored due to disabled nodeOptions fuse.";
       env->UnSetVar("NODE_OPTIONS");
     }
   }
