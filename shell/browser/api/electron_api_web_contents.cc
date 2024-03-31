@@ -2093,10 +2093,12 @@ void WebContents::MessageHost(const std::string& channel,
                  std::move(arguments));
 }
 
-void WebContents::UpdateDraggableRegions(
-    std::vector<mojom::DraggableRegionPtr> regions) {
-  if (owner_window() && owner_window()->has_frame())
+void WebContents::DraggableRegionsChanged(
+    const std::vector<blink::mojom::DraggableRegionPtr>& regions,
+    content::WebContents* contents) {
+  if (owner_window() && owner_window()->has_frame()) {
     return;
+  }
 
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
