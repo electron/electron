@@ -537,6 +537,14 @@ WebContents.prototype._init = function () {
   // maintaining a list of navigation entries for backward and forward navigation.
   Object.defineProperty(this, 'navigationHistory', {
     value: {
+      canGoBack: this.canGoBack.bind(this),
+      canGoForward: this.canGoForward.bind(this),
+      canGoToOffset: this.canGoToOffset.bind(this),
+      clear: this.clearHistory.bind(this),
+      goBack: this.goBack.bind(this),
+      goForward: this.goForward.bind(this),
+      goToIndex: this.goToIndex.bind(this),
+      goToOffset: this.goToOffset.bind(this),
       getActiveIndex: this._getActiveIndex.bind(this),
       length: this._historyLength.bind(this),
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this)
