@@ -1254,7 +1254,9 @@ void WebContents::AddNewContents(
 
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
-    const content::OpenURLParams& params) {
+    const content::OpenURLParams& params,
+    base::OnceCallback<void(content::NavigationHandle&)>
+        navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
