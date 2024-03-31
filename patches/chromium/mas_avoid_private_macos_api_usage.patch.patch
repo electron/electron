@@ -761,10 +761,10 @@ index 05cce11f233e04e22bf9166ee107661900686bea..70268a1ff7c59a03903072fafe8b62ac
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 3033b23a07041d375d5733bad1901f9a61bdf3b6..9dd6cb1aa49d03c167d1a92100d4ba5f08f93abe 100644
+index cda4f747099492c306db22c6dba98249e443cd74..f63dbbe7149010efa06c9cbb215399eb9e882cb9 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -37,6 +37,7 @@
+@@ -39,6 +39,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -772,7 +772,7 @@ index 3033b23a07041d375d5733bad1901f9a61bdf3b6..9dd6cb1aa49d03c167d1a92100d4ba5f
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -50,6 +51,7 @@
+@@ -52,6 +53,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -780,7 +780,7 @@ index 3033b23a07041d375d5733bad1901f9a61bdf3b6..9dd6cb1aa49d03c167d1a92100d4ba5f
  
  namespace {
  
-@@ -93,8 +95,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -103,8 +105,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -791,7 +791,7 @@ index 3033b23a07041d375d5733bad1901f9a61bdf3b6..9dd6cb1aa49d03c167d1a92100d4ba5f
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -242,8 +246,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -252,8 +256,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
