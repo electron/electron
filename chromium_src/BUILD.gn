@@ -158,7 +158,6 @@ static_library("chrome") {
       "//chrome/child/v8_crashpad_support_win.cc",
       "//chrome/child/v8_crashpad_support_win.h",
     ]
-    deps += [ "//components/segmentation_platform/public/proto" ]
   }
 
   if (is_linux) {
@@ -236,6 +235,7 @@ static_library("chrome") {
       "//chrome/services/util_win:lib",
       "//components/webapps/common:mojo_bindings",
     ]
+    deps += [ "//components/segmentation_platform/public/proto" ]
   }
 
   if (is_mac) {
