@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Paniconi <marpan@google.com>
+Date: Wed, 13 Mar 2024 10:58:17 -0700
+Subject: Fix to buffer alloc for vp9_bitstream_worker_data
+
+The code was using the bitstream_worker_data when it
+wasn't allocated for big enough size. This is because
+the existing condition was to only re-alloc the
+bitstream_worker_data when current dest_size was larger
+than the current frame_size. But under resolution change
+where frame_size is increased, beyond the current dest_size,
+we need to allow re-alloc to the new size.
+
+The existing condition to re-alloc when dest_size is
+larger than frame_size (which is not required) is kept
+for now.
+
+Also increase the dest_size to account for image format.
+
+Added tests, for both ROW_MT=0 and 1, that reproduce
+the failures in the bugs below.
+
+Note: this issue only affects the REALTIME encoding path.
+
+Bug: b/329088759, b/329674887, b/329179808
+
+Change-Id: Icd65dbc5317120304d803f648d4bd9405710db6f
+(cherry picked from commit c29e63728316486082dd6083c2062434b441b77d)
+
+diff --git a/vp9/encoder/vp9_bitstream.c b/vp9/encoder/vp9_bitstream.c
+index ca56d14aa1e31e4791f8772316e449b771aae4fc..88a031e5fc1cf7b6cf0a441664dbbc62006c1790 100644
+--- a/vp9/encoder/vp9_bitstream.c
++++ b/vp9/encoder/vp9_bitstream.c
+@@ -962,6 +962,14 @@ void vp9_bitstream_encode_tiles_buffer_dealloc(VP9_COMP *const cpi) {
+   }
+ }
+ 
++static int encode_tiles_buffer_alloc_size(VP9_COMP *const cpi) {
++  VP9_COMMON *const cm = &cpi->common;
++  const int image_bps =
++      (8 + 2 * (8 >> (cm->subsampling_x + cm->subsampling_y))) *
++      (1 + (cm->bit_depth > 8));
++  return cpi->oxcf.width * cpi->oxcf.height * image_bps / 8;
++}
++
+ static void encode_tiles_buffer_alloc(VP9_COMP *const cpi) {
+   VP9_COMMON *const cm = &cpi->common;
+   int i;
+@@ -972,7 +980,7 @@ static void encode_tiles_buffer_alloc(VP9_COMP *const cpi) {
+   memset(cpi->vp9_bitstream_worker_data, 0, worker_data_size);
+   for (i = 1; i < cpi->num_workers; ++i) {
+     cpi->vp9_bitstream_worker_data[i].dest_size =
+-        cpi->oxcf.width * cpi->oxcf.height;
++        encode_tiles_buffer_alloc_size(cpi);
+     CHECK_MEM_ERROR(&cm->error, cpi->vp9_bitstream_worker_data[i].dest,
+                     vpx_malloc(cpi->vp9_bitstream_worker_data[i].dest_size));
+   }
+@@ -987,8 +995,8 @@ static size_t encode_tiles_mt(VP9_COMP *cpi, uint8_t *data_ptr) {
+   int tile_col = 0;
+ 
+   if (!cpi->vp9_bitstream_worker_data ||
+-      cpi->vp9_bitstream_worker_data[1].dest_size >
+-          (cpi->oxcf.width * cpi->oxcf.height)) {
++      cpi->vp9_bitstream_worker_data[1].dest_size !=
++          encode_tiles_buffer_alloc_size(cpi)) {
+     vp9_bitstream_encode_tiles_buffer_dealloc(cpi);
+     encode_tiles_buffer_alloc(cpi);
+   }
