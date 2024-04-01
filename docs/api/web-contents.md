@@ -237,7 +237,7 @@ See [`window.open()`](window-open.md) for more details and how to use this in co
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
@@ -270,7 +270,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
@@ -300,7 +300,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -324,7 +324,7 @@ Emitted when any frame (including main) starts navigating.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -355,7 +355,7 @@ redirect).
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -582,6 +582,15 @@ Returns:
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
+#### Event: 'devtools-search-query'
+
+Returns:
+
+* `event` Event
+* `query` string - text to query for.
+
+Emitted when 'Search' is selected for text in its context menu.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -674,7 +683,7 @@ Emitted when media is paused or done playing.
 
 Returns:
 
-* `event` Event<>
+* `event` Event\<\>
   * `audible` boolean - True if one or more frames or child `webContents` are emitting audio.
 
 Emitted when media becomes audible or inaudible.
@@ -891,7 +900,7 @@ Returns:
 * `webPreferences` [WebPreferences](structures/web-preferences.md) - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
-* `params` Record<string, string> - The other `<webview>` parameters such as the `src` URL.
+* `params` Record\<string, string\> - The other `<webview>` parameters such as the `src` URL.
   This object can be modified to adjust the parameters of the guest page.
 
 Emitted when a `<webview>`'s web contents is being attached to this web
@@ -1011,7 +1020,7 @@ win.webContents.loadURL('https://github.com', options)
 
 * `filePath` string
 * `options` Object (optional)
-  * `query` Record<string, string> (optional) - Passed to `url.format()`.
+  * `query` Record\<string, string\> (optional) - Passed to `url.format()`.
   * `search` string (optional) - Passed to `url.format()`.
   * `hash` string (optional) - Passed to `url.format()`.
 
@@ -1042,7 +1051,7 @@ win.loadFile('src/index.html')
 
 * `url` string
 * `options` Object (optional)
-  * `headers` Record<string, string> (optional) - HTTP request headers.
+  * `headers` Record\<string, string\> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url` without navigating. The
 `will-download` event of `session` will be triggered.
@@ -1279,7 +1288,7 @@ Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setWindowOpenHandler(handler)`
 
-* `handler` Function<{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+* `handler` Function\<[WindowOpenHandlerResponse](structures/window-open-handler-response.md)\>
   * `details` Object
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
@@ -1294,11 +1303,8 @@ Ignore application menu shortcuts while this web contents is focused.
       be set. If no post data is to be sent, the value will be `null`. Only defined
       when the window is being created by a form that set `target=_blank`.
 
-  Returns `{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
-  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
-  By default, child windows are closed when their opener is closed. This can be
-  changed by specifying `outlivesOpener: true`, in which case the opened window
-  will not be closed when its opener is closed.
+  Returns `WindowOpenHandlerResponse` - When set to `{ action: 'deny' }` cancels the creation of the new
+  window. `{ action: 'allow' }` will allow the new window to be created.
   Returning an unrecognized value such as a null, undefined, or an object
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
@@ -1308,6 +1314,26 @@ by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
 submitting a form with `<form target="_blank">`. See
 [`window.open()`](window-open.md) for more details and how to use this in
 conjunction with `did-create-window`.
+
+An example showing how to customize the process of new `BrowserWindow` creation to be `BrowserView` attached to main window instead:
+
+```js
+const { BrowserView, BrowserWindow } = require('electron')
+
+const mainWindow = new BrowserWindow()
+
+mainWindow.webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    createWindow: (options) => {
+      const browserView = new BrowserView(options)
+      mainWindow.addBrowserView(browserView)
+      browserView.setBounds({ x: 0, y: 0, width: 640, height: 480 })
+      return browserView.webContents
+    }
+  }
+})
+```
 
 #### `contents.setAudioMuted(muted)`
 
@@ -1557,7 +1583,7 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
     * `from` number - Index of the first page to print (0-based).
     * `to` number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` string (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
-  * `dpi` Record<string, number> (optional)
+  * `dpi` Record\<string, number\> (optional)
     * `horizontal` number (optional) - The horizontal dpi.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
@@ -2196,6 +2222,10 @@ A `Integer` representing the unique ID of this WebContents. Each ID is unique am
 #### `contents.session` _Readonly_
 
 A [`Session`](session.md) used by this webContents.
+
+#### `contents.navigationHistory` _Readonly_
+
+A [`NavigationHistory`](navigation-history.md) used by this webContents.
 
 #### `contents.hostWebContents` _Readonly_
 

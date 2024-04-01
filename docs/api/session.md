@@ -814,6 +814,8 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `keyboardLock` - Request capture of keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock). These requests always appear to originate from the main frame.
     * `openExternal` - Request to open links in external applications.
     * `speaker-selection` - Request to enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
+    * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request.
   * `callback` Function
@@ -862,6 +864,8 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `openExternal` - Open links in external applications.
     * `pointerLock` - Directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
     * `serial` - Read from and write to serial devices with the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
+    * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
@@ -1216,7 +1220,7 @@ Returns `Promise<Buffer>` - resolves with blob data.
 
 * `url` string
 * `options` Object (optional)
-  * `headers` Record<string, string> (optional) - HTTP request headers.
+  * `headers` Record\<string, string\> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url`.
 The API will generate a [DownloadItem](download-item.md) that can be accessed
@@ -1424,23 +1428,34 @@ is emitted.
 Returns `string | null` - The absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
 
-#### `ses.clearData()`
+#### `ses.clearData([options])`
+
+* `options` Object (optional)
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
+    * `backgroundFetch` - Background Fetch
+    * `cache` - Cache
+    * `cookies` - Cookies
+    * `downloads` - Downloads
+    * `fileSystems` - File Systems
+    * `indexedDB` - IndexedDB
+    * `localStorage` - Local Storage
+    * `serviceWorkers` - Service Workers
+    * `webSQL` - WebSQL
+  * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
+  * `excludeOrigins` String[] (optional) - Clear data for all origins except these ones. Cannot be used with `origins`.
+  * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections. (Default: `false`)
+  * `originMatchingMode` String (optional) - The behavior for matching data to origins.
+    * `third-parties-included` (default) - Storage is matched on origin in first-party contexts and top-level-site in third-party contexts.
+    * `origin-in-all-contexts` - Storage is matched on origin only in all contexts.
 
 Returns `Promise<void>` - resolves when all data has been cleared.
 
-This method clears many different types of data, inlcuding:
-
-* Cache
-* Cookies
-* Downloads
-* IndexedDB
-* Local Storage
-* Service Workers
-* And more...
+Clears various different types of data.
 
 This method clears more types of data and is more thourough than the
-`clearStorageData` method, however it is currently less configurable than that
-method.
+`clearStorageData` method.
+
+**Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
 

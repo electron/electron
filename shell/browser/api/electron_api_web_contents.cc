@@ -352,6 +352,20 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   }
 };
 
+template <>
+struct Converter<content::NavigationEntry*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::NavigationEntry* entry) {
+    if (!entry) {
+      return v8::Null(isolate);
+    }
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("url", entry->GetURL().spec());
+    dict.Set("title", entry->GetTitleForDisplay());
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace gin
 
 namespace electron::api {
@@ -1537,7 +1551,8 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
 }
 
 void WebContents::LostPointerLock() {
-  exclusive_access_manager_.pointer_lock_controller()->LostPointerLock();
+  exclusive_access_manager_.pointer_lock_controller()
+      ->ExitExclusiveAccessToPreviousState();
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -2557,6 +2572,11 @@ void WebContents::GoToIndex(int index) {
 
 int WebContents::GetActiveIndex() const {
   return web_contents()->GetController().GetCurrentEntryIndex();
+}
+
+content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
+    int index) const {
+  return web_contents()->GetController().GetEntryAtIndex(index);
 }
 
 void WebContents::ClearHistory() {
@@ -4152,6 +4172,10 @@ void WebContents::DevToolsOpenInNewTab(const std::string& url) {
   Emit("devtools-open-url", url);
 }
 
+void WebContents::DevToolsOpenSearchResultsInNewTab(const std::string& query) {
+  Emit("devtools-search-query", query);
+}
+
 void WebContents::DevToolsSearchInPath(int request_id,
                                        const std::string& file_system_path,
                                        const std::string& query) {
@@ -4348,9 +4372,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("goToOffset", &WebContents::GoToOffset)
       .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("goToIndex", &WebContents::GoToIndex)
-      .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getNavigationEntryAtIndex",
+                 &WebContents::GetNavigationEntryAtIndex)
+      .SetMethod("_historyLength", &WebContents::GetHistoryLength)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
-      .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)

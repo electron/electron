@@ -89,7 +89,6 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
-#include "base/mac/mac_util.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #endif
 
@@ -324,80 +323,6 @@ struct Converter<JumpListResult> {
 };
 #endif
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct Converter<Browser::LaunchItem> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     Browser::LaunchItem* out) {
-    gin_helper::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-
-    dict.Get("name", &(out->name));
-    dict.Get("path", &(out->path));
-    dict.Get("args", &(out->args));
-    dict.Get("scope", &(out->scope));
-    dict.Get("enabled", &(out->enabled));
-    return true;
-  }
-
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   Browser::LaunchItem val) {
-    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.Set("name", val.name);
-    dict.Set("path", val.path);
-    dict.Set("args", val.args);
-    dict.Set("scope", val.scope);
-    dict.Set("enabled", val.enabled);
-    return dict.GetHandle();
-  }
-};
-#endif
-
-template <>
-struct Converter<Browser::LoginItemSettings> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     Browser::LoginItemSettings* out) {
-    gin_helper::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-
-    dict.Get("openAtLogin", &(out->open_at_login));
-    dict.Get("openAsHidden", &(out->open_as_hidden));
-    dict.Get("path", &(out->path));
-    dict.Get("args", &(out->args));
-#if BUILDFLAG(IS_WIN)
-    dict.Get("name", &(out->name));
-    dict.Get("enabled", &(out->enabled));
-#elif BUILDFLAG(IS_MAC)
-    dict.Get("serviceName", &(out->service_name));
-    dict.Get("type", &(out->type));
-#endif
-    return true;
-  }
-
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   Browser::LoginItemSettings val) {
-    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-#if BUILDFLAG(IS_WIN)
-    dict.Set("launchItems", val.launch_items);
-    dict.Set("executableWillLaunchAtLogin",
-             val.executable_will_launch_at_login);
-#elif BUILDFLAG(IS_MAC)
-    if (base::mac::MacOSMajorVersion() >= 13)
-      dict.Set("status", val.status);
-#endif
-    dict.Set("openAtLogin", val.open_at_login);
-    dict.Set("openAsHidden", val.open_as_hidden);
-    dict.Set("restoreState", val.restore_state);
-    dict.Set("wasOpenedAtLogin", val.opened_at_login);
-    dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
-    return dict.GetHandle();
-  }
-};
-
 template <>
 struct Converter<content::CertificateRequestResultType> {
   static bool FromV8(v8::Isolate* isolate,
@@ -480,23 +405,23 @@ int GetPathConstant(std::string_view name) {
 
 bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
-        void(const base::CommandLine& command_line,
+        void(base::CommandLine command_line,
              const base::FilePath& current_directory,
              const std::vector<const uint8_t> additional_data)>& callback,
-    const base::CommandLine& cmd,
+    base::CommandLine cmd,
     const base::FilePath& cwd,
     const std::vector<const uint8_t> additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, std::move(additional_data));
+    callback.Run(std::move(cmd), cwd, std::move(additional_data));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::SingleThreadTaskRunner::GetCurrentDefault());
 
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(FROM_HERE,
-                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                         std::move(additional_data)));
+    task_runner->PostTask(
+        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
+                                  cwd, std::move(additional_data)));
   }
   // ProcessSingleton needs to know whether current process is quitting.
   return !Browser::Get()->is_shutting_down();
@@ -1060,7 +985,7 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnSecondInstance(const base::CommandLine& cmd,
+void App::OnSecondInstance(base::CommandLine cmd,
                            const base::FilePath& cwd,
                            const std::vector<const uint8_t> additional_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1216,8 +1141,8 @@ void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
   Browser::Get()->OnAccessibilitySupportChanged();
 }
 
-Browser::LoginItemSettings App::GetLoginItemSettings(gin::Arguments* args) {
-  Browser::LoginItemSettings options;
+v8::Local<v8::Value> App::GetLoginItemSettings(gin::Arguments* args) {
+  LoginItemSettings options;
   args->GetNext(&options);
   return Browser::Get()->GetLoginItemSettings(options);
 }
@@ -1281,7 +1206,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
   if (!delete_jump_list &&
       !gin::ConvertFromV8(args->isolate(), val, &categories)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Argument must be null or an array of categories");
+        .ThrowTypeError("Argument must be null or an array of categories");
     return JumpListResult::kArgumentError;
   }
 
@@ -1352,10 +1277,9 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto pid_dict = gin_helper::Dictionary::CreateEmpty(isolate);
     auto cpu_dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
-    cpu_dict.Set(
-        "percentCPUUsage",
-        process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
-            processor_count);
+    std::optional<double> usage =
+        process_metric.second->metrics->GetPlatformIndependentCPUUsage();
+    cpu_dict.Set("percentCPUUsage", usage.value_or(0) / processor_count);
 
 #if !BUILDFLAG(IS_WIN)
     cpu_dict.Set("idleWakeupsPerSecond",

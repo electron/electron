@@ -271,6 +271,8 @@ class ChunkedDataPipeReadableStream
         .SetMethod("read", &ChunkedDataPipeReadableStream::Read);
   }
 
+  const char* GetTypeName() override { return "ChunkedDataPipeReadableStream"; }
+
   static gin::WrapperInfo kWrapperInfo;
 
  private:

@@ -26,7 +26,7 @@ PRODUCT_NAME = get_electron_branding()['product_name']
 SYMBOLS_DIR = os.path.join(RELEASE_DIR, 'breakpad_symbols')
 
 PDB_LIST = [
-  os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME))
+  os.path.join(RELEASE_DIR, f'{PROJECT_NAME}.exe.pdb')
 ]
 
 PDB_LIST += glob.glob(os.path.join(RELEASE_DIR, '*.dll.pdb'))

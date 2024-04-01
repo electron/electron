@@ -475,6 +475,7 @@ source_set("electron_lib") {
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",
+    "//services/device/public/cpp/bluetooth:bluetooth",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
@@ -502,6 +503,7 @@ source_set("electron_lib") {
     "//ui/native_theme",
     "//ui/shell_dialogs",
     "//ui/views",
+    "//ui/views/controls/webview",
     "//v8",
     "//v8:v8_libplatform",
   ]
@@ -637,7 +639,6 @@ source_set("electron_lib") {
       "//ui/gtk:gtk_config",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
-      "//ui/views/controls/webview",
       "//ui/wm",
     ]
     if (ozone_platform_x11) {
@@ -666,7 +667,6 @@ source_set("electron_lib") {
     deps += [
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
-      "//ui/views/controls/webview",
       "//ui/wm",
       "//ui/wm/public",
     ]
@@ -856,7 +856,7 @@ if (is_mac) {
     if (is_asan) {
       # crashpad_handler requires the ASan runtime at its @executable_path.
       sources += [ "$root_out_dir/libclang_rt.asan_osx_dynamic.dylib" ]
-      public_deps += [ "//build/config/sanitizers:copy_asan_runtime" ]
+      public_deps += [ "//build/config/sanitizers:copy_sanitizer_runtime" ]
     }
   }
 

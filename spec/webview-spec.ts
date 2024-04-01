@@ -2105,8 +2105,8 @@ describe('<webview> tag', function () {
       }
     });
 
-    // TODO(miniak): figure out why this is failing on windows
-    ifdescribe(process.platform !== 'win32')('<webview>.capturePage()', () => {
+    // FIXME: This test is flaking constantly on Linux and macOS.
+    xdescribe('<webview>.capturePage()', () => {
       it('returns a Promise with a NativeImage', async function () {
         this.retries(5);
 

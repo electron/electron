@@ -9,10 +9,10 @@ be created for each child process, despite logs being redirected to a
 file.
 
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index aebbccad2a503caf5cf0ee5f3056a56e312cb42f..982a60250812f17b22c9bbdb6be2aceaa587d206 100644
+index ffbb5986ca997135bd44b5a4aa02066cfce5f394..520825bc2d7d7006544e9d88a8c196f03903ff60 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
-@@ -310,14 +310,13 @@ RunContentProcess(ContentMainParams params,
+@@ -308,14 +308,13 @@ RunContentProcess(ContentMainParams params,
  
  #if BUILDFLAG(IS_WIN)
      // Route stdio to parent console (if any) or create one.

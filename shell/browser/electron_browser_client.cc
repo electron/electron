@@ -64,7 +64,7 @@
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
-#include "services/device/public/cpp/geolocation/geolocation_manager.h"
+#include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
@@ -948,15 +948,9 @@ ElectronBrowserClient::CreateThrottlesForNavigation(
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  std::unique_ptr<content::NavigationThrottle> pdf_iframe_throttle =
-      PDFIFrameNavigationThrottle::MaybeCreateThrottleFor(handle);
-  if (pdf_iframe_throttle)
-    throttles.push_back(std::move(pdf_iframe_throttle));
-  std::unique_ptr<content::NavigationThrottle> pdf_throttle =
-      pdf::PdfNavigationThrottle::MaybeCreateThrottleFor(
-          handle, std::make_unique<ChromePdfStreamDelegate>());
-  if (pdf_throttle)
-    throttles.push_back(std::move(pdf_throttle));
+  throttles.push_back(std::make_unique<PDFIFrameNavigationThrottle>(handle));
+  throttles.push_back(std::make_unique<pdf::PdfNavigationThrottle>(
+      handle, std::make_unique<ChromePdfStreamDelegate>()));
 #endif
 
   return throttles;
@@ -1036,22 +1030,22 @@ blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
   return embedder_support::GetUserAgentMetadata();
 }
 
-void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
-    int frame_tree_node_id,
-    NonNetworkURLLoaderFactoryMap* factories) {
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ElectronBrowserClient::CreateNonNetworkNavigationURLLoaderFactory(
+    const std::string& scheme,
+    int frame_tree_node_id) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   content::BrowserContext* context = web_contents->GetBrowserContext();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  factories->emplace(
-      extensions::kExtensionScheme,
-      extensions::CreateExtensionNavigationURLLoaderFactory(
-          context, false /* we don't support extensions::WebViewGuest */));
+  if (scheme == extensions::kExtensionScheme) {
+    return extensions::CreateExtensionNavigationURLLoaderFactory(
+        context, false /* we don't support extensions::WebViewGuest */);
+  }
 #endif
   // Always allow navigating to file:// URLs.
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
-  protocol_registry->RegisterURLLoaderFactories(factories,
-                                                true /* allow_file_access */);
+  return protocol_registry->CreateNonNetworkNavigationURLLoaderFactory(scheme);
 }
 
 void ElectronBrowserClient::
@@ -1727,8 +1721,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
-  return device::GeolocationManager::GetInstance();
+device::GeolocationSystemPermissionManager*
+ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
+  return device::GeolocationSystemPermissionManager::GetInstance();
 }
 #endif
 

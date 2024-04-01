@@ -72,13 +72,10 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
     root_args += ['-c', 'user.email=' + committer_email]
   root_args += ['-c', 'commit.gpgsign=false']
   command = ['git'] + root_args + ['am'] + args
-  proc = subprocess.Popen(
-      command,
-      stdin=subprocess.PIPE)
-  proc.communicate(patch_data.encode('utf-8'))
-  if proc.returncode != 0:
-    raise RuntimeError("Command {} returned {}".format(command,
-      proc.returncode))
+  with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
+    proc.communicate(patch_data.encode('utf-8'))
+    if proc.returncode != 0:
+      raise RuntimeError(f"Command {command} returned {proc.returncode}")
 
 
 def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
@@ -229,19 +226,19 @@ def export_patches(repo, out_dir,
                    dry_run=False, grep=None):
   if not os.path.exists(repo):
     sys.stderr.write(
-      "Skipping patches in {} because it does not exist.\n".format(repo)
+      f"Skipping patches in {repo} because it does not exist.\n"
     )
     return
   if patch_range is None:
-    patch_range, num_patches = guess_base_commit(repo, ref)
-    sys.stderr.write("Exporting {} patches in {} since {}\n".format(
-        num_patches, repo, patch_range[0:7]))
+    patch_range, n_patches = guess_base_commit(repo, ref)
+    msg = f"Exporting {n_patches} patches in {repo} since {patch_range[0:7]}\n"
+    sys.stderr.write(msg)
   patch_data = format_patch(repo, patch_range)
   patches = split_patches(patch_data)
   if grep:
     olen = len(patches)
     patches = filter_patches(patches, grep)
-    sys.stderr.write("Exporting {} of {} patches\n".format(len(patches), olen))
+    sys.stderr.write(f"Exporting {len(patches)} of {olen} patches\n")
 
   try:
     os.mkdir(out_dir)
@@ -256,7 +253,8 @@ def export_patches(repo, out_dir,
     for patch in patches:
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
-      existing_patch = str(io.open(filepath, 'rb').read(), 'utf-8')
+      with io.open(filepath, 'rb') as inp:
+        existing_patch = str(inp.read(), 'utf-8')
       formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
         bad_patches.append(filename)
