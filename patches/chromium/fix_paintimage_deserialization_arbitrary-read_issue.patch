@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peng Huang <penghuang@chromium.org>
+Date: Wed, 20 Mar 2024 16:22:16 +0000
+Subject: Fix PaintImage deserialization arbitrary-read issue
+
+(cherry picked from commit 47e8386c97ac7a84a96866fbd35422b99a01de5a)
+
+Bug: 327183408
+Change-Id: I09927fbae60b666aaa370e3aba01607cdb977a25
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5370455
+Reviewed-by: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Peng Huang <penghuang@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1272930}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5382202
+Auto-Submit: Peng Huang <penghuang@chromium.org>
+Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6261@{#1106}
+Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+
+diff --git a/cc/paint/paint_op_reader.cc b/cc/paint/paint_op_reader.cc
+index 128d4306319d039f0a1dc3ab48793dbdcc641da0..936251f2c45c18464bb557bfc9ac600ba5b9510b 100644
+--- a/cc/paint/paint_op_reader.cc
++++ b/cc/paint/paint_op_reader.cc
+@@ -1568,9 +1568,10 @@ inline void PaintOpReader::DidRead(size_t bytes_read) {
+   // All data are aligned with PaintOpWriter::kDefaultAlignment at least.
+   size_t aligned_bytes =
+       base::bits::AlignUp(bytes_read, PaintOpWriter::kDefaultAlignment);
+-  memory_ += aligned_bytes;
+   DCHECK_LE(aligned_bytes, remaining_bytes_);
+-  remaining_bytes_ -= aligned_bytes;
++  bytes_read = std::min(aligned_bytes, remaining_bytes_);
++  memory_ += bytes_read;
++  remaining_bytes_ -= bytes_read;
+ }
+ 
+ }  // namespace cc

@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Mon, 25 Mar 2024 19:28:44 +0000
+Subject: webcodecs: Disable async VideoFrame readback to mitigate a race
+
+(cherry picked from commit fdc363eb7a1c1c194a02a4cb340534b1501b0f95)
+
+Bug: 330575496
+Change-Id: I187a113528da9d1c4316186e3dd24f91dbfd818b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5386784
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1277172}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5391828
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Xiaohan Wang <xhwang@chromium.org>
+Commit-Queue: Xiaohan Wang <xhwang@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6261@{#1124}
+Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+
+diff --git a/content/test/data/gpu/webcodecs/copyTo.html b/content/test/data/gpu/webcodecs/copyTo.html
+index ec2455c9c18900ad911ce98f326139cbdeabd84f..9453c8d361a572b500e86b1249896bc4114ebe27 100644
+--- a/content/test/data/gpu/webcodecs/copyTo.html
++++ b/content/test/data/gpu/webcodecs/copyTo.html
+@@ -118,6 +118,16 @@ Take frames coming from various sources and read them using copyTo().
+     let frame = await source.getNextFrame();
+     let size = frame.allocationSize();
+ 
++    // Readback a whole frame to a regular buffer detach it
++    {
++      let buf = new ArrayBuffer(size);
++      TEST.assert(readWholeBuffer(buf) == 0, "Buffer should be zero");
++      let copy_promise = frame.copyTo(buf);
++      buf.transfer(1);
++      let layout = await copy_promise;
++      TEST.assert(layout, "layout is empty / ArrayBuffer");
++    }
++
+     // Readback a whole frame to a regular buffer and send it to a worker
+     {
+       let {worker, worker_promise } = makeWorker();
+@@ -158,4 +168,5 @@ Take frames coming from various sources and read them using copyTo().
+     TEST.log('Test completed');
+   }
+   addManualTestButton([{'source_type': 'offscreen'}]);
++  addManualTestButton([{'source_type': 'arraybuffer'}]);
+ </script>
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_frame.cc b/third_party/blink/renderer/modules/webcodecs/video_frame.cc
+index e5860706c0d9098980ee1e901f1eac048be1a011..af4b7082bebb96b8e6d766c950cf34d5747d10d3 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_frame.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_frame.cc
+@@ -80,6 +80,11 @@ namespace blink {
+ 
+ namespace {
+ 
++// Controls if VideoFrame.copyTo() reads GPU frames asynchronously
++BASE_FEATURE(kVideoFrameAsyncCopyTo,
++             "VideoFrameAsyncCopyTo",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ media::VideoPixelFormat ToMediaPixelFormat(V8VideoPixelFormat::Enum fmt) {
+   switch (fmt) {
+     case V8VideoPixelFormat::Enum::kI420:
+@@ -1157,9 +1162,11 @@ ScriptPromise VideoFrame::copyTo(ScriptState* script_state,
+   } else {
+     DCHECK(local_frame->HasTextures());
+ 
+-    if (auto* resolver = CopyToAsync(script_state, local_frame, src_rect,
+-                                     destination, dest_layout)) {
+-      return resolver->Promise();
++    if (base::FeatureList::IsEnabled(kVideoFrameAsyncCopyTo)) {
++      if (auto* resolver = CopyToAsync(script_state, local_frame, src_rect,
++                                       destination, dest_layout)) {
++        return resolver->Promise();
++      }
+     }
+ 
+     if (!CopyTexturablePlanes(*local_frame, src_rect, dest_layout, buffer)) {
