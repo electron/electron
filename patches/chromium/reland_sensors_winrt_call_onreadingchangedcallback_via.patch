@@ -1,0 +1,1690 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raphael Kubo Da Costa <raphael.kubo.da.costa@intel.com>
+Date: Thu, 21 Mar 2024 16:50:44 +0000
+Subject: Reland "sensors WinRT: Call OnReadingChangedCallback() via
+ PostTask()"
+
+This reverts commit 745ca2de005c052f58097ef9cb7aa2deff095cf4.
+
+Reason for revert: Reapproved by pgrace@ in the bug.
+
+Original change's description:
+> Revert "sensors WinRT: Call OnReadingChangedCallback() via PostTask()"
+>
+> This reverts commit 7e93b6a926ab65cc7ff1293bdcf0099c6e6e4e4e.
+>
+> Reason for revert: Requested in the bug by pgrace@
+>
+> Original change's description:
+> > sensors WinRT: Call OnReadingChangedCallback() via PostTask()
+> >
+> > While here, also add checks to make sure each method is running on the
+> > right sequence and make |minimum_report_interval_| guarded by |lock_|
+> > since it is accessed by the main task runner just like |client_|.
+> >
+> > There is a significant amount of changes in the unit tests for two
+> > reasons:
+> > 1. We now use multiple task runners and create Reader objects in a COM
+> >    STA task runner to better simulate what happens in production.
+> > 2. Doing so has uncovered bugs in the exist tests that had to be fixed.
+> >    Namely:
+> >    - One of the biggest offenders was the use of EXPECT_CALL() with
+> >      WillRepeatedly() for expecting calls to OnReadingUpdated(). Using
+> >      only WillRepeatedly() meant the control over the cardinality of the
+> >      expectations was not very strict, and sometimes callbacks were
+> >      simply not being run.
+> >      Now that TriggerFakeSensorReading() is asynchronous and we need to
+> >      use a base::RunLoop to ensure, we are also using WillOnce() a lot
+> >      more than WillRepeatedly() so that we set one expectation, call
+> >      TriggerFakeSensorReading() and consume it immediately.
+> >    - The *Thresholding tests were affected by the problem above, and
+> >      fixing them showed that several callbacks were not being invoked.
+> >      Many checks where values were increased by the exact threshold
+> >      amount were broken because the manipulated values are floats and
+> >      doubles, and the math operations on them in the
+> >      OnReadingChangedCallback() implementations caused the comparisons
+> >      with exact values to fail. In this case, it was simpler to just
+> >      remove those specific tests, as the "values bigger than the
+> >      threshold" case are already covered by other checks.
+> >    - Also as a consequence of the above, *Thresholding tests with
+> >      multi-axis values were also broken when they went from testing that
+> >      values did not pass the threshold checks to the first test that
+> >      verifies that an axis passes the threshold check. This caused all
+> >      previous |last_sent_*| variables to be stored in the Reader, and
+> >      other calls to threshold_helper(true) would fail. The fix here was
+> >      to reorder the calls so that each axis is tested entirely before
+> >      the next.
+> >
+> > (cherry picked from commit 2aafa000795519b5153125673f87c734f7b8ae9f)
+> >
+> > Bug: 326349405
+> > Change-Id: Ief67720e8c449af1ce4f450002103a20ca1830ee
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5340216
+> > Auto-Submit: Raphael Kubo Da Costa <raphael.kubo.da.costa@intel.com>
+> > Commit-Queue: Raphael Kubo Da Costa <raphael.kubo.da.costa@intel.com>
+> > Reviewed-by: Reilly Grant <reillyg@chromium.org>
+> > Cr-Original-Commit-Position: refs/heads/main@{#1268797}
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5372846
+> > Reviewed-by: Colin Blundell <blundell@chromium.org>
+> > Cr-Commit-Position: refs/branch-heads/6261@{#1079}
+> > Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+>
+> Bug: 326349405
+> Change-Id: I49d61cf7bdf2a00004aa565a5439ad813b1c379e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5378404
+> Commit-Queue: Raphael Kubo Da Costa <raphael.kubo.da.costa@intel.com>
+> Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+> Cr-Commit-Position: refs/branch-heads/6261@{#1090}
+> Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+
+Bug: 326349405
+Change-Id: I3bcba8840a3a10cd4660ec287fa24623bcf87657
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5383440
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Raphael Kubo Da Costa <raphael.kubo.da.costa@intel.com>
+Cr-Commit-Position: refs/branch-heads/6261@{#1111}
+Cr-Branched-From: 9755d9d81e4a8cb5b4f76b23b761457479dbb06b-refs/heads/main@{#1250580}
+
+diff --git a/services/device/generic_sensor/platform_sensor_reader_winrt.cc b/services/device/generic_sensor/platform_sensor_reader_winrt.cc
+index 6c778b7edf0cbaeae9a412b44bfcd75d0408cce9..673225e398a2318962aca7fb08ee2ea6c7a4a0a6 100644
+--- a/services/device/generic_sensor/platform_sensor_reader_winrt.cc
++++ b/services/device/generic_sensor/platform_sensor_reader_winrt.cc
+@@ -8,6 +8,7 @@
+ 
+ #include "base/numerics/math_constants.h"
+ #include "base/time/time.h"
++#include "base/win/com_init_util.h"
+ #include "base/win/core_winrt_util.h"
+ #include "services/device/generic_sensor/generic_sensor_consts.h"
+ #include "services/device/public/mojom/sensor.mojom.h"
+@@ -99,7 +100,11 @@ PlatformSensorReaderWinrtBase<
+     ISensorWinrtStatics,
+     ISensorWinrtClass,
+     ISensorReadingChangedHandler,
+-    ISensorReadingChangedEventArgs>::PlatformSensorReaderWinrtBase() {
++    ISensorReadingChangedEventArgs>::PlatformSensorReaderWinrtBase()
++    : com_sta_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++  DETACH_FROM_SEQUENCE(main_sequence_checker_);
++
+   get_sensor_factory_callback_ =
+       base::BindRepeating([](ISensorWinrtStatics** sensor_factory) -> HRESULT {
+         return base::win::GetActivationFactory<ISensorWinrtStatics,
+@@ -119,6 +124,8 @@ void PlatformSensorReaderWinrtBase<
+     ISensorWinrtClass,
+     ISensorReadingChangedHandler,
+     ISensorReadingChangedEventArgs>::SetClient(Client* client) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(main_sequence_checker_);
++
+   base::AutoLock autolock(lock_);
+   client_ = client;
+ }
+@@ -136,6 +143,8 @@ HRESULT PlatformSensorReaderWinrtBase<runtime_class_id,
+                                       ISensorReadingChangedEventArgs>::
+     ConvertSensorReadingTimeStamp(ComPtr<ISensorReading> sensor_reading,
+                                   base::TimeDelta* timestamp_delta) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   DateTime timestamp;
+   HRESULT hr = sensor_reading->get_Timestamp(&timestamp);
+   if (FAILED(hr))
+@@ -157,6 +166,8 @@ bool PlatformSensorReaderWinrtBase<
+     ISensorWinrtClass,
+     ISensorReadingChangedHandler,
+     ISensorReadingChangedEventArgs>::Initialize() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<ISensorWinrtStatics> sensor_statics;
+ 
+   HRESULT hr = get_sensor_factory_callback_.Run(&sensor_statics);
+@@ -180,10 +191,14 @@ bool PlatformSensorReaderWinrtBase<
+     return false;
+   }
+ 
+-  minimum_report_interval_ = GetMinimumReportIntervalFromSensor();
++  {
++    base::AutoLock autolock(lock_);
++    minimum_report_interval_ = GetMinimumReportIntervalFromSensor();
+ 
+-  if (minimum_report_interval_.is_zero())
+-    DLOG(WARNING) << "Failed to get sensor minimum report interval";
++    if (minimum_report_interval_.is_zero()) {
++      DLOG(WARNING) << "Failed to get sensor minimum report interval";
++    }
++  }
+ 
+   return true;
+ }
+@@ -199,6 +214,8 @@ base::TimeDelta PlatformSensorReaderWinrtBase<
+     ISensorWinrtClass,
+     ISensorReadingChangedHandler,
+     ISensorReadingChangedEventArgs>::GetMinimumReportIntervalFromSensor() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   UINT32 minimum_report_interval_ms = 0;
+   HRESULT hr = sensor_->get_MinimumReportInterval(&minimum_report_interval_ms);
+ 
+@@ -225,6 +242,9 @@ base::TimeDelta PlatformSensorReaderWinrtBase<
+     ISensorWinrtClass,
+     ISensorReadingChangedHandler,
+     ISensorReadingChangedEventArgs>::GetMinimalReportingInterval() const {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(main_sequence_checker_);
++
++  base::AutoLock autolock(lock_);
+   return minimum_report_interval_;
+ }
+ 
+@@ -239,6 +259,8 @@ bool PlatformSensorReaderWinrtBase<runtime_class_id,
+                                    ISensorReadingChangedHandler,
+                                    ISensorReadingChangedEventArgs>::
+     StartSensor(const PlatformSensorConfiguration& configuration) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(main_sequence_checker_);
++
+   base::AutoLock autolock(lock_);
+ 
+   if (!reading_callback_token_) {
+@@ -256,7 +278,39 @@ bool PlatformSensorReaderWinrtBase<runtime_class_id,
+     }
+ 
+     auto reading_changed_handler = Callback<ISensorReadingChangedHandler>(
+-        this, &PlatformSensorReaderWinrtBase::OnReadingChangedCallback);
++        [weak_ptr(weak_ptr_factory_.GetWeakPtr()),
++         com_sta_task_runner(com_sta_task_runner_)](
++            ISensorWinrtClass* sender, ISensorReadingChangedEventArgs* args) {
++          // We cannot invoke OnReadingChangedCallback() directly because this
++          // callback is run on a COM MTA thread spawned by Windows (on tests,
++          // we mimic the behavior by using base::ThreadPool, as the task
++          // scheduler threads live in the MTA).
++          //
++          // This callback is invoked on an MTA thread because the
++          // ISensorReadingChangedHandler declarations explicitly inherit from
++          // Microsoft::WRL::FtmBase, which makes them agile, free-threaded
++          // objects.
++          //
++          // We could CHECK() this behavior here, but ::CoGetApartmentType()
++          // depends on ole32.dll and base::win::GetComApartmentTypeForThread()
++          // returns NONE in the non-test code path even though
++          // ::GoGetApartmentType() returns MTA, so the best we can do is just
++          // double-check that this is not running on an STA.
++          DCHECK_NE(base::win::GetComApartmentTypeForThread(),
++                    base::win::ComApartmentType::STA);
++          com_sta_task_runner->PostTask(
++              FROM_HERE,
++              base::BindOnce(
++                  // TODO(crbug.com/326349405): base::IgnoreResult is being used
++                  // temporarily to reduce the amount of changes required for
++                  // this bug. OnReadingChangedCallback() must be changed to
++                  // have a void return type.
++                  base::IgnoreResult(
++                      &PlatformSensorReaderWinrtBase::OnReadingChangedCallback),
++                  weak_ptr, ComPtr<ISensorWinrtClass>(sender),
++                  ComPtr<ISensorReadingChangedEventArgs>(args)));
++          return S_OK;
++        });
+ 
+     EventRegistrationToken event_token;
+     hr = sensor_->add_ReadingChanged(reading_changed_handler.Get(),
+@@ -285,6 +339,9 @@ void PlatformSensorReaderWinrtBase<
+     ISensorWinrtClass,
+     ISensorReadingChangedHandler,
+     ISensorReadingChangedEventArgs>::StopSensor() {
++  // This function is called in the main task runner by PlatformSensorWin as
++  // well as in the com_sta_task_runner_ by the destructor.
++
+   base::AutoLock autolock(lock_);
+ 
+   if (reading_callback_token_) {
+@@ -316,6 +373,8 @@ PlatformSensorReaderWinrtLightSensor::PlatformSensorReaderWinrtLightSensor() =
+ HRESULT PlatformSensorReaderWinrtLightSensor::OnReadingChangedCallback(
+     ILightSensor* light_sensor,
+     ILightSensorReadingChangedEventArgs* reading_changed_args) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<ILightSensorReading> light_sensor_reading;
+   HRESULT hr = reading_changed_args->get_Reading(&light_sensor_reading);
+   if (FAILED(hr)) {
+@@ -379,6 +438,8 @@ PlatformSensorReaderWinrtAccelerometer::
+ HRESULT PlatformSensorReaderWinrtAccelerometer::OnReadingChangedCallback(
+     IAccelerometer* accelerometer,
+     IAccelerometerReadingChangedEventArgs* reading_changed_args) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<IAccelerometerReading> accelerometer_reading;
+   HRESULT hr = reading_changed_args->get_Reading(&accelerometer_reading);
+   if (FAILED(hr)) {
+@@ -464,6 +525,8 @@ PlatformSensorReaderWinrtGyrometer::PlatformSensorReaderWinrtGyrometer() =
+ HRESULT PlatformSensorReaderWinrtGyrometer::OnReadingChangedCallback(
+     IGyrometer* gyrometer,
+     IGyrometerReadingChangedEventArgs* reading_changed_args) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<IGyrometerReading> gyrometer_reading;
+   HRESULT hr = reading_changed_args->get_Reading(&gyrometer_reading);
+   if (FAILED(hr)) {
+@@ -548,6 +611,8 @@ PlatformSensorReaderWinrtMagnetometer::PlatformSensorReaderWinrtMagnetometer() =
+ HRESULT PlatformSensorReaderWinrtMagnetometer::OnReadingChangedCallback(
+     IMagnetometer* magnetometer,
+     IMagnetometerReadingChangedEventArgs* reading_changed_args) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<IMagnetometerReading> magnetometer_reading;
+   HRESULT hr = reading_changed_args->get_Reading(&magnetometer_reading);
+   if (FAILED(hr)) {
+@@ -631,6 +696,8 @@ HRESULT
+ PlatformSensorReaderWinrtAbsOrientationEulerAngles::OnReadingChangedCallback(
+     IInclinometer* inclinometer,
+     IInclinometerReadingChangedEventArgs* reading_changed_args) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<IInclinometerReading> inclinometer_reading;
+   HRESULT hr = reading_changed_args->get_Reading(&inclinometer_reading);
+   if (FAILED(hr)) {
+@@ -717,6 +784,8 @@ HRESULT
+ PlatformSensorReaderWinrtAbsOrientationQuaternion::OnReadingChangedCallback(
+     IOrientationSensor* orientation_sensor,
+     IOrientationSensorReadingChangedEventArgs* reading_changed_args) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++
+   ComPtr<IOrientationSensorReading> orientation_sensor_reading;
+   HRESULT hr = reading_changed_args->get_Reading(&orientation_sensor_reading);
+   if (FAILED(hr)) {
+diff --git a/services/device/generic_sensor/platform_sensor_reader_winrt.h b/services/device/generic_sensor/platform_sensor_reader_winrt.h
+index 66c40adc59e897d85872eae864f957fecc62fca7..e4521a7816fad77a2f69416befa6f1358fb1a1c2 100644
+--- a/services/device/generic_sensor/platform_sensor_reader_winrt.h
++++ b/services/device/generic_sensor/platform_sensor_reader_winrt.h
+@@ -14,7 +14,10 @@
+ 
+ #include "base/functional/callback.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
++#include "base/sequence_checker.h"
+ #include "base/synchronization/lock.h"
++#include "base/task/single_thread_task_runner.h"
+ #include "base/thread_annotations.h"
+ #include "base/time/time.h"
+ #include "services/device/generic_sensor/platform_sensor_reader_win_base.h"
+@@ -77,7 +80,10 @@ class PlatformSensorReaderWinrtBase : public PlatformSensorReaderWinBase {
+ 
+  protected:
+   PlatformSensorReaderWinrtBase();
+-  virtual ~PlatformSensorReaderWinrtBase() { StopSensor(); }
++  virtual ~PlatformSensorReaderWinrtBase() {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(com_sta_sequence_checker_);
++    StopSensor();
++  }
+ 
+   // Derived classes should implement this function to handle sensor specific
+   // parsing of the sensor reading.
+@@ -93,11 +99,15 @@ class PlatformSensorReaderWinrtBase : public PlatformSensorReaderWinBase {
+       Microsoft::WRL::ComPtr<ISensorReading> sensor_reading,
+       base::TimeDelta* timestamp_delta);
+ 
+-  // Following class member is protected by lock since SetClient,
+-  // StartSensor, and StopSensor can all be called from different
+-  // threads by PlatformSensorWin.
+-  base::Lock lock_;
+-  // Null if there is no client to notify, non-null otherwise.
++  SEQUENCE_CHECKER(com_sta_sequence_checker_);
++  SEQUENCE_CHECKER(main_sequence_checker_);
++
++  mutable base::Lock lock_;
++
++  // Null if there is no client to notify, non-null otherwise. Protected by
++  // |lock_| because SetClient() and StartSensor() are called from the main
++  // task runner rather than the thread where this object is created, and
++  // StopSensor() may be called from the main task runner too.
+   raw_ptr<Client, DanglingUntriaged> client_ GUARDED_BY(lock_);
+ 
+   // Always report the first sample received after starting the sensor.
+@@ -106,13 +116,21 @@ class PlatformSensorReaderWinrtBase : public PlatformSensorReaderWinBase {
+  private:
+   base::TimeDelta GetMinimumReportIntervalFromSensor();
+ 
++  // Task runner where this object was created.
++  scoped_refptr<base::SingleThreadTaskRunner> com_sta_task_runner_;
++
+   GetSensorFactoryFunctor get_sensor_factory_callback_;
+ 
+   // absl::nullopt if the sensor has not been started, non-empty otherwise.
+   absl::optional<EventRegistrationToken> reading_callback_token_;
+ 
+-  base::TimeDelta minimum_report_interval_;
++  // Protected by |lock_| because GetMinimalReportingInterval() is called from
++  // the main task runner.
++  base::TimeDelta minimum_report_interval_ GUARDED_BY(lock_);
++
+   Microsoft::WRL::ComPtr<ISensorWinrtClass> sensor_;
++
++  base::WeakPtrFactory<PlatformSensorReaderWinrtBase> weak_ptr_factory_{this};
+ };
+ 
+ class PlatformSensorReaderWinrtLightSensor final
+diff --git a/services/device/generic_sensor/platform_sensor_reader_winrt_unittests.cc b/services/device/generic_sensor/platform_sensor_reader_winrt_unittests.cc
+index 2283de90c75dd91f5472ece24b1d674ed796120b..f6add828b496916ff2856d8ff36fcd2a7babb1a9 100644
+--- a/services/device/generic_sensor/platform_sensor_reader_winrt_unittests.cc
++++ b/services/device/generic_sensor/platform_sensor_reader_winrt_unittests.cc
+@@ -6,8 +6,13 @@
+ 
+ #include <objbase.h>
+ 
++#include "base/notreached.h"
+ #include "base/numerics/math_constants.h"
++#include "base/run_loop.h"
++#include "base/task/task_traits.h"
++#include "base/task/thread_pool.h"
+ #include "base/test/bind.h"
++#include "base/test/gmock_callback_support.h"
+ #include "base/test/task_environment.h"
+ #include "base/win/core_winrt_util.h"
+ #include "base/win/scoped_com_initializer.h"
+@@ -428,15 +433,26 @@ class FakeSensorWinrt
+     return remove_reading_changed_return_code_;
+   }
+ 
+-  // Makes any clients registered via add_ReadingChanged() to trigger with
+-  // the given sensor reading.
++  // Invokes the handler added via add_ReadingChanged() with the reading
++  // described by |reading|.
++  //
++  // The invocation is asynchronous to better simulate real behavior, where
++  // Windows delivers the reading notifications in a separate MTA thread.
+   void TriggerFakeSensorReading(
+       Microsoft::WRL::ComPtr<ISensorReading> reading) {
+-    EXPECT_TRUE(handler_);
+     Microsoft::WRL::ComPtr<ISensorReadingChangedEventArgs> reading_event_args =
+         Microsoft::WRL::Make<FakeSensorReadingChangedEventArgsWinrt<
+             ISensorReading, ISensorReadingChangedEventArgs>>(reading);
+-    EXPECT_HRESULT_SUCCEEDED(handler_->Invoke(this, reading_event_args.Get()));
++    base::ThreadPool::PostTask(
++        FROM_HERE, {base::MayBlock()},
++        base::BindLambdaForTesting(
++            // Copy |handler_| and |reading_event_args| to ensure they do not
++            // lose their values when TriggerFakeSensorReading() exits.
++            [this, handler = handler_, reading_event_args]() {
++              ASSERT_TRUE(handler);
++              EXPECT_HRESULT_SUCCEEDED(
++                  handler->Invoke(this, reading_event_args.Get()));
++            }));
+   }
+ 
+   // Returns true if any clients are registered for readings via
+@@ -547,7 +563,47 @@ class FakeSensorFactoryWinrt
+ };
+ 
+ class PlatformSensorReaderTestWinrt : public testing::Test {
+- private:
++ public:
++  void SetUp() override {
++    // Ensure each test starts with a fresh task runner.
++    com_sta_task_runner_ =
++        base::ThreadPool::CreateCOMSTATaskRunner({base::MayBlock()});
++  }
++
++  // Synchronously creates a new PlatformSensorReaderWinrtBase-derived class on
++  // |com_sta_task_runner_| and returns it.
++  //
++  // This better simulates real behavior, as PlatformSensorProviderWinrt
++  // creates readers on a COM STA task runner.
++  template <typename SensorReader,
++            typename ISensorStatics,
++            typename... OtherFactoryTypes>
++  auto CreateAndInitializeSensor(
++      const Microsoft::WRL::ComPtr<
++          FakeSensorFactoryWinrt<ISensorStatics, OtherFactoryTypes...>>&
++          fake_sensor_factory) {
++    std::unique_ptr<SensorReader, base::OnTaskRunnerDeleter> reader(
++        nullptr, base::OnTaskRunnerDeleter(com_sta_task_runner_));
++
++    base::RunLoop run_loop;
++    com_sta_task_runner_->PostTaskAndReply(
++        FROM_HERE, base::BindLambdaForTesting([&]() {
++          reader.reset(new SensorReader);
++          reader->InitForTesting(base::BindLambdaForTesting(
++              [&](ISensorStatics** sensor_factory) -> HRESULT {
++                return fake_sensor_factory.CopyTo(sensor_factory);
++              }));
++          ASSERT_TRUE(reader->Initialize());
++        }),
++        run_loop.QuitClosure());
++    run_loop.Run();
++
++    return reader;
++  }
++
++ protected:
++  scoped_refptr<base::SingleThreadTaskRunner> com_sta_task_runner_;
++
+   base::test::TaskEnvironment task_environment_;
+   base::win::ScopedCOMInitializer scoped_com_initializer_;
+ };
+@@ -602,11 +658,9 @@ TEST_F(PlatformSensorReaderTestWinrt, SensorMinimumReportInterval) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   EXPECT_EQ(sensor->GetMinimalReportingInterval().InMilliseconds(),
+             kExpectedMinimumReportInterval);
+@@ -623,20 +677,42 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedSensorMinimumReportInterval) {
+       ABI::Windows::Devices::Sensors::ILightSensorReadingChangedEventArgs,
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+-
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+   fake_sensor->SetGetMinimumReportIntervalReturnCode(E_FAIL);
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   EXPECT_EQ(sensor->GetMinimalReportingInterval().InMilliseconds(), 0);
+ }
+ 
+-// Tests that PlatformSensorReaderWinrtBase converts the timestamp correctly
+-TEST_F(PlatformSensorReaderTestWinrt, SensorTimestampConversion) {
+-  static constexpr double expectedTimestampDeltaSecs = 19.0;
++TEST_F(PlatformSensorReaderTestWinrt, ReadingChangedCallbackAndPostTask) {
++  // Instead of using PlatformSensorReaderWinrtLightSensor, declare a custom
++  // implementation that does less and whose sole purpose is to assert that its
++  // OnReadingChangedCallback() implementation is never called.
++  struct CustomLightSensor
++      : public PlatformSensorReaderWinrtBase<
++            RuntimeClass_Windows_Devices_Sensors_LightSensor,
++            ABI::Windows::Devices::Sensors::ILightSensorStatics,
++            ABI::Windows::Devices::Sensors::ILightSensor,
++            Microsoft::WRL::Implements<
++                Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++                ABI::Windows::Foundation::ITypedEventHandler<
++                    ABI::Windows::Devices::Sensors::LightSensor*,
++                    ABI::Windows::Devices::Sensors::
++                        LightSensorReadingChangedEventArgs*>,
++                Microsoft::WRL::FtmBase>,
++            ABI::Windows::Devices::Sensors::
++                ILightSensorReadingChangedEventArgs> {
++    ~CustomLightSensor() override = default;
++
++    HRESULT OnReadingChangedCallback(
++        ABI::Windows::Devices::Sensors::ILightSensor*,
++        ABI::Windows::Devices::Sensors::ILightSensorReadingChangedEventArgs*)
++        override {
++      NOTREACHED_NORETURN() << "This function should not have been reached";
++    }
++  };
+ 
+   auto fake_sensor_factory = Microsoft::WRL::Make<FakeSensorFactoryWinrt<
+       ABI::Windows::Devices::Sensors::ILightSensorStatics,
+@@ -647,21 +723,57 @@ TEST_F(PlatformSensorReaderTestWinrt, SensorTimestampConversion) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
++  // Instead of using CreateAndInitializeSensor(), for simplicity and for
++  // better control over |light_sensor|'s lifetime we invert things and create
++  // the object in the main task runner and invoke StartSensor() from another
++  // one. The effect on the Reader is the same -- the calls are still made from
++  // different task runners.
++  auto light_sensor = std::make_unique<CustomLightSensor>();
++  light_sensor->InitForTesting(base::BindLambdaForTesting(
+       [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+           -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  ASSERT_TRUE(light_sensor->Initialize());
++
++  base::RunLoop run_loop;
++  base::ThreadPool::PostTaskAndReply(
++      FROM_HERE, base::BindLambdaForTesting([&]() {
++        ASSERT_TRUE(light_sensor->StartSensor(
++            PlatformSensorConfiguration(kExpectedReportFrequencySet)));
++      }),
++      run_loop.QuitClosure());
++  run_loop.Run();
++
++  // The idea here is to rely on the fact that TriggerFakeSensorReading() is
++  // asynchronous: we call it while it has a valid handler, it schedules a
++  // task, we destroy the handler object synchronoustly and then it Invoke()s
++  // the callback, which should never reach
++  // CustomLightSensor::OnReadingChangedCallback().
++  Microsoft::WRL::ComPtr<ABI::Windows::Devices::Sensors::ILightSensorReading>
++      reading = Microsoft::WRL::Make<FakeLightSensorReadingWinrt>(
++          ABI::Windows::Foundation::DateTime{}, 0.0f);
++  fake_sensor->TriggerFakeSensorReading(reading);
++  light_sensor.reset();
++  task_environment_.RunUntilIdle();
++}
+ 
+-  auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
++// Tests that PlatformSensorReaderWinrtBase converts the timestamp correctly
++TEST_F(PlatformSensorReaderTestWinrt, SensorTimestampConversion) {
++  static constexpr double expectedTimestampDeltaSecs = 19.0;
+ 
+-  double lastReportedTimestamp = 0.0;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke([&](const SensorReading& reading) {
+-        lastReportedTimestamp = reading.als.timestamp;
+-        EXPECT_EQ(reading.als.value, 0.0f);
+-      }));
++  auto fake_sensor_factory = Microsoft::WRL::Make<FakeSensorFactoryWinrt<
++      ABI::Windows::Devices::Sensors::ILightSensorStatics,
++      ABI::Windows::Devices::Sensors::ILightSensor,
++      ABI::Windows::Devices::Sensors::LightSensor,
++      ABI::Windows::Devices::Sensors::ILightSensorReading,
++      ABI::Windows::Devices::Sensors::ILightSensorReadingChangedEventArgs,
++      ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
++  auto fake_sensor = fake_sensor_factory->fake_sensor_;
++
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
++  auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+   sensor->SetClient(mock_client.get());
+ 
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+@@ -672,18 +784,35 @@ TEST_F(PlatformSensorReaderTestWinrt, SensorTimestampConversion) {
+   Microsoft::WRL::ComPtr<ABI::Windows::Devices::Sensors::ILightSensorReading>
+       reading = Microsoft::WRL::Make<FakeLightSensorReadingWinrt>(
+           ABI::Windows::Foundation::DateTime{}, 0.0f);
+-  fake_sensor->TriggerFakeSensorReading(reading);
+-  EXPECT_EQ(lastReportedTimestamp, 0);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(reading.als.timestamp, 0.0);
++          EXPECT_EQ(reading.als.value, 0.0f);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ 
++  // Verify the reported time stamp has ticked forward
++  // expectedTimestampDeltaSecs
+   auto second_timestamp =
+       base::Seconds(expectedTimestampDeltaSecs).ToWinrtDateTime();
+   reading =
+       Microsoft::WRL::Make<FakeLightSensorReadingWinrt>(second_timestamp, 0.0f);
+-  fake_sensor->TriggerFakeSensorReading(reading);
+-
+-  // Verify the reported time stamp has ticked forward
+-  // expectedTimestampDeltaSecs
+-  EXPECT_EQ(lastReportedTimestamp, expectedTimestampDeltaSecs);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(reading.als.timestamp, expectedTimestampDeltaSecs);
++          EXPECT_EQ(reading.als.value, 0.0f);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ }
+ 
+ // Tests that PlatformSensorReaderWinrtBase starts and stops the
+@@ -698,11 +827,9 @@ TEST_F(PlatformSensorReaderTestWinrt, StartStopSensorCallbacks) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+@@ -732,17 +859,19 @@ TEST_F(PlatformSensorReaderTestWinrt, StartWithoutStopSensorCallbacks) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+   EXPECT_TRUE(fake_sensor->IsSensorStarted());
+ 
++  // *sensor is deleted in |com_sta_task_runner_|, so we need to wait for it to
++  // happen asynchronously.
+   sensor.reset();
++  task_environment_.RunUntilIdle();
++
+   EXPECT_FALSE(fake_sensor->IsSensorStarted());
+ }
+ 
+@@ -758,11 +887,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedSensorStart) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   fake_sensor->SetPutReportIntervalReturnCode(E_FAIL);
+ 
+@@ -787,11 +914,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedSensorStop) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+@@ -813,11 +938,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedLightSensorSampleParse) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+ 
+@@ -832,12 +955,17 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedLightSensorSampleParse) {
+   auto reading = Microsoft::WRL::Make<FakeLightSensorReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, 0.0f);
+ 
++  // We cannot use a base::RunLoop in the checks below because we are expecting
++  // that MockClient::OnReadingUpdate() does _not_ get called.
++
+   reading->SetGetTimestampReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
+ 
+   reading->SetGetTimestampReturnCode(S_OK);
+   reading->SetGetIlluminanceInLuxReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
++
++  task_environment_.RunUntilIdle();
+ }
+ 
+ // Tests that PlatformSensorReaderWinrtLightSensor notifies the client
+@@ -854,19 +982,11 @@ TEST_F(PlatformSensorReaderTestWinrt, SensorClientNotification) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillOnce(testing::Invoke([&](const SensorReading& reading) {
+-        EXPECT_EQ(expected_lux, reading.als.value);
+-      }));
+-
+   sensor->SetClient(mock_client.get());
+ 
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+@@ -874,8 +994,16 @@ TEST_F(PlatformSensorReaderTestWinrt, SensorClientNotification) {
+ 
+   auto reading = Microsoft::WRL::Make<FakeLightSensorReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, expected_lux);
+-  fake_sensor->TriggerFakeSensorReading(reading);
+-
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(expected_lux, reading.als.value);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+   sensor->StopSensor();
+ }
+ 
+@@ -896,30 +1024,31 @@ TEST_F(PlatformSensorReaderTestWinrt, CheckAccelerometerReadingConversion) {
+       Microsoft::WRL::Make<FakeAccelerometerSensorWinrt>());
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtAccelerometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IAccelerometerStatics**
+-              sensor_factory) -> HRESULT {
+-        return fake_sensor_factory.CopyTo(sensor_factory);
+-      }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor =
++      CreateAndInitializeSensor<PlatformSensorReaderWinrtAccelerometer>(
++          fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillOnce(testing::Invoke([&](const SensorReading& reading) {
+-        EXPECT_EQ(-expected_x * base::kMeanGravityDouble, reading.accel.x);
+-        EXPECT_EQ(-expected_y * base::kMeanGravityDouble, reading.accel.y);
+-        EXPECT_EQ(-expected_z * base::kMeanGravityDouble, reading.accel.z);
+-      }));
+-
+   sensor->SetClient(mock_client.get());
+ 
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+-
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
++
+   auto reading = Microsoft::WRL::Make<FakeAccelerometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, expected_x, expected_y, expected_z);
+-  fake_sensor->TriggerFakeSensorReading(reading);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(-expected_x * base::kMeanGravityDouble, reading.accel.x);
++          EXPECT_EQ(-expected_y * base::kMeanGravityDouble, reading.accel.y);
++          EXPECT_EQ(-expected_z * base::kMeanGravityDouble, reading.accel.z);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ 
+   sensor->StopSensor();
+ }
+@@ -937,13 +1066,10 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedAccelerometerSampleParse) {
+       Microsoft::WRL::Make<FakeAccelerometerSensorWinrt>());
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtAccelerometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IAccelerometerStatics**
+-              sensor_factory) -> HRESULT {
+-        return fake_sensor_factory.CopyTo(sensor_factory);
+-      }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor =
++      CreateAndInitializeSensor<PlatformSensorReaderWinrtAccelerometer>(
++          fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+   sensor->SetClient(mock_client.get());
+@@ -954,6 +1080,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedAccelerometerSampleParse) {
+   auto reading = Microsoft::WRL::Make<FakeAccelerometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, 0, 0, 0);
+ 
++  // We cannot use a base::RunLoop in the checks below because we are expecting
++  // that MockClient::OnReadingUpdate() does _not_ get called.
++
+   reading->SetGetTimestampReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
+ 
+@@ -968,6 +1097,8 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedAccelerometerSampleParse) {
+   reading->SetGetYReturnCode(S_OK);
+   reading->SetGetZReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
++
++  task_environment_.RunUntilIdle();
+ }
+ 
+ // Tests if PlatformSensorReaderWinrtGyrometer correctly converts sensor
+@@ -986,27 +1117,30 @@ TEST_F(PlatformSensorReaderTestWinrt, CheckGyrometerReadingConversion) {
+       ABI::Windows::Devices::Sensors::GyrometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtGyrometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IGyrometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtGyrometer>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillOnce(testing::Invoke([&](const SensorReading& reading) {
+-        EXPECT_EQ(gfx::DegToRad(expected_x), reading.gyro.x);
+-        EXPECT_EQ(gfx::DegToRad(expected_y), reading.gyro.y);
+-        EXPECT_EQ(gfx::DegToRad(expected_z), reading.gyro.z);
+-      }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+   auto reading = Microsoft::WRL::Make<FakeGyrometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, expected_x, expected_y, expected_z);
+-  fake_sensor->TriggerFakeSensorReading(reading);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(gfx::DegToRad(expected_x), reading.gyro.x);
++          EXPECT_EQ(gfx::DegToRad(expected_y), reading.gyro.y);
++          EXPECT_EQ(gfx::DegToRad(expected_z), reading.gyro.z);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ 
+   sensor->StopSensor();
+ }
+@@ -1023,11 +1157,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedGyrometerSampleParse) {
+       ABI::Windows::Devices::Sensors::GyrometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtGyrometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IGyrometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtGyrometer>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+   sensor->SetClient(mock_client.get());
+@@ -1038,6 +1170,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedGyrometerSampleParse) {
+   auto reading = Microsoft::WRL::Make<FakeGyrometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, 0, 0, 0);
+ 
++  // We cannot use a base::RunLoop in the checks below because we are expecting
++  // that MockClient::OnReadingUpdate() does _not_ get called.
++
+   reading->SetGetTimestampReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
+ 
+@@ -1052,6 +1187,8 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedGyrometerSampleParse) {
+   reading->SetGetYReturnCode(S_OK);
+   reading->SetGetZReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
++
++  task_environment_.RunUntilIdle();
+ }
+ 
+ // Tests if PlatformSensorReaderWinrtMagnetometer correctly converts sensor
+@@ -1070,27 +1207,31 @@ TEST_F(PlatformSensorReaderTestWinrt, CheckMagnetometerReadingConversion) {
+       ABI::Windows::Devices::Sensors::MagnetometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtMagnetometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IMagnetometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor =
++      CreateAndInitializeSensor<PlatformSensorReaderWinrtMagnetometer>(
++          fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillOnce(testing::Invoke([&](const SensorReading& reading) {
+-        EXPECT_EQ(expected_x, reading.magn.x);
+-        EXPECT_EQ(expected_y, reading.magn.y);
+-        EXPECT_EQ(expected_z, reading.magn.z);
+-      }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+   auto reading = Microsoft::WRL::Make<FakeMagnetometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, expected_x, expected_y, expected_z);
+-  fake_sensor->TriggerFakeSensorReading(reading);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(expected_x, reading.magn.x);
++          EXPECT_EQ(expected_y, reading.magn.y);
++          EXPECT_EQ(expected_z, reading.magn.z);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ 
+   sensor->StopSensor();
+ }
+@@ -1107,11 +1248,10 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedMagnetometerSampleParse) {
+       ABI::Windows::Devices::Sensors::MagnetometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtMagnetometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IMagnetometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor =
++      CreateAndInitializeSensor<PlatformSensorReaderWinrtMagnetometer>(
++          fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+   sensor->SetClient(mock_client.get());
+@@ -1122,6 +1262,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedMagnetometerSampleParse) {
+   auto reading = Microsoft::WRL::Make<FakeMagnetometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, 0, 0, 0);
+ 
++  // We cannot use a base::RunLoop in the checks below because we are expecting
++  // that MockClient::OnReadingUpdate() does _not_ get called.
++
+   reading->SetGetTimestampReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
+ 
+@@ -1136,6 +1279,8 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedMagnetometerSampleParse) {
+   reading->SetGetYReturnCode(S_OK);
+   reading->SetGetZReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
++
++  task_environment_.RunUntilIdle();
+ }
+ 
+ // Tests if PlatformSensorReaderWinrtAbsOrientationEulerAngles correctly
+@@ -1154,28 +1299,30 @@ TEST_F(PlatformSensorReaderTestWinrt, CheckInclinometerReadingConversion) {
+       ABI::Windows::Devices::Sensors::InclinometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor =
+-      std::make_unique<PlatformSensorReaderWinrtAbsOrientationEulerAngles>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IInclinometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<
++      PlatformSensorReaderWinrtAbsOrientationEulerAngles>(fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillOnce(testing::Invoke([&](const SensorReading& reading) {
+-        EXPECT_EQ(expected_x, reading.orientation_euler.x);
+-        EXPECT_EQ(expected_y, reading.orientation_euler.y);
+-        EXPECT_EQ(expected_z, reading.orientation_euler.z);
+-      }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+   auto reading = Microsoft::WRL::Make<FakeInclinometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, expected_x, expected_y, expected_z);
+-  fake_sensor->TriggerFakeSensorReading(reading);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(expected_x, reading.orientation_euler.x);
++          EXPECT_EQ(expected_y, reading.orientation_euler.y);
++          EXPECT_EQ(expected_z, reading.orientation_euler.z);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ 
+   sensor->StopSensor();
+ }
+@@ -1192,12 +1339,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedInclinometerSampleParse) {
+       ABI::Windows::Devices::Sensors::InclinometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor =
+-      std::make_unique<PlatformSensorReaderWinrtAbsOrientationEulerAngles>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IInclinometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<
++      PlatformSensorReaderWinrtAbsOrientationEulerAngles>(fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+   sensor->SetClient(mock_client.get());
+@@ -1208,6 +1352,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedInclinometerSampleParse) {
+   auto reading = Microsoft::WRL::Make<FakeInclinometerReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, 0, 0, 0);
+ 
++  // We cannot use a base::RunLoop in the checks below because we are expecting
++  // that MockClient::OnReadingUpdate() does _not_ get called.
++
+   reading->SetGetTimestampReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
+ 
+@@ -1222,6 +1369,8 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedInclinometerSampleParse) {
+   reading->SetGetYReturnCode(S_OK);
+   reading->SetGetZReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
++
++  task_environment_.RunUntilIdle();
+ }
+ 
+ // Tests if PlatformSensorReaderWinrtAbsOrientationQuaternion correctly
+@@ -1242,32 +1391,32 @@ TEST_F(PlatformSensorReaderTestWinrt, CheckOrientationSensorReadingConversion) {
+           OrientationSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor =
+-      std::make_unique<PlatformSensorReaderWinrtAbsOrientationQuaternion>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IOrientationSensorStatics**
+-              sensor_factory) -> HRESULT {
+-        return fake_sensor_factory.CopyTo(sensor_factory);
+-      }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<
++      PlatformSensorReaderWinrtAbsOrientationQuaternion>(fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillOnce(testing::Invoke([&](const SensorReading& reading) {
+-        EXPECT_EQ(expected_w, reading.orientation_quat.w);
+-        EXPECT_EQ(expected_x, reading.orientation_quat.x);
+-        EXPECT_EQ(expected_y, reading.orientation_quat.y);
+-        EXPECT_EQ(expected_z, reading.orientation_quat.z);
+-      }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+   auto reading = Microsoft::WRL::Make<FakeOrientationSensorReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, expected_w, expected_x, expected_y,
+       expected_z);
+-  fake_sensor->TriggerFakeSensorReading(reading);
++  {
++    base::RunLoop run_loop;
++    EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++        .WillOnce(testing::Invoke([&](const SensorReading& reading) {
++          EXPECT_EQ(expected_w, reading.orientation_quat.w);
++          EXPECT_EQ(expected_x, reading.orientation_quat.x);
++          EXPECT_EQ(expected_y, reading.orientation_quat.y);
++          EXPECT_EQ(expected_z, reading.orientation_quat.z);
++          run_loop.Quit();
++        }));
++    fake_sensor->TriggerFakeSensorReading(reading);
++    run_loop.Run();
++  }
+ 
+   sensor->StopSensor();
+ }
+@@ -1285,14 +1434,9 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedOrientationSampleParse) {
+           OrientationSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor =
+-      std::make_unique<PlatformSensorReaderWinrtAbsOrientationQuaternion>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IOrientationSensorStatics**
+-              sensor_factory) -> HRESULT {
+-        return fake_sensor_factory.CopyTo(sensor_factory);
+-      }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<
++      PlatformSensorReaderWinrtAbsOrientationQuaternion>(fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+   sensor->SetClient(mock_client.get());
+@@ -1303,12 +1447,17 @@ TEST_F(PlatformSensorReaderTestWinrt, FailedOrientationSampleParse) {
+   auto reading = Microsoft::WRL::Make<FakeOrientationSensorReadingWinrt>(
+       ABI::Windows::Foundation::DateTime{}, 0, 0, 0, 0);
+ 
++  // We cannot use a base::RunLoop in the checks below because we are expecting
++  // that MockClient::OnReadingUpdate() does _not_ get called.
++
+   reading->SetGetTimestampReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
+ 
+   reading->SetGetTimestampReturnCode(S_OK);
+   reading->SetGetQuaternionReturnCode(E_FAIL);
+   fake_sensor->TriggerFakeSensorReading(reading);
++
++  task_environment_.RunUntilIdle();
+ }
+ 
+ TEST_F(PlatformSensorReaderTestWinrt, LightSensorThresholding) {
+@@ -1321,29 +1470,30 @@ TEST_F(PlatformSensorReaderTestWinrt, LightSensorThresholding) {
+       ABI::Windows::Devices::Sensors::LightSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtLightSensor>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::ILightSensorStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtLightSensor>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  bool expected_callback = false;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke(
+-          [&](const SensorReading&) { EXPECT_TRUE(expected_callback); }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+   float last_sent_lux = 1.0f;
+   auto threshold_helper = [&](bool expect_callback) {
+-    expected_callback = expect_callback;
+     auto reading = Microsoft::WRL::Make<FakeLightSensorReadingWinrt>(
+         ABI::Windows::Foundation::DateTime{}, last_sent_lux);
+-    fake_sensor->TriggerFakeSensorReading(reading);
++    if (expect_callback) {
++      base::RunLoop run_loop;
++      EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++          .WillOnce(base::test::RunClosure(run_loop.QuitClosure()));
++      fake_sensor->TriggerFakeSensorReading(reading);
++      run_loop.Run();
++    } else {
++      fake_sensor->TriggerFakeSensorReading(reading);
++      task_environment_.RunUntilIdle();
++    }
+   };
+ 
+   // Expect callback, first sample
+@@ -1359,10 +1509,6 @@ TEST_F(PlatformSensorReaderTestWinrt, LightSensorThresholding) {
+       PlatformSensorReaderWinrtLightSensor::kLuxPercentThreshold * 0.6f;
+   threshold_helper(true);
+ 
+-  // Expect callback, threshold has been met exactly
+-  last_sent_lux += PlatformSensorReaderWinrtLightSensor::kLuxPercentThreshold;
+-  threshold_helper(true);
+-
+   sensor->StopSensor();
+ }
+ 
+@@ -1377,22 +1523,14 @@ TEST_F(PlatformSensorReaderTestWinrt, AccelerometerThresholding) {
+       Microsoft::WRL::Make<FakeAccelerometerSensorWinrt>());
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtAccelerometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IAccelerometerStatics**
+-              sensor_factory) -> HRESULT {
+-        return fake_sensor_factory.CopyTo(sensor_factory);
+-      }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor =
++      CreateAndInitializeSensor<PlatformSensorReaderWinrtAccelerometer>(
++          fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  bool expected_callback = false;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke(
+-          [&](const SensorReading&) { EXPECT_TRUE(expected_callback); }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+@@ -1400,40 +1538,40 @@ TEST_F(PlatformSensorReaderTestWinrt, AccelerometerThresholding) {
+   double last_sent_y = 2.0f;
+   double last_sent_z = 3.0f;
+   auto threshold_helper = [&](bool expect_callback) {
+-    expected_callback = expect_callback;
+     auto reading = Microsoft::WRL::Make<FakeAccelerometerReadingWinrt>(
+         ABI::Windows::Foundation::DateTime{}, last_sent_x, last_sent_y,
+         last_sent_z);
+-    fake_sensor->TriggerFakeSensorReading(reading);
++    if (expect_callback) {
++      base::RunLoop run_loop;
++      EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++          .WillOnce(base::test::RunClosure(run_loop.QuitClosure()));
++      fake_sensor->TriggerFakeSensorReading(reading);
++      run_loop.Run();
++    } else {
++      fake_sensor->TriggerFakeSensorReading(reading);
++      task_environment_.RunUntilIdle();
++    }
+   };
+ 
+   // Expect callback, first sample
+   threshold_helper(true);
+ 
+-  // No callback, threshold has not been met
++  // For each axis, increase its value by an amount lower than the threshold so
++  // that no callback is invoked, then meet the threshold and do expect a
++  // callback.
+   last_sent_x += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.5f;
+   threshold_helper(false);
+-  last_sent_y += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.5f;
+-  threshold_helper(false);
+-  last_sent_z += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.5f;
+-  threshold_helper(false);
+-
+-  // Expect callback, threshold has been met since last reported sample
+   last_sent_x += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.6f;
+   threshold_helper(true);
++  last_sent_y += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.5f;
++  threshold_helper(false);
+   last_sent_y += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.6f;
+   threshold_helper(true);
++  last_sent_z += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.5f;
++  threshold_helper(false);
+   last_sent_z += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold * 0.6f;
+   threshold_helper(true);
+ 
+-  // Expect callback, threshold has been met exactly
+-  last_sent_x += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold;
+-  threshold_helper(true);
+-  last_sent_y += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold;
+-  threshold_helper(true);
+-  last_sent_z += PlatformSensorReaderWinrtAccelerometer::kAxisThreshold;
+-  threshold_helper(true);
+-
+   sensor->StopSensor();
+ }
+ 
+@@ -1447,20 +1585,13 @@ TEST_F(PlatformSensorReaderTestWinrt, GyrometerThresholding) {
+       ABI::Windows::Devices::Sensors::GyrometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtGyrometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IGyrometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<PlatformSensorReaderWinrtGyrometer>(
++      fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  bool expected_callback = false;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke(
+-          [&](const SensorReading&) { EXPECT_TRUE(expected_callback); }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+@@ -1468,40 +1599,40 @@ TEST_F(PlatformSensorReaderTestWinrt, GyrometerThresholding) {
+   double last_sent_y = 4.0f;
+   double last_sent_z = 5.0f;
+   auto threshold_helper = [&](bool expect_callback) {
+-    expected_callback = expect_callback;
+     auto reading = Microsoft::WRL::Make<FakeGyrometerReadingWinrt>(
+         ABI::Windows::Foundation::DateTime{}, last_sent_x, last_sent_y,
+         last_sent_z);
+-    fake_sensor->TriggerFakeSensorReading(reading);
++    if (expect_callback) {
++      base::RunLoop run_loop;
++      EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++          .WillOnce(base::test::RunClosure(run_loop.QuitClosure()));
++      fake_sensor->TriggerFakeSensorReading(reading);
++      run_loop.Run();
++    } else {
++      fake_sensor->TriggerFakeSensorReading(reading);
++      task_environment_.RunUntilIdle();
++    }
+   };
+ 
+   // Expect callback, first sample
+   threshold_helper(true);
+ 
+-  // No callback, threshold has not been met
++  // For each axis, increase its value by an amount lower than the threshold so
++  // that no callback is invoked, then meet the threshold and do expect a
++  // callback.
+   last_sent_x += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.5f;
+   threshold_helper(false);
+-  last_sent_y += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.5f;
+-  threshold_helper(false);
+-  last_sent_z += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.5f;
+-  threshold_helper(false);
+-
+-  // Expect callback, threshold has been met since last reported sample
+   last_sent_x += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.6f;
+   threshold_helper(true);
++  last_sent_y += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.5f;
++  threshold_helper(false);
+   last_sent_y += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.6f;
+   threshold_helper(true);
++  last_sent_z += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.5f;
++  threshold_helper(false);
+   last_sent_z += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold * 0.6f;
+   threshold_helper(true);
+ 
+-  // Expect callback, threshold has been met exactly
+-  last_sent_x += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold;
+-  threshold_helper(true);
+-  last_sent_y += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold;
+-  threshold_helper(true);
+-  last_sent_z += PlatformSensorReaderWinrtGyrometer::kDegreeThreshold;
+-  threshold_helper(true);
+-
+   sensor->StopSensor();
+ }
+ 
+@@ -1515,20 +1646,14 @@ TEST_F(PlatformSensorReaderTestWinrt, MagnetometerThresholding) {
+       ABI::Windows::Devices::Sensors::MagnetometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor = std::make_unique<PlatformSensorReaderWinrtMagnetometer>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IMagnetometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor =
++      CreateAndInitializeSensor<PlatformSensorReaderWinrtMagnetometer>(
++          fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  bool expected_callback = false;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke(
+-          [&](const SensorReading&) { EXPECT_TRUE(expected_callback); }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+@@ -1536,46 +1661,46 @@ TEST_F(PlatformSensorReaderTestWinrt, MagnetometerThresholding) {
+   double last_sent_y = 4.0f;
+   double last_sent_z = 5.0f;
+   auto threshold_helper = [&](bool expect_callback) {
+-    expected_callback = expect_callback;
+     auto reading = Microsoft::WRL::Make<FakeMagnetometerReadingWinrt>(
+         ABI::Windows::Foundation::DateTime{}, last_sent_x, last_sent_y,
+         last_sent_z);
+-    fake_sensor->TriggerFakeSensorReading(reading);
++    if (expect_callback) {
++      base::RunLoop run_loop;
++      EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++          .WillOnce(base::test::RunClosure(run_loop.QuitClosure()));
++      fake_sensor->TriggerFakeSensorReading(reading);
++      run_loop.Run();
++    } else {
++      fake_sensor->TriggerFakeSensorReading(reading);
++      task_environment_.RunUntilIdle();
++    }
+   };
+ 
+   // Expect callback, first sample
+   threshold_helper(true);
+ 
+-  // No callback, threshold has not been met
++  // For each axis, increase its value by an amount lower than the threshold so
++  // that no callback is invoked, then meet the threshold and do expect a
++  // callback.
+   last_sent_x +=
+       PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.5f;
+   threshold_helper(false);
+-  last_sent_y +=
+-      PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.5f;
+-  threshold_helper(false);
+-  last_sent_z +=
+-      PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.5f;
+-  threshold_helper(false);
+-
+-  // Expect callback, threshold has been met since last reported sample
+   last_sent_x +=
+       PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.6f;
+   threshold_helper(true);
++  last_sent_y +=
++      PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.5f;
++  threshold_helper(false);
+   last_sent_y +=
+       PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.6f;
+   threshold_helper(true);
++  last_sent_z +=
++      PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.5f;
++  threshold_helper(false);
+   last_sent_z +=
+       PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold * 0.6f;
+   threshold_helper(true);
+ 
+-  // Expect callback, threshold has been met exactly
+-  last_sent_x += PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold;
+-  threshold_helper(true);
+-  last_sent_y += PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold;
+-  threshold_helper(true);
+-  last_sent_z += PlatformSensorReaderWinrtMagnetometer::kMicroteslaThreshold;
+-  threshold_helper(true);
+-
+   sensor->StopSensor();
+ }
+ 
+@@ -1589,21 +1714,13 @@ TEST_F(PlatformSensorReaderTestWinrt, AbsOrientationEulerThresholding) {
+       ABI::Windows::Devices::Sensors::InclinometerReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor =
+-      std::make_unique<PlatformSensorReaderWinrtAbsOrientationEulerAngles>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IInclinometerStatics** sensor_factory)
+-          -> HRESULT { return fake_sensor_factory.CopyTo(sensor_factory); }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<
++      PlatformSensorReaderWinrtAbsOrientationEulerAngles>(fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  bool expected_callback = false;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke(
+-          [&](const SensorReading&) { EXPECT_TRUE(expected_callback); }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+@@ -1611,53 +1728,50 @@ TEST_F(PlatformSensorReaderTestWinrt, AbsOrientationEulerThresholding) {
+   double last_sent_y = 4.0f;
+   double last_sent_z = 5.0f;
+   auto threshold_helper = [&](bool expect_callback) {
+-    expected_callback = expect_callback;
+     auto reading = Microsoft::WRL::Make<FakeInclinometerReadingWinrt>(
+         ABI::Windows::Foundation::DateTime{}, last_sent_x, last_sent_y,
+         last_sent_z);
+-    fake_sensor->TriggerFakeSensorReading(reading);
++    if (expect_callback) {
++      base::RunLoop run_loop;
++      EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++          .WillOnce(base::test::RunClosure(run_loop.QuitClosure()));
++      fake_sensor->TriggerFakeSensorReading(reading);
++      run_loop.Run();
++    } else {
++      fake_sensor->TriggerFakeSensorReading(reading);
++      task_environment_.RunUntilIdle();
++    }
+   };
+ 
+   // Expect callback, first sample
+   threshold_helper(true);
+ 
+-  // No callback, threshold has not been met
++  // For each axis, increase its value by an amount lower than the threshold so
++  // that no callback is invoked, then meet the threshold and do expect a
++  // callback.
+   last_sent_x +=
+       PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
+       0.5f;
+   threshold_helper(false);
+-  last_sent_y +=
+-      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
+-      0.5f;
+-  threshold_helper(false);
+-  last_sent_z +=
+-      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
+-      0.5f;
+-  threshold_helper(false);
+-
+-  // Expect callback, threshold has been met since last reported sample
+   last_sent_x +=
+       PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
+       0.6f;
+   threshold_helper(true);
++  last_sent_y +=
++      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
++      0.5f;
++  threshold_helper(false);
+   last_sent_y +=
+       PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
+       0.6f;
+   threshold_helper(true);
+   last_sent_z +=
+       PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
+-      0.6f;
+-  threshold_helper(true);
+-
+-  // Expect callback, threshold has been met exactly
+-  last_sent_x +=
+-      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold;
+-  threshold_helper(true);
+-  last_sent_y +=
+-      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold;
+-  threshold_helper(true);
++      0.5f;
++  threshold_helper(false);
+   last_sent_z +=
+-      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold;
++      PlatformSensorReaderWinrtAbsOrientationEulerAngles::kDegreeThreshold *
++      0.6f;
+   threshold_helper(true);
+ 
+   sensor->StopSensor();
+@@ -1674,34 +1788,32 @@ TEST_F(PlatformSensorReaderTestWinrt, AbsOrientationQuatThresholding) {
+           OrientationSensorReadingChangedEventArgs>>();
+   auto fake_sensor = fake_sensor_factory->fake_sensor_;
+ 
+-  auto sensor =
+-      std::make_unique<PlatformSensorReaderWinrtAbsOrientationQuaternion>();
+-  sensor->InitForTesting(base::BindLambdaForTesting(
+-      [&](ABI::Windows::Devices::Sensors::IOrientationSensorStatics**
+-              sensor_factory) -> HRESULT {
+-        return fake_sensor_factory.CopyTo(sensor_factory);
+-      }));
+-  EXPECT_TRUE(sensor->Initialize());
++  auto sensor = CreateAndInitializeSensor<
++      PlatformSensorReaderWinrtAbsOrientationQuaternion>(fake_sensor_factory);
++  ASSERT_TRUE(sensor);
+ 
+   auto mock_client = std::make_unique<testing::NiceMock<MockClient>>();
+-
+-  bool expected_callback = false;
+-  EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
+-      .WillRepeatedly(testing::Invoke(
+-          [&](const SensorReading&) { EXPECT_TRUE(expected_callback); }));
+-
+   sensor->SetClient(mock_client.get());
++
+   PlatformSensorConfiguration sensor_config(kExpectedReportFrequencySet);
+   EXPECT_TRUE(sensor->StartSensor(sensor_config));
+ 
+   double last_sent_rad = 1.0;
+   auto threshold_helper = [&](bool expect_callback) {
+-    expected_callback = expect_callback;
+     auto quat = gfx::Quaternion(gfx::Vector3dF(1.0, 0, 0), last_sent_rad);
+     auto reading = Microsoft::WRL::Make<FakeOrientationSensorReadingWinrt>(
+         ABI::Windows::Foundation::DateTime{}, quat.w(), quat.x(), quat.y(),
+         quat.z());
+-    fake_sensor->TriggerFakeSensorReading(reading);
++    if (expect_callback) {
++      base::RunLoop run_loop;
++      EXPECT_CALL(*mock_client, OnReadingUpdated(::testing::_))
++          .WillOnce(base::test::RunClosure(run_loop.QuitClosure()));
++      fake_sensor->TriggerFakeSensorReading(reading);
++      run_loop.Run();
++    } else {
++      fake_sensor->TriggerFakeSensorReading(reading);
++      task_environment_.RunUntilIdle();
++    }
+   };
+ 
+   // Expect callback, first sample
+@@ -1719,11 +1831,6 @@ TEST_F(PlatformSensorReaderTestWinrt, AbsOrientationQuatThresholding) {
+       0.6f;
+   threshold_helper(true);
+ 
+-  // Expect callback, threshold has been met exactly
+-  last_sent_rad +=
+-      PlatformSensorReaderWinrtAbsOrientationQuaternion::kRadianThreshold;
+-  threshold_helper(true);
+-
+   sensor->StopSensor();
+ }
+ 
+diff --git a/services/device/generic_sensor/platform_sensor_win.cc b/services/device/generic_sensor/platform_sensor_win.cc
+index 3ee3c1fa86a80475dabe78ba440544767b2fce3a..e9a78687250f5214c99f03b62d31a7ff53211521 100644
+--- a/services/device/generic_sensor/platform_sensor_win.cc
++++ b/services/device/generic_sensor/platform_sensor_win.cc
+@@ -43,6 +43,8 @@ double PlatformSensorWin::GetMaximumSupportedFrequency() {
+ }
+ 
+ void PlatformSensorWin::OnReadingUpdated(const SensorReading& reading) {
++  // This function is normally called from |sensor_thread_runner_|, except on
++  // PlatformSensorAndProviderTestWin.
+   UpdateSharedBufferAndNotifyClients(reading);
+ }
+ 
+@@ -75,6 +77,7 @@ bool PlatformSensorWin::CheckSensorConfiguration(
+ }
+ 
+ PlatformSensorWin::~PlatformSensorWin() {
++  DCHECK(main_task_runner()->RunsTasksInCurrentSequence());
+   sensor_reader_->SetClient(nullptr);
+   sensor_thread_runner_->DeleteSoon(FROM_HERE, sensor_reader_.get());
+ }
