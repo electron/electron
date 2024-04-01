@@ -27,7 +27,6 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   GPUInfoManager(const GPUInfoManager&) = delete;
   GPUInfoManager& operator=(const GPUInfoManager&) = delete;
 
-  bool NeedsCompleteGpuInfoCollection() const;
   void FetchCompleteInfo(gin_helper::Promise<base::Value> promise);
   void FetchBasicInfo(gin_helper::Promise<base::Value> promise);
   void OnGpuInfoUpdate() override;

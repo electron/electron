@@ -28,16 +28,6 @@ GPUInfoManager::~GPUInfoManager() {
   content::GpuDataManagerImpl::GetInstance()->RemoveObserver(this);
 }
 
-// Based on
-// https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/content/browser/gpu/gpu_data_manager_impl_private.cc#838
-bool GPUInfoManager::NeedsCompleteGpuInfoCollection() const {
-#if BUILDFLAG(IS_WIN)
-  return gpu_data_manager_->DxdiagDx12VulkanRequested();
-#else
-  return false;
-#endif
-}
-
 // Should be posted to the task runner
 void GPUInfoManager::ProcessCompleteInfo() {
   base::Value::Dict result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
