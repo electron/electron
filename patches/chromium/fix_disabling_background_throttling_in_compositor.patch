@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 58c898eae10ecca9741d89e5a211b7c25c6d5a0b..ddd00f284e3e1efb810bf0202eb3b7838ac4d7e6 100644
+index d2c2b79216a496f7eea037bde312e3dc90d8ef9f..d50f310c435d17ede2718400e379aa28e58129f0 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -339,7 +339,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -25,21 +25,18 @@ index 58c898eae10ecca9741d89e5a211b7c25c6d5a0b..ddd00f284e3e1efb810bf0202eb3b783
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -531,8 +532,11 @@ void Compositor::SetVisible(bool visible) {
-   host_->SetVisible(visible);
-   // Visibility is reset when the output surface is lost, so this must also be
-   // updated then.
--  if (display_private_)
+@@ -540,7 +541,9 @@ void Compositor::SetVisible(bool visible) {
+   // updated then. We need to call this even if the visibility hasn't changed,
+   // for the same reason.
+   if (display_private_)
 -    display_private_->SetDisplayVisible(visible);
-+  if (display_private_) {
 +    // Invisible display is throttling itself.
 +    display_private_->SetDisplayVisible(
 +        background_throttling_ ? visible : true);
-+  }
- }
  
- bool Compositor::IsVisible() {
-@@ -959,4 +963,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
+   if (changed) {
+     for (auto& observer : observer_list_) {
+@@ -973,4 +976,13 @@ const cc::LayerTreeSettings& Compositor::GetLayerTreeSettings() const {
    return host_->GetSettings();
  }
  
