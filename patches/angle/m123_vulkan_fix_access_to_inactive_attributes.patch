@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Tue, 12 Mar 2024 16:06:37 -0400
+Subject: M123: Vulkan: Fix access to inactive attributes
+
+... within range of active ones.  Since a buffer is bound for inactive
+attributes, it must be considered accessed.
+
+Ultimately, the nullDescriptor feature could be used to avoid binding a
+buffer for inactive attributes.
+
+Bug: chromium:327807820
+Change-Id: I953b419d8ec51760e8848409024cad5083888fa2
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5386431
+Reviewed-by: Shahbaz Youssefi <syoussefi@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 9965bb1084ea237a18f72a1549916c0a6140806e..8e1708c82cd97acee56aae131c7d629c05a9d6a9 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -2596,8 +2596,7 @@ angle::Result ContextVk::handleDirtyGraphicsVertexBuffers(DirtyBits::Iterator *d
+         vertexArrayVk->getCurrentArrayBuffers();
+ 
+     // Mark all active vertex buffers as accessed.
+-    const gl::AttributesMask attribsMask = executable->getActiveAttribLocationsMask();
+-    for (size_t attribIndex : attribsMask)
++    for (uint32_t attribIndex = 0; attribIndex < maxAttrib; ++attribIndex)
+     {
+         vk::BufferHelper *arrayBuffer = arrayBufferResources[attribIndex];
+         if (arrayBuffer)
+diff --git a/src/tests/gl_tests/VertexAttributeTest.cpp b/src/tests/gl_tests/VertexAttributeTest.cpp
+index b26821200e472bec3d522d7b3e7f7aa0cb0d27a5..c37868cd4067aced75f2edb7397d72457a6fabb3 100644
+--- a/src/tests/gl_tests/VertexAttributeTest.cpp
++++ b/src/tests/gl_tests/VertexAttributeTest.cpp
+@@ -1200,6 +1200,19 @@ class VertexAttributeOORTest : public VertexAttributeTest
+     }
+ };
+ 
++class RobustVertexAttributeTest : public VertexAttributeTest
++{
++  public:
++    RobustVertexAttributeTest()
++    {
++        // mac GL and metal do not support robustness.
++        if (!IsMac() && !IsIOS())
++        {
++            setRobustAccess(true);
++        }
++    }
++};
++
+ // Verify that drawing with a large out-of-range offset generates INVALID_OPERATION.
+ // Requires WebGL compatibility with robust access behaviour disabled.
+ TEST_P(VertexAttributeOORTest, ANGLEDrawArraysBufferTooSmall)
+@@ -1260,6 +1273,48 @@ TEST_P(VertexAttributeOORTest, ANGLEDrawArraysOutOfBoundsCases)
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+ }
+ 
++// Test that enabling a buffer in an unused attribute doesn't crash.  There should be an active
++// attribute after that.
++TEST_P(RobustVertexAttributeTest, BoundButUnusedBuffer)
++{
++    constexpr char kVS[] = R"(attribute vec2 offset;
++void main()
++{
++    gl_Position = vec4(offset.xy, 0, 1);
++    gl_PointSize = 1.0;
++})";
++
++    constexpr char kFS[] = R"(precision mediump float;
++void main()
++{
++    gl_FragColor = vec4(1.0, 0, 0, 1.0);
++})";
++
++    const GLuint vs = CompileShader(GL_VERTEX_SHADER, kVS);
++    const GLuint fs = CompileShader(GL_FRAGMENT_SHADER, kFS);
++
++    GLuint program = glCreateProgram();
++    glBindAttribLocation(program, 1, "offset");
++    glAttachShader(program, vs);
++    glAttachShader(program, fs);
++    glLinkProgram(program);
++
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, 100, nullptr, GL_STATIC_DRAW);
++
++    // Enable an unused attribute that is within the range of active attributes (not beyond it)
++    glEnableVertexAttribArray(0);
++    glVertexAttribPointer(0, 4, GL_FLOAT, false, 0, 0);
++
++    glUseProgram(program);
++    glDrawArrays(GL_TRIANGLES, 0, 6);
++
++    // Destroy the buffer.  Regression test for a tracking bug where the buffer was used by
++    // SwiftShader (even though location 1 is inactive), but not marked as used by ANGLE.
++    buffer.reset();
++}
++
+ // Verify that using a different start vertex doesn't mess up the draw.
+ TEST_P(VertexAttributeTest, DrawArraysWithBufferOffset)
+ {
+@@ -4544,6 +4599,8 @@ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     ES3_METAL().disable(Feature::HasExplicitMemBarrier).disable(Feature::HasCheapRenderPass),
+     ES3_METAL().disable(Feature::HasExplicitMemBarrier).enable(Feature::HasCheapRenderPass));
+ 
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(RobustVertexAttributeTest);
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(VertexAttributeTestES3);
+ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     VertexAttributeTestES3,
