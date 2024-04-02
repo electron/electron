@@ -15,13 +15,6 @@ namespace electron {
 
 namespace {
 
-// The menu bar height in pixels.
-#if BUILDFLAG(IS_WIN)
-const int kMenuBarHeight = 20;
-#else
-const int kMenuBarHeight = 25;
-#endif
-
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
   return event.windows_key_code == ui::VKEY_MENU;
 }
@@ -84,7 +77,7 @@ bool RootView::HasMenu() const {
 }
 
 int RootView::GetMenuBarHeight() const {
-  return kMenuBarHeight;
+  return menu_bar_ ? menu_bar_->GetPreferredSize().height() : 0;
 }
 
 void RootView::SetAutoHideMenuBar(bool auto_hide) {
