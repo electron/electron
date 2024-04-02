@@ -41,15 +41,11 @@ class WinFrameView : public FramelessView {
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
 
-  NativeWindowViews* window() const { return window_; }
-  views::Widget* frame() const { return frame_; }
   WinCaptionButtonContainer* caption_button_container() {
     return caption_button_container_;
   }
 
   bool IsMaximized() const;
-
-  bool ShouldCustomDrawSystemTitlebar() const;
 
   // Visual height of the titlebar when the window is maximized (i.e. excluding
   // the area above the top of the screen).
@@ -89,7 +85,7 @@ class WinFrameView : public FramelessView {
   // The container holding the caption buttons (minimize, maximize, close, etc.)
   // May be null if the caption button container is destroyed before the frame
   // view. Always check for validity before using!
-  raw_ptr<WinCaptionButtonContainer> caption_button_container_;
+  raw_ptr<WinCaptionButtonContainer> caption_button_container_ = nullptr;
 };
 
 }  // namespace electron
