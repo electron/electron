@@ -116,6 +116,9 @@ views::Button* OpaqueFrameView::CreateButton(
   button->SetID(view_id);
   AddChildView(button);
 
+  button->SetPaintToLayer();
+  button->layer()->SetFillsBoundsOpaquely(false);
+
   return button;
 }
 
