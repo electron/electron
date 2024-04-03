@@ -36,8 +36,8 @@ index f502df2f88424ea902a061adfeb30358daf212e4..40f55812bf5795dc60bb8a4cd19c62cb
 +
 +	if (!ownedBundle || ![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) {
 +		NSLog(@"Unknown error while unarchiving ownedBundle - did not conform to SQRLInstallerOwnedBundle");
-+ 		return nil;
-+ 	}
++		return nil;
++	}
  
  	return ownedBundle;
  }
