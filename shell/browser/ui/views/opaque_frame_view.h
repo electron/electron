@@ -56,6 +56,9 @@ class OpaqueFrameView : public FramelessView {
   // views::View
   void OnPaint(gfx::Canvas* canvas) override;
 
+  void UpdateCaptionButtonPlaceholderContainerBackground();
+  void LayoutWindowControlsOverlay();
+
  protected:
   void PaintAsActiveChanged();
 
@@ -106,9 +109,6 @@ class OpaqueFrameView : public FramelessView {
 
   SkColor GetFrameColor() const;
 
-  void UpdateCaptionButtonPlaceholderContainerBackground();
-
-  void LayoutWindowControlsOverlay();
   void LayoutWindowControls();
 
   void ConfigureButton(views::FrameButton button_id, ButtonAlignment alignment);

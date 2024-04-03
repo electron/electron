@@ -26,6 +26,20 @@
 #include "shell/browser/native_window_views.h"
 #endif
 
+<<<<<<< HEAD
+||||||| parent of b3e4f5630a (fix: enable BrowserWindow.setTitleBarOverlay on Linux)
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/ui/views/win_frame_view.h"
+#endif
+
+=======
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/ui/views/win_frame_view.h"
+#elif BUILDFLAG(IS_LINUX)
+#include "shell/browser/ui/views/opaque_frame_view.h"
+#endif
+
+>>>>>>> b3e4f5630a (fix: enable BrowserWindow.setTitleBarOverlay on Linux)
 namespace electron::api {
 
 BrowserWindow::BrowserWindow(gin::Arguments* args,
@@ -309,6 +323,16 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
       .SetMethod("isWebViewFocused", &BrowserWindow::IsWebViewFocused)
+<<<<<<< HEAD
+||||||| parent of b3e4f5630a (fix: enable BrowserWindow.setTitleBarOverlay on Linux)
+#if BUILDFLAG(IS_WIN)
+      .SetMethod("setTitleBarOverlay", &BrowserWindow::SetTitleBarOverlay)
+#endif
+=======
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+      .SetMethod("setTitleBarOverlay", &BrowserWindow::SetTitleBarOverlay)
+#endif
+>>>>>>> b3e4f5630a (fix: enable BrowserWindow.setTitleBarOverlay on Linux)
       .SetProperty("webContents", &BrowserWindow::GetWebContents);
 }
 

@@ -1041,9 +1041,11 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
                                   relaunch_command, relaunch_display_name,
                                   window_->GetAcceleratedWidget());
 }
+#endif
 
-void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                    gin_helper::Arguments* args) {
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
+                                       gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
   if (!window_->titlebar_overlay_enabled()) {
     args->ThrowError("Titlebar overlay is not enabled");
@@ -1090,13 +1092,20 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
     updated = true;
   }
 
-  // If anything was updated, invalidate the layout and schedule a paint of the
-  // window's frame view
-  if (updated) {
-    auto* frame_view = static_cast<WinFrameView*>(
-        window->widget()->non_client_view()->frame_view());
-    frame_view->InvalidateCaptionButtons();
-  }
+  if (!updated)
+    return;
+
+    // If anything was updated, ensure the overlay is repainted.
+#if BUILDFLAG(IS_WIN)
+  auto* frame_view = static_cast<WinFrameView*>(
+      window->widget()->non_client_view()->frame_view());
+  frame_view->InvalidateCaptionButtons();
+#else
+  auto* frame_view = static_cast<OpaqueFrameView*>(
+      window->widget()->non_client_view()->frame_view());
+  frame_view->UpdateCaptionButtonPlaceholderContainerBackground();
+  frame_view->LayoutWindowControlsOverlay();
+#endif
 }
 #endif
 
