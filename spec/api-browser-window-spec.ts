@@ -3098,27 +3098,28 @@ describe('BrowserWindow module', () => {
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
-      if (!w.isMaximized()) {
-        const maximize = once(w, 'maximize');
-        w.show();
-        w.maximize();
-        await maximize;
-      }
-
-      expect(w.isMaximized()).to.be.true('not maximized');
-      const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
-
       expect(overlayRectPreMax.y).to.equal(0);
       if (process.platform === 'darwin') {
         expect(overlayRectPreMax.x).to.be.greaterThan(0);
       } else {
         expect(overlayRectPreMax.x).to.equal(0);
       }
-      expect(overlayRectPreMax.width).to.be.greaterThan(0);
 
+      expect(overlayRectPreMax.width).to.be.greaterThan(0);
       expect(overlayRectPreMax.height).to.equal(size);
-      // Confirm that maximization only affected the height of the buttons and not the title bar
-      expect(overlayRectPostMax.height).to.equal(size);
+
+      // 'maximize' event is not emitted on Linux in CI.
+      if (process.platform !== 'linux' && !w.isMaximized()) {
+        const maximize = once(w, 'maximize');
+        w.show();
+        w.maximize();
+
+        await maximize;
+        expect(w.isMaximized()).to.be.true('not maximized');
+
+        const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+        expect(overlayRectPostMax.height).to.equal(size);
+      }
     };
 
     afterEach(async () => {
@@ -3169,22 +3170,25 @@ describe('BrowserWindow module', () => {
 
         const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
         expect(overlayEnabled).to.be.true('overlayEnabled');
-        const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
-        if (!w.isMaximized()) {
+        const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+        expect(preMaxHeight).to.equal(size);
+
+        // 'maximize' event is not emitted on Linux in CI.
+        if (process.platform !== 'linux' && !w.isMaximized()) {
           const maximize = once(w, 'maximize');
           w.show();
           w.maximize();
-          await maximize;
-        }
 
-        expect(w.isMaximized()).to.be.true('not maximized');
-        const { x, y, width, height } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
-        expect(x).to.equal(0);
-        expect(y).to.equal(0);
-        expect(width).to.be.greaterThan(0);
-        expect(height).to.equal(size);
-        expect(preMaxHeight).to.equal(size);
+          await maximize;
+          expect(w.isMaximized()).to.be.true('not maximized');
+
+          const { x, y, width, height } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+          expect(x).to.equal(0);
+          expect(y).to.equal(0);
+          expect(width).to.be.greaterThan(0);
+          expect(height).to.equal(size);
+        }
       };
 
       const INITIAL_SIZE = 40;
