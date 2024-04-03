@@ -251,19 +251,6 @@ void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
   const SkColor symbol_color = window()->overlay_button_color();
   SkColor frame_color =
       symbol_color == SkColor() ? GetFrameColor() : symbol_color;
-  // if (window_title_) {
-  //   window_title_->SetEnabledColor(
-  //       GetCaptionColor(BrowserFrameActiveState::kUseCurrent));
-  //   window_title_->SetBackgroundColor(frame_color);
-  // }
-  // frame_background_->set_frame_color(frame_color);
-  // frame_background_->set_use_custom_frame(frame()->UseCustomFrame());
-  // frame_background_->set_is_active(active);
-  // frame_background_->set_theme_image(GetFrameImage());
-  // frame_background_->set_theme_image_inset(
-  //     browser_view()->GetThemeOffsetFromBrowserView());
-  // frame_background_->set_theme_overlay_image(GetFrameOverlayImage());
-  // frame_background_->set_top_area_height(GetTopAreaHeight());
 
   for (views::Button* button :
        {minimize_button_, maximize_button_, restore_button_, close_button_}) {
@@ -541,6 +528,12 @@ void OpaqueFrameView::PaintAsActiveChanged() {
 SkColor OpaqueFrameView::GetFrameColor() const {
   return GetColorProvider()->GetColor(
       ShouldPaintAsActive() ? ui::kColorFrameActive : ui::kColorFrameInactive);
+}
+
+void OpaqueFrameView::InvalidateCaptionButtons() {
+  UpdateCaptionButtonPlaceholderContainerBackground();
+  LayoutWindowControlsOverlay();
+  InvalidateLayout();
 }
 
 void OpaqueFrameView::UpdateCaptionButtonPlaceholderContainerBackground() {

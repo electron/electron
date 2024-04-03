@@ -53,17 +53,12 @@ class OpaqueFrameView : public FramelessView {
   void ResetWindowControls() override;
   views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
 
-  // views::View
-  void OnPaint(gfx::Canvas* canvas) override;
-
-  void UpdateCaptionButtonPlaceholderContainerBackground();
-  void LayoutWindowControlsOverlay();
-
- protected:
-  void PaintAsActiveChanged();
-
   // views::View:
   void Layout(PassKey) override;
+  void OnPaint(gfx::Canvas* canvas) override;
+
+  // Needed by BrowserWindow::SetTitleBarOverlay.
+  void InvalidateCaptionButtons();
 
  private:
   enum ButtonAlignment { ALIGN_LEADING, ALIGN_TRAILING };
@@ -72,6 +67,9 @@ class OpaqueFrameView : public FramelessView {
     int leading;
     int trailing;
   };
+
+  void PaintAsActiveChanged();
+
   // Creates and returns an ImageButton with |this| as its listener.
   // Memory is owned by the caller.
   views::Button* CreateButton(ViewID view_id,
@@ -109,7 +107,9 @@ class OpaqueFrameView : public FramelessView {
 
   SkColor GetFrameColor() const;
 
+  void UpdateCaptionButtonPlaceholderContainerBackground();
   void LayoutWindowControls();
+  void LayoutWindowControlsOverlay();
 
   void ConfigureButton(views::FrameButton button_id, ButtonAlignment alignment);
   void HideButton(views::FrameButton button_id);
