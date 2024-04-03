@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 53b7641464c11..c9d3c632db220 100644
+index 53b7641464c111c467944ac60a1b8eb989eba8cb..c9d3c632db22000b4f67f5c7de559ec8f5262b73 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -7,6 +7,7 @@
@@ -117,7 +117,7 @@ index 53b7641464c11..c9d3c632db220 100644
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index f5c5ff2c89489..fdd2e2483171c 100644
+index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac27d22cf9 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
 @@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
@@ -140,7 +140,7 @@ index f5c5ff2c89489..fdd2e2483171c 100644
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 6f86563fe6c80..31ef1e43db6ea 100644
+index 6f86563fe6c80ecd3db75b9480e1ed13399ccc18..31ef1e43db6ea4a51333d1ae4f84c3c274e26b53 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -8,13 +8,18 @@
@@ -255,7 +255,7 @@ index 6f86563fe6c80..31ef1e43db6ea 100644
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index b083cd89c46e6..84736ba6b3ae6 100644
+index b083cd89c46e676f26a7c28eda091cedbf9a5a97..84736ba6b3ae6111f1cebad862989daadb838234 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -374,7 +374,7 @@ index b083cd89c46e6..84736ba6b3ae6 100644
            process_lock.lock_url().scheme())) {
      return process_lock.lock_url();
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index ce9644d33fe83..fd486d4637ae4 100644
+index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9cebbd809f38 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
 @@ -98,6 +98,14 @@ void RegisterContentSchemes(bool should_lock_registry) {
@@ -393,7 +393,7 @@ index ce9644d33fe83..fd486d4637ae4 100644
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 2387517cfddbd..eb64b73515b0f 100644
+index 2387517cfddbd9277739265ae648ba6a2a4ebb50..eb64b73515b0f4d925157ad769df283168983e31 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -142,6 +142,9 @@ class CONTENT_EXPORT ContentClient {
@@ -407,7 +407,7 @@ index 2387517cfddbd..eb64b73515b0f 100644
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 82b27b8f59684..c5e07f7875152 100644
+index 82b27b8f596843b4b7e8e9a07909ccecb7ada6b3..c5e07f7875152ed638b59c286919296335c785e0 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -115,6 +115,9 @@ struct SchemeRegistry {
@@ -437,7 +437,7 @@ index 82b27b8f59684..c5e07f7875152 100644
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index b044801738627..cfce25d7e2729 100644
+index b044801738627c36c136459dc605c5b6e58b8423..cfce25d7e2729b5d3c86353d8df8b0c864238247 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

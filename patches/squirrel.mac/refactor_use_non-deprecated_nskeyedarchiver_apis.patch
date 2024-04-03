@@ -11,7 +11,7 @@ Several NSKeyedArchiver methods have been deprecated and replaced as of macOS 10
 - archivedDataWithRootObject -> archivedDataWithRootObject:requiringSecureCoding:error:
 
 diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
-index f502df2f88424ea902a061adfeb30358daf212e4..40f55812bf5795dc60bb8a4cd19c62cb37f40359 100644
+index f502df2f88424ea902a061adfeb30358daf212e4..8969cfda03efd5a11bfe0c531e2702ff12a3f610 100644
 --- a/Squirrel/SQRLInstaller.m
 +++ b/Squirrel/SQRLInstaller.m
 @@ -182,14 +182,40 @@ - (SQRLInstallerOwnedBundle *)ownedBundle {

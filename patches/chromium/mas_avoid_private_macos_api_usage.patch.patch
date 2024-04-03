@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 646e3d8a69977d2f46aa2d933f0bfbd61bff7dc5..4d779ac3cb84623a206764b86a35d74f974d5c4f 100644
+index 5cf6798c0139e4ca370f1b1d954fe98acec7629c..fe510283b2b9b874c02979c0de144b75f6288efa 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1065,6 +1065,7 @@ component("base") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ba30f1d3ac56ca007f6c38883f0dec872eb77928..96a72e70cba0fd2f78484e8b70f65d0a7f041874 100644
+index a7c881ff0dfea942df18b7c77e2ad4c53bebc0e5..ba11d8cc668b986bc7819b832902f2eb8fba1f35 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -494,6 +494,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index ba30f1d3ac56ca007f6c38883f0dec872eb77928..96a72e70cba0fd2f78484e8b70f65d0a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1714,6 +1716,7 @@ test("content_browsertests") {
+@@ -1715,6 +1717,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index ba30f1d3ac56ca007f6c38883f0dec872eb77928..96a72e70cba0fd2f78484e8b70f65d0a
  
    public_deps = [
      ":test_interfaces",
-@@ -2943,6 +2946,7 @@ test("content_unittests") {
+@@ -2944,6 +2947,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1596,10 +1596,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index ebc3920648cd0c02ad53ec97884a8906dc2d7321..43844bb1d2fb2daa4a8e9fd18e10fc0e8a3fb817 100644
+index 0cac6df102a9e23f661268c1d7c3f8977f14725b..34772fc702621aaea274b58f97e15295482e98e4 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -714,6 +714,7 @@ component("views") {
+@@ -717,6 +717,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1607,7 +1607,7 @@ index ebc3920648cd0c02ad53ec97884a8906dc2d7321..43844bb1d2fb2daa4a8e9fd18e10fc0e
    }
  
    if (is_win) {
-@@ -1147,6 +1148,8 @@ source_set("test_support") {
+@@ -1150,6 +1151,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
