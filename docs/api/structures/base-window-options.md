@@ -83,7 +83,7 @@
 * `titleBarStyle` string (optional) _macOS_ _Windows_ - The style of window title bar.
   Default is `default`. Possible values are:
   * `default` - Results in the standard title bar for macOS or Windows respectively.
-  * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
+  * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows and Linux, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
   * `hiddenInset` _macOS_ - Only on macOS, results in a hidden title bar
     with an alternative look where the traffic light buttons are slightly
     more inset from the window edge.
