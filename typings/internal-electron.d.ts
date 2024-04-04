@@ -78,9 +78,10 @@ declare namespace Electron {
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
+    _getNavigationEntryAtIndex(index: number): Electron.EntryAtIndex | null;
+    _getActiveIndex(): number;
+    _historyLength(): number;
     canGoToIndex(index: number): boolean;
-    getActiveIndex(): number;
-    length(): number;
     destroy(): void;
     // <webview>
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
