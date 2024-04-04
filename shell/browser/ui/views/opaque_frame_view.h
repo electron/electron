@@ -69,6 +69,10 @@ class OpaqueFrameView : public FramelessView {
 
   void PaintAsActiveChanged();
 
+  void UpdateCaptionButtonPlaceholderContainerBackground();
+  void LayoutWindowControls();
+  void LayoutWindowControlsOverlay();
+
   // Creates and returns an ImageButton with |this| as its listener.
   // Memory is owned by the caller.
   views::Button* CreateButton(ViewID view_id,
@@ -77,6 +81,8 @@ class OpaqueFrameView : public FramelessView {
                               int ht_component,
                               const gfx::VectorIcon& icon_image,
                               views::Button::PressedCallback callback);
+
+  /** Layout-Related Utility Functions **/
 
   // Returns the insets from the native window edge to the client view.
   // This does not include any client edge.  If |restored| is true, this
@@ -89,33 +95,80 @@ class OpaqueFrameView : public FramelessView {
   // window is restored regardless of the actual mode.
   int FrameTopBorderThickness(bool restored) const;
 
+  // Returns the spacing between the edge of the browser window and the first
+  // frame buttons.
   TopAreaPadding GetTopAreaPadding(bool has_leading_buttons,
                                    bool has_trailing_buttons) const;
 
+  // Determines whether the top frame is condensed vertically, as when the
+  // window is maximized. If true, the top frame is just the height of a tab,
+  // rather than having extra vertical space above the tabs.
   bool IsFrameCondensed() const;
+
+  // The insets from the native window edge to the client view when the window
+  // is restored.  This goes all the way to the web contents on the left, right,
+  // and bottom edges.
   gfx::Insets RestoredFrameBorderInsets() const;
+
+  // The insets from the native window edge to the flat portion of the
+  // window border.  That is, this function returns the "3D portion" of the
+  // border when the window is restored.  The returned insets will not be larger
+  // than RestoredFrameBorderInsets().
   gfx::Insets RestoredFrameEdgeInsets() const;
+
+  // Additional vertical padding between tabs and the top edge of the window
+  // when the window is restored.
   int NonClientExtraTopThickness() const;
+
+  // Returns the height of the entire nonclient top border, from the edge of the
+  // window to the top of the tabs. If |restored| is true, this is calculated as
+  // if the window was restored, regardless of its current state.
   int NonClientTopHeight(bool restored) const;
 
-  gfx::Insets FrameEdgeInsets(bool restored) const;
+  // Returns the y-coordinate of button |button_id|.  If |restored| is true,
+  // acts as if the window is restored regardless of the real mode.
   int CaptionButtonY(views::FrameButton button_id, bool restored) const;
+
+  // Returns the y-coordinate of the caption button when native frame buttons
+  // are disabled.  If |restored| is true, acts as if the window is restored
+  // regardless of the real mode.
   int DefaultCaptionButtonY(bool restored) const;
+
+  // Returns the insets from the native window edge to the flat portion of the
+  // window border.  That is, this function returns the "3D portion" of the
+  // border.  If |restored| is true, acts as if the window is restored
+  // regardless of the real mode.
+  gfx::Insets FrameEdgeInsets(bool restored) const;
+
+  // Returns the size of the window icon. This can be platform dependent
+  // because of differences in fonts.
   int GetIconSize() const;
+
+  // Returns the spacing between the edge of the browser window and the first
+  // frame buttons.
   TopAreaPadding GetTopAreaPadding() const;
 
+  // Returns the color of the frame.
   SkColor GetFrameColor() const;
 
-  void UpdateCaptionButtonPlaceholderContainerBackground();
-  void LayoutWindowControls();
-  void LayoutWindowControlsOverlay();
-
+  // Initializes the button with |button_id| to be aligned according to
+  // |alignment|.
   void ConfigureButton(views::FrameButton button_id, ButtonAlignment alignment);
+
+  // Sets the visibility of all buttons associated with |button_id| to false.
   void HideButton(views::FrameButton button_id);
+
+  // Adds a window caption button to either the leading or trailing side.
   void SetBoundsForButton(views::FrameButton button_id,
                           views::Button* button,
                           ButtonAlignment alignment);
+
+  // Computes the height of the top area of the frame.
   int GetTopAreaHeight() const;
+
+  // Returns the margin around button |button_id|.  If |leading_spacing| is
+  // true, returns the left margin (in RTL), otherwise returns the right margin
+  // (in RTL).  Extra margin may be added if |is_leading_button| is true.
   int GetWindowCaptionSpacing(views::FrameButton button_id,
                               bool leading_spacing,
                               bool is_leading_button) const;

@@ -99,98 +99,10 @@ int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
   return FramelessView::ResizingBorderHitTest(point);
 }
 
-views::Button* OpaqueFrameView::CreateButton(
-    ViewID view_id,
-    int accessibility_string_id,
-    views::CaptionButtonIcon icon_type,
-    int ht_component,
-    const gfx::VectorIcon& icon_image,
-    views::Button::PressedCallback callback) {
-  views::FrameCaptionButton* button = new views::FrameCaptionButton(
-      views::Button::PressedCallback(), icon_type, ht_component);
-  button->SetImage(button->GetIcon(), views::FrameCaptionButton::Animate::kNo,
-                   icon_image);
-
-  button->SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
-  button->SetCallback(std::move(callback));
-  button->SetAccessibleName(l10n_util::GetStringUTF16(accessibility_string_id));
-  button->SetID(view_id);
-  AddChildView(button);
-
-  button->SetPaintToLayer();
-  button->layer()->SetFillsBoundsOpaquely(false);
-
-  return button;
-}
-
-OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding(
-    bool has_leading_buttons,
-    bool has_trailing_buttons) const {
-  const auto padding = FrameBorderInsets(false);
-  return TopAreaPadding{padding.left(), padding.right()};
-}
-
-bool OpaqueFrameView::IsFrameCondensed() const {
-  return frame()->IsMaximized() || frame()->IsFullscreen();
-}
-
-gfx::Insets OpaqueFrameView::RestoredFrameBorderInsets() const {
-  return gfx::Insets(kFrameBorderThickness);
-}
-
-gfx::Insets OpaqueFrameView::RestoredFrameEdgeInsets() const {
-  return gfx::Insets::TLBR(kTopFrameEdgeThickness, kSideFrameEdgeThickness,
-                           kSideFrameEdgeThickness, kSideFrameEdgeThickness);
-}
-
-int OpaqueFrameView::NonClientExtraTopThickness() const {
-  return kNonClientExtraTopThickness;
-}
-
-gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {
-  return RestoredFrameEdgeInsets();
-}
-
-int OpaqueFrameView::CaptionButtonY(views::FrameButton button_id,
-                                    bool restored) const {
-  return DefaultCaptionButtonY(restored);
-}
-
-int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
-  // Maximized buttons start at window top, since the window has no border. This
-  // offset is for the image (the actual clickable bounds extend all the way to
-  // the top to take Fitts' Law into account).
-  const bool start_at_top_of_frame = !restored && IsFrameCondensed();
-  return start_at_top_of_frame
-             ? FrameBorderInsets(false).top()
-             : views::NonClientFrameView::kFrameShadowThickness;
-}
-
-int OpaqueFrameView::NonClientTopHeight(bool restored) const {
-  // Adding 2px of vertical padding puts at least 1 px of space on the top and
-  // bottom of the element.
-  constexpr int kVerticalPadding = 2;
-  const int icon_height = GetIconSize() + kVerticalPadding;
-  const int caption_button_height = DefaultCaptionButtonY(restored) +
-                                    kCaptionButtonHeight +
-                                    kCaptionButtonBottomPadding;
-
-  int custom_height = window()->titlebar_overlay_height();
-  return custom_height ? custom_height
-                       : std::max(icon_height, caption_button_height) +
-                             kContentEdgeShadowThickness;
-}
-
-gfx::Insets OpaqueFrameView::FrameBorderInsets(bool restored) const {
-  return !restored && IsFrameCondensed() ? gfx::Insets()
-                                         : RestoredFrameBorderInsets();
-}
-
-int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {
-  int thickness = FrameBorderInsets(restored).top();
-  if ((restored || !IsFrameCondensed()) && thickness > 0)
-    thickness += NonClientExtraTopThickness();
-  return thickness;
+void OpaqueFrameView::InvalidateCaptionButtons() {
+  UpdateCaptionButtonPlaceholderContainerBackground();
+  LayoutWindowControlsOverlay();
+  InvalidateLayout();
 }
 
 gfx::Rect OpaqueFrameView::GetBoundsForClientView() const {
@@ -241,30 +153,6 @@ int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
   return FramelessView::NonClientHitTest(point);
 }
 
-// views::View:
-void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
-  if (!window()->IsWindowControlsOverlayEnabled())
-    return;
-
-  if (frame()->IsFullscreen())
-    return;
-
-  const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color = window()->overlay_button_color();
-  SkColor frame_color =
-      symbol_color == SkColor() ? GetFrameColor() : symbol_color;
-
-  for (views::Button* button :
-       {minimize_button_, maximize_button_, restore_button_, close_button_}) {
-    DCHECK_EQ(std::string(views::FrameCaptionButton::kViewClassName),
-              button->GetClassName());
-    views::FrameCaptionButton* frame_caption_button =
-        static_cast<views::FrameCaptionButton*>(button);
-    frame_caption_button->SetPaintAsActive(active);
-    frame_caption_button->SetBackgroundColor(frame_color);
-  }
-}
-
 void OpaqueFrameView::ResetWindowControls() {
   NonClientFrameView::ResetWindowControls();
 
@@ -309,27 +197,40 @@ void OpaqueFrameView::Layout(PassKey) {
   LayoutWindowControlsOverlay();
 }
 
-OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding() const {
-  return GetTopAreaPadding(!leading_buttons_.empty(),
-                           !trailing_buttons_.empty());
+void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
+  if (!window()->IsWindowControlsOverlayEnabled())
+    return;
+
+  if (frame()->IsFullscreen())
+    return;
+
+  const bool active = ShouldPaintAsActive();
+  const SkColor symbol_color = window()->overlay_button_color();
+  SkColor frame_color =
+      symbol_color == SkColor() ? GetFrameColor() : symbol_color;
+
+  for (views::Button* button :
+       {minimize_button_, maximize_button_, restore_button_, close_button_}) {
+    DCHECK_EQ(std::string(views::FrameCaptionButton::kViewClassName),
+              button->GetClassName());
+    views::FrameCaptionButton* frame_caption_button =
+        static_cast<views::FrameCaptionButton*>(button);
+    frame_caption_button->SetPaintAsActive(active);
+    frame_caption_button->SetBackgroundColor(frame_color);
+  }
 }
 
-void OpaqueFrameView::LayoutWindowControlsOverlay() {
-  int overlay_height = window()->titlebar_overlay_height();
-  if (overlay_height == 0) {
-    // Accounting for the 1 pixel margin at the top of the button container
-    overlay_height =
-        window()->IsMaximized()
-            ? caption_button_placeholder_container_->size().height()
-            : caption_button_placeholder_container_->size().height() + 1;
-  }
-  int overlay_width = caption_button_placeholder_container_->size().width();
-  int bounding_rect_width = width() - overlay_width;
-  auto bounding_rect =
-      GetMirroredRect(gfx::Rect(0, 0, bounding_rect_width, overlay_height));
+void OpaqueFrameView::PaintAsActiveChanged() {
+  UpdateCaptionButtonPlaceholderContainerBackground();
+}
 
-  window()->SetWindowControlsOverlayRect(bounding_rect);
-  window()->NotifyLayoutWindowControlsOverlay();
+void OpaqueFrameView::UpdateCaptionButtonPlaceholderContainerBackground() {
+  if (caption_button_placeholder_container_) {
+    const SkColor obc = window()->overlay_button_color();
+    const SkColor bg_color = obc == SkColor() ? GetFrameColor() : obc;
+    caption_button_placeholder_container_->SetBackground(
+        views::CreateSolidBackground(bg_color));
+  }
 }
 
 void OpaqueFrameView::LayoutWindowControls() {
@@ -351,6 +252,134 @@ void OpaqueFrameView::LayoutWindowControls() {
 
   for (const auto& button_id : buttons_not_shown)
     HideButton(button_id);
+}
+
+void OpaqueFrameView::LayoutWindowControlsOverlay() {
+  int overlay_height = window()->titlebar_overlay_height();
+  if (overlay_height == 0) {
+    // Accounting for the 1 pixel margin at the top of the button container
+    overlay_height =
+        window()->IsMaximized()
+            ? caption_button_placeholder_container_->size().height()
+            : caption_button_placeholder_container_->size().height() + 1;
+  }
+  int overlay_width = caption_button_placeholder_container_->size().width();
+  int bounding_rect_width = width() - overlay_width;
+  auto bounding_rect =
+      GetMirroredRect(gfx::Rect(0, 0, bounding_rect_width, overlay_height));
+
+  window()->SetWindowControlsOverlayRect(bounding_rect);
+  window()->NotifyLayoutWindowControlsOverlay();
+}
+
+views::Button* OpaqueFrameView::CreateButton(
+    ViewID view_id,
+    int accessibility_string_id,
+    views::CaptionButtonIcon icon_type,
+    int ht_component,
+    const gfx::VectorIcon& icon_image,
+    views::Button::PressedCallback callback) {
+  views::FrameCaptionButton* button = new views::FrameCaptionButton(
+      views::Button::PressedCallback(), icon_type, ht_component);
+  button->SetImage(button->GetIcon(), views::FrameCaptionButton::Animate::kNo,
+                   icon_image);
+
+  button->SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
+  button->SetCallback(std::move(callback));
+  button->SetAccessibleName(l10n_util::GetStringUTF16(accessibility_string_id));
+  button->SetID(view_id);
+  AddChildView(button);
+
+  button->SetPaintToLayer();
+  button->layer()->SetFillsBoundsOpaquely(false);
+
+  return button;
+}
+
+gfx::Insets OpaqueFrameView::FrameBorderInsets(bool restored) const {
+  return !restored && IsFrameCondensed() ? gfx::Insets()
+                                         : RestoredFrameBorderInsets();
+}
+
+int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {
+  int thickness = FrameBorderInsets(restored).top();
+  if ((restored || !IsFrameCondensed()) && thickness > 0)
+    thickness += NonClientExtraTopThickness();
+  return thickness;
+}
+
+OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding(
+    bool has_leading_buttons,
+    bool has_trailing_buttons) const {
+  const auto padding = FrameBorderInsets(false);
+  return TopAreaPadding{padding.left(), padding.right()};
+}
+
+bool OpaqueFrameView::IsFrameCondensed() const {
+  return frame()->IsMaximized() || frame()->IsFullscreen();
+}
+
+gfx::Insets OpaqueFrameView::RestoredFrameBorderInsets() const {
+  return gfx::Insets(kFrameBorderThickness);
+}
+
+gfx::Insets OpaqueFrameView::RestoredFrameEdgeInsets() const {
+  return gfx::Insets::TLBR(kTopFrameEdgeThickness, kSideFrameEdgeThickness,
+                           kSideFrameEdgeThickness, kSideFrameEdgeThickness);
+}
+
+int OpaqueFrameView::NonClientExtraTopThickness() const {
+  return kNonClientExtraTopThickness;
+}
+
+int OpaqueFrameView::NonClientTopHeight(bool restored) const {
+  // Adding 2px of vertical padding puts at least 1 px of space on the top and
+  // bottom of the element.
+  constexpr int kVerticalPadding = 2;
+  const int icon_height = GetIconSize() + kVerticalPadding;
+  const int caption_button_height = DefaultCaptionButtonY(restored) +
+                                    kCaptionButtonHeight +
+                                    kCaptionButtonBottomPadding;
+
+  int custom_height = window()->titlebar_overlay_height();
+  return custom_height ? custom_height
+                       : std::max(icon_height, caption_button_height) +
+                             kContentEdgeShadowThickness;
+}
+
+int OpaqueFrameView::CaptionButtonY(views::FrameButton button_id,
+                                    bool restored) const {
+  return DefaultCaptionButtonY(restored);
+}
+
+int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
+  // Maximized buttons start at window top, since the window has no border. This
+  // offset is for the image (the actual clickable bounds extend all the way to
+  // the top to take Fitts' Law into account).
+  const bool start_at_top_of_frame = !restored && IsFrameCondensed();
+  return start_at_top_of_frame
+             ? FrameBorderInsets(false).top()
+             : views::NonClientFrameView::kFrameShadowThickness;
+}
+
+gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {
+  return RestoredFrameEdgeInsets();
+}
+
+int OpaqueFrameView::GetIconSize() const {
+  // The icon never shrinks below 16 px on a side.
+  const int kIconMinimumSize = 16;
+  return std::max(gfx::FontList().GetHeight(), kIconMinimumSize);
+}
+
+OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding() const {
+  return GetTopAreaPadding(!leading_buttons_.empty(),
+                           !trailing_buttons_.empty());
+}
+
+SkColor OpaqueFrameView::GetFrameColor() const {
+  return GetColorProvider()->GetColor(
+      ShouldPaintAsActive() ? ui::kColorFrameActive : ui::kColorFrameInactive);
 }
 
 void OpaqueFrameView::ConfigureButton(views::FrameButton button_id,
@@ -406,11 +435,6 @@ void OpaqueFrameView::HideButton(views::FrameButton button_id) {
       close_button_->SetVisible(false);
       break;
   }
-}
-
-int OpaqueFrameView::GetTopAreaHeight() const {
-  int top_height = NonClientTopHeight(false);
-  return top_height;
 }
 
 void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
@@ -500,6 +524,11 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
   }
 }
 
+int OpaqueFrameView::GetTopAreaHeight() const {
+  int top_height = NonClientTopHeight(false);
+  return top_height;
+}
+
 int OpaqueFrameView::GetWindowCaptionSpacing(views::FrameButton button_id,
                                              bool leading_spacing,
                                              bool is_leading_button) const {
@@ -514,36 +543,6 @@ int OpaqueFrameView::GetWindowCaptionSpacing(views::FrameButton button_id,
     }
   }
   return 0;
-}
-
-int OpaqueFrameView::GetIconSize() const {
-  // The icon never shrinks below 16 px on a side.
-  const int kIconMinimumSize = 16;
-  return std::max(gfx::FontList().GetHeight(), kIconMinimumSize);
-}
-
-void OpaqueFrameView::PaintAsActiveChanged() {
-  UpdateCaptionButtonPlaceholderContainerBackground();
-}
-
-SkColor OpaqueFrameView::GetFrameColor() const {
-  return GetColorProvider()->GetColor(
-      ShouldPaintAsActive() ? ui::kColorFrameActive : ui::kColorFrameInactive);
-}
-
-void OpaqueFrameView::InvalidateCaptionButtons() {
-  UpdateCaptionButtonPlaceholderContainerBackground();
-  LayoutWindowControlsOverlay();
-  InvalidateLayout();
-}
-
-void OpaqueFrameView::UpdateCaptionButtonPlaceholderContainerBackground() {
-  if (caption_button_placeholder_container_) {
-    const SkColor obc = window()->overlay_button_color();
-    const SkColor bg_color = obc == SkColor() ? GetFrameColor() : obc;
-    caption_button_placeholder_container_->SetBackground(
-        views::CreateSolidBackground(bg_color));
-  }
 }
 
 BEGIN_METADATA(OpaqueFrameView)
