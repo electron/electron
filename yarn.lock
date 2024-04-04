@@ -199,10 +199,10 @@
     "@octokit/auth-app" "^4.0.13"
     "@octokit/rest" "^19.0.11"
 
-"@electron/lint-roller@^1.9.0":
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.10.0.tgz#278dfb285018869faabd5c3f616c64da7f2b26c1"
-  integrity sha512-dDJDy5MANWNIxv7OqQ0NwPzqwMmgTFYtjR/KKeEEdCQj1k21TT61+Zjdsm+IKbA2LSPujpujsyGKUQtb4oLLCA==
+"@electron/lint-roller@^1.12.1":
+  version "1.12.1"
+  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.12.1.tgz#3152b9a68815b2ab51cc5a4d462ae6769d5052ce"
+  integrity sha512-TGgVcHUAooM9/dV3iJTxhmKl35x/gzStsClz2/LWtBQZ59cRK+0YwWF5HWhtydGFIpOLEQGzCvUrty5zZLyd4w==
   dependencies:
     "@dsanders11/vscode-markdown-languageservice" "^0.3.0"
     balanced-match "^2.0.0"

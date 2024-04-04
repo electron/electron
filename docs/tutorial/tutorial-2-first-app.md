@@ -234,7 +234,7 @@ Notification) whereas camelCase modules are not instantiable (e.g. app, ipcRende
 <details><summary>Typed import aliases</summary>
 
 For better type checking when writing TypeScript code, you can choose to import
-main process modules from <code>electron/main</code>.
+main process modules from `electron/main`.
 
 ```js
 const { app, BrowserWindow } = require('electron/main')
