@@ -1494,10 +1494,10 @@ void ElectronBrowserClient::
                           render_frame_host.GetGlobalId()));
 #endif
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  associated_registry.AddInterface<pdf::mojom::PdfService>(base::BindRepeating(
+  associated_registry.AddInterface<pdf::mojom::PdfHost>(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<pdf::mojom::PdfService> receiver) {
-        pdf::PDFDocumentHelper::BindPdfService(
+         mojo::PendingAssociatedReceiver<pdf::mojom::PdfHost> receiver) {
+        pdf::PDFDocumentHelper::BindPdfHost(
             std::move(receiver), render_frame_host,
             std::make_unique<ElectronPDFDocumentHelperClient>());
       },
