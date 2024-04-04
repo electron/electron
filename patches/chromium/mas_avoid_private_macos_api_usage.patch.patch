@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5cf6798c0139e4ca370f1b1d954fe98acec7629c..fe510283b2b9b874c02979c0de144b75f6288efa 100644
+index 90982ca16e4c2961998fefcb3e9f871d8babc699..0eb42a5ab34fd86929fdb6ebf9cf2ad50ddba1c7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1065,6 +1065,7 @@ component("base") {
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a7c881ff0dfea942df18b7c77e2ad4c53bebc0e5..ba11d8cc668b986bc7819b832902f2eb8fba1f35 100644
+index 15280fece83740994d4650a6540e4a74dde50a15..07163e641e0f317cdbb5656c318b2d644d71fb70 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -494,6 +494,7 @@ static_library("test_support") {
+@@ -496,6 +496,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index a7c881ff0dfea942df18b7c77e2ad4c53bebc0e5..ba11d8cc668b986bc7819b832902f2eb
    ]
  
    public_deps = [
-@@ -1100,6 +1101,7 @@ static_library("browsertest_support") {
+@@ -1102,6 +1103,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index a7c881ff0dfea942df18b7c77e2ad4c53bebc0e5..ba11d8cc668b986bc7819b832902f2eb
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1715,6 +1717,7 @@ test("content_browsertests") {
+@@ -1717,6 +1719,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index a7c881ff0dfea942df18b7c77e2ad4c53bebc0e5..ba11d8cc668b986bc7819b832902f2eb
  
    public_deps = [
      ":test_interfaces",
-@@ -2944,6 +2947,7 @@ test("content_unittests") {
+@@ -2946,6 +2949,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
