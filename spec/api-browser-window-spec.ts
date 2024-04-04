@@ -3138,7 +3138,7 @@ describe('BrowserWindow module', () => {
       ipcMain.removeAllListeners('geometrychange');
     });
 
-    it('does not crash when an invalid titleBarStyle was initially set', () => {
+    it('throws when an invalid titleBarStyle is initially set', () => {
       const win = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -3156,7 +3156,7 @@ describe('BrowserWindow module', () => {
         win.setTitleBarOverlay({
           color: '#000000'
         });
-      }).to.not.throw();
+      }).to.throw('Titlebar overlay is not enabled');
     });
 
     it('correctly updates the height of the overlay', async () => {

@@ -95,13 +95,11 @@ void FramelessView::ResetWindowControls() {}
 
 void FramelessView::UpdateWindowIcon() {}
 
+void FramelessView::InvalidateCaptionButtons() {}
+
 void FramelessView::UpdateWindowTitle() {}
 
 void FramelessView::SizeConstraintsChanged() {}
-
-bool FramelessView::ShouldCustomDrawSystemTitlebar() const {
-  return window()->IsWindowControlsOverlayEnabled();
-}
 
 views::View* FramelessView::TargetForRect(views::View* root,
                                           const gfx::Rect& rect) {

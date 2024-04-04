@@ -170,10 +170,6 @@ class NativeWindowViews : public NativeWindow,
   void UpdateThickFrame();
 #endif
 
-  bool IsWindowControlsOverlayEnabled() const {
-    return (title_bar_style_ == NativeWindowViews::TitleBarStyle::kHidden) &&
-           titlebar_overlay_;
-  }
   SkColor overlay_button_color() const { return overlay_button_color_; }
   void set_overlay_button_color(SkColor color) {
     overlay_button_color_ = color;

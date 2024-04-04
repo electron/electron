@@ -80,14 +80,14 @@
   * `followWindow` - The backdrop should automatically appear active when the window is active, and inactive when it is not. This is the default.
   * `active` - The backdrop should always appear active.
   * `inactive` - The backdrop should always appear inactive.
-* `titleBarStyle` string (optional) _macOS_ _Windows_ - The style of window title bar.
+* `titleBarStyle` string (optional) - The style of window title bar.
   Default is `default`. Possible values are:
   * `default` - Results in the standard title bar for macOS or Windows respectively.
   * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows and Linux, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
-  * `hiddenInset` _macOS_ - Only on macOS, results in a hidden title bar
+  * `hiddenInset` _macOS_ - Results in a hidden title bar
     with an alternative look where the traffic light buttons are slightly
     more inset from the window edge.
-  * `customButtonsOnHover` _macOS_ - Only on macOS, results in a hidden
+  * `customButtonsOnHover` _macOS_ -Results in a hidden
     title bar and a full size content window, the traffic light buttons will
     display when being hovered over in the top left of the window.
     **Note:** This option is currently experimental.

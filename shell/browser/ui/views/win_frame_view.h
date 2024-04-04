@@ -26,15 +26,13 @@ class WinFrameView : public FramelessView {
   ~WinFrameView() override;
 
   void Init(NativeWindowViews* window, views::Widget* frame) override;
+  void InvalidateCaptionButtons() override;
 
   // Alpha to use for features in the titlebar (the window title and caption
   // buttons) when the window is inactive. They are opaque when active.
   static constexpr SkAlpha kInactiveTitlebarFeatureAlpha = 0x66;
 
   SkColor GetReadableFeatureColor(SkColor background_color);
-
-  // Tells the NonClientView to invalidate the WinFrameView's caption buttons.
-  void InvalidateCaptionButtons();
 
   // views::NonClientFrameView:
   gfx::Rect GetWindowBoundsForClientBounds(

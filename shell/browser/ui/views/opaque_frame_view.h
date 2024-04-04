@@ -42,8 +42,10 @@ class OpaqueFrameView : public FramelessView {
   OpaqueFrameView();
   ~OpaqueFrameView() override;
 
+  // FramelessView:
   void Init(NativeWindowViews* window, views::Widget* frame) override;
   int ResizingBorderHitTest(const gfx::Point& point) override;
+  void InvalidateCaptionButtons() override;
 
   // views::NonClientFrameView:
   gfx::Rect GetBoundsForClientView() const override;
@@ -56,9 +58,6 @@ class OpaqueFrameView : public FramelessView {
   // views::View:
   void Layout(PassKey) override;
   void OnPaint(gfx::Canvas* canvas) override;
-
-  // Needed by BrowserWindow::SetTitleBarOverlay.
-  void InvalidateCaptionButtons();
 
  private:
   enum ButtonAlignment { ALIGN_LEADING, ALIGN_TRAILING };

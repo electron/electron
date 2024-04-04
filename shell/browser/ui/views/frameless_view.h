@@ -33,6 +33,10 @@ class FramelessView : public views::NonClientFrameView {
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
 
+  // Tells the NonClientView to invalidate caption buttons
+  // and forces a re-layout and re-paint.
+  virtual void InvalidateCaptionButtons();
+
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }
 
@@ -41,8 +45,6 @@ class FramelessView : public views::NonClientFrameView {
   // custom resize inset.
   int ResizingBorderHitTestImpl(const gfx::Point& point,
                                 const gfx::Insets& resize_border);
-
-  bool ShouldCustomDrawSystemTitlebar() const;
 
   // views::NonClientFrameView:
   gfx::Rect GetBoundsForClientView() const override;
