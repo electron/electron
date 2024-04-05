@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 90982ca16e4c2961998fefcb3e9f871d8babc699..0eb42a5ab34fd86929fdb6ebf9cf2ad50ddba1c7 100644
+index 2ac5bd880dff6d2c0be18cff26082856702adefe..4275970719462c2bdd086b531d55bf155b08c452 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1065,6 +1065,7 @@ component("base") {
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 15280fece83740994d4650a6540e4a74dde50a15..07163e641e0f317cdbb5656c318b2d644d71fb70 100644
+index df2c7cd983919bf146d67f14f92119182195875c..1e2cab2edf9b4b0d42994ccea3400d3236cd5598 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -496,6 +496,7 @@ static_library("test_support") {
+@@ -494,6 +494,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index 15280fece83740994d4650a6540e4a74dde50a15..07163e641e0f317cdbb5656c318b2d64
    ]
  
    public_deps = [
-@@ -1102,6 +1103,7 @@ static_library("browsertest_support") {
+@@ -1100,6 +1101,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 15280fece83740994d4650a6540e4a74dde50a15..07163e641e0f317cdbb5656c318b2d64
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1717,6 +1719,7 @@ test("content_browsertests") {
+@@ -1715,6 +1717,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 15280fece83740994d4650a6540e4a74dde50a15..07163e641e0f317cdbb5656c318b2d64
  
    public_deps = [
      ":test_interfaces",
-@@ -2946,6 +2949,7 @@ test("content_unittests") {
+@@ -2944,6 +2947,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -843,7 +843,7 @@ index 90e093cd2d499ba0f37f3246bab288c758b51e19..6027134a4de53e6fe39fdbfdb67885e0
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 25dfcca1ba390548599a4a3667a2ed6943834392..23a0960c13448aa6c9f413f00c833753d51aab80 100644
+index 960841f9020c7715f32e39a857751cb25b25b38b..3f364bef6f39e0c7aaf3afe704c941d3dc2cdd0b 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -34,19 +34,23 @@
@@ -1517,7 +1517,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 8fcf80911db2a84ed9f1f8e81ad0e3398719bba2..007d54e898d11b96356ef81cdf734304e98233fb 100644
+index 96f0d3a75a639a69eab6ef12f27c7b23df99d508..d89c075498c060379d42f6089cddb41999f7220e 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -69,6 +69,10 @@ component("display") {
@@ -1554,7 +1554,7 @@ index a771c1c03fd1afe3a5e563b4421721a5ddc2eb93..a6cbdfcbeff30508d921d4637aac543d
    // Query the display's refresh rate.
    {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 3702eefa91a9dd22752b3d06d531885928a4d7a6..a78fd474d63d709a703f9c530c687305ddebcea0 100644
+index 2ecae316ea10f9bb57562c930fe2736934189557..854ca4d5abd5f9878febedf5d473dbd14541e0d7 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
