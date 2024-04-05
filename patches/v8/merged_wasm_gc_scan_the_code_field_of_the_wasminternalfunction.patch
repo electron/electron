@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Mon, 18 Mar 2024 15:25:15 +0100
+Subject: Merged: [wasm][gc] Scan the code field of the WasmInternalFunction
+
+The code field in the WasmInternalFunction is a code pointer since
+https://crrev.com/c/5110559, so it has to be scanned explicitly.
+
+Bug: 329130358
+(cherry picked from commit b93975a48c722c2e5fe9b39437738eb2e23dac74)
+
+Change-Id: I0795d2188a8af3480c513d1dbaccfcef1da04473
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5410311
+Reviewed-by: Deepti Gandluri <gdeepti@chromium.org>
+Commit-Queue: Deepti Gandluri <gdeepti@chromium.org>
+Auto-Submit: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.2@{#54}
+Cr-Branched-From: 6eb5a9616aa6f8c705217aeb7c7ab8c037a2f676-refs/heads/12.2.281@{#1}
+Cr-Branched-From: 44cf56d850167c6988522f8981730462abc04bcc-refs/heads/main@{#91934}
+
+diff --git a/src/objects/objects-body-descriptors-inl.h b/src/objects/objects-body-descriptors-inl.h
+index 4041a10b3d0e22fa95f263528f331dad1eadaf8b..e9ecda50718a85847ad1205bdcf2f275208fbc12 100644
+--- a/src/objects/objects-body-descriptors-inl.h
++++ b/src/objects/objects-body-descriptors-inl.h
+@@ -791,6 +791,7 @@ class WasmInternalFunction::BodyDescriptor final : public BodyDescriptorBase {
+     v->VisitExternalPointer(
+         obj, obj->RawExternalPointerField(kCallTargetOffset,
+                                           kWasmInternalFunctionCallTargetTag));
++    IterateCodePointer(obj, kCodeOffset, v, IndirectPointerMode::kStrong);
+   }
+ 
+   static inline int SizeOf(Tagged<Map> map, Tagged<HeapObject> object) {
+diff --git a/test/mjsunit/regress/wasm/regress-329130358.js b/test/mjsunit/regress/wasm/regress-329130358.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d5231768989d9c709da7102bdd6be5702a89f2f8
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-329130358.js
+@@ -0,0 +1,27 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++// Flags: --expose-gc --wasm-wrapper-tiering-budget=1 --experimental-wasm-type-reflection
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++const type = builder.addType(kSig_i_i);
++const global = builder.addImportedGlobal('m', 'val', kWasmAnyFunc);
++
++builder.addFunction('main', type)
++    .addBody([
++      kExprLocalGet, 0, kExprGlobalGet, global, kGCPrefix, kExprRefCast, type,
++      kExprCallRef, type
++    ])
++    .exportFunc();
++
++function foo() {
++  gc();
++}
++const func =
++    new WebAssembly.Function({parameters: ['i32'], results: ['i32']}, foo);
++
++let instance = builder.instantiate({m: {val: func}});
++instance.exports.main(3);
++instance.exports.main(3);
