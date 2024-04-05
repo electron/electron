@@ -9,10 +9,10 @@ View these docs in other languages on our [Crowdin](https://crowdin.com/project/
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
-[Chromium](https://www.chromium.org) and is used by the [Visual Studio
+[Chromium](https://www.chromium.org) and is used by [Visual Studio
 Code](https://github.com/Microsoft/vscode/) and many other [apps](https://electronjs.org/apps).
 
-Follow [@electronjs](https://twitter.com/electronjs) on Twitter for important
+Follow [@electronjs](https://twitter.com/electronjs) on X (formerly known as Twitter) for important
 announcements.
 
 This project adheres to the Contributor Covenant
@@ -95,7 +95,7 @@ See the [Advanced Installation Instructions](https://www.electronjs.org/docs/lat
 
 ## Documentation translations
 
-We crowdsource translations for our documentation via [Crowdin](https://crowdin.com/project/electron).
+We crowdsource translations for our documentation via [Crowdin](https://crowdin.com/project/electron?_gl=1*1n5ijv*_up*MQ..*_ga*OTI0OTM5MjIxLjE3MTIzNTk4NTc.*_ga_SRNRQ29Q3E*MTcxMjM1OTg1Ny4xLjAuMTcxMjM1OTg1Ny4wLjAuMTA2NzM0NzEyNQ..).
 We currently accept translations for Chinese (Simplified), French, German, Japanese, Portuguese,
 Russian, and Spanish.
 
