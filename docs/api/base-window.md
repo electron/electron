@@ -1374,13 +1374,12 @@ removed in future Electron releases.
 
 * `options` Object
   * `color` String (optional) - The CSS color of the Window Controls Overlay when enabled.
-  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
+  * `symbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels.
 
-On a Window with Window Controls Overlay already enabled, this method updates
-the style of the title bar overlay.
+On a Window with Window Controls Overlay already enabled, this method updates the style of the title bar overlay.
 
-On Linux, the `symbolColor` is automatically calculated to have minimum accessible contrast to the `color`.
+On Linux, the `symbolColor` is automatically calculated to have minimum accessible contrast to the `color` if not explicitly set.
 
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc

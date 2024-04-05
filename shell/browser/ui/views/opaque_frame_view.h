@@ -70,6 +70,7 @@ class OpaqueFrameView : public FramelessView {
   void PaintAsActiveChanged();
 
   void UpdateCaptionButtonPlaceholderContainerBackground();
+  void UpdateFrameCaptionButtons();
   void LayoutWindowControls();
   void LayoutWindowControlsOverlay();
 
