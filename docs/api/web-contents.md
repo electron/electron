@@ -2206,6 +2206,10 @@ A `Integer` representing the unique ID of this WebContents. Each ID is unique am
 
 A [`Session`](session.md) used by this webContents.
 
+#### `contents.navigationHistory` _Readonly_
+
+A [`NavigationHistory`](navigation-history.md) used by this webContents.
+
 #### `contents.hostWebContents` _Readonly_
 
 A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
