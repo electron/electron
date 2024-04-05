@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Fri, 22 Mar 2024 17:55:04 +0100
+Subject: Merged: [runtime] Recreate enum cache on map update if any previous
+ map had one
+
+If any previous map in the transition tree had an enum cache, then we
+recreate one when updating the map.
+
+Bug: 330760873
+(cherry picked from commit 807cf7d0b7d96212c98ed2119e07f9b2c6a23f61)
+
+Change-Id: Ia9ea4cf17fef60166a0c037318eb539866aac37a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5401859
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.2@{#52}
+Cr-Branched-From: 6eb5a9616aa6f8c705217aeb7c7ab8c037a2f676-refs/heads/12.2.281@{#1}
+Cr-Branched-From: 44cf56d850167c6988522f8981730462abc04bcc-refs/heads/main@{#91934}
+
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index 613a4921637b113121e06a470ef996974577f58b..1d649373274bd41c4346f3955efde8583fb923fc 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -1038,14 +1038,21 @@ MapUpdater::State MapUpdater::ConstructNewMap() {
+   Handle<Map> new_map =
+       Map::AddMissingTransitions(isolate_, split_map, new_descriptors);
+ 
++  bool had_any_enum_cache =
++      split_map->instance_descriptors(isolate_)
++              ->enum_cache()
++              ->keys()
++              ->length() > 0 ||
++      old_descriptors_->enum_cache()->keys()->length() > 0;
++
+   // Deprecated part of the transition tree is no longer reachable, so replace
+   // current instance descriptors in the "survived" part of the tree with
+   // the new descriptors to maintain descriptors sharing invariant.
+   split_map->ReplaceDescriptors(isolate_, *new_descriptors);
+ 
+-  // If the old descriptors had an enum cache, make sure the new ones do too.
+-  if (old_descriptors_->enum_cache()->keys()->length() > 0 &&
+-      new_map->NumberOfEnumerableProperties() > 0) {
++  // If the old descriptors had an enum cache (or if {split_map}'s descriptors
++  // had one), make sure the new ones do too.
++  if (had_any_enum_cache && new_map->NumberOfEnumerableProperties() > 0) {
+     FastKeyAccumulator::InitializeFastPropertyEnumCache(
+         isolate_, new_map, new_map->NumberOfEnumerableProperties());
+   }
