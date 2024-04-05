@@ -17,7 +17,7 @@ following properties:
     method.
   * `url` string (optional) - The request URL. Must be provided in the absolute
     form with the protocol scheme specified as http or https.
-  * `headers` Record<string, string | string[]> (optional) - Headers to be sent
+  * `headers` Record\<string, string | string[]\> (optional) - Headers to be sent
     with the request.
   * `session` Session (optional) - The [`Session`](session.md) instance with
     which the request is associated.
