@@ -5,7 +5,7 @@
 [![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.gg/electronjs)
 
 :memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
-View these docs in other languages on our [Crowdin](https://crowdin.com/project/electron) project.
+View these docs in other languages on our [Crowdin](https://crowdin.com/project/electron?_gl=1*1n5ijv*_up*MQ..*_ga*OTI0OTM5MjIxLjE3MTIzNTk4NTc.*_ga_SRNRQ29Q3E*MTcxMjM1OTg1Ny4xLjAuMTcxMjM1OTg1Ny4wLjAuMTA2NzM0NzEyNQ..) project.
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
