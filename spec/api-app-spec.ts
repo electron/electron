@@ -1442,6 +1442,7 @@ describe('app module', () => {
 
         types.push(entry.type);
         expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number');
+        expect(entry.cpu).to.have.ownProperty('cumulativeCPUUsage').that.is.a('number');
         expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number');
 
         expect(entry.memory).to.have.property('workingSetSize').that.is.greaterThan(0);
