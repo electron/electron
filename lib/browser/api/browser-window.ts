@@ -70,9 +70,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
   });
 };
 
-const isBrowserWindow = (win: any) => {
-  return win && win.constructor.name === 'BrowserWindow';
-};
+const isBrowserWindow = (win: any) => win instanceof BrowserWindow;
 
 BrowserWindow.fromId = (id: number) => {
   const win = BaseWindow.fromId(id);

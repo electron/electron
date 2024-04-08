@@ -2733,6 +2733,54 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('BrowserWindow.getAllWindows', () => {
+    afterEach(closeAllWindows);
+
+    it('returns an array of all created BrowserWindow instances', () => {
+      const a = new BrowserWindow({ show: false });
+      const b = new BrowserWindow({ show: false });
+      const c = new BrowserWindow({ show: false });
+
+      const windows = BrowserWindow.getAllWindows();
+      expect(windows).to.have.lengthOf(3);
+      expect(windows.map((w) => w.id)).to.include.members([a.id, b.id, c.id]);
+    });
+
+    it('does not return destroyed windows', () => {
+      const a = new BrowserWindow({ show: false });
+      const b = new BrowserWindow({ show: false });
+      const c = new BrowserWindow({ show: false });
+
+      b.destroy();
+
+      const windows = BrowserWindow.getAllWindows();
+      expect(windows).to.have.lengthOf(2);
+      expect(windows.map((w) => w.id)).to.include.members([a.id, c.id]);
+    });
+
+    it('returns subclass instances of BrowserWindow', () => {
+      class SubclassWindow extends BrowserWindow {
+        mood: string = 'happy';
+        constructor (options: any) {
+          super(options);
+          this.mood = options.mood;
+        }
+      }
+
+      const a = new BrowserWindow({ show: false });
+      const b = new BrowserWindow({ show: false });
+      const c = new SubclassWindow({ show: false, mood: 'excited' });
+
+      const windows = BrowserWindow.getAllWindows();
+      expect(windows).to.have.lengthOf(3);
+      expect(windows.map((w) => w.id)).to.include.members([a.id, b.id, c.id]);
+
+      const scw = windows.find((w) => w.id === c.id) as SubclassWindow;
+      expect(scw).to.be.an.instanceOf(SubclassWindow);
+      expect(scw.mood).to.equal('excited');
+    });
+  });
+
   describe('BrowserWindow.fromId(id)', () => {
     afterEach(closeAllWindows);
     it('returns the window with id', () => {
