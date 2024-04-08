@@ -25,6 +25,7 @@
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/common/input/synthetic_gesture.h"  // nogncheck
+#include "content/common/input/synthetic_gesture_target.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
