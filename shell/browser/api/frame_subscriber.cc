@@ -42,6 +42,7 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
 
   // Create and configure the video capturer.
   gfx::Size size = GetRenderViewSize();
+  DCHECK(!size.IsEmpty());
   video_capturer_ = host_->GetView()->CreateVideoCapturer();
   video_capturer_->SetResolutionConstraints(size, size, true);
   video_capturer_->SetAutoThrottlingEnabled(false);
