@@ -1,40 +1,32 @@
 name: Build MacOS
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      macos-publish-arch-limit:
-        description: 'The allowed arches for macos-publish'
-        type: choice
-        default: all
-        options: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
-      upload-to-storage:
-        description: 'True to print to STDOUT'
-        required: true
-        default: '0'
+      environment:
+        required: false
         type: string
-      run-macos-publish:
-        description: 'Run the publish jobs vs just the build jobs'
-        type: boolean
-        default: false
+        default: ''
 
 env:
-  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
-  IS_RELEASE: false
-  # GENERATE_SYMBOLS: true only on release builds
-  GENERATE_SYMBOLS: false
-  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
-  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
-  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
-  ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  # TODO: this should be set to the correct GN_CONFIG for the build type.
-  GN_CONFIG: //electron/build/args/testing.gn
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
+  IS_RELEASE: false
+  GN_CONFIG: //electron/build/args/testing.gn
+  STRIP_BINARIES: false
+  GENERATE_SYMBOLS: false
+  UPLOAD_TO_STORAGE: '0'
 
 jobs:
   checkout:
     runs-on: LargeLinuxRunner
+    environment: ${{ inputs.environment }}
+    env:
+      AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+      AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+      AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@v4
@@ -150,6 +142,12 @@ jobs:
   build:
     runs-on: macos-13-xlarge
     needs: checkout
+    environment: ${{ inputs.environment }}
+    env:
+      AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+      AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+      AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Load Build Tools
       run: |
@@ -358,10 +356,48 @@ jobs:
         export BUILD_PATH="$(pwd)/out/Default"
         e build electron:licenses
         e build electron:electron_version_file
-        electron/script/zip-symbols.py -b $BUILD_PATH
-      # TODO(vertedinde): handle creating ffmpeg and hunspell for release builds
-      # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
-      # tp ensure we don't break anything, but we may be able to improve that.
+        if [ "$IS_RELEASE" == "true" ]; then
+          DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
+        else
+          electron/script/zip-symbols.py -b $BUILD_PATH
+        fi
+    # Only generate ffmpeg, hunspell, and typescript definitions for release builds
+    - name: Generate ffmpeg
+      run: |
+        if [ "$IS_RELEASE" == "true" ]; then
+          cd src
+          gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
+          autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+        fi
+    - name: Generate Hunspell Dictionaries
+      run: |
+        if [ "$IS_RELEASE" == "true" ]; then
+          cd src
+          if [ "$SKIP_DIST_ZIP" != "1" ]; then
+            autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+          fi
+        fi
+    - name: Generate TypeScript Definitions
+      run: |
+        if [ "$IS_RELEASE" == "true" ]; then
+          cd src/electron
+          node script/yarn create-typescript-definitions
+        fi
+    # TODO(vertedinde): Don't actually upload the dist to Azure/GH yet,
+    # this should be one of the last things we turn on
+    - name: Publish Electron Dist
+      run: |
+        rm -rf src/out/Default/obj
+        cd src/electron
+        if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
+          echo 'Uploading Electron release distribution to Azure'
+          # script/release/uploaders/upload.py --verbose --upload_to_storage
+        else
+          echo 'Uploading Electron release distribution to GitHub releases'
+          # script/release/uploaders/upload.py --verbose
+        fi
+    # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
+    # tp ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts
@@ -450,7 +486,11 @@ jobs:
         export BUILD_PATH="$(pwd)/out/Default"
         e build electron:licenses
         e build electron:electron_version_file
-        electron/script/zip-symbols.py -b $BUILD_PATH
+        if [ "$IS_RELEASE" == "true" ]; then
+          DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
+        else
+          electron/script/zip-symbols.py -b $BUILD_PATH
+        fi
     - name: Move all Generated Artifacts to Upload Folder (mas)
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts
@@ -479,6 +519,7 @@ jobs:
           src/v8/tools/builtins-pgo
         key: ${{ runner.os }}-build-artifacts-mas-${{ github.sha }}
   test:
+    # if: ${{ env.IS_RELEASE != true }} TODO FIX THIS
     runs-on: macos-13-xlarge
     needs: build
     strategy:
