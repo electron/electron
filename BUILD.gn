@@ -700,6 +700,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
+      "shell/browser/printing/printing_utils.cc",
+      "shell/browser/printing/printing_utils.h",
       "shell/renderer/printing/print_render_frame_helper_delegate.cc",
       "shell/renderer/printing/print_render_frame_helper_delegate.h",
     ]
