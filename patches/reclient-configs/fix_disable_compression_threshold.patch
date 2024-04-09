@@ -1,0 +1,17 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 28 Dec 2023 16:13:18 +1300
+Subject: fix: disable compression_threshold
+
+This appears to cause issues with nginx ingress for RBE endpoints, disable
+it till we can figure out why.
+
+diff --git a/reproxy.cfg b/reproxy.cfg
+index 4325d36cbfcb6d81eb0f8dc7ab7cf8e8857d608c..2390a73f4674a591ef833d10697e4aaf3894c011 100644
+--- a/reproxy.cfg
++++ b/reproxy.cfg
+@@ -17,3 +17,4 @@
+ # Unset Chromium variables.
+ service=
+ automatic_auth=
++compression_threshold=

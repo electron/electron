@@ -4,10 +4,10 @@
 
 #include "shell/browser/usb/electron_usb_delegate.h"
 
+#include <string_view>
 #include <utility>
 
 #include "base/containers/contains.h"
-#include "base/containers/cxx20_erase.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "base/scoped_observation.h"
@@ -33,8 +33,6 @@
 
 namespace {
 
-using ::content::UsbChooser;
-
 electron::UsbChooserContext* GetChooserContext(
     content::BrowserContext* browser_context) {
   return electron::UsbChooserContextFactory::GetForBrowserContext(
@@ -45,7 +43,7 @@ electron::UsbChooserContext* GetChooserContext(
 // These extensions can claim the smart card USB class and automatically gain
 // permissions for devices that have an interface with this class.
 constexpr auto kSmartCardPrivilegedExtensionIds =
-    base::MakeFixedFlatSet<base::StringPiece>({
+    base::MakeFixedFlatSet<std::string_view>({
         // Smart Card Connector Extension and its Beta version, see
         // crbug.com/1233881.
         "khpfeaanjngmcnplbdlpegiifgpfgdco",
@@ -158,7 +156,7 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
   classes = permission_manager->CheckProtectedUSBClasses(classes);
 }
 
-std::unique_ptr<UsbChooser> ElectronUsbDelegate::RunChooser(
+std::unique_ptr<content::UsbChooser> ElectronUsbDelegate::RunChooser(
     content::RenderFrameHost& frame,
     blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {

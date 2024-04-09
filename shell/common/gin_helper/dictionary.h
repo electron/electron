@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 
+#include <optional>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -12,7 +14,6 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/accessor.h"
 #include "shell/common/gin_helper/function_template.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin_helper {
 
@@ -66,9 +67,9 @@ class Dictionary : public gin::Dictionary {
     return !result.IsNothing() && result.FromJust();
   }
 
-  // Like normal Get but put result in an absl::optional.
+  // Like normal Get but put result in an std::optional.
   template <typename T>
-  bool GetOptional(base::StringPiece key, absl::optional<T>* out) const {
+  bool GetOptional(const std::string_view key, std::optional<T>* out) const {
     T ret;
     if (Get(key, &ret)) {
       out->emplace(std::move(ret));
@@ -79,7 +80,7 @@ class Dictionary : public gin::Dictionary {
   }
 
   template <typename T>
-  bool GetHidden(base::StringPiece key, T* out) const {
+  bool GetHidden(std::string_view key, T* out) const {
     v8::Local<v8::Context> context = isolate()->GetCurrentContext();
     v8::Local<v8::Private> privateKey =
         v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
@@ -92,7 +93,7 @@ class Dictionary : public gin::Dictionary {
   }
 
   template <typename T>
-  bool SetHidden(base::StringPiece key, T val) {
+  bool SetHidden(std::string_view key, T val) {
     v8::Local<v8::Value> v8_value;
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
@@ -105,7 +106,7 @@ class Dictionary : public gin::Dictionary {
   }
 
   template <typename T>
-  bool SetMethod(base::StringPiece key, const T& callback) {
+  bool SetMethod(std::string_view key, const T& callback) {
     auto context = isolate()->GetCurrentContext();
     auto templ = CallbackTraits<T>::CreateTemplate(isolate(), callback);
     return GetHandle()
@@ -147,7 +148,7 @@ class Dictionary : public gin::Dictionary {
   }
 
   template <typename T>
-  bool SetReadOnly(base::StringPiece key, const T& val) {
+  bool SetReadOnly(std::string_view key, const T& val) {
     v8::Local<v8::Value> v8_value;
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
@@ -160,7 +161,7 @@ class Dictionary : public gin::Dictionary {
   // Note: If we plan to add more Set methods, consider adding an option instead
   // of copying code.
   template <typename T>
-  bool SetReadOnlyNonConfigurable(base::StringPiece key, T val) {
+  bool SetReadOnlyNonConfigurable(std::string_view key, T val) {
     v8::Local<v8::Value> v8_value;
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
@@ -171,13 +172,13 @@ class Dictionary : public gin::Dictionary {
     return !result.IsNothing() && result.FromJust();
   }
 
-  bool Has(base::StringPiece key) const {
+  bool Has(std::string_view key) const {
     v8::Maybe<bool> result = GetHandle()->Has(isolate()->GetCurrentContext(),
                                               gin::StringToV8(isolate(), key));
     return !result.IsNothing() && result.FromJust();
   }
 
-  bool Delete(base::StringPiece key) {
+  bool Delete(std::string_view key) {
     v8::Maybe<bool> result = GetHandle()->Delete(
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
     return !result.IsNothing() && result.FromJust();

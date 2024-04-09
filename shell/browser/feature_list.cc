@@ -49,6 +49,11 @@ void InitializeFeatureList() {
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
 #endif
+  std::string platform_specific_enable_features =
+      EnablePlatformSpecificFeatures();
+  if (platform_specific_enable_features.size() > 0) {
+    enable_features += std::string(",") + platform_specific_enable_features;
+  }
   base::FeatureList::InitInstance(enable_features, disable_features);
 }
 
@@ -59,5 +64,11 @@ void InitializeFieldTrials() {
 
   base::FieldTrialList::CreateTrialsFromString(force_fieldtrials);
 }
+
+#if !BUILDFLAG(IS_MAC)
+std::string EnablePlatformSpecificFeatures() {
+  return "";
+}
+#endif
 
 }  // namespace electron

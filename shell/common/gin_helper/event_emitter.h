@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
 
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -38,7 +39,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
   // this.emit(name, new Event(), args...);
   template <typename... Args>
-  bool Emit(base::StringPiece name, Args&&... args) {
+  bool Emit(const std::string_view name, Args&&... args) {
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
@@ -58,7 +59,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
  private:
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitWithEvent(base::StringPiece name,
+  bool EmitWithEvent(const std::string_view name,
                      gin::Handle<gin_helper::internal::Event> event,
                      Args&&... args) {
     // It's possible that |this| will be deleted by EmitEvent, so save anything

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Richard Lau <rlau@redhat.com>
+Date: Fri, 1 Mar 2024 19:15:40 +0000
+Subject: fs: fix WTF-8 decoding issue
+
+Cherry-pick of libuv/libuv@d09441c
+
+Refs: https://github.com/libuv/libuv/pull/2970
+Fixes: https://github.com/nodejs/node/issues/48673
+
+We forgot to mask off the high bits from the first byte, so we ended up
+always failing the subsequent range check.
+
+diff --git a/deps/uv/src/win/fs.c b/deps/uv/src/win/fs.c
+index fc209c54f470edaa031009979061cff071cbf66d..4fc13b04bdae5bd9e2627027a10c534c2d9675dc 100644
+--- a/deps/uv/src/win/fs.c
++++ b/deps/uv/src/win/fs.c
+@@ -176,9 +176,11 @@ static int32_t fs__decode_wtf8_char(const char** input) {
+   if ((b4 & 0xC0) != 0x80)
+     return -1; /* invalid: not a continuation byte */
+   code_point = (code_point << 6) | (b4 & 0x3F);
+-  if (b1 <= 0xF4)
++  if (b1 <= 0xF4) {
++    code_point &= 0x1FFFFF;
+     if (code_point <= 0x10FFFF)
+       return code_point; /* four-byte character */
++  }
+ 
+   /* code point too large */
+   return -1;

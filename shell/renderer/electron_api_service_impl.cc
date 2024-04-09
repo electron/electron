@@ -24,6 +24,7 @@
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
+#include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
@@ -61,12 +62,10 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
 
   // Only set up the node::CallbackScope if there's a node environment.
   // Sandboxed renderers don't have a node environment.
-  node::Environment* env = node::Environment::GetCurrent(context);
   std::unique_ptr<node::CallbackScope> callback_scope;
-  if (env) {
-    node::async_context async_context = {};
-    callback_scope = std::make_unique<node::CallbackScope>(isolate, ipcNative,
-                                                           async_context);
+  if (node::Environment::GetCurrent(context)) {
+    callback_scope = std::make_unique<node::CallbackScope>(
+        isolate, ipcNative, node::async_context{0, 0});
   }
 
   auto callback_key = gin::ConvertToV8(isolate, callback_name)
@@ -159,7 +158,7 @@ void ElectronApiServiceImpl::Message(bool internal,
   if (!frame)
     return;
 
-  v8::Isolate* isolate = blink::MainThreadIsolate();
+  v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
@@ -177,7 +176,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
   if (!frame)
     return;
 
-  v8::Isolate* isolate = blink::MainThreadIsolate();
+  v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
@@ -200,6 +199,10 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+  if (!frame)
+    return;
+
   ScopedAllowBlockingForElectron allow_blocking;
 
   base::ScopedPlatformFile platform_file;
@@ -211,8 +214,8 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
   }
   base::File base_file(std::move(platform_file));
 
-  bool success =
-      electron::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);
+  v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
+  bool success = electron::TakeHeapSnapshot(isolate, &base_file);
 
   std::move(callback).Run(success);
 }

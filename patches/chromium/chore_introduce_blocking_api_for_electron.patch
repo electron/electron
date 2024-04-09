@@ -7,10 +7,10 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 67f0ff1785559143cbff0e81e6630c4d5a86bc90..c049707872f2585535b03fb5b55463b2d4323d16 100644
+index e9b8366361706dcd5977fe9cdba221026770a3c5..ebc1b54cd7029e4cb87be73f87f4967414b1b0eb 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
-@@ -135,6 +135,7 @@ class KeyStorageLinux;
+@@ -136,6 +136,7 @@ class KeyStorageLinux;
  class NativeBackendKWallet;
  class NativeDesktopMediaList;
  class PartnerBookmarksReader;
@@ -18,7 +18,7 @@ index 67f0ff1785559143cbff0e81e6630c4d5a86bc90..c049707872f2585535b03fb5b55463b2
  class Profile;
  class ProfileImpl;
  class ScopedAllowBlockingForProfile;
-@@ -270,6 +271,9 @@ class BackendImpl;
+@@ -276,6 +277,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache
@@ -28,7 +28,7 @@ index 67f0ff1785559143cbff0e81e6630c4d5a86bc90..c049707872f2585535b03fb5b55463b2
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -559,6 +563,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
+@@ -576,6 +580,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
@@ -36,7 +36,7 @@ index 67f0ff1785559143cbff0e81e6630c4d5a86bc90..c049707872f2585535b03fb5b55463b2
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -597,6 +602,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
+@@ -615,6 +620,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class crosapi::LacrosThreadTypeDelegate;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;

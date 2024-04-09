@@ -27,7 +27,7 @@ void Log(int severity, std::string text) {
       break;
     case logging::LOGGING_FATAL:
       LOG(FATAL) << text;
-      break;
+      // break not needed here because LOG(FATAL) is [[noreturn]]
     default:
       LOG(ERROR) << "Unrecognized severity: " << severity;
       break;

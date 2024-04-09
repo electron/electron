@@ -6,11 +6,11 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 
+#include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/raw_ptr.h"
@@ -55,7 +55,7 @@ class InspectableWebContents
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
   InspectableWebContentsDelegate* GetDelegate() const;
-  bool IsGuest() const;
+  [[nodiscard]] bool is_guest() const { return is_guest_; }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
@@ -76,7 +76,9 @@ class InspectableWebContents
   void InspectElement(int x, int y);
 
   // Return the last position and size of devtools window.
-  gfx::Rect GetDevToolsBounds() const;
+  [[nodiscard]] const gfx::Rect& dev_tools_bounds() const {
+    return devtools_bounds_;
+  }
   void SaveDevToolsBounds(const gfx::Rect& bounds);
 
   // Return the last set zoom level of devtools window.
@@ -97,6 +99,7 @@ class InspectableWebContents
                            int stream_id) override;
   void SetIsDocked(DispatchCallback callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
+  void OpenSearchResultsInNewTab(const std::string& query) override;
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
@@ -164,6 +167,7 @@ class InspectableWebContents
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
+  void RecordResize(const ResizeEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
   void RecordHover(const HoverEvent& event) override {}
   void RecordDrag(const DragEvent& event) override {}
@@ -174,7 +178,9 @@ class InspectableWebContents
   void CanShowSurvey(DispatchCallback callback,
                      const std::string& trigger) override {}
   void DoAidaConversation(DispatchCallback callback,
-                          const std::string& request) override {}
+                          const std::string& request,
+                          int stream_id) override {}
+  void RegisterAidaClientEvent(const std::string& request) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
@@ -241,11 +247,12 @@ class InspectableWebContents
       embedder_message_dispatcher_;
 
   class NetworkResourceLoader;
-  std::set<std::unique_ptr<NetworkResourceLoader>, base::UniquePtrComparator>
+  base::flat_set<std::unique_ptr<NetworkResourceLoader>,
+                 base::UniquePtrComparator>
       loaders_;
 
-  using ExtensionsAPIs = std::map<std::string, std::string>;
-  ExtensionsAPIs extensions_api_;
+  // origin -> script
+  base::flat_map<std::string, std::string> extensions_api_;
 
   // Contains the set of synced settings.
   // The DevTools frontend *must* call `Register` for each setting prior to

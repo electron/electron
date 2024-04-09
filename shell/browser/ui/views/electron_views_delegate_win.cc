@@ -119,7 +119,7 @@ int ViewsDelegate::GetAppbarAutohideEdges(HMONITOR monitor,
   // in us thinking there is no auto-hide edges. By returning at least one edge
   // we don't initially go fullscreen until we figure out the real auto-hide
   // edges.
-  if (!appbar_autohide_edge_map_.count(monitor))
+  if (!appbar_autohide_edge_map_.contains(monitor))
     appbar_autohide_edge_map_[monitor] = EDGE_BOTTOM;
 
   // We use the SHAppBarMessage API to get the taskbar autohide state. This API

@@ -14,8 +14,6 @@ import("//third_party/widevine/cdm/widevine.gni")
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
-    "//chrome/browser/accessibility/accessibility_ui.cc",
-    "//chrome/browser/accessibility/accessibility_ui.h",
     "//chrome/browser/app_mode/app_mode_utils.cc",
     "//chrome/browser/app_mode/app_mode_utils.h",
     "//chrome/browser/browser_features.cc",
@@ -100,8 +98,8 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.h",
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
-    "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
-    "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
+    "//chrome/browser/ui/exclusive_access/pointer_lock_controller.cc",
+    "//chrome/browser/ui/exclusive_access/pointer_lock_controller.h",
     "//chrome/browser/ui/frame/window_frame_util.cc",
     "//chrome/browser/ui/frame/window_frame_util.h",
     "//chrome/browser/ui/ui_features.cc",
@@ -130,6 +128,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
+    "//chrome/browser/ui/webui/accessibility/accessibility_ui.cc",
+    "//chrome/browser/ui/webui/accessibility/accessibility_ui.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
     "//ui/views/native_window_tracker.h",
@@ -242,6 +242,8 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
+      "//chrome/browser/media/webrtc/thumbnail_capturer_mac.h",
+      "//chrome/browser/media/webrtc/thumbnail_capturer_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
       "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",

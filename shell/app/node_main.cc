@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -20,7 +21,6 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "content/public/common/content_switches.h"
-#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -59,7 +60,7 @@ namespace {
 // See https://nodejs.org/api/cli.html#cli_options
 void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   // Options that are unilaterally disallowed.
-  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+  static constexpr auto disallowed = base::MakeFixedFlatSet<std::string_view>({
       "--enable-fips",
       "--force-fips",
       "--openssl-config",
@@ -68,7 +69,7 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   });
 
   for (const auto& arg : argv) {
-    const auto key = base::StringPiece(arg).substr(0, arg.find('='));
+    const auto key = std::string_view{arg}.substr(0, arg.find('='));
     if (disallowed.contains(key)) {
       LOG(ERROR) << "The Node.js cli flag " << key
                  << " is not supported in Electron";
@@ -80,6 +81,23 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
     }
   }
 }
+
+#if BUILDFLAG(IS_MAC)
+// A list of node envs that may be used to inject scripts.
+const char* kHijackableEnvs[] = {"NODE_OPTIONS", "NODE_REPL_EXTERNAL_MODULE"};
+
+// Return true if there is any env in kHijackableEnvs.
+bool UnsetHijackableEnvs(base::Environment* env) {
+  bool has = false;
+  for (const char* name : kHijackableEnvs) {
+    if (env->HasVar(name)) {
+      env->UnSetVar(name);
+      has = true;
+    }
+  }
+  return has;
+}
+#endif
 
 #if IS_MAS_BUILD()
 void SetCrashKeyStub(const std::string& key, const std::string& value) {}
@@ -107,8 +125,12 @@ int NodeMain(int argc, char* argv[]) {
 
   auto os_env = base::Environment::Create();
   bool node_options_enabled = electron::fuses::IsNodeOptionsEnabled();
+  if (!node_options_enabled) {
+    os_env->UnSetVar("NODE_OPTIONS");
+  }
+
 #if BUILDFLAG(IS_MAC)
-  if (node_options_enabled && os_env->HasVar("NODE_OPTIONS")) {
+  if (!ProcessSignatureIsSameWithCurrentApp(getppid())) {
     // On macOS, it is forbidden to run sandboxed app with custom arguments
     // from another app, i.e. args are discarded in following call:
     //   exec("Sandboxed.app", ["--custom-args-will-be-discarded"])
@@ -117,18 +139,14 @@ int NodeMain(int argc, char* argv[]) {
     //   exec("Electron.app", {env: {ELECTRON_RUN_AS_NODE: "1",
     //                               NODE_OPTIONS: "--require 'bad.js'"}})
     // To prevent Electron apps from being used to work around macOS security
-    // restrictions, when NODE_OPTIONS is passed it will be checked whether
-    // this process is invoked by its own app.
-    if (!ProcessBelongToCurrentApp(getppid())) {
-      LOG(ERROR) << "NODE_OPTIONS is disabled because this process is invoked "
-                    "by other apps.";
-      node_options_enabled = false;
+    // restrictions, when the parent process is not part of the app bundle, all
+    // environment variables that may be used to inject scripts are removed.
+    if (UnsetHijackableEnvs(os_env.get())) {
+      LOG(ERROR) << "Node.js environment variables are disabled because this "
+                    "process is invoked by other apps.";
     }
   }
 #endif  // BUILDFLAG(IS_MAC)
-  if (!node_options_enabled) {
-    os_env->UnSetVar("NODE_OPTIONS");
-  }
 
 #if BUILDFLAG(IS_WIN)
   v8_crashpad_support::SetUp();
@@ -263,15 +281,10 @@ int NodeMain(int argc, char* argv[]) {
 #endif
 
       process.Set("crashReporter", reporter);
-
-      gin_helper::Dictionary versions;
-      if (process.Get("versions", &versions)) {
-        versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
-      }
     }
 
     v8::HandleScope scope(isolate);
-    node::LoadEnvironment(env, node::StartExecutionCallback{});
+    node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env
     // is stopping, or the user hooks process.emit('exit').

@@ -431,7 +431,7 @@ index 3b738b7f47ec59ba718a92e3a0024fed45a9c87c..fabf5775a263804f5974b10cf73c6886
 +  });
  }
 diff --git a/test/parallel/test-crypto-getcipherinfo.js b/test/parallel/test-crypto-getcipherinfo.js
-index 98d2a52eceac4bc564fd2878f77b50c336a67a66..bcb2de6e354c26816000f2400d9c1d46de01888a 100644
+index 64b79fc36ccf4d38f763fcd8c1930473c82cefd7..892490fc7dd8da09f8aa10a20bec69385c0fee28 100644
 --- a/test/parallel/test-crypto-getcipherinfo.js
 +++ b/test/parallel/test-crypto-getcipherinfo.js
 @@ -62,9 +62,13 @@ assert(getCipherInfo('aes-128-cbc', { ivLength: 16 }));
@@ -549,7 +549,7 @@ index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a5
    });
  
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149ba4abc8c 100644
+index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc3192b2f2 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -28,12 +28,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -570,7 +570,18 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  };
  
  const decryptError = common.hasOpenSSL3 ?
-@@ -397,7 +396,7 @@ assert.throws(() => {
+@@ -221,8 +220,8 @@ function test_rsa(padding, encryptOaepHash, decryptOaepHash) {
+     oaepHash: encryptOaepHash
+   }, bufferToEncrypt);
+ 
+-
+-  if (padding === constants.RSA_PKCS1_PADDING) {
++  // BoringSSL does not support RSA_PKCS1_PADDING.
++  if (false) {
+     assert.throws(() => {
+       crypto.privateDecrypt({
+         key: rsaKeyPem,
+@@ -415,7 +414,7 @@ assert.throws(() => {
    assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
  }
  
@@ -579,7 +590,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  //
  // Test DSA signing and verification
  //
-@@ -472,3 +471,4 @@ const input = 'I AM THE WALRUS';
+@@ -490,3 +489,4 @@ const input = 'I AM THE WALRUS';
  
    assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
  }
@@ -905,7 +916,7 @@ index aa685ca9e09cf0d17ff4d5480089e9977dd51f72..ccafa427433922155c1afd5d95ba69d8
    }));
    socket.end('Hello');
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
-index 7da2f60676d00e8e40d890f2efd46102154ca34d..2230b8cf85259d6670e274d6b84d83fd8788e83e 100644
+index 571f400cea574662bda6be8eecd22ceccaf75420..2296362dc625ee663df11927297ccf124233a19b 100644
 --- a/test/parallel/test-tls-getprotocol.js
 +++ b/test/parallel/test-tls-getprotocol.js
 @@ -27,7 +27,7 @@ const clientConfigs = [

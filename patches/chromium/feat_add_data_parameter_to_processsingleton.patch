@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d542cd758 100644
+index 31f5b160e4cd755cfb56a62b04261ee1bee80277..191d43392d1ca76882e9da32548fd8e6a713e701 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -24,13 +24,11 @@ index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d
  #include "ui/gfx/native_widget_types.h"
  
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
-@@ -99,22 +100,25 @@ class ProcessSingleton {
-   // handled within the current browser instance or false if the remote process
+@@ -100,21 +101,24 @@ class ProcessSingleton {
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
--      base::RepeatingCallback<bool(const base::CommandLine& command_line,
+       base::RepeatingCallback<bool(base::CommandLine command_line,
 -                                   const base::FilePath& current_directory)>;
-+       base::RepeatingCallback<bool(const base::CommandLine& command_line,
 +                                   const base::FilePath& current_directory,
 +                                   const std::vector<const uint8_t> additional_data)>;
  
@@ -65,18 +63,18 @@ index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f30557a4f 100644
+index 298c9c81fa110ad7900d0bd6822136bb57f0382e..da7aaed23e4e0cdc037490bbe8beaea705b48df5 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -613,6 +613,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -610,6 +610,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
 +                     const std::vector<const uint8_t> additional_data,
                       SocketReader* reader);
  
-  private:
-@@ -667,13 +668,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+   // Called when the ProcessSingleton that owns this class is about to be
+@@ -669,13 +670,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -88,14 +86,15 @@ index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f
    DCHECK(ui_task_runner_->BelongsToCurrentThread());
    DCHECK(reader);
  
-   if (parent_->notification_callback_.Run(base::CommandLine(argv),
--                                          base::FilePath(current_dir))) {
-+                                          base::FilePath(current_dir),
-+                                          std::move(additional_data))) {
+   if (parent_ && parent_->notification_callback_.Run(
+-                     base::CommandLine(argv), base::FilePath(current_dir))) {
++                     base::CommandLine(argv),
++                     base::FilePath(current_dir),
++                     std::move(additional_data))) {
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken, std::size(kACKToken) - 1);
    } else {
-@@ -721,7 +725,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -723,7 +728,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
@@ -105,7 +104,7 @@ index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f
    const size_t kMinMessageLength = std::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -751,10 +756,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -753,10 +759,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -135,7 +134,7 @@ index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -783,8 +806,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -785,8 +809,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -146,7 +145,7 @@ index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f
        current_pid_(base::GetCurrentProcId()) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
    lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
-@@ -902,7 +927,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -907,7 +933,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -156,7 +155,7 @@ index 09108f231a54b117a143e71efa3f3663d64a63e6..b520e59cd5c0e3014497780d2ff8503f
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -912,11 +938,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -917,11 +944,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();

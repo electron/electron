@@ -24,29 +24,14 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_MAC)
-#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
-#endif
-
 namespace electron::api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
-#if BUILDFLAG(IS_MAC)
-    : View(new DelayedNativeViewHost(web_contents->inspectable_web_contents()
-                                         ->GetView()
-                                         ->GetNativeView())),
-#else
-    : View(web_contents->inspectable_web_contents()->GetView()->GetView()),
-#endif
+    : View(web_contents->inspectable_web_contents()->GetView()),
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
-#if !BUILDFLAG(IS_MAC)
-  // On macOS the View is a newly-created |DelayedNativeViewHost| and it is our
-  // responsibility to delete it. On other platforms the View is created and
-  // managed by InspectableWebContents.
   set_delete_view(false);
-#endif
   view()->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
@@ -66,7 +51,7 @@ gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
     return gin::Handle<WebContents>();
 }
 
-void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
+void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   View::SetBackgroundColor(color);
   if (api_web_contents_) {
     api_web_contents_->SetBackgroundColor(color);
@@ -81,11 +66,14 @@ void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
 }
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
-  gfx::Point local_point(point);
-  views::View::ConvertPointFromWidget(view(), &local_point);
-  SkRegion* region = api_web_contents_->draggable_region();
-  if (region && region->contains(local_point.x(), local_point.y()))
-    return HTCAPTION;
+  if (api_web_contents_) {
+    gfx::Point local_point(point);
+    views::View::ConvertPointFromWidget(view(), &local_point);
+    SkRegion* region = api_web_contents_->draggable_region();
+    if (region && region->contains(local_point.x(), local_point.y()))
+      return HTCAPTION;
+  }
+
   return HTNOWHERE;
 }
 

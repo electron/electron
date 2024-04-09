@@ -31,10 +31,10 @@ class OffscreenViewProxy {
   void SetObserver(OffscreenViewProxyObserver* observer);
   void RemoveObserver();
 
-  const SkBitmap* GetBitmap() const;
+  const SkBitmap* bitmap() const { return view_bitmap_.get(); }
   void SetBitmap(const SkBitmap& bitmap);
 
-  const gfx::Rect& GetBounds();
+  const gfx::Rect& bounds() { return view_bounds_; }
   void SetBounds(const gfx::Rect& bounds);
 
   void OnEvent(ui::Event* event);

@@ -8,10 +8,10 @@
 
 #include <commctrl.h>
 
-#include <map>
 #include <vector>
 
 #include "base/containers/contains.h"
+#include "base/containers/flat_map.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -41,8 +41,8 @@ struct DialogResult {
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
 // will be passed between threads and we need to ensure the memory of HWND is
 // not changed while dialogs map is modified.
-std::map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
-  static base::NoDestructor<std::map<int, std::unique_ptr<HWND>>> dialogs;
+base::flat_map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
+  static base::NoDestructor<base::flat_map<int, std::unique_ptr<HWND>>> dialogs;
   return *dialogs;
 }
 
@@ -95,7 +95,7 @@ CommonButtonID GetCommonID(const std::wstring& button) {
 // Determine whether the buttons are common buttons, if so map common ID
 // to button ID.
 void MapToCommonID(const std::vector<std::wstring>& buttons,
-                   std::map<int, int>* id_map,
+                   base::flat_map<int, int>* id_map,
                    TASKDIALOG_COMMON_BUTTON_FLAGS* button_flags,
                    std::vector<TASKDIALOG_BUTTON>* dialog_buttons) {
   for (size_t i = 0; i < buttons.size(); ++i) {
@@ -215,7 +215,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
 
   // Iterate through the buttons, put common buttons in dwCommonButtons
   // and custom buttons in pButtons.
-  std::map<int, int> id_map;
+  base::flat_map<int, int> id_map;
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   if (no_link) {
     for (size_t i = 0; i < buttons.size(); ++i)
@@ -304,7 +304,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings,
                                     parent_widget, base::Unretained(hwnd)),
                      base::BindOnce(
-                         [](MessageBoxCallback callback, absl::optional<int> id,
+                         [](MessageBoxCallback callback, std::optional<int> id,
                             DialogResult result) {
                            if (id)
                              GetDialogsMap().erase(*id);

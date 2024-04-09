@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_
 
 #include "base/memory/raw_ptr.h"
+#include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/window/non_client_view.h"
 
 namespace views {
@@ -17,8 +18,9 @@ namespace electron {
 class NativeWindowViews;
 
 class FramelessView : public views::NonClientFrameView {
+  METADATA_HEADER(FramelessView, views::NonClientFrameView)
+
  public:
-  static const char kViewClassName[];
   FramelessView();
   ~FramelessView() override;
 
@@ -55,7 +57,6 @@ class FramelessView : public views::NonClientFrameView {
   gfx::Size CalculatePreferredSize() const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
-  const char* GetClassName() const override;
 
   // Not owned.
   raw_ptr<NativeWindowViews> window_ = nullptr;

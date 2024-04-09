@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -19,9 +20,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/trace_event/trace_event.h"
+#include "chrome/common/chrome_version.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
@@ -33,6 +36,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
+#include "shell/common/node_util.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
@@ -57,7 +61,6 @@
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
   V(electron_browser_native_theme)       \
-  V(electron_browser_net)                \
   V(electron_browser_notification)       \
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
@@ -76,7 +79,8 @@
   V(electron_browser_web_contents_view)  \
   V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
-  V(electron_browser_window)
+  V(electron_browser_window)             \
+  V(electron_common_net)
 
 #define ELECTRON_COMMON_BINDINGS(V)   \
   V(electron_common_asar)             \
@@ -96,7 +100,10 @@
   V(electron_renderer_ipc)            \
   V(electron_renderer_web_frame)
 
-#define ELECTRON_UTILITY_BINDINGS(V) V(electron_utility_parent_port)
+#define ELECTRON_UTILITY_BINDINGS(V) \
+  V(electron_browser_event_emitter)  \
+  V(electron_common_net)             \
+  V(electron_utility_parent_port)
 
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
 
@@ -114,6 +121,8 @@ ELECTRON_UTILITY_BINDINGS(V)
 ELECTRON_TESTING_BINDINGS(V)
 #endif
 #undef V
+
+using node::loader::ModuleWrap;
 
 namespace {
 
@@ -205,16 +214,24 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
 void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
                                     v8::Local<v8::Module> module,
                                     v8::Local<v8::Object> meta) {
-  if (node::Environment::GetCurrent(context) == nullptr) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
     if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
       return;
     return blink::V8Initializer::HostGetImportMetaProperties(context, module,
                                                              meta);
   }
 
-  // If we're running with contextIsolation enabled in the renderer process,
-  // fall back to Blink's logic.
   if (electron::IsRendererProcess()) {
+    // If the module is created by Node.js, use Node.js' handling.
+    if (env != nullptr) {
+      ModuleWrap* wrap = ModuleWrap::GetFromModule(env, module);
+      if (wrap)
+        return ModuleWrap::HostInitializeImportMetaObjectCallback(context,
+                                                                  module, meta);
+    }
+
+    // If contextIsolation is enabled, fall back to Blink's handling.
     blink::WebLocalFrame* frame =
         blink::WebLocalFrame::FrameForContext(context);
     if (!frame || frame->GetScriptContextWorldId(context) !=
@@ -224,8 +241,8 @@ void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
     }
   }
 
-  return node::loader::ModuleWrap::HostInitializeImportMetaObjectCallback(
-      context, module, meta);
+  return ModuleWrap::HostInitializeImportMetaObjectCallback(context, module,
+                                                            meta);
 }
 
 v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
@@ -290,9 +307,9 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
 
 // Only allow a specific subset of options in non-ELECTRON_RUN_AS_NODE mode.
 // If node CLI inspect support is disabled, allow no debug options.
-bool IsAllowedOption(base::StringPiece option) {
+bool IsAllowedOption(const std::string_view option) {
   static constexpr auto debug_options =
-      base::MakeFixedFlatSet<base::StringPiece>({
+      base::MakeFixedFlatSet<std::string_view>({
           "--debug",
           "--debug-brk",
           "--debug-port",
@@ -304,7 +321,7 @@ bool IsAllowedOption(base::StringPiece option) {
       });
 
   // This should be aligned with what's possible to set via the process object.
-  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
+  static constexpr auto options = base::MakeFixedFlatSet<std::string_view>({
       "--dns-result-order",
       "--no-deprecation",
       "--throw-deprecation",
@@ -322,7 +339,7 @@ bool IsAllowedOption(base::StringPiece option) {
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
-  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+  static constexpr auto disallowed = base::MakeFixedFlatSet<std::string_view>({
       "--enable-fips",
       "--experimental-policy",
       "--force-fips",
@@ -331,7 +348,7 @@ void SetNodeOptions(base::Environment* env) {
       "--use-openssl-ca",
   });
 
-  static constexpr auto pkg_opts = base::MakeFixedFlatSet<base::StringPiece>({
+  static constexpr auto pkg_opts = base::MakeFixedFlatSet<std::string_view>({
       "--http-parser",
       "--max-http-header-size",
   });
@@ -472,7 +489,7 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
 #else
     const auto& option = arg;
 #endif
-    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+    const auto stripped = std::string_view{option}.substr(0, option.find('='));
     // Only allow no-op or a small set of debug/trace related options.
     if (IsAllowedOption(stripped) || stripped == "--")
       args.push_back(option);
@@ -553,7 +570,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     node::MultiIsolatePlatform* platform,
     std::vector<std::string> args,
     std::vector<std::string> exec_args,
-    absl::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
+    std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
   // Feed node the path to initialization script.
   std::string process_type;
   switch (browser_env_) {
@@ -596,7 +613,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
                          electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
   }
 
-  base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
@@ -721,11 +737,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
-  process.Set("resourcesPath", resources_path);
-  // The path to helper app.
-  base::FilePath helper_exec_path;
-  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
-  process.Set("helperExecPath", helper_exec_path);
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kRenderer) {
@@ -759,7 +770,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform,
-    absl::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
+    std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
 #if BUILDFLAG(IS_WIN)
   auto& electron_args = ElectronCommandLine::argv();
   std::vector<std::string> args(electron_args.size());
@@ -772,7 +783,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env, node::StartExecutionCallback{});
+  node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
@@ -915,6 +926,35 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
     // Deal with event in main thread.
     self->WakeupMainThread();
   }
+}
+
+void OnNodePreload(node::Environment* env,
+                   v8::Local<v8::Value> process,
+                   v8::Local<v8::Value> require) {
+  // Set custom process properties.
+  gin_helper::Dictionary dict(env->isolate(), process.As<v8::Object>());
+  dict.SetReadOnly("resourcesPath", GetResourcesPath());
+  base::FilePath helper_exec_path;  // path to the helper app.
+  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  dict.SetReadOnly("helperExecPath", helper_exec_path);
+  gin_helper::Dictionary versions;
+  if (dict.Get("versions", &versions)) {
+    versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
+    versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
+#if BUILDFLAG(HAS_VENDOR_VERSION)
+    versions.SetReadOnly(BUILDFLAG(VENDOR_VERSION_NAME),
+                         BUILDFLAG(VENDOR_VERSION_VALUE));
+#endif
+  }
+
+  // Execute lib/node/init.ts.
+  std::vector<v8::Local<v8::String>> bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
+      node::FIXED_ONE_BYTE_STRING(env->isolate(), "require"),
+  };
+  std::vector<v8::Local<v8::Value>> bundle_args = {process, require};
+  electron::util::CompileAndCall(env->context(), "electron/js2c/node_init",
+                                 &bundle_params, &bundle_args);
 }
 
 }  // namespace electron

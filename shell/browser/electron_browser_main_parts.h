@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "base/functional/callback.h"
@@ -16,7 +17,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/display/screen.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -153,7 +153,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   // A place to remember the exit code once the message loop is ready.
   // Before then, we just exit() without any intermediate steps.
-  absl::optional<int> exit_code_;
+  std::optional<int> exit_code_;
 
   std::unique_ptr<NodeBindings> node_bindings_;
 

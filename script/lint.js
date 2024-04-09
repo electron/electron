@@ -120,10 +120,10 @@ const LINTERS = [{
   roots: ['script'],
   test: filename => filename.endsWith('.py'),
   run: (opts, filenames) => {
-    const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
+    const rcfile = path.join(DEPOT_TOOLS, 'pylintrc-2.17');
     const args = ['--rcfile=' + rcfile, ...filenames];
     const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
-    spawnAndCheckExitCode('pylint-2.7', args, { env });
+    spawnAndCheckExitCode('pylint-2.17', args, { env });
   }
 }, {
   key: 'javascript',
@@ -201,10 +201,9 @@ const LINTERS = [{
       process.exit(1);
     }
 
-    const config = JSON.parse(fs.readFileSync(patchesConfig, 'utf8'));
-    for (const key of Object.keys(config)) {
+    for (const target of JSON.parse(fs.readFileSync(patchesConfig, 'utf8'))) {
       // The directory the config points to should exist
-      const targetPatchesDir = path.resolve(__dirname, '../../..', key);
+      const targetPatchesDir = path.resolve(__dirname, '../../..', target.patch_dir);
       if (!fs.existsSync(targetPatchesDir)) {
         console.error(`target patch directory: "${targetPatchesDir}" does not exist`);
         process.exit(1);

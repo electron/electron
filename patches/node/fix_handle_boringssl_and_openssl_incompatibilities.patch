@@ -17,10 +17,10 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 2e6e02d229b67bc97e0d15a2704e091d5289df9c..6fd0416820998bd0ba4c4cd4fe3093f144610f18 100644
+index 99a16a667baa20138715b0901e3255e41f5f1052..a7f210031085a348f752e7e7e963d2f040bc2000 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -27,7 +27,8 @@ using v8::Value;
+@@ -28,7 +28,8 @@ using v8::Value;
  namespace crypto {
  namespace {
  bool IsSupportedAuthenticatedMode(const EVP_CIPHER* cipher) {
@@ -30,6 +30,23 @@ index 2e6e02d229b67bc97e0d15a2704e091d5289df9c..6fd0416820998bd0ba4c4cd4fe3093f1
    case EVP_CIPH_CCM_MODE:
    case EVP_CIPH_GCM_MODE:
  #ifndef OPENSSL_NO_OCB
+@@ -1062,7 +1063,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+     if (EVP_PKEY_decrypt_init(ctx.get()) <= 0) {
+       return ThrowCryptoError(env, ERR_get_error());
+     }
+-
++#ifndef OPENSSL_IS_BORINGSSL
+     int rsa_pkcs1_implicit_rejection =
+         EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
+     // From the doc -2 means that the option is not supported.
+@@ -1078,6 +1079,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+           "RSA_PKCS1_PADDING is no longer supported for private decryption,"
+           " this can be reverted with --security-revert=CVE-2023-46809");
+     }
++#endif
+   }
+ 
+   const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index c6120a655ec853aef11c66ed37d7ca0ffb957dd3..a52ca15cb0ab592d4196d4bd0f1133240967d70c 100644
 --- a/src/crypto/crypto_common.cc
@@ -263,7 +280,7 @@ index c5dd2fb8fce40f2bf6f9a8543047ffb50cc08084..d850af9257cc194ee385130ce3cd2c01
  
  void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 245f352918696413f8f0f7cec94dbcec687685af..35c1c1ce9f0e3d59b75e3966d485bf70b846de5b 100644
+index 48154df7dc91ed7c0d65323199bc2f59dfc68135..6431e5c3062890975854780d15ecb84370b81770 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
 @@ -140,7 +140,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
@@ -357,12 +374,12 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }  // namespace
  
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index 22546e9de25bdf95a00d06057626b544d5bf6f28..3a20f2f6a153c2f0b48b86ed83b92484ac4c274a 100644
+index b88cfb98e75aca426224e19376b3ff4c23b92e53..b66f4e2b5cbd8f36af42f82a8921207302360e39 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
 @@ -16,7 +16,7 @@
  #include "v8.h"
- #include "zlib.h"
+ #include "zlib_version.h"
  
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
@@ -383,7 +400,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 29cb7fc6b29b89946856990032645ad4edb8529c..faca807e31daaadb0103556001a16629a3822c1f 100644
+index 5da6918af8c125259a89ce95bbbbc4fc475c4c69..a3d25cdd52f18e319ae3ac81437c8a0206b18690 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -396,7 +413,7 @@ index 29cb7fc6b29b89946856990032645ad4edb8529c..faca807e31daaadb0103556001a16629
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 30955c779714ce5ad9b79f11e4cfefbcada7fa05..f02c07cd418fa2e3c64221bd37acd380a130f608 100644
+index 312fae8f759c5828d0770ceee845dc4754871436..207468a2177d36894c64cb37aac946af02c82549 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

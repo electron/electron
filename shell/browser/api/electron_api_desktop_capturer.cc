@@ -4,16 +4,17 @@
 
 #include "shell/browser/api/electron_api_desktop_capturer.h"
 
-#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/media/webrtc/desktop_capturer_wrapper.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
+#include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
 #include "gin/object_template_builder.h"
@@ -42,11 +43,11 @@
 
 #if BUILDFLAG(IS_LINUX)
 // Private function in ui/base/x/x11_display_util.cc
-std::map<x11::RandR::Output, int> GetMonitors(
+base::flat_map<x11::RandR::Output, int> GetMonitors(
     std::pair<uint32_t, uint32_t> version,
     x11::RandR* randr,
     x11::Window window) {
-  std::map<x11::RandR::Output, int> output_to_monitor;
+  base::flat_map<x11::RandR::Output, int> output_to_monitor;
   if (version >= std::pair<uint32_t, uint32_t>{1, 5}) {
     if (auto reply = randr->GetMonitors({window}).Sync()) {
       for (size_t monitor = 0; monitor < reply->monitors.size(); monitor++) {
@@ -76,12 +77,12 @@ std::vector<uint8_t> GetEDIDProperty(x11::RandR* randr,
 // Find the mapping from monitor name atom to the display identifier
 // that the screen API uses. Based on the logic in BuildDisplaysFromXRandRInfo
 // in ui/base/x/x11_display_util.cc
-std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
+base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   auto* connection = x11::Connection::Get();
   auto& randr = connection->randr();
   auto x_root_window = ui::GetX11RootWindow();
 
-  std::map<int32_t, uint32_t> monitor_atom_to_display;
+  base::flat_map<int32_t, uint32_t> monitor_atom_to_display;
 
   auto resources = randr.GetScreenResourcesCurrent({x_root_window}).Sync();
   if (!resources) {
@@ -89,7 +90,7 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
     return monitor_atom_to_display;
   }
 
-  std::map<x11::RandR::Output, int> output_to_monitor =
+  const auto output_to_monitor =
       GetMonitors(connection->randr_version(), &randr, x_root_window);
   auto monitors_reply = randr.GetMonitors({x_root_window}).Sync();
 
@@ -135,6 +136,38 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   return monitor_atom_to_display;
 }
 #endif
+
+namespace {
+
+std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
+#if BUILDFLAG(IS_MAC)
+  if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)) {
+    return CreateThumbnailCapturerMac(DesktopMediaList::Type::kWindow);
+  }
+#endif  // BUILDFLAG(IS_MAC)
+
+  std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
+      content::desktop_capture::CreateWindowCapturer();
+  return window_capturer ? std::make_unique<DesktopCapturerWrapper>(
+                               std::move(window_capturer))
+                         : nullptr;
+}
+
+std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
+#if BUILDFLAG(IS_MAC)
+  if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)) {
+    return CreateThumbnailCapturerMac(DesktopMediaList::Type::kScreen);
+  }
+#endif  // BUILDFLAG(IS_MAC)
+
+  std::unique_ptr<webrtc::DesktopCapturer> screen_capturer =
+      content::desktop_capture::CreateScreenCapturer();
+  return screen_capturer ? std::make_unique<DesktopCapturerWrapper>(
+                               std::move(screen_capturer))
+                         : nullptr;
+}
+
+}  // namespace
 
 namespace gin {
 
@@ -265,16 +298,16 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
-      std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
-          content::desktop_capture::CreateWindowCapturer();
-      auto capturer = window_capturer
-                          ? std::make_unique<DesktopCapturerWrapper>(
-                                std::move(window_capturer))
-                          : nullptr;
+      auto capturer = MakeWindowCapturer();
       if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kWindow, std::move(capturer));
         window_capturer_->SetThumbnailSize(thumbnail_size);
+#if BUILDFLAG(IS_MAC)
+        window_capturer_->skip_next_refresh_ =
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow) ? 2
+                                                                           : 0;
+#endif
 
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
@@ -295,16 +328,16 @@ void DesktopCapturer::StartHandling(bool capture_window,
     }
 
     if (capture_screen) {
-      std::unique_ptr<webrtc::DesktopCapturer> screen_capturer =
-          content::desktop_capture::CreateScreenCapturer();
-      auto capturer = screen_capturer
-                          ? std::make_unique<DesktopCapturerWrapper>(
-                                std::move(screen_capturer))
-                          : nullptr;
+      auto capturer = MakeScreenCapturer();
       if (capturer) {
         screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
+#if BUILDFLAG(IS_MAC)
+        screen_capturer_->skip_next_refresh_ =
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
+                                                                           : 0;
+#endif
 
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
@@ -385,8 +418,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     // display name atom and the display id is either the EDID or the
     // loop index when that display was found (see
     // BuildDisplaysFromXRandRInfo in ui/base/x/x11_display_util.cc)
-    std::map<int32_t, uint32_t> monitor_atom_to_display_id =
-        MonitorAtomIdToDisplayId();
+    const auto monitor_atom_to_display_id = MonitorAtomIdToDisplayId();
     for (auto& source : screen_sources) {
       auto display_id_iter =
           monitor_atom_to_display_id.find(source.media_list_source.id.id);

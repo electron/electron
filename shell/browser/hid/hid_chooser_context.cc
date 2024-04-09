@@ -6,9 +6,12 @@
 
 #include <utility>
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include <string_view>
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
 #include "base/command_line.h"
 #include "base/containers/contains.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -33,7 +36,6 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/containers/fixed_flat_set.h"
-#include "base/strings/string_piece.h"
 #include "extensions/common/constants.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -189,7 +191,7 @@ bool HidChooserContext::HasDevicePermission(
 bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   static constexpr auto kPrivilegedExtensionIds =
-      base::MakeFixedFlatSet<base::StringPiece>({
+      base::MakeFixedFlatSet<std::string_view>({
           "ckcendljdlmgnhghiaomidhiiclmapok",  // gnubbyd-v3 dev
           "lfboplenmmjcmpbkeemecobbadnmpfhi",  // gnubbyd-v3 prod
       });

@@ -74,7 +74,6 @@ class MenuBar : public views::AccessiblePaneView,
   void OnDidChangeFocus(View* focused_before, View* focused_now) override;
 
   // views::View:
-  const char* GetClassName() const override;
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   void ButtonPressed(size_t id, const ui::Event& event);

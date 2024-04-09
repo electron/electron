@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index fbbc35818cfa1709b30520e2336eeab2d96693d0..814230e423a44bfc71b6e028fb870f2a1d15e15f 100644
+index c5bcbe62463a418cf78c4813678d7a1e39c4dd9d..f51e2e70bb249f5113ee592f121e53d61bc334fc 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -198,6 +198,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
+@@ -191,6 +191,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index fbbc35818cfa1709b30520e2336eeab2d96693d0..814230e423a44bfc71b6e028fb870f2a
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 772c7a34a97588dd20c040be5ca482696990c880..fe1c04d6f9c9e9ca6a3aeacbaf897f1df5783248 100644
+index e1c2037c320efc78bc9df701960af57aa0ef180c..3a74da489cfbe6457aa9a206364a977bb3052d80 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -442,6 +442,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -443,6 +443,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -62,10 +62,10 @@ index 772c7a34a97588dd20c040be5ca482696990c880..fe1c04d6f9c9e9ca6a3aeacbaf897f1d
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 6af4df92820d5a9d247a927244522f4c4acd164d..92af8c4a933b8462dce2524b0623a6843abd2600 100644
+index 9830931142e76fe117266e64444d50f83eefa842..a9313c3bac674ca3e785adfe10ec4a03d74245c8 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -655,6 +655,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -661,6 +661,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;

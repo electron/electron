@@ -10,7 +10,7 @@ parameters.
 This should be upstreamed.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index f3cda64beaa1403cb33f1b0bd8089f3dfcbfc8b9..77386bd234d0b49b122f1de3d27b1a92da5d0ea4 100644
+index bcef04f980d1b1f010c5349ecbfca8080f39b308..6861c28eb6deea72e844b04048d88ca726385c7f 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -482,6 +482,18 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,

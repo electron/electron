@@ -24,10 +24,10 @@ index 97257d47c6173872e55facf6f92801bd2fc3564b..8cdee730101fbdc79415654aa6fe4015
    Environment* env = Environment::GetCurrent(args);
  
 diff --git a/src/node_binding.h b/src/node_binding.h
-index 9f0692ca4e190bde251d4825aa9abac3d66b6ac6..f4024a05901f72f85e097a8ab6ddbd5812e9ba16 100644
+index 7256bf2bbcf73214a25e61156305cc212b6f2451..d129981ad8588376eeee61155964062f624695d6 100644
 --- a/src/node_binding.h
 +++ b/src/node_binding.h
-@@ -134,6 +134,8 @@ void GetInternalBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -137,6 +137,8 @@ void GetInternalBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
  void GetLinkedBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
  void DLOpen(const v8::FunctionCallbackInfo<v8::Value>& args);
  

@@ -11,7 +11,9 @@
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/bluez_dbus_thread_manager.h"
+#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 
 namespace {
 
@@ -34,6 +36,9 @@ PowerObserverLinux::PowerObserverLinux(
     base::PowerSuspendObserver* suspend_observer)
     : suspend_observer_(suspend_observer),
       lock_owner_name_(GetExecutableBaseName()) {
+  if (!bluez::BluezDBusManager::IsInitialized())
+    bluez::DBusBluezManagerWrapperLinux::Initialize();
+
   auto* bus = bluez::BluezDBusThreadManager::Get()->GetSystemBus();
   if (!bus) {
     LOG(WARNING) << "Failed to get system bus connection";

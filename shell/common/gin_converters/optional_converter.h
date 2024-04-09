@@ -5,17 +5,17 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_OPTIONAL_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_OPTIONAL_CONVERTER_H_
 
+#include <optional>
 #include <utility>
 
 #include "gin/converter.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin {
 
 template <typename T>
-struct Converter<absl::optional<T>> {
+struct Converter<std::optional<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const absl::optional<T>& val) {
+                                   const std::optional<T>& val) {
     if (val)
       return Converter<T>::ToV8(isolate, val.value());
     else
@@ -23,7 +23,7 @@ struct Converter<absl::optional<T>> {
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     absl::optional<T>* out) {
+                     std::optional<T>* out) {
     T converted;
     if (Converter<T>::FromV8(isolate, val, &converted))
       out->emplace(std::move(converted));

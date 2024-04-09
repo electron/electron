@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
 #include "content/public/browser/context_menu_params.h"
@@ -22,55 +23,10 @@
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
-namespace {
-
-[[nodiscard]] constexpr base::StringPiece FormControlToInputFieldTypeString(
-    const absl::optional<blink::mojom::FormControlType> form_control_type) {
-  if (!form_control_type)
-    return "none";
-
-  switch (*form_control_type) {
-    case blink::mojom::FormControlType::kInputPassword:
-      return "password";
-
-    case blink::mojom::FormControlType::kInputText:
-      return "plainText";
-
-    // other input types:
-    case blink::mojom::FormControlType::kInputButton:
-    case blink::mojom::FormControlType::kInputCheckbox:
-    case blink::mojom::FormControlType::kInputColor:
-    case blink::mojom::FormControlType::kInputDate:
-    case blink::mojom::FormControlType::kInputDatetimeLocal:
-    case blink::mojom::FormControlType::kInputEmail:
-    case blink::mojom::FormControlType::kInputFile:
-    case blink::mojom::FormControlType::kInputHidden:
-    case blink::mojom::FormControlType::kInputImage:
-    case blink::mojom::FormControlType::kInputMonth:
-    case blink::mojom::FormControlType::kInputNumber:
-    case blink::mojom::FormControlType::kInputRadio:
-    case blink::mojom::FormControlType::kInputRange:
-    case blink::mojom::FormControlType::kInputReset:
-    case blink::mojom::FormControlType::kInputSearch:
-    case blink::mojom::FormControlType::kInputSubmit:
-    case blink::mojom::FormControlType::kInputTelephone:
-    case blink::mojom::FormControlType::kInputTime:
-    case blink::mojom::FormControlType::kInputUrl:
-    case blink::mojom::FormControlType::kInputWeek:
-      return "other";
-
-    // not an input type
-    default:
-      return "none";
-  }
-}
-
-}  // namespace
-
 namespace gin {
 
 static constexpr auto MenuSourceTypes =
-    base::MakeFixedFlatMap<base::StringPiece, ui::MenuSourceType>({
+    base::MakeFixedFlatMap<std::string_view, ui::MenuSourceType>({
         {"adjustSelection", ui::MENU_SOURCE_ADJUST_SELECTION},
         {"adjustSelectionReset", ui::MENU_SOURCE_ADJUST_SELECTION_RESET},
         {"keyboard", ui::MENU_SOURCE_KEYBOARD},
@@ -161,12 +117,6 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
   dict.Set("frameCharset", params.frame_charset);
   dict.Set("referrerPolicy", params.referrer_policy);
   dict.Set("formControlType", params.form_control_type);
-
-  // NB: inputFieldType is deprecated because the upstream
-  // field was removed; we are emulating it now until removal
-  dict.Set("inputFieldType",
-           FormControlToInputFieldTypeString(params.form_control_type));
-
   dict.Set("menuSourceType", params.source_type);
 
   return gin::ConvertToV8(isolate, dict);
@@ -256,15 +206,19 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "captured-surface-control");
     case blink::PermissionType::SMART_CARD:
       return StringToV8(isolate, "smart-card");
+    case blink::PermissionType::WEB_PRINTING:
+      return StringToV8(isolate, "web-printing");
+    case blink::PermissionType::SPEAKER_SELECTION:
+      return StringToV8(isolate, "speaker-selection");
+    case blink::PermissionType::POINTER_LOCK:
+      return StringToV8(isolate, "pointerLock");
+    case blink::PermissionType::KEYBOARD_LOCK:
+      return StringToV8(isolate, "keyboardLock");
     case blink::PermissionType::NUM:
       break;
   }
 
   switch (static_cast<PermissionType>(val)) {
-    case PermissionType::POINTER_LOCK:
-      return StringToV8(isolate, "pointerLock");
-    case PermissionType::KEYBOARD_LOCK:
-      return StringToV8(isolate, "keyboardLock");
     case PermissionType::FULLSCREEN:
       return StringToV8(isolate, "fullscreen");
     case PermissionType::OPEN_EXTERNAL:
@@ -285,12 +239,11 @@ bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 content::StopFindAction* out) {
   using Val = content::StopFindAction;
-  static constexpr auto Lookup =
-      base::MakeFixedFlatMap<base::StringPiece, Val>({
-          {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
-          {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
-          {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},
-      });
+  static constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, Val>({
+      {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
+      {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
+      {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},
+  });
   return FromV8WithLookup(isolate, val, Lookup, out);
 }
 

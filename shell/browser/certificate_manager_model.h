@@ -13,11 +13,6 @@
 #include "base/memory/ref_counted.h"
 #include "net/cert/nss_cert_database.h"
 
-namespace content {
-class BrowserContext;
-class ResourceContext;
-}  // namespace content
-
 // CertificateManagerModel provides the data to be displayed in the certificate
 // manager dialog, and processes changes from the view.
 class CertificateManagerModel {
@@ -26,10 +21,8 @@ class CertificateManagerModel {
       base::OnceCallback<void(std::unique_ptr<CertificateManagerModel>)>;
 
   // Creates a CertificateManagerModel. The model will be passed to the callback
-  // when it is ready. The caller must ensure the model does not outlive the
-  // |browser_context|.
-  static void Create(content::BrowserContext* browser_context,
-                     CreationCallback callback);
+  // when it is ready.
+  static void Create(CreationCallback callback);
 
   // disable copy
   CertificateManagerModel(const CertificateManagerModel&) = delete;
@@ -105,8 +98,7 @@ class CertificateManagerModel {
                                      CreationCallback callback);
   static void DidGetCertDBOnIOThread(CreationCallback callback,
                                      net::NSSCertDatabase* cert_db);
-  static void GetCertDBOnIOThread(content::ResourceContext* context,
-                                  CreationCallback callback);
+  static void GetCertDBOnIOThread(CreationCallback callback);
 
   raw_ptr<net::NSSCertDatabase> cert_db_;
   // Whether the certificate database has a public slot associated with the

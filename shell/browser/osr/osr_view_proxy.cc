@@ -29,20 +29,12 @@ void OffscreenViewProxy::RemoveObserver() {
   observer_ = nullptr;
 }
 
-const SkBitmap* OffscreenViewProxy::GetBitmap() const {
-  return view_bitmap_.get();
-}
-
 void OffscreenViewProxy::SetBitmap(const SkBitmap& bitmap) {
   if (view_bounds_.width() == bitmap.width() &&
       view_bounds_.height() == bitmap.height() && observer_) {
     view_bitmap_ = std::make_unique<SkBitmap>(bitmap);
     observer_->OnProxyViewPaint(view_bounds_);
   }
-}
-
-const gfx::Rect& OffscreenViewProxy::GetBounds() {
-  return view_bounds_;
 }
 
 void OffscreenViewProxy::SetBounds(const gfx::Rect& bounds) {

@@ -55,7 +55,7 @@ bool ScopedTemporaryFile::InitFromFile(
     const base::FilePath::StringType& ext,
     uint64_t offset,
     uint64_t size,
-    const absl::optional<IntegrityPayload>& integrity) {
+    const std::optional<IntegrityPayload>& integrity) {
   if (!src->IsValid())
     return false;
 

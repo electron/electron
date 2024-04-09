@@ -8,6 +8,7 @@
 #include "shell/browser/native_window.h"
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -49,27 +50,27 @@ class NativeWindowViews : public NativeWindow,
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
-  bool IsFocused() override;
+  bool IsFocused() const override;
   void Show() override;
   void ShowInactive() override;
   void Hide() override;
-  bool IsVisible() override;
-  bool IsEnabled() override;
+  bool IsVisible() const override;
+  bool IsEnabled() const override;
   void SetEnabled(bool enable) override;
   void Maximize() override;
   void Unmaximize() override;
-  bool IsMaximized() override;
+  bool IsMaximized() const override;
   void Minimize() override;
   void Restore() override;
-  bool IsMinimized() override;
+  bool IsMinimized() const override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds, bool animate) override;
-  gfx::Rect GetBounds() override;
-  gfx::Rect GetContentBounds() override;
-  gfx::Size GetContentSize() override;
-  gfx::Rect GetNormalBounds() override;
-  SkColor GetBackgroundColor() override;
+  gfx::Rect GetBounds() const override;
+  gfx::Rect GetContentBounds() const override;
+  gfx::Size GetContentSize() const override;
+  gfx::Rect GetNormalBounds() const override;
+  SkColor GetBackgroundColor() const override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
 #if BUILDFLAG(IS_WIN)
@@ -78,45 +79,45 @@ class NativeWindowViews : public NativeWindow,
   void SetResizable(bool resizable) override;
   bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
-  bool IsResizable() override;
+  bool IsResizable() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
   void SetMovable(bool movable) override;
-  bool IsMovable() override;
+  bool IsMovable() const override;
   void SetMinimizable(bool minimizable) override;
-  bool IsMinimizable() override;
+  bool IsMinimizable() const override;
   void SetMaximizable(bool maximizable) override;
-  bool IsMaximizable() override;
+  bool IsMaximizable() const override;
   void SetFullScreenable(bool fullscreenable) override;
-  bool IsFullScreenable() override;
+  bool IsFullScreenable() const override;
   void SetClosable(bool closable) override;
-  bool IsClosable() override;
+  bool IsClosable() const override;
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
                       int relativeLevel) override;
-  ui::ZOrderLevel GetZOrderLevel() override;
+  ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
   void SetTitle(const std::string& title) override;
-  std::string GetTitle() override;
+  std::string GetTitle() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override;
-  bool IsExcludedFromShownWindowsMenu() override;
+  bool IsExcludedFromShownWindowsMenu() const override;
   void SetSimpleFullScreen(bool simple_fullscreen) override;
-  bool IsSimpleFullScreen() override;
+  bool IsSimpleFullScreen() const override;
   void SetKiosk(bool kiosk) override;
-  bool IsKiosk() override;
+  bool IsKiosk() const override;
   bool IsTabletMode() const override;
   void SetBackgroundColor(SkColor color) override;
   void SetHasShadow(bool has_shadow) override;
-  bool HasShadow() override;
+  bool HasShadow() const override;
   void SetOpacity(const double opacity) override;
-  double GetOpacity() override;
+  double GetOpacity() const override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
-  bool IsFocusable() override;
+  bool IsFocusable() const override;
   void SetMenu(ElectronMenuModel* menu_model) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
@@ -125,16 +126,16 @@ class NativeWindowViews : public NativeWindow,
                       const std::string& description) override;
   void SetProgressBar(double progress, const ProgressState state) override;
   void SetAutoHideMenuBar(bool auto_hide) override;
-  bool IsMenuBarAutoHide() override;
+  bool IsMenuBarAutoHide() const override;
   void SetMenuBarVisibility(bool visible) override;
-  bool IsMenuBarVisible() override;
+  bool IsMenuBarVisible() const override;
   void SetBackgroundMaterial(const std::string& type) override;
 
   void SetVisibleOnAllWorkspaces(bool visible,
                                  bool visibleOnFullScreen,
                                  bool skipTransformProcessType) override;
 
-  bool IsVisibleOnAllWorkspaces() override;
+  bool IsVisibleOnAllWorkspaces() const override;
 
   void SetGTKDarkThemeEnabled(bool use_dark_theme) override;
 
@@ -226,7 +227,7 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // Enable/disable:
-  bool ShouldBeEnabled();
+  bool ShouldBeEnabled() const;
   void SetEnabledInternal(bool enabled);
 
   // NativeWindow:
@@ -304,7 +305,7 @@ class NativeWindowViews : public NativeWindow,
   // Whether the window is currently being moved.
   bool is_moving_ = false;
 
-  absl::optional<gfx::Rect> pending_bounds_change_;
+  std::optional<gfx::Rect> pending_bounds_change_;
 
   // The color to use as the theme and symbol colors respectively for Window
   // Controls Overlay if enabled on Windows.

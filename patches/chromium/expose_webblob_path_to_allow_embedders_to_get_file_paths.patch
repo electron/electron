@@ -18,7 +18,7 @@ index 384a59138db11ea38028f844dd67e328ebffbe7b..f153997c2afccef1fa1b64ee5f162c28
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index 4d0d10c1fb87429f874bc89063b1f719873154e7..b5cc01801aece4623706cc5de9ccae809f270a3f 100644
+index f10a9bf39de576dfdf97d9c14447cd0de2026b89..3decbdfad72f4a08d6039555f269bcd94a47c053 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
 @@ -41,6 +41,7 @@

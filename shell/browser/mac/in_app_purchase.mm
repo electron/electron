@@ -26,6 +26,7 @@
   in_app_purchase::InAppPurchaseCallback callback_;
   NSInteger quantity_;
   NSString* username_;
+  InAppPurchase __strong* self_;
 }
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
@@ -53,6 +54,7 @@
     callback_ = std::move(callback);
     quantity_ = quantity;
     username_ = [username copy];
+    self_ = self;
   }
 
   return self;
@@ -91,6 +93,7 @@
   // Return if the product is not found or invalid.
   if (product == nil) {
     [self runCallback:false];
+    self_ = nil;
     return;
   }
 
@@ -114,6 +117,7 @@
 
   // Notify that the payment has been added to the queue with success.
   [self runCallback:true];
+  self_ = nil;
 }
 
 /**
@@ -126,10 +130,6 @@
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE, base::BindOnce(std::move(callback_), isProductValid));
   }
-}
-
-- (void)dealloc {
-  username_ = nil;
 }
 
 @end

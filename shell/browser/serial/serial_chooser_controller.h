@@ -34,6 +34,7 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   SerialChooserController(
       content::RenderFrameHost* render_frame_host,
       std::vector<blink::mojom::SerialPortFilterPtr> filters,
+      std::vector<::device::BluetoothUUID> allowed_bluetooth_service_class_ids,
       content::SerialChooser::Callback callback,
       content::WebContents* web_contents,
       base::WeakPtr<ElectronSerialDelegate> serial_delegate);
@@ -46,6 +47,8 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   // SerialChooserContext::PortObserver:
   void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
+  void OnPortConnectedStateChanged(
+      const device::mojom::SerialPortInfo& port) override {}
   void OnPortManagerConnectionError() override;
   void OnPermissionRevoked(const url::Origin& origin) override {}
   void OnSerialChooserContextShutdown() override;
@@ -53,11 +56,12 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
  private:
   api::Session* GetSession();
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
-  bool FilterMatchesAny(const device::mojom::SerialPortInfo& port) const;
+  bool DisplayDevice(const device::mojom::SerialPortInfo& port) const;
   void RunCallback(device::mojom::SerialPortInfoPtr port);
   void OnDeviceChosen(const std::string& port_id);
 
   std::vector<blink::mojom::SerialPortFilterPtr> filters_;
+  std::vector<::device::BluetoothUUID> allowed_bluetooth_service_class_ids_;
   content::SerialChooser::Callback callback_;
   url::Origin origin_;
 

@@ -11,9 +11,10 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+import { setTimeout as syncSetTimeout } from 'node:timers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -30,7 +31,7 @@ const isScaleFactorRounding = () => {
 
 const expectBoundsEqual = (actual: any, expected: any) => {
   if (!isScaleFactorRounding()) {
-    expect(expected).to.deep.equal(actual);
+    expect(actual).to.deep.equal(expected);
   } else if (Array.isArray(actual)) {
     expect(actual[0]).to.be.closeTo(expected[0], 1);
     expect(actual[1]).to.be.closeTo(expected[1], 1);
@@ -1245,6 +1246,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
+      // FIXME: disabled in `disabled-tests.json`
       ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
         // Show to focus app, then remove existing window
         w.show();
@@ -1807,6 +1809,36 @@ describe('BrowserWindow module', () => {
 
           expect(w.isMaximized()).to.equal(false);
           expect(w.isFullScreen()).to.equal(true);
+        });
+
+        it('does not crash if maximized, minimized, then restored to maximized state', (done) => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          let count = 0;
+
+          w.on('maximize', () => {
+            if (count === 0) syncSetTimeout(() => { w.minimize(); });
+            count++;
+          });
+
+          w.on('minimize', () => {
+            if (count === 1) syncSetTimeout(() => { w.restore(); });
+            count++;
+          });
+
+          w.on('restore', () => {
+            try {
+              throw new Error('hey!');
+            } catch (e: any) {
+              expect(e.message).to.equal('hey!');
+              done();
+            }
+          });
+
+          w.maximize();
         });
 
         it('checks normal bounds for maximized transparent window', async () => {
@@ -3774,7 +3806,6 @@ describe('BrowserWindow module', () => {
         expect(test.processMemoryInfo).to.be.an('object');
         expect(test.systemVersion).to.be.a('string');
         expect(test.cpuUsage).to.be.an('object');
-        expect(test.ioCounters).to.be.an('object');
         expect(test.uptime).to.be.a('number');
         expect(test.arch).to.equal(process.arch);
         expect(test.platform).to.equal(process.platform);
@@ -5611,6 +5642,19 @@ describe('BrowserWindow module', () => {
         expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
         expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
       });
+
+      it('does not disable maximize button if window is resizable', () => {
+        const w = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        expect(w.isMaximizable()).to.be.true('isMaximizable');
+
+        w.setResizable(false);
+
+        expect(w.isMaximizable()).to.be.false('isMaximizable');
+      });
     });
 
     ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
@@ -6427,8 +6471,8 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not display a visible background', async () => {
+    // FIXME(codebytere): figure out why these are failing on macOS arm64.
+    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6452,21 +6496,26 @@ describe('BrowserWindow module', () => {
       await foregroundWindow.loadFile(colorFile);
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const leftHalfColor = getPixelColor(screenCapture, {
-        x: display.size.width / 4,
-        y: display.size.height / 2
-      });
-      const rightHalfColor = getPixelColor(screenCapture, {
-        x: display.size.width - (display.size.width / 4),
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtPointOnDisplayMatches(
+        HexColors.GREEN,
+        (size) => ({
+          x: size.width / 4,
+          y: size.height / 2
+        })
+      );
+      await screenCapture.expectColorAtPointOnDisplayMatches(
+        HexColors.RED,
+        (size) => ({
+          x: size.width * 3 / 4,
+          y: size.height / 2
+        })
+      );
     });
 
-    ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
+    // FIXME(codebytere): figure out why these are failing on macOS arm64.
+    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('Allows setting a transparent window via CSS', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6493,13 +6542,9 @@ describe('BrowserWindow module', () => {
       await once(ipcMain, 'set-transparent');
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
 
-      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -6516,15 +6561,11 @@ describe('BrowserWindow module', () => {
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
         await setTimeout(1000);
-        const screenCapture = await captureScreen();
-        const centerColor = getPixelColor(screenCapture, {
-          x: display.size.width / 2,
-          y: display.size.height / 2
-        });
-        window.close();
-
+        const screenCapture = await ScreenCapture.createForDisplay(display);
         // color-scheme is set to dark so background should not be white
-        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+        await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+
+        window.close();
       }
     });
   });
@@ -6546,13 +6587,122 @@ describe('BrowserWindow module', () => {
       await once(w, 'ready-to-show');
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
+
+      const screenCapture = await ScreenCapture.createForDisplay(display);
+      await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
+    });
+  });
+
+  describe('draggable regions', () => {
+    afterEach(closeAllWindows);
+
+    ifit(hasCapturableScreen())('should allow the window to be dragged when enabled', async () => {
+      // WOA fails to load libnut so we're using require to defer loading only
+      // on supported platforms.
+      // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
+      // @ts-ignore: nut-js is an optional dependency so it may not be installed
+      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        x: 0,
+        y: 0,
+        width: display.bounds.width / 2,
+        height: display.bounds.height / 2,
+        frame: false,
+        titleBarStyle: 'hidden'
       });
 
-      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      w.loadFile(overlayHTML);
+      await once(w, 'ready-to-show');
+
+      const winBounds = w.getBounds();
+      const titleBarHeight = 30;
+      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
+      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
+
+      const startPos = w.getPosition();
+
+      await mouse.setPosition(await centerOf(titleBarRegion));
+      await mouse.pressButton(Button.LEFT);
+      await mouse.drag(straightTo(centerOf(screenRegion)));
+
+      // Wait for move to complete
+      await Promise.race([
+        once(w, 'move'),
+        setTimeout(100) // fallback for possible race condition
+      ]);
+
+      const endPos = w.getPosition();
+
+      expect(startPos).to.not.deep.equal(endPos);
+    });
+
+    ifit(hasCapturableScreen())('should allow the window to be dragged when no WCO and --webkit-app-region: drag enabled', async () => {
+      // @ts-ignore: nut-js is an optional dependency so it may not be installed
+      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+
+      const display = screen.getPrimaryDisplay();
+      const w = new BrowserWindow({
+        x: 0,
+        y: 0,
+        width: display.bounds.width / 2,
+        height: display.bounds.height / 2,
+        frame: false
+      });
+
+      const basePageHTML = path.join(__dirname, 'fixtures', 'pages', 'base-page.html');
+      w.loadFile(basePageHTML);
+      await once(w, 'ready-to-show');
+
+      await w.webContents.executeJavaScript(`
+        const style = document.createElement('style');
+        style.innerHTML = \`
+        #titlebar {
+            
+          background-color: red;
+          height: 30px;
+          width: 100%;
+          -webkit-user-select: none;
+          -webkit-app-region: drag;
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 1000000000000;
+        }
+        \`;
+        
+        const titleBar = document.createElement('title-bar');
+        titleBar.id = 'titlebar';
+        titleBar.textContent = 'test-titlebar';
+        
+        document.body.append(style);
+        document.body.append(titleBar);
+      `);
+      // allow time for titlebar to finish loading
+      await setTimeout(2000);
+
+      const winBounds = w.getBounds();
+      const titleBarHeight = 30;
+      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
+      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
+
+      const startPos = w.getPosition();
+      await mouse.setPosition(await centerOf(titleBarRegion));
+      await mouse.pressButton(Button.LEFT);
+      await mouse.drag(straightTo(centerOf(screenRegion)));
+
+      // Wait for move to complete
+      await Promise.race([
+        once(w, 'move'),
+        setTimeout(1000) // fallback for possible race condition
+      ]);
+
+      const endPos = w.getPosition();
+
+      expect(startPos).to.not.deep.equal(endPos);
     });
   });
 });

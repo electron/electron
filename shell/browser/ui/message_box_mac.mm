@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/message_box.h"
 
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,6 +11,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/containers/contains.h"
+#include "base/containers/flat_map.h"
 #include "base/functional/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
@@ -31,8 +31,8 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<int, NSAlert*>& GetDialogsMap() {
-  static base::NoDestructor<std::map<int, NSAlert*>> dialogs;
+base::flat_map<int, NSAlert*>& GetDialogsMap() {
+  static base::NoDestructor<base::flat_map<int, NSAlert*>> dialogs;
   return *dialogs;
 }
 
@@ -76,15 +76,16 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
     [[ns_buttons objectAtIndex:settings.default_id] setKeyEquivalent:@"\r"];
   }
 
-  // Bind cancel id button to escape key if there is more than one button
-  if (button_count > 1 && settings.cancel_id >= 0 &&
-      settings.cancel_id < button_count) {
-    [[ns_buttons objectAtIndex:settings.cancel_id] setKeyEquivalent:@"\e"];
-  }
+  if (button_count > 1 && settings.cancel_id >= 0) {
+    // Bind cancel id button to escape key if there is more than one button.
+    if (settings.cancel_id < button_count) {
+      [[ns_buttons objectAtIndex:settings.cancel_id] setKeyEquivalent:@"\e"];
+    }
 
-  // TODO(@codebytere): This behavior violates HIG & should be deprecated.
-  if (settings.cancel_id >= 0 && settings.cancel_id == settings.default_id) {
-    [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
+    // TODO(@codebytere): This behavior violates HIG & should be deprecated.
+    if (settings.cancel_id == settings.default_id) {
+      [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
+    }
   }
 
   if (!settings.checkbox_label.empty()) {
@@ -97,8 +98,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   }
 
   if (!settings.icon.isNull()) {
-    NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
-        *settings.icon.bitmap(), base::mac::GetGenericRGBColorSpace());
+    NSImage* image = skia::SkBitmapToNSImage(*settings.icon.bitmap());
     [alert setIcon:image];
   }
 
@@ -162,7 +162,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
-    __block absl::optional<int> id = std::move(settings.id);
+    __block std::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
 
     auto handler = ^(NSModalResponse response) {

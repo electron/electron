@@ -227,9 +227,9 @@ describe('web security', () => {
     await w.loadURL(`data:text/html,<script>
         const s = document.createElement('script')
         s.src = "${serverUrl}"
-        // The script will load successfully but its body will be emptied out
-        // by CORB, so we don't expect a syntax error.
-        s.onload = () => { require('electron').ipcRenderer.send('success') }
+        // The script will not load under ORB, refs https://chromium-review.googlesource.com/c/chromium/src/+/3785025.
+        // Before ORB an empty response is sent, which is now replaced by a network error.
+        s.onerror = () => { require('electron').ipcRenderer.send('success') }
         document.documentElement.appendChild(s)
       </script>`);
     await p;
@@ -1383,6 +1383,138 @@ describe('chromium features', () => {
     });
   });
 
+  describe('Storage Access API', () => {
+    afterEach(closeAllWindows);
+    afterEach(() => {
+      session.defaultSession.setPermissionCheckHandler(null);
+      session.defaultSession.setPermissionRequestHandler(null);
+    });
+
+    it('can determine if a permission is granted for "storage-access"', async () => {
+      session.defaultSession.setPermissionCheckHandler(
+        (_wc, permission) => permission === 'storage-access'
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+
+      const permission = await w.webContents.executeJavaScript(`
+        navigator.permissions.query({ name: 'storage-access' })
+          .then(permission => permission.state).catch(err => err.message);
+      `, true);
+
+      expect(permission).to.eq('granted');
+    });
+
+    it('can determine if a permission is denied for "storage-access"', async () => {
+      session.defaultSession.setPermissionCheckHandler(
+        (_wc, permission) => permission !== 'storage-access'
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+
+      const permission = await w.webContents.executeJavaScript(`
+        navigator.permissions.query({ name: 'storage-access' })
+          .then(permission => permission.state).catch(err => err.message);
+      `, true);
+
+      expect(permission).to.eq('denied');
+    });
+
+    it('can determine if a permission is granted for "top-level-storage-access"', async () => {
+      session.defaultSession.setPermissionCheckHandler(
+        (_wc, permission) => permission === 'top-level-storage-access'
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+
+      const permission = await w.webContents.executeJavaScript(`
+        navigator.permissions.query({
+          name: 'top-level-storage-access',
+          requestedOrigin: "https://www.example.com",
+        }).then(permission => permission.state).catch(err => err.message);
+      `, true);
+
+      expect(permission).to.eq('granted');
+    });
+
+    it('can determine if a permission is denied for "top-level-storage-access"', async () => {
+      session.defaultSession.setPermissionCheckHandler(
+        (_wc, permission) => permission !== 'top-level-storage-access'
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+
+      const permission = await w.webContents.executeJavaScript(`
+        navigator.permissions.query({
+          name: 'top-level-storage-access',
+          requestedOrigin: "https://www.example.com",
+        }).then(permission => permission.state).catch(err => err.message);
+      `, true);
+
+      expect(permission).to.eq('denied');
+    });
+
+    it('can grant a permission request for "top-level-storage-access"', async () => {
+      session.defaultSession.setPermissionRequestHandler(
+        (_wc, permission, callback) => {
+          callback(permission === 'top-level-storage-access');
+        }
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
+
+      // requestStorageAccessFor returns a Promise that fulfills with undefined
+      // if the access to third-party cookies was granted and rejects if access was denied.
+      const permission = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const button = document.getElementById('button');
+          button.addEventListener("click", () => {
+            document.requestStorageAccessFor('https://myfakesite').then(
+              (res) => { resolve('granted') },
+              (err) => { resolve('denied') },
+            );
+          });
+          button.click();
+        });
+      `, true);
+
+      expect(permission).to.eq('granted');
+    });
+
+    it('can deny a permission request for "top-level-storage-access"', async () => {
+      session.defaultSession.setPermissionRequestHandler(
+        (_wc, permission, callback) => {
+          callback(permission !== 'top-level-storage-access');
+        }
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
+
+      // requestStorageAccessFor returns a Promise that fulfills with undefined
+      // if the access to third-party cookies was granted and rejects if access was denied.
+      const permission = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const button = document.getElementById('button');
+          button.addEventListener("click", () => {
+            document.requestStorageAccessFor('https://myfakesite').then(
+              (res) => { resolve('granted') },
+              (err) => { resolve('denied') },
+            );
+          });
+          button.click();
+        });
+      `, true);
+
+      expect(permission).to.eq('denied');
+    });
+  });
+
   describe('IdleDetection', () => {
     afterEach(closeAllWindows);
     afterEach(() => {
@@ -2068,13 +2200,13 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         // History should have current page by now.
-        expect(w.webContents.length()).to.equal(1);
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
 
         const waitCommit = once(w.webContents, 'navigation-entry-committed');
         w.webContents.executeJavaScript('window.history.pushState({}, "")');
         await waitCommit;
         // Initial page + pushed state.
-        expect(w.webContents.length()).to.equal(2);
+        expect(w.webContents.navigationHistory.length()).to.equal(2);
       });
     });
 
@@ -2102,7 +2234,7 @@ describe('chromium features', () => {
         });
         await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
         expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
-        expect(w.webContents.getActiveIndex()).to.equal(1);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
       });
     });
   });
@@ -2113,7 +2245,8 @@ describe('chromium features', () => {
       'chrome://gpu',
       'chrome://media-internals',
       'chrome://tracing',
-      'chrome://webrtc-internals'
+      'chrome://webrtc-internals',
+      'chrome://process-internals'
     ];
 
     for (const url of urls) {
@@ -2121,8 +2254,9 @@ describe('chromium features', () => {
         it('loads the page successfully', async () => {
           const w = new BrowserWindow({ show: false });
           await w.loadURL(url);
+          const host = url.substring('chrome://'.length);
           const pageExists = await w.webContents.executeJavaScript(
-            "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+            `window.hasOwnProperty('chrome') && window.location.host === '${host}'`
           );
           expect(pageExists).to.be.true();
         });
@@ -2988,7 +3122,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await readClipboard();
-    expect(clipboard).to.not.equal('Read permission denied.');
+    expect(clipboard).to.not.contain('Read permission denied.');
   });
 
   it('returns an error when permission denied', async () => {
@@ -3000,7 +3134,7 @@ describe('navigator.clipboard.read', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.equal('Read permission denied.');
+    expect(clipboard).to.contain('Read permission denied.');
   });
 
   it('returns clipboard contents when permission is granted', async () => {
@@ -3012,7 +3146,7 @@ describe('navigator.clipboard.read', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.not.equal('Read permission denied.');
+    expect(clipboard).to.not.contain('Read permission denied.');
   });
 });
 
@@ -3036,7 +3170,7 @@ describe('navigator.clipboard.write', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
+    expect(clipboard).to.be.undefined();
   });
 
   it('returns an error when permission denied', async () => {
@@ -3048,7 +3182,7 @@ describe('navigator.clipboard.write', () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.equal('Write permission denied.');
+    expect(clipboard).to.contain('Write permission denied.');
   });
 
   it('returns clipboard contents when permission is granted', async () => {
@@ -3060,7 +3194,7 @@ describe('navigator.clipboard.write', () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
+    expect(clipboard).to.be.undefined();
   });
 });
 

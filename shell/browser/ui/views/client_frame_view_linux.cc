@@ -14,6 +14,7 @@
 #include "shell/browser/ui/views/frameless_view.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/base/models/image_model.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/font_list.h"
@@ -62,9 +63,6 @@ ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
 }
 
 }  // namespace
-
-// static
-const char ClientFrameViewLinux::kViewClassName[] = "ClientFrameView";
 
 ClientFrameViewLinux::ClientFrameViewLinux()
     : theme_(ui::NativeTheme::GetInstanceForNativeUi()),
@@ -132,9 +130,11 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
           window->GetAcceleratedWidget()));
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
+  bool tiled = tiled_edges().top || tiled_edges().left ||
+               tiled_edges().bottom || tiled_edges().right;
   frame_provider_ =
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, frame_->IsMaximized());
+          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
 
   UpdateWindowTitle();
 
@@ -270,8 +270,8 @@ gfx::Size ClientFrameViewLinux::GetMaximumSize() const {
   return SizeWithDecorations(FramelessView::GetMaximumSize());
 }
 
-void ClientFrameViewLinux::Layout() {
-  FramelessView::Layout();
+void ClientFrameViewLinux::Layout(PassKey) {
+  LayoutSuperclass<FramelessView>(this);
 
   if (frame_->IsFullscreen()) {
     // Just hide everything and return.
@@ -283,9 +283,11 @@ void ClientFrameViewLinux::Layout() {
     return;
   }
 
+  bool tiled = tiled_edges().top || tiled_edges().left ||
+               tiled_edges().bottom || tiled_edges().right;
   frame_provider_ =
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, frame_->IsMaximized());
+          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
 
   UpdateButtonImages();
   LayoutButtons();
@@ -302,12 +304,8 @@ void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
   if (!frame_->IsFullscreen()) {
     frame_provider_->PaintWindowFrame(canvas, GetLocalBounds(),
                                       GetTitlebarBounds().bottom(),
-                                      ShouldPaintAsActive(), tiled_edges());
+                                      ShouldPaintAsActive(), GetInputInsets());
   }
-}
-
-const char* ClientFrameViewLinux::GetClassName() const {
-  return kViewClassName;
 }
 
 void ClientFrameViewLinux::PaintAsActiveChanged() {
@@ -502,5 +500,8 @@ views::View* ClientFrameViewLinux::TargetForRect(views::View* root,
                                                  const gfx::Rect& rect) {
   return views::NonClientFrameView::TargetForRect(root, rect);
 }
+
+BEGIN_METADATA(ClientFrameViewLinux)
+END_METADATA
 
 }  // namespace electron
