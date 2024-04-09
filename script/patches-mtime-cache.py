@@ -40,7 +40,6 @@ def generate_cache(patches_config):
                 "mtime": os.path.getmtime(file_path),
             }
 
-    print("Returning the mtime_cache")
     return mtime_cache
 
 
@@ -180,7 +179,6 @@ def main():
 
         set_mtimes(json.load(args.patches_config), args.mtime)
 
-    print("Done with patches-mtime-cache.py")
     return 0
 
 
