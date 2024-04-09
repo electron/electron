@@ -329,6 +329,8 @@ static_library("chrome") {
         "//chrome/browser/printing/pdf_to_emf_converter.h",
         "//chrome/browser/printing/printer_xml_parser_impl.cc",
         "//chrome/browser/printing/printer_xml_parser_impl.h",
+        "//chrome/browser/printing/xps_features.cc",
+        "//chrome/browser/printing/xps_features.h",
       ]
       deps += [ "//printing:printing_base" ]
     }
