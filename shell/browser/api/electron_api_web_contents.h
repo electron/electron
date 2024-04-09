@@ -236,7 +236,6 @@ class WebContents : public ExclusiveAccessContext,
 #if BUILDFLAG(ENABLE_PRINTING)
   void OnGetDeviceNameToUse(base::Value::Dict print_settings,
                             printing::CompletionCallback print_callback,
-                            bool silent,
                             // <error, device_name>
                             std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);

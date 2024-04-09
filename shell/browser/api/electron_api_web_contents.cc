@@ -2952,7 +2952,6 @@ bool WebContents::IsCurrentlyAudible() {
 void WebContents::OnGetDeviceNameToUse(
     base::Value::Dict print_settings,
     printing::CompletionCallback print_callback,
-    bool silent,
     // <error, device_name>
     std::pair<std::string, std::u16string> info) {
   // The content::WebContents might be already deleted at this point, and the
@@ -2982,7 +2981,7 @@ void WebContents::OnGetDeviceNameToUse(
                   ? focused_frame
                   : web_contents()->GetPrimaryMainFrame();
 
-  print_view_manager->PrintNow(rfh, silent, std::move(print_settings),
+  print_view_manager->PrintNow(rfh, std::move(print_settings),
                                std::move(print_callback));
 }
 
@@ -3003,9 +3002,10 @@ void WebContents::Print(gin::Arguments* args) {
     return;
   }
 
-  // Set optional silent printing
+  // Set optional silent printing.
   bool silent = false;
   options.Get("silent", &silent);
+  settings.Set("silent", silent);
 
   bool print_background = false;
   options.Get("printBackground", &print_background);
@@ -3150,7 +3150,7 @@ void WebContents::Print(gin::Arguments* args) {
       FROM_HERE, base::BindOnce(&GetDeviceNameToUse, device_name),
       base::BindOnce(&WebContents::OnGetDeviceNameToUse,
                      weak_factory_.GetWeakPtr(), std::move(settings),
-                     std::move(callback), silent));
+                     std::move(callback)));
 }
 
 // Partially duplicated and modified from
