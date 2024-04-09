@@ -5,6 +5,10 @@ const { BrowserWindow } = process._linkedBinding('electron_browser_window') as {
 Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
 BrowserWindow.prototype._init = function (this: BWT) {
+  if (this.constructor.name !== 'BrowserWindow') {
+    throw new Error('Subclassing BrowserWindow is not supported in Electron');
+  }
+
   // Call parent class's _init.
   (BaseWindow.prototype as any)._init.call(this);
 
@@ -70,7 +74,9 @@ BrowserWindow.prototype._init = function (this: BWT) {
   });
 };
 
-const isBrowserWindow = (win: any) => win instanceof BrowserWindow;
+const isBrowserWindow = (win: any) => {
+  return win && win.constructor.name === 'BrowserWindow';
+};
 
 BrowserWindow.fromId = (id: number) => {
   const win = BaseWindow.fromId(id);

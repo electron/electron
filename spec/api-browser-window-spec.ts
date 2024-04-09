@@ -65,6 +65,21 @@ describe('BrowserWindow module', () => {
       }).not.to.throw();
     });
 
+    it('does not allow subclassing', () => {
+      class SubclassWindow extends BrowserWindow {
+        mood: string = 'happy';
+        constructor (options: any) {
+          super(options);
+          this.mood = options.mood;
+        }
+      }
+
+      expect(() => {
+        /* eslint-disable-next-line no-new */
+        new SubclassWindow({ show: false, mood: 'excited' });
+      }).to.throw(/Subclassing BrowserWindow is not supported in Electron/);
+    });
+
     ifit(process.platform === 'linux')('does not crash when setting large window icons', async () => {
       const appPath = path.join(fixtures, 'apps', 'xwindow-icon');
       const appProcess = childProcess.spawn(process.execPath, [appPath]);
@@ -2756,28 +2771,6 @@ describe('BrowserWindow module', () => {
       const windows = BrowserWindow.getAllWindows();
       expect(windows).to.have.lengthOf(2);
       expect(windows.map((w) => w.id)).to.include.members([a.id, c.id]);
-    });
-
-    it('returns subclass instances of BrowserWindow', () => {
-      class SubclassWindow extends BrowserWindow {
-        mood: string = 'happy';
-        constructor (options: any) {
-          super(options);
-          this.mood = options.mood;
-        }
-      }
-
-      const a = new BrowserWindow({ show: false });
-      const b = new BrowserWindow({ show: false });
-      const c = new SubclassWindow({ show: false, mood: 'excited' });
-
-      const windows = BrowserWindow.getAllWindows();
-      expect(windows).to.have.lengthOf(3);
-      expect(windows.map((w) => w.id)).to.include.members([a.id, b.id, c.id]);
-
-      const scw = windows.find((w) => w.id === c.id) as SubclassWindow;
-      expect(scw).to.be.an.instanceOf(SubclassWindow);
-      expect(scw.mood).to.equal('excited');
     });
   });
 
