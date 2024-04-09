@@ -1,7 +1,5 @@
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
-declare const ENABLE_VIEWS_API: boolean;
-
 declare namespace NodeJS {
   interface ModuleInternal extends NodeJS.Module {
     new(id: string, parent?: NodeJS.Module | null): NodeJS.Module;
@@ -18,7 +16,6 @@ declare namespace NodeJS {
     isBuiltinSpellCheckerEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
-    isViewApiEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
@@ -93,7 +90,6 @@ declare namespace NodeJS {
       asarPath: string;
       filePath: string;
     };
-    initAsarSupport(require: NodeJS.Require): void;
   }
 
   interface NetBinding {
@@ -104,6 +100,7 @@ declare namespace NodeJS {
     Net: any;
     net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
+    resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
   }
 
   interface NotificationBinding {
@@ -212,11 +209,11 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
+    _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
-    _linkedBinding(name: 'electron_browser_browser_view'): { BrowserView: typeof Electron.BrowserView };
     _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer; };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void; };
@@ -225,7 +222,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
     _linkedBinding(name: 'electron_browser_message_port'): { createPair(): { port1: Electron.MessagePortMain, port2: Electron.MessagePortMain }; };
     _linkedBinding(name: 'electron_browser_native_theme'): { nativeTheme: Electron.NativeTheme };
-    _linkedBinding(name: 'electron_browser_net'): NetBinding;
     _linkedBinding(name: 'electron_browser_notification'): NotificationBinding;
     _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };

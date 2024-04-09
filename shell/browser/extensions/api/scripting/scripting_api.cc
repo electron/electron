@@ -22,6 +22,7 @@
 #include "extensions/browser/api/scripting/scripting_utils.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/browser/extension_file_task_runner.h"
+#include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_system.h"
 #include "extensions/browser/extension_user_script_loader.h"
 #include "extensions/browser/extension_util.h"
@@ -198,14 +199,14 @@ bool GetFileResources(const std::vector<std::string>& files,
 
 using ResourcesLoadedCallback =
     base::OnceCallback<void(std::vector<InjectedFileSource>,
-                            absl::optional<std::string>)>;
+                            std::optional<std::string>)>;
 
 // Checks the loaded content of extension resources. Invokes `callback` with
 // the constructed file sources on success or with an error on failure.
 void CheckLoadedResources(std::vector<std::string> file_names,
                           ResourcesLoadedCallback callback,
                           std::vector<std::unique_ptr<std::string>> file_data,
-                          absl::optional<std::string> load_error) {
+                          std::optional<std::string> load_error) {
   if (load_error) {
     std::move(callback).Run({}, std::move(load_error));
     return;
@@ -228,7 +229,7 @@ void CheckLoadedResources(std::vector<std::string> file_names,
     }
   }
 
-  std::move(callback).Run(std::move(file_sources), absl::nullopt);
+  std::move(callback).Run(std::move(file_sources), std::nullopt);
 }
 
 // Checks the specified `files` for validity, and attempts to load and localize
@@ -582,7 +583,7 @@ ScriptingExecuteScriptFunction::ScriptingExecuteScriptFunction() = default;
 ScriptingExecuteScriptFunction::~ScriptingExecuteScriptFunction() = default;
 
 ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
-  absl::optional<api::scripting::ExecuteScript::Params> params =
+  std::optional<api::scripting::ExecuteScript::Params> params =
       api::scripting::ExecuteScript::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
   injection_ = std::move(params->injection);
@@ -631,10 +632,11 @@ ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
     std::vector<std::string> string_args;
     string_args.reserve(injection_.args->size());
     for (const auto& arg : *injection_.args) {
-      std::string json;
-      if (!base::JSONWriter::Write(arg, &json))
+      if (auto json = base::WriteJson(arg)) {
+        string_args.push_back(std::move(*json));
+      } else {
         return RespondNow(Error("Unserializable argument passed."));
-      string_args.push_back(std::move(json));
+      }
     }
     args_expression = base::JoinString(string_args, ",");
   }
@@ -654,7 +656,7 @@ ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
 
 void ScriptingExecuteScriptFunction::DidLoadResources(
     std::vector<InjectedFileSource> file_sources,
-    absl::optional<std::string> load_error) {
+    std::optional<std::string> load_error) {
   if (load_error) {
     Respond(Error(std::move(*load_error)));
     return;
@@ -749,7 +751,7 @@ ScriptingInsertCSSFunction::ScriptingInsertCSSFunction() = default;
 ScriptingInsertCSSFunction::~ScriptingInsertCSSFunction() = default;
 
 ExtensionFunction::ResponseAction ScriptingInsertCSSFunction::Run() {
-  absl::optional<api::scripting::InsertCSS::Params> params =
+  std::optional<api::scripting::InsertCSS::Params> params =
       api::scripting::InsertCSS::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
@@ -793,7 +795,7 @@ ExtensionFunction::ResponseAction ScriptingInsertCSSFunction::Run() {
 
 void ScriptingInsertCSSFunction::DidLoadResources(
     std::vector<InjectedFileSource> file_sources,
-    absl::optional<std::string> load_error) {
+    std::optional<std::string> load_error) {
   if (load_error) {
     Respond(Error(std::move(*load_error)));
     return;
@@ -850,7 +852,7 @@ ScriptingRemoveCSSFunction::ScriptingRemoveCSSFunction() = default;
 ScriptingRemoveCSSFunction::~ScriptingRemoveCSSFunction() = default;
 
 ExtensionFunction::ResponseAction ScriptingRemoveCSSFunction::Run() {
-  absl::optional<api::scripting::RemoveCSS::Params> params =
+  std::optional<api::scripting::RemoveCSS::Params> params =
       api::scripting::RemoveCSS::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
@@ -929,7 +931,7 @@ ScriptingRegisterContentScriptsFunction::
     ~ScriptingRegisterContentScriptsFunction() = default;
 
 ExtensionFunction::ResponseAction ScriptingUpdateContentScriptsFunction::Run() {
-  absl::optional<api::scripting::UpdateContentScripts::Params> params =
+  std::optional<api::scripting::UpdateContentScripts::Params> params =
       api::scripting::UpdateContentScripts::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
@@ -975,12 +977,12 @@ ExtensionFunction::ResponseAction ScriptingUpdateContentScriptsFunction::Run() {
   }
 
   std::u16string parse_error;
-  auto parsed_scripts = std::make_unique<UserScriptList>();
+  UserScriptList parsed_scripts;
   std::set<std::string> updated_script_ids_to_persist;
   std::set<std::string> persistent_script_ids =
       loader->GetPersistentDynamicScriptIDs();
 
-  parsed_scripts->reserve(scripts.size());
+  parsed_scripts.reserve(scripts.size());
   for (size_t i = 0; i < scripts.size(); ++i) {
     api::scripting::RegisteredContentScript& update_delta = scripts[i];
     DCHECK(base::Contains(loaded_scripts_metadata, update_delta.id));
@@ -1028,7 +1030,7 @@ ExtensionFunction::ResponseAction ScriptingUpdateContentScriptsFunction::Run() {
       updated_script_ids_to_persist.insert(update_delta.id);
     }
 
-    parsed_scripts->push_back(std::move(user_script));
+    parsed_scripts.push_back(std::move(user_script));
   }
 
   // Add new script IDs now in case another call with the same script IDs is
@@ -1060,6 +1062,17 @@ void ScriptingRegisterContentScriptsFunction::OnContentScriptFilesValidated(
     return;
   }
 
+  // We cannot proceed if the extension is uninstalled or unloaded in the middle
+  // of validating its script files.
+  ExtensionRegistry* registry = ExtensionRegistry::Get(browser_context());
+  if (!extension() ||
+      !registry->enabled_extensions().Contains(extension_id())) {
+    // Note: a Respond() is not needed if the system is shutting down or if the
+    // extension is no longer enabled.
+    Release();  // Matches the `AddRef()` in `Run()`.
+    return;
+  }
+
   auto error = std::move(result.second);
   auto scripts = std::move(result.first);
   ExtensionUserScriptLoader* loader =
@@ -1069,7 +1082,7 @@ void ScriptingRegisterContentScriptsFunction::OnContentScriptFilesValidated(
 
   if (error.has_value()) {
     std::set<std::string> ids_to_remove;
-    for (const auto& script : *scripts) {
+    for (const auto& script : scripts) {
       ids_to_remove.insert(script->id());
     }
 
@@ -1087,7 +1100,7 @@ void ScriptingRegisterContentScriptsFunction::OnContentScriptFilesValidated(
 }
 
 void ScriptingRegisterContentScriptsFunction::OnContentScriptsRegistered(
-    const absl::optional<std::string>& error) {
+    const std::optional<std::string>& error) {
   if (error.has_value())
     Respond(Error(std::move(*error)));
   else
@@ -1102,11 +1115,11 @@ ScriptingGetRegisteredContentScriptsFunction::
 
 ExtensionFunction::ResponseAction
 ScriptingGetRegisteredContentScriptsFunction::Run() {
-  absl::optional<api::scripting::GetRegisteredContentScripts::Params> params =
+  std::optional<api::scripting::GetRegisteredContentScripts::Params> params =
       api::scripting::GetRegisteredContentScripts::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  const absl::optional<api::scripting::ContentScriptFilter>& filter =
+  const std::optional<api::scripting::ContentScriptFilter>& filter =
       params->filter;
   std::set<std::string> id_filter;
   if (filter && filter->ids) {
@@ -1157,7 +1170,7 @@ ScriptingUnregisterContentScriptsFunction::Run() {
       api::scripting::UnregisterContentScripts::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  absl::optional<api::scripting::ContentScriptFilter>& filter = params->filter;
+  std::optional<api::scripting::ContentScriptFilter>& filter = params->filter;
   ExtensionUserScriptLoader* loader =
       ExtensionSystem::Get(browser_context())
           ->user_script_manager()
@@ -1206,7 +1219,7 @@ ScriptingUnregisterContentScriptsFunction::Run() {
 }
 
 void ScriptingUnregisterContentScriptsFunction::OnContentScriptsUnregistered(
-    const absl::optional<std::string>& error) {
+    const std::optional<std::string>& error) {
   if (error.has_value())
     Respond(Error(std::move(*error)));
   else
@@ -1220,7 +1233,7 @@ ScriptingUpdateContentScriptsFunction::
 
 ExtensionFunction::ResponseAction
 ScriptingRegisterContentScriptsFunction::Run() {
-  absl::optional<api::scripting::RegisterContentScripts::Params> params =
+  std::optional<api::scripting::RegisterContentScripts::Params> params =
       api::scripting::RegisterContentScripts::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
@@ -1246,10 +1259,10 @@ ScriptingRegisterContentScriptsFunction::Run() {
 
   // Parse content scripts.
   std::u16string parse_error;
-  auto parsed_scripts = std::make_unique<UserScriptList>();
+  UserScriptList parsed_scripts;
   std::set<std::string> persistent_script_ids;
 
-  parsed_scripts->reserve(scripts.size());
+  parsed_scripts.reserve(scripts.size());
   for (auto& script : scripts) {
     if (!script.matches) {
       std::string error_script_id =
@@ -1271,7 +1284,7 @@ ScriptingRegisterContentScriptsFunction::Run() {
     if (persist_across_sessions) {
       persistent_script_ids.insert(user_script->id());
     }
-    parsed_scripts->push_back(std::move(user_script));
+    parsed_scripts.push_back(std::move(user_script));
   }
   // The contents of `scripts` have all been std::move()'d.
   scripts.clear();
@@ -1305,6 +1318,17 @@ void ScriptingUpdateContentScriptsFunction::OnContentScriptFilesValidated(
     return;
   }
 
+  // We cannot proceed if the extension is uninstalled or unloaded in the middle
+  // of validating its script files.
+  ExtensionRegistry* registry = ExtensionRegistry::Get(browser_context());
+  if (!extension() ||
+      !registry->enabled_extensions().Contains(extension_id())) {
+    // Note: a Respond() is not needed if the system is shutting down or if the
+    // extension is no longer enabled.
+    Release();  // Matches the `AddRef()` in `Run()`.
+    return;
+  }
+
   auto error = std::move(result.second);
   auto scripts = std::move(result.first);
   ExtensionUserScriptLoader* loader =
@@ -1313,7 +1337,7 @@ void ScriptingUpdateContentScriptsFunction::OnContentScriptFilesValidated(
           ->GetUserScriptLoaderForExtension(extension()->id());
 
   std::set<std::string> script_ids;
-  for (const auto& script : *scripts)
+  for (const auto& script : scripts)
     script_ids.insert(script->id());
 
   if (error.has_value()) {
@@ -1341,7 +1365,7 @@ void ScriptingUpdateContentScriptsFunction::OnContentScriptFilesValidated(
 }
 
 void ScriptingUpdateContentScriptsFunction::OnContentScriptsUpdated(
-    const absl::optional<std::string>& error) {
+    const std::optional<std::string>& error) {
   if (error.has_value())
     Respond(Error(std::move(*error)));
   else

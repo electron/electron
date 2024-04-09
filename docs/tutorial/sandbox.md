@@ -17,7 +17,7 @@ further configuration. If you want to disable the sandbox for a process, see the
 [Disabling the sandbox for a single process](#disabling-the-sandbox-for-a-single-process)
 section.
 
-## Sandbox behaviour in Electron
+## Sandbox behavior in Electron
 
 Sandboxed processes in Electron behave _mostly_ in the same way as Chromium's do, but
 Electron has a few additional concepts to consider because it interfaces with Node.js.
@@ -46,7 +46,7 @@ scripts attached to sandboxed renderers will still have a polyfilled subset of N
 APIs available. A `require` function similar to Node's `require` module is exposed,
 but can only import a subset of Electron and Node's built-in modules:
 
-* `electron` (following renderer process modules: `contextBridge`, `crashReporter`, `ipcRenderer`, `nativeImage`, `webFrame`)
+* `electron` (following renderer process modules: `contextBridge`, `crashReporter`, `ipcRenderer`, `nativeImage`, `webFrame`, `webUtils`)
 * [`events`](https://nodejs.org/api/events.html)
 * [`timers`](https://nodejs.org/api/timers.html)
 * [`url`](https://nodejs.org/api/url.html)

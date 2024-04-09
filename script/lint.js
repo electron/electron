@@ -7,6 +7,7 @@ const { ESLint } = require('eslint');
 const fs = require('node:fs');
 const minimist = require('minimist');
 const path = require('node:path');
+const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -94,7 +95,7 @@ function isObjCHeader (filename) {
 }
 
 const LINTERS = [{
-  key: 'c++',
+  key: 'cpp',
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
@@ -119,10 +120,10 @@ const LINTERS = [{
   roots: ['script'],
   test: filename => filename.endsWith('.py'),
   run: (opts, filenames) => {
-    const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
+    const rcfile = path.join(DEPOT_TOOLS, 'pylintrc-2.17');
     const args = ['--rcfile=' + rcfile, ...filenames];
     const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
-    spawnAndCheckExitCode('pylint-2.7', args, { env });
+    spawnAndCheckExitCode('pylint-2.17', args, { env });
   }
 }, {
   key: 'javascript',
@@ -135,7 +136,9 @@ const LINTERS = [{
       cache: !process.env.CI,
       cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
       extensions: ['.js', '.ts'],
-      fix: opts.fix
+      fix: opts.fix,
+      overrideConfigFile: path.join(ELECTRON_ROOT, '.eslintrc.json'),
+      resolvePluginsRelativeTo: ELECTRON_ROOT
     });
     const formatter = await eslint.loadFormatter();
     let successCount = 0;
@@ -198,10 +201,9 @@ const LINTERS = [{
       process.exit(1);
     }
 
-    const config = JSON.parse(fs.readFileSync(patchesConfig, 'utf8'));
-    for (const key of Object.keys(config)) {
+    for (const target of JSON.parse(fs.readFileSync(patchesConfig, 'utf8'))) {
       // The directory the config points to should exist
-      const targetPatchesDir = path.resolve(__dirname, '../../..', key);
+      const targetPatchesDir = path.resolve(__dirname, '../../..', target.patch_dir);
       if (!fs.existsSync(targetPatchesDir)) {
         console.error(`target patch directory: "${targetPatchesDir}" does not exist`);
         process.exit(1);
@@ -265,20 +267,134 @@ const LINTERS = [{
       process.exit(1);
     }
   }
+}, {
+  key: 'md',
+  roots: ['.'],
+  ignoreRoots: ['node_modules', 'spec/node_modules'],
+  test: filename => filename.endsWith('.md'),
+  run: async (opts, filenames) => {
+    let errors = false;
+
+    // Run markdownlint on all Markdown files
+    for (const chunk of chunkFilenames(filenames)) {
+      spawnAndCheckExitCode('electron-markdownlint', chunk);
+    }
+
+    // Run the remaining checks only in docs
+    const docs = filenames.filter(filename => path.dirname(filename).split(path.sep)[0] === 'docs');
+
+    for (const filename of docs) {
+      const contents = fs.readFileSync(filename, 'utf8');
+      const codeBlocks = await getCodeBlocks(contents);
+
+      for (const codeBlock of codeBlocks) {
+        const line = codeBlock.position.start.line;
+
+        if (codeBlock.lang) {
+          // Enforce all lowercase language identifiers
+          if (codeBlock.lang.toLowerCase() !== codeBlock.lang) {
+            console.log(`${filename}:${line} Code block language identifiers should be all lowercase`);
+            errors = true;
+          }
+
+          // Prefer js/ts to javascript/typescript as the language identifier
+          if (codeBlock.lang === 'javascript') {
+            console.log(`${filename}:${line} Use 'js' as code block language identifier instead of 'javascript'`);
+            errors = true;
+          }
+
+          if (codeBlock.lang === 'typescript') {
+            console.log(`${filename}:${line} Use 'typescript' as code block language identifier instead of 'ts'`);
+            errors = true;
+          }
+
+          // Enforce latest fiddle code block syntax
+          if (codeBlock.lang === 'javascript' && codeBlock.meta && codeBlock.meta.includes('fiddle=')) {
+            console.log(`${filename}:${line} Use 'fiddle' as code block language identifier instead of 'javascript fiddle='`);
+            errors = true;
+          }
+
+          // Ensure non-empty content in fiddle code blocks matches the file content
+          if (codeBlock.lang === 'fiddle' && codeBlock.value.trim() !== '') {
+            // This is copied and adapted from the website repo:
+            // https://github.com/electron/website/blob/62a55ca0dd14f97339e1a361b5418d2f11c34a75/src/transformers/fiddle-embedder.ts#L89C6-L101
+            const parseFiddleEmbedOptions = (
+              optStrings
+            ) => {
+              // If there are optional parameters, parse them out to pass to the getFiddleAST method.
+              return optStrings.reduce((opts, option) => {
+                // Use indexOf to support bizarre combinations like `|key=Myvalue=2` (which will properly
+                // parse to {'key': 'Myvalue=2'})
+                const firstEqual = option.indexOf('=');
+                const key = option.slice(0, firstEqual);
+                const value = option.slice(firstEqual + 1);
+                return { ...opts, [key]: value };
+              }, {});
+            };
+
+            const [dir, ...others] = codeBlock.meta.split('|');
+            const options = parseFiddleEmbedOptions(others);
+
+            const fiddleFilename = path.join(dir, options.focus || 'main.js');
+
+            try {
+              const fiddleContent = fs.readFileSync(fiddleFilename, 'utf8').trim();
+
+              if (fiddleContent !== codeBlock.value.trim()) {
+                console.log(`${filename}:${line} Content for fiddle code block differs from content in ${fiddleFilename}`);
+                errors = true;
+              }
+            } catch (err) {
+              console.error(`${filename}:${line} Error linting fiddle code block content`);
+              if (err.stack) {
+                console.error(err.stack);
+              }
+              errors = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (errors) {
+      process.exit(1);
+    }
+  }
 }];
 
 function parseCommandLine () {
   let help;
+  const langs = ['cpp', 'objc', 'javascript', 'python', 'gn', 'patches', 'markdown'];
+  const langRoots = langs.map(lang => lang + '-roots');
+  const langIgnoreRoots = langs.map(lang => lang + '-ignore-roots');
   const opts = minimist(process.argv.slice(2), {
-    boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only'],
-    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
+    boolean: [...langs, 'help', 'changed', 'fix', 'verbose', 'only'],
+    alias: { cpp: ['c++', 'cc', 'cxx'], javascript: ['js', 'es'], python: 'py', markdown: 'md', changed: 'c', help: 'h', verbose: 'v' },
+    string: [...langRoots, ...langIgnoreRoots],
     unknown: () => { help = true; }
   });
   if (help || opts.help) {
-    console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]');
+    const langFlags = langs.map(lang => `[--${lang}]`).join(' ');
+    console.log(`Usage: script/lint.js ${langFlags} [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]`);
     process.exit(0);
   }
   return opts;
+}
+
+function populateLinterWithArgs (linter, opts) {
+  const extraRoots = opts[`${linter.key}-roots`];
+  if (extraRoots) {
+    linter.roots.push(...extraRoots.split(','));
+  }
+  const extraIgnoreRoots = opts[`${linter.key}-ignore-roots`];
+  if (extraIgnoreRoots) {
+    const list = extraIgnoreRoots.split(',');
+    if (linter.ignoreRoots) {
+      linter.ignoreRoots.push(...list);
+    } else {
+      linter.ignoreRoots = list;
+    }
+  }
 }
 
 async function findChangedFiles (top) {
@@ -338,13 +454,14 @@ async function main () {
   const opts = parseCommandLine();
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches) {
-    opts['c++'] = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = true;
+  if (!opts.cpp && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches && !opts.markdown) {
+    opts.cpp = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = opts.markdown = true;
   }
 
   const linters = LINTERS.filter(x => opts[x.key]);
 
   for (const linter of linters) {
+    populateLinterWithArgs(linter, opts);
     const filenames = await findFiles(opts, linter);
     if (filenames.length) {
       if (opts.verbose) { console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`); }

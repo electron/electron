@@ -22,7 +22,8 @@ class ProtocolRegistry;
 
 namespace api {
 
-std::vector<std::string> GetStandardSchemes();
+const std::vector<std::string>& GetStandardSchemes();
+const std::vector<std::string>& GetCodeCacheSchemes();
 
 void AddServiceWorkerScheme(const std::string& scheme);
 

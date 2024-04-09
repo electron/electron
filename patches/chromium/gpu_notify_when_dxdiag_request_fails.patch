@@ -12,10 +12,10 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index e496fc3cab0eed155123f5fc0e3cb5c4332bfcea..db062a89b241ea7d73b01a28adf6725e9f951e4d 100644
+index 7a29221744211227cc1153aad6fee797f5f71134..2a414e5b29791f9fac230555f44129eb1a632719 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
-@@ -225,6 +225,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
+@@ -214,6 +214,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
    base::AutoLock auto_lock(lock_);
    private_->TerminateInfoCollectionGpuProcess();
  }
@@ -28,10 +28,10 @@ index e496fc3cab0eed155123f5fc0e3cb5c4332bfcea..db062a89b241ea7d73b01a28adf6725e
  
  void GpuDataManagerImpl::PostCreateThreads() {
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index c57305681efb469d296c90df68b6cdbea927580d..6dda1a5465e08df64b539ee203b7c40386d16e72 100644
+index 08c9940799c935898e02dca5c95b39edbe3fbb32..ced6f932b5bb03d27780d80d158a2eacf206e498 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -121,6 +121,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+@@ -117,6 +117,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    bool Dx12Requested() const;
    bool VulkanRequested() const;
    void TerminateInfoCollectionGpuProcess();
@@ -40,27 +40,25 @@ index c57305681efb469d296c90df68b6cdbea927580d..6dda1a5465e08df64b539ee203b7c403
    // Called from BrowserMainLoop::PostCreateThreads().
    // TODO(content/browser/gpu/OWNERS): This should probably use a
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 5982540cdc27d7a983076af1a1ca76c996ec9082..11a888de262a8e185579fa83aabd6b5d9047985b 100644
+index ce9a571cf8ca44ced937071047bb5daf2732de2b..8bc154b098c72d5a43af7a638cafb32807cb7468 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1222,6 +1222,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1140,6 +1140,10 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
 +
 +bool GpuDataManagerImplPrivate::DxdiagDx12VulkanRequested() const {
-+  return !(gpu_info_vulkan_request_failed_ ||
-+           gpu_info_dx12_request_failed_ ||
-+           gpu_info_dx_diag_request_failed_);
++  return !(gpu_info_vulkan_request_failed_ || gpu_info_dx12_request_failed_);
 +}
  #endif
  
  void GpuDataManagerImplPrivate::PostCreateThreads() {
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index 6d5e9789ad9eab175087cc6bd30100d83d90a13b..d1946374205973cf2856acf4fe81fbe7c62c923e 100644
+index f907360160caee6510bb209d71ffa61f0de1e5b9..af68fc04861caf7b050f8afd65bbda0cc8685e45 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -86,6 +86,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+@@ -84,6 +84,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
    bool Dx12Requested() const;
    bool VulkanRequested() const;
    void TerminateInfoCollectionGpuProcess();

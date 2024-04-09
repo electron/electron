@@ -2,7 +2,7 @@
 
 > Make HTTP/HTTPS requests.
 
-Process: [Main](../glossary.md#main-process)<br />
+Process: [Main](../glossary.md#main-process), [Utility](../glossary.md#utility-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 `ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
@@ -17,6 +17,8 @@ following properties:
     method.
   * `url` string (optional) - The request URL. Must be provided in the absolute
     form with the protocol scheme specified as http or https.
+  * `headers` Record\<string, string | string[]\> (optional) - Headers to be sent
+    with the request.
   * `session` Session (optional) - The [`Session`](session.md) instance with
     which the request is associated.
   * `partition` string (optional) - The name of the [`partition`](session.md)
@@ -65,7 +67,7 @@ strictly follow the Node.js model as described in the
 
 For instance, we could have created the same request to 'github.com' as follows:
 
-```javascript
+```js
 const request = net.request({
   method: 'GET',
   protocol: 'https:',
@@ -104,7 +106,7 @@ The `callback` function is expected to be called back with user credentials:
 * `username` string
 * `password` string
 
-```javascript @ts-type={request:Electron.ClientRequest}
+```js @ts-type={request:Electron.ClientRequest}
 request.on('login', (authInfo, callback) => {
   callback('username', 'password')
 })
@@ -113,7 +115,7 @@ request.on('login', (authInfo, callback) => {
 Providing empty credentials will cancel the request and report an authentication
 error on the response object:
 
-```javascript @ts-type={request:Electron.ClientRequest}
+```js @ts-type={request:Electron.ClientRequest}
 request.on('response', (response) => {
   console.log(`STATUS: ${response.statusCode}`)
   response.on('error', (error) => {
@@ -158,7 +160,7 @@ Returns:
 * `statusCode` Integer
 * `method` string
 * `redirectUrl` string
-* `responseHeaders` Record<string, string[]>
+* `responseHeaders` Record\<string, string[]\>
 
 Emitted when the server returns a redirect response (e.g. 301 Moved
 Permanently). Calling [`request.followRedirect`](#requestfollowredirect) will

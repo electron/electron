@@ -15,7 +15,7 @@ Fuses are the solution to this problem, at a high level they are "magic bits" in
 **Default:** Enabled
 **@electron/fuses:** `FuseV1Options.RunAsNode`
 
-The runAsNode fuse toggles whether the `ELECTRON_RUN_AS_NODE` environment variable is respected or not.  Please note that if this fuse is disabled then `process.fork` in the main process will not function as expected as it depends on this environment variable to function.
+The runAsNode fuse toggles whether the `ELECTRON_RUN_AS_NODE` environment variable is respected or not.  Please note that if this fuse is disabled then `process.fork` in the main process will not function as expected as it depends on this environment variable to function. Instead, we recommend that you use [Utility Processes](../api/utility-process.md), which work for many use cases where you need a standalone Node.js process (like a Sqlite server process or similar scenarios).
 
 ### `cookieEncryption`
 

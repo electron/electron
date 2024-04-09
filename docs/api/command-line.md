@@ -7,7 +7,7 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 The following example shows how to check if the `--disable-gpu` flag is set.
 
-```javascript
+```js
 const { app } = require('electron')
 app.commandLine.hasSwitch('disable-gpu')
 ```

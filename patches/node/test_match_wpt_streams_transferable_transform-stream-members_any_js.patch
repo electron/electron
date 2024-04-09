@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 16 Jan 2024 19:39:10 +0100
+Subject: test: match wpt/streams/transferable/transform-stream-members.any.js
+ to upstream
+
+All four of this calls should fail - see third_party/blink/web_tests/external/wpt/streams/transferable/transform-stream-members.any-expected.txt
+
+diff --git a/test/wpt/status/streams.json b/test/wpt/status/streams.json
+index 3b6e0ce6429f9dddb0b1a6882ce9e3a5158300e5..7ec49a378bfc84728b473d5df69675fff1dfdfef 100644
+--- a/test/wpt/status/streams.json
++++ b/test/wpt/status/streams.json
+@@ -50,7 +50,9 @@
+     "fail": {
+       "expected": [
+         "Transferring [object TransformStream],[object ReadableStream] should fail",
+-        "Transferring [object TransformStream],[object WritableStream] should fail"
++        "Transferring [object TransformStream],[object WritableStream] should fail",
++        "Transferring [object ReadableStream],[object TransformStream] should fail",
++        "Transferring [object WritableStream],[object TransformStream] should fail"
+       ]
+     }
+   },

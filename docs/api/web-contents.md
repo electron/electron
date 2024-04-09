@@ -9,7 +9,7 @@ It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
@@ -53,7 +53,7 @@ If you want to also observe navigations in `<iframe>`s, use [`will-frame-navigat
 
 These methods can be accessed from the `webContents` module:
 
-```javascript
+```js
 const { webContents } = require('electron')
 console.log(webContents)
 ```
@@ -237,7 +237,7 @@ See [`window.open()`](window-open.md) for more details and how to use this in co
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
@@ -270,7 +270,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
@@ -300,7 +300,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -324,7 +324,7 @@ Emitted when any frame (including main) starts navigating.
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -355,7 +355,7 @@ redirect).
 
 Returns:
 
-* `details` Event<>
+* `details` Event\<\>
   * `url` string - The URL the frame is navigating to.
   * `isSameDocument` boolean - Whether the navigation happened without changing
     document. Examples of same document navigations are reference fragment
@@ -439,7 +439,7 @@ Emitted when a `beforeunload` event handler is attempting to cancel a page unloa
 Calling `event.preventDefault()` will ignore the `beforeunload` event handler
 and allow the page to be unloaded.
 
-```javascript
+```js
 const { BrowserWindow, dialog } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.webContents.on('will-prevent-unload', (event) => {
@@ -527,7 +527,7 @@ and the menu shortcuts.
 To only prevent the menu shortcuts, use
 [`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 600 })
@@ -581,6 +581,15 @@ Returns:
 * `url` string - URL of the link that was clicked or selected.
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
+
+#### Event: 'devtools-search-query'
+
+Returns:
+
+* `event` Event
+* `query` string - text to query for.
+
+Emitted when 'Search' is selected for text in its context menu.
 
 #### Event: 'devtools-opened'
 
@@ -674,7 +683,7 @@ Emitted when media is paused or done playing.
 
 Returns:
 
-* `event` Event<>
+* `event` Event\<\>
   * `audible` boolean - True if one or more frames or child `webContents` are emitting audio.
 
 Emitted when media becomes audible or inaudible.
@@ -778,9 +787,6 @@ Returns:
     `input-text`, `input-time`, `input-url`, `input-week`, `output`, `reset-button`,
     `select-list`, `select-list`, `select-multiple`, `select-one`, `submit-button`,
     and `text-area`,
-  * `inputFieldType` string _Deprecated_ - If the context menu was invoked on an
-    input field, the type of that field. Possible values include `none`,
-    `plainText`, `password`, `other`.
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
@@ -837,7 +843,7 @@ Due to the nature of bluetooth, scanning for devices when
 `select-bluetooth-device` to fire multiple times until `callback` is called
 with either a device id or an empty string to cancel the request.
 
-```javascript title='main.js'
+```js title='main.js'
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -872,7 +878,7 @@ Returns:
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ webPreferences: { offscreen: true } })
@@ -894,7 +900,7 @@ Returns:
 * `webPreferences` [WebPreferences](structures/web-preferences.md) - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
-* `params` Record<string, string> - The other `<webview>` parameters such as the `src` URL.
+* `params` Record\<string, string\> - The other `<webview>` parameters such as the `src` URL.
   This object can be modified to adjust the parameters of the guest page.
 
 Emitted when a `<webview>`'s web contents is being attached to this web
@@ -1004,7 +1010,7 @@ Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
-```javascript
+```js
 const win = new BrowserWindow()
 const options = { extraHeaders: 'pragma: no-cache\n' }
 win.webContents.loadURL('https://github.com', options)
@@ -1014,7 +1020,7 @@ win.webContents.loadURL('https://github.com', options)
 
 * `filePath` string
 * `options` Object (optional)
-  * `query` Record<string, string> (optional) - Passed to `url.format()`.
+  * `query` Record\<string, string\> (optional) - Passed to `url.format()`.
   * `search` string (optional) - Passed to `url.format()`.
   * `hash` string (optional) - Passed to `url.format()`.
 
@@ -1045,7 +1051,7 @@ win.loadFile('src/index.html')
 
 * `url` string
 * `options` Object (optional)
-  * `headers` Record<string, string> (optional) - HTTP request headers.
+  * `headers` Record\<string, string\> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url` without navigating. The
 `will-download` event of `session` will be triggered.
@@ -1054,7 +1060,7 @@ Initiates a download of the resource at `url` without navigating. The
 
 Returns `string` - The URL of the current web page.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('https://github.com').then(() => {
@@ -1282,7 +1288,7 @@ Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setWindowOpenHandler(handler)`
 
-* `handler` Function<{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+* `handler` Function\<[WindowOpenHandlerResponse](structures/window-open-handler-response.md)\>
   * `details` Object
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
@@ -1297,11 +1303,8 @@ Ignore application menu shortcuts while this web contents is focused.
       be set. If no post data is to be sent, the value will be `null`. Only defined
       when the window is being created by a form that set `target=_blank`.
 
-  Returns `{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
-  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
-  By default, child windows are closed when their opener is closed. This can be
-  changed by specifying `outlivesOpener: true`, in which case the opened window
-  will not be closed when its opener is closed.
+  Returns `WindowOpenHandlerResponse` - When set to `{ action: 'deny' }` cancels the creation of the new
+  window. `{ action: 'allow' }` will allow the new window to be created.
   Returning an unrecognized value such as a null, undefined, or an object
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
@@ -1311,6 +1314,26 @@ by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
 submitting a form with `<form target="_blank">`. See
 [`window.open()`](window-open.md) for more details and how to use this in
 conjunction with `did-create-window`.
+
+An example showing how to customize the process of new `BrowserWindow` creation to be `BrowserView` attached to main window instead:
+
+```js
+const { BrowserView, BrowserWindow } = require('electron')
+
+const mainWindow = new BrowserWindow()
+
+mainWindow.webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    createWindow: (options) => {
+      const browserView = new BrowserView(options)
+      mainWindow.addBrowserView(browserView)
+      browserView.setBounds({ x: 0, y: 0, width: 640, height: 480 })
+      return browserView.webContents
+    }
+  }
+})
+```
 
 #### `contents.setAudioMuted(muted)`
 
@@ -1503,7 +1526,7 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
-```javascript
+```js
 const win = new BrowserWindow()
 win.webContents.on('found-in-page', (event, result) => {
   if (result.finalUpdate) win.webContents.stopFindInPage('clearSelection')
@@ -1560,7 +1583,7 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
     * `from` number - Index of the first page to print (0-based).
     * `to` number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` string (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
-  * `dpi` Record<string, number> (optional)
+  * `dpi` Record\<string, number\> (optional)
     * `horizontal` number (optional) - The horizontal dpi.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
@@ -1614,6 +1637,7 @@ win.webContents.print(options, (success, errorType) => {
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
   * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
+  * `generateDocumentOutline` boolean (optional) _Experimental_ - Whether or not to generate a PDF document outline from content headers. Defaults to false.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -1623,25 +1647,27 @@ The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
 
 An example of `webContents.printToPDF`:
 
-```javascript
-const { BrowserWindow } = require('electron')
+```js
+const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
 
-const win = new BrowserWindow()
-win.loadURL('https://github.com')
+app.whenReady().then(() => {
+  const win = new BrowserWindow()
+  win.loadURL('https://github.com')
 
-win.webContents.on('did-finish-load', () => {
-  // Use default printing options
-  const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
-  win.webContents.printToPDF({}).then(data => {
-    fs.writeFile(pdfPath, data, (error) => {
-      if (error) throw error
-      console.log(`Wrote PDF successfully to ${pdfPath}`)
+  win.webContents.on('did-finish-load', () => {
+    // Use default printing options
+    const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
+    win.webContents.printToPDF({}).then(data => {
+      fs.writeFile(pdfPath, data, (error) => {
+        if (error) throw error
+        console.log(`Wrote PDF successfully to ${pdfPath}`)
+      })
+    }).catch(error => {
+      console.log(`Failed to write PDF to ${pdfPath}: `, error)
     })
-  }).catch(error => {
-    console.log(`Failed to write PDF to ${pdfPath}: `, error)
   })
 })
 ```
@@ -1655,7 +1681,7 @@ See [Page.printToPdf](https://chromedevtools.github.io/devtools-protocol/tot/Pag
 Adds the specified path to DevTools workspace. Must be used after DevTools
 creation:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 win.webContents.on('devtools-opened', () => {
@@ -1978,7 +2004,7 @@ the cursor when dragging.
 
 Returns `Promise<void>` - resolves if the page is saved.
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
@@ -2196,6 +2222,10 @@ A `Integer` representing the unique ID of this WebContents. Each ID is unique am
 #### `contents.session` _Readonly_
 
 A [`Session`](session.md) used by this webContents.
+
+#### `contents.navigationHistory` _Readonly_
+
+A [`NavigationHistory`](navigation-history.md) used by this webContents.
 
 #### `contents.hostWebContents` _Readonly_
 

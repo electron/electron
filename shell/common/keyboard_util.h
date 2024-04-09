@@ -5,8 +5,9 @@
 #ifndef ELECTRON_SHELL_COMMON_KEYBOARD_UTIL_H_
 #define ELECTRON_SHELL_COMMON_KEYBOARD_UTIL_H_
 
-#include "base/strings/string_piece.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
+#include <optional>
+#include <string_view>
+
 #include "ui/events/keycodes/keyboard_codes.h"
 
 namespace electron {
@@ -14,8 +15,8 @@ namespace electron {
 // Return key code of the |str|, if the original key is a shifted character,
 // for example + and /, set it in |shifted_char|.
 // pressed.
-ui::KeyboardCode KeyboardCodeFromStr(base::StringPiece str,
-                                     absl::optional<char16_t>* shifted_char);
+ui::KeyboardCode KeyboardCodeFromStr(std::string_view str,
+                                     std::optional<char16_t>* shifted_char);
 
 }  // namespace electron
 

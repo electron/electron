@@ -2,7 +2,7 @@
 
 > Issue HTTP/HTTPS requests using Chromium's native networking library
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process), [Utility](../glossary.md#utility-process)
 
 The `net` module is a client-side API for issuing HTTP(S) requests. It is
 similar to the [HTTP](https://nodejs.org/api/http.html) and
@@ -26,7 +26,7 @@ Node.js.
 
 Example usage:
 
-```javascript
+```js
 const { app } = require('electron')
 app.whenReady().then(() => {
   const { net } = require('electron')
@@ -118,6 +118,9 @@ protocol.handle('https', (req) => {
   }
 })
 ```
+
+Note: in the [utility process](../glossary.md#utility-process) custom protocols
+are not supported.
 
 ### `net.isOnline()`
 

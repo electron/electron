@@ -14,6 +14,7 @@
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
 #include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
 #include "base/win/windows_version.h"
@@ -75,8 +76,8 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
   if (origin.is_valid()) {
     filename = base::MD5String(origin.spec()) + ".png";
   } else {
-    base::TimeTicks now = base::TimeTicks::Now();
-    filename = std::to_string(now.ToInternalValue()) + ".png";
+    const int64_t now_usec = base::Time::Now().since_origin().InMicroseconds();
+    filename = base::NumberToString(now_usec) + ".png";
   }
 
   ScopedAllowBlockingForElectron allow_blocking;

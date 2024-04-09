@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -55,6 +56,11 @@
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/renderer/spellcheck.h"
+#include "components/spellcheck/renderer/spellcheck_provider.h"
+#endif
+
 namespace gin {
 
 template <>
@@ -104,10 +110,15 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 
   RendererClientBase* client = RendererClientBase::Get();
 
+  mojo::Remote<spellcheck::mojom::SpellCheckHost> spellcheck_host;
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
+      spellcheck_host.BindNewPipeAndPassReceiver());
+  if (!spellcheck_host.is_bound())
+    return false;
+
   std::u16string w = base::UTF8ToUTF16(word);
-  int id = render_frame->GetRoutingID();
   return client->GetSpellCheck()->SpellCheckWord(
-      w.c_str(), 0, word.size(), id, &start, &length, optional_suggestions);
+      w, *spellcheck_host.get(), &start, &length, optional_suggestions);
 }
 
 #endif
@@ -386,7 +397,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
  private:
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
-                           const base::StringPiece method_name,
+                           const std::string_view method_name,
                            content::RenderFrame** render_frame_ptr) {
     std::string error_msg;
     if (!MaybeGetRenderFrame(&error_msg, method_name, render_frame_ptr)) {
@@ -397,7 +408,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   }
 
   bool MaybeGetRenderFrame(std::string* error_msg,
-                           const base::StringPiece method_name,
+                           const std::string_view method_name,
                            content::RenderFrame** render_frame_ptr) {
     auto* frame = render_frame();
     if (!frame) {

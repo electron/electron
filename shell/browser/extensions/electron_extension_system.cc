@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/files/file_path.h"
@@ -93,7 +94,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
 }
 
 std::unique_ptr<base::Value::Dict> ParseManifest(
-    base::StringPiece manifest_contents) {
+    const std::string_view manifest_contents) {
   JSONStringValueDeserializer deserializer(manifest_contents);
   std::unique_ptr<base::Value> manifest =
       deserializer.Deserialize(nullptr, nullptr);

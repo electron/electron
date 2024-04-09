@@ -8,7 +8,7 @@ The `shell` module provides functions related to desktop integration.
 
 An example of opening a URL in the user's default browser:
 
-```javascript
+```js
 const { shell } = require('electron')
 
 shell.openExternal('https://github.com')

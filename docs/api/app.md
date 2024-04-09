@@ -32,7 +32,7 @@ In most cases, you should do everything in the `ready` event handler.
 Returns:
 
 * `event` Event
-* `launchInfo` Record<string, any> | [NotificationResponse](structures/notification-response.md) _macOS_
+* `launchInfo` Record\<string, any\> | [NotificationResponse](structures/notification-response.md) _macOS_
 
 Emitted once, when Electron has finished initializing. On macOS, `launchInfo`
 holds the `userInfo` of the [`NSUserNotification`](https://developer.apple.com/documentation/foundation/nsusernotification)
@@ -970,7 +970,7 @@ app.setJumpList([
 
 ### `app.requestSingleInstanceLock([additionalData])`
 
-* `additionalData` Record<any, any> (optional) - A JSON object containing additional data to send to the first instance.
+* `additionalData` Record\<any, any\> (optional) - A JSON object containing additional data to send to the first instance.
 
 Returns `boolean`
 
@@ -1467,6 +1467,24 @@ See [Apple's documentation](https://developer.apple.com/library/archive/technote
 details.
 
 **Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
+
+### `app.setProxy(config)`
+
+* `config` [ProxyConfig](structures/proxy-config.md)
+
+Returns `Promise<void>` - Resolves when the proxy setting process is complete.
+
+Sets the proxy settings for networks requests made without an associated [Session](session.md).
+Currently this will affect requests made with [Net](net.md) in the [utility process](../glossary.md#utility-process)
+and internal requests made by the runtime (ex: geolocation queries).
+
+This method can only be called after app is ready.
+
+#### `app.resolveProxy(url)`
+
+* `url` URL
+
+Returns `Promise<string>` - Resolves with the proxy information for `url` that will be used when attempting to make requests using [Net](net.md) in the [utility process](../glossary.md#utility-process).
 
 ## Properties
 

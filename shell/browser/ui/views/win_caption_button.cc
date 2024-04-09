@@ -163,7 +163,7 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
   gfx::ScopedCanvas scoped_canvas(canvas);
   const float scale = canvas->UndoDeviceScaleFactor();
 
-  const int symbol_size_pixels = std::round(10 * scale);
+  const int symbol_size_pixels = base::ClampRound(10 * scale);
   gfx::RectF bounds_rect(GetContentsBounds());
   bounds_rect.Scale(scale);
   gfx::Rect symbol_rect(gfx::ToEnclosingRect(bounds_rect));
@@ -174,8 +174,7 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
   flags.setAntiAlias(false);
   flags.setColor(symbol_color);
   flags.setStyle(cc::PaintFlags::kStroke_Style);
-  // Stroke width jumps up a pixel every time we reach a new integral scale.
-  const int stroke_width = std::floor(scale);
+  const int stroke_width = base::ClampRound(scale);
   flags.setStrokeWidth(stroke_width);
 
   switch (button_type_) {
@@ -211,4 +210,8 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
       return;
   }
 }
+
+BEGIN_METADATA(WinCaptionButton)
+END_METADATA
+
 }  // namespace electron

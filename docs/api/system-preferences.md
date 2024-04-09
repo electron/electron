@@ -4,7 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-```javascript
+```js
 const { systemPreferences } = require('electron')
 console.log(systemPreferences.isAeroGlassEnabled())
 ```
@@ -36,7 +36,7 @@ Returns `boolean` - Whether the Swipe between pages setting is on.
 ### `systemPreferences.postNotification(event, userInfo[, deliverImmediately])` _macOS_
 
 * `event` string
-* `userInfo` Record<string, any>
+* `userInfo` Record\<string, any\>
 * `deliverImmediately` boolean (optional) - `true` to post notifications immediately even when the subscribing app is inactive.
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
@@ -45,7 +45,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` string
-* `userInfo` Record<string, any>
+* `userInfo` Record\<string, any\>
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -53,7 +53,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postWorkspaceNotification(event, userInfo)` _macOS_
 
 * `event` string
-* `userInfo` Record<string, any>
+* `userInfo` Record\<string, any\>
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -63,7 +63,7 @@ that contains the user information dictionary sent along with the notification.
 * `event` string | null
 * `callback` Function
   * `event` string
-  * `userInfo` Record<string, unknown>
+  * `userInfo` Record\<string, unknown\>
   * `object` string
 
 Returns `number` - The ID of this subscription
@@ -92,7 +92,7 @@ If `event` is null, the `NSDistributedNotificationCenter` doesn’t use it as cr
 * `event` string | null
 * `callback` Function
   * `event` string
-  * `userInfo` Record<string, unknown>
+  * `userInfo` Record\<string, unknown\>
   * `object` string
 
 Returns `number` - The ID of this subscription
@@ -107,7 +107,7 @@ If `event` is null, the `NSNotificationCenter` doesn’t use it as criteria for 
 * `event` string | null
 * `callback` Function
   * `event` string
-  * `userInfo` Record<string, unknown>
+  * `userInfo` Record\<string, unknown\>
   * `object` string
 
 Returns `number` - The ID of this subscription
@@ -137,7 +137,7 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSWorkspace.
 
 ### `systemPreferences.registerDefaults(defaults)` _macOS_
 
-* `defaults` Record<string, string | boolean | number> - a dictionary of (`key: value`) user defaults
+* `defaults` Record\<string, string | boolean | number\> - a dictionary of (`key: value`) user defaults
 
 Add the specified defaults to your application's `NSUserDefaults`.
 
@@ -189,7 +189,7 @@ enabled, and `false` otherwise.
 An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
-```javascript
+```js
 const { BrowserWindow, systemPreferences } = require('electron')
 const browserOptions = { width: 1000, height: 800 }
 
@@ -348,7 +348,7 @@ Returns `boolean` - whether or not this device has the ability to use Touch ID.
 
 Returns `Promise<void>` - resolves if the user has successfully authenticated with Touch ID.
 
-```javascript
+```js
 const { systemPreferences } = require('electron')
 
 systemPreferences.promptTouchID('To get consent for a Security-Gated Thing').then(success => {

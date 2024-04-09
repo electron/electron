@@ -6,9 +6,10 @@ import * as net from 'node:net';
 import * as fs from 'fs-extra';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
-import { app, BrowserWindow, Menu, session, net as electronNet, WebContents } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { collectStreamBody, getResponse } from './lib/net-helpers';
 import { once } from 'node:events';
 import split = require('split')
 import * as semver from 'semver';
@@ -994,6 +995,44 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'win32')('setJumpList(categories)', () => {
+    it('throws an error when categories is not null or an array', () => {
+      expect(() => {
+        app.setJumpList('string' as any);
+      }).to.throw('Argument must be null or an array of categories');
+    });
+
+    it('can get jump list settings', () => {
+      const settings = app.getJumpListSettings();
+      expect(settings).to.eql({ minItems: 10, removedItems: [] });
+    });
+
+    it('can set a jump list with an array of categories', () => {
+      expect(() => {
+        app.setJumpList([
+          { type: 'frequent' },
+          {
+            items: [{
+              type: 'task',
+              title: 'New Project',
+              program: process.execPath,
+              args: '--new-project',
+              description: 'Create a new project.'
+            },
+            { type: 'separator' },
+            {
+              type: 'task',
+              title: 'Recover Project',
+              program: process.execPath,
+              args: '--recover-project',
+              description: 'Recover Project'
+            }]
+          }
+        ]);
+      }).to.not.throw();
+    });
+  });
+
   describe('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path');
@@ -1445,8 +1484,7 @@ describe('app module', () => {
     });
   });
 
-  // FIXME https://github.com/electron/electron/issues/24224
-  ifdescribe(process.platform !== 'linux')('getGPUInfo() API', () => {
+  ifdescribe(!process.env.IS_ASAN)('getGPUInfo() API', () => {
     const appPath = path.join(fixturesPath, 'api', 'gpu-info.js');
 
     const getGPUInfo = async (type: string) => {
@@ -1893,6 +1931,154 @@ describe('app module', () => {
 
     it('app.showAboutPanel() does not crash & runs asynchronously', () => {
       app.showAboutPanel();
+    });
+  });
+
+  describe('app.setProxy(options)', () => {
+    let server: http.Server;
+
+    afterEach(async () => {
+      if (server) {
+        server.close();
+      }
+      await app.setProxy({ mode: 'direct' as const });
+    });
+
+    it('allows configuring proxy settings', async () => {
+      const config = { proxyRules: 'http=myproxy:80' };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows removing the implicit bypass rules for localhost', async () => {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<-loopback>'
+      };
+
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://localhost');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows configuring proxy settings with pacScript', async () => {
+      server = http.createServer((req, res) => {
+        const pac = `
+          function FindProxyForURL(url, host) {
+            return "PROXY myproxy:8132";
+          }
+        `;
+        res.writeHead(200, {
+          'Content-Type': 'application/x-ns-proxy-autoconfig'
+        });
+        res.end(pac);
+      });
+      const { url } = await listen(server);
+      {
+        const config = { pacScript: url };
+        await app.setProxy(config);
+        const proxy = await app.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
+      {
+        const config = { mode: 'pac_script' as any, pacScript: url };
+        await app.setProxy(config);
+        const proxy = await app.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
+    });
+
+    it('allows bypassing proxy settings', async () => {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<local>'
+      };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `direct`', async () => {
+      const config = { mode: 'direct' as const, proxyRules: 'http=myproxy:80' };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `auto_detect`', async () => {
+      const config = { mode: 'auto_detect' as const };
+      await app.setProxy(config);
+    });
+
+    it('allows configuring proxy settings with mode `pac_script`', async () => {
+      const config = { mode: 'pac_script' as const };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `fixed_servers`', async () => {
+      const config = { mode: 'fixed_servers' as const, proxyRules: 'http=myproxy:80' };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows configuring proxy settings with mode `system`', async () => {
+      const config = { mode: 'system' as const };
+      await app.setProxy(config);
+    });
+
+    it('disallows configuring proxy settings with mode `invalid`', async () => {
+      const config = { mode: 'invalid' as any };
+      await expect(app.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+    });
+
+    it('impacts proxy for requests made from utility process', async () => {
+      const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
+      const fn = async () => {
+        const urlRequest = electronNet.request('http://example.com/');
+        const response = await getResponse(urlRequest);
+        expect(response.statusCode).to.equal(200);
+        const message = await collectStreamBody(response);
+        expect(message).to.equal('ok from proxy\n');
+      };
+      server = http.createServer((req, res) => {
+        res.writeHead(200);
+        res.end('ok from proxy\n');
+      });
+      const { port, hostname } = await listen(server);
+      const config = { mode: 'fixed_servers' as const, proxyRules: `http=${hostname}:${port}` };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example.com/');
+      expect(proxy).to.equal(`PROXY ${hostname}:${port}`);
+      const child = utilityProcess.fork(utilityFixturePath, [], {
+        execArgv: ['--expose-gc']
+      });
+      child.postMessage({ fn: `(${fn})()` });
+      const [data] = await once(child, 'message');
+      expect(data.ok).to.be.true(data.message);
+      // Cleanup.
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('does not impact proxy for requests made from main process', async () => {
+      server = http.createServer((req, res) => {
+        res.writeHead(200);
+        res.end('ok from server\n');
+      });
+      const { url } = await listen(server);
+      const config = { mode: 'fixed_servers' as const, proxyRules: 'http=myproxy:80' };
+      await app.setProxy(config);
+      const proxy = await app.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+      const urlRequest = electronNet.request(url);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      const message = await collectStreamBody(response);
+      expect(message).to.equal('ok from server\n');
     });
   });
 });

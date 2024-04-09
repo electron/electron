@@ -187,10 +187,31 @@ describe('webContents module', () => {
 
     afterEach(closeAllWindows);
 
+    it('does not throw when options are not passed', () => {
+      expect(() => {
+        w.webContents.print();
+      }).not.to.throw();
+
+      expect(() => {
+        w.webContents.print(undefined);
+      }).not.to.throw();
+    });
+
+    it('does not throw when options object is empty', () => {
+      expect(() => {
+        w.webContents.print({});
+      }).not.to.throw();
+    });
+
     it('throws when invalid settings are passed', () => {
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print(true);
+      }).to.throw('webContents.print(): Invalid print settings specified.');
+
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print(null);
       }).to.throw('webContents.print(): Invalid print settings specified.');
     });
 
@@ -514,6 +535,88 @@ describe('webContents module', () => {
         .and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
       s.close();
     });
+
+    it('subsequent load failures reject each time', async () => {
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+    });
+
+    it('invalid URL load rejects', async () => {
+      await expect(w.loadURL('invalidURL')).to.eventually.be.rejected();
+    });
+  });
+
+  describe('navigationHistory', () => {
+    let w: BrowserWindow;
+    const urlPage1 = 'data:text/html,<html><head><script>document.title = "Page 1";</script></head><body></body></html>';
+    const urlPage2 = 'data:text/html,<html><head><script>document.title = "Page 2";</script></head><body></body></html>';
+    const urlPage3 = 'data:text/html,<html><head><script>document.title = "Page 3";</script></head><body></body></html>';
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+    });
+    afterEach(closeAllWindows);
+    describe('navigationHistory.getEntryAtIndex(index) API ', () => {
+      it('should fetch default navigation entry when no urls are loaded', async () => {
+        const result = w.webContents.navigationHistory.getEntryAtIndex(0);
+        expect(result).to.deep.equal({ url: '', title: '' });
+      });
+      it('should fetch navigation entry given a valid index', async () => {
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(0);
+        expect(result).to.deep.equal({ url: urlPage1, title: 'Page 1' });
+      });
+      it('should return null given an invalid index larger than history length', async () => {
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(5);
+        expect(result).to.be.null();
+      });
+      it('should return null given an invalid negative index', async () => {
+        await w.loadURL(urlPage1);
+        const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
+        expect(result).to.be.null();
+      });
+    });
+
+    describe('navigationHistory.getActiveIndex() API', () => {
+      it('should return valid active index after a single page visit', async () => {
+        await w.loadURL(urlPage1);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+
+      it('should return valid active index after a multiple page visits', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+      });
+
+      it('should return valid active index given no page visits', async () => {
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+    });
+
+    describe('navigationHistory.length() API', () => {
+      it('should return valid history length after a single page visit', async () => {
+        await w.loadURL(urlPage1);
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
+      });
+
+      it('should return valid history length after a multiple page visits', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+      });
+
+      it('should return valid history length given no page visits', async () => {
+        // Note: Even if no navigation has committed, the history list will always start with an initial navigation entry
+        // Ref: https://source.chromium.org/chromium/chromium/src/+/main:ceontent/public/browser/navigation_controller.h;l=381
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
+      });
+    });
   });
 
   describe('getFocusedWebContents() API', () => {
@@ -638,6 +741,24 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false, title: 'myTitle' });
       await devtoolsOpened;
       expect(w.webContents.getDevToolsTitle()).to.equal('myTitle');
+    });
+
+    it('can re-open devtools', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: true });
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await devtoolsClosed;
+      expect(w.webContents.isDevToolsOpened()).to.be.false();
+
+      const devtoolsOpened2 = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: true });
+      await devtoolsOpened2;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
   });
 
@@ -2016,7 +2137,9 @@ describe('webContents module', () => {
         pageRanges: { oops: 'im-not-the-right-key' },
         headerTemplate: [1, 2, 3],
         footerTemplate: [4, 5, 6],
-        preferCSSPageSize: 'no'
+        preferCSSPageSize: 'no',
+        generateTaggedPDF: 'wtf',
+        generateDocumentOutline: [7, 8, 9]
       };
 
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
@@ -2026,6 +2149,20 @@ describe('webContents module', () => {
         const param = { [key]: value };
         await expect(w.webContents.printToPDF(param)).to.eventually.be.rejected();
       }
+    });
+
+    it('rejects when margins exceed physical page size', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      await expect(w.webContents.printToPDF({
+        pageSize: 'Letter',
+        margins: {
+          top: 100,
+          bottom: 100,
+          left: 5,
+          right: 5
+        }
+      })).to.eventually.be.rejectedWith('margins must be less than or equal to pageSize');
     });
 
     it('does not crash when called multiple times in parallel', async () => {
@@ -2447,18 +2584,18 @@ describe('webContents module', () => {
     it('emits when moveTo is called', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
-      w.webContents.executeJavaScript('window.moveTo(100, 100)', true);
+      w.webContents.executeJavaScript('window.moveTo(50, 50)', true);
       const [, rect] = await once(w.webContents, 'content-bounds-updated') as [any, Electron.Rectangle];
       const { width, height } = w.getBounds();
       expect(rect).to.deep.equal({
-        x: 100,
-        y: 100,
+        x: 50,
+        y: 50,
         width,
         height
       });
       await new Promise(setImmediate);
-      expect(w.getBounds().x).to.equal(100);
-      expect(w.getBounds().y).to.equal(100);
+      expect(w.getBounds().x).to.equal(50);
+      expect(w.getBounds().y).to.equal(50);
     });
 
     it('emits when resizeTo is called', async () => {

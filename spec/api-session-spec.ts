@@ -1451,6 +1451,7 @@ describe('session module', () => {
       w.webContents.executeJavaScript(`
         var iframe = document.createElement('iframe');
         iframe.src = '${loadUrl}';
+        iframe.allow = 'clipboard-read';
         document.body.appendChild(iframe);
         null;
       `);
@@ -1604,6 +1605,126 @@ describe('session module', () => {
         disabledCipherSuites: [0x009C]
       });
       await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
+    });
+  });
+
+  describe('ses.clearData()', () => {
+    afterEach(closeAllWindows);
+
+    // NOTE: This API clears more than localStorage, but localStorage is a
+    // convenient test target for this API
+    it('clears all data when no options supplied', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+
+      await w.webContents.session.clearData();
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+    });
+
+    it('clears all data when no options supplied, called twice in parallel', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+
+      // This first call is not awaited immediately
+      const clearDataPromise = w.webContents.session.clearData();
+      await w.webContents.session.clearData();
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+
+      // Await the first promise so it doesn't creep into another test
+      await clearDataPromise;
+    });
+
+    it('only clears specified data categories', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadFile(
+        path.join(fixtures, 'api', 'localstorage-and-indexeddb.html')
+      );
+
+      const { webContents } = w;
+      const { session } = webContents;
+
+      await once(ipcMain, 'indexeddb-ready');
+
+      async function queryData (channel: string): Promise<string> {
+        const event = once(ipcMain, `result-${channel}`);
+        webContents.send(`get-${channel}`);
+        return (await event)[1];
+      }
+
+      // Data is in localStorage
+      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+      // Data is in indexedDB
+      await expect(queryData('indexeddb')).to.eventually.equal('hello indexeddb');
+
+      // Clear only indexedDB, not localStorage
+      await session.clearData({ dataTypes: ['indexedDB'] });
+
+      // The localStorage data should still be there
+      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+
+      // The indexedDB data should be gone
+      await expect(queryData('indexeddb')).to.eventually.be.undefined();
+    });
+
+    it('only clears the specified origins', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const { session } = w.webContents;
+      const { cookies } = session;
+
+      await Promise.all([
+        cookies.set({
+          url: 'https://example.com/',
+          name: 'testdotcom',
+          value: 'testdotcom'
+        }),
+        cookies.set({
+          url: 'https://example.org/',
+          name: 'testdotorg',
+          value: 'testdotorg'
+        })
+      ]);
+
+      await session.clearData({ origins: ['https://example.com'] });
+
+      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.equal(0);
+      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.be.greaterThan(0);
+    });
+
+    it('clears all except the specified origins', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const { session } = w.webContents;
+      const { cookies } = session;
+
+      await Promise.all([
+        cookies.set({
+          url: 'https://example.com/',
+          name: 'testdotcom',
+          value: 'testdotcom'
+        }),
+        cookies.set({
+          url: 'https://example.org/',
+          name: 'testdotorg',
+          value: 'testdotorg'
+        })
+      ]);
+
+      await session.clearData({ excludeOrigins: ['https://example.com'] });
+
+      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.be.greaterThan(0);
+      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.equal(0);
     });
   });
 });

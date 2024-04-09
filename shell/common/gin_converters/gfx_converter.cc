@@ -4,9 +4,14 @@
 
 #include "shell/common/gin_converters/gfx_converter.h"
 
+#include <string>
+
+#include "gin/data_object_builder.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/rect.h"
@@ -103,6 +108,35 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+v8::Local<v8::Value> Converter<gfx::Insets>::ToV8(v8::Isolate* isolate,
+                                                  const gfx::Insets& val) {
+  return gin::DataObjectBuilder(isolate)
+      .Set("top", val.top())
+      .Set("left", val.left())
+      .Set("bottom", val.bottom())
+      .Set("right", val.right())
+      .Build();
+}
+
+bool Converter<gfx::Insets>::FromV8(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> val,
+                                    gfx::Insets* out) {
+  gin::Dictionary dict(isolate);
+  if (!gin::ConvertFromV8(isolate, val, &dict))
+    return false;
+  double top, left, right, bottom;
+  if (!dict.Get("top", &top))
+    return false;
+  if (!dict.Get("left", &left))
+    return false;
+  if (!dict.Get("bottom", &bottom))
+    return false;
+  if (!dict.Get("right", &right))
+    return false;
+  *out = gfx::Insets::TLBR(top, left, bottom, right);
+  return true;
+}
+
 template <>
 struct Converter<display::Display::AccelerometerSupport> {
   static v8::Local<v8::Value> ToV8(
@@ -183,6 +217,16 @@ v8::Local<v8::Value> Converter<gfx::ResizeEdge>::ToV8(
     default:
       return StringToV8(isolate, "unknown");
   }
+}
+
+bool Converter<WrappedSkColor>::FromV8(v8::Isolate* isolate,
+                                       v8::Local<v8::Value> val,
+                                       WrappedSkColor* out) {
+  std::string str;
+  if (!gin::ConvertFromV8(isolate, val, &str))
+    return false;
+  *out = electron::ParseCSSColor(str);
+  return true;
 }
 
 }  // namespace gin

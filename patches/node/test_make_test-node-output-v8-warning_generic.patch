@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 16 Jan 2024 14:53:31 +0100
+Subject: test: make test-node-output-v8-warning generic
+
+Ref https://github.com/nodejs/node/pull/50421.
+
+The above CL migrated python snapshot testing to JS, and in the process
+added string replace calls to change 'node' as a hardcoded string to an
+asterisk. This was initially fixed in https://github.com/nodejs/node/pull/36489
+before being regressed in the above, as that PR essentially makes the wildcard
+meaningless. Fix it for now by replacing the process.argv0 basename instead.
+
+Some form of fix for this should be upstreamed.
+
+diff --git a/test/parallel/test-node-output-v8-warning.mjs b/test/parallel/test-node-output-v8-warning.mjs
+index 8e497739d21c70d5c792f43c268746a200916063..cad1910e020b15775ee16122bc9d310680fed687 100644
+--- a/test/parallel/test-node-output-v8-warning.mjs
++++ b/test/parallel/test-node-output-v8-warning.mjs
+@@ -2,11 +2,18 @@ import '../common/index.mjs';
+ import * as fixtures from '../common/fixtures.mjs';
+ import * as snapshot from '../common/assertSnapshot.js';
+ import { describe, it } from 'node:test';
++import { basename } from 'node:path';
+ 
+ function replaceNodeVersion(str) {
+   return str.replaceAll(process.version, '*');
+ }
+ 
++function replaceExecName(str) {
++  // Copied from lib/internal/process/warning.js
++  const baseName = basename(process.argv0 || 'node', '.exe');
++  return str.replaceAll(`${baseName} --`, '* --');
++}
++
+ describe('v8 output', { concurrency: true }, () => {
+   function normalize(str) {
+     return str.replaceAll(snapshot.replaceWindowsPaths(process.cwd()), '')
+@@ -15,10 +22,10 @@ describe('v8 output', { concurrency: true }, () => {
+     .replaceAll('*test*', '*')
+     .replaceAll(/.*?\*fixtures\*v8\*/g, '(node:*) V8: *') // Replace entire path before fixtures/v8
+     .replaceAll('*fixtures*v8*', '*')
+-    .replaceAll('node --', '* --');
+   }
++
+   const common = snapshot
+-    .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths, replaceNodeVersion);
++    .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths, replaceNodeVersion, replaceExecName);
+   const defaultTransform = snapshot.transform(common, normalize);
+   const tests = [
+     { name: 'v8/v8_warning.js' },

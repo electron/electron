@@ -7,27 +7,27 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 62cb46b328871d929f16ced2a4741bc6e6b004db..53ab7c255317d2280e2579435bc7097705f19c6e 100644
+index f52d4f805406c513904151be90e433948764b3ad..7b790060b03cceec62bfe4c1f12d396b9cf52e8c 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -79,6 +79,8 @@
-     # TODO(refack): make v8-perfetto happen
+@@ -86,6 +86,8 @@
      'v8_use_perfetto': 0,
+     'tsan%': 0,
  
 +    'using_electron_config_gypi%': 0,
 +
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -282,6 +284,7 @@
-       'V8_DEPRECATION_WARNINGS',
-       'V8_IMMINENT_DEPRECATION_WARNINGS',
+@@ -285,6 +287,7 @@
+     # Defines these mostly for node-gyp to pickup.
+     'defines': [
        '_GLIBCXX_USE_CXX11_ABI=1',
 +      'ELECTRON_ENSURE_CONFIG_GYPI',
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -388,6 +391,11 @@
+@@ -391,6 +394,11 @@
            }],
          ],
        }],
@@ -36,14 +36,14 @@ index 62cb46b328871d929f16ced2a4741bc6e6b004db..53ab7c255317d2280e2579435bc70977
 +          'USING_ELECTRON_CONFIG_GYPI',
 +        ],
 +      }],
-       ['v8_enable_pointer_compression == 1', {
-         'defines': [
-           'V8_COMPRESS_POINTERS',
+       # The defines bellow must include all things from the external_v8_defines
+       # list in v8/BUILD.gn.
+       ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index 875d83e5db0037b902cff03c74852ea347513b03..8776cd057607ffe913bdd822a0aed5f9f1aa4a7a 100755
+index 84b016cd853080656d4dcf982e64855fcfa72a55..f0cccff0eed2ef11275d2f7ec2358276f6e10458 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1524,6 +1524,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1489,6 +1489,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):
@@ -52,7 +52,7 @@ index 875d83e5db0037b902cff03c74852ea347513b03..8776cd057607ffe913bdd822a0aed5f9
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index c4cce244359d893acf31e78f935152d4d47b14cd..26368061a909e6abc62a4cf261a5dbbd79404f1a 100644
+index 868366f6d3e35d0fe543c89efd7d5e313a831a96..a512d2228e0afcfff765c3fe845e1f22073047d0 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

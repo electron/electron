@@ -7,7 +7,7 @@ Allows embedders to get a handle to the gtk and
 gdk_pixbuf libraries already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index d196e304a43191b6dc82f25b0b4bf24d242edb3c..85d618efa0574b00fc0cb1e5bde5ed725b2a90ab 100644
+index 3a4b856ec5c2f5c3ede6e8f6db7858498b737702..a308249c66c01856df84e64bda0411dbcbd96457 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
 @@ -66,11 +66,6 @@ void* GetLibGio() {
@@ -54,10 +54,10 @@ index d196e304a43191b6dc82f25b0b4bf24d242edb3c..85d618efa0574b00fc0cb1e5bde5ed72
    static bool loaded = LoadGtkImpl();
    return loaded;
 diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
-index 409e385fc952662c9887d9a810bb3c547c5be282..1518b681f98b3bc051aed74713a23c016c7b755e 100644
+index 19f73cc179d82a3729c5fe37883460ac05f4d0c3..cdb67c98291f145f89f76a50b31bf00318648518 100644
 --- a/ui/gtk/gtk_compat.h
 +++ b/ui/gtk/gtk_compat.h
-@@ -40,6 +40,12 @@ using SkColor = uint32_t;
+@@ -41,6 +41,12 @@ using SkColor = uint32_t;
  
  namespace gtk {
  

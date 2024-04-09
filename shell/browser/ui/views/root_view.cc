@@ -9,17 +9,11 @@
 #include "content/public/common/input/native_web_keyboard_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
+#include "ui/views/layout/box_layout.h"
 
 namespace electron {
 
 namespace {
-
-// The menu bar height in pixels.
-#if BUILDFLAG(IS_WIN)
-const int kMenuBarHeight = 20;
-#else
-const int kMenuBarHeight = 25;
-#endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
   return event.windows_key_code == ui::VKEY_MENU;
@@ -41,6 +35,12 @@ RootView::RootView(NativeWindow* window)
     : window_(window),
       last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
   set_owned_by_client();
+  views::BoxLayout* layout =
+      SetLayoutManager(std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical));
+  main_view_ = AddChildView(std::make_unique<views::View>());
+  main_view_->SetUseDefaultFillLayout(true);
+  layout->SetFlexForView(main_view_, 1);
 }
 
 RootView::~RootView() = default;
@@ -69,7 +69,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   menu_bar_->SetMenu(menu_model);
-  Layout();
+  InvalidateLayout();
 }
 
 bool RootView::HasMenu() const {
@@ -77,15 +77,11 @@ bool RootView::HasMenu() const {
 }
 
 int RootView::GetMenuBarHeight() const {
-  return kMenuBarHeight;
+  return menu_bar_ ? menu_bar_->GetPreferredSize().height() : 0;
 }
 
 void RootView::SetAutoHideMenuBar(bool auto_hide) {
   menu_bar_autohide_ = auto_hide;
-}
-
-bool RootView::IsMenuBarAutoHide() const {
-  return menu_bar_autohide_;
 }
 
 void RootView::SetMenuBarVisibility(bool visible) {
@@ -94,18 +90,12 @@ void RootView::SetMenuBarVisibility(bool visible) {
 
   menu_bar_visible_ = visible;
   if (visible) {
-    DCHECK_EQ(children().size(), 1ul);
-    AddChildView(menu_bar_.get());
+    AddChildViewAt(menu_bar_.get(), 0);
   } else {
-    DCHECK_EQ(children().size(), 2ul);
     RemoveChildView(menu_bar_.get());
   }
 
-  Layout();
-}
-
-bool RootView::IsMenuBarVisible() const {
-  return menu_bar_visible_;
+  InvalidateLayout();
 }
 
 void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
@@ -172,21 +162,6 @@ void RootView::RestoreFocus() {
 
 void RootView::ResetAltState() {
   menu_bar_alt_pressed_ = false;
-}
-
-void RootView::Layout() {
-  if (!window_->content_view())  // Not ready yet.
-    return;
-
-  const auto menu_bar_bounds =
-      menu_bar_visible_ ? gfx::Rect(0, 0, size().width(), kMenuBarHeight)
-                        : gfx::Rect();
-  if (menu_bar_)
-    menu_bar_->SetBoundsRect(menu_bar_bounds);
-
-  window_->content_view()->SetBoundsRect(
-      gfx::Rect(0, menu_bar_visible_ ? menu_bar_bounds.bottom() : 0,
-                size().width(), size().height() - menu_bar_bounds.height()));
 }
 
 gfx::Size RootView::GetMinimumSize() const {

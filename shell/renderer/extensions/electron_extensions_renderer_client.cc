@@ -15,9 +15,12 @@
 
 namespace electron {
 
-ElectronExtensionsRendererClient::ElectronExtensionsRendererClient()
-    : dispatcher_(std::make_unique<extensions::Dispatcher>(
-          std::make_unique<ElectronExtensionsDispatcherDelegate>())) {
+ElectronExtensionsRendererClient::ElectronExtensionsRendererClient() {}
+
+void ElectronExtensionsRendererClient::RenderThreadStarted() {
+  dispatcher_ = std::make_unique<extensions::Dispatcher>(
+      std::make_unique<ElectronExtensionsDispatcherDelegate>(),
+      std::move(api_providers_));
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 

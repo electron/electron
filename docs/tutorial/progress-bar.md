@@ -50,12 +50,12 @@ See the [API documentation for more options and modes][setprogressbar].
 In this example, we add a progress bar to the main window that increments over time
 using Node.js timers.
 
-```javascript fiddle='docs/fiddles/features/progress-bar'
-const { app, BrowserWindow } = require('electron')
+```fiddle docs/fiddles/features/progress-bar
+const { app, BrowserWindow } = require('electron/main')
 
 let progressInterval
 
-const createWindow = () => {
+function createWindow () {
   const win = new BrowserWindow({
     width: 800,
     height: 600
@@ -73,8 +73,11 @@ const createWindow = () => {
     win.setProgressBar(c)
 
     // increment or reset progress bar
-    if (c < 2) c += INCREMENT
-    else c = 0
+    if (c < 2) {
+      c += INCREMENT
+    } else {
+      c = (-INCREMENT * 5) // reset to a bit less than 0 to show reset state
+    }
   }, INTERVAL_DELAY)
 }
 

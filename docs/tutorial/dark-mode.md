@@ -50,7 +50,7 @@ of this theming, due to the use of the macOS 10.14 SDK.
 This example demonstrates an Electron application that derives its theme colors from the
 `nativeTheme`. Additionally, it provides theme toggle and reset controls using IPC channels.
 
-```javascript fiddle='docs/fiddles/features/dark-mode'
+```fiddle docs/fiddles/features/dark-mode
 
 ```
 

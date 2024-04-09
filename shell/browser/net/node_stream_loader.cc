@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/node_stream_loader.h"
 
+#include <string_view>
 #include <utility>
 
 #include "mojo/public/cpp/system/string_data_source.h"
@@ -59,7 +60,7 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
   client_->OnReceiveResponse(std::move(head), std::move(consumer),
-                             absl::nullopt);
+                             std::nullopt);
 
   auto weak = weak_factory_.GetWeakPtr();
   On("end",
@@ -135,8 +136,8 @@ void NodeStreamLoader::ReadMore() {
   is_reading_ = false;
   is_writing_ = true;
   producer_->Write(std::make_unique<mojo::StringDataSource>(
-                       base::StringPiece(node::Buffer::Data(buffer),
-                                         node::Buffer::Length(buffer)),
+                       std::string_view{node::Buffer::Data(buffer),
+                                        node::Buffer::Length(buffer)},
                        mojo::StringDataSource::AsyncWritingMode::
                            STRING_STAYS_VALID_UNTIL_COMPLETION),
                    base::BindOnce(&NodeStreamLoader::DidWrite, weak));

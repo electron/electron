@@ -12,14 +12,50 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (30.0)
+
+### Behavior Changed: cross-origin iframes now use Permission Policy to access features
+
+Cross-origin iframes must now specify features available to a given `iframe` via the `allow`
+attribute in order to access them.
+
+See [documentation](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#allow) for
+more information.
+
+### Removed: The `--disable-color-correct-rendering` switch
+
+This switch was never formally documented but it's removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
+
+### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
+
+In Electron 30, BrowserView is now a wrapper around the new [WebContentsView](api/web-contents-view.md) API.
+
+Previously, the `setAutoResize` function of the `BrowserView` API was backed by [autoresizing](https://developer.apple.com/documentation/appkit/nsview/1483281-autoresizingmask?language=objc) on macOS, and by a custom algorithm on Windows and Linux.
+For simple use cases such as making a BrowserView fill the entire window, the behavior of these two approaches was identical.
+However, in more advanced cases, BrowserViews would be autoresized differently on macOS than they would be on other platforms, as the custom resizing algorithm for Windows and Linux did not perfectly match the behavior of macOS's autoresizing API.
+The autoresizing behavior is now standardized across all platforms.
+
+If your app uses `BrowserView.setAutoResize` to do anything more complex than making a BrowserView fill the entire window, it's likely you already had custom logic in place to handle this difference in behavior on macOS.
+If so, that logic will no longer be needed in Electron 30 as autoresizing behavior is consistent.
+
+### Removed: `params.inputFormType` property on `context-menu` on `WebContents`
+
+The `inputFormType` property of the params object in the `context-menu`
+event from `WebContents` has been removed. Use the new `formControlType`
+property instead.
+
+### Removed: `process.getIOCounters()`
+
+Chromium has removed access to this information.
+
 ## Planned Breaking API Changes (29.0)
 
 ### Behavior Changed: `ipcRenderer` can no longer be sent over the `contextBridge`
 
-Attempting to send `ipcRenderer` as an object over the `contextBridge` will now result in
+Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will now result in
 an empty object on the receiving side of the bridge. This change was made to remove / mitigate
-a security footgun, you should not directly expose ipcRenderer or it's methods over the bridge.
-Instead provide a safe wrapper like below:
+a security footgun. You should not directly expose ipcRenderer or its methods over the bridge.
+Instead, provide a safe wrapper like below:
 
 ```js
 contextBridge.exposeInMainWorld('app', {
@@ -210,6 +246,18 @@ systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
 // Replace with
 nativeTheme.on('updated', () => { /* ... */ })
 ```
+
+### Removed: Some `window.setVibrancy` options on macOS
+
+The following vibrancy options have been removed:
+
+* 'light'
+* 'medium-light'
+* 'dark'
+* 'ultra-dark'
+* 'appearance-based'
+
+These were previously deprecated and have been removed by Apple in 10.15.
 
 ### Removed: `webContents.getPrinters`
 
@@ -590,7 +638,7 @@ The `new-window` event of `<webview>` has been removed. There is no direct repla
 webview.addEventListener('new-window', (event) => {})
 ```
 
-```javascript fiddle='docs/fiddles/ipc/webview-new-window'
+```js
 // Replace with
 
 // main.js
@@ -1255,7 +1303,7 @@ module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-
 
 The APIs are now synchronous and the optional callback is no longer needed.
 
-```javascript
+```js
 // Deprecated
 protocol.unregisterProtocol(scheme, () => { /* ... */ })
 // Replace with
@@ -1284,7 +1332,7 @@ protocol.unregisterProtocol(scheme)
 
 The APIs are now synchronous and the optional callback is no longer needed.
 
-```javascript
+```js
 // Deprecated
 protocol.registerFileProtocol(scheme, handler, () => { /* ... */ })
 // Replace with
@@ -1299,7 +1347,7 @@ until navigation happens.
 This API is deprecated and users should use `protocol.isProtocolRegistered`
 and `protocol.isProtocolIntercepted` instead.
 
-```javascript
+```js
 // Deprecated
 protocol.isProtocolHandled(scheme).then(() => { /* ... */ })
 // Replace with
@@ -1638,7 +1686,7 @@ folder
 └── file3
 ```
 
-In Electron <=6, this would return a `FileList` with a `File` object for:
+In Electron &lt;=6, this would return a `FileList` with a `File` object for:
 
 ```console
 path/to/folder

@@ -126,7 +126,7 @@ folder of your project:
 
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
@@ -155,7 +155,7 @@ need two Electron modules:
   windows.
 
 Because the main process runs Node.js, you can import these as [CommonJS][commonjs]
-modules at the top of your file:
+modules at the top of your `main.js` file:
 
 ```js
 const { app, BrowserWindow } = require('electron')
@@ -420,9 +420,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 ```html
 <!--index.html-->
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->

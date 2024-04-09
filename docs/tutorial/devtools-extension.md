@@ -33,7 +33,7 @@ Using the [React Developer Tools][react-devtools] as an example:
 1. Pass the location of the extension to the [`ses.loadExtension`][load-extension]
    API. For React Developer Tools `v4.9.0`, it looks something like:
 
-   ```javascript
+   ```js
    const { app, session } = require('electron')
    const path = require('node:path')
    const os = require('node:os')

@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <string_view>
+
 #include "shell/common/gin_helper/promise.h"
 
 namespace gin_helper {
@@ -43,7 +45,8 @@ v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
   return GetInner()->Reject(GetContext(), except);
 }
 
-v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(base::StringPiece message) {
+v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(
+    const std::string_view message) {
   v8::HandleScope handle_scope(isolate());
   gin_helper::MicrotasksScope microtasks_scope(
       isolate(), GetContext()->GetMicrotaskQueue());

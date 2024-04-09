@@ -7,7 +7,8 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "third_party/abseil-cpp/absl/types/optional.h"
+#include <optional>
+
 #include "ui/gfx/geometry/point.h"
 
 @class WindowButtonsProxy;
@@ -48,7 +49,7 @@
 - (void)setShowOnHover:(BOOL)yes;
 
 // Set left-top margin of the window buttons..
-- (void)setMargin:(const absl::optional<gfx::Point>&)margin;
+- (void)setMargin:(const std::optional<gfx::Point>&)margin;
 
 // Set height of button container
 - (void)setHeight:(const float)height;

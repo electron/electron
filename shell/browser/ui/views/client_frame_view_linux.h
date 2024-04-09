@@ -13,6 +13,7 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/scoped_observation.h"
 #include "shell/browser/ui/views/frameless_view.h"
+#include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/ui_base_types.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/nav_button_provider.h"
@@ -30,8 +31,9 @@ namespace electron {
 class ClientFrameViewLinux : public FramelessView,
                              public ui::NativeThemeObserver,
                              public ui::WindowButtonOrderObserver {
+  METADATA_HEADER(ClientFrameViewLinux, FramelessView)
+
  public:
-  static const char kViewClassName[];
   ClientFrameViewLinux();
   ~ClientFrameViewLinux() override;
 
@@ -71,9 +73,8 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Size CalculatePreferredSize() const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
-  void Layout() override;
+  void Layout(PassKey) override;
   void OnPaint(gfx::Canvas* canvas) override;
-  const char* GetClassName() const override;
 
   // Overriden from views::ViewTargeterDelegate
   views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;

@@ -9,7 +9,7 @@ import("//pdf/features.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
-import("//third_party/electron_node/node.gni")
+import("//third_party/electron_node/electron_node.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -29,6 +29,7 @@ import("filenames.gni")
 import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
+import("js2c_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -165,15 +166,6 @@ npm_action("build_electron_definitions") {
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
-webpack_build("electron_asar_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.asar_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.asar.js"
-  out_file = "$target_gen_dir/js2c/asar_bundle.js"
-}
-
 webpack_build("electron_browser_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -219,6 +211,15 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
+webpack_build("electron_node_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.node_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.node.js"
+  out_file = "$target_gen_dir/js2c/node_init.js"
+}
+
 webpack_build("electron_utility_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -230,32 +231,37 @@ webpack_build("electron_utility_bundle") {
 
 action("electron_js2c") {
   deps = [
-    ":electron_asar_bundle",
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_node_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
     ":electron_worker_bundle",
+    "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
 
   sources = [
-    "$target_gen_dir/js2c/asar_bundle.js",
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/node_init.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
     "$target_gen_dir/js2c/utility_init.js",
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
-  inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
+  inputs = sources
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
   script = "build/js2c.py"
-  args = [ rebase_path("//third_party/electron_node") ] +
-         rebase_path(outputs, root_build_dir) +
-         rebase_path(sources, root_build_dir)
+  out_dir =
+      get_label_info(":anything($electron_js2c_toolchain)", "root_out_dir")
+  args = [
+           rebase_path("$out_dir/node_js2c"),
+           rebase_path("$root_gen_dir"),
+         ] + rebase_path(outputs, root_gen_dir) +
+         rebase_path(sources, root_gen_dir)
 }
 
 action("generate_config_gypi") {
@@ -408,8 +414,10 @@ action("electron_generate_node_defines") {
 }
 
 source_set("electron_lib") {
-  configs += [ "//v8:external_startup_data" ]
-  configs += [ "//third_party/electron_node:node_internals" ]
+  configs += [
+    "//v8:external_startup_data",
+    "//third_party/electron_node:node_internals",
+  ]
 
   public_configs = [
     ":branding",
@@ -467,6 +475,7 @@ source_set("electron_lib") {
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",
+    "//services/device/public/cpp/bluetooth:bluetooth",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
@@ -486,6 +495,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
     "//ui/events:dom_keycode_converter",
@@ -493,6 +503,7 @@ source_set("electron_lib") {
     "//ui/native_theme",
     "//ui/shell_dialogs",
     "//ui/views",
+    "//ui/views/controls/webview",
     "//v8",
     "//v8:v8_libplatform",
   ]
@@ -628,7 +639,6 @@ source_set("electron_lib") {
       "//ui/gtk:gtk_config",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
-      "//ui/views/controls/webview",
       "//ui/wm",
     ]
     if (ozone_platform_x11) {
@@ -653,10 +663,10 @@ source_set("electron_lib") {
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
+    sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
-      "//ui/views/controls/webview",
       "//ui/wm",
       "//ui/wm/public",
     ]
@@ -683,13 +693,6 @@ source_set("electron_lib") {
       "//ppapi/host",
       "//ppapi/proxy",
       "//ppapi/shared_impl",
-    ]
-  }
-
-  if (enable_views_api) {
-    sources += [
-      "shell/browser/api/views/electron_api_image_view.cc",
-      "shell/browser/api/views/electron_api_image_view.h",
     ]
   }
 
@@ -741,7 +744,7 @@ source_set("electron_lib") {
       "//chrome/browser/resources/pdf:resources",
       "//components/pdf/browser",
       "//components/pdf/browser:interceptors",
-      "//components/pdf/common",
+      "//components/pdf/common:constants",
       "//components/pdf/renderer",
       "//pdf",
     ]
@@ -853,7 +856,7 @@ if (is_mac) {
     if (is_asan) {
       # crashpad_handler requires the ASan runtime at its @executable_path.
       sources += [ "$root_out_dir/libclang_rt.asan_osx_dynamic.dylib" ]
-      public_deps += [ "//build/config/sanitizers:copy_asan_runtime" ]
+      public_deps += [ "//build/config/sanitizers:copy_sanitizer_runtime" ]
     }
   }
 

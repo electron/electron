@@ -11,9 +11,11 @@
 #include "base/environment.h"
 #include "base/process/launch.h"
 #include "electron/electron_version.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -49,7 +51,7 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   return process.WaitForExit(exit_code);
 }
 
-absl::optional<std::string> GetXdgAppOutput(
+std::optional<std::string> GetXdgAppOutput(
     const std::vector<std::string>& argv) {
   std::string reply;
   int success_code;
@@ -58,9 +60,9 @@ absl::optional<std::string> GetXdgAppOutput(
                                                &success_code);
 
   if (!ran_ok || success_code != EXIT_SUCCESS)
-    return absl::optional<std::string>();
+    return std::optional<std::string>();
 
-  return absl::make_optional(reply);
+  return std::make_optional(reply);
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
@@ -126,7 +128,7 @@ std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
 
-bool Browser::SetBadgeCount(absl::optional<int> count) {
+bool Browser::SetBadgeCount(std::optional<int> count) {
   if (IsUnityRunning() && count.has_value()) {
     unity::SetDownloadCount(count.value());
     badge_count_ = count.value();
@@ -138,9 +140,10 @@ bool Browser::SetBadgeCount(absl::optional<int> count) {
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings(
+v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
-  return LoginItemSettings();
+  LoginItemSettings settings;
+  return gin::ConvertToV8(JavascriptEnvironment::GetIsolate(), settings);
 }
 
 std::string Browser::GetExecutableFileVersion() const {

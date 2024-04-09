@@ -9,6 +9,7 @@ import * as http from 'node:http';
 import * as auth from 'basic-auth';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+import { HexColors, ScreenCapture } from './lib/screen-helpers';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -351,6 +352,31 @@ describe('<webview> tag', function () {
       const [, zoomFactor, zoomLevel] = await zoomEventPromise;
       expect(zoomFactor).to.equal(1.2);
       expect(zoomLevel).to.equal(1);
+    });
+
+    it('maintains the zoom level for a given host in the same session after navigation', () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      const zoomPromise = new Promise<void>((resolve) => {
+        ipcMain.on('webview-zoom-persist-level', (_event, values) => {
+          resolve(values);
+        });
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-change-persist-host.html'));
+
+      expect(zoomPromise).to.eventually.deep.equal({
+        initialZoomLevel: 2,
+        switchZoomLevel: 3,
+        finalZoomLevel: 2
+      });
     });
 
     it('maintains zoom level on navigation', async () => {
@@ -745,6 +771,67 @@ describe('<webview> tag', function () {
           typeofOpenedWindow: 'object'
         }
       });
+    });
+  });
+
+  describe('webpreferences attribute', () => {
+    const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+
+    let w: BrowserWindow;
+    before(async () => {
+      w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadURL(`file://${fixtures}/pages/flex-webview.html`);
+      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+    });
+    afterEach(async () => {
+      await w.webContents.executeJavaScript(`{
+        for (const el of document.querySelectorAll('webview')) el.remove();
+      }`);
+    });
+    after(() => w.close());
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('is transparent by default', async () => {
+      await loadWebView(w.webContents, {
+        src: 'data:text/html,foo'
+      });
+
+      await setTimeout(1000);
+
+      const screenCapture = await ScreenCapture.create();
+      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('remains transparent when set', async () => {
+      await loadWebView(w.webContents, {
+        src: 'data:text/html,foo',
+        webpreferences: 'transparent=yes'
+      });
+
+      await setTimeout(1000);
+
+      const screenCapture = await ScreenCapture.create();
+      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('can disable transparency', async () => {
+      await loadWebView(w.webContents, {
+        src: 'data:text/html,foo',
+        webpreferences: 'transparent=no'
+      });
+
+      await setTimeout(1000);
+
+      const screenCapture = await ScreenCapture.create();
+      await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });
 
@@ -2018,8 +2105,8 @@ describe('<webview> tag', function () {
       }
     });
 
-    // TODO(miniak): figure out why this is failing on windows
-    ifdescribe(process.platform !== 'win32')('<webview>.capturePage()', () => {
+    // FIXME: This test is flaking constantly on Linux and macOS.
+    xdescribe('<webview>.capturePage()', () => {
       it('returns a Promise with a NativeImage', async function () {
         this.retries(5);
 

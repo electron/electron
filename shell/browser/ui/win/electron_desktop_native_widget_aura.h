@@ -27,6 +27,9 @@ class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
 
   // views::DesktopNativeWidgetAura:
   void InitNativeWidget(views::Widget::InitParams params) override;
+#if BUILDFLAG(IS_WIN)
+  void OnSizeConstraintsChanged() override;
+#endif
 
   // internal::NativeWidgetPrivate:
   void Activate() override;

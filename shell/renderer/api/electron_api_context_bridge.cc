@@ -14,7 +14,6 @@
 #include "base/containers/contains.h"
 #include "base/feature_list.h"
 #include "base/no_destructor.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -391,8 +390,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       blink::WebElement::FromV8Value(destination_context->GetIsolate(), value);
   if (!elem.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
-    return v8::MaybeLocal<v8::Value>(elem.ToV8Value(
-        destination_context->Global(), destination_context->GetIsolate()));
+    return v8::MaybeLocal<v8::Value>(
+        elem.ToV8Value(destination_context->GetIsolate()));
   }
 
   // Custom logic to "clone" Blob references

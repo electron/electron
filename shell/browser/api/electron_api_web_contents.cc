@@ -6,8 +6,10 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -88,7 +90,6 @@
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/browser/electron_javascript_dialog_manager.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
@@ -129,7 +130,6 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "storage/browser/file_system/isolated_context.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
@@ -206,7 +206,7 @@ struct Converter<printing::mojom::MarginType> {
                      printing::mojom::MarginType* out) {
     using Val = printing::mojom::MarginType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"custom", Val::kCustomMargins},
             {"default", Val::kDefaultMargins},
             {"none", Val::kNoMargins},
@@ -223,7 +223,7 @@ struct Converter<printing::mojom::DuplexMode> {
                      printing::mojom::DuplexMode* out) {
     using Val = printing::mojom::DuplexMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"longEdge", Val::kLongEdge},
             {"shortEdge", Val::kShortEdge},
             {"simplex", Val::kSimplex},
@@ -264,13 +264,28 @@ struct Converter<WindowOpenDisposition> {
 };
 
 template <>
+struct Converter<content::JavaScriptDialogType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::JavaScriptDialogType val) {
+    switch (val) {
+      case content::JAVASCRIPT_DIALOG_TYPE_ALERT:
+        return gin::ConvertToV8(isolate, "alert");
+      case content::JAVASCRIPT_DIALOG_TYPE_CONFIRM:
+        return gin::ConvertToV8(isolate, "confirm");
+      case content::JAVASCRIPT_DIALOG_TYPE_PROMPT:
+        return gin::ConvertToV8(isolate, "prompt");
+    }
+  }
+};
+
+template <>
 struct Converter<content::SavePageType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      content::SavePageType* out) {
     using Val = content::SavePageType;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"htmlcomplete", Val::SAVE_PAGE_TYPE_AS_COMPLETE_HTML},
             {"htmlonly", Val::SAVE_PAGE_TYPE_AS_ONLY_HTML},
             {"mhtml", Val::SAVE_PAGE_TYPE_AS_MHTML},
@@ -315,7 +330,7 @@ struct Converter<electron::api::WebContents::Type> {
                      electron::api::WebContents::Type* out) {
     using Val = electron::api::WebContents::Type;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<std::string_view, Val>({
             {"backgroundPage", Val::kBackgroundPage},
             {"browserView", Val::kBrowserView},
             {"offscreen", Val::kOffScreen},
@@ -337,13 +352,27 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   }
 };
 
+template <>
+struct Converter<content::NavigationEntry*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::NavigationEntry* entry) {
+    if (!entry) {
+      return v8::Null(isolate);
+    }
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("url", entry->GetURL().spec());
+    dict.Set("title", entry->GetTitleForDisplay());
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace gin
 
 namespace electron::api {
 
 namespace {
 
-constexpr base::StringPiece CursorTypeToString(
+constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
   switch (cursor_type) {
     case ui::mojom::CursorType::kPointer:
@@ -482,9 +511,9 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   capture_handle.RunAndReset();
 }
 
-absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
+std::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #if BUILDFLAG(IS_MAC)
-  absl::optional<base::TimeDelta> system_value(
+  std::optional<base::TimeDelta> system_value(
       ui::TextInsertionCaretBlinkPeriodFromDefaults());
   if (system_value)
     return *system_value;
@@ -498,7 +527,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
                                      : base::Milliseconds(system_msec);
   }
 #endif
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -703,12 +732,6 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                         file_system_path);
 }
 
-void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
-  rwhv->SetBackgroundColor(color);
-  static_cast<content::RenderWidgetHostViewBase*>(rwhv)
-      ->SetContentBackgroundColor(color);
-}
-
 content::RenderFrameHost* GetRenderFrameHost(
     content::NavigationHandle* navigation_handle) {
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -725,7 +748,6 @@ content::RenderFrameHost* GetRenderFrameHost(
 
   return frame_host;
 }
-
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -815,6 +837,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
+  // Get transparent for guest view
+  options.Get("transparent", &guest_transparent_);
+
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::kOffScreen;
@@ -825,10 +850,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  // BrowserViews are not attached to a window initially so they should start
-  // off as hidden. This is also important for compositor recycling. See:
-  // https://github.com/electron/electron/pull/21372
-  bool initially_shown = type_ != Type::kBrowserView;
+  bool initially_shown = true;
   options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
@@ -844,7 +866,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   session_.Reset(isolate, session.ToV8());
 
   std::unique_ptr<content::WebContents> web_contents;
-  if (IsGuest()) {
+  if (is_guest()) {
     scoped_refptr<content::SiteInstance> site_instance =
         content::SiteInstance::CreateForURL(session->browser_context(),
                                             GURL("chrome-guest://fake-host"));
@@ -914,7 +936,7 @@ void WebContents::InitWithSessionAndOptions(
     const gin_helper::Dictionary& options) {
   Observe(owned_web_contents.get());
   InitWithWebContents(std::move(owned_web_contents), session->browser_context(),
-                      IsGuest());
+                      is_guest());
 
   inspectable_web_contents_->GetView()->SetDelegate(this);
 
@@ -974,7 +996,7 @@ void WebContents::InitWithSessionAndOptions(
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
 
-  if (IsGuest()) {
+  if (is_guest()) {
     NativeWindow* owner_window = nullptr;
     if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
@@ -1009,7 +1031,7 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
   // Allow toggling DevTools for background pages
   Observe(web_contents);
   InitWithWebContents(std::unique_ptr<content::WebContents>(web_contents),
-                      GetBrowserContext(), IsGuest());
+                      GetBrowserContext(), is_guest());
   inspectable_web_contents_->GetView()->SetDelegate(this);
 }
 #endif
@@ -1058,7 +1080,7 @@ WebContents::~WebContents() {
 
   // For guest view based on OOPIF, the WebContents is released by the embedder
   // frame, and we need to clear the reference to the memory.
-  bool not_owned_by_this = IsGuest() && attached_;
+  bool not_owned_by_this = is_guest() && attached_;
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // And background pages are owned by extensions::ExtensionHost.
   if (type_ == Type::kBackgroundPage)
@@ -1088,7 +1110,7 @@ void WebContents::DeleteThisIfAlive() {
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asynchronously when possible
   // as user may choose to destroy WebContents during an event of it.
-  if (Browser::Get()->is_shutting_down() || IsGuest()) {
+  if (Browser::Get()->is_shutting_down() || is_guest()) {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -1097,7 +1119,7 @@ void WebContents::Destroy() {
   }
 }
 
-void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   bool dispatch_beforeunload = false;
   if (options)
     options->Get("waitForBeforeUnload", &dispatch_beforeunload);
@@ -1273,13 +1295,11 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen ||
-      type_ == Type::kBrowserView)
-    *proceed_to_fire_unload = proceed;
-  else
-    *proceed_to_fire_unload = true;
   // Note that Chromium does not emit this for navigations.
-  Emit("before-unload-fired", proceed);
+
+  // Emit returns true if preventDefault() was called, so !Emit will be true if
+  // the event should proceed.
+  *proceed_to_fire_unload = !Emit("-before-unload-fired", proceed);
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
@@ -1298,12 +1318,7 @@ void WebContents::CloseContents(content::WebContents* source) {
     autofill_driver_factory->CloseAllPopups();
   }
 
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnCloseContents();
-
-  // This is handled by the embedder frame.
-  if (!IsGuest())
-    Destroy();
+  Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1511,32 +1526,33 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result.GetHandle());
 }
 
-void WebContents::OnRequestToLockMouse(content::WebContents* web_contents,
+void WebContents::OnRequestPointerLock(content::WebContents* web_contents,
                                        bool user_gesture,
                                        bool last_unlocked_by_target,
                                        bool allowed) {
   if (allowed) {
-    exclusive_access_manager_.mouse_lock_controller()->RequestToLockMouse(
+    exclusive_access_manager_.pointer_lock_controller()->RequestToLockPointer(
         web_contents, user_gesture, last_unlocked_by_target);
   } else {
-    web_contents->GotResponseToLockMouseRequest(
+    web_contents->GotResponseToPointerLockRequest(
         blink::mojom::PointerLockResult::kPermissionDenied);
   }
 }
 
-void WebContents::RequestToLockMouse(content::WebContents* web_contents,
+void WebContents::RequestPointerLock(content::WebContents* web_contents,
                                      bool user_gesture,
                                      bool last_unlocked_by_target) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::OnRequestToLockMouse,
+      base::BindOnce(&WebContents::OnRequestPointerLock,
                      base::Unretained(this)));
 }
 
-void WebContents::LostMouseLock() {
-  exclusive_access_manager_.mouse_lock_controller()->LostMouseLock();
+void WebContents::LostPointerLock() {
+  exclusive_access_manager_.pointer_lock_controller()
+      ->ExitExclusiveAccessToPreviousState();
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -1567,7 +1583,7 @@ void WebContents::CancelKeyboardLockRequest(
 
 bool WebContents::CheckMediaAccessPermission(
     content::RenderFrameHost* render_frame_host,
-    const GURL& security_origin,
+    const url::Origin& security_origin,
     blink::mojom::MediaStreamType type) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
@@ -1585,12 +1601,53 @@ void WebContents::RequestMediaAccessPermission(
   permission_helper->RequestMediaAccessPermission(request, std::move(callback));
 }
 
+const void* const kJavaScriptDialogManagerKey = &kJavaScriptDialogManagerKey;
+
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
-  if (!dialog_manager_)
-    dialog_manager_ = std::make_unique<ElectronJavaScriptDialogManager>();
+  // Indirect these delegate methods through a helper object whose lifetime is
+  // bound to that of the content::WebContents. This prevents the
+  // content::WebContents from calling methods on the Electron WebContents in
+  // the event that the Electron one is destroyed before the content one, as
+  // happens sometimes during shutdown or when webviews are involved.
+  class JSDialogManagerHelper : public content::JavaScriptDialogManager,
+                                public base::SupportsUserData::Data {
+   public:
+    void RunJavaScriptDialog(content::WebContents* web_contents,
+                             content::RenderFrameHost* rfh,
+                             content::JavaScriptDialogType dialog_type,
+                             const std::u16string& message_text,
+                             const std::u16string& default_prompt_text,
+                             DialogClosedCallback callback,
+                             bool* did_suppress_message) override {
+      auto* wc = WebContents::From(web_contents);
+      if (wc)
+        wc->RunJavaScriptDialog(web_contents, rfh, dialog_type, message_text,
+                                default_prompt_text, std::move(callback),
+                                did_suppress_message);
+    }
+    void RunBeforeUnloadDialog(content::WebContents* web_contents,
+                               content::RenderFrameHost* rfh,
+                               bool is_reload,
+                               DialogClosedCallback callback) override {
+      auto* wc = WebContents::From(web_contents);
+      if (wc)
+        wc->RunBeforeUnloadDialog(web_contents, rfh, is_reload,
+                                  std::move(callback));
+    }
+    void CancelDialogs(content::WebContents* web_contents,
+                       bool reset_state) override {
+      auto* wc = WebContents::From(web_contents);
+      if (wc)
+        wc->CancelDialogs(web_contents, reset_state);
+    }
+  };
+  if (!source->GetUserData(kJavaScriptDialogManagerKey))
+    source->SetUserData(kJavaScriptDialogManagerKey,
+                        std::make_unique<JSDialogManagerHelper>());
 
-  return dialog_manager_.get();
+  return static_cast<JSDialogManagerHelper*>(
+      source->GetUserData(kJavaScriptDialogManagerKey));
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {
@@ -1617,17 +1674,8 @@ void WebContents::HandleNewRenderFrame(
 
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences) {
-    auto maybe_color = web_preferences->GetBackgroundColor();
-    bool guest = IsGuest() || type_ == Type::kBrowserView;
-
-    // If webPreferences has no color stored we need to explicitly set guest
-    // webContents background color to transparent.
-    auto bg_color =
-        maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
-    web_contents()->SetPageBaseBackgroundColor(bg_color);
-    SetBackgroundColor(rwhv, bg_color);
-  }
+  if (web_preferences)
+    SetBackgroundColor(web_preferences->GetBackgroundColor());
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
@@ -1643,7 +1691,7 @@ void WebContents::HandleNewRenderFrame(
 }
 
 void WebContents::OnBackgroundColorChanged() {
-  absl::optional<SkColor> color = web_contents()->GetBackgroundColor();
+  std::optional<SkColor> color = web_contents()->GetBackgroundColor();
   if (color.has_value()) {
     auto* const view = web_contents()->GetRenderWidgetHostView();
     static_cast<content::RenderWidgetHostViewBase*>(view)
@@ -2122,7 +2170,7 @@ void WebContents::DidFinishNavigation(
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
     }
-    if (IsGuest())
+    if (is_guest())
       Emit("load-commit", url, is_main_frame);
   } else {
     auto url = navigation_handle->GetURL();
@@ -2234,6 +2282,11 @@ void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
 }
 
+void WebContents::SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window) {
+  SetOwnerWindow(GetWebContents(),
+                 owner_window ? (*owner_window)->window() : nullptr);
+}
+
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
                                  NativeWindow* owner_window) {
   if (owner_window_) {
@@ -2334,10 +2387,6 @@ base::ProcessId WebContents::GetOSProcessID() const {
                                            ->GetProcess()
                                            .Handle();
   return base::GetProcId(process_handle);
-}
-
-WebContents::Type WebContents::GetType() const {
-  return type_;
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
@@ -2523,6 +2572,11 @@ void WebContents::GoToIndex(int index) {
 
 int WebContents::GetActiveIndex() const {
   return web_contents()->GetController().GetCurrentEntryIndex();
+}
+
+content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
+    int index) const {
+  return web_contents()->GetController().GetEntryAtIndex(index);
 }
 
 void WebContents::ClearHistory() {
@@ -3111,7 +3165,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto landscape = settings.GetDict().FindBool("landscape");
   auto display_header_footer =
       settings.GetDict().FindBool("displayHeaderFooter");
-  auto print_background = settings.GetDict().FindBool("shouldPrintBackgrounds");
+  auto print_background = settings.GetDict().FindBool("printBackground");
   auto scale = settings.GetDict().FindDouble("scale");
   auto paper_width = settings.GetDict().FindDouble("paperWidth");
   auto paper_height = settings.GetDict().FindDouble("paperHeight");
@@ -3124,15 +3178,17 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
   auto generate_tagged_pdf = settings.GetDict().FindBool("generateTaggedPDF");
+  auto generate_document_outline =
+      settings.GetDict().FindBool("generateDocumentOutline");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
           web_contents()->GetPrimaryMainFrame()->GetLastCommittedURL(),
           landscape, display_header_footer, print_background, scale,
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
-          margin_right, absl::make_optional(header_template),
-          absl::make_optional(footer_template), prefer_css_page_size,
-          generate_tagged_pdf);
+          margin_right, std::make_optional(header_template),
+          std::make_optional(footer_template), prefer_css_page_size,
+          generate_tagged_pdf, generate_document_outline);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
     auto error = absl::get<std::string>(print_pages_params);
@@ -3331,7 +3387,7 @@ bool WebContents::IsFocused() const {
   if (!view)
     return false;
 
-  if (GetType() != Type::kBackgroundPage) {
+  if (type() != Type::kBackgroundPage) {
     auto* window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
@@ -3525,10 +3581,6 @@ void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   } else {
     Emit("cursor-changed", CursorTypeToString(cursor.type()));
   }
-}
-
-bool WebContents::IsGuest() const {
-  return type_ == Type::kWebView;
 }
 
 void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
@@ -3741,8 +3793,65 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
+void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
+  SkColor color = maybe_color.value_or((is_guest() && guest_transparent_) ||
+                                               type_ == Type::kBrowserView
+                                           ? SK_ColorTRANSPARENT
+                                           : SK_ColorWHITE);
+  web_contents()->SetPageBaseBackgroundColor(color);
+
+  content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
+  if (!rfh)
+    return;
+  content::RenderWidgetHostView* rwhv = rfh->GetView();
+  if (rwhv) {
+    rwhv->SetBackgroundColor(color);
+    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+        ->SetContentBackgroundColor(color);
+  }
+}
+
 void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
   Emit("input-event", event);
+}
+
+void WebContents::RunJavaScriptDialog(content::WebContents* web_contents,
+                                      content::RenderFrameHost* rfh,
+                                      content::JavaScriptDialogType dialog_type,
+                                      const std::u16string& message_text,
+                                      const std::u16string& default_prompt_text,
+                                      DialogClosedCallback callback,
+                                      bool* did_suppress_message) {
+  CHECK_EQ(web_contents, this->web_contents());
+
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto info = gin::DataObjectBuilder(isolate)
+                  .Set("frame", rfh)
+                  .Set("dialogType", dialog_type)
+                  .Set("messageText", message_text)
+                  .Set("defaultPromptText", default_prompt_text)
+                  .Build();
+
+  EmitWithoutEvent("-run-dialog", info, std::move(callback));
+}
+
+void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
+                                        content::RenderFrameHost* rfh,
+                                        bool is_reload,
+                                        DialogClosedCallback callback) {
+  // TODO: asyncify?
+  bool default_prevented = Emit("will-prevent-unload");
+  std::move(callback).Run(default_prevented, std::u16string());
+}
+
+void WebContents::CancelDialogs(content::WebContents* web_contents,
+                                bool reset_state) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  EmitWithoutEvent(
+      "-cancel-dialogs",
+      gin::DataObjectBuilder(isolate).Set("resetState", reset_state).Build());
 }
 
 v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
@@ -4028,7 +4137,7 @@ void WebContents::DevToolsIndexPath(
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
   std::vector<std::string> excluded_folders;
-  absl::optional<base::Value> parsed_excluded_folders =
+  std::optional<base::Value> parsed_excluded_folders =
       base::JSONReader::Read(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
@@ -4061,6 +4170,10 @@ void WebContents::DevToolsStopIndexing(int request_id) {
 
 void WebContents::DevToolsOpenInNewTab(const std::string& url) {
   Emit("devtools-open-url", url);
+}
+
+void WebContents::DevToolsOpenSearchResultsInNewTab(const std::string& query) {
+  Emit("devtools-search-query", query);
 }
 
 void WebContents::DevToolsSearchInPath(int request_id,
@@ -4207,14 +4320,13 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
   }
 
   // Make sure all child webviews quit html fullscreen.
-  if (!fullscreen && !IsGuest()) {
+  if (!fullscreen && !is_guest()) {
     auto* manager = WebViewManager::GetWebViewManager(web_contents());
-    manager->ForEachGuest(
-        web_contents(), base::BindRepeating([](content::WebContents* guest) {
-          WebContents* api_web_contents = WebContents::From(guest);
-          api_web_contents->SetHtmlApiFullscreen(false);
-          return false;
-        }));
+    manager->ForEachGuest(web_contents(), [&](content::WebContents* guest) {
+      WebContents* api_web_contents = WebContents::From(guest);
+      api_web_contents->SetHtmlApiFullscreen(false);
+      return false;
+    });
   }
 }
 
@@ -4260,9 +4372,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("goToOffset", &WebContents::GoToOffset)
       .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("goToIndex", &WebContents::GoToIndex)
-      .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("_getNavigationEntryAtIndex",
+                 &WebContents::GetNavigationEntryAtIndex)
+      .SetMethod("_historyLength", &WebContents::GetHistoryLength)
       .SetMethod("clearHistory", &WebContents::ClearHistory)
-      .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)
@@ -4320,7 +4434,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
-      .SetMethod("getType", &WebContents::GetType)
+      .SetMethod("getType", &WebContents::type)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
@@ -4363,6 +4477,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
+      .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }
 
@@ -4446,14 +4561,8 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
       existing_preferences->SetFromDictionary(web_preferences_dict);
-      absl::optional<SkColor> color =
-          existing_preferences->GetBackgroundColor();
-      web_contents->web_contents()->SetPageBaseBackgroundColor(color);
-      // Because web preferences don't recognize transparency,
-      // only set rwhv background color if a color exists
-      auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
-      if (rwhv && color.has_value())
-        SetBackgroundColor(rwhv, color.value());
+      web_contents->SetBackgroundColor(
+          existing_preferences->GetBackgroundColor());
     }
   } else {
     // Create one if not.

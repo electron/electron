@@ -22,7 +22,6 @@ class RootViewMac : public views::View {
   RootViewMac& operator=(const RootViewMac&) = delete;
 
   // views::View:
-  void Layout() override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
 

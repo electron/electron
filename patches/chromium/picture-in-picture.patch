@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index af0616d9ca466d146f3c41887857dd4720ebafbf..c088db193f5bd4b88aa42a3803571d2b87251b76 100644
+index 1a0c7f5f204f00b52747ebb7800b39a3479f1178..52a1b350c8b5a13b4c0636b43f4773b72872f025 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,11 +4,14 @@
@@ -40,12 +40,12 @@ index af0616d9ca466d146f3c41887857dd4720ebafbf..c088db193f5bd4b88aa42a3803571d2b
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index dd1db5f91d104845b8eea7c4d348b733f8c13ee6..f141eb1d315c930251b47f2fdebb6c8307d94382 100644
+index 5e7c2cc28e00a84b330558dca3a520c08687e274..569e99b4790b88326029d3681adb4958777f3499 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -16,9 +16,11 @@
- #include "base/timer/timer.h"
+@@ -17,9 +17,11 @@
  #include "build/build_config.h"
+ #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
@@ -55,16 +55,16 @@ index dd1db5f91d104845b8eea7c4d348b733f8c13ee6..f141eb1d315c930251b47f2fdebb6c83
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
-@@ -57,7 +59,7 @@
+@@ -58,7 +60,7 @@
  #include "ui/aura/window.h"
  #endif
  
 -#if BUILDFLAG(IS_WIN)
 +#if 0
  #include "chrome/browser/shell_integration_win.h"
+ #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
- #include "ui/aura/window_tree_host.h"
-@@ -286,7 +288,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -310,7 +312,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

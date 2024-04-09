@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 9 Jan 2024 11:18:28 +1300
+Subject: build: on windows provide clang wrapper as toolchain input
+
+Should be upstreamed, fixes the executable bit being missing on win->lin x builds
+
+diff --git a/chromium-browser-clang/rewrapper_windows.cfg b/chromium-browser-clang/rewrapper_windows.cfg
+index 543b68bbd736bfb6cb2cf3e939c4cdc34b6a18da..539f37a53d990df39203496bb2d579f2ce38de75 100644
+--- a/chromium-browser-clang/rewrapper_windows.cfg
++++ b/chromium-browser-clang/rewrapper_windows.cfg
+@@ -15,6 +15,5 @@
+ # This config is merged with Chromium config. See README.md.
+ 
+ server_address=pipe://reproxy.pipe
+-inputs={src_dir}/buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper
+-toolchain_inputs={linux_clang_base_path}/bin/clang
++toolchain_inputs={linux_clang_base_path}/bin/clang,{src_dir}/buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper
+ remote_wrapper={src_dir}/buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper

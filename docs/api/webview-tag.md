@@ -4,9 +4,10 @@
 
 Electron's `webview` tag is based on [Chromium's `webview`][chrome-webview], which
 is undergoing dramatic architectural changes. This impacts the stability of `webviews`,
-including rendering, navigation, and event routing. We currently recommend to not
-use the `webview` tag and to consider alternatives, like `iframe`, [Electron's `BrowserView`](browser-view.md),
-or an architecture that avoids embedded content altogether.
+including rendering, navigation, and event routing. We currently recommend to
+not use the `webview` tag and to consider alternatives, like `iframe`, a
+[`WebContentsView`](web-contents-view.md), or an architecture that avoids
+embedded content altogether.
 
 ## Enabling
 
@@ -220,7 +221,9 @@ windows. Popups are disabled by default.
 ```
 
 A `string` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
-The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions).
+The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions). In addition, webview supports the following preferences:
+
+* `transparent` boolean (optional) - Whether to enable background transparency for the guest page. Default is `true`. **Note:** The guest page's text and background colors are derived from the [color scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme) of its root element. When transparency is enabled, the text color will still change accordingly but the background will remain transparent.
 
 The string follows the same format as the features string in `window.open`.
 A name by itself is given a `true` boolean value.
@@ -255,7 +258,7 @@ The `webview` tag has the following methods:
 
 **Example**
 
-```javascript @ts-expect-error=[3]
+```js @ts-expect-error=[3]
 const webview = document.querySelector('webview')
 webview.addEventListener('dom-ready', () => {
   webview.openDevTools()
@@ -284,7 +287,7 @@ e.g. the `http://` or `file://`.
 
 * `url` string
 * `options` Object (optional)
-  * `headers` Record<string, string> (optional) - HTTP request headers.
+  * `headers` Record\<string, string\> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url` without navigating.
 
@@ -577,7 +580,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     * `from` number - Index of the first page to print (0-based).
     * `to` number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` string (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
-  * `dpi` Record<string, number> (optional)
+  * `dpi` Record\<string, number\> (optional)
     * `horizontal` number (optional) - The horizontal dpi.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
@@ -608,6 +611,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
   * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
+  * `generateDocumentOutline` boolean (optional) _Experimental_ - Whether or not to generate a PDF document outline from content headers. Defaults to false.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 
@@ -802,7 +806,7 @@ Fired when the guest window logs a console message.
 The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
-```javascript @ts-expect-error=[3]
+```js @ts-expect-error=[3]
 const webview = document.querySelector('webview')
 webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message)
@@ -823,7 +827,7 @@ Returns:
 Fired when a result is available for
 [`webview.findInPage`](#webviewfindinpagetext-options) request.
 
-```javascript @ts-expect-error=[3,6]
+```js @ts-expect-error=[3,6]
 const webview = document.querySelector('webview')
 webview.addEventListener('found-in-page', (e) => {
   webview.stopFindInPage('keepSelection')
@@ -948,7 +952,7 @@ Fired when the guest page attempts to close itself.
 The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
-```javascript @ts-expect-error=[3]
+```js @ts-expect-error=[3]
 const webview = document.querySelector('webview')
 webview.addEventListener('close', () => {
   webview.src = 'about:blank'
@@ -968,7 +972,7 @@ Fired when the guest page has sent an asynchronous message to embedder page.
 With `sendToHost` method and `ipc-message` event you can communicate
 between guest page and embedder page:
 
-```javascript @ts-expect-error=[4,7]
+```js @ts-expect-error=[4,7]
 // In embedder page.
 const webview = document.querySelector('webview')
 webview.addEventListener('ipc-message', (event) => {
@@ -978,7 +982,7 @@ webview.addEventListener('ipc-message', (event) => {
 webview.send('ping')
 ```
 
-```javascript
+```js
 // In guest page.
 const { ipcRenderer } = require('electron')
 ipcRenderer.on('ping', () => {
@@ -1044,6 +1048,15 @@ Returns:
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
+#### Event: 'devtools-search-query'
+
+Returns:
+
+* `event` Event
+* `query` string - text to query for.
+
+Emitted when 'Search' is selected for text in its context menu.
+
 ### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -1107,9 +1120,6 @@ Returns:
     `input-text`, `input-time`, `input-url`, `input-week`, `output`, `reset-button`,
     `select-list`, `select-list`, `select-multiple`, `select-one`, `submit-button`,
     and `text-area`,
-  * `inputFieldType` string _Deprecated_ - If the context menu was invoked on an
-    input field, the type of that field. Possible values include `none`,
-    `plainText`, `password`, `other`.
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.

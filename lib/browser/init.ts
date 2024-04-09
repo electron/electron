@@ -3,15 +3,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+import type * as url from 'url';
+import type * as v8 from 'v8';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
 process.argv.splice(1, 1);
-
-// Clear search paths.
-require('../common/reset-search-paths');
 
 // Import common settings.
 require('@electron/internal/common/init');
@@ -135,7 +134,7 @@ if (packageJson.desktopName != null) {
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
 if (packageJson.v8Flags != null) {
-  require('v8').setFlagsFromString(packageJson.v8Flags);
+  (require('v8') as typeof v8).setFlagsFromString(packageJson.v8Flags);
 }
 
 app.setAppPath(packagePath);
@@ -151,6 +150,10 @@ require('@electron/internal/browser/api/web-contents');
 
 // Load web-frame-main module to ensure it is populated on app ready
 require('@electron/internal/browser/api/web-frame-main');
+
+// Required because `new BrowserWindow` calls some WebContentsView stuff, so
+// the inheritance needs to be set up before that happens.
+require('@electron/internal/browser/api/web-contents-view');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
@@ -198,7 +201,7 @@ if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
     const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
-    const main = require('url').pathToFileURL(path.join(packagePath, mainStartupScript));
+    const main = (require('url') as typeof url).pathToFileURL(path.join(packagePath, mainStartupScript));
     loadESM(async (esmLoader: any) => {
       try {
         await esmLoader.import(main.toString(), undefined, Object.create(null));

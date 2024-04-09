@@ -26,13 +26,11 @@ class WebContentsPermissionHelper
       delete;
 
   enum class PermissionType {
-    POINTER_LOCK = static_cast<int>(blink::PermissionType::NUM) + 1,
-    FULLSCREEN,
+    FULLSCREEN = static_cast<int>(blink::PermissionType::NUM) + 1,
     OPEN_EXTERNAL,
     SERIAL,
     HID,
-    USB,
-    KEYBOARD_LOCK
+    USB
   };
 
   // Asynchronous Requests
@@ -57,7 +55,7 @@ class WebContentsPermissionHelper
                                      const GURL& url);
 
   // Synchronous Checks
-  bool CheckMediaAccessPermission(const GURL& security_origin,
+  bool CheckMediaAccessPermission(const url::Origin& security_origin,
                                   blink::mojom::MediaStreamType type) const;
   bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
 

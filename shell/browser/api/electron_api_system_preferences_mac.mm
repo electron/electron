@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
-#include <map>
 #include <string>
 #include <utility>
 
@@ -14,12 +13,13 @@
 #import <Security/Security.h>
 
 #include "base/apple/scoped_cftyperef.h"
+#include "base/containers/flat_map.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
-#include "net/base/mac/url_conversions.h"
+#include "net/base/apple/url_conversions.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/color_util.h"
@@ -81,7 +81,7 @@ namespace {
 int g_next_id = 0;
 
 // The map to convert |id| to |int|.
-std::map<int, id> g_id_map;
+base::flat_map<int, id> g_id_map;
 
 AVMediaType ParseMediaType(const std::string& media_type) {
   if (media_type == "camera") {

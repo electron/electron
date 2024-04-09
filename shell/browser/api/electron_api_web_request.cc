@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/containers/contains.h"
@@ -33,8 +34,8 @@
 #include "shell/common/gin_helper/dictionary.h"
 
 static constexpr auto ResourceTypes =
-    base::MakeFixedFlatMapSorted<base::StringPiece,
-                                 extensions::WebRequestResourceType>({
+    base::MakeFixedFlatMap<std::string_view,
+                           extensions::WebRequestResourceType>({
         {"cspReport", extensions::WebRequestResourceType::CSP_REPORT},
         {"font", extensions::WebRequestResourceType::FONT},
         {"image", extensions::WebRequestResourceType::IMAGE},
@@ -77,7 +78,7 @@ struct UserData : public base::SupportsUserData::Data {
   raw_ptr<WebRequest> data;
 };
 
-extensions::WebRequestResourceType ParseResourceType(base::StringPiece value) {
+extensions::WebRequestResourceType ParseResourceType(std::string_view value) {
   if (const auto* iter = ResourceTypes.find(value); iter != ResourceTypes.end())
     return iter->second;
 
@@ -113,10 +114,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         std::string filename = "\"" + header.filename() + "\"";
         value = decodedFilename + "; filename=" + filename;
       }
-      base::Value::List* values = response_headers.FindList(key);
-      if (!values)
-        values = &response_headers.Set(key, base::Value::List())->GetList();
-      values->Append(base::Value(value));
+      response_headers.EnsureList(key)->Append(value);
     }
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);

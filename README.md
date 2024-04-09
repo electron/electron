@@ -112,4 +112,4 @@ and more can be found on the [Community page](https://www.electronjs.org/communi
 
 [MIT](https://github.com/electron/electron/blob/main/LICENSE)
 
-When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://openjsf.org/wp-content/uploads/sites/84/2021/01/OpenJS-Foundation-Trademark-Policy-2021-01-12.docx.pdf).
+When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://trademark-policy.openjsf.org/).

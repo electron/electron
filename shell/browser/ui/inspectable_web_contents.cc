@@ -6,6 +6,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "base/base64.h"
@@ -14,8 +15,10 @@
 #include "base/json/string_escape.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
+#include "base/ranges/algorithm.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -106,32 +109,16 @@ base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
 }
 
 gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
-  const base::Value* found = dict.Find("x");
-  int x = found ? found->GetInt() : 0;
-
-  found = dict.Find("y");
-  int y = found ? found->GetInt() : 0;
-
-  found = dict.Find("width");
-  int width = found ? found->GetInt() : 800;
-
-  found = dict.Find("height");
-  int height = found ? found->GetInt() : 600;
-
-  return gfx::Rect(x, y, width, height);
-}
-
-bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
-  return point.x() > rect.x() && point.x() < (rect.width() + rect.x()) &&
-         point.y() > rect.y() && point.y() < (rect.height() + rect.y());
+  return gfx::Rect{dict.FindInt("x").value_or(0), dict.FindInt("y").value_or(0),
+                   dict.FindInt("width").value_or(800),
+                   dict.FindInt("height").value_or(600)};
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  for (const auto& display : display::Screen::GetScreen()->GetAllDisplays()) {
-    if (IsPointInRect(point, display.bounds()))
-      return true;
-  }
-  return false;
+  return base::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+                              [&point](auto const& display) {
+                                return display.bounds().Contains(point);
+                              });
 }
 
 void SetZoomLevelForWebContents(content::WebContents* web_contents,
@@ -203,11 +190,10 @@ class InspectableWebContents::NetworkResourceLoader
                      URLLoaderFactoryHolder url_loader_factory,
                      DispatchCallback callback,
                      base::TimeDelta retry_delay = base::TimeDelta()) {
-    auto resource_loader =
+    bindings->loaders_.insert(
         std::make_unique<InspectableWebContents::NetworkResourceLoader>(
             stream_id, bindings, resource_request, traffic_annotation,
-            std::move(url_loader_factory), std::move(callback), retry_delay);
-    bindings->loaders_.insert(std::move(resource_loader));
+            std::move(url_loader_factory), std::move(callback), retry_delay));
   }
 
   NetworkResourceLoader(
@@ -258,22 +244,11 @@ class InspectableWebContents::NetworkResourceLoader
 
   void OnDataReceived(base::StringPiece chunk,
                       base::OnceClosure resume) override {
-    base::Value chunkValue;
-
     bool encoded = !base::IsStringUTF8(chunk);
-    if (encoded) {
-      std::string encoded_string;
-      base::Base64Encode(chunk, &encoded_string);
-      chunkValue = base::Value(std::move(encoded_string));
-    } else {
-      chunkValue = base::Value(chunk);
-    }
-    base::Value id(stream_id_);
-    base::Value encodedValue(encoded);
-
-    bindings_->CallClientFunction("DevToolsAPI", "streamWrite", std::move(id),
-                                  std::move(chunkValue),
-                                  std::move(encodedValue));
+    bindings_->CallClientFunction(
+        "DevToolsAPI", "streamWrite", base::Value{stream_id_},
+        base::Value{encoded ? base::Base64Encode(chunk) : chunk},
+        base::Value{encoded});
     std::move(resume).Run();
   }
 
@@ -308,7 +283,7 @@ class InspectableWebContents::NetworkResourceLoader
       std::move(callback_).Run(&response);
     }
 
-    bindings_->loaders_.erase(bindings_->loaders_.find(this));
+    bindings_->loaders_.erase(this);
   }
 
   void OnRetry(base::OnceClosure start_retry) override {}
@@ -325,11 +300,6 @@ class InspectableWebContents::NetworkResourceLoader
   base::TimeDelta retry_delay_;
 };
 
-// Implemented separately on each platform.
-InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContents* inspectable_web_contents);
-
-// static
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -345,7 +315,7 @@ InspectableWebContents::InspectableWebContents(
     : pref_service_(pref_service),
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)) {
+      view_(new InspectableWebContentsView(this)) {
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
@@ -407,10 +377,6 @@ void InspectableWebContents::SetDelegate(
 
 InspectableWebContentsDelegate* InspectableWebContents::GetDelegate() const {
   return delegate_;
-}
-
-bool InspectableWebContents::IsGuest() const {
-  return is_guest_;
 }
 
 void InspectableWebContents::ReleaseWebContents() {
@@ -479,7 +445,7 @@ void InspectableWebContents::CloseDevTools() {
       managed_devtools_web_contents_.reset();
     }
     embedder_message_dispatcher_.reset();
-    if (!IsGuest())
+    if (!is_guest())
       web_contents_->Focus();
   }
 }
@@ -539,10 +505,6 @@ void InspectableWebContents::CallClientFunction(
   GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScriptMethod(
       base::ASCIIToUTF16(object_name), base::ASCIIToUTF16(method_name),
       std::move(arguments), std::move(cb));
-}
-
-gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
-  return devtools_bounds_;
 }
 
 void InspectableWebContents::SaveDevToolsBounds(const gfx::Rect& bounds) {
@@ -754,6 +716,12 @@ void InspectableWebContents::OpenInNewTab(const std::string& url) {
     delegate_->DevToolsOpenInNewTab(url);
 }
 
+void InspectableWebContents::OpenSearchResultsInNewTab(
+    const std::string& query) {
+  if (delegate_)
+    delegate_->DevToolsOpenSearchResultsInNewTab(query);
+}
+
 void InspectableWebContents::ShowItemInFolder(
     const std::string& file_system_path) {
   if (file_system_path.empty())
@@ -852,10 +820,6 @@ void InspectableWebContents::SetDevicesDiscoveryConfig(
     const std::string& network_discovery_config) {}
 
 void InspectableWebContents::SetDevicesUpdatesEnabled(bool enabled) {}
-
-void InspectableWebContents::PerformActionOnRemotePage(
-    const std::string& page_id,
-    const std::string& action) {}
 
 void InspectableWebContents::OpenRemotePage(const std::string& browser_id,
                                             const std::string& url) {}
@@ -964,8 +928,8 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (!frontend_loaded_)
     return;
 
-  base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
-                                message.size());
+  const std::string_view str_message{
+      reinterpret_cast<const char*>(message.data()), message.size()};
   if (str_message.length() < kMaxMessageChunkSize) {
     CallClientFunction("DevToolsAPI", "dispatchMessage",
                        base::Value(std::string(str_message)));
@@ -1007,6 +971,7 @@ void InspectableWebContents::WebContentsDestroyed() {
   Observe(nullptr);
   Detach();
   embedder_message_dispatcher_.reset();
+  frontend_host_.reset();
 
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
@@ -1052,7 +1017,7 @@ void InspectableWebContents::OnWebContentsFocused(
 
 void InspectableWebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame()) {
+  if (navigation_handle->IsInPrimaryMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
             GetDevToolsWebContents()->GetPrimaryMainFrame() &&
         frontend_host_) {
@@ -1069,7 +1034,7 @@ void InspectableWebContents::ReadyToCommitNavigation(
 
 void InspectableWebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame() ||
+  if (navigation_handle->IsInPrimaryMainFrame() ||
       !navigation_handle->GetURL().SchemeIs("chrome-extension") ||
       !navigation_handle->HasCommitted())
     return;

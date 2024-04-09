@@ -7,9 +7,12 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
+
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -78,41 +81,22 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // partition_id => browser_context
   struct PartitionKey {
-    enum class KeyType { Partition, FilePath };
-    std::string location;
-    bool in_memory;
-    KeyType partition_type;
+    PartitionKey(const std::string_view partition, bool in_memory)
+        : type_{Type::Partition}, location_{partition}, in_memory_{in_memory} {}
 
-    PartitionKey(const std::string& partition, bool in_memory)
-        : location(partition),
-          in_memory(in_memory),
-          partition_type(KeyType::Partition) {}
     explicit PartitionKey(const base::FilePath& file_path)
-        : location(file_path.AsUTF8Unsafe()),
-          in_memory(false),
-          partition_type(KeyType::FilePath) {}
+        : type_{Type::Path},
+          location_{file_path.AsUTF8Unsafe()},
+          in_memory_{false} {}
 
-    bool operator<(const PartitionKey& other) const {
-      if (partition_type == KeyType::Partition) {
-        if (location == other.location)
-          return in_memory < other.in_memory;
-        return location < other.location;
-      } else {
-        if (location == other.location)
-          return false;
-        return location < other.location;
-      }
-    }
+    friend auto operator<=>(const PartitionKey&, const PartitionKey&) = default;
 
-    bool operator==(const PartitionKey& other) const {
-      if (partition_type == KeyType::Partition) {
-        return (location == other.location) && (in_memory < other.in_memory);
-      } else {
-        if (location == other.location)
-          return true;
-        return false;
-      }
-    }
+   private:
+    enum class Type { Partition, Path };
+
+    Type type_;
+    std::string location_;
+    bool in_memory_;
   };
 
   using BrowserContextMap =
@@ -135,8 +119,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
-  bool CanUseHttpCache() const;
-  int GetMaxCacheSize() const;
+  bool can_use_http_cache() const { return use_cache_; }
+  int max_cache_size() const { return max_cache_size_; }
   ResolveProxyHelper* GetResolveProxyHelper();
   predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
@@ -146,7 +130,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   // content::BrowserContext:
   base::FilePath GetPath() override;
   bool IsOffTheRecord() override;
-  content::ResourceContext* GetResourceContext() override;
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
   content::PushMessagingService* GetPushMessagingService() override;
@@ -241,7 +224,6 @@ class ElectronBrowserContext : public content::BrowserContext {
                        blink::PermissionType permission_type);
 
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
-  std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<ElectronDownloadManagerDelegate> download_manager_delegate_;
@@ -253,7 +235,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
-  absl::optional<std::string> user_agent_;
+  std::optional<std::string> user_agent_;
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;

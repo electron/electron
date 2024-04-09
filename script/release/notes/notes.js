@@ -99,7 +99,7 @@ const getNoteFromClerk = async (ghKey) => {
 
   const CLERK_LOGIN = 'release-clerk[bot]';
   const CLERK_NO_NOTES = '**No Release Notes**';
-  const PERSIST_LEAD = '**Release Notes Persisted**\n\n';
+  const PERSIST_LEAD = '**Release Notes Persisted**';
   const QUOTE_LEAD = '> ';
 
   for (const comment of comments.data.reverse()) {
@@ -130,6 +130,8 @@ const getNoteFromClerk = async (ghKey) => {
         .trim();
     }
   }
+
+  console.warn(`WARN: no notes found in ${buildPullURL(ghKey)}`);
 };
 
 /**

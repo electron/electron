@@ -6,7 +6,7 @@ Process: [Main](../glossary.md#main-process)
 
 For example:
 
-```javascript
+```js
 const { powerSaveBlocker } = require('electron')
 
 const id = powerSaveBlocker.start('prevent-display-sleep')

@@ -29,7 +29,7 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
   void AddAPIJSONSources(
       extensions::JSONFeatureProviderSource* json_source) override;
   bool IsAPISchemaGenerated(const std::string& name) override;
-  base::StringPiece GetAPISchema(const std::string& name) override;
+  std::string_view GetAPISchema(const std::string& name) override;
   void RegisterPermissions(
       extensions::PermissionsInfo* permissions_info) override;
   void RegisterManifestHandlers() override;

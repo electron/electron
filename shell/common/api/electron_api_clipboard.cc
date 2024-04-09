@@ -137,7 +137,7 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
   }
 
   if (data.Get("html", &html))
-    writer.WriteHTML(html, std::string(), ui::ClipboardContentType::kSanitized);
+    writer.WriteHTML(html, std::string());
 
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
@@ -198,7 +198,7 @@ std::u16string Clipboard::ReadHTML(gin_helper::Arguments* args) {
 void Clipboard::WriteHTML(const std::u16string& html,
                           gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteHTML(html, std::string(), ui::ClipboardContentType::kSanitized);
+  writer.WriteHTML(html, std::string());
 }
 
 v8::Local<v8::Value> Clipboard::ReadBookmark(gin_helper::Arguments* args) {
@@ -229,7 +229,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   }
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  absl::optional<gfx::Image> image;
+  std::optional<gfx::Image> image;
 
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
   base::RepeatingClosure callback = run_loop.QuitClosure();
@@ -237,7 +237,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image, base::RepeatingClosure cb,
+          [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);

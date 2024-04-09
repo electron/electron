@@ -70,7 +70,14 @@ async function checkAppVeyorImage (options) {
     const { cloudSettings } = settings;
     return cloudSettings.images.find(image => image.name === `${options.imageVersion}`) || null;
   } catch (err) {
-    console.log('Could not call AppVeyor: ', err);
+    if (err.response?.body) {
+      console.error('Could not call AppVeyor: ', {
+        statusCode: err.response.statusCode,
+        body: JSON.parse(err.response.body)
+      });
+    } else {
+      console.error('Error calling AppVeyor:', err);
+    }
   }
 }
 
@@ -110,7 +117,6 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
     ELECTRON_OUT_DIR: 'Default',
     ELECTRON_ENABLE_STACK_DUMPING: 1,
     ELECTRON_ALSO_LOG_TO_STDERR: 1,
-    GOMA_FALLBACK_ON_AUTH_FAILURE: true,
     DEPOT_TOOLS_WIN_TOOLCHAIN: 0,
     PYTHONIOENCODING: 'UTF-8'
   };

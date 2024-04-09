@@ -253,8 +253,8 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
           if (AppendSeparator(collection))
             ++appended_count;
         } else {
-          LOG(ERROR) << "Can't append separator to Jump List category "
-                     << "'" << category.name << "'. "
+          LOG(ERROR) << "Can't append separator to Jump List category " << "'"
+                     << category.name << "'. "
                      << "Separators are only allowed in the standard 'Tasks' "
                         "Jump List category.";
           result = JumpListResult::kCustomCategorySeparatorError;
@@ -292,18 +292,18 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
     HRESULT hr = destinations_->AppendCategory(category.name.c_str(), items);
     if (FAILED(hr)) {
       if (hr == static_cast<HRESULT>(0x80040F03)) {
-        LOG(ERROR) << "Failed to append custom category "
-                   << "'" << category.name << "' "
+        LOG(ERROR) << "Failed to append custom category " << "'"
+                   << category.name << "' "
                    << "to Jump List due to missing file type registration.";
         result = JumpListResult::kMissingFileTypeRegistrationError;
       } else if (hr == E_ACCESSDENIED) {
-        LOG(ERROR) << "Failed to append custom category "
-                   << "'" << category.name << "' "
+        LOG(ERROR) << "Failed to append custom category " << "'"
+                   << category.name << "' "
                    << "to Jump List due to system privacy settings.";
         result = JumpListResult::kCustomCategoryAccessDeniedError;
       } else {
-        LOG(ERROR) << "Failed to append custom category "
-                   << "'" << category.name << "' to Jump List.";
+        LOG(ERROR) << "Failed to append custom category " << "'"
+                   << category.name << "' to Jump List.";
         if (result == JumpListResult::kSuccess)
           result = JumpListResult::kGenericError;
       }

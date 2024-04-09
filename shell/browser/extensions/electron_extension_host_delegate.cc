@@ -8,7 +8,6 @@
 #include <string>
 #include <utility>
 
-#include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "extensions/browser/media_capture_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -62,7 +61,7 @@ void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
 
 bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
     content::RenderFrameHost* render_frame_host,
-    const GURL& security_origin,
+    const url::Origin& security_origin,
     blink::mojom::MediaStreamType type,
     const Extension* extension) {
   media_capture_util::VerifyMediaAccessPermission(type, extension);
