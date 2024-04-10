@@ -10,7 +10,7 @@ already been called.
 This should be upstreamed.
 
 diff --git a/src/node.cc b/src/node.cc
-index 2bed5aec6a1bc362ef4e1e0d6715951537676270..f19948f50fef3518ec3a78b6d685dc35eeec5418 100644
+index 1d77a8b31cb0bfbeeeac594b6e1ac7dd303c902d..dadddf33527beebfcde12214da4084badbd27af1 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -605,6 +605,7 @@ static void PlatformInit(ProcessInitializationFlags::Flags flags) {
