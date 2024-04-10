@@ -14,6 +14,7 @@
 #include "base/task/thread_pool.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h" // nogncheck
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_context.h"
@@ -38,6 +39,7 @@ const base::Feature kFileSystemAccessLocalUNCPathBlock{
 
 namespace {
 
+using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
 using blink::mojom::PermissionStatus;
@@ -85,88 +87,6 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 }
 #endif
 
-// Sentinel used to indicate that no PathService key is specified for a path in
-// the struct below.
-constexpr const int kNoBasePathKey = -1;
-
-enum class BlockType {
-  kBlockAllChildren,
-  kBlockNestedDirectories,
-  kDontBlockChildren
-};
-
-const struct {
-  // base::BasePathKey value (or one of the platform specific extensions to it)
-  // for a path that should be blocked. Specify kNoBasePathKey if |path| should
-  // be used instead.
-  int base_path_key;
-
-  // Explicit path to block instead of using |base_path_key|. Set to nullptr to
-  // use |base_path_key| on its own. If both |base_path_key| and |path| are set,
-  // |path| is treated relative to the path |base_path_key| resolves to.
-  const base::FilePath::CharType* path;
-
-  // If this is set to kDontBlockChildren, only the given path and its parents
-  // are blocked. If this is set to kBlockAllChildren, all children of the given
-  // path are blocked as well. Finally if this is set to kBlockNestedDirectories
-  // access is allowed to individual files in the directory, but nested
-  // directories are still blocked.
-  // The BlockType of the nearest ancestor of a path to check is what ultimately
-  // determines if a path is blocked or not. If a blocked path is a descendent
-  // of another blocked path, then it may override the child-blocking policy of
-  // its ancestor. For example, if /home blocks all children, but
-  // /home/downloads does not, then /home/downloads/file.ext will *not* be
-  // blocked.
-  BlockType type;
-} kBlockedPaths[] = {
-    {base::DIR_HOME, nullptr, BlockType::kDontBlockChildren},
-    {base::DIR_USER_DESKTOP, nullptr, BlockType::kDontBlockChildren},
-    {chrome::DIR_USER_DOCUMENTS, nullptr, BlockType::kDontBlockChildren},
-    {chrome::DIR_DEFAULT_DOWNLOADS, nullptr, BlockType::kDontBlockChildren},
-    {chrome::DIR_DEFAULT_DOWNLOADS_SAFE, nullptr,
-     BlockType::kDontBlockChildren},
-    {base::DIR_EXE, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_MODULE, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_ASSETS, nullptr, BlockType::kBlockAllChildren},
-    {chrome::DIR_USER_DATA, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), BlockType::kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"), BlockType::kBlockAllChildren},
-#if BUILDFLAG(IS_WIN)
-    {base::DIR_PROGRAM_FILES, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_PROGRAM_FILESX86, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_PROGRAM_FILES6432, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_WINDOWS, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_ROAMING_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_LOCAL_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_COMMON_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_IE_INTERNET_CACHE, nullptr, BlockType::kBlockNestedDirectories},
-#endif
-#if BUILDFLAG(IS_MAC)
-    {base::DIR_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL("Library"),
-     BlockType::kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL("Library/CloudStorage"),
-     BlockType::kDontBlockChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
-     BlockType::kDontBlockChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL("Library/Mobile Documents"),
-     BlockType::kDontBlockChildren},
-    {base::DIR_HOME,
-     FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
-     BlockType::kDontBlockChildren},
-#endif
-#if BUILDFLAG(IS_LINUX)
-    {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), BlockType::kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/proc"), BlockType::kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), BlockType::kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/boot"), BlockType::kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), BlockType::kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".config"),
-     BlockType::kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), BlockType::kBlockAllChildren},
-#endif
-};
-
 // Describes a rule for blocking a directory, which can be constructed
 // dynamically (based on state) or statically (from kBlockedPaths).
 struct BlockPathRule {
@@ -191,8 +111,8 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 #endif
 
   // Add the hard-coded rules to the dynamic rules.
-  for (auto const& [key, rule_path, type] : kBlockedPaths) {
-    if (key == kNoBasePathKey) {
+  for (auto const& [key, rule_path, type] : ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
+    if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
       rules.emplace_back(base::FilePath{rule_path}, type);
     } else if (base::FilePath path; base::PathService::Get(key, &path)) {
       rules.emplace_back(rule_path ? path.Append(rule_path) : path, type);
