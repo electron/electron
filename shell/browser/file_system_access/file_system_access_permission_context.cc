@@ -43,14 +43,12 @@ using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
 using blink::mojom::PermissionStatus;
 
 #if BUILDFLAG(IS_WIN)
-bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
-  for (base::FilePath::CharType c : hostname) {
-    if (!((c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
-          (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-'))) {
-      return true;
-    }
-  }
-  return false;
+[[nodiscard]] constexpr bool ContainsInvalidDNSCharacter(
+    base::FilePath::StringType hostname) {
+  return !base::ranges::all_of(hostname, [](base::FilePath::CharType c) {
+    return (c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
+           (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-');
+  });
 }
 
 bool MaybeIsLocalUNCPath(const base::FilePath& path) {
@@ -91,7 +89,7 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 // the struct below.
 constexpr const int kNoBasePathKey = -1;
 
-enum BlockType {
+enum class BlockType {
   kBlockAllChildren,
   kBlockNestedDirectories,
   kDontBlockChildren
@@ -121,48 +119,51 @@ const struct {
   // blocked.
   BlockType type;
 } kBlockedPaths[] = {
-    {base::DIR_HOME, nullptr, kDontBlockChildren},
-    {base::DIR_USER_DESKTOP, nullptr, kDontBlockChildren},
-    {chrome::DIR_USER_DOCUMENTS, nullptr, kDontBlockChildren},
-    {chrome::DIR_DEFAULT_DOWNLOADS, nullptr, kDontBlockChildren},
-    {chrome::DIR_DEFAULT_DOWNLOADS_SAFE, nullptr, kDontBlockChildren},
-    {base::DIR_EXE, nullptr, kBlockAllChildren},
-    {base::DIR_MODULE, nullptr, kBlockAllChildren},
-    {base::DIR_ASSETS, nullptr, kBlockAllChildren},
-    {chrome::DIR_USER_DATA, nullptr, kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"), kBlockAllChildren},
+    {base::DIR_HOME, nullptr, BlockType::kDontBlockChildren},
+    {base::DIR_USER_DESKTOP, nullptr, BlockType::kDontBlockChildren},
+    {chrome::DIR_USER_DOCUMENTS, nullptr, BlockType::kDontBlockChildren},
+    {chrome::DIR_DEFAULT_DOWNLOADS, nullptr, BlockType::kDontBlockChildren},
+    {chrome::DIR_DEFAULT_DOWNLOADS_SAFE, nullptr,
+     BlockType::kDontBlockChildren},
+    {base::DIR_EXE, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_MODULE, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_ASSETS, nullptr, BlockType::kBlockAllChildren},
+    {chrome::DIR_USER_DATA, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), BlockType::kBlockAllChildren},
+    {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"), BlockType::kBlockAllChildren},
 #if BUILDFLAG(IS_WIN)
-    {base::DIR_PROGRAM_FILES, nullptr, kBlockAllChildren},
-    {base::DIR_PROGRAM_FILESX86, nullptr, kBlockAllChildren},
-    {base::DIR_PROGRAM_FILES6432, nullptr, kBlockAllChildren},
-    {base::DIR_WINDOWS, nullptr, kBlockAllChildren},
-    {base::DIR_ROAMING_APP_DATA, nullptr, kBlockAllChildren},
-    {base::DIR_LOCAL_APP_DATA, nullptr, kBlockAllChildren},
-    {base::DIR_COMMON_APP_DATA, nullptr, kBlockAllChildren},
-    {base::DIR_IE_INTERNET_CACHE, nullptr, kBlockNestedDirectories},
+    {base::DIR_PROGRAM_FILES, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_PROGRAM_FILESX86, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_PROGRAM_FILES6432, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_WINDOWS, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_ROAMING_APP_DATA, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_LOCAL_APP_DATA, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_COMMON_APP_DATA, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_IE_INTERNET_CACHE, nullptr, BlockType::kBlockNestedDirectories},
 #endif
 #if BUILDFLAG(IS_MAC)
-    {base::DIR_APP_DATA, nullptr, kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL("Library"), kBlockAllChildren},
+    {base::DIR_APP_DATA, nullptr, BlockType::kBlockAllChildren},
+    {base::DIR_HOME, FILE_PATH_LITERAL("Library"),
+     BlockType::kBlockAllChildren},
     {base::DIR_HOME, FILE_PATH_LITERAL("Library/CloudStorage"),
-     kDontBlockChildren},
+     BlockType::kDontBlockChildren},
     {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
-     kDontBlockChildren},
+     BlockType::kDontBlockChildren},
     {base::DIR_HOME, FILE_PATH_LITERAL("Library/Mobile Documents"),
-     kDontBlockChildren},
+     BlockType::kDontBlockChildren},
     {base::DIR_HOME,
      FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
-     kDontBlockChildren},
+     BlockType::kDontBlockChildren},
 #endif
 #if BUILDFLAG(IS_LINUX)
-    {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/proc"), kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/boot"), kBlockAllChildren},
-    {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".config"), kBlockAllChildren},
-    {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), kBlockAllChildren},
+    {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), BlockType::kBlockAllChildren},
+    {kNoBasePathKey, FILE_PATH_LITERAL("/proc"), BlockType::kBlockAllChildren},
+    {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), BlockType::kBlockAllChildren},
+    {kNoBasePathKey, FILE_PATH_LITERAL("/boot"), BlockType::kBlockAllChildren},
+    {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), BlockType::kBlockAllChildren},
+    {base::DIR_HOME, FILE_PATH_LITERAL(".config"),
+     BlockType::kBlockAllChildren},
+    {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), BlockType::kBlockAllChildren},
 #endif
 };
 
@@ -190,24 +191,16 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 #endif
 
   // Add the hard-coded rules to the dynamic rules.
-  for (const auto& block : kBlockedPaths) {
-    base::FilePath blocked_path;
-    if (block.base_path_key != kNoBasePathKey) {
-      if (!base::PathService::Get(block.base_path_key, &blocked_path)) {
-        continue;
-      }
-      if (block.path) {
-        blocked_path = blocked_path.Append(block.path);
-      }
-    } else {
-      DCHECK(block.path);
-      blocked_path = base::FilePath(block.path);
+  for (auto const& [key, rule_path, type] : kBlockedPaths) {
+    if (key == kNoBasePathKey) {
+      rules.emplace_back(base::FilePath{rule_path}, type);
+    } else if (base::FilePath path; base::PathService::Get(key, &path)) {
+      rules.emplace_back(rule_path ? path.Append(rule_path) : path, type);
     }
-    rules.emplace_back(blocked_path, block.type);
   }
 
   base::FilePath nearest_ancestor;
-  BlockType nearest_ancestor_block_type = kDontBlockChildren;
+  BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
   for (const auto& block : rules) {
     if (path == block.path || path.IsParent(block.path)) {
       DLOG(INFO) << "Blocking access to " << path
@@ -225,14 +218,14 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
   // The path we're checking is not in a potentially blocked directory, or the
   // nearest ancestor does not block access to its children. Grant access.
   if (nearest_ancestor.empty() ||
-      nearest_ancestor_block_type == kDontBlockChildren) {
+      nearest_ancestor_block_type == BlockType::kDontBlockChildren) {
     return false;
   }
 
   // The path we're checking is a file, and the nearest ancestor only blocks
   // access to directories. Grant access.
   if (handle_type == HandleType::kFile &&
-      nearest_ancestor_block_type == kBlockNestedDirectories) {
+      nearest_ancestor_block_type == BlockType::kBlockNestedDirectories) {
     return false;
   }
 
@@ -255,12 +248,11 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
                       HandleType handle_type,
                       GrantType type,
                       UserAction user_action)
-      : context_(std::move(context)),
-        origin_(origin),
-        handle_type_(handle_type),
-        type_(type),
-        path_(path),
-        user_action_(user_action) {}
+      : context_{std::move(context)},
+        origin_{origin},
+        handle_type_{handle_type},
+        type_{type},
+        path_{path} {}
 
   // FileSystemAccessPermissionGrant:
   PermissionStatus GetStatus() override {
@@ -320,9 +312,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    content::WebContents* web_contents =
-        content::WebContents::FromRenderFrameHost(rfh);
-    if (!web_contents) {
+    if (content::WebContents::FromRenderFrameHost(rfh) == nullptr) {
       std::move(callback).Run(PermissionRequestOutcome::kInvalidFrame);
       return;
     }
@@ -448,7 +438,6 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
   const HandleType handle_type_;
   const GrantType type_;
   base::FilePath path_;
-  const UserAction user_action_;
 
   // This member should only be updated via SetStatus().
   PermissionStatus status_ = PermissionStatus::ASK;
@@ -624,7 +613,7 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
 
   std::vector<BlockPathRule> extra_rules;
   extra_rules.emplace_back(browser_context_->GetPath().DirName(),
-                           kBlockAllChildren);
+                           BlockType::kBlockAllChildren);
 
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
