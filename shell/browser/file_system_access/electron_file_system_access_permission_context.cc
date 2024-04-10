@@ -24,11 +24,8 @@
 #include "base/values.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/file_system_access/file_system_access_features.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/generated_resources.h"
-#include "components/permissions/features.h"
-#include "components/permissions/permission_util.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -43,12 +40,18 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
 
+#if BUILDFLAG(IS_WIN)
+namespace features {
+const base::Feature kFileSystemAccessLocalUNCPathBlock{
+    "kFileSystemAccessLocalUNCPathBlock", base::FEATURE_ENABLED_BY_DEFAULT};
+}
+#endif
+
 namespace {
 
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = ElectronFileSystemAccessPermissionContext::GrantType;
 using blink::mojom::PermissionStatus;
-using permissions::PermissionAction;
 
 #if BUILDFLAG(IS_WIN)
 bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
@@ -341,8 +344,7 @@ class ElectronFileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    auto origin = permissions::PermissionUtil::GetLastCommittedOriginAsURL(
-        rfh->GetMainFrame());
+    auto origin = rfh->GetLastCommittedOrigin().GetURL();
     if (url::Origin::Create(origin) != origin_) {
       // Third party iframes are not allowed to request more permissions.
       std::move(callback).Run(PermissionRequestOutcome::kThirdPartyContext);
