@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_ELECTRON_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_
 #define ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_ELECTRON_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_
 
-#include "shell/browser/file_system_access/electron_file_system_access_permission_context.h"
+#include "shell/browser/file_system_access/file_system_access_permission_context.h"
 
 #include <memory>
 #include <string>
@@ -26,19 +26,21 @@ namespace storage {
 class FileSystemURL;
 }  // namespace storage
 
-class ElectronFileSystemAccessPermissionContext
+namespace electron {
+
+class FileSystemAccessPermissionContext
     : public KeyedService,
       public content::FileSystemAccessPermissionContext {
  public:
   enum class GrantType { kRead, kWrite };
 
-  explicit ElectronFileSystemAccessPermissionContext(
+  explicit FileSystemAccessPermissionContext(
       content::BrowserContext* browser_context);
-  ElectronFileSystemAccessPermissionContext(
-      const ElectronFileSystemAccessPermissionContext&) = delete;
-  ElectronFileSystemAccessPermissionContext& operator=(
-      const ElectronFileSystemAccessPermissionContext&) = delete;
-  ~ElectronFileSystemAccessPermissionContext() override;
+  FileSystemAccessPermissionContext(const FileSystemAccessPermissionContext&) =
+      delete;
+  FileSystemAccessPermissionContext& operator=(
+      const FileSystemAccessPermissionContext&) = delete;
+  ~FileSystemAccessPermissionContext() override;
 
   // content::FileSystemAccessPermissionContext:
   scoped_refptr<content::FileSystemAccessPermissionGrant>
@@ -132,15 +134,16 @@ class ElectronFileSystemAccessPermissionContext
                                    const base::FilePath& path,
                                    GrantType grant_type) const;
 
-  base::WeakPtr<ElectronFileSystemAccessPermissionContext> GetWeakPtr();
+  base::WeakPtr<FileSystemAccessPermissionContext> GetWeakPtr();
 
   const raw_ptr<content::BrowserContext, DanglingUntriaged> browser_context_;
 
   struct OriginState;
   std::map<url::Origin, OriginState> active_permissions_map_;
 
-  base::WeakPtrFactory<ElectronFileSystemAccessPermissionContext> weak_factory_{
-      this};
+  base::WeakPtrFactory<FileSystemAccessPermissionContext> weak_factory_{this};
 };
 
-#endif  // ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_ELECTRON_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_
+}  // namespace electron
+
+#endif  // ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_

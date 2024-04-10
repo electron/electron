@@ -7,12 +7,14 @@
 
 #include "base/no_destructor.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
-#include "shell/browser/file_system_access/electron_file_system_access_permission_context.h"
+#include "shell/browser/file_system_access/file_system_access_permission_context.h"
+
+namespace electron {
 
 class FileSystemAccessPermissionContextFactory
     : public BrowserContextKeyedServiceFactory {
  public:
-  static ElectronFileSystemAccessPermissionContext* GetForBrowserContext(
+  static FileSystemAccessPermissionContext* GetForBrowserContext(
       content::BrowserContext* context);
   static FileSystemAccessPermissionContextFactory* GetInstance();
 
@@ -34,5 +36,7 @@ class FileSystemAccessPermissionContextFactory
   KeyedService* BuildServiceInstanceFor(
       content::BrowserContext* context) const override;
 };
+
+}  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_FACTORY_H_
