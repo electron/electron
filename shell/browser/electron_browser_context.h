@@ -150,6 +150,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::StorageNotificationService* GetStorageNotificationService() override;
   content::ReduceAcceptLanguageControllerDelegate*
   GetReduceAcceptLanguageControllerDelegate() override;
+  content::FileSystemAccessPermissionContext*
+  GetFileSystemAccessPermissionContext() override;
 
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
