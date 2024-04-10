@@ -854,7 +854,7 @@ describe('chromium features', () => {
       session.defaultSession.setPermissionRequestHandler(null);
     });
 
-    it('allows access by default to reading a file', async () => {
+    it('allows access by default to reading an OPFS file', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -876,7 +876,7 @@ describe('chromium features', () => {
       expect(result).to.deep.equal({ name: 'test', size: 0 });
     });
 
-    it('by default has permission to read and write to OFPS files', async () => {
+    it('fileHandle.queryPermission by default has permission to read and write to OPFS files', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -898,7 +898,7 @@ describe('chromium features', () => {
       expect(status).to.equal('granted');
     });
 
-    it('automatically grants permission to read and write to OFPS files', async () => {
+    it('fileHandle.requestPermission automatically grants permission to read and write to OPFS files', async () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
