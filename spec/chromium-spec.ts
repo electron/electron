@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+import { clipboard } from 'electron/common';
 import { closeAllWindows } from './lib/window-helpers';
 import * as https from 'node:https';
 import * as http from 'node:http';
@@ -13,6 +14,7 @@ import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 import { setTimeout } from 'node:timers/promises';
 import { AddressInfo } from 'node:net';
+import { MediaAccessPermissionRequest } from 'electron';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -846,6 +848,129 @@ describe('chromium features', () => {
     });
   });
 
+  describe('File System API,', () => {
+    afterEach(closeAllWindows);
+    afterEach(() => {
+      session.defaultSession.setPermissionRequestHandler(null);
+    });
+
+    it('allows access by default to reading an OPFS file', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          partition: 'file-system-spec',
+          contextIsolation: false
+        }
+      });
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const result = await w.webContents.executeJavaScript(`
+        new Promise(async (resolve, reject) => {
+          const root = await navigator.storage.getDirectory();
+          const fileHandle = await root.getFileHandle('test', { create: true });
+          const { name, size } = await fileHandle.getFile();
+          resolve({ name, size });
+        }
+      )`, true);
+      expect(result).to.deep.equal({ name: 'test', size: 0 });
+    });
+
+    it('fileHandle.queryPermission by default has permission to read and write to OPFS files', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          partition: 'file-system-spec',
+          contextIsolation: false
+        }
+      });
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const status = await w.webContents.executeJavaScript(`
+        new Promise(async (resolve, reject) => {
+          const root = await navigator.storage.getDirectory();
+          const fileHandle = await root.getFileHandle('test', { create: true });
+          const status = await fileHandle.queryPermission({ mode: 'readwrite' });
+          resolve(status);
+        }
+      )`, true);
+      expect(status).to.equal('granted');
+    });
+
+    it('fileHandle.requestPermission automatically grants permission to read and write to OPFS files', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          partition: 'file-system-spec',
+          contextIsolation: false
+        }
+      });
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const status = await w.webContents.executeJavaScript(`
+        new Promise(async (resolve, reject) => {
+          const root = await navigator.storage.getDirectory();
+          const fileHandle = await root.getFileHandle('test', { create: true });
+          const status = await fileHandle.requestPermission({ mode: 'readwrite' });
+          resolve(status);
+        }
+      )`, true);
+      expect(status).to.equal('granted');
+    });
+
+    it('requests permission when trying to create a writable file handle', (done) => {
+      const writablePath = path.join(fixturesPath, 'file-system', 'test-writable.html');
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+        expect(permission).to.equal('fileSystem');
+
+        const { href } = url.pathToFileURL(writablePath);
+        expect(details).to.deep.equal({
+          fileAccessType: 'writable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: href
+        });
+
+        callback(true);
+      });
+
+      ipcMain.once('did-create-file-handle', async () => {
+        const result = await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            try {
+              const writable = fileHandle.createWritable();
+              resolve(true);
+            } catch {
+              resolve(false);
+            }
+          })
+        `, true);
+        expect(result).to.be.true();
+        done();
+      });
+
+      w.loadFile(writablePath);
+
+      w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testFile]);
+        w.webContents.paste();
+      });
+    });
+  });
+
   describe('web workers', () => {
     let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
 
@@ -1663,7 +1788,7 @@ describe('chromium features', () => {
     it('provides a securityOrigin to the request handler', async () => {
       session.defaultSession.setPermissionRequestHandler(
         (wc, permission, callback, details) => {
-          if (details.securityOrigin !== undefined) {
+          if ((details as MediaAccessPermissionRequest).securityOrigin !== undefined) {
             callback(true);
           } else {
             callback(false);
