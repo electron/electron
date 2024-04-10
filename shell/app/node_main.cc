@@ -127,6 +127,7 @@ int NodeMain(int argc, char* argv[]) {
   bool node_options_enabled = electron::fuses::IsNodeOptionsEnabled();
   if (!node_options_enabled) {
     os_env->UnSetVar("NODE_OPTIONS");
+    os_env->UnSetVar("NODE_EXTRA_CA_CERTS");
   }
 
 #if BUILDFLAG(IS_MAC)
