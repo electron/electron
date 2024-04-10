@@ -760,8 +760,13 @@ void FileSystemAccessPermissionContext::NotifyEntryMoved(
 
 void FileSystemAccessPermissionContext::OnFileCreatedFromShowSaveFilePicker(
     const GURL& file_picker_binding_context,
-    const storage::FileSystemURL& url) {
-  // TODO(codebytere): What should we do here?
+    const storage::FileSystemURL& url) {}
+
+void FileSystemAccessPermissionContext::CheckPathsAgainstEnterprisePolicy(
+    std::vector<PathInfo> entries,
+    content::GlobalRenderFrameHostId frame_id,
+    EntriesAllowedByEnterprisePolicyCallback callback) {
+  std::move(callback).Run(std::move(entries));
 }
 
 void FileSystemAccessPermissionContext::RevokeGrant(
