@@ -15,6 +15,7 @@
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
+#include "chrome/browser/file_system_access/file_system_access_features.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_context.h"
