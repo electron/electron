@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 9 Apr 2024 19:42:44 -0500
+Subject: chore: add v8-sandbox.h
+
+
+Add v8-sandbox.h to the list of v8 headers.
+
+This patch can be removed after upstream Node is updated to a version
+of v8 that includes this file.
+
+diff --git a/deps/v8/BUILD.bazel b/deps/v8/BUILD.bazel
+index 81a9286d2670de2caef1f151def05d865d3c8ccf..6922952d0df0a6300759389d65af9f12d7ef42ae 100644
+--- a/deps/v8/BUILD.bazel
++++ b/deps/v8/BUILD.bazel
+@@ -549,6 +549,7 @@ filegroup(
+         "include/v8-promise.h",
+         "include/v8-proxy.h",
+         "include/v8-regexp.h",
++        "include/v8-sandbox.h",
+         "include/v8-script.h",
+         "include/v8-snapshot.h",
+         "include/v8-statistics.h",
+diff --git a/deps/v8/BUILD.gn b/deps/v8/BUILD.gn
+index 68d92c3477bc2c324859a4167e2be129d8a209a7..94f3c30568f54e37f42696deb910049f719f49e9 100644
+--- a/deps/v8/BUILD.gn
++++ b/deps/v8/BUILD.gn
+@@ -2726,6 +2726,7 @@ v8_header_set("v8_headers") {
+     "include/v8-promise.h",
+     "include/v8-proxy.h",
+     "include/v8-regexp.h",
++    "include/v8-sandbox.h",
+     "include/v8-script.h",
+     "include/v8-snapshot.h",
+     "include/v8-statistics.h",
+diff --git a/filenames.json b/filenames.json
+index 4404338bb5d576b341cae3bf79c84334fb05654f..ec7d82e49ed96314499e4304101f557fcfecc617 100644
+--- a/filenames.json
++++ b/filenames.json
+@@ -68,6 +68,7 @@
+         "//v8/include/v8-promise.h",
+         "//v8/include/v8-proxy.h",
+         "//v8/include/v8-regexp.h",
++        "//v8/include/v8-sandbox.h",
+         "//v8/include/v8-script.h",
+         "//v8/include/v8-snapshot.h",
+         "//v8/include/v8-source-location.h",
+diff --git a/tools/install.py b/tools/install.py
+index 74b01f8352021f1105c080dbbf8bb29121a13501..633119cc6b1152ec3a4b676756b554aa4667d298 100755
+--- a/tools/install.py
++++ b/tools/install.py
+@@ -284,6 +284,7 @@ def headers(action):
+       '../../v8/include/v8-promise.h',
+       '../../v8/include/v8-proxy.h',
+       '../../v8/include/v8-regexp.h',
++      '../../v8/include/v8-sandbox.h',
+       '../../v8/include/v8-script.h',
+       '../../v8/include/v8-snapshot.h',
+       '../../v8/include/v8-source-location.h',

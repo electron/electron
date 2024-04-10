@@ -48,3 +48,4 @@ src_preload_function_for_environment.patch
 deprecate_vector_v8_local_in_v8.patch
 fs_fix_wtf-8_decoding_issue.patch
 fix_remove_deprecated_errno_constants.patch
+chore_add_v8-sandbox_h.patch
