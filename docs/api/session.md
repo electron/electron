@@ -822,15 +822,15 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.
+    * `requestingUrl` string - The last URL the requesting frame loaded.
+    * `isMainFrame` boolean - Whether the frame making the request is the main frame.
     * `externalURL` string (optional) - The url of the `openExternal` request.
     * `securityOrigin` string (optional) - The security origin of the `media` request.
     * `mediaTypes` string[] (optional) - The types of media access being requested, elements can be `video`
       or `audio`.
-    * `requestingUrl` string - The last URL the requesting frame loaded.
-    * `isMainFrame` boolean - Whether the frame making the request is the main frame.
-    * `path` string (optional) - The path of the `file-system` request.
-    * `isDirectory` boolean (optional) - Whether the `file-system` request is a directory.
-    * `accessType` string (optional) - The access type of the `file-system` request. Can be `writable` or `readable`.
+    * `filePath` string (optional) - The path of the `fileSystem` request.
+    * `isDirectory` boolean (optional) - Whether the `fileSystem` request is a directory.
+    * `fileAccessType` string (optional) - The access type of the `fileSystem` request. Can be `writable` or `readable`.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.

@@ -361,8 +361,15 @@ class ElectronFileSystemAccessPermissionContext::PermissionGrantImpl
 
     blink::PermissionType type = static_cast<blink::PermissionType>(
         electron::WebContentsPermissionHelper::PermissionType::FILE_SYSTEM);
+
+    base::Value::Dict details;
+    details.Set("filePath", base::FilePathToValue(path_));
+    details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
+    details.Set("fileAccessType",
+                type_ == GrantType::kWrite ? "writable" : "readable");
+
     permission_manager->RequestPermissionWithDetails(
-        type, rfh, origin, false, AsValue(),
+        type, rfh, origin, false, std::move(details),
         base::BindOnce(&PermissionGrantImpl::OnPermissionRequestResult, this,
                        std::move(callback)));
   }
@@ -391,17 +398,6 @@ class ElectronFileSystemAccessPermissionContext::PermissionGrantImpl
     if (permission_changed) {
       NotifyPermissionStatusChanged();
     }
-  }
-
-  base::Value::Dict AsValue() const {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-    base::Value::Dict value;
-    value.Set("path", base::FilePathToValue(path_));
-    value.Set("isDirectory", handle_type_ == HandleType::kDirectory);
-    value.Set("accessType",
-              type_ == GrantType::kWrite ? "writable" : "readable");
-    return value;
   }
 
   static void UpdateGrantPath(
