@@ -51,6 +51,8 @@ Unsupported options are:
 --http-parser
 ```
 
+The [`nodeOptions` fuse](../tutorial/fuses.md#L27) need to be enabled in order to use this variable.
+
 ### `NODE_EXTRA_CA_CERTS`
 
 See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api/cli.md#node_extra_ca_certsfile) for details.
@@ -58,6 +60,8 @@ See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api
 ```sh
 export NODE_EXTRA_CA_CERTS=/path/to/cert.pem 
 ```
+
+The [`nodeOptions` fuse](../tutorial/fuses.md#L27) need to be enabled in order to use this variable.
 
 ### `GOOGLE_API_KEY`
 
@@ -99,6 +103,8 @@ you would when running the normal Node.js executable, with the exception of the 
 
 These flags are disabled owing to the fact that Electron uses BoringSSL instead of OpenSSL when building Node.js'
 `crypto` module, and so will not work as designed.
+
+The [`runAsNode` fuse](../tutorial/fuses.md#L13) need to be enabled in order to use this variable.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 
