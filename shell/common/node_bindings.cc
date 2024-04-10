@@ -338,7 +338,7 @@ bool IsAllowedOption(const std::string_view option) {
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
-  // Options that are unilaterally disallowed
+  // Options that are expressly disallowed
   static constexpr auto disallowed = base::MakeFixedFlatSet<std::string_view>({
       "--enable-fips",
       "--experimental-policy",

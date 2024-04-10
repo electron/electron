@@ -51,6 +51,14 @@ Unsupported options are:
 --http-parser
 ```
 
+### `NODE_EXTRA_CA_CERTS`
+
+See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api/cli.md#node_extra_ca_certsfile) for details.
+
+```sh
+export NODE_EXTRA_CA_CERTS=/path/to/cert.pem 
+```
+
 ### `GOOGLE_API_KEY`
 
 Geolocation support in Electron requires the use of Google Cloud Platform's
