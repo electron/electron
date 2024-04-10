@@ -3,7 +3,6 @@ From: Charles Kerr <charles@charleskerr.com>
 Date: Tue, 9 Apr 2024 19:42:44 -0500
 Subject: chore: add v8-sandbox.h
 
-
 Add v8-sandbox.h to the list of v8 headers.
 
 This patch can be removed after upstream Node is updated to a version
