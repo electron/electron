@@ -821,16 +821,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
-  * `details` Object - Some properties are only available on certain permission types.
-    * `requestingUrl` string - The last URL the requesting frame loaded.
-    * `isMainFrame` boolean - Whether the frame making the request is the main frame.
-    * `externalURL` string (optional) - The url of the `openExternal` request.
-    * `securityOrigin` string (optional) - The security origin of the `media` request.
-    * `mediaTypes` string[] (optional) - The types of media access being requested, elements can be `video`
-      or `audio`.
-    * `filePath` string (optional) - The path of the `fileSystem` request.
-    * `isDirectory` boolean (optional) - Whether the `fileSystem` request is a directory.
-    * `fileAccessType` string (optional) - The access type of the `fileSystem` request. Can be `writable` or `readable`.
+  * `details` [PermissionRequest](structures/permission-request.md)  | [FilesystemPermissionRequest](structures/filesystem-permission-request.md) | [MediaAccessPermissionRequest](structures/media-access-permission-request.md) | [OpenExternalPermissionRequest](structures/open-external-permission-request.md) - Additional information about the permission being requested.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.

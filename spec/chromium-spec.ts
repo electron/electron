@@ -14,6 +14,7 @@ import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 import { setTimeout } from 'node:timers/promises';
 import { AddressInfo } from 'node:net';
+import { MediaAccessPermissionRequest } from 'electron';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -1787,7 +1788,7 @@ describe('chromium features', () => {
     it('provides a securityOrigin to the request handler', async () => {
       session.defaultSession.setPermissionRequestHandler(
         (wc, permission, callback, details) => {
-          if (details.securityOrigin !== undefined) {
+          if ((details as MediaAccessPermissionRequest).securityOrigin !== undefined) {
             callback(true);
           } else {
             callback(false);
