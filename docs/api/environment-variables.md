@@ -61,7 +61,7 @@ See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api
 export NODE_EXTRA_CA_CERTS=/path/to/cert.pem 
 ```
 
-If the [`nodeOptions` fuse](../tutorial/fuses.md#L27) is disabled, `NODE_OPTIONS` will be ignored.
+If the [`nodeOptions` fuse](../tutorial/fuses.md#L27) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored.
 
 ### `GOOGLE_API_KEY`
 
