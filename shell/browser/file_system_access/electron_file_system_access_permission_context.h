@@ -7,12 +7,20 @@
 
 #include "shell/browser/file_system_access/electron_file_system_access_permission_context.h"
 
+#include <memory>
 #include <string>
+#include <vector>
 
+#include "base/functional/callback.h"
+#include "base/memory/weak_ptr.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/file_system_access_permission_context.h"
 
 class GURL;
+
+namespace base {
+class FilePath;
+}  // namespace base
 
 namespace storage {
 class FileSystemURL;
@@ -88,49 +96,6 @@ class ElectronFileSystemAccessPermissionContext
   enum class Access { kRead, kWrite, kReadWrite };
 
   enum class RequestType { kNewPermission, kRestorePermissions };
-
-  struct FileRequestData {
-    FileRequestData(const base::FilePath& path,
-                    HandleType handle_type,
-                    Access access)
-        : path(path), handle_type(handle_type), access(access) {}
-    ~FileRequestData() = default;
-    FileRequestData(FileRequestData&&) = default;
-    FileRequestData(const FileRequestData&) = default;
-    FileRequestData& operator=(FileRequestData&&) = default;
-    FileRequestData& operator=(const FileRequestData&) = default;
-
-    base::FilePath path;
-    HandleType handle_type;
-    Access access;
-  };
-
-  struct RequestData {
-    RequestData(RequestType request_type,
-                const url::Origin& origin,
-                const std::vector<FileRequestData>& file_request_data);
-    ~RequestData();
-    RequestData(RequestData&&);
-    RequestData(const RequestData&);
-    RequestData& operator=(RequestData&&) = default;
-    RequestData& operator=(const RequestData&) = default;
-
-    RequestType request_type;
-    url::Origin origin;
-    std::vector<FileRequestData> file_request_data;
-  };
-
-  struct Grants {
-    Grants();
-    ~Grants();
-    Grants(Grants&&);
-    Grants& operator=(Grants&&);
-
-    std::vector<base::FilePath> file_read_grants;
-    std::vector<base::FilePath> file_write_grants;
-    std::vector<base::FilePath> directory_read_grants;
-    std::vector<base::FilePath> directory_write_grants;
-  };
 
   void RevokeGrant(const url::Origin& origin,
                    const base::FilePath& file_path = base::FilePath());
