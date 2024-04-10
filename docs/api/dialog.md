@@ -15,7 +15,7 @@ console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] 
 
 The `dialog` module has the following methods:
 
-### `dialog.showOpenDialogSync([browserWindow, ]options)`
+### `dialog.showOpenDialogSync([browserWindow], options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -78,7 +78,7 @@ dialog.showOpenDialogSync(mainWindow, {
 })
 ```
 
-### `dialog.showOpenDialog([browserWindow, ]options)`
+### `dialog.showOpenDialog([browserWindow], options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -150,7 +150,7 @@ dialog.showOpenDialog(mainWindow, {
 })
 ```
 
-### `dialog.showSaveDialogSync([browserWindow, ]options)`
+### `dialog.showSaveDialogSync([browserWindow], options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -181,7 +181,7 @@ The `browserWindow` argument allows the dialog to attach itself to a parent wind
 The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
 
-### `dialog.showSaveDialog([browserWindow, ]options)`
+### `dialog.showSaveDialog([browserWindow], options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -218,7 +218,7 @@ The `filters` specifies an array of file types that can be displayed, see
 **Note:** On macOS, using the asynchronous version is recommended to avoid issues when
 expanding and collapsing the dialog.
 
-### `dialog.showMessageBoxSync([browserWindow, ]options)`
+### `dialog.showMessageBoxSync([browserWindow], options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -261,7 +261,7 @@ It returns the index of the clicked button.
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 If `browserWindow` is not shown dialog will not be attached to it. In such case it will be displayed as an independent window.
 
-### `dialog.showMessageBox([browserWindow, ]options)`
+### `dialog.showMessageBox([browserWindow], options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -327,7 +327,7 @@ it is usually used to report errors in early stage of startup. If called
 before the app `ready`event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
 
-### `dialog.showCertificateTrustDialog([browserWindow, ]options)` _macOS_ _Windows_
+### `dialog.showCertificateTrustDialog([browserWindow], options)` _macOS_ _Windows_
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
