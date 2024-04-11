@@ -371,10 +371,10 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }  // namespace
  
 diff --git a/src/node.cc b/src/node.cc
-index 524f80ee69ee5248e045a2b61faf5610c9ba4285..1d77a8b31cb0bfbeeeac594b6e1ac7dd303c902d 100644
+index 10e04ed8a28bd010e4887ad5b9af3886f7b32a53..012dd487e8db232d068bce358ad44b14e78d0fe9 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1027,7 +1027,8 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1079,7 +1079,8 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
    }
  
    if (!(flags & ProcessInitializationFlags::kNoInitOpenSSL)) {
@@ -384,7 +384,7 @@ index 524f80ee69ee5248e045a2b61faf5610c9ba4285..1d77a8b31cb0bfbeeeac594b6e1ac7dd
      auto GetOpenSSLErrorString = []() -> std::string {
        std::string ret;
        ERR_print_errors_cb(
-@@ -1127,13 +1128,13 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1179,13 +1180,13 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
        CHECK(crypto::CSPRNG(buffer, length).is_ok());
        return true;
      });
