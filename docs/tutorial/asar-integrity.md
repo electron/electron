@@ -66,8 +66,9 @@ flipFuses(
 
 :::tip Fuses in Electron Forge
 
-With Electron Forge, you can configure your app's fuses with [@electron-forge/plugin-fuses]
-(https://www.electronforge.io/config/plugins/fuses) in your Forge configuration file.
+With Electron Forge, you can configure your app's fuses with
+[@electron-forge/plugin-fuses](https://www.electronforge.io/config/plugins/fuses)
+in your Forge configuration file.
 
 :::
 
@@ -130,4 +131,3 @@ For an implementation example, see [`src/resedit.ts`](https://github.com/electro
 in the Electron Packager code.
 
 :::
-
