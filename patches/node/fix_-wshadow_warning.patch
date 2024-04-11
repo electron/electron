@@ -28,7 +28,7 @@ In file included from ../../third_party/electron_node/src/env-inl.h:32:
 1 error generated.
 
 diff --git a/src/util.h b/src/util.h
-index 83e5d226701b9bbdb27b6bc236f756af969ae3de..c819a0ea22f2c0c2f8ee17b065b99d95245e19ab 100644
+index e5f508b5090b2a0a95dc280e010ddcc731ad0dd2..d1d78c5b2f0409c7a399444875079eb5c487a3e7 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -145,9 +145,9 @@ void DumpJavaScriptBacktrace(FILE* fp);
