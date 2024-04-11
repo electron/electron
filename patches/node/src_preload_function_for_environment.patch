@@ -92,7 +92,7 @@ index ac4295f495e240331a183b4a0a22d7437fc85271..63ce35ba68b48a55d8150395304bf86c
    async_hooks()->async_id_fields()[AsyncHooks::kAsyncIdCounter] += 1;
    return async_hooks()->async_id_fields()[AsyncHooks::kAsyncIdCounter];
 diff --git a/src/env.h b/src/env.h
-index dc4b3628a351aef0f3895dee07548df1dee29d91..3b3724d6c7156b87555be31470e75b1cf28b5e3f 100644
+index f0a1d5ef2b45d4c27c5660177c9805acee19e5f2..910c69b6d1d17ef25201dbb39d3d074f4f3f011f 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -1003,6 +1003,9 @@ class Environment : public MemoryRetainer {

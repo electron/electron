@@ -147,7 +147,7 @@ index 6e5bbe07d0c337b36f3157c2e6404fdc91849fd1..7ec682833213de9054a8c30751436d12
    DHPointer dh;
    {
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index b4447102a8478639a5aa774e583834d79808603f..d3dad0ae8a9810e8481529776f4ed4686a8d9c53 100644
+index b4447102a8478639a5aa774e583834d79808603f..678be07feb394530b944c1b356265416f2d50742 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -154,13 +154,11 @@ bool DiffieHellman::Init(BignumPointer&& bn_p, int g) {
@@ -166,7 +166,7 @@ index b4447102a8478639a5aa774e583834d79808603f..d3dad0ae8a9810e8481529776f4ed468
      return false;
    }
    BignumPointer bn_p(
-@@ -176,18 +174,17 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+@@ -176,20 +174,17 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -184,11 +184,13 @@ index b4447102a8478639a5aa774e583834d79808603f..d3dad0ae8a9810e8481529776f4ed468
    BignumPointer bn_g(
        BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr));
    if (BN_is_zero(bn_g.get()) || BN_is_one(bn_g.get())) {
+-    ERR_put_error(ERR_LIB_DH, DH_F_DH_BUILTIN_GENPARAMS,
+-      DH_R_BAD_GENERATOR, __FILE__, __LINE__);
 +    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
-     ERR_put_error(ERR_LIB_DH, DH_F_DH_BUILTIN_GENPARAMS,
-       DH_R_BAD_GENERATOR, __FILE__, __LINE__);
      return false;
-@@ -219,8 +216,10 @@ typedef BignumPointer (*StandardizedGroupInstantiator)();
+   }
+   BignumPointer bn_p(
+@@ -219,8 +214,10 @@ typedef BignumPointer (*StandardizedGroupInstantiator)();
  inline StandardizedGroupInstantiator FindDiffieHellmanGroup(const char* name) {
  #define V(n, p)                                                                \
    if (StringEqualNoCase(name, n)) return InstantiateStandardizedGroup<p>
@@ -199,7 +201,7 @@ index b4447102a8478639a5aa774e583834d79808603f..d3dad0ae8a9810e8481529776f4ed468
    V("modp5", BN_get_rfc3526_prime_1536);
    V("modp14", BN_get_rfc3526_prime_2048);
    V("modp15", BN_get_rfc3526_prime_3072);
-@@ -559,15 +558,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -559,15 +556,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
  
@@ -220,7 +222,7 @@ index b4447102a8478639a5aa774e583834d79808603f..d3dad0ae8a9810e8481529776f4ed468
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -581,6 +585,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -581,6 +583,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
  
      key_params = EVPKeyPointer(raw_params);
@@ -370,6 +372,28 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }
  }  // namespace
  
+diff --git a/src/env.h b/src/env.h
+index 994b9573822fd3eb0588e87edaa0e505aa5102fb..bb84f5ab43cb5be42019921e5dc2fc010d7b9018 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -49,7 +49,7 @@
+ #include "uv.h"
+ #include "v8.h"
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && OPENSSL_VERSION_MAJOR >= 3
+ #include <openssl/evp.h>
+ #endif
+ 
+@@ -1032,7 +1032,7 @@ class Environment : public MemoryRetainer {
+     kExitInfoFieldCount
+   };
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL// && !defined(OPENSSL_IS_BORINGSSL)
+ #if OPENSSL_VERSION_MAJOR >= 3
+   // We declare another alias here to avoid having to include crypto_util.h
+   using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node.cc b/src/node.cc
 index 10e04ed8a28bd010e4887ad5b9af3886f7b32a53..012dd487e8db232d068bce358ad44b14e78d0fe9 100644
 --- a/src/node.cc
