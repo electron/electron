@@ -76,7 +76,6 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
-#include "printing/print_job_constants.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
@@ -173,10 +172,10 @@
 #include "components/printing/browser/print_manager_utils.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
-#include "printing/backend/print_backend.h"  // nogncheck
-#include "printing/mojom/print.mojom.h"      // nogncheck
+#include "printing/mojom/print.mojom.h"  // nogncheck
 #include "printing/page_range.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
+#include "shell/browser/printing/printing_utils.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
@@ -529,96 +528,6 @@ std::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #endif
   return std::nullopt;
 }
-
-#if BUILDFLAG(ENABLE_PRINTING)
-// This will return false if no printer with the provided device_name can be
-// found on the network. We need to check this because Chromium does not do
-// sanity checking of device_name validity and so will crash on invalid names.
-bool IsDeviceNameValid(const std::u16string& device_name) {
-#if BUILDFLAG(IS_MAC)
-  base::apple::ScopedCFTypeRef<CFStringRef> new_printer_id(
-      base::SysUTF16ToCFStringRef(device_name));
-  PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
-  bool printer_exists = new_printer != nullptr;
-  PMRelease(new_printer);
-  return printer_exists;
-#else
-  scoped_refptr<printing::PrintBackend> print_backend =
-      printing::PrintBackend::CreateInstance(
-          g_browser_process->GetApplicationLocale());
-  return print_backend->IsValidPrinter(base::UTF16ToUTF8(device_name));
-#endif
-}
-
-// This function returns a validated device name.
-// If the user passed one to webContents.print(), we check that it's valid and
-// return it or fail if the network doesn't recognize it. If the user didn't
-// pass a device name, we first try to return the system default printer. If one
-// isn't set, then pull all the printers and use the first one or fail if none
-// exist.
-std::pair<std::string, std::u16string> GetDeviceNameToUse(
-    const std::u16string& device_name) {
-#if BUILDFLAG(IS_WIN)
-  // Blocking is needed here because Windows printer drivers are oftentimes
-  // not thread-safe and have to be accessed on the UI thread.
-  ScopedAllowBlockingForElectron allow_blocking;
-#endif
-
-  if (!device_name.empty()) {
-    if (!IsDeviceNameValid(device_name))
-      return std::make_pair("Invalid deviceName provided", std::u16string());
-    return std::make_pair(std::string(), device_name);
-  }
-
-  scoped_refptr<printing::PrintBackend> print_backend =
-      printing::PrintBackend::CreateInstance(
-          g_browser_process->GetApplicationLocale());
-  std::string printer_name;
-  printing::mojom::ResultCode code =
-      print_backend->GetDefaultPrinterName(printer_name);
-
-  // We don't want to return if this fails since some devices won't have a
-  // default printer.
-  if (code != printing::mojom::ResultCode::kSuccess)
-    LOG(ERROR) << "Failed to get default printer name";
-
-  if (printer_name.empty()) {
-    printing::PrinterList printers;
-    if (print_backend->EnumeratePrinters(printers) !=
-        printing::mojom::ResultCode::kSuccess)
-      return std::make_pair("Failed to enumerate printers", std::u16string());
-    if (printers.empty())
-      return std::make_pair("No printers available on the network",
-                            std::u16string());
-
-    printer_name = printers.front().printer_name;
-  }
-
-  return std::make_pair(std::string(), base::UTF8ToUTF16(printer_name));
-}
-
-// Copied from
-// chrome/browser/ui/webui/print_preview/local_printer_handler_default.cc:L36-L54
-scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
-  // USER_VISIBLE because the result is displayed in the print preview dialog.
-#if !BUILDFLAG(IS_WIN)
-  static constexpr base::TaskTraits kTraits = {
-      base::MayBlock(), base::TaskPriority::USER_VISIBLE};
-#endif
-
-#if defined(USE_CUPS)
-  // CUPS is thread safe.
-  return base::ThreadPool::CreateTaskRunner(kTraits);
-#elif BUILDFLAG(IS_WIN)
-  // Windows drivers are likely not thread-safe and need to be accessed on the
-  // UI thread.
-  return content::GetUIThreadTaskRunner({base::TaskPriority::USER_VISIBLE});
-#else
-  // Be conservative on unsupported platforms.
-  return base::ThreadPool::CreateSingleThreadTaskRunner(kTraits);
-#endif
-}
-#endif
 
 struct UserDataLink : public base::SupportsUserData::Data {
   explicit UserDataLink(base::WeakPtr<WebContents> contents)
@@ -2972,6 +2881,12 @@ void WebContents::OnGetDeviceNameToUse(
   // If the user has passed a deviceName use it, otherwise use default printer.
   print_settings.Set(printing::kSettingDeviceName, info.second);
 
+  if (!print_settings.FindInt(printing::kSettingDpiHorizontal)) {
+    gfx::Size dpi = GetDefaultPrinterDPI(info.second);
+    print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
+    print_settings.Set(printing::kSettingDpiVertical, dpi.height());
+  }
+
   auto* print_view_manager =
       PrintViewManagerElectron::FromWebContents(web_contents());
   if (!print_view_manager)
@@ -3133,7 +3048,6 @@ void WebContents::Print(gin::Arguments* args) {
 
   // Set custom dots per inch (dpi)
   gin_helper::Dictionary dpi_settings;
-  int dpi = 72;
   if (options.Get("dpi", &dpi_settings)) {
     int horizontal = 72;
     dpi_settings.Get("horizontal", &horizontal);
@@ -3141,9 +3055,6 @@ void WebContents::Print(gin::Arguments* args) {
     int vertical = 72;
     dpi_settings.Get("vertical", &vertical);
     settings.Set(printing::kSettingDpiVertical, vertical);
-  } else {
-    settings.Set(printing::kSettingDpiHorizontal, dpi);
-    settings.Set(printing::kSettingDpiVertical, dpi);
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
