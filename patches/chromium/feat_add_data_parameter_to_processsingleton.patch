@@ -187,7 +187,7 @@ index 11f35769cc53b4aa111a319d155a3916f0040fa7..8e3e870eaac14ce6886878b027c7cf2e
                        base::CommandLine* parsed_command_line,
 -                      base::FilePath* current_directory) {
 +                      base::FilePath* current_directory,
-+                      std::vector<const uint8_t>* parsed_additional_data) {
++                      std::vector<uint8_t>* parsed_additional_data) {
    // We should have enough room for the shortest command (min_message_size)
    // and also be a multiple of wchar_t bytes. The shortest command
 -  // possible is L"START\0\0" (empty current directory and command line).
@@ -228,7 +228,7 @@ index 11f35769cc53b4aa111a319d155a3916f0040fa7..8e3e870eaac14ce6886878b027c7cf2e
 +        msg.substr(fourth_null + 1, fifth_null - fourth_null);
 +    const uint8_t* additional_data_bytes =
 +        reinterpret_cast<const uint8_t*>(additional_data.c_str());
-+    *parsed_additional_data = std::vector<const uint8_t>(additional_data_bytes,
++    *parsed_additional_data = std::vector<uint8_t>(additional_data_bytes,
 +        additional_data_bytes + additional_data_length);
 +
      return true;
@@ -239,7 +239,7 @@ index 11f35769cc53b4aa111a319d155a3916f0040fa7..8e3e870eaac14ce6886878b027c7cf2e
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
 -  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
-+  std::vector<const uint8_t> additional_data;
++  std::vector<uint8_t> additional_data;
 +  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory, &additional_data)) {
      *result = TRUE;
      return true;
