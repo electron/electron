@@ -22,7 +22,7 @@ index 022f1507ce6a72d0ef140409efba476c7ef7825a..ac4295f495e240331a183b4a0a22d743
    // configure --no-browser-globals
  #ifdef NODE_NO_BROWSER_GLOBALS
 diff --git a/src/env.h b/src/env.h
-index 994b9573822fd3eb0588e87edaa0e505aa5102fb..dc4b3628a351aef0f3895dee07548df1dee29d91 100644
+index bb84f5ab43cb5be42019921e5dc2fc010d7b9018..f0a1d5ef2b45d4c27c5660177c9805acee19e5f2 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -801,6 +801,7 @@ class Environment : public MemoryRetainer {
