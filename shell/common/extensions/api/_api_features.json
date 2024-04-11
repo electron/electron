@@ -41,8 +41,8 @@
   },
   "extension.lastError": {
     "contexts": [
-      "blessed_extension",
-      "unblessed_extension",
+      "privileged_extension",
+      "unprivileged_extension",
       "content_script"
     ],
     "max_manifest_version": 2
