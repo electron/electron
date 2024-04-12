@@ -481,9 +481,9 @@
   dependencies:
     "@types/node" "*"
 
-abstract-socket@^2.0.0, "abstract-socket@github:deepak1556/node-abstractsocket#121d94ca6d1811f90cd035e9787aaea79b5cf533":
+abstract-socket@^2.0.0, "abstract-socket@github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19":
   version "2.1.1"
-  resolved "https://codeload.github.com/deepak1556/node-abstractsocket/tar.gz/121d94ca6d1811f90cd035e9787aaea79b5cf533"
+  resolved "https://codeload.github.com/deepak1556/node-abstractsocket/tar.gz/928cc591decd12aff7dad96449da8afc29832c19"
   dependencies:
     bindings "^1.2.1"
     node-addon-api "8.0.0"
