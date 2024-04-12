@@ -134,7 +134,8 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
                tiled_edges().bottom || tiled_edges().right;
   frame_provider_ =
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
+          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized(),
+          !window_->has_frame());
 
   UpdateWindowTitle();
 
@@ -175,7 +176,7 @@ SkRRect ClientFrameViewLinux::GetRoundedWindowContentBounds() const {
   SkRect rect = gfx::RectToSkRect(GetWindowContentBounds());
   SkRRect rrect;
 
-  if (!frame_->IsMaximized()) {
+  if (!frame_->IsMaximized() && window_->has_frame()) {
     SkPoint round_point{theme_values_.window_border_radius,
                         theme_values_.window_border_radius};
     SkPoint radii[] = {round_point, round_point, {}, {}};
@@ -273,13 +274,19 @@ gfx::Size ClientFrameViewLinux::GetMaximumSize() const {
 void ClientFrameViewLinux::Layout(PassKey) {
   LayoutSuperclass<FramelessView>(this);
 
-  if (frame_->IsFullscreen()) {
-    // Just hide everything and return.
+  bool is_fullscreen = frame_->IsFullscreen();
+  bool has_frame = window_->has_frame();
+
+  if (is_fullscreen || !has_frame) {
+    // Just hide everything.
     for (NavButton& button : nav_buttons_) {
       button.button->SetVisible(false);
     }
 
     title_->SetVisible(false);
+  }
+
+  if (is_fullscreen) {
     return;
   }
 
@@ -287,7 +294,12 @@ void ClientFrameViewLinux::Layout(PassKey) {
                tiled_edges().bottom || tiled_edges().right;
   frame_provider_ =
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
+          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized(),
+          !window_->has_frame());
+
+  if (!has_frame) {
+    return;
+  }
 
   UpdateButtonImages();
   LayoutButtons();
@@ -459,7 +471,7 @@ void ClientFrameViewLinux::LayoutButtonsOnSide(
 }
 
 gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
-  if (frame_->IsFullscreen()) {
+  if (frame_->IsFullscreen() || !window_->has_frame()) {
     return gfx::Rect();
   }
 

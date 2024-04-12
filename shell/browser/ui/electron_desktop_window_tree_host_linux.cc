@@ -134,7 +134,9 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
-    if (SupportsClientFrameShadow() && native_window_view_->has_frame() &&
+    if (SupportsClientFrameShadow() &&
+        (native_window_view_->has_frame() ||
+         !native_window_view_->transparent()) &&
         native_window_view_->has_client_frame()) {
       UpdateClientDecorationHints(static_cast<ClientFrameViewLinux*>(
           native_window_view_->widget()->non_client_view()->frame_view()));

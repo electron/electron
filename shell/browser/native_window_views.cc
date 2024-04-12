@@ -1687,7 +1687,7 @@ NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
   if (has_frame() && !has_client_frame()) {
     return std::make_unique<NativeFrameView>(this, widget);
   } else {
-    auto frame_view = has_frame() && has_client_frame()
+    auto frame_view = (has_frame() || !transparent()) && has_client_frame()
                           ? std::make_unique<ClientFrameViewLinux>()
                           : std::make_unique<FramelessView>();
     frame_view->Init(this, widget);
