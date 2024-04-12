@@ -44,6 +44,7 @@
   "resolutions": {
     "nan": "file:../../third_party/nan",
     "dbus-native/optimist/minimist": "1.2.7",
-    "dbus-native/xml2js": "0.5.0"
+    "dbus-native/xml2js": "0.5.0",
+    "abstract-socket": "github:deepak1556/node-abstractsocket#121d94ca6d1811f90cd035e9787aaea79b5cf533"
   }
 }
