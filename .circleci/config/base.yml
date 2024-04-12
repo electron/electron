@@ -2291,6 +2291,7 @@ jobs:
       <<: *env-stack-dumping
     parallelism: 2
     steps:
+      - run: nvm install lts/iron && nvm alias default lts/iron
       - electron-tests:
           artifact-key: darwin-x64
 
@@ -2317,6 +2318,7 @@ jobs:
       <<: *env-stack-dumping
     parallelism: 2
     steps:
+      - run: nvm install lts/iron && nvm alias default lts/iron
       - electron-tests:
           artifact-key: mas-x64
 
