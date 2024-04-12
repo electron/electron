@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index e78c7f7ada534710901ea24891c28fa4dff24e12..a9cc542d2c04d7362405e41d5abc6f2c2de7289d 100644
+index 096000e6b68a5c4ffc3b1750a98b23c3c6596e3e..46dea4280328abf79618eb68eeb680f549da605a 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -48,7 +48,7 @@ index e78c7f7ada534710901ea24891c28fa4dff24e12..a9cc542d2c04d7362405e41d5abc6f2c
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -971,7 +978,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -969,7 +976,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -102,7 +102,7 @@ index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb5
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index ddd43301893e122086663eb7d03d52b7bec22c42..f3a28196eceb62c596af81b0c25f93600c3cdb94 100644
+index d1eeb2e904e3077555cf29b366744e9e02cada70..03a7bfb721a72fc35f8d36cc0b2ef0a40516e4cf 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -584,8 +584,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,

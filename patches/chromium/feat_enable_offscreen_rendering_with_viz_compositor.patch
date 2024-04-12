@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6c32e20a29d016766bdc6f89e21e05184af8030e..f4c5c67f855cc3141a382be5e6cb23fbdb89f94d 100644
+index 0836ea5c4015ef30622532af1608ef46bc60a863..a8ba726fea0a6be4009c71d5e9fb39fecc515e62 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -165,6 +165,8 @@ viz_component("service") {
+@@ -167,6 +167,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",

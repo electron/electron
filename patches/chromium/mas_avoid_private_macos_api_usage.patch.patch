@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2ac5bd880dff6d2c0be18cff26082856702adefe..4275970719462c2bdd086b531d55bf155b08c452 100644
+index c1c384e4ce443c60cc01668bc76e82a3ef5cd16d..0f3e39998b55331be8bdf5f5e84f1edca7053197 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1065,6 +1065,7 @@ component("base") {
+@@ -1066,6 +1066,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -47,10 +47,10 @@ index 2ac5bd880dff6d2c0be18cff26082856702adefe..4275970719462c2bdd086b531d55bf15
  
    deps = [
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 2bad2ed2f5205b3a2599aa3a620812aa32d52f87..ab3d4c953556d4f94075671436565a6c442f30d5 100644
+index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..57d4756c0d87b9313e8566b3083c0132966fcd78 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
-@@ -115,6 +115,14 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+@@ -116,6 +116,14 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
      DeviceUserDomainJoinState state{.device_joined = false,
                                      .user_joined = false};
  
@@ -65,7 +65,7 @@ index 2bad2ed2f5205b3a2599aa3a620812aa32d52f87..ab3d4c953556d4f94075671436565a6c
      @autoreleasepool {
        ODSession* session = [ODSession defaultSession];
        if (session == nil) {
-@@ -218,5 +226,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+@@ -219,5 +227,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
  
    return state;
  }
@@ -370,10 +370,10 @@ index 8b37a7c4150b4013e1763cadc6303dcf6d950738..5721dd765dc5cfff9867720fa8f0d214
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index a58ce0a4e37634662258068592e6b3bb10096912..6c32e20a29d016766bdc6f89e21e05184af8030e 100644
+index f1f3fb86e175d54de28a153d87351c2308fc723b..0836ea5c4015ef30622532af1608ef46bc60a863 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -358,6 +358,7 @@ viz_component("service") {
+@@ -360,6 +360,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -381,7 +381,7 @@ index a58ce0a4e37634662258068592e6b3bb10096912..6c32e20a29d016766bdc6f89e21e0518
    }
  
    if (is_android || use_ozone) {
-@@ -627,6 +628,7 @@ viz_source_set("unit_tests") {
+@@ -630,6 +631,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -459,7 +459,7 @@ index e1ccb471c286f41d38673c4cb1326a6bed19d733..4b64a87464aefc04df107a64155e1f6f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c071c648896920ee9373b9c7fcd6870169788d58..7bdea86578abe441759a92428242bceefcd40945 100644
+index 9fe51a5751eb774c8a1507a356ab9fa53caabc83..873d36935fcce58584e10bf26e483ba89533d6c6 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -543,7 +543,7 @@ index 5497f4e3faa66cc0a78d449e92d54c1da0cb041c..a768ff0ad1fd0aebc14f0432b9f4b88b
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index a2c2c78947c5e3e64632fd0f128745a80ce45fa8..96283a4f72b32eb45357eb6ec1f5b807593d5f07 100644
+index a929fb3efede304fa560fcb4e7bd403451c72f77..a1bbdb830ef53c0db6c448b263da2d968309dc95 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -580,7 +580,7 @@ index a2c2c78947c5e3e64632fd0f128745a80ce45fa8..96283a4f72b32eb45357eb6ec1f5b807
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2214,20 +2220,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2230,20 +2236,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -608,10 +608,10 @@ index a2c2c78947c5e3e64632fd0f128745a80ce45fa8..96283a4f72b32eb45357eb6ec1f5b807
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index deb960892c575e43c0f4b8af3d8343a60a1102c9..79aec653c3124906c6eebcf864fc195526abdfbc 100644
+index e6068c998ca06c0bd4bc54cdd6bf999293a6ac66..4e29ba278615072b05b1e28c8406d40df7481880 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -242,6 +242,7 @@ source_set("common") {
+@@ -243,6 +243,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index df2c7cd983919bf146d67f14f92119182195875c..1e2cab2edf9b4b0d42994ccea3400d3236cd5598 100644
+index d049eb8304d1a4b74fcb2ef19a1c85f7e593b528..d7cd6c13cf1d6d432184efaf547eda33faaebe96 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -494,6 +494,7 @@ static_library("test_support") {
+@@ -495,6 +495,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index df2c7cd983919bf146d67f14f92119182195875c..1e2cab2edf9b4b0d42994ccea3400d32
    ]
  
    public_deps = [
-@@ -1100,6 +1101,7 @@ static_library("browsertest_support") {
+@@ -1101,6 +1102,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index df2c7cd983919bf146d67f14f92119182195875c..1e2cab2edf9b4b0d42994ccea3400d32
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1715,6 +1717,7 @@ test("content_browsertests") {
+@@ -1716,6 +1718,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index df2c7cd983919bf146d67f14f92119182195875c..1e2cab2edf9b4b0d42994ccea3400d32
  
    public_deps = [
      ":test_interfaces",
-@@ -2944,6 +2947,7 @@ test("content_unittests") {
+@@ -2946,6 +2949,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1305,10 +1305,10 @@ index 3ead42e14ad9d41a30c5637678a3ac49296ce2a6..8dec61ee6a62e54ec3c8c5dd5e08601c
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-index 4da580c4c2eb558858021420a7d0b55574f7e449..f6eabd522c49e4dfe118c16720159a7c655b03d5 100644
+index b11c365f42dd1ddc363de0d94c387b13ac65bef3..c274340cac7aaf22321b9cd35a8fad2c6eeae5ce 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-@@ -12,7 +12,9 @@
+@@ -14,7 +14,9 @@
  #include "ui/gl/gl_surface.h"
  #include "ui/gl/presenter.h"
  
@@ -1318,7 +1318,7 @@ index 4da580c4c2eb558858021420a7d0b55574f7e449..f6eabd522c49e4dfe118c16720159a7c
  @class CALayer;
  
  namespace ui {
-@@ -108,7 +110,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
+@@ -110,7 +112,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
    // both the current tree and the pending trees.
    size_t presented_ca_layer_trees_max_length_ = 2;
  
@@ -1397,7 +1397,7 @@ index fc99800e70eb29b94ac356b55caef81a25518896..e9fe9be7f737372b0111e113bd120b52
  
      if (use_atk) {
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index c737a2ca1afb44083aef33c6aa4518bea68d1aba..879f1357b5129849c5a1aa1731cf769712569e9e 100644
+index 84e156b7ff28abc2071dde155e56a2a92a53b142..bd73dac7fe3ed256cab805a0815d31d4f5e7dffc 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
 @@ -108,6 +108,7 @@
@@ -1417,7 +1417,7 @@ index c737a2ca1afb44083aef33c6aa4518bea68d1aba..879f1357b5129849c5a1aa1731cf7697
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 3452178f0db87d7d18af3fea5386dc56b85e7fd2..fa510698a6ccc1c3d0e800733d69e167364b1663 100644
+index dd924747037349af236849f18138548b321142a1..dbaf0c0a97298f160d4af477ef8ccad9173465ec 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -361,6 +361,7 @@ component("base") {

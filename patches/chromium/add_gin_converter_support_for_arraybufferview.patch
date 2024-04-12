@@ -6,10 +6,10 @@ Subject: add gin::Converter support for ArrayBufferView
 This should be upstreamed.
 
 diff --git a/gin/converter.cc b/gin/converter.cc
-index f6a93a1f74668e69b425a87c42e05c1adbc5cf54..4934f23d077d4b2a4c376196e37c720471fc88f6 100644
+index 62209cadaec7314d2d4ec3e63e1bc88394afa4a9..b035bfe1fd16fb6ca8be33bf446ff8578d7cc2a0 100644
 --- a/gin/converter.cc
 +++ b/gin/converter.cc
-@@ -18,6 +18,7 @@
+@@ -20,6 +20,7 @@
  #include "v8/include/v8-value.h"
  
  using v8::ArrayBuffer;
@@ -17,7 +17,7 @@ index f6a93a1f74668e69b425a87c42e05c1adbc5cf54..4934f23d077d4b2a4c376196e37c7204
  using v8::External;
  using v8::Function;
  using v8::Int32;
-@@ -244,6 +245,20 @@ bool Converter<Local<ArrayBuffer>>::FromV8(Isolate* isolate,
+@@ -246,6 +247,20 @@ bool Converter<Local<ArrayBuffer>>::FromV8(Isolate* isolate,
    return true;
  }
  
@@ -39,7 +39,7 @@ index f6a93a1f74668e69b425a87c42e05c1adbc5cf54..4934f23d077d4b2a4c376196e37c7204
                                                Local<External> val) {
    return val.As<Value>();
 diff --git a/gin/converter.h b/gin/converter.h
-index 88ed39f337d5e9a1004d4e270f2bd020251ee518..175817151bfb8c83213767dc42f6ed14777f3cd1 100644
+index 828e59f4640e84ae9e4517b9ed9bc13b154fa9f2..c3d97c4e46fe47076299e475be7eec74cbc5783c 100644
 --- a/gin/converter.h
 +++ b/gin/converter.h
 @@ -190,6 +190,15 @@ struct GIN_EXPORT Converter<v8::Local<v8::ArrayBuffer> > {
