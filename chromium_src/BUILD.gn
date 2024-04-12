@@ -94,6 +94,8 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_manager.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_manager.h",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_permission_manager.cc",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_permission_manager.h",
     "//chrome/browser/ui/exclusive_access/fullscreen_controller.cc",
     "//chrome/browser/ui/exclusive_access/fullscreen_controller.h",
     "//chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.cc",
