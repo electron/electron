@@ -1246,7 +1246,6 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      // FIXME: disabled in `disabled-tests.json`
       ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
         // Show to focus app, then remove existing window
         w.show();
@@ -1269,7 +1268,7 @@ describe('BrowserWindow module', () => {
         const isShow = once(w, 'show');
         const isFocus = once(w, 'focus');
 
-        w.showInactive();
+        w.show();
         w.focus();
 
         await isShow;

@@ -25,6 +25,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
+#include "shell/browser/ui/cocoa/electron_ns_panel.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 #include "shell/browser/ui/cocoa/electron_ns_window_delegate.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
@@ -117,11 +118,6 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 namespace electron {
 
 namespace {
-
-bool IsPanel(NSWindow* window) {
-  return [window isKindOfClass:[NSPanel class]];
-}
-
 // -[NSWindow orderWindow] does not handle reordering for children
 // windows. Their order is fixed to the attachment order (the last attached
 // window is on the top). Therefore, work around it by re-parenting in our
@@ -429,30 +425,22 @@ void NativeWindowMac::Focus(bool focus) {
   if (focus) {
     // If we're a panel window, we do not want to activate the app,
     // which enables Electron-apps to build Spotlight-like experiences.
-    //
-    // On macOS < Sonoma, "activateIgnoringOtherApps:NO" would not
-    // activate apps if focusing a window that is inActive. That
-    // changed with macOS Sonoma, which also deprecated
-    // "activateIgnoringOtherApps". For the panel-specific usecase,
-    // we can simply replace "activateIgnoringOtherApps:NO" with
-    // "activate". For details on why we cannot replace all calls 1:1,
-    // please see
-    // https://github.com/electron/electron/pull/40307#issuecomment-1801976591.
-    //
-    // There's a slim chance we should have never called
-    // activateIgnoringOtherApps, but we tried that many years ago
-    // and saw weird focus bugs on other macOS versions. So, to make
-    // this safe, we're gating by versions.
-    if (@available(macOS 14.0, *)) {
-      if (!IsPanel(window_)) {
+    if (!IsPanel()) {
+      // On macOS < Sonoma, "activateIgnoringOtherApps:NO" would not
+      // activate apps if focusing a window that is inActive. That
+      // changed with macOS Sonoma, which also deprecated
+      // "activateIgnoringOtherApps".
+      //
+      // There's a slim chance we should have never called
+      // activateIgnoringOtherApps, but we tried that many years ago
+      // and saw weird focus bugs on other macOS versions. So, to make
+      // this safe, we're gating by versions.
+      if (@available(macOS 14.0, *)) {
         [[NSApplication sharedApplication] activate];
       } else {
         [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
       }
-    } else {
-      [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
     }
-
     [window_ makeKeyAndOrderFront:nil];
   } else {
     [window_ orderOut:nil];
@@ -480,10 +468,14 @@ void NativeWindowMac::Show() {
   if (parent())
     InternalSetParentWindow(parent(), true);
 
-  // This method is supposed to put focus on window, however if the app does not
-  // have focus then "makeKeyAndOrderFront" will only show the window.
-  [NSApp activateIgnoringOtherApps:YES];
-
+  // Panels receive key focus when shown but should not activate the app.
+  if (!IsPanel()) {
+    if (@available(macOS 14.0, *)) {
+      [[NSApplication sharedApplication] activate];
+    } else {
+      [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+    }
+  }
   [window_ makeKeyAndOrderFront:nil];
 }
 
@@ -623,6 +615,10 @@ void NativeWindowMac::Restore() {
 
 bool NativeWindowMac::IsMinimized() const {
   return [window_ isMiniaturized];
+}
+
+bool NativeWindowMac::IsPanel() {
+  return [window_ isKindOfClass:[ElectronNSPanel class]];
 }
 
 bool NativeWindowMac::HandleDeferredClose() {
