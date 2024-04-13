@@ -15,5 +15,5 @@
   { "patch_dir": "src/electron/patches/angle", "repo": "src/third_party/angle" },
   { "patch_dir": "src/electron/patches/sqlite", "repo": "src/third_party/sqlite/src" },
   { "patch_dir": "src/electron/patches/libvpx", "repo": "src/third_party/libvpx/source/libvpx" },
-  { "patch_dir": "src/electron/patches/dxc", "repo": "src/third_party/dawn/third_party/dxc" }
+  { "patch_dir": "src/electron/patches/DirectXShaderCompiler", "repo": "src/third_party/dawn/third_party/dxc" }
 ]
