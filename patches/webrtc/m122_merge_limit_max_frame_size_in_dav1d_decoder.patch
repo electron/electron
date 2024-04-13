@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sergey Silkin <ssilkin@webrtc.org>
 Date: Wed, 21 Feb 2024 10:35:54 +0100
-Subject: [M122 Merge] Limit max frame size in DAV1D decoder
+Subject: Limit max frame size in DAV1D decoder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
