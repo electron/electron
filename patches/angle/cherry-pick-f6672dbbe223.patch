@@ -1,7 +1,7 @@
-From f6672dbbe223e68396d6dfab11edc342aa435719 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
 Date: Mon, 25 Mar 2024 14:46:56 -0400
-Subject: [PATCH] M123: Translator: Disallow samplers in structs in interface blocks
+Subject: M123: Translator: Disallow samplers in structs in interface blocks
 
 As disallowed by the spec:
 
@@ -19,22 +19,18 @@ Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 (cherry picked from commit a0fa06f6d79ced897c0fe2795551268199d29806)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5435737
 Reviewed-by: Yuly Novikov <ynovikov@chromium.org>
----
 
 diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
-index d8aec3c..ad39437 100644
+index 38bd4ca13a4a8828ebbe64e19bd740639bce5083..98b4dc46fec65269a87ee920d8e63a1d0350fbae 100644
 --- a/src/compiler/translator/ParseContext.cpp
 +++ b/src/compiler/translator/ParseContext.cpp
-@@ -34,27 +34,39 @@
+@@ -34,27 +34,39 @@ namespace
  
  const int kWebGLMaxStructNesting = 4;
  
 -bool ContainsSampler(const TStructure *structType);
--
--bool ContainsSampler(const TType &type)
 +struct IsSamplerFunc
- {
--    if (IsSampler(type.getBasicType()))
++{
 +    bool operator()(TBasicType type) { return IsSampler(type); }
 +};
 +struct IsOpaqueFunc
@@ -44,10 +40,12 @@ index d8aec3c..ad39437 100644
 +
 +template <typename OpaqueFunc>
 +bool ContainsOpaque(const TStructure *structType);
-+
+ 
+-bool ContainsSampler(const TType &type)
 +template <typename OpaqueFunc>
 +bool ContainsOpaque(const TType &type)
-+{
+ {
+-    if (IsSampler(type.getBasicType()))
 +    if (OpaqueFunc{}(type.getBasicType()))
      {
          return true;
@@ -72,7 +70,7 @@ index d8aec3c..ad39437 100644
              return true;
      }
      return false;
-@@ -1120,7 +1132,7 @@
+@@ -1113,7 +1125,7 @@ bool TParseContext::checkIsNotOpaqueType(const TSourceLoc &line,
  {
      if (pType.type == EbtStruct)
      {
@@ -81,7 +79,7 @@ index d8aec3c..ad39437 100644
          {
              std::stringstream reasonStream = sh::InitializeStream<std::stringstream>();
              reasonStream << reason << " (structure contains a sampler)";
-@@ -4994,12 +5006,9 @@
+@@ -4979,12 +4991,9 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
      {
          TField *field    = (*fieldList)[memberIndex];
          TType *fieldType = field->type();
@@ -97,10 +95,10 @@ index d8aec3c..ad39437 100644
  
          const TQualifier qualifier = fieldType->getQualifier();
 diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
-index 1aaeaf8..2604bd7 100644
+index ed63153e49b2425a974a497a1fae2f9fdc79afa6..cfe6414d52647db92669be954cadd15344603559 100644
 --- a/src/tests/gl_tests/GLSLTest.cpp
 +++ b/src/tests/gl_tests/GLSLTest.cpp
-@@ -6716,7 +6716,34 @@
+@@ -6716,7 +6716,34 @@ void main()
      gl_FragColor = vec4(f(us), 0, 0, 1);
  })";
  
@@ -136,7 +134,7 @@ index 1aaeaf8..2604bd7 100644
      ASSERT_GL_NO_ERROR();
  }
  
-@@ -18430,6 +18457,116 @@
+@@ -18357,6 +18384,116 @@ void main() {
      EXPECT_EQ(0u, shader);
  }
  
@@ -254,10 +252,10 @@ index 1aaeaf8..2604bd7 100644
  // SPIR-V generator that made a copy of the array to pass to the function, by decomposing and
  // reconstructing it (in the absence of OpCopyLogical), but the reconstruction instruction has a
 diff --git a/src/tests/gl_tests/PixelLocalStorageTest.cpp b/src/tests/gl_tests/PixelLocalStorageTest.cpp
-index 7b3e4eb..7666947 100644
+index c49ba5741ad565ad9637fb2188a472ccbebc6284..126936271eb25eec601349a560fabc6f0f7d4b75 100644
 --- a/src/tests/gl_tests/PixelLocalStorageTest.cpp
 +++ b/src/tests/gl_tests/PixelLocalStorageTest.cpp
-@@ -5574,8 +5574,7 @@
+@@ -5573,8 +5573,7 @@ TEST_P(PixelLocalStorageCompilerTest, Declarations)
      EXPECT_FALSE(log.compileFragmentShader(kPLSInStruct));
      EXPECT_TRUE(log.has("ERROR: 0:5: 'pixelLocalANGLE' : disallowed type in struct"));
      EXPECT_TRUE(

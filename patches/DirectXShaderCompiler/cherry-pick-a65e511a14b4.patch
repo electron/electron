@@ -1,7 +1,8 @@
-From a65e511a14b4bffda1b24052732b09ca130359d1 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
-Date: Wed, 03 Apr 2024 15:58:51 -0400
-Subject: [PATCH] Fix ASAN use-after-free on unreferenced self-assignment of struct instance (#6466)
+Date: Wed, 3 Apr 2024 15:58:51 -0400
+Subject: Fix ASAN use-after-free on unreferenced self-assignment of struct
+ instance (#6466)
 
 When deleting an unused memcpy, ScalarReplAggregatesHLSL was attempting
 to delete both the target and the source of the memcpy without first
@@ -13,13 +14,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/micr
 Reviewed-by: David Neto <dneto@google.com>
 Reviewed-by: dan sinclair <dsinclair@chromium.org>
 Reviewed-by: Ben Clayton <bclayton@chromium.org>
----
 
 diff --git a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
-index 59f32a9..3f8ffdb 100644
+index 59f32a953ac5991e38c44d685f0f8fc589377b4d..3f8ffdbcfa09a96899295fd85291cedb879a248b 100644
 --- a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
 +++ b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
-@@ -1003,9 +1003,11 @@
+@@ -1003,9 +1003,11 @@ void DeleteMemcpy(MemCpyInst *MI) {
      if (op0->user_empty())
        op0->eraseFromParent();
    }
@@ -36,7 +36,7 @@ index 59f32a9..3f8ffdb 100644
  
 diff --git a/tools/clang/test/DXC/unreferenced_struct_selft_assignment_crash.hlsl b/tools/clang/test/DXC/unreferenced_struct_selft_assignment_crash.hlsl
 new file mode 100644
-index 0000000..81adf71
+index 0000000000000000000000000000000000000000..81adf71867c9868992372e12dc1ba81aebb48344
 --- /dev/null
 +++ b/tools/clang/test/DXC/unreferenced_struct_selft_assignment_crash.hlsl
 @@ -0,0 +1,24 @@
