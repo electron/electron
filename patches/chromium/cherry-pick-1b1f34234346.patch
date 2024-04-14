@@ -1,7 +1,7 @@
-From 1b1f34234346db1df8751e51c7a26c533b308fb4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: kylechar <kylechar@chromium.org>
-Date: Tue, 09 Apr 2024 17:14:26 +0000
-Subject: [PATCH] [M120-LTS] Validate buffer length
+Date: Tue, 9 Apr 2024 17:14:26 +0000
+Subject: Validate buffer length
 
 The BitmapInSharedMemory mojo traits were only validating row length and
 not total buffer length.
@@ -24,13 +24,12 @@ Reviewed-by: danakj <danakj@chromium.org>
 Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6099@{#2003}
 Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
----
 
 diff --git a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
-index a6e5f45..519d554 100644
+index a6e5f45d9e72b9ac48e536c3a7756966b3c263cf..519d554055e5182cdcbae44fafdac339a64a923b 100644
 --- a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
 +++ b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
-@@ -76,6 +76,10 @@
+@@ -76,6 +76,10 @@ bool StructTraits<viz::mojom::BitmapInSharedMemoryDataView, SkBitmap>::Read(
    if (!mapping_ptr->IsValid())
      return false;
  
