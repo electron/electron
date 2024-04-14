@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Wed, 22 Nov 2023 12:01:31 -0500
+Subject: M120: Fix off-by-one bounds check on uniform location.
+
+Log an error when the user provides an invalid uniform location.
+
+Bug: chromium:1504162
+Bug: chromium:1484878
+Change-Id: Ieb7eb964d508954ac8dfa8e4d9bd941778185223
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5054238
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: James Godfrey-Kittle <jamesgk@google.com>
+(cherry picked from commit fba482b7107ccf3e178f6bf56b6b0285407ace3a)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5080772
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/Program.cpp b/src/libANGLE/Program.cpp
+index 5dc66027831b0d1ac1915faf0d32223d6a71cd1c..d9e9582679b1e16e122c7e7b0a699e23cf45ae46 100644
+--- a/src/libANGLE/Program.cpp
++++ b/src/libANGLE/Program.cpp
+@@ -2192,13 +2192,15 @@ GLuint Program::getUniformIndex(const std::string &name) const
+ 
+ bool Program::shouldIgnoreUniform(UniformLocation location) const
+ {
+-    if (location.value < 0 || static_cast<size_t>(location.value) >= mUniformLocations.size())
++    if (location.value < 0)
+     {
+         return true;
+     }
+ 
+-    if (mState.mExecutable->mUniformLocations[static_cast<size_t>(location.value)].ignored)
++    if (static_cast<size_t>(location.value) >= mState.mExecutable->mUniformLocations.size())
+     {
++        ERR() << "Invalid uniform location " << location.value << ", expected [0, "
++              << mState.mExecutable->mUniformLocations.size() << ")";
+         return true;
+     }
+ 

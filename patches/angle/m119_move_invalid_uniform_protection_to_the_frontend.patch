@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Tue, 17 Oct 2023 11:39:10 -0400
+Subject: M119: Move invalid uniform protection to the frontend.
+
+The frontend potentialy indexes into mUniformLocations with invalid
+uniform locations while validation is disabled too. Move the validation
+from the Metal backend to the frontend.
+
+Bug: chromium:1484878
+Change-Id: I92bc43aa28cfa26d601bb28f318860375f618608
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4947652
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit e076d6cfd0e1d6948623bb344c5a38753b0c2b2e)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4969232
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/src/libANGLE/Program.cpp b/src/libANGLE/Program.cpp
+index 5caab257c909d81ea40c8bdad6bca8ce5e9c72c7..5dc66027831b0d1ac1915faf0d32223d6a71cd1c 100644
+--- a/src/libANGLE/Program.cpp
++++ b/src/libANGLE/Program.cpp
+@@ -2192,7 +2192,7 @@ GLuint Program::getUniformIndex(const std::string &name) const
+ 
+ bool Program::shouldIgnoreUniform(UniformLocation location) const
+ {
+-    if (location.value == -1)
++    if (location.value < 0 || static_cast<size_t>(location.value) >= mUniformLocations.size())
+     {
+         return true;
+     }
+diff --git a/src/libANGLE/renderer/metal/ProgramMtl.mm b/src/libANGLE/renderer/metal/ProgramMtl.mm
+index 5b86c4a8e0fa00012460d2e14101494c1dc4fa82..c7b98020e47c2f881815685e122ecaa57dbc1ad9 100644
+--- a/src/libANGLE/renderer/metal/ProgramMtl.mm
++++ b/src/libANGLE/renderer/metal/ProgramMtl.mm
+@@ -766,22 +766,10 @@ void operator()() override
+     ProgramExecutableMtl *executableMtl = getExecutable();
+ 
+     const std::vector<gl::VariableLocation> &uniformLocations = mState.getUniformLocations();
+-    if (location < 0 || static_cast<size_t>(location) >= uniformLocations.size())
+-    {
+-        ERR() << "Invalid uniform location " << location << ", expected [0, "
+-              << uniformLocations.size() << ")";
+-        return;
+-    }
+-    const gl::VariableLocation &locationInfo = uniformLocations[location];
++    const gl::VariableLocation &locationInfo                  = uniformLocations[location];
+ 
+     const std::vector<gl::LinkedUniform> &linkedUniforms = mState.getUniforms();
+-    if (locationInfo.index >= linkedUniforms.size())
+-    {
+-        ERR() << "Invalid uniform location index " << locationInfo.index << ", expected [0, "
+-              << linkedUniforms.size() << ")";
+-        return;
+-    }
+-    const gl::LinkedUniform &linkedUniform = linkedUniforms[locationInfo.index];
++    const gl::LinkedUniform &linkedUniform               = linkedUniforms[locationInfo.index];
+ 
+     if (linkedUniform.isSampler())
+     {
