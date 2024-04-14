@@ -40,7 +40,7 @@ def read_electron_args():
     for line in file_in:
       if line.startswith('#'):
         continue
-      m = re.match('([\w_]+) = (.+)', line)
+      m = re.match('(\w+) = (.+)', line)
       if m == None:
         continue
       args[m.group(1)] = m.group(2)
