@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Wed, 3 Apr 2024 15:58:51 -0400
+Subject: Fix ASAN use-after-free on unreferenced self-assignment of struct
+ instance (#6466)
+
+When deleting an unused memcpy, ScalarReplAggregatesHLSL was attempting
+to delete both the target and the source of the memcpy without first
+checking if they were both same, resulting in a double-delete.
+
+Bug: chromium:331123811
+Change-Id: Idaef95a06b10a7fb6f0ca2e662972a44ec662fbc
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5419225
+Reviewed-by: David Neto <dneto@google.com>
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Reviewed-by: Ben Clayton <bclayton@chromium.org>
+
+diff --git a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
+index 59f32a953ac5991e38c44d685f0f8fc589377b4d..3f8ffdbcfa09a96899295fd85291cedb879a248b 100644
+--- a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
++++ b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
+@@ -1003,9 +1003,11 @@ void DeleteMemcpy(MemCpyInst *MI) {
+     if (op0->user_empty())
+       op0->eraseFromParent();
+   }
+-  if (Instruction *op1 = dyn_cast<Instruction>(Op1)) {
+-    if (op1->user_empty())
+-      op1->eraseFromParent();
++  if (Op0 != Op1) {
++    if (Instruction *op1 = dyn_cast<Instruction>(Op1)) {
++      if (op1->user_empty())
++        op1->eraseFromParent();
++    }
+   }
+ }
+ 
+diff --git a/tools/clang/test/DXC/unreferenced_struct_selft_assignment_crash.hlsl b/tools/clang/test/DXC/unreferenced_struct_selft_assignment_crash.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..81adf71867c9868992372e12dc1ba81aebb48344
+--- /dev/null
++++ b/tools/clang/test/DXC/unreferenced_struct_selft_assignment_crash.hlsl
+@@ -0,0 +1,24 @@
++// RUN: %dxc -T cs_6_0 %s | FileCheck %s
++
++// Validate that self-assignment of a static struct instance that is not
++// referenced does not crash the compiler. This was resulting in an ASAN
++// use-after-free in ScalarReplAggregatesHLSL because DeleteMemcpy would
++// attempt to delete both source and target, even if both were the same.
++// CHECK: define void @main() {
++// CHECK-NEXT:   ret void
++// CHECK-NEXT: }
++
++struct MyStruct {
++  int m0;
++};
++
++static MyStruct s;
++
++void foo() {
++  s = s;
++}
++
++[numthreads(1, 1, 1)]
++void main() {
++  foo();
++}

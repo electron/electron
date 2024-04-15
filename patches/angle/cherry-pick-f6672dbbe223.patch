@@ -1,0 +1,267 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 25 Mar 2024 14:46:56 -0400
+Subject: M123: Translator: Disallow samplers in structs in interface blocks
+
+As disallowed by the spec:
+
+> Types and declarators are the same as for other uniform variable
+> declarations outside blocks, with these exceptions:
+>
+> * opaque types are not allowed
+
+Bug: chromium:328859176
+Change-Id: Ib94977860102329e520e635c3757827c93ca2163
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5391986
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit a0fa06f6d79ced897c0fe2795551268199d29806)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5435737
+Reviewed-by: Yuly Novikov <ynovikov@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 38bd4ca13a4a8828ebbe64e19bd740639bce5083..98b4dc46fec65269a87ee920d8e63a1d0350fbae 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -34,27 +34,39 @@ namespace
+ 
+ const int kWebGLMaxStructNesting = 4;
+ 
+-bool ContainsSampler(const TStructure *structType);
++struct IsSamplerFunc
++{
++    bool operator()(TBasicType type) { return IsSampler(type); }
++};
++struct IsOpaqueFunc
++{
++    bool operator()(TBasicType type) { return IsOpaqueType(type); }
++};
++
++template <typename OpaqueFunc>
++bool ContainsOpaque(const TStructure *structType);
+ 
+-bool ContainsSampler(const TType &type)
++template <typename OpaqueFunc>
++bool ContainsOpaque(const TType &type)
+ {
+-    if (IsSampler(type.getBasicType()))
++    if (OpaqueFunc{}(type.getBasicType()))
+     {
+         return true;
+     }
+     if (type.getBasicType() == EbtStruct)
+     {
+-        return ContainsSampler(type.getStruct());
++        return ContainsOpaque<OpaqueFunc>(type.getStruct());
+     }
+ 
+     return false;
+ }
+ 
+-bool ContainsSampler(const TStructure *structType)
++template <typename OpaqueFunc>
++bool ContainsOpaque(const TStructure *structType)
+ {
+     for (const auto &field : structType->fields())
+     {
+-        if (ContainsSampler(*field->type()))
++        if (ContainsOpaque<OpaqueFunc>(*field->type()))
+             return true;
+     }
+     return false;
+@@ -1113,7 +1125,7 @@ bool TParseContext::checkIsNotOpaqueType(const TSourceLoc &line,
+ {
+     if (pType.type == EbtStruct)
+     {
+-        if (ContainsSampler(pType.userDef))
++        if (ContainsOpaque<IsSamplerFunc>(pType.userDef))
+         {
+             std::stringstream reasonStream = sh::InitializeStream<std::stringstream>();
+             reasonStream << reason << " (structure contains a sampler)";
+@@ -4979,12 +4991,9 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
+     {
+         TField *field    = (*fieldList)[memberIndex];
+         TType *fieldType = field->type();
+-        if (IsOpaqueType(fieldType->getBasicType()))
++        if (ContainsOpaque<IsOpaqueFunc>(*fieldType))
+         {
+-            std::string reason("unsupported type - ");
+-            reason += fieldType->getBasicString();
+-            reason += " types are not allowed in interface blocks";
+-            error(field->line(), reason.c_str(), fieldType->getBasicString());
++            error(field->line(), "Opaque types are not allowed in interface blocks", blockName);
+         }
+ 
+         const TQualifier qualifier = fieldType->getQualifier();
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index ed63153e49b2425a974a497a1fae2f9fdc79afa6..cfe6414d52647db92669be954cadd15344603559 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -6716,7 +6716,34 @@ void main()
+     gl_FragColor = vec4(f(us), 0, 0, 1);
+ })";
+ 
+-    CompileShader(GL_FRAGMENT_SHADER, kFS);
++    GLuint fs = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_NE(fs, 0u);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that structs with samplers are not allowed in interface blocks.  This is forbidden per
++// GLES3:
++//
++// > Types and declarators are the same as for other uniform variable declarations outside blocks,
++// > with these exceptions:
++// > * opaque types are not allowed
++TEST_P(GLSLTest_ES3, StructWithSamplersDisallowedInInterfaceBlock)
++{
++    const char kFS[] = R"(#version 300 es
++precision mediump float;
++struct S { sampler2D samp; bool b; };
++
++layout(std140) uniform Buffer { S s; } buffer;
++
++out vec4 color;
++
++void main()
++{
++    color = texture(buffer.s.samp, vec2(0));
++})";
++
++    GLuint fs = CompileShader(GL_FRAGMENT_SHADER, kFS);
++    EXPECT_EQ(fs, 0u);
+     ASSERT_GL_NO_ERROR();
+ }
+ 
+@@ -18357,6 +18384,116 @@ void main() {
+     EXPECT_EQ(0u, shader);
+ }
+ 
++// Same as TooManyFieldsInStruct, but with samplers in the struct.
++TEST_P(GLSLTest_ES3, TooManySamplerFieldsInStruct)
++{
++    std::ostringstream fs;
++    fs << R"(#version 300 es
++precision highp float;
++struct TooManyFields
++{
++)";
++    for (uint32_t i = 0; i < (1 << 16); ++i)
++    {
++        fs << "    sampler2D field" << i << ";\n";
++    }
++    fs << R"(};
++uniform TooManyFields s;
++out vec4 color;
++void main() {
++    color = texture(s.field0, vec2(0));
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, fs.str().c_str());
++    EXPECT_EQ(0u, shader);
++}
++
++// More complex variation of ManySamplerFieldsInStruct.  This one compiles fine.
++TEST_P(GLSLTest_ES3, ManySamplerFieldsInStructComplex)
++{
++    // D3D and OpenGL may be more restrictive about this many samplers.
++    ANGLE_SKIP_TEST_IF(IsD3D() || IsOpenGL());
++
++    std::ostringstream fs;
++    fs << R"(#version 300 es
++precision highp float;
++
++struct X {
++    mediump sampler2D a[0xf00];
++    mediump sampler2D b[0xf00];
++    mediump sampler2D c[0xf000];
++    mediump sampler2D d[0xf00];
++};
++
++struct Y {
++  X s1;
++  mediump sampler2D a[0xf00];
++  mediump sampler2D b[0xf000];
++  mediump sampler2D c[0x14000];
++};
++
++struct S {
++    Y s1;
++};
++
++struct structBuffer { S s; };
++
++uniform structBuffer b;
++
++out vec4 color;
++void main()
++{
++    color = texture(b.s.s1.s1.c[0], vec2(0));
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, fs.str().c_str());
++    EXPECT_NE(0u, shader);
++}
++
++// Make sure a large array of samplers works.
++TEST_P(GLSLTest, ManySamplers)
++{
++    // D3D and OpenGL may be more restrictive about this many samplers.
++    ANGLE_SKIP_TEST_IF(IsD3D() || IsOpenGL());
++
++    std::ostringstream fs;
++    fs << R"(precision highp float;
++
++uniform mediump sampler2D c[0x12000];
++
++void main()
++{
++    gl_FragColor = texture2D(c[0], vec2(0));
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, fs.str().c_str());
++    EXPECT_NE(0u, shader);
++}
++
++// Make sure a large array of samplers works when declared in a struct.
++TEST_P(GLSLTest, ManySamplersInStruct)
++{
++    // D3D and OpenGL may be more restrictive about this many samplers.
++    ANGLE_SKIP_TEST_IF(IsD3D() || IsOpenGL());
++
++    std::ostringstream fs;
++    fs << R"(precision highp float;
++
++struct X {
++    mediump sampler2D c[0x12000];
++};
++
++uniform X x;
++
++void main()
++{
++    gl_FragColor = texture2D(x.c[0], vec2(0));
++})";
++
++    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, fs.str().c_str());
++    EXPECT_NE(0u, shader);
++}
++
+ // Test that passing large arrays to functions are compiled correctly.  Regression test for the
+ // SPIR-V generator that made a copy of the array to pass to the function, by decomposing and
+ // reconstructing it (in the absence of OpCopyLogical), but the reconstruction instruction has a
+diff --git a/src/tests/gl_tests/PixelLocalStorageTest.cpp b/src/tests/gl_tests/PixelLocalStorageTest.cpp
+index c49ba5741ad565ad9637fb2188a472ccbebc6284..126936271eb25eec601349a560fabc6f0f7d4b75 100644
+--- a/src/tests/gl_tests/PixelLocalStorageTest.cpp
++++ b/src/tests/gl_tests/PixelLocalStorageTest.cpp
+@@ -5573,8 +5573,7 @@ TEST_P(PixelLocalStorageCompilerTest, Declarations)
+     EXPECT_FALSE(log.compileFragmentShader(kPLSInStruct));
+     EXPECT_TRUE(log.has("ERROR: 0:5: 'pixelLocalANGLE' : disallowed type in struct"));
+     EXPECT_TRUE(
+-        log.has("ERROR: 0:10: 'pixelLocalANGLE' : unsupported type - pixelLocalANGLE types are not "
+-                "allowed in interface blocks"));
++        log.has("ERROR: 0:10: 'PLSBlock' : Opaque types are not allowed in interface blocks"));
+ 
+     ASSERT_GL_NO_ERROR();
+ }
