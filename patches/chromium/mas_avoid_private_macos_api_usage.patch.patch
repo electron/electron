@@ -1644,7 +1644,7 @@ index 06cb52062e66fc27c00941e703b909cf42cfa322..309f7a351b8a2aa2ccc42a084a5af086
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 7201c4c13c1b225b921eeca073e8f0514de2c6af..052c1ed56663040363a024bcb730dada8c670f83 100644
+index 7201c4c13c1b225b921eeca073e8f0514de2c6af..a88c37536e54628b06f26c3405f6df2d34a7daaa 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -345,7 +345,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -1683,7 +1683,7 @@ index 7201c4c13c1b225b921eeca073e8f0514de2c6af..052c1ed56663040363a024bcb730dada
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1418,17 +1428,25 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1418,17 +1428,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1694,11 +1694,6 @@ index 7201c4c13c1b225b921eeca073e8f0514de2c6af..052c1ed56663040363a024bcb730dada
        ui::RemoteAccessibility::GetRemoteElementFromToken(view_token);
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_];
    [remote_view_accessible_ setTopLevelUIElement:remote_window_accessible_];
-+
-+  if (features::IsAccessibilityRemoteUIAppEnabled() &&
-+      ![NSAccessibilityRemoteUIElement isRemoteUIApp]) {
-+    [NSAccessibilityRemoteUIElement setRemoteUIApp:YES];
-+  }
 +#endif
  }
  
@@ -1709,7 +1704,7 @@ index 7201c4c13c1b225b921eeca073e8f0514de2c6af..052c1ed56663040363a024bcb730dada
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1441,6 +1459,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1441,6 +1454,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
