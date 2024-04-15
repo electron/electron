@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Tue, 9 Apr 2024 17:14:26 +0000
+Subject: Validate buffer length
+
+The BitmapInSharedMemory mojo traits were only validating row length and
+not total buffer length.
+
+(cherry picked from commit 1a19ff70bd54847d818566bd7a1e7c384c419746)
+
+(cherry picked from commit f15315f1cb7897e208947a40d538aac693283d7f)
+
+Bug: 331237485
+Change-Id: Ia2318899c44e9e7ac72fc7183954e6ce2c702179
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5396796
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#1278417}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5420432
+Commit-Queue: danakj <danakj@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/6312@{#786}
+Cr-Original-Branched-From: 6711dcdae48edaf98cbc6964f90fac85b7d9986e-refs/heads/main@{#1262506}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5433678
+Reviewed-by: danakj <danakj@chromium.org>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6099@{#2003}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
+index a6e5f45d9e72b9ac48e536c3a7756966b3c263cf..519d554055e5182cdcbae44fafdac339a64a923b 100644
+--- a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
++++ b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
+@@ -76,6 +76,10 @@ bool StructTraits<viz::mojom::BitmapInSharedMemoryDataView, SkBitmap>::Read(
+   if (!mapping_ptr->IsValid())
+     return false;
+ 
++  if (mapping_ptr->size() < image_info.computeByteSize(data.row_bytes())) {
++    return false;
++  }
++
+   if (!sk_bitmap->installPixels(image_info, mapping_ptr->memory(),
+                                 data.row_bytes(), &DeleteSharedMemoryMapping,
+                                 mapping_ptr.get())) {

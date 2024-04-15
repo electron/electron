@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Wed, 17 Jan 2024 09:41:46 +0000
+Subject: Merged: [wasm] Check the cached memory for growability
+
+Instead of always checking memory 0, do check if the actually cached
+memory is growable.
+
+R=jkummerow@chromium.org
+
+(cherry picked from commit 1285ee44a9e5207a8c1302bfaa745ca06f0a90a8)
+Bug: chromium:1518257
+
+Change-Id: Ic415e281d85bb979f1fd27aa5e14a5fcc52ffbf1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5232161
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.0@{#36}
+Cr-Branched-From: ed7b4caf1fb8184ad9e24346c84424055d4d430a-refs/heads/12.0.267@{#1}
+Cr-Branched-From: 210e75b19db4352c9b78dce0bae11c2dc3077df4-refs/heads/main@{#90651}
+
+diff --git a/src/wasm/graph-builder-interface.cc b/src/wasm/graph-builder-interface.cc
+index 4cbd8a9032622382c15321c82409db6e3da3a511..2ed779148501c45db238e805eb3c4a8c7009bdc9 100644
+--- a/src/wasm/graph-builder-interface.cc
++++ b/src/wasm/graph-builder-interface.cc
+@@ -265,17 +265,18 @@ class WasmGraphBuildingInterface {
+     }
+   }
+ 
+-  // Load the instance cache entries into the Ssa Environment.
++  // Load the instance cache entries into the SSA Environment.
+   void LoadInstanceCacheIntoSsa(SsaEnv* ssa_env) {
+     builder_->InitInstanceCache(&ssa_env->instance_cache);
+   }
+ 
+-  // Reload the instance cache entries into the Ssa Environment, if memory can
++  // Reload the instance cache entries into the SSA Environment, if memory can
+   // actually grow.
+   void ReloadInstanceCacheIntoSsa(SsaEnv* ssa_env, const WasmModule* module) {
+-    if (module->memories.empty()) return;
+-    const WasmMemory* memory0 = &module->memories[0];
+-    if (memory0->initial_pages == memory0->maximum_pages) return;
++    if (!builder_->has_cached_memory()) return;
++    const WasmMemory* cached_memory =
++        &module->memories[builder_->cached_memory_index()];
++    if (cached_memory->initial_pages == cached_memory->maximum_pages) return;
+     LoadInstanceCacheIntoSsa(ssa_env);
+   }
+ 
