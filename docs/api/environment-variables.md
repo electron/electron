@@ -51,6 +51,18 @@ Unsupported options are:
 --http-parser
 ```
 
+If the [`nodeOptions` fuse](../tutorial/fuses.md#L27) is disabled, `NODE_OPTIONS` will be ignored.
+
+### `NODE_EXTRA_CA_CERTS`
+
+See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api/cli.md#node_extra_ca_certsfile) for details.
+
+```sh
+export NODE_EXTRA_CA_CERTS=/path/to/cert.pem 
+```
+
+If the [`nodeOptions` fuse](../tutorial/fuses.md#L27) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored.
+
 ### `GOOGLE_API_KEY`
 
 Geolocation support in Electron requires the use of Google Cloud Platform's
@@ -91,6 +103,8 @@ you would when running the normal Node.js executable, with the exception of the 
 
 These flags are disabled owing to the fact that Electron uses BoringSSL instead of OpenSSL when building Node.js'
 `crypto` module, and so will not work as designed.
+
+If the [`runAsNode` fuse](../tutorial/fuses.md#L13) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 
