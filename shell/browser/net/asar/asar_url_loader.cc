@@ -267,7 +267,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     }
     if (head->headers) {
       head->headers->AddHeader(net::HttpRequestHeaders::kContentType,
-                               head->mime_type.c_str());
+                               head->mime_type);
     }
     client_->OnReceiveResponse(std::move(head), std::move(consumer_handle),
                                std::nullopt);
