@@ -232,7 +232,7 @@ index 27ca28371c713a69b491b70c47068a07bdf43ee0..95858ec5081b7314a397353cd70fa8af
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 68b8b268b1d8f1666a5b20cc372bf98c6f3cf10d..6236ac71f6a89b62433d431cba750346332552ad 100644
+index 4e0e72c701c78458de3082dc22faff68609f1011..4d645b653fbe75e877abdb1cad34a6c69bbf261b 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -140,8 +140,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(

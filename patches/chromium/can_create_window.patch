@@ -100,10 +100,10 @@ index 0956279643bc6af04c87483857541dc4eddc3b98..ef59489df22bceff853ef1fb6bf50941
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 18763ef825bfd3dae1d5ca9932420ac43bd8a194..68b8b268b1d8f1666a5b20cc372bf98c6f3cf10d 100644
+index 18763ef825bfd3dae1d5ca9932420ac43bd8a194..4e0e72c701c78458de3082dc22faff68609f1011 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -30,10 +30,21 @@ namespace content {
+@@ -30,6 +30,17 @@ namespace content {
  
  WebContentsDelegate::WebContentsDelegate() = default;
  
@@ -119,15 +119,8 @@ index 18763ef825bfd3dae1d5ca9932420ac43bd8a194..68b8b268b1d8f1666a5b20cc372bf98c
 +}
 +
  WebContents* WebContentsDelegate::OpenURLFromTab(
--    WebContents* source,
--    const OpenURLParams& params,
--    base::OnceCallback<void(NavigationHandle&)> navigation_handle_callback) {
-+  WebContents* source,
-+  const OpenURLParams& params,
-+  base::OnceCallback<void(NavigationHandle&)> navigation_handle_callback) {
-   return nullptr;
- }
- 
+     WebContents* source,
+     const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
 index 55aa807264c1e8057d647c710ebea16d40d30f19..965ffb81b20b847aa4386142fb412595dc175bc5 100644
 --- a/content/public/browser/web_contents_delegate.h
