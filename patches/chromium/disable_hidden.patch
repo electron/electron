@@ -33,10 +33,10 @@ index fb89c4500eeae064c6c8f3d4c0ad7b5b4deecb5a..52868268ba4843e0743284afc684e549
    void StartDragging(blink::mojom::DragDataPtr drag_data,
                       const url::Origin& source_origin,
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index e065ce0700764bcfd29b1e91eff76104908ae1a3..b95f3df368ce3bff6e7d2e38ac4d1984c7b9bac5 100644
+index 58310ec382696f0f59c36771f8bf205016981ccb..cb9b21a3d3e99558e6892e00e73e550f68571daf 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -614,7 +614,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -613,7 +613,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    DCHECK(visibility_ == Visibility::HIDDEN ||
           visibility_ == Visibility::OCCLUDED);
  
