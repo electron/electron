@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sergey Silkin <ssilkin@webrtc.org>
+Date: Wed, 21 Feb 2024 10:35:54 +0100
+Subject: Limit max frame size in DAV1D decoder
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit 74a4038eaddcac773b9fc172ad446df6eb704b11)
+
+Bug: chromium:325284120
+Change-Id: Iea0aea0a17bb0b1f73b3c1cbd408b7a6cd2b216e
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/340180
+Commit-Queue: Sergey Silkin <ssilkin@webrtc.org>
+Reviewed-by: Erik Språng <sprang@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#41776}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/340580
+Reviewed-by: Philip Eliasson <philipel@webrtc.org>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/6261@{#1}
+Cr-Branched-From: be2786cd2383b7ec5d158add166275d19e246763-refs/heads/main@{#41596}
+
+diff --git a/modules/video_coding/codecs/av1/dav1d_decoder.cc b/modules/video_coding/codecs/av1/dav1d_decoder.cc
+index 6a787ff935d2a7602d35627b41a0882a9f27e83a..d658e401e888309e68c1c65f522e00b4cb220e1e 100644
+--- a/modules/video_coding/codecs/av1/dav1d_decoder.cc
++++ b/modules/video_coding/codecs/av1/dav1d_decoder.cc
+@@ -87,6 +87,8 @@ bool Dav1dDecoder::Configure(const Settings& settings) {
+   s.n_threads = std::max(2, settings.number_of_cores());
+   s.max_frame_delay = 1;   // For low latency decoding.
+   s.all_layers = 0;        // Don't output a frame for every spatial layer.
++  // Limit max frame size to avoid OOM'ing fuzzers. crbug.com/325284120.
++  s.frame_size_limit = 16384 * 16384;
+   s.operating_point = 31;  // Decode all operating points.
+ 
+   return dav1d_open(&context_, &s) == 0;
