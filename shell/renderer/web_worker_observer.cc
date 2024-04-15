@@ -66,11 +66,25 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   std::shared_ptr<node::Environment> env =
       node_bindings_->CreateEnvironment(worker_context, nullptr);
 
+  v8::Local<v8::Object> global = worker_context->Global();
+  v8::Local<v8::String> fetch_string = gin::StringToV8(env->isolate(), "fetch");
+  v8::MaybeLocal<v8::Value> fetch = global->Get(worker_context, fetch_string);
+
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env.get());
+
+  // We need to use the Blink implementation of fetch in WebWorker process
+  // Node.js deletes the global fetch function when their fetch implementation
+  // is disabled, so we need to save and re-add it after the Node.js environment
+  // is loaded.
+  if (!fetch.IsEmpty()) {
+    worker_context->Global()
+        ->Set(worker_context, fetch_string, fetch.ToLocalChecked())
+        .Check();
+  }
 
   // Make uv loop being wrapped by window context.
   node_bindings_->set_uv_env(env.get());
