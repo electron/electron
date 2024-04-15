@@ -757,8 +757,6 @@ filenames = {
     "shell/common/extensions/electron_extensions_client.h",
     "shell/common/gin_converters/extension_converter.cc",
     "shell/common/gin_converters/extension_converter.h",
-    "shell/renderer/extensions/electron_extensions_dispatcher_delegate.cc",
-    "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h",
     "shell/renderer/extensions/electron_extensions_renderer_api_provider.cc",
     "shell/renderer/extensions/electron_extensions_renderer_api_provider.h",
     "shell/renderer/extensions/electron_extensions_renderer_client.cc",

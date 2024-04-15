@@ -6,10 +6,10 @@ Subject: boringssl BUILD.gn
 Build BoringSSL with some extra functions that nodejs needs.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index 6a0e44685b3208663e89287894c55be8e1285a1a..084d29bf0a38f73aeeceb9a6649ae347a7ba9c9a 100644
+index f1b4a1ac248479746a378c85e34845b7703d5867..727940b7c015bedb0a09c06123d9e12cbb039694 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
-@@ -56,6 +56,21 @@ config("no_asm_config") {
+@@ -52,6 +52,21 @@ config("no_asm_config") {
  all_sources = crypto_sources + ssl_sources + pki_sources + pki_internal_headers
  all_headers = crypto_headers + ssl_headers + pki_headers + pki_internal_headers
  
@@ -28,6 +28,6 @@ index 6a0e44685b3208663e89287894c55be8e1285a1a..084d29bf0a38f73aeeceb9a6649ae347
 +  ]
 +}
 +
- if (enable_rust_boringssl) {
+ if (enable_rust) {
    rust_bindgen("raw_bssl_sys_bindings") {
      header = "src/rust/bssl-sys/wrapper.h"

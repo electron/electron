@@ -15,16 +15,16 @@ at some point be an API to "unfreeze" the flags, or we may be able to refactor
 node initialization to not update flags after V8 initialization.
 
 diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
-index 59438368edfc06c209f470c24a23ffa227c4d349..8bd1076177936dae183adb62a30bae4c05d736bc 100644
+index 701bab7d691d8473979a5e0a153137a6d61e4f1a..bcbb548f30c125b5b8b4982163e7c6a9015a5941 100644
 --- a/content/renderer/render_process_impl.cc
 +++ b/content/renderer/render_process_impl.cc
-@@ -216,6 +216,9 @@ RenderProcessImpl::RenderProcessImpl()
+@@ -207,6 +207,9 @@ RenderProcessImpl::RenderProcessImpl()
      v8::V8::SetFlagsFromString(kSABPerContextFlag, sizeof(kSABPerContextFlag));
    }
  
 +  // Freezing flags after init conflicts with node in the renderer.
 +  v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
 +
- #ifdef ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
    if (base::FeatureList::IsEnabled(features::kWebAssemblyTrapHandler)) {
-     // The trap handler is set as the first chance handler for Crashpad's signal
+     content::GetContentClient()->renderer()->SetUpWebAssemblyTrapHandler();
+   }

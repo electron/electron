@@ -69,7 +69,7 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
   // In Chrome, app regions are only supported in the main frame.
   // However, we need to support draggable regions on other
   // local frames/windows, so extend support beyond the main frame.
-  render_frame_->GetWebView()->SetSupportsAppRegion(true);
+  render_frame_->GetWebView()->SetSupportsDraggableRegions(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
@@ -151,25 +151,6 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     if (!renderer_client_->IsWebViewFrame(context, render_frame_))
       renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
-}
-
-void ElectronRenderFrameObserver::DraggableRegionsChanged() {
-  blink::WebVector<blink::WebDraggableRegion> webregions =
-      render_frame_->GetWebFrame()->GetDocument().DraggableRegions();
-  std::vector<mojom::DraggableRegionPtr> regions;
-  for (auto& webregion : webregions) {
-    auto region = mojom::DraggableRegion::New();
-    render_frame_->ConvertViewportToWindow(&webregion.bounds);
-    region->bounds = webregion.bounds;
-    region->draggable = webregion.draggable;
-    regions.push_back(std::move(region));
-  }
-
-  mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
-      web_contents_utility_remote;
-  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
-      &web_contents_utility_remote);
-  web_contents_utility_remote->UpdateDraggableRegions(std::move(regions));
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(

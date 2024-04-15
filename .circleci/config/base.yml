@@ -56,7 +56,7 @@ executors:
         # 2xlarge should not be used directly, use the pipeline param instead
         enum: ["medium", "electronjs/aks-linux-medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
     docker:
-      - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
+      - image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
     resource_class: << parameters.size >>
 
   macos:
@@ -2291,6 +2291,7 @@ jobs:
       <<: *env-stack-dumping
     parallelism: 2
     steps:
+      - run: nvm install lts/iron && nvm alias default lts/iron
       - electron-tests:
           artifact-key: darwin-x64
 
@@ -2317,6 +2318,7 @@ jobs:
       <<: *env-stack-dumping
     parallelism: 2
     steps:
+      - run: nvm install lts/iron && nvm alias default lts/iron
       - electron-tests:
           artifact-key: mas-x64
 

@@ -1,2 +1,3 @@
 use_new_constructor_for_scriptorigin_when_17_x.patch
 api_remove_allcan_read_write.patch
+fix_define_nan_copyablepersistenttraits_for_v8_12_5.patch

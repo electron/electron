@@ -12,19 +12,19 @@ describe('nativeImage module', () => {
     height: 190
   };
   const image1x1 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=',
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGJVjYAACAAAFAAHWnxbNAAAAAElFTkSuQmCC',
     path: path.join(fixturesPath, 'assets', '1x1.png'),
     height: 1,
     width: 1
   };
   const image2x2 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==',
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAAXNSR0IArs4c6QAAABZJREFUGJVj/P//PwMDAxMDAwMDAwMAJAYDAQTM5XcAAAAASUVORK5CYII=',
     path: path.join(fixturesPath, 'assets', '2x2.jpg'),
     height: 2,
     width: 2
   };
   const image3x3 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC',
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAABB2lDQ1BTa2lhAAAokX2QP0vDQByGn1NBBEEHBweHG1wttQXp4FSF4BojpN0uMUYh/7ikdHURZ0GcRfwM9YOILi79CA7irJeA1yW+08PLy93DD8QcYKULaVZp1xlKfzSWq3MEgjoqLAvaI+D7vdm+7v2za8vaeVSGwCfgaX80BnEMbMUN+4aDhhPD06qofr+9Nqw99wjEPbAZL3CwwGGhzf4ZOEyTSWi9WY+ys1NgAOxQ4uIwROKgSJlQIZlyRcUlkh4dekg8NIqMkgsijLJsnswfYfAFy3e2Cx7g5Ra2P2y3+wQbNzB7s529YaG0+rvOUr/f4ixrZ4ecnJiECMkJGSGd2rXLPgc/b9ZFPoj6CWEAAAAMSURBVBiVY2AgCgAAACcAAZlYQycAAAAASUVORK5CYII=',
     path: path.join(fixturesPath, 'assets', '3x3.png'),
     height: 3,
     width: 3
@@ -177,7 +177,8 @@ describe('nativeImage module', () => {
 
     it('returns an image created from the given string', () => {
       for (const imageData of dataUrlImages) {
-        const imageFromPath = nativeImage.createFromPath(imageData.path);
+        const imageFromPath = nativeImage.createFromBuffer(
+          nativeImage.createFromPath(imageData.path).toPNG());
         const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl!);
 
         expect(imageFromDataUrl.isEmpty()).to.be.false();
@@ -192,7 +193,8 @@ describe('nativeImage module', () => {
   describe('toDataURL()', () => {
     it('returns a PNG data URL', () => {
       for (const imageData of dataUrlImages) {
-        const imageFromPath = nativeImage.createFromPath(imageData.path!);
+        const imageFromPath = nativeImage.createFromBuffer(
+          nativeImage.createFromPath(imageData.path!).toPNG());
 
         const scaleFactors = [1.0, 2.0];
         for (const scaleFactor of scaleFactors) {

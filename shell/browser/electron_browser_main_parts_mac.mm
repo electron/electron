@@ -10,7 +10,7 @@
 #include "base/apple/foundation_util.h"
 #include "base/path_service.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
-#include "services/device/public/cpp/geolocation/system_geolocation_source_mac.h"
+#include "services/device/public/cpp/geolocation/system_geolocation_source_apple.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
@@ -36,8 +36,8 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
 
   if (!device::GeolocationSystemPermissionManager::GetInstance()) {
     device::GeolocationSystemPermissionManager::SetInstance(
-        device::SystemGeolocationSourceMac::
-            CreateGeolocationSystemPermissionManagerOnMac());
+        device::SystemGeolocationSourceApple::
+            CreateGeolocationSystemPermissionManager());
   }
 }
 

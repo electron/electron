@@ -126,6 +126,8 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
+  subresource_filter::RulesetService*
+  fingerprinting_protection_ruleset_service() override;
 
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_.get();

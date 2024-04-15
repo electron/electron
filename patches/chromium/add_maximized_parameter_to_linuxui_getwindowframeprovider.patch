@@ -51,7 +51,7 @@ index 0432ea4f5906502a4f6def46ab064292a6628218..e3cbfa3a1ac8c169c429e29c1262d0dd
    // Objects to notify when the window frame button order changes.
    base::ObserverList<ui::WindowButtonOrderObserver>::Unchecked
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index 794efdb773422ddc12ccbe013a13aadeb980b487..a60bbd76141f06202343c68e78688a95179b0083 100644
+index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b141e8a09 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
 @@ -30,20 +30,23 @@ constexpr int kMaxFrameSizeDip = 64;
@@ -112,9 +112,9 @@ index 794efdb773422ddc12ccbe013a13aadeb980b487..a60bbd76141f06202343c68e78688a95
    double opacity = GetOpacityFromContext(context);
    if (opacity < 1.0) {
      return true;
-@@ -206,8 +209,8 @@ void WindowFrameProviderGtk::Asset::CloneFrom(
-   unfocused_bitmap = src.unfocused_bitmap;
- }
+@@ -189,8 +192,8 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::Asset::operator=(
+ 
+ WindowFrameProviderGtk::Asset::~Asset() = default;
  
 -WindowFrameProviderGtk::WindowFrameProviderGtk(bool solid_frame, bool tiled)
 -    : solid_frame_(solid_frame), tiled_(tiled) {
@@ -123,7 +123,7 @@ index 794efdb773422ddc12ccbe013a13aadeb980b487..a60bbd76141f06202343c68e78688a95
    GtkSettings* settings = gtk_settings_get_default();
    // Unretained() is safe since WindowFrameProviderGtk will own the signals.
    auto callback = base::BindRepeating(&WindowFrameProviderGtk::OnThemeChanged,
-@@ -325,7 +328,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
+@@ -340,7 +343,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
  
    auto header =
        PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
@@ -132,7 +132,7 @@ index 794efdb773422ddc12ccbe013a13aadeb980b487..a60bbd76141f06202343c68e78688a95
    image = gfx::ImageSkia::CreateFrom1xBitmap(header);
    // In GTK4, the headerbar gets clipped by the window.
    if (GtkCheckVersion(4)) {
-@@ -352,7 +355,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -369,7 +372,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
  
    gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
                               2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
@@ -141,20 +141,20 @@ index 794efdb773422ddc12ccbe013a13aadeb980b487..a60bbd76141f06202343c68e78688a95
    frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
    frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
    gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
-@@ -360,7 +363,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -377,7 +380,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
                                       focused_context, scale);
    asset.unfocused_bitmap =
        PaintBitmap(bitmap_size, gfx::RectF(frame_bounds_dip),
 -                  DecorationContext(solid_frame_, tiled_, false), scale);
 +                  DecorationContext(solid_frame_, tiled_, maximized_, false), scale);
  
-   // In GTK4, there's no way to obtain the frame thickness from CSS values
-   // directly, so we must determine it experimentally based on the drawn
+   return asset;
+ }
 diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
-index bed28192daffe032fde3a74ca70f1298fb12b1b7..268acade8bd1075f3ce756cdf29bf50905ccb433 100644
+index 4faaae32a203bfa57f3e61c391dc6917c4a0bf59..94050a0136b78730f607f42991742e0434948d0e 100644
 --- a/ui/gtk/window_frame_provider_gtk.h
 +++ b/ui/gtk/window_frame_provider_gtk.h
-@@ -18,7 +18,7 @@ namespace gtk {
+@@ -20,7 +20,7 @@ namespace gtk {
  
  class WindowFrameProviderGtk : public ui::WindowFrameProvider {
   public:
@@ -163,7 +163,7 @@ index bed28192daffe032fde3a74ca70f1298fb12b1b7..268acade8bd1075f3ce756cdf29bf509
  
    WindowFrameProviderGtk(const WindowFrameProviderGtk&) = delete;
    WindowFrameProviderGtk& operator=(const WindowFrameProviderGtk&) = delete;
-@@ -70,6 +70,8 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+@@ -65,6 +65,8 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
    // Input parameters used for drawing.
    const bool solid_frame_;
    const bool tiled_;
@@ -171,7 +171,7 @@ index bed28192daffe032fde3a74ca70f1298fb12b1b7..268acade8bd1075f3ce756cdf29bf509
 +  const bool maximized_;
  
    // Scale-independent metric calculated based on the bitmaps.
-   gfx::Insets frame_thickness_dip_;
+   std::optional<gfx::Insets> frame_thickness_dip_;
 diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
 index 8903f9ba950e7878fbd1bfa0cf2a42e0cc9daa21..7d13381eb1d16193bad0be1318e8ed199c6fb845 100644
 --- a/ui/linux/fallback_linux_ui.cc

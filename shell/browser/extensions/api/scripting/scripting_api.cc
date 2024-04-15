@@ -699,7 +699,7 @@ bool ScriptingExecuteScriptFunction::Execute(
   script_executor->ExecuteScript(
       mojom::HostID(mojom::HostID::HostType::kExtensions, extension()->id()),
       mojom::CodeInjection::NewJs(mojom::JSInjection::New(
-          std::move(sources), execution_world,
+          std::move(sources), execution_world, /*world_id=*/std::nullopt,
           blink::mojom::WantResultOption::kWantResult,
           user_gesture() ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,

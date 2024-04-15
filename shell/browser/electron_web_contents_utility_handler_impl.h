@@ -41,8 +41,6 @@ class ElectronWebContentsUtilityHandlerImpl
 
   // mojom::ElectronWebContentsUtility:
   void OnFirstNonEmptyLayout() override;
-  void UpdateDraggableRegions(
-      std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
 

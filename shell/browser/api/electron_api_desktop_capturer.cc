@@ -403,8 +403,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         base::UTF8ToWide(device_name.c_str(), device_name.size(),
                          &wide_device_name);
         const int64_t device_id =
-            display::win::internal::DisplayInfo::DeviceIdFromDeviceName(
-                wide_device_name.c_str());
+            base::PersistentHash(base::WideToUTF8(wide_device_name.c_str()));
         source.display_id = base::NumberToString(device_id);
       }
     }
