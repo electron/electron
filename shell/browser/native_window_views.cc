@@ -243,19 +243,13 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     }
   }
 
-  if (title_bar_style_ != TitleBarStyle::kNormal)
-    set_has_frame(false);
-
   // If the taskbar is re-created after we start up, we have to rebuild all of
   // our buttons.
   taskbar_created_message_ = RegisterWindowMessage(TEXT("TaskbarCreated"));
 #endif
 
-#if BUILDFLAG(IS_OZONE)
-  // We are only able to draw WCO if we have client frame.
-  // Allowing setting of title bar style is meaningless if we cannot draw WCO.
-  // For that case users can use a frameless window.
-  if (has_client_frame() && title_bar_style_ != TitleBarStyle::kNormal)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_OZONE)
+  if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
 #endif
 

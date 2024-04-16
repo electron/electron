@@ -138,9 +138,10 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   // Ozone X11 likes to prefer custom frames, but we don't need them unless
   // on Wayland.
   if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
-      !ui::OzonePlatform::GetInstance()
-           ->GetPlatformRuntimeProperties()
-           .supports_server_side_window_decorations &&
+      (!ui::OzonePlatform::GetInstance()
+            ->GetPlatformRuntimeProperties()
+            .supports_server_side_window_decorations ||
+       title_bar_style_ != TitleBarStyle::kNormal) &&
       (has_frame() || !transparent()) && thick_frame) {
     has_client_frame_ = true;
   }
