@@ -59,6 +59,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   // Overridden from FramelessView:
   int ResizingBorderHitTest(const gfx::Point& point) override;
+  void InvalidateCaptionButtons() override;
 
   // Overridden from views::NonClientFrameView:
   gfx::Rect GetBoundsForClientView() const override;
@@ -116,6 +117,7 @@ class ClientFrameViewLinux : public FramelessView,
   void LayoutButtonsOnSide(ButtonSide side,
                            gfx::Rect* remaining_content_bounds);
 
+  gfx::Rect GetTitlebarBoundsHint() const;
   gfx::Rect GetTitlebarBounds() const;
   gfx::Insets GetTitlebarContentInsets() const;
   gfx::Rect GetTitlebarContentBounds() const;

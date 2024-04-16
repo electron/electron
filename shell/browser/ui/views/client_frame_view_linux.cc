@@ -16,6 +16,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/base/models/image_model.h"
+#include "ui/compositor/layer.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/font_list.h"
 #include "ui/gfx/geometry/insets.h"
@@ -91,6 +92,9 @@ ClientFrameViewLinux::ClientFrameViewLinux()
     button.button->SetAccessibleName(
         l10n_util::GetStringUTF16(button.accessibility_id));
     AddChildView(button.button);
+
+    button.button->SetPaintToLayer();
+    button.button->layer()->SetFillsBoundsOpaquely(false);
   }
 
   title_ = new views::Label();
@@ -207,6 +211,10 @@ int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
       GetBorderDecorationInsets() + gfx::Insets(kResizeInsideBoundsSize));
 }
 
+void ClientFrameViewLinux::InvalidateCaptionButtons() {
+  InvalidateLayout();
+}
+
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   gfx::Rect client_bounds = bounds();
   if (!frame_->IsFullscreen()) {
@@ -274,20 +282,23 @@ gfx::Size ClientFrameViewLinux::GetMaximumSize() const {
 void ClientFrameViewLinux::Layout(PassKey) {
   LayoutSuperclass<FramelessView>(this);
 
-  bool is_fullscreen = frame_->IsFullscreen();
-  bool has_frame = window_->has_frame();
-
-  if (is_fullscreen || !has_frame) {
-    // Just hide everything.
+  if (frame_->IsFullscreen()) {
+    // Just hide everything and return.
     for (NavButton& button : nav_buttons_) {
       button.button->SetVisible(false);
     }
 
     title_->SetVisible(false);
+    return;
   }
 
-  if (is_fullscreen) {
-    return;
+  if (!window_->has_frame()) {
+    bool wco_enabled = window_->IsWindowControlsOverlayEnabled();
+    for (NavButton& button : nav_buttons_) {
+      button.button->SetVisible(wco_enabled);
+    }
+
+    title_->SetVisible(false);
   }
 
   bool tiled = tiled_edges().top || tiled_edges().left ||
@@ -296,10 +307,6 @@ void ClientFrameViewLinux::Layout(PassKey) {
       ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
           !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized(),
           !window_->has_frame());
-
-  if (!has_frame) {
-    return;
-  }
 
   UpdateButtonImages();
   LayoutButtons();
@@ -403,7 +410,9 @@ void ClientFrameViewLinux::LayoutButtons() {
     button.button->SetVisible(false);
   }
 
-  gfx::Rect remaining_content_bounds = GetTitlebarContentBounds();
+  gfx::Rect remaining_content_bounds(GetTitlebarBoundsHint());
+  remaining_content_bounds.Inset(GetTitlebarContentInsets());
+
   LayoutButtonsOnSide(ButtonSide::kLeading, &remaining_content_bounds);
   LayoutButtonsOnSide(ButtonSide::kTrailing, &remaining_content_bounds);
 }
@@ -470,15 +479,17 @@ void ClientFrameViewLinux::LayoutButtonsOnSide(
   }
 }
 
-gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
-  if (frame_->IsFullscreen() || !window_->has_frame()) {
-    return gfx::Rect();
-  }
-
+gfx::Rect ClientFrameViewLinux::GetTitlebarBoundsHint() const {
   int font_height = gfx::FontList().GetHeight();
   int titlebar_height =
       std::max(font_height, theme_values_.titlebar_min_height) +
       GetTitlebarContentInsets().height();
+
+  if (window_->IsWindowControlsOverlayEnabled()) {
+    if (int height = window_->titlebar_overlay_height(); height != 0) {
+      titlebar_height = height;
+    }
+  }
 
   gfx::Insets decoration_insets = GetBorderDecorationInsets();
 
@@ -487,6 +498,14 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
   gfx::Rect titlebar(width(), titlebar_height + decoration_insets.height());
   titlebar.Inset(decoration_insets);
   return titlebar;
+}
+
+gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
+  if (frame_->IsFullscreen() || !window_->has_frame()) {
+    return gfx::Rect();
+  }
+
+  return GetTitlebarBoundsHint();
 }
 
 gfx::Insets ClientFrameViewLinux::GetTitlebarContentInsets() const {

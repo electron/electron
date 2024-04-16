@@ -73,7 +73,7 @@ class BrowserWindow : public BaseWindow,
   void BlurWebView();
   bool IsWebViewFocused();
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
-#if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_OZONE)
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
                           gin_helper::Arguments* args);
 #endif

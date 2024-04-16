@@ -13,6 +13,7 @@
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -25,10 +26,6 @@
 
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
-#endif
-
-#if BUILDFLAG(IS_WIN)
-#include "shell/browser/ui/views/win_frame_view.h"
 #endif
 
 namespace electron::api {
@@ -275,11 +272,11 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-#if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_OZONE)
 void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
                                        gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
-  if (!window_->titlebar_overlay_enabled()) {
+  if (!window_->IsWindowControlsOverlayEnabled()) {
     args->ThrowError("Titlebar overlay is not enabled");
     return;
   }
@@ -327,7 +324,7 @@ void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
   // If anything was updated, invalidate the layout and schedule a paint of the
   // window's frame view
   if (updated) {
-    auto* frame_view = static_cast<WinFrameView*>(
+    auto* frame_view = static_cast<FramelessView*>(
         window->widget()->non_client_view()->frame_view());
     frame_view->InvalidateCaptionButtons();
   }
@@ -373,7 +370,7 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
       .SetMethod("isWebViewFocused", &BrowserWindow::IsWebViewFocused)
-#if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_OZONE)
       .SetMethod("setTitleBarOverlay", &BrowserWindow::SetTitleBarOverlay)
 #endif
       .SetProperty("webContents", &BrowserWindow::GetWebContents);
