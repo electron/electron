@@ -66,7 +66,7 @@ index 68992f2c22b9e76e677739541b8eb900e1338830..a3b2f7959ef4613676d28f0a775705be
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index 899bb462ee332a4f7256f967b58443bb96759f55..075f5976fd4eff4ebc0478e44deea1754f303c5e 100644
+index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945a7a13c46 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -79,8 +79,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -80,10 +80,10 @@ index 899bb462ee332a4f7256f967b58443bb96759f55..075f5976fd4eff4ebc0478e44deea175
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 77322453e30d5a8ec801427666b5089dbd852911..a4f8cc4464a6311a56f93010127183b7e8ca4ed0 100644
+index cf9de7df6299d9c18527d4d67817b1a4b8dd5414..33231630d811aae9875cfc6d5aac85c391a1d598 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1927,12 +1927,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1940,12 +1940,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 77322453e30d5a8ec801427666b5089dbd852911..a4f8cc4464a6311a56f93010127183b7
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index da344f3165134496e044295c79de2718def145b4..cd5467be2fa9b6129d690a5474e3f10fe2eb0042 100644
+index 6a3a4af355be92c22aa54ebd7e50a5ee5ca67a84..7ab991f75acb4e1d3df395092f94abf374110e17 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -952,8 +952,7 @@ class Browser : public TabStripModelObserver,
+@@ -962,8 +962,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -113,7 +113,7 @@ index da344f3165134496e044295c79de2718def145b4..cd5467be2fa9b6129d690a5474e3f10f
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
-index 4f9040c4fd3127cec4473b36f818a12796710ec0..a4e8d400404b44b7ec3269fcab3ecb8dd4374840 100644
+index 58506f1c2e9e20c77cd26172e6b52e71ffb8e515..052c00d29e3f517440e28f56cf61fd33655e2804 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 @@ -203,8 +203,7 @@ bool PresentationReceiverWindowController::IsWebContentsCreationOverridden(
@@ -141,10 +141,10 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 21bc7cfa8e0da54650196b3c1aac22a52aa25e72..be90f3aabca034fdb08cfb653b456235b56773e1 100644
+index cc3c68955320378b1974d4f3ef0fd47d54029b11..fa1ba4df8ae69d106af2834441f57c1fa4d2f6fb 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -78,8 +78,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -81,8 +81,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

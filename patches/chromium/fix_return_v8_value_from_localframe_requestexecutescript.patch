@@ -64,7 +64,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index dacc5fa86066734224d32b01bc79e03cbb1030fa..8510da3a9e8572f00696f0a271f3b53bd38948b9 100644
+index 2730717e0eefb9ca22e31d690e9f994a9efc6b4f..ba6180b7f220e9d1ea3492dfa7b8557b3d9ddd89 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -2997,6 +2997,7 @@ void LocalFrame::RequestExecuteScript(
@@ -85,7 +85,7 @@ index dacc5fa86066734224d32b01bc79e03cbb1030fa..8510da3a9e8572f00696f0a271f3b53b
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index a0a911078da1c0167031e9431fa83f20365cc543..85bd2d151610e6d97b7aac6ee5b91199f17d2dd1 100644
+index 8b7da41000213b17aaaf4945854cdb1912ff7965..849243513d417aff4fada54235e06da153169df4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -825,6 +825,7 @@ class CORE_EXPORT LocalFrame final
@@ -216,10 +216,10 @@ index ad83e6557546e8bebc524873038dd97043a453f1..7ea30360421af2f92d639a37d54b4998
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index dc26385f8b4a6183815af3af9b0355fe69253eea..fdf4c16f6d9e6e641fd4855fd809b852fb24326f 100644
+index 3a835b91d70ce7b41419ce2af2c1bcc7a4028266..d9cff66d80c38fa0c0f4486807bc1eb9f7feeed7 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -1106,14 +1106,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
+@@ -1111,14 +1111,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,

@@ -8,10 +8,10 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 7af928a9a030c0bc1efe069f0a4004adc5ae9c14..e1b04e1e2f76a3d9ba4575844e1ae49dd909ecb2 100644
+index 0ef41b4efc339b5e5022927e2ee1cf1da35ad288..8e6ab35f658e59b253667370471a2eb761eb37f6 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
-@@ -47,9 +47,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
+@@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
  }
  #endif
  
@@ -22,7 +22,7 @@ index 7af928a9a030c0bc1efe069f0a4004adc5ae9c14..e1b04e1e2f76a3d9ba4575844e1ae49d
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -57,7 +57,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -58,7 +58,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
  
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 0836ea5c4015ef30622532af1608ef46bc60a863..a8ba726fea0a6be4009c71d5e9fb39fecc515e62 100644
+index fad99e25b1983ec56b1e2afd04d97880d6211693..7a0c170d1a9fd2b66e2576437a388c5cb44ef2bf 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -167,6 +167,8 @@ viz_component("service") {
