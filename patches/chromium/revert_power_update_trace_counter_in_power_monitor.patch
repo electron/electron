@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Wed, 20 Mar 2024 15:25:40 -0700
+Subject: Revert "[power] Update TRACE_COUNTER in power monitor"
+
+This reverts commit dfb50c50fd84fafe1227bc84d08ff84fc2f0df21.
+
+This broke because we build with use_perfetto_client_library = false due
+to Node.js incompatabilities. However, this isn't sustainable and we
+should build with use_perfetto_client_library = true (like upstream
+does), and when we do that, we should remove this patch.
+
+diff --git a/base/power_monitor/speed_limit_observer_win.cc b/base/power_monitor/speed_limit_observer_win.cc
+index 20c1ea34c14ef8b579a8727b3307c70649d92080..ebddc1d712b0458b2ff66ade951152a369c5f92d 100644
+--- a/base/power_monitor/speed_limit_observer_win.cc
++++ b/base/power_monitor/speed_limit_observer_win.cc
+@@ -111,14 +111,14 @@ int SpeedLimitObserverWin::GetCurrentSpeedLimit() {
+   TRACE_EVENT_CATEGORY_GROUP_ENABLED(kPowerTraceCategory,
+                                      &trace_events_enabled);
+   if (trace_events_enabled) {
+-    TRACE_COUNTER(kPowerTraceCategory, "idleness", idleness_percent);
+-    TRACE_COUNTER(kPowerTraceCategory, "throttling_level",
+-                  static_cast<unsigned int>(throttling_level * 100));
++    TRACE_COUNTER1(kPowerTraceCategory, "idleness", idleness_percent);
++    TRACE_COUNTER1(kPowerTraceCategory, "throttling_level",
++                   static_cast<unsigned int>(throttling_level * 100));
+ 
+ #if defined(ARCH_CPU_X86_FAMILY)
+     double cpu_frequency = EstimateCpuFrequency();
+-    TRACE_COUNTER(kPowerTraceCategory, "frequency_mhz",
+-                  static_cast<unsigned int>(cpu_frequency / 1'000'000));
++    TRACE_COUNTER1(kPowerTraceCategory, "frequency_mhz",
++                   static_cast<unsigned int>(cpu_frequency / 1'000'000));
+ #endif
+   }
+ #endif  // BUILDFLAG(ENABLE_BASE_TRACING)
+@@ -167,8 +167,8 @@ void SpeedLimitObserverWin::OnTimerTick() {
+   }
+ 
+ #if BUILDFLAG(ENABLE_BASE_TRACING)
+-  TRACE_COUNTER(kPowerTraceCategory, "speed_limit",
+-                static_cast<unsigned int>(speed_limit));
++  TRACE_COUNTER1(kPowerTraceCategory, "speed_limit",
++                 static_cast<unsigned int>(speed_limit));
+ #endif  // BUILDFLAG(ENABLE_BASE_TRACING)
+ }
+ 
+@@ -230,7 +230,7 @@ float SpeedLimitObserverWin::EstimateThrottlingLevel() {
+   throttling_level = (load_fraction_total / num_cpus());
+ 
+ #if BUILDFLAG(ENABLE_BASE_TRACING)
+-  TRACE_COUNTER(kPowerTraceCategory, "num_active_cpus", num_active_cpus);
++  TRACE_COUNTER1(kPowerTraceCategory, "num_active_cpus", num_active_cpus);
+ #endif  // BUILDFLAG(ENABLE_BASE_TRACING)
+ 
+   return throttling_level;
