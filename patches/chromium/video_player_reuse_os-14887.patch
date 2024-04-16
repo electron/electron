@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tariq Bashir <120014322+t-bashir-bs@users.noreply.github.com>
+Date: Fri, 12 Apr 2024 11:24:15 +0100
+Subject: Video player reuse OS-14887
+
+This change cherry picks the QtWebEngine changes in 
+I4093433d2153925338b12fd6ef5ed2f1a309eb73. Its purpose is to reuse the
+video player.
+
+diff --git a/third_party/blink/renderer/core/html/media/html_media_element.cc b/third_party/blink/renderer/core/html/media/html_media_element.cc
+index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fdb2d75750 100644
+--- a/third_party/blink/renderer/core/html/media/html_media_element.cc
++++ b/third_party/blink/renderer/core/html/media/html_media_element.cc
+@@ -734,6 +734,13 @@ void HTMLMediaElement::ParseAttribute(
+     // requires a style recalc.
+     SetNeedsStyleRecalc(kLocalStyleChange,
+                         StyleChangeReasonForTracing::FromAttribute(name));
++    // BRIGHTSIGN: Release video player if src is newly ""
++    if (RuntimeEnabledFeatures::MediaPlayerReuseEnabled() &&
++        !(params.old_value.IsNull() || params.old_value.empty()) &&
++        params.new_value.empty()
++        ) {
++      ClearMediaPlayer();
++    }
+     // Trigger a reload, as long as the 'src' attribute is present.
+     if (!params.new_value.IsNull()) {
+       ignore_preload_none_ = false;
+@@ -1307,6 +1314,8 @@ void HTMLMediaElement::LoadNextSourceChild() {
+   String content_type;
+   KURL media_url = SelectNextSourceChild(&content_type, kComplain);
+   if (!media_url.IsValid()) {
++    if (RuntimeEnabledFeatures::MediaPlayerReuseEnabled() && media_url.IsEmpty())
++      ClearMediaPlayer();
+     WaitForSourceChange();
+     return;
+   }
+@@ -1501,8 +1510,15 @@ void HTMLMediaElement::StartPlayerLoad() {
+     return;
+   }
+ 
+-  web_media_player_ =
+-      frame->Client()->CreateWebMediaPlayer(*this, source, this);
++  bool player_created = false;
++  if (!RuntimeEnabledFeatures::MediaPlayerReuseEnabled())
++    web_media_player_.reset();
++
++  if (!web_media_player_) {
++    web_media_player_ =
++        frame->Client()->CreateWebMediaPlayer(*this, source, this);
++    player_created = true;
++  }
+ 
+   if (!web_media_player_) {
+     MediaLoadingFailed(WebMediaPlayer::kNetworkStateFormatError,
+@@ -1513,17 +1529,19 @@ void HTMLMediaElement::StartPlayerLoad() {
+ 
+   OnWebMediaPlayerCreated();
+ 
+-  // Setup the communication channels between the renderer and browser processes
+-  // via the MediaPlayer and MediaPlayerObserver mojo interfaces.
+-  DCHECK(media_player_receiver_set_->Value().empty());
+-  mojo::PendingAssociatedRemote<media::mojom::blink::MediaPlayer>
+-      media_player_remote;
+-  BindMediaPlayerReceiver(
+-      media_player_remote.InitWithNewEndpointAndPassReceiver());
++  if (player_created) {
++    // Setup the communication channels between the renderer and browser processes
++    // via the MediaPlayer and MediaPlayerObserver mojo interfaces.
++    DCHECK(media_player_receiver_set_->Value().empty());
++    mojo::PendingAssociatedRemote<media::mojom::blink::MediaPlayer>
++        media_player_remote;
++    BindMediaPlayerReceiver(
++        media_player_remote.InitWithNewEndpointAndPassReceiver());
+ 
+-  GetMediaPlayerHostRemote().OnMediaPlayerAdded(
+-      std::move(media_player_remote), AddMediaPlayerObserverAndPassReceiver(),
+-      web_media_player_->GetDelegateId());
++    GetMediaPlayerHostRemote().OnMediaPlayerAdded(
++        std::move(media_player_remote), AddMediaPlayerObserverAndPassReceiver(),
++        web_media_player_->GetDelegateId());
++  }
+ 
+   if (GetLayoutObject())
+     GetLayoutObject()->SetShouldDoFullPaintInvalidation();
+@@ -3832,6 +3850,9 @@ TimeRanges* HTMLMediaElement::seekable() const {
+ }
+ 
+ bool HTMLMediaElement::PotentiallyPlaying() const {
++  // Brightsign is ready to change states even before metadata arrives.
++  if (RuntimeEnabledFeatures::MediaPlayerReuseEnabled())
++    return CouldPlayIfEnoughData();
+   // Once we've reached the metadata state the WebMediaPlayer is ready to accept
+   // play state changes.
+   return ready_state_ >= kHaveMetadata && CouldPlayIfEnoughData();
+@@ -3946,6 +3967,8 @@ void HTMLMediaElement::StopPeriodicTimers() {
+ 
+ void HTMLMediaElement::
+     ClearMediaPlayerAndAudioSourceProviderClientWithoutLocking() {
++  if (RuntimeEnabledFeatures::MediaPlayerReuseEnabled())
++    SetShouldDelayLoadEvent(false);
+   GetAudioSourceProvider().SetClient(nullptr);
+   if (web_media_player_) {
+     audio_source_provider_.Wrap(nullptr);
+@@ -3978,6 +4001,14 @@ void HTMLMediaElement::ClearMediaPlayer() {
+ 
+   pending_action_flags_ = 0;
+   load_state_ = kWaitingForSource;
++  if (RuntimeEnabledFeatures::MediaPlayerReuseEnabled()) {
++    ready_state_ = kHaveNothing;
++    ready_state_maximum_ = kHaveNothing;
++    SetNetworkState(kNetworkEmpty);
++    playing_ = false;
++    paused_ = true;
++    seeking_ = false;
++  }
+ 
+   if (GetLayoutObject())
+     GetLayoutObject()->SetShouldDoFullPaintInvalidation();
+@@ -4364,6 +4395,10 @@ void HTMLMediaElement::ConfigureTextTrackDisplay() {
+ void HTMLMediaElement::ResetMediaPlayerAndMediaSource() {
+   CloseMediaSource();
+ 
++  // BRIGHTSIGN: ResetMediaPlayerAndMediaSource is called for a load request,
++  // or if next src is going to be loaded from src attribute list. We want to
++  // reuse the existing player. Commented out following 2 lines.
++  if (!RuntimeEnabledFeatures::MediaPlayerReuseEnabled())
+   {
+     AudioSourceProviderClientLockScope scope(*this);
+     ClearMediaPlayerAndAudioSourceProviderClientWithoutLocking();
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 5f91aa499ae04..f3596592a0af2 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -4553,5 +4553,8 @@
+       // frames, which should trigger a zero-copy path in the tab capture code.
+       name: "ZeroCopyTabCapture",
+     },
++    {
++      name: "MediaPlayerReuse",
++    },
+   ],
+ }
