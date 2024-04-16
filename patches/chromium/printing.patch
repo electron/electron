@@ -91,7 +91,7 @@ index 0d8a53178e8d509a573ffdaadf2c4cec670522ac..8e7f9b92beb317888a5a3acb3bc2fa29
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 261742ba789809e4dc65530fff25554d10c59b75..d3a967abcb1e08003b3490de7c4e4a5fdb1341b6 100644
+index 261742ba789809e4dc65530fff25554d10c59b75..12bc3f84b0279c9eb2f1fc5cfe5ea1546ba174ca 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -86,6 +86,20 @@ namespace printing {
@@ -163,8 +163,7 @@ index 261742ba789809e4dc65530fff25554d10c59b75..d3a967abcb1e08003b3490de7c4e4a5f
 +#if 0
    Profile* profile =
        Profile::FromBrowserContext(web_contents->GetBrowserContext());
--  printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
-+   printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
+   printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
 +#endif
  }
  
@@ -577,7 +576,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..0d7d20c1a7920b1961585b345d30d996
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 5df31ec780ae5388b431e6fd63cee5de705a177a..94c180b48d47385a984e36126f9665788dc3f140 100644
+index 5df31ec780ae5388b431e6fd63cee5de705a177a..9a7d340b38124b2557b43efb12f1d110c230de8f 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -47,6 +47,7 @@
@@ -623,15 +622,6 @@ index 5df31ec780ae5388b431e6fd63cee5de705a177a..94c180b48d47385a984e36126f966578
  
    if (render_frame_gone_) {
      return;
-@@ -1373,7 +1374,7 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
-   }
- 
-   Print(frame, print_preview_context_.source_node(),
--        PrintRequestType::kRegular);
-+        PrintRequestType::kRegular, base::Value::Dict());
-   if (render_frame_gone_) {
-     return;
-   }
 @@ -1436,6 +1437,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
@@ -641,15 +631,6 @@ index 5df31ec780ae5388b431e6fd63cee5de705a177a..94c180b48d47385a984e36126f966578
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2013,7 +2016,7 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
-   }
- 
-   Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
--        PrintRequestType::kRegular);
-+        PrintRequestType::kRegular, base::Value::Dict());
-   // Check if `this` is still valid.
-   if (!weak_this) {
-     return;
 @@ -2029,17 +2032,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
@@ -731,7 +712,7 @@ index 5df31ec780ae5388b431e6fd63cee5de705a177a..94c180b48d47385a984e36126f966578
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index b0ac94751454bd16b4e9bfdc071e2623813133ec..74809543b8c1030494638a58c6d27ee69e2867b2 100644
+index b0ac94751454bd16b4e9bfdc071e2623813133ec..2631e9019e4c6617e2a8a90d30a21ca5552f1d67 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -245,7 +245,7 @@ class PrintRenderFrameHelper
@@ -749,7 +730,7 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..74809543b8c1030494638a58c6d27ee6
               const blink::WebNode& node,
 -             PrintRequestType print_request_type);
 +             PrintRequestType print_request_type,
-+             base::Value::Dict settings);
++             base::Value::Dict settings = {});
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
