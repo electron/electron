@@ -141,7 +141,6 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Load everything.
   node_bindings_->LoadEnvironment(env.get());
-  LOG(INFO) << "node_bindings_->LoadEnvironment(env.get());";
 
   if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
