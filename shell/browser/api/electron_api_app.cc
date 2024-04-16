@@ -462,8 +462,7 @@ void OnClientCertificateSelected(
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data.c_str(), data.size())),
-      net::X509Certificate::FORMAT_AUTO);
+      base::as_bytes(base::make_span(data)), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {

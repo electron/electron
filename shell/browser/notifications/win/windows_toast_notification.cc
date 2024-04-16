@@ -540,7 +540,7 @@ HRESULT WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
   ComPtr<IXmlNode> src_attr;
   RETURN_IF_FAILED(attrs->GetNamedItem(src, &src_attr));
 
-  ScopedHString img_path(icon_path.c_str());
+  const ScopedHString img_path{icon_path};
   if (!img_path.success())
     return E_FAIL;
 
