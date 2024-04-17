@@ -13,7 +13,7 @@ adding associated guards there should be relatively small.
 We should upstream this as it will eventually impact Node.js as well.
 
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
-index 7ce59674356f9743438350949be42fa7ead2afbe..3cd1ebf1688a158f12c926ed9d06ae38d16cf63e 100644
+index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e94a001d7 100644
 --- a/src/tracing/agent.cc
 +++ b/src/tracing/agent.cc
 @@ -50,7 +50,9 @@ using v8::platform::tracing::TraceWriter;
@@ -54,7 +54,30 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..3cd1ebf1688a158f12c926ed9d06ae38
    started_ = false;
  
    // Thread should finish when the tracing loop is stopped.
-@@ -223,6 +231,7 @@ void Agent::Flush(bool blocking) {
+@@ -202,6 +210,7 @@ std::string Agent::GetEnabledCategories() const {
+   return categories;
+ }
+ 
++#ifndef V8_USE_PERFETTO
+ void Agent::AppendTraceEvent(TraceObject* trace_event) {
+   for (const auto& id_writer : writers_)
+     id_writer.second->AppendTraceEvent(trace_event);
+@@ -211,18 +220,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
+   Mutex::ScopedLock lock(metadata_events_mutex_);
+   metadata_events_.push_back(std::move(event));
+ }
++#endif
+ 
+ void Agent::Flush(bool blocking) {
++#ifndef V8_USE_PERFETTO
+   {
+     Mutex::ScopedLock lock(metadata_events_mutex_);
+     for (const auto& event : metadata_events_)
+       AppendTraceEvent(event.get());
+   }
+-
++#endif
+   for (const auto& id_writer : writers_)
      id_writer.second->Flush(blocking);
  }
  
@@ -62,27 +85,37 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..3cd1ebf1688a158f12c926ed9d06ae38
  void TracingController::AddMetadataEvent(
      const unsigned char* category_group_enabled,
      const char* name,
-@@ -246,6 +255,7 @@ void TracingController::AddMetadataEvent(
+@@ -246,6 +258,6 @@ void TracingController::AddMetadataEvent(
    if (node_agent != nullptr)
      node_agent->AddMetadataEvent(std::move(trace_event));
  }
+-
 +#endif
- 
  }  // namespace tracing
  }  // namespace node
 diff --git a/src/tracing/agent.h b/src/tracing/agent.h
-index b542a849fe8da7e8bbbcca7067b73dc32b18d6d3..e8f3d06d0bd5b3358c4ad46bb36a9ab631141521 100644
+index b542a849fe8da7e8bbbcca7067b73dc32b18d6d3..059ce6f6ea17199ead09c6c13bcc680f18f8c4d0 100644
 --- a/src/tracing/agent.h
 +++ b/src/tracing/agent.h
-@@ -36,6 +36,7 @@ class TracingController : public v8::platform::tracing::TracingController {
+@@ -27,7 +27,9 @@ class Agent;
+ class AsyncTraceWriter {
+  public:
+   virtual ~AsyncTraceWriter() = default;
++#ifndef V8_USE_PERFETTO
+   virtual void AppendTraceEvent(TraceObject* trace_event) = 0;
++#endif
+   virtual void Flush(bool blocking) = 0;
+   virtual void InitializeOnThread(uv_loop_t* loop) {}
+ };
+@@ -36,6 +38,7 @@ class TracingController : public v8::platform::tracing::TracingController {
   public:
    TracingController() : v8::platform::tracing::TracingController() {}
  
-+#if !defined(V8_USE_PERFETTO)
++#ifndef V8_USE_PERFETTO
    int64_t CurrentTimestampMicroseconds() override {
      return uv_hrtime() / 1000;
    }
-@@ -48,6 +49,7 @@ class TracingController : public v8::platform::tracing::TracingController {
+@@ -48,6 +51,7 @@ class TracingController : public v8::platform::tracing::TracingController {
        const uint64_t* arg_values,
        std::unique_ptr<v8::ConvertableToTraceFormat>* convertable_values,
        unsigned int flags);
@@ -90,6 +123,86 @@ index b542a849fe8da7e8bbbcca7067b73dc32b18d6d3..e8f3d06d0bd5b3358c4ad46bb36a9ab6
  };
  
  class AgentWriterHandle {
+@@ -108,11 +112,12 @@ class Agent {
+ 
+   // Returns a comma-separated list of enabled categories.
+   std::string GetEnabledCategories() const;
+-
++#ifndef V8_USE_PERFETTO
+   // Writes to all writers registered through AddClient().
+   void AppendTraceEvent(TraceObject* trace_event);
+ 
+   void AddMetadataEvent(std::unique_ptr<TraceObject> event);
++#endif
+   // Flushes all writers registered through AddClient().
+   void Flush(bool blocking);
+ 
+@@ -152,7 +157,9 @@ class Agent {
+   std::set<AsyncTraceWriter*> to_be_initialized_;
+ 
+   Mutex metadata_events_mutex_;
++#ifndef V8_USE_PERFETTO
+   std::list<std::unique_ptr<TraceObject>> metadata_events_;
++#endif
+ };
+ 
+ void AgentWriterHandle::reset() {
+diff --git a/src/tracing/node_trace_buffer.cc b/src/tracing/node_trace_buffer.cc
+index e187a1d78c81972b69cd4e03f7079cdb727956ad..3256c6326a08c6cafd83f1e49e3350193e813b51 100644
+--- a/src/tracing/node_trace_buffer.cc
++++ b/src/tracing/node_trace_buffer.cc
+@@ -55,6 +55,7 @@ TraceObject* InternalTraceBuffer::GetEventByHandle(uint64_t handle) {
+ }
+ 
+ void InternalTraceBuffer::Flush(bool blocking) {
++#ifndef V8_USE_PERFETTO
+   {
+     Mutex::ScopedLock scoped_lock(mutex_);
+     if (total_chunks_ > 0) {
+@@ -75,6 +76,7 @@ void InternalTraceBuffer::Flush(bool blocking) {
+       flushing_ = false;
+     }
+   }
++#endif
+   agent_->Flush(blocking);
+ }
+ 
+diff --git a/src/tracing/node_trace_writer.cc b/src/tracing/node_trace_writer.cc
+index 8f053efe93324b9acbb4e85f7b974b4f7712e200..e331ed5567caa39ade90ce28cea69f1d10533812 100644
+--- a/src/tracing/node_trace_writer.cc
++++ b/src/tracing/node_trace_writer.cc
+@@ -95,7 +95,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
+     fd_ = -1;
+   }
+ }
+-
++#ifndef V8_USE_PERFETTO
+ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
+   Mutex::ScopedLock scoped_lock(stream_mutex_);
+   // If this is the first trace event, open a new file for streaming.
+@@ -112,7 +112,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
+   ++total_traces_;
+   json_trace_writer_->AppendTraceEvent(trace_event);
+ }
+-
++#endif
+ void NodeTraceWriter::FlushPrivate() {
+   std::string str;
+   int highest_request_id;
+diff --git a/src/tracing/node_trace_writer.h b/src/tracing/node_trace_writer.h
+index cd965d77b7859ff2edcf781a934594b5a9b6d251..fe1714ba77fddef693d37eeb8c7a196ddfd15c26 100644
+--- a/src/tracing/node_trace_writer.h
++++ b/src/tracing/node_trace_writer.h
+@@ -20,7 +20,9 @@ class NodeTraceWriter : public AsyncTraceWriter {
+   ~NodeTraceWriter() override;
+ 
+   void InitializeOnThread(uv_loop_t* loop) override;
++#ifndef V8_USE_PERFETTO
+   void AppendTraceEvent(TraceObject* trace_event) override;
++#endif
+   void Flush(bool blocking) override;
+ 
+   static const int kTracesPerFile = 1 << 19;
 diff --git a/src/tracing/trace_event.h b/src/tracing/trace_event.h
 index be0f55a409a71bf9c1763c36fdc252857228742e..827b5330b2f8c545338a46c548f8abf4aab7f50c 100644
 --- a/src/tracing/trace_event.h
