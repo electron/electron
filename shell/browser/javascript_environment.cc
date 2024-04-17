@@ -193,7 +193,9 @@ class TracingControllerImpl : public node::tracing::TracingController {
   TracingControllerImpl(const TracingControllerImpl&) = delete;
   TracingControllerImpl& operator=(const TracingControllerImpl&) = delete;
 
-  // TracingController implementation.
+// In Perfetto mode, trace events are written using Perfetto's Track Event
+// API directly without going through the embedder.
+#if !defined(V8_USE_PERFETTO)
   const uint8_t* GetCategoryGroupEnabled(const char* name) override {
     return TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(name);
   }
@@ -262,6 +264,7 @@ class TracingControllerImpl : public node::tracing::TracingController {
     TRACE_EVENT_API_UPDATE_TRACE_EVENT_DURATION(category_enabled_flag, name,
                                                 traceEventHandle);
   }
+#endif  // !defined(V8_USE_PERFETTO)
 
   void AddTraceStateObserver(TraceStateObserver* observer) override {
     GetObserverDelegate().AddObserver(observer);
