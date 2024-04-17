@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5dc15da08eeff408c71bb64e63e26540c660350f..8e73ecd559755f840598becc339933cb9ece9287 100644
+index d9d694e1d3e0adbd5593f1c09720756f2ac15b85..f514f26c21c25bc5d9213c4edb7391f957620af1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1068,6 +1068,7 @@ component("base") {
+@@ -1067,6 +1067,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -370,7 +370,7 @@ index 5c7b15aa94da9017e5b4bbbbab0529239f058b92..68807b74e27ef422cef2c40df29299fc
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 0131eaf19d3e1161e915b9c74c20c37c9302d3f0..fad99e25b1983ec56b1e2afd04d97880d6211693 100644
+index 6fe8c2e37b51e04dab93aade4beb579eb06d3a7d..ed93f26f05fb7cdd45145d21cb771d8d5ccefde6 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -360,6 +360,7 @@ viz_component("service") {
@@ -381,7 +381,7 @@ index 0131eaf19d3e1161e915b9c74c20c37c9302d3f0..fad99e25b1983ec56b1e2afd04d97880
    }
  
    if (is_android || use_ozone) {
-@@ -630,6 +631,7 @@ viz_source_set("unit_tests") {
+@@ -632,6 +633,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -471,7 +471,7 @@ index 9d4172e5cbaa94779c44abb8e983012e7e7db738..4de683f9ee0f7cdb8fd9c9e749c7b1c7
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 4ff37a0e4624399afb25580f9af2d2a2343ab8e1..9ae5a151ba031201a36a644e36c5e23e8fdaa9c4 100644
+index ec784e17cead72eceea0f91a4cad89db6fab8d8e..8732d375388521ee99785da9df5b6cf6840ac2ea 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -871,10 +871,10 @@ index 808f4e1c7beb03cc5377465882940eea94ad61a7..d001436c3a5a8a0fc25995519772478f
  }  // namespace
  #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 0c0243c2bb9e72c6eba6f9af554b99e2d5514a5d..f5f0e0ec951ccc8278b773c852134e4e29f53e8a 100644
+index 5bdc3b7f77ca0ac087a24fd5bedff2bf7c0732cb..cf6dc039dae03769e2059b4ca9538c8f6656299b 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -959,7 +959,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -960,7 +960,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -1417,7 +1417,7 @@ index 84e156b7ff28abc2071dde155e56a2a92a53b142..bd73dac7fe3ed256cab805a0815d31d4
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 52dc158f4ac032a1b00b8d31567180ac945b289d..4da06d93baa708dd8a737f3b1477f5fd4502f18b 100644
+index 9ba6a1d60c312c686e16461edb929be8ead4f34e..ee1cac554137b47bb2161aeb7b0bbd372b8feee4 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -361,6 +361,7 @@ component("base") {
@@ -1532,7 +1532,7 @@ index 96f0d3a75a639a69eab6ef12f27c7b23df99d508..d89c075498c060379d42f6089cddb419
  
    if (is_win) {
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index a771c1c03fd1afe3a5e563b4421721a5ddc2eb93..a6cbdfcbeff30508d921d4637aac543dce9e8ad3 100644
+index 268934b96daccacd1cbd0a441d60ceb9043d7c15..6889b083f5aa314417832210f76e110cf5eb45a6 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -171,7 +171,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
@@ -1596,7 +1596,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 6db1ca1effc4d9f8035c0b4619d94bf404d4b332..2db8ba987fca85a3ced18ab64707dc6fbe287e6c 100644
+index 7609319c81a131322f1ebab6e539ef6b6649edbd..37a3abe6c68701e89b0c84b4c7445a03229dc9de 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -716,6 +716,7 @@ component("views") {

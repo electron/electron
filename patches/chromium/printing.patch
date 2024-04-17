@@ -91,7 +91,7 @@ index 0d8a53178e8d509a573ffdaadf2c4cec670522ac..8e7f9b92beb317888a5a3acb3bc2fa29
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 6b1bc5d054a7cd616094f0603e47d001fb8c75de..2f1a84ed1e891170c6461c223b1d77d96cc57f0d 100644
+index 3ab74beeb5b7fee4f05c3b6ef1cddfc8a3cf1ead..8cfe0efdcd1de197c8fc573ae6bdeed14d91b909 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -86,6 +86,20 @@ namespace printing {
@@ -429,7 +429,7 @@ index 6b1bc5d054a7cd616094f0603e47d001fb8c75de..2f1a84ed1e891170c6461c223b1d77d9
  
  #if BUILDFLAG(ENABLE_PRINT_CONTENT_ANALYSIS)
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index eda41e79720f3f237c0b91d93ab56b018c953b67..1bbc7c3db21006bfd8518b74d0fc116e085371de 100644
+index b2b3356f7e20b4b396a5c3092c488881cb3d7d90..b4ea3633acc70b4eb49646857af95d8270ee040d 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -51,6 +51,8 @@ class PrinterQuery;

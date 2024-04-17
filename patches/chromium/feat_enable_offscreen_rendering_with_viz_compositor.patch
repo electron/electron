@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index fad99e25b1983ec56b1e2afd04d97880d6211693..7a0c170d1a9fd2b66e2576437a388c5cb44ef2bf 100644
+index ed93f26f05fb7cdd45145d21cb771d8d5ccefde6..523495527d10abdf48cf00ae79d8dc93a9d7e622 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -167,6 +167,8 @@ viz_component("service") {
@@ -687,7 +687,7 @@ index 86d5be8b3778ced67e65d3f1e22b6aef467c7042..a2044ee0440339247cc91e06a7a0c323
    gfx::Size pixel_size;
    float scale_factor = 1.f;
 diff --git a/ui/gfx/mojom/ca_layer_params.mojom b/ui/gfx/mojom/ca_layer_params.mojom
-index 1944ef571b1f12fbee8dff553ad4de913c794efb..529296cbf858d2aaeb7b5fbe1ae8f36e4ec1d485 100644
+index c380e4882d699232869c88bc65dc4d396bb95780..7d3c81b200cc9b390084a35ab5d0fc1904137144 100644
 --- a/ui/gfx/mojom/ca_layer_params.mojom
 +++ b/ui/gfx/mojom/ca_layer_params.mojom
 @@ -18,5 +18,6 @@ struct CALayerParams {

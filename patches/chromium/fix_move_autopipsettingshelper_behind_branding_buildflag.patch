@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 031b440574a5d7305b4afe1201f1a1e8f5f8e205..13650d2586027a3f89d77da8fab4b93c8f1ce06b 100644
+index ceced82cbd23b2dcd7fabf7d63028423f86e05c3..27d0b61a7b67d1c9d7e0699e287b78332d9dce26 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@

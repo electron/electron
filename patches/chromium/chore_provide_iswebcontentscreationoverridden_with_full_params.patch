@@ -7,7 +7,7 @@ Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index 25b7fc49f6b5ebfee5a4a823ea18435871071c24..fe1ef8e8cd849023c654b07cc69738ba917a942c 100644
+index ef406aa21d60c7b14745674c6dae3ca6e1e76a12..8d9b255575905c32af5c6177cae859445b71f756 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
 @@ -286,8 +286,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
@@ -21,7 +21,7 @@ index 25b7fc49f6b5ebfee5a4a823ea18435871071c24..fe1ef8e8cd849023c654b07cc69738ba
    // uses this to spawn new windows/tabs, which is also not allowed for
    // offscreen tabs.
 diff --git a/chrome/browser/media/offscreen_tab.h b/chrome/browser/media/offscreen_tab.h
-index 9433ce4602414df4999f6ced8b371d4e847819ce..f38afaafcd6710f9cfcef816bf152cd2538d1ab0 100644
+index d4ec8ff2ee39242a86b27dafc237f5fad194354d..cb6914b28203a530210d98f79e6e1d4c42807a4b 100644
 --- a/chrome/browser/media/offscreen_tab.h
 +++ b/chrome/browser/media/offscreen_tab.h
 @@ -107,8 +107,7 @@ class OffscreenTab final : public ProfileObserver,
@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 27ca28371c713a69b491b70c47068a07bdf43ee0..95858ec5081b7314a397353cd70fa8afbae66cda 100644
+index 01aac14365c991fc781e77a71321d1cfb61aeef0..b4091a38411566c21079becc7282d354ef42389e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4525,8 +4525,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -316,10 +316,10 @@ index f0b71aba6dfb4682ce2e5b4c834b2526dcacb75c..d4b1857ca468ff97914d91d0c31298b7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index faa8416c8d625fac0cdb15dc9d54855417dce252..4f3e06a2e9945980f8b12418f7b31e0f73e11e61 100644
+index 04380854c1ec6c32a98f55948e5fdd358d8b8d7f..260145fe90c6ba52ea3367e75ab2a327c90a6cb3 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -574,8 +574,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -573,8 +573,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -372,7 +372,7 @@ index 933439e5d02efc8552558efd6397082f3ee9a4a9..f535ec672fcec71f82f5a537c3a248ee
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index fbda234faf1c80072651297b14bb77dcd63dc701..1521aef90152a71713e570ab7d1bde216a6192d5 100644
+index 36f11d3ebbc1715f6f89467ece331e8127e05110..42ee32220a84c273c65c60bd01d08ecf9eeb65d4 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -165,8 +165,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
