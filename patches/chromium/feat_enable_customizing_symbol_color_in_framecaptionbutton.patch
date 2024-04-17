@@ -47,10 +47,10 @@ index 73e6020e3b9b6e0d12a8dea991f189b3ddeab14c..b38e5bd1408c26cbbfc995fc2ac5dc59
  float FrameCaptionButton::GetInactiveButtonColorAlphaRatio() {
    return 0.38f;
 diff --git a/ui/views/window/frame_caption_button.h b/ui/views/window/frame_caption_button.h
-index 0d20ec5891d08187b4dae7a6b46a9a6de2f7c39c..eb396811a39c4e6021916dbba1f89baa83d77d31 100644
+index 0ac923a3ca6052d499ed7c1a4f156b0f19ad4e64..3164f79828218d57843eba823e0f14ff456b2df4 100644
 --- a/ui/views/window/frame_caption_button.h
 +++ b/ui/views/window/frame_caption_button.h
-@@ -43,8 +43,18 @@ class VIEWS_EXPORT FrameCaptionButton : public Button {
+@@ -44,8 +44,18 @@ class VIEWS_EXPORT FrameCaptionButton : public Button {
    FrameCaptionButton& operator=(const FrameCaptionButton&) = delete;
    ~FrameCaptionButton() override;
  
@@ -70,7 +70,7 @@ index 0d20ec5891d08187b4dae7a6b46a9a6de2f7c39c..eb396811a39c4e6021916dbba1f89baa
  
    // Gets the alpha ratio for the colors of inactive frame caption buttons.
    static float GetInactiveButtonColorAlphaRatio();
-@@ -133,6 +143,7 @@ class VIEWS_EXPORT FrameCaptionButton : public Button {
+@@ -134,6 +144,7 @@ class VIEWS_EXPORT FrameCaptionButton : public Button {
    // TODO(b/292154873): Store the foreground color instead of the background
    // color for the SkColor type.
    absl::variant<ui::ColorId, SkColor> color_ = gfx::kPlaceholderColor;

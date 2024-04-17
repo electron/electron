@@ -40,6 +40,8 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
+#elif BUILDFLAG (IS_LINUX)
+#include "shell/browser/ui/views/opaque_frame_view.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -1047,7 +1049,7 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
                                        gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
-  if (!window_->titlebar_overlay_enabled()) {
+  if (!window_->IsWindowControlsOverlayEnabled()) {
     args->ThrowError("Titlebar overlay is not enabled");
     return;
   }
