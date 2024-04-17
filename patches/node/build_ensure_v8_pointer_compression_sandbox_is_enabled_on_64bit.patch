@@ -10,7 +10,7 @@ in.
 This should be upstreamed.
 
 diff --git a/common.gypi b/common.gypi
-index 7b790060b03cceec62bfe4c1f12d396b9cf52e8c..ef8c7a0477aa9c92439846699e739eae4340b88c 100644
+index 722b4c3d376ce6eaa683397b693f9bad8f2aa584..b003ddf5763a0f5c3289a7ff39d71f3d828b73db 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -133,6 +133,7 @@
@@ -22,10 +22,10 @@ index 7b790060b03cceec62bfe4c1f12d396b9cf52e8c..ef8c7a0477aa9c92439846699e739eae
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
 diff --git a/configure.py b/configure.py
-index f0cccff0eed2ef11275d2f7ec2358276f6e10458..87b647ab363219add8201966a64b539215bdee03 100755
+index 8169c674d672b7206b3765bcbf68cde04ba2d915..ac5990cf48703ae2e10ad86915aacdad25206f0e 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1503,6 +1503,7 @@ def configure_v8(o):
+@@ -1510,6 +1510,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_maglev'] = 1 if options.v8_enable_maglev else 0
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0

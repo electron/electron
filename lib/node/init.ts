@@ -2,6 +2,11 @@
 import { wrapFsWithAsar } from './asar-fs-wrapper';
 wrapFsWithAsar(require('fs'));
 
+// See ElectronRendererClient::DidCreateScriptContext.
+if ((globalThis as any).blinkFetch) {
+  globalThis.fetch = (globalThis as any).blinkFetch;
+}
+
 // Hook child_process.fork.
 import cp = require('child_process'); // eslint-disable-line import/first
 const originalFork = cp.fork;

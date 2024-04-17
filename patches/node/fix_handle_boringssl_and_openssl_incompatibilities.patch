@@ -147,10 +147,10 @@ index 6e5bbe07d0c337b36f3157c2e6404fdc91849fd1..7ec682833213de9054a8c30751436d12
    DHPointer dh;
    {
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 408d6be2a9cfdbcb52af285204c07c40bf74a5a9..9c3244a14bc286d60805bac5719df6595d802768 100644
+index b4447102a8478639a5aa774e583834d79808603f..678be07feb394530b944c1b356265416f2d50742 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -153,13 +153,11 @@ bool DiffieHellman::Init(BignumPointer&& bn_p, int g) {
+@@ -154,13 +154,11 @@ bool DiffieHellman::Init(BignumPointer&& bn_p, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -165,8 +165,8 @@ index 408d6be2a9cfdbcb52af285204c07c40bf74a5a9..9c3244a14bc286d60805bac5719df659
 +    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
      return false;
    }
-   BIGNUM* bn_p =
-@@ -177,21 +175,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+   BignumPointer bn_p(
+@@ -176,20 +174,17 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -181,17 +181,16 @@ index 408d6be2a9cfdbcb52af285204c07c40bf74a5a9..9c3244a14bc286d60805bac5719df659
 +    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
      return false;
    }
-   BIGNUM* bn_g =
-       BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr);
-   if (BN_is_zero(bn_g) || BN_is_one(bn_g)) {
-     BN_free(bn_g);
+   BignumPointer bn_g(
+       BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr));
+   if (BN_is_zero(bn_g.get()) || BN_is_one(bn_g.get())) {
 -    ERR_put_error(ERR_LIB_DH, DH_F_DH_BUILTIN_GENPARAMS,
 -      DH_R_BAD_GENERATOR, __FILE__, __LINE__);
 +    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
      return false;
    }
-   BIGNUM* bn_p =
-@@ -218,8 +213,10 @@ typedef BignumPointer (*StandardizedGroupInstantiator)();
+   BignumPointer bn_p(
+@@ -219,8 +214,10 @@ typedef BignumPointer (*StandardizedGroupInstantiator)();
  inline StandardizedGroupInstantiator FindDiffieHellmanGroup(const char* name) {
  #define V(n, p)                                                                \
    if (StringEqualNoCase(name, n)) return InstantiateStandardizedGroup<p>
@@ -202,7 +201,7 @@ index 408d6be2a9cfdbcb52af285204c07c40bf74a5a9..9c3244a14bc286d60805bac5719df659
    V("modp5", BN_get_rfc3526_prime_1536);
    V("modp14", BN_get_rfc3526_prime_2048);
    V("modp15", BN_get_rfc3526_prime_3072);
-@@ -558,15 +555,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -559,15 +556,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
  
@@ -223,7 +222,7 @@ index 408d6be2a9cfdbcb52af285204c07c40bf74a5a9..9c3244a14bc286d60805bac5719df659
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -580,6 +582,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -581,6 +583,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
  
      key_params = EVPKeyPointer(raw_params);
@@ -373,11 +372,33 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }
  }  // namespace
  
+diff --git a/src/env.h b/src/env.h
+index 994b9573822fd3eb0588e87edaa0e505aa5102fb..bb84f5ab43cb5be42019921e5dc2fc010d7b9018 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -49,7 +49,7 @@
+ #include "uv.h"
+ #include "v8.h"
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && OPENSSL_VERSION_MAJOR >= 3
+ #include <openssl/evp.h>
+ #endif
+ 
+@@ -1032,7 +1032,7 @@ class Environment : public MemoryRetainer {
+     kExitInfoFieldCount
+   };
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL// && !defined(OPENSSL_IS_BORINGSSL)
+ #if OPENSSL_VERSION_MAJOR >= 3
+   // We declare another alias here to avoid having to include crypto_util.h
+   using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node.cc b/src/node.cc
-index 524f80ee69ee5248e045a2b61faf5610c9ba4285..1d77a8b31cb0bfbeeeac594b6e1ac7dd303c902d 100644
+index 10e04ed8a28bd010e4887ad5b9af3886f7b32a53..012dd487e8db232d068bce358ad44b14e78d0fe9 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1027,7 +1027,8 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1079,7 +1079,8 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
    }
  
    if (!(flags & ProcessInitializationFlags::kNoInitOpenSSL)) {
@@ -387,7 +408,7 @@ index 524f80ee69ee5248e045a2b61faf5610c9ba4285..1d77a8b31cb0bfbeeeac594b6e1ac7dd
      auto GetOpenSSLErrorString = []() -> std::string {
        std::string ret;
        ERR_print_errors_cb(
-@@ -1127,13 +1128,13 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1179,13 +1180,13 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
        CHECK(crypto::CSPRNG(buffer, length).is_ok());
        return true;
      });
@@ -404,12 +425,12 @@ index 524f80ee69ee5248e045a2b61faf5610c9ba4285..1d77a8b31cb0bfbeeeac594b6e1ac7dd
  
    if (!(flags & ProcessInitializationFlags::kNoInitializeNodeV8Platform)) {
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index b88cfb98e75aca426224e19376b3ff4c23b92e53..b66f4e2b5cbd8f36af42f82a8921207302360e39 100644
+index 844c5ac2c2b948b3be35cb3e447717a510a463a6..72a75ee0bf391ea508441f49413f85c5b735b259 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
-@@ -16,7 +16,7 @@
- #include "v8.h"
- #include "zlib_version.h"
+@@ -21,7 +21,7 @@
+ #include <zlib.h>
+ #endif  // NODE_BUNDLED_ZLIB
  
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
@@ -430,7 +451,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 5da6918af8c125259a89ce95bbbbc4fc475c4c69..a3d25cdd52f18e319ae3ac81437c8a0206b18690 100644
+index fa09d4503980e144a0b3b6f15e858fcad6c6f5b2..e46c71ee467ce1390f0e14794f3514196856b424 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -443,7 +464,7 @@ index 5da6918af8c125259a89ce95bbbbc4fc475c4c69..a3d25cdd52f18e319ae3ac81437c8a02
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 312fae8f759c5828d0770ceee845dc4754871436..207468a2177d36894c64cb37aac946af02c82549 100644
+index 293642d79fa168e12a5875e98f9b9e39cca533be..440bb9ebdf72b9883a1f6a997f23e0344d26ae5f 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
