@@ -721,7 +721,7 @@ void ElectronBrowserContext::GrantDevicePermission(
 void ElectronBrowserContext::RevokeDevicePermission(
     const url::Origin& origin,
     const base::Value& device,
-    blink::PermissionType permission_type) {
+    const blink::PermissionType permission_type) {
   const auto& current_devices_it = granted_devices_.find(permission_type);
   if (current_devices_it == granted_devices_.end())
     return;
@@ -730,20 +730,17 @@ void ElectronBrowserContext::RevokeDevicePermission(
   if (origin_devices_it == current_devices_it->second.end())
     return;
 
-  for (auto it = origin_devices_it->second.begin();
-       it != origin_devices_it->second.end();) {
-    if (DoesDeviceMatch(device, it->get(), permission_type)) {
-      it = origin_devices_it->second.erase(it);
-    } else {
-      ++it;
-    }
-  }
+  std::erase_if(origin_devices_it->second,
+                [&device, &permission_type](auto const& val) {
+                  return DoesDeviceMatch(device, val.get(), permission_type);
+                });
 }
 
+// static
 bool ElectronBrowserContext::DoesDeviceMatch(
     const base::Value& device,
     const base::Value* device_to_compare,
-    blink::PermissionType permission_type) {
+    const blink::PermissionType permission_type) {
   if (permission_type ==
           static_cast<blink::PermissionType>(
               WebContentsPermissionHelper::PermissionType::HID) ||
