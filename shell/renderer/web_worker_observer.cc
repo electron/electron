@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/no_destructor.h"
-#include "base/ranges/algorithm.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -112,7 +111,7 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
   microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
-  base::EraseIf(environments_,
+  std::erase_if(environments_,
                 [env](auto const& item) { return item.get() == env; });
 
   microtask_queue->set_microtasks_policy(old_policy);
