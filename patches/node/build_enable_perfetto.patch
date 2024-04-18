@@ -12,6 +12,59 @@ adding associated guards there should be relatively small.
 
 We should upstream this as it will eventually impact Node.js as well.
 
+diff --git a/lib/internal/constants.js b/lib/internal/constants.js
+index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b564ef600 100644
+--- a/lib/internal/constants.js
++++ b/lib/internal/constants.js
+@@ -5,12 +5,15 @@ const isWindows = process.platform === 'win32';
+ module.exports = {
+   // Alphabet chars.
+   CHAR_UPPERCASE_A: 65, /* A */
++  CHAR_UPPERCASE_B: 66, /* B */
+   CHAR_LOWERCASE_A: 97, /* a */
+   CHAR_UPPERCASE_Z: 90, /* Z */
+   CHAR_LOWERCASE_Z: 122, /* z */
+   CHAR_UPPERCASE_C: 67, /* C */
+   CHAR_LOWERCASE_B: 98, /* b */
++  CHAR_UPPERCASE_E: 69, /* E */
+   CHAR_LOWERCASE_E: 101, /* e */
++
+   CHAR_LOWERCASE_N: 110, /* n */
+ 
+   // Non-alphabetic chars.
+diff --git a/lib/internal/http.js b/lib/internal/http.js
+index b20b3cd229efcd9701791309361b7d106f315900..f708557b87a0f695e1f9e649dcd83f95fdbc6d59 100644
+--- a/lib/internal/http.js
++++ b/lib/internal/http.js
+@@ -10,8 +10,8 @@ const {
+ const { setUnrefTimeout } = require('internal/timers');
+ const { trace, isTraceCategoryEnabled } = internalBinding('trace_events');
+ const {
+-  CHAR_LOWERCASE_B,
+-  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_B,
++  CHAR_UPPERCASE_E,
+ } = require('internal/constants');
+ 
+ let utcCache;
+@@ -44,11 +44,15 @@ function isTraceHTTPEnabled() {
+ const traceEventCategory = 'node,node.http';
+ 
+ function traceBegin(...args) {
+-  trace(CHAR_LOWERCASE_B, traceEventCategory, ...args);
++  // See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
++  console.log('trace with CHAR_UPPERCASE_B: ', CHAR_UPPERCASE_B)
++  trace(CHAR_UPPERCASE_B, traceEventCategory, ...args);
+ }
+ 
+ function traceEnd(...args) {
+-  trace(CHAR_LOWERCASE_E, traceEventCategory, ...args);
++  // See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
++  console.log('trace with CHAR_UPPERCASE_E: ', CHAR_UPPERCASE_E)
++  trace(CHAR_UPPERCASE_E, traceEventCategory, ...args);
+ }
+ 
+ module.exports = {
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
 index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e94a001d7 100644
 --- a/src/tracing/agent.cc
