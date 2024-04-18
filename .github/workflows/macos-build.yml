@@ -2,21 +2,6 @@ name: Build MacOS
 
 on:
   workflow_dispatch:
-    inputs:
-      macos-publish-arch-limit:
-        description: 'The allowed arches for macos-publish'
-        type: choice
-        default: all
-        options: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
-      upload-to-storage:
-        description: 'True to print to STDOUT'
-        required: true
-        default: '0'
-        type: string
-      run-macos-publish:
-        description: 'Run the publish jobs vs just the build jobs'
-        type: boolean
-        default: false
 
 env:
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
