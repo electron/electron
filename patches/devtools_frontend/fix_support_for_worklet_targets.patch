@@ -12,7 +12,7 @@ Reviewed-by: Danil Somsikov <dsv@chromium.org>
 Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
 
 diff --git a/front_end/core/sdk/ChildTargetManager.ts b/front_end/core/sdk/ChildTargetManager.ts
-index 1d790363b8a45655140353863b422fce35f2ae0e..9305546e8777abf582437e0978c114ad5db514ca 100644
+index d7b902baba05bdc3b977b385894051387b03cac0..87235daf8d237b3a64b646823ec545b6699596a4 100644
 --- a/front_end/core/sdk/ChildTargetManager.ts
 +++ b/front_end/core/sdk/ChildTargetManager.ts
 @@ -173,6 +173,8 @@ export class ChildTargetManager extends SDKModel<EventTypes> implements Protocol
