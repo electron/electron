@@ -576,7 +576,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..0d7d20c1a7920b1961585b345d30d996
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226ea543b25 100644
+index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9bbd7600f3 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -50,6 +50,7 @@
@@ -587,7 +587,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1292,14 +1293,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1293,14 +1294,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -604,7 +604,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
    if (!weak_this) {
      return;
    }
-@@ -1330,7 +1331,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1331,7 +1332,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -613,7 +613,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1345,7 +1346,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1346,7 +1347,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -622,7 +622,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
  
    if (render_frame_gone_) {
      return;
-@@ -1501,6 +1502,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1502,6 +1503,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -631,7 +631,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2095,17 +2098,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2096,17 +2099,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -654,7 +654,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2126,8 +2131,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2127,8 +2132,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -671,7 +671,7 @@ index c7d7a7cacd4f3215bf9a130327ca05476bad2cf2..6e51e9791c8905e880c719460e102226
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2389,29 +2401,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2390,29 +2402,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -750,7 +750,7 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..2631e9019e4c6617e2a8a90d30a21ca5
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4de683f9ee0f7cdb8fd9c9e749c7b1c776c22fe0..ea094914d0e9c406ccc7fae507a90b946dbb00b8 100644
+index 8e7e92a9eff5a2ac1aa712d83dfc9784d571c0e3..1a1a9f012f7becbe21c4fba4ae1c85fe103d9947 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2934,8 +2934,9 @@ source_set("browser") {

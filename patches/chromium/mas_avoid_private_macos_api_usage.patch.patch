@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d9d694e1d3e0adbd5593f1c09720756f2ac15b85..f514f26c21c25bc5d9213c4edb7391f957620af1 100644
+index ad421b6ab06f1a2db18f5f190082c6c6641f13e3..7aa0c31ec6c9530ebb28ab8d6cad4aa034d1bb6b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1067,6 +1067,7 @@ component("base") {
@@ -459,7 +459,7 @@ index e1ccb471c286f41d38673c4cb1326a6bed19d733..4b64a87464aefc04df107a64155e1f6f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9d4172e5cbaa94779c44abb8e983012e7e7db738..4de683f9ee0f7cdb8fd9c9e749c7b1c776c22fe0 100644
+index dfcda910dc40d81e9aa96cb8fa3420eb3953825d..8e7e92a9eff5a2ac1aa712d83dfc9784d571c0e3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7143a91346895a8a8c5f35560d65b88a8ff48e7d..b0d3b500b3a0a5f86c85d4329f18512b54a5500a 100644
+index 7b00405fbc7473cb3ac1ca060d44df63d3562c56..d6cf5c9372dedfe4048c302d077f7476613400fb 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -496,6 +496,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index 7143a91346895a8a8c5f35560d65b88a8ff48e7d..b0d3b500b3a0a5f86c85d4329f18512b
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1717,6 +1719,7 @@ test("content_browsertests") {
+@@ -1715,6 +1717,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 7143a91346895a8a8c5f35560d65b88a8ff48e7d..b0d3b500b3a0a5f86c85d4329f18512b
  
    public_deps = [
      ":test_interfaces",
-@@ -2951,6 +2954,7 @@ test("content_unittests") {
+@@ -2949,6 +2952,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1596,7 +1596,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 7609319c81a131322f1ebab6e539ef6b6649edbd..37a3abe6c68701e89b0c84b4c7445a03229dc9de 100644
+index dfb51c3303312a6fc98330896ac28f67790e6867..ea1d656585d1cd6f2ccdb7d3845791f46bdb1816 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -716,6 +716,7 @@ component("views") {
@@ -1607,7 +1607,7 @@ index 7609319c81a131322f1ebab6e539ef6b6649edbd..37a3abe6c68701e89b0c84b4c7445a03
    }
  
    if (is_win) {
-@@ -1149,6 +1150,8 @@ source_set("test_support") {
+@@ -1148,6 +1149,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
