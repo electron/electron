@@ -50,6 +50,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 #include "ui/strings/grit/ui_strings.h"
+#include <Windows.h>
 
 namespace electron {
 
@@ -776,6 +777,46 @@ void Browser::ShowAboutPanel() {
 
 void Browser::SetAboutPanelOptions(base::Value::Dict options) {
   about_panel_options_ = std::move(options);
+}
+
+int Browser::GetClickType(WPARAM wParam) {
+  if (wParam == WM_LBUTTONDOWN) {
+	return 0;
+  }
+  else if (wParam == WM_RBUTTONDOWN) {
+	return 1;
+  }
+  else if (wParam == WM_MBUTTONDOWN) {
+	return 2;
+  }
+
+  return -1;
+}
+
+LRESULT CALLBACK Browser::MouseHookProc(int nCode, WPARAM wparam, LPARAM lparam){
+  if(nCode >= 0){
+  	return GetClickType(wParam);
+  }
+
+  return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+void Browser::WindowClickEvent() {
+  HINSTANCE hInstance = GetModuleHandle(NULL);
+  HHOOK hHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, hInstance, 0)
+
+  if(hHook == NULL){
+	return;
+  }
+
+  MSG msg;
+  while(GetMessage(&msg, NULL, 0, 0)){
+	TranslateMessage(&msg);
+	DispatchMessage(&msg);
+  }
+
+  UnhookWindowsHookEx(hHook);
+  return;
 }
 
 }  // namespace electron
