@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ad421b6ab06f1a2db18f5f190082c6c6641f13e3..7aa0c31ec6c9530ebb28ab8d6cad4aa034d1bb6b 100644
+index 22b45f82a4d648656fb82d0072c99b674c7bb4f8..19ce9233e35f901c5696bb58d25dd5526ca2e887 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1067,6 +1067,7 @@ component("base") {
@@ -353,10 +353,10 @@ index 6ebc4754ef986f5ae966ff7a3217ab77df78edf9..91147b8a42f731c645c318776933b4c1
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5c7b15aa94da9017e5b4bbbbab0529239f058b92..68807b74e27ef422cef2c40df29299fc39db4c08 100644
+index e0cd6c1956cc5ac96067c3626370ceb14903f5b1..ac6834030abad73e2e7fec0c2c8e4d5f45896997 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -621,10 +621,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -627,10 +627,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -370,7 +370,7 @@ index 5c7b15aa94da9017e5b4bbbbab0529239f058b92..68807b74e27ef422cef2c40df29299fc
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6fe8c2e37b51e04dab93aade4beb579eb06d3a7d..ed93f26f05fb7cdd45145d21cb771d8d5ccefde6 100644
+index 1a6fed8fa26058343d711d38833d0c6b675224f6..6354ce53aab6ba907606e578a1df0b8df9c84f58 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -360,6 +360,7 @@ viz_component("service") {
@@ -805,7 +805,7 @@ index cda4f747099492c306db22c6dba98249e443cd74..f63dbbe7149010efa06c9cbb215399eb
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index a908f37ed7c22901eaa1dc9b9b2efae1053b5874..b3287fb071e66d2f53c132d86712b72561cccc40 100644
+index 592487f13c5c7806cf59b6653c3c4cdc7bf0a144..a96169c8861287940d55a9aabcdbfcfd23dc6056 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -133,6 +133,7 @@ component("service") {
@@ -1554,7 +1554,7 @@ index 268934b96daccacd1cbd0a441d60ceb9043d7c15..6889b083f5aa314417832210f76e110c
    // Query the display's refresh rate.
    {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index f3b0ff3d2391c29b12b8842cb3c9a1bcb1b38814..a7fa1ef13cdb8ebd9160728efc29f02be8fd75f3 100644
+index 5ad5e8313d93b970f4b140d074b6aa319be23b26..fee30feaa460f9a14d0e28ff55ca595c8782f56e 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
