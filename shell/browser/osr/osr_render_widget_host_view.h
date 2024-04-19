@@ -59,9 +59,11 @@ typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
     OnPaintCallback;
 typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
-class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
-                                      public ui::CompositorDelegate,
-                                      public OffscreenViewProxyObserver {
+class OffScreenRenderWidgetHostView
+    : public content::RenderWidgetHostViewBase,
+      public content::RenderFrameMetadataProvider::Observer,
+      public ui::CompositorDelegate,
+      public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
                                 bool painting,
@@ -174,6 +176,15 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::PointF& point,
       RenderWidgetHostViewBase* target_view,
       gfx::PointF* transformed_point) override;
+
+  // RenderFrameMetadataProvider::Observer:
+  void OnRenderFrameMetadataChangedBeforeActivation(
+      const cc::RenderFrameMetadata& metadata) override {}
+  void OnRenderFrameMetadataChangedAfterActivation(
+      base::TimeTicks activation_time) override {}
+  void OnRenderFrameSubmission() override {}
+  void OnLocalSurfaceIdChanged(
+      const cc::RenderFrameMetadata& metadata) override;
 
   // ui::CompositorDelegate:
   bool IsOffscreen() const override;
