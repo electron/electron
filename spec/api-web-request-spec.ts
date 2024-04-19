@@ -168,6 +168,49 @@ describe('webRequest module', () => {
       expect(data).to.equal('/redirect');
     });
 
+    it('check normal and transparent redirections', async () => {
+      let onBeforeRedirectCount = 0;
+      let onBeforeRequestCount = 0;
+      const redirectFileURL = url.format({
+        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      });
+
+      ses.webRequest.onBeforeRedirect(() => {
+        onBeforeRedirectCount++;
+      });
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        onBeforeRequestCount++;
+        if (details.url === 'file:///fileTofile') {
+          callback({ redirectURL: redirectFileURL });
+        } else if (details.url === 'file:///fileTohttp' || details.url === defaultURL) {
+          callback({ redirectURL: `${defaultURL}redirect` });
+        } else {
+          callback({});
+        }
+      });
+
+      let fileUrl = 'file:///fileTofile';
+      let result = await ajax(fileUrl);
+      expect(result.status).to.equal(200);
+      expect(onBeforeRequestCount).to.equal(1);
+      expect(onBeforeRedirectCount).to.equal(0);
+      onBeforeRequestCount = onBeforeRedirectCount = 0;
+
+      fileUrl = 'file:///fileTohttp';
+      result = await ajax(fileUrl);
+      expect(result.data).to.equal('/redirect');
+      expect(onBeforeRequestCount).to.equal(2);
+      expect(onBeforeRedirectCount).to.equal(1);
+      onBeforeRequestCount = onBeforeRedirectCount = 0;
+
+      result = await ajax(defaultURL);
+      expect(result.data).to.equal('/redirect');
+      expect(onBeforeRequestCount).to.equal(2);
+      expect(onBeforeRedirectCount).to.equal(1);
+    });
+
     it('does not crash for redirects', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({ cancel: false });
