@@ -221,10 +221,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   // Initialize pref registry.
   void InitPrefs();
 
-  static bool DoesDeviceMatch(const base::Value& device,
-                              const base::Value* device_to_compare,
-                              blink::PermissionType permission_type);
-
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
