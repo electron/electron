@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { nativeImage } from 'electron/common';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import * as path from 'node:path';
 
 describe('nativeImage module', () => {
@@ -424,6 +424,8 @@ describe('nativeImage module', () => {
   });
 
   ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
+    useRemoteContext({ webPreferences: { contextIsolation: false, nodeIntegration: true } });
+
     it('throws when invalid size is passed', async () => {
       const badSize = { width: -1, height: -1 };
 
@@ -471,6 +473,13 @@ describe('nativeImage module', () => {
       const result = await nativeImage.createThumbnailFromPath(imgPath, maxSize);
       expect(result.getSize()).to.deep.equal(maxSize);
     });
+
+    itremote('works in the renderer', async (path: string) => {
+      const { nativeImage } = require('electron');
+      const goodSize = { width: 100, height: 100 };
+      const result = await nativeImage.createThumbnailFromPath(path, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    }, [path.join(fixturesPath, 'assets', 'logo.png')]);
   });
 
   describe('addRepresentation()', () => {
