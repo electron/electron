@@ -1,0 +1,27 @@
+name: 'BrightSign Test Process'
+on: 
+  pull_request:
+    # branches: [ "main" ]
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  test-pr:
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+    uses: ./.github/workflows/bs_electron_ci_ec2.yml
+    secrets: inherit
+    with:
+      build_type: test
+      aws_arn_role: arn:aws:iam::195607249165:role/github-actions-electron-repo
+      aws_region: us-east-1
+
+  # debug:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Dump GitHub context
+  #       env:
+  #         GITHUB_CONTEXT: ${{ toJson(github) }}
+  #       run: |
+  #         echo "$GITHUB_CONTEXT"    

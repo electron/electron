@@ -1,0 +1,108 @@
+name: 'BrightSign Build and Test Electron: EC2 controller'
+on:
+  workflow_call:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        type: string
+
+      instance_type:
+        description: 'EC2 instance type'
+        required: false
+        type: string
+        default: c6a.4xlarge
+
+      leave_ec2_instance_running:
+        description: 'Leave EC2 instance running after use'
+        type: boolean
+        default: false
+
+      instance_name_postfix:
+        description: 'Name to add as postfix to the EC2 machine'
+        type: string
+        default: auto-triggered
+
+      aws_arn_role:
+        required: true
+        type: string
+
+      aws_region:
+        required: true
+        type: string
+
+jobs:
+  start-runner:
+    name: Start self-hosted EC2 runner
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: ${{ inputs.aws_region }}
+          role-to-assume: ${{ inputs.aws_arn_role }}
+
+      - name: Download config file and set env vars from it
+        run: |
+          aws s3 cp s3://electron-ci-config-bucket/config.json .
+          aws s3 cp s3://electron-ci-config-bucket/set_github_env_vars.py .
+          python set_github_env_vars.py --file config.json
+
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: brightsign/ec2-github-runner@0fa8b183dd4124fd191ccdbc48b68f0ea46a9634
+        with:
+          mode: start
+          github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          github-app-id: 287690
+          ec2-image-id: ami-07b4a16cd5294af98
+          ec2-instance-type: ${{ inputs.instance_type }}
+          subnet-id: ${{ env.VPC_SUBNET_ID }}
+          security-group-id: ${{ env.VPC_SG_ID }}
+          run-as-service-with-user: ubuntu
+          runner-home-dir: /home/ubuntu
+          # iam-role-name: my-role-name # optional, requires additional permissions
+          aws-resource-tags: > # optional, requires additional permissions
+            [
+              {"Key": "Name", "Value": "github-runner-${{ inputs.instance_name_postfix }}"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"}
+            ]
+
+  build-and-test-electron:
+    name: Build and Test Electron
+    needs: start-runner # required to start the main job when the runner is ready
+    uses: ./.github/workflows/bs_electron_build_and_test.yml
+    secrets: inherit
+    with:
+      runner_name: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+      github_hosted_runner: false
+      build_type: ${{ inputs.build_type }}
+      aws_arn_role: ${{ inputs.aws_arn_role }}
+      aws_region: ${{ inputs.aws_region }}
+
+  stop-runner:
+    name: Stop self-hosted EC2 runner
+    needs:
+      - start-runner # required to get output from the start-runner job
+      - build-and-test-electron # required to wait when the main job is done
+    runs-on: ubuntu-latest
+    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ inputs.aws_arn_role }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Stop EC2 runner
+        uses: brightsign/ec2-github-runner@0fa8b183dd4124fd191ccdbc48b68f0ea46a9634
+        with:
+          mode: stop
+          github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          github-app-id: 287690
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          leave-ec2-instance-running:  ${{ inputs.leave_ec2_instance_running }}

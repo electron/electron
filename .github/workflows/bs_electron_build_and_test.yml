@@ -1,0 +1,299 @@
+name: 'BrightSign Build and Test Electron: Build and test workflow'
+on:
+  workflow_call:
+    inputs:
+      runner_name:
+        required: true
+        type: string
+
+      github_hosted_runner:
+        required: true
+        type: boolean
+
+      build_type:
+        required: true
+        type: string
+        # "test" or "release"
+
+      aws_arn_role:
+        required: true
+        type: string
+
+      aws_region:
+        required: true
+        type: string
+
+jobs:
+  build-and-test-electron:
+    name: Build and Test Electron
+    runs-on: ${{ inputs.runner_name }}
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+    # Cleanups only needed for self hosted runners
+    # - name: Clean up work dir (temp instead of colpal/actions-clean@v1, until docker usage issue with sock file permissions sorted)
+    #   run: rm -rf *
+
+    # - name: Cleanup work dir
+    #   uses: colpal/actions-clean@v1
+    #   if: ${{ always() }} # To ensure this step runs even when earlier steps fail
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1-node16
+      with:
+        aws-region: ${{ inputs.aws_region}}
+        role-to-assume: ${{ inputs.aws_arn_role }}
+        # Set role-duration-seconds to 10 hours
+        role-duration-seconds: 36000
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - name: Download config file and set env vars from it
+      run: |
+        aws s3 cp s3://electron-ci-config-bucket/config.json .
+        aws s3 cp s3://electron-ci-config-bucket/set_github_env_vars.py .
+        python3 set_github_env_vars.py --file config.json
+
+    - name: Check build type 
+      if: inputs.build_type != 'test' && inputs.build_type != 'release'
+      run: |
+        echo "ERROR> build_type is set to \"${{ inputs.build_type }}\" and should be set to \"test\" or \"release\""
+        exit 1
+
+    - name: Install dependencies if Github hosted runner
+      if: inputs.github_hosted_runner == true
+      run: |
+        #  From https://www.electronjs.org/docs/latest/development/build-instructions-linux
+        sudo apt-get update
+        sudo apt-get install -y build-essential clang libdbus-1-dev libgtk-3-dev \
+                       libnotify-dev libasound2-dev libcap-dev \
+                       libcups2-dev libxtst-dev \
+                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
+                       gperf bison python3-dbusmock openjdk-8-jre
+        
+        # virtual framebuffer for running tests.
+        sudo apt install -y xvfb
+
+        # A fix for test case (to remove fonts-liberation that seems to be installed by default in Github default ubuntu image)...
+        # 2022-12-23T10:56:48.4520914Z not ok 2079 font fallback should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux
+        # 2022-12-23T10:56:48.4522432Z   AssertionError: expected 'Liberation Sans' to equal 'DejaVu Sans'
+        # 2022-12-23T10:56:48.4523556Z       at Context.<anonymous> (electron/spec/chromium-spec.ts:2222:38)
+        sudo apt-get remove -y fonts-liberation
+
+    - name: Install and setup sccache
+      run: |
+        # export SCCACHE_ERROR_LOG="$PWD"/sccache.log
+        # export SCCACHE_LOG="info,sccache::cache=debug"
+
+        # curl -o sccache_package.tar.gz -L https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz
+        # echo "427bd2151a1b01cd9b094d842e22c445b30f3c645f171a9a62ea55270f06bf23  sccache_package.tar.gz" | shasum -a 256 -c
+        
+        curl -o sccache_package.tar.gz -L https://github.com/mozilla/sccache/releases/download/v0.4.0-pre.6/sccache-v0.4.0-pre.6-x86_64-unknown-linux-musl.tar.gz
+        echo "be5e423c546de2756337ccc1990eb842d85fa5255fb1c4f10a8b5788e18d3e22  sccache_package.tar.gz" | shasum -a 256 -c
+
+        tar xzf sccache_package.tar.gz --strip-components=1
+        sudo ln -s "$PWD"/sccache /usr/local/bin/sccache
+
+        # echo '/home/ubuntu/.cargo/bin/sccache' >> $GITHUB_PATH
+        echo 'SCCACHE_REGION=${{ inputs.aws_region }}' >> $GITHUB_ENV
+        echo 'SCCACHE_CACHE_SIZE=100G' >> $GITHUB_ENV
+
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        path: ./src/electron
+        fetch-depth: 0
+
+    - name: Get electron_version
+      run: echo "ELECTRON_VERSION=v$(python3 ./src/electron/script/get-git-version.py)" >> $GITHUB_ENV
+
+    - name: Setup build type Testing
+      if: inputs.build_type == 'test'
+      run: |
+        echo "Setting up build type as testing"
+        echo 'OUTPUT_FOLDER=out/Testing' >> $GITHUB_ENV
+        echo 'GN_IMPORT=//electron/build/args/testing.gn' >> $GITHUB_ENV
+        echo 'SCCACHE_BUCKET=${{ env.SCCACHE_TEST_BUILD_BUCKET_NAME }}' >> $GITHUB_ENV
+
+    - name: Setup build type Release
+      if: inputs.build_type == 'release'
+      run: |
+        echo "Setting up build type as release"
+        echo 'OUTPUT_FOLDER=out/Release' >> $GITHUB_ENV
+        echo 'GN_IMPORT=//electron/build/args/release.gn' >> $GITHUB_ENV
+        echo 'SOURCE_RELEASE_FILE_NAME=${{ env.ELECTRON_VERSION }}' >> $GITHUB_ENV
+        echo 'RELEASE_SRC_FOLDER=${{ env.ELECTRON_VERSION }}' >> $GITHUB_ENV
+        echo 'RELEASE_DST_FOLDER=${{ env.ELECTRON_VERSION }}' >> $GITHUB_ENV
+        echo 'SCCACHE_BUCKET=${{ env.SCCACHE_RELEASE_BUILD_BUCKET_NAME }}' >> $GITHUB_ENV
+
+    - name: Display sccache config
+      run: |
+        # echo $SCCACHE_BUCKET $SCCACHE_REGION $SCCACHE_CACHE_SIZE
+
+        sccache -s
+
+    - name: Configure Git cache params
+      run:  |
+        echo 'GIT_CACHE_FOLDER_NAME=git-cache' >> $GITHUB_ENV
+        echo 'GIT_CACHE_PATH='"$PWD"'/git-cache' >> $GITHUB_ENV
+        echo 'GIT_CACHE_FILENAME=git-cache-${{ hashFiles('src/electron/DEPS') }}.tar.gz' >> $GITHUB_ENV
+
+    - name: Get depot tools
+      run:  git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+    - name: Add depot tools to PATH
+      run:  echo ''"$PWD"'/depot_tools' >> $GITHUB_PATH
+
+    - name: Retrieve git-cache
+      run: |
+        aws s3api head-object --bucket ${{ env.GIT_CACHE_BUCKET_NAME }} --key $GIT_CACHE_FILENAME || not_exist=true
+        if [ $not_exist ]; then
+          echo "Git cache ${GIT_CACHE_FILENAME} not found in bucket ${{ env.GIT_CACHE_BUCKET_NAME }}"
+          echo "GIT_CACHE_RESTORED=false" >> $GITHUB_ENV
+        else
+          echo "Git cache ${GIT_CACHE_FILENAME} found in bucket ${{ env.GIT_CACHE_BUCKET_NAME }}"
+          echo "GIT_CACHE_RESTORED=true" >> $GITHUB_ENV
+          aws s3 cp s3://${{ env.GIT_CACHE_BUCKET_NAME }}/$GIT_CACHE_FILENAME $GIT_CACHE_FILENAME --quiet
+          echo "Downloaded ${GIT_CACHE_FILENAME}"
+          tar --use-compress-program=pigz -xf $GIT_CACHE_FILENAME
+          echo "Uncompressed ${GIT_CACHE_FILENAME}"
+          rm $GIT_CACHE_FILENAME
+        fi
+
+    - name: GClient sync
+      run: |
+        gclient config --name "src/electron"  --unmanaged git@github.com:${{ github.repository }}.git
+        gclient sync --with_branch_heads --with_tags
+        
+        # TEMP if you don't do gsync
+        # cd src/electron
+        # gclient sync -f
+
+    - name: Save git-cache cache if needed
+      if: env.GIT_CACHE_RESTORED == 'false'
+      run: |
+        tar --use-compress-program=pigz -cf $GIT_CACHE_FILENAME ./$GIT_CACHE_FOLDER_NAME
+        aws s3 cp $GIT_CACHE_FILENAME s3://${{ env.GIT_CACHE_BUCKET_NAME }}/$GIT_CACHE_FILENAME --storage-class ONEZONE_IA --quiet
+
+    - name: Create source tarball and copy to artifacts bucket
+      if: inputs.build_type == 'release'
+      run: |
+        mkdir -p ${{ env.RELEASE_SRC_FOLDER }}
+
+        echo "Fetching chromium build tools to get export_tarball.py"
+        git clone https://chromium.googlesource.com/chromium/tools/build --depth 1
+
+        echo "Running export_tarball.py"
+        ./build/recipes/recipe_modules/chromium/resources/export_tarball.py $RELEASE_SRC_FOLDER/${{ env.SOURCE_RELEASE_FILE_NAME }} --basename src --src-dir=./src --version=${{ env.ELECTRON_VERSION }} --remove-nonessential-files    
+
+        echo "Uploading source tarball"
+        aws s3 cp ${{ env.RELEASE_SRC_FOLDER }}/${{ env.SOURCE_RELEASE_FILE_NAME }}.tar.xz s3://${{ env.ARTIFACT_BUCKET_NAME }}/${{ env.RELEASE_DST_FOLDER }}/ --acl public-read --quiet
+
+    - name: Set CHROMIUM_BUILDTOOLS_PATH env var
+      run: echo 'CHROMIUM_BUILDTOOLS_PATH='"$PWD"'/src/buildtools' >> $GITHUB_ENV
+
+    - name: Make sure electron git pack-refs file is present
+      # This is to stop ninja getting into an infinte loop of "[0/1] Regenerating ninja files"
+      # Found this file was the issue (as it was missing for some reason) by manually running ninja with -d explain
+      run: |
+        cd src/electron
+        git pack-refs --all
+
+    - name: Run GN Gen
+      run: |
+        cd src
+        gn gen $OUTPUT_FOLDER --args="import(\"${GN_IMPORT}\") cc_wrapper=\"sccache\""
+ 
+    - name: Run Ninja Build
+      run: |
+        cd src
+        ninja -C $OUTPUT_FOLDER electron
+
+    - name: Build other items for tests
+      if: inputs.build_type == 'test'
+      run: |
+        cd src
+        ninja -C $OUTPUT_FOLDER electron:node_headers shell_browser_ui_unittests
+
+    - name: Display sccache stats
+      run: sccache -s
+
+    - name: Run unit tests
+      if: inputs.build_type == 'test'
+      run: |
+        cd src/electron
+        xvfb-run npm run test
+
+    - name: Run Node.js Smoke Tests
+      if: inputs.build_type == 'test'
+      run: |
+        cd src/electron
+        xvfb-run node script/node-spec-runner.js --default
+
+    - name: Prepare release dist and upload
+      if: inputs.build_type == 'release'
+      run: |
+        cd src
+        ninja -C $OUTPUT_FOLDER electron:electron_dist_zip electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+        if [ "`uname`" == "Darwin" ]; then
+          target_os=mac
+          target_cpu=x64
+          if [ x"$MAS_BUILD" == x"true" ]; then
+            target_os=mac_mas
+          fi
+          if [ "$TARGET_ARCH" == "arm64" ]; then
+            target_cpu=arm64
+          fi
+        elif [ "`uname`" == "Linux" ]; then
+          target_os=linux
+          if [ x"$TARGET_ARCH" == x ]; then
+            target_cpu=x64
+          else
+            target_cpu="$TARGET_ARCH"
+          fi
+        else
+          echo "Unknown system: `uname`"
+          exit 1
+        fi
+        echo "Checking dist_zip.${target_os}.${target_cpu}.manifest"
+        echo "TARGET_OS_CPU=${target_os}-${target_cpu}" >> $GITHUB_ENV
+        electron/script/zip_manifests/check-zip-manifest.py $OUTPUT_FOLDER/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
+
+    - name: Prepare release package and upload to artifacts bucket
+      if: inputs.build_type == 'release'
+      run: |
+        cd ${{ env.RELEASE_SRC_FOLDER }}
+        mkdir package
+        cd package
+        unzip -q ../../src/out/Release/dist.zip -d ./dist
+        cp ../../src/electron/npm/* .
+        cp ../../src/electron/electron.d.ts .
+        cp ../../src/LICENSE .
+        
+        # Normally when electron is installed it will run install.js which will download the binary, create path.txt 
+        # and copy fields 'name', 'repository', 'description', 'license', 'author', 'keywords' from the root package.json.
+
+        # We will manually do these steps and clear install.js
+
+        echo -n "electron" > path.txt
+        echo "" > install.js
+
+        echo "$(jq '. += {"name": "electron"}' package.json)" > package.json
+        echo "$(jq '. += {"repository": "https://github.com/brightsign/electron"}' package.json)" > package.json
+        echo "$(jq '. += {"description": "Build cross platform desktop apps with JavaScript, HTML, and CSS"}' package.json)" > package.json
+        echo "$(jq '. += {"license": "MIT"}' package.json)" > package.json
+        echo "$(jq '. += {"author": "Electron Community"}' package.json)" > package.json
+        echo "$(jq '. += {"keywords": [ "electron" ] }' package.json)" > package.json
+        echo "$(jq '. += {"version": "${{ env.ELECTRON_VERSION }}"}' package.json)" > package.json
+
+        electron_package_name="electron-package-${{ env.TARGET_OS_CPU }}-${{ env.SOURCE_RELEASE_FILE_NAME }}.tar.gz"
+        echo "Creating $electron_package_name"
+        tar --use-compress-program=pigz -cf "../$electron_package_name" .
+        cd ..
+
+        echo "Uploading $electron_package_name to s3://${{ env.ARTIFACT_BUCKET_NAME }}/${{ env.RELEASE_DST_FOLDER }}/"
+        aws s3 cp $electron_package_name s3://${{ env.ARTIFACT_BUCKET_NAME }}/${{ env.RELEASE_DST_FOLDER }}/ --acl public-read --quiet

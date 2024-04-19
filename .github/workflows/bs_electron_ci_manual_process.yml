@@ -1,0 +1,41 @@
+name: 'BrightSign Manual Build Process'
+on: 
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        type: choice
+        options:
+        - test
+        - release
+
+      instance_type:
+        description: 'EC2 Instance Type'
+        type: choice
+        options:
+        - c6a.large
+        - c6a.xlarge
+        - c6a.2xlarge
+        - c6a.4xlarge
+        - c6a.8xlarge
+
+      leave_ec2_instance_running:
+        description: 'Leave EC2 instance running after use'
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  call-build-and-test:
+    uses: ./.github/workflows/bs_electron_ci_ec2.yml
+    secrets: inherit
+    with:
+      build_type: ${{ inputs.build_type }}
+      instance_type: ${{ inputs.instance_type }}
+      leave_ec2_instance_running: ${{ inputs.leave_ec2_instance_running }}
+      instance_name_postfix: manual--${{ github.actor }}
+      aws_arn_role: arn:aws:iam::195607249165:role/github-actions-electron-repo
+      aws_region: us-east-1
