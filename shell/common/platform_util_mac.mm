@@ -15,11 +15,15 @@
 #include "base/apple/osstatus_logging.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/thread_pool.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "net/base/apple/url_conversions.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
@@ -183,15 +187,12 @@ void OpenExternal(const GURL& url,
     return;
   }
 
-  bool activate = options.activate;
-  __block OpenCallback c = std::move(callback);
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
-                 ^{
-                   __block std::string error = OpenURL(ns_url, activate);
-                   dispatch_async(dispatch_get_main_queue(), ^{
-                     std::move(c).Run(error);
-                   });
-                 });
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE,
+      {base::MayBlock(), base::WithBaseSyncPrimitives(),
+       base::TaskPriority::USER_BLOCKING,
+       base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
+      base::BindOnce(&OpenURL, ns_url, options.activate), std::move(callback));
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,
