@@ -33,7 +33,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index b20b3cd229efcd9701791309361b7d106f315900..f708557b87a0f695e1f9e649dcd83f95fdbc6d59 100644
+index b20b3cd229efcd9701791309361b7d106f315900..6b2820c9dcce5e658b694f53e75d93707c4320d7 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -10,8 +10,8 @@ const {
@@ -47,20 +47,18 @@ index b20b3cd229efcd9701791309361b7d106f315900..f708557b87a0f695e1f9e649dcd83f95
  } = require('internal/constants');
  
  let utcCache;
-@@ -44,11 +44,15 @@ function isTraceHTTPEnabled() {
+@@ -44,11 +44,13 @@ function isTraceHTTPEnabled() {
  const traceEventCategory = 'node,node.http';
  
  function traceBegin(...args) {
 -  trace(CHAR_LOWERCASE_B, traceEventCategory, ...args);
 +  // See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
-+  console.log('trace with CHAR_UPPERCASE_B: ', CHAR_UPPERCASE_B)
 +  trace(CHAR_UPPERCASE_B, traceEventCategory, ...args);
  }
  
  function traceEnd(...args) {
 -  trace(CHAR_LOWERCASE_E, traceEventCategory, ...args);
 +  // See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
-+  console.log('trace with CHAR_UPPERCASE_E: ', CHAR_UPPERCASE_E)
 +  trace(CHAR_UPPERCASE_E, traceEventCategory, ...args);
  }
  
