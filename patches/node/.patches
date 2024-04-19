@@ -45,3 +45,4 @@ fix_revert_src_lb_reducing_c_calls_of_esm_legacy_main_resolve.patch
 src_preload_function_for_environment.patch
 deprecate_vector_v8_local_in_v8.patch
 fix_remove_deprecated_errno_constants.patch
+build_enable_perfetto.patch
