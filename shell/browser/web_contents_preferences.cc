@@ -107,8 +107,7 @@ WebContentsPreferences::WebContentsPreferences(
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
-  Instances().erase(std::remove(Instances().begin(), Instances().end(), this),
-                    Instances().end());
+  std::erase(Instances(), this);
 }
 
 void WebContentsPreferences::Clear() {
