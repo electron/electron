@@ -75,7 +75,8 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 
 function cpplint (args) {
   args.unshift(`--root=${SOURCE_ROOT}`);
-  const result = childProcess.spawnSync(IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py', args, { encoding: 'utf8', shell: true });
+  const cmd = IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py';
+  const result = childProcess.spawnSync(cmd, args, { encoding: 'utf8', shell: true });
   // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
     for (const line of result.stderr.split(/[\r\n]+/)) {
