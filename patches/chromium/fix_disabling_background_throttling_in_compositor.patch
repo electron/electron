@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 52b526013428cfe5cb4ea49be8be32b280f40162..10df9f6ad0d8f21a4c8dd20bb6a5dbebc5d525b7 100644
+index 4dc329165d439fb63930527a0d88af537139286f..a3477a0337e60e13bc170afbd2b232036932f0a3 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -340,7 +340,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -36,7 +36,7 @@ index 52b526013428cfe5cb4ea49be8be32b280f40162..10df9f6ad0d8f21a4c8dd20bb6a5dbeb
  
    if (changed) {
      for (auto& observer : observer_list_) {
-@@ -1015,4 +1018,13 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1014,4 +1017,13 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -51,10 +51,10 @@ index 52b526013428cfe5cb4ea49be8be32b280f40162..10df9f6ad0d8f21a4c8dd20bb6a5dbeb
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 50a06cf8eb3141cfd296b15cc188afc9628be511..edaa26116a980818f090c878f5086c3e87e143f4 100644
+index 48690a48e26e7acb13d2a44cf7454da9e80596df..b6c4d4fe03f51f5453f0da7f4a48e19535607de2 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -509,6 +509,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -508,6 +508,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -65,7 +65,7 @@ index 50a06cf8eb3141cfd296b15cc188afc9628be511..edaa26116a980818f090c878f5086c3e
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -641,6 +645,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -638,6 +642,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

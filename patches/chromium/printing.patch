@@ -750,7 +750,7 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..2631e9019e4c6617e2a8a90d30a21ca5
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8e7e92a9eff5a2ac1aa712d83dfc9784d571c0e3..1a1a9f012f7becbe21c4fba4ae1c85fe103d9947 100644
+index a589ead8da8c42a9afde99d2ff88b715805fd94b..6675524af47b45e0506715f12e27982d43a1119c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2934,8 +2934,9 @@ source_set("browser") {

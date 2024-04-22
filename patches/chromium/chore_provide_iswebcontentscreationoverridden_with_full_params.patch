@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c746fe89066b8187b4091b20ab1454b2bd7fc8cf..144be28714517543bed9383b671a6c7fe9e427c1 100644
+index d5e79728b80d5b6ce7c16463721bf9e2d82292d8..7af7db3bf5a81695c06045e64f0626f3bee3206c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4524,8 +4524,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -316,7 +316,7 @@ index f0b71aba6dfb4682ce2e5b4c834b2526dcacb75c..d4b1857ca468ff97914d91d0c31298b7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 04380854c1ec6c32a98f55948e5fdd358d8b8d7f..260145fe90c6ba52ea3367e75ab2a327c90a6cb3 100644
+index 190aec11878864d89678edf9654eab923a47ee89..fca46e4edaed01ac1fe63c58a43b523a61b5fce9 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -573,8 +573,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
@@ -358,10 +358,10 @@ index c9ba0256487325454f9cfd7d4905d3ac73e24189..4cf06fbf5cbc4db60ed343ac8caada39
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 933439e5d02efc8552558efd6397082f3ee9a4a9..f535ec672fcec71f82f5a537c3a248ee26dc71be 100644
+index 1a2c66e329b6f42db3dc0bea7f18df53960fa088..0d879e3bcfc736d8dd7193204ab0fae9e26779a5 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -441,8 +441,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -442,8 +442,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -372,10 +372,10 @@ index 933439e5d02efc8552558efd6397082f3ee9a4a9..f535ec672fcec71f82f5a537c3a248ee
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 36f11d3ebbc1715f6f89467ece331e8127e05110..42ee32220a84c273c65c60bd01d08ecf9eeb65d4 100644
+index d7915d549e6dda928aad23be7f067386d519f499..da1723c3e83d42867a1bdd63183b244c67521212 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
-@@ -165,8 +165,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
+@@ -166,8 +166,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

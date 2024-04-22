@@ -163,7 +163,7 @@ index 220eab3370bb2632150f845d29ab7babf44472f5..6f055560ecfe480de1c7c8f4f2c22a59
  }
  
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index 2952e39ee9f6dd180b7d8a25216202bff8ebc065..e29d60a99302f174bda921202c0aeb539921faa8 100644
+index 163d00f6a0f0ed89017b2a7e8c537de0db160229..b84ad0652585460612e3e64a7cc34090f7ad83d8 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
 @@ -204,6 +204,16 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
@@ -253,7 +253,7 @@ index 20dcf8a82ccc5bfe8ff428cc3e91584b215c9810..776eb0badd4b191e9d08eba3fdba720e
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 76169a21ebe9969a2d8a0d9696ca1400ee0ea4bb..86582f1600a0195a8b67f8d7760f4493f5895f94 100644
+index 9791ae2f761043b9eecd9064a6fd39a6e2339af4..1083f1683a05825f51f5b2d71f8107d910fa2474 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -29,6 +29,10 @@

@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 53b7641464c111c467944ac60a1b8eb989eba8cb..c9d3c632db22000b4f67f5c7de559ec8f5262b73 100644
+index 47f39d608a07ece72d7cb9b6e79648b68dbe6b16..c9a6f2fa1ce856cc2b4e00401fa58408f361067d 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -7,6 +7,7 @@
@@ -393,7 +393,7 @@ index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9ceb
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 42d78899b33b2b61e8104675ee810578656c2981..3feacc44bd94faaed23b57667df4ccbac1610819 100644
+index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756dba452183e 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -142,6 +142,9 @@ class CONTENT_EXPORT ContentClient {
