@@ -12,13 +12,13 @@ const ERR_UNEXPECTED = -9;
 const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
 
 function makeStreamFromPipe (pipe: any): ReadableStream {
+  const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
   return new ReadableStream({
     async pull (controller) {
       try {
-        const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
         const rv = await pipe.read(buf);
         if (rv > 0) {
-          controller.enqueue(buf.subarray(0, rv));
+          controller.enqueue(buf.slice(0, rv));
         } else {
           controller.close();
         }
