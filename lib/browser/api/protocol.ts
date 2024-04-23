@@ -18,7 +18,7 @@ function makeStreamFromPipe (pipe: any): ReadableStream {
       try {
         const rv = await pipe.read(buf);
         if (rv > 0) {
-          controller.enqueue(buf.subarray(0, rv));
+          controller.enqueue(buf.slice(0, rv));
         } else {
           controller.close();
         }
