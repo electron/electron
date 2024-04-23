@@ -27,7 +27,8 @@
 			]
 		},
 		"vscode": {
-			"extensions": ["joeleinbinder.mojom-language",
+			"extensions": [
+				"joeleinbinder.mojom-language",
 				"rafaelmaiolla.diff",
 				"surajbarkale.ninja",
 				"ms-vscode.cpptools",
