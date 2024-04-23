@@ -192,6 +192,8 @@ const char kHideScrollBars[] = "hideScrollBars";
 
 const char ktitleBarOverlay[] = "titleBarOverlay";
 
+const char kEnablePinchZoom[] = "enablePinchZoom";
+
 }  // namespace options
 
 namespace switches {
