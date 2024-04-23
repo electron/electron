@@ -167,7 +167,7 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        npm i -g @electron/build-tools
+        yarn add git://github.com/electron/build-tools.git#2bb63e2e7877491b52f972532b52adc979a6ec2f
         e init --root=$(pwd) --out=Default testing
     - name: Checkout Electron
       uses: actions/checkout@v4
@@ -504,7 +504,7 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        npm i -g @electron/build-tools
+        yarn add git://github.com/electron/build-tools.git#2bb63e2e7877491b52f972532b52adc979a6ec2f
         e init --root=$(pwd) --out=Default testing
     - name: Checkout Electron
       uses: actions/checkout@v4
