@@ -10,6 +10,10 @@ on:
 
 env:
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
+  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
   IS_RELEASE: false
@@ -21,12 +25,6 @@ env:
 jobs:
   checkout:
     runs-on: LargeLinuxRunner
-    environment: ${{ inputs.environment }}
-    env:
-      AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
-      AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
-      AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
-      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@v4
@@ -391,10 +389,10 @@ jobs:
         cd src/electron
         if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
           echo 'Uploading Electron release distribution to Azure'
-          # script/release/uploaders/upload.py --verbose --upload_to_storage
+          script/release/uploaders/upload.py --verbose --upload_to_storage
         else
           echo 'Uploading Electron release distribution to GitHub releases'
-          # script/release/uploaders/upload.py --verbose
+          script/release/uploaders/upload.py --verbose
         fi
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # tp ensure we don't break anything, but we may be able to improve that.
