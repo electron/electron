@@ -55,7 +55,10 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
-typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
+typedef std::unordered_map<blink::LocalFrameToken,
+                           WebFrameMain*,
+                           blink::LocalFrameToken::Hasher>
+    WebFrameMainIdMap;
 
 WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
@@ -63,33 +66,21 @@ WebFrameMainIdMap& GetWebFrameMainMap() {
 }
 
 // static
-WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
-  WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
-  auto iter = frame_map.find(frame_tree_node_id);
-  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
-  return web_frame;
-}
-
-// static
 WebFrameMain* WebFrameMain::FromRenderFrameHost(content::RenderFrameHost* rfh) {
   if (!rfh)
     return nullptr;
 
-  // TODO(codebytere): remove after refactoring away from FrameTreeNodeId as map
-  // key.
-  auto* ftn =
-      static_cast<content::RenderFrameHostImpl*>(rfh)->frame_tree_node();
-  if (!ftn)
-    return nullptr;
-
-  return FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+  WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
+  auto iter = frame_map.find(rfh->GetGlobalFrameToken().frame_token);
+  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
+  return web_frame;
 }
 
 gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
-    : frame_tree_node_id_(rfh->GetFrameTreeNodeId()), render_frame_(rfh) {
-  GetWebFrameMainMap().emplace(frame_tree_node_id_, this);
+    : rfh_token_(rfh->GetGlobalFrameToken()), render_frame_(rfh) {
+  GetWebFrameMainMap().emplace(rfh_token_.frame_token, this);
 }
 
 WebFrameMain::~WebFrameMain() {
@@ -98,7 +89,7 @@ WebFrameMain::~WebFrameMain() {
 
 void WebFrameMain::Destroyed() {
   MarkRenderFrameDisposed();
-  GetWebFrameMainMap().erase(frame_tree_node_id_);
+  GetWebFrameMainMap().erase(rfh_token_.frame_token);
   Unpin();
 }
 
@@ -270,7 +261,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
 }
 
 int WebFrameMain::FrameTreeNodeID() const {
-  return frame_tree_node_id_;
+  return 0;
 }
 
 std::string WebFrameMain::Name() const {

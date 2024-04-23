@@ -628,7 +628,6 @@ class WebContents : public ExclusiveAccessContext,
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
-  void FrameDeleted(int frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void PrimaryMainFrameRenderProcessGone(
       base::TerminationStatus status) override;

@@ -1,0 +1,9 @@
+<script>
+const { ipcRenderer } = require('electron')
+window.onload = () => {
+  setInterval(() => {
+    ipcRenderer.send('test')
+  }, 0);
+  window.location.replace("https://example.com");
+}
+</script>

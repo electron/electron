@@ -12,6 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "content/public/browser/global_routing_id.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -49,7 +50,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   static gin::Handle<WebFrameMain> FromOrNull(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
-  static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
   static WebFrameMain* FromRenderFrameHost(
       content::RenderFrameHost* render_frame_host);
 
@@ -125,7 +125,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
 
-  int frame_tree_node_id_;
+  content::GlobalRenderFrameHostToken rfh_token_;
 
   raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 

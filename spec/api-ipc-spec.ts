@@ -198,6 +198,21 @@ describe('ipc module', () => {
       expect(received).to.have.lengthOf(1000);
       expect(received).to.deep.equal([...received].sort((a, b) => a - b));
     });
+
+    it('handles navigation', async () => {
+      const received = new Set<string>();
+      ipcMain.on('test', (e) => { received.add(e.senderFrame.url); });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      // This is testing a race condition between navigation and IPC.
+      // It's not quite deterministic so repeat a few times to get good signal.
+      for (let i = 0; i < 10; i++) {
+        w.loadFile(path.resolve(fixturesPath, 'pages', 'ipc-after-navigate.html'));
+        await once(w.webContents, 'did-navigate');
+        const expectedUrl = w.getURL();
+        await once(w.webContents, 'did-stop-loading');
+        expect([...received.values()]).to.deep.equal([expectedUrl]);
+      }
+    });
   });
 
   describe('MessagePort', () => {
