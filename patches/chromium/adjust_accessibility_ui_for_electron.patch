@@ -1,47 +1,27 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Mon, 6 Jul 2020 13:46:06 -0700
-Subject: fix: patch out Profile refs in accessibility_ui
+Subject: Adjust accessibility_ui for Electron
 
 This tweaks Chrome's Accessibility support at chrome://accessibility
-to make it usable from Electron by removing Profile references.
+to make it usable from Electron by replacing use of the Profile PrefService
+with Electron's own PrefService in ElectronBrowserContext. It also removes
+usage of BrowserList and Browser as we subclass related methods and use our
+WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 45b085ebb5096b2cdd083337371539a249c7a0a8..404a0a8d99eb68a35c0c06fe1b1dbfa3086e8794 100644
+index 45b085ebb5096b2cdd083337371539a249c7a0a8..9a0a6cb8b37c60641c2c51aa489fbf22cdb123cb 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-@@ -23,7 +23,10 @@
- #include "base/trace_event/trace_event.h"
- #include "build/build_config.h"
- #include "build/chromeos_buildflags.h"
-+#if 0
- #include "chrome/browser/profiles/profile.h"
-+#endif
-+#include "chrome/common/chrome_features.h"
- #include "chrome/common/pref_names.h"
- #include "chrome/common/webui_url_constants.h"
- #include "chrome/grit/accessibility_resources.h"
-@@ -33,6 +36,7 @@
- #include "content/public/browser/ax_event_notification_details.h"
- #include "content/public/browser/ax_inspect_factory.h"
- #include "content/public/browser/browser_accessibility_state.h"
-+#include "content/public/browser/browser_context.h"
- #include "content/public/browser/browser_thread.h"
- #include "content/public/browser/favicon_status.h"
- #include "content/public/browser/navigation_entry.h"
-@@ -52,9 +56,11 @@
- #include "ui/views/accessibility/view_accessibility.h"
- 
- #if !BUILDFLAG(IS_ANDROID)
-+#if 0
- #include "chrome/browser/ui/browser.h"
- #include "chrome/browser/ui/browser_list.h"
- #include "chrome/browser/ui/browser_window.h"
-+#endif
- #include "ui/views/accessibility/widget_ax_tree_id_map.h"
- #include "ui/views/widget/widget.h"
- #include "ui/views/widget/widget_delegate.h"
-@@ -169,7 +175,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
+@@ -44,6 +44,7 @@
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/browser/web_contents_delegate.h"
+ #include "content/public/browser/web_ui_data_source.h"
++#include "electron/shell/browser/electron_browser_context.h"
+ #include "ui/accessibility/accessibility_features.h"
+ #include "ui/accessibility/platform/ax_platform_node.h"
+ #include "ui/accessibility/platform/ax_platform_node_delegate.h"
+@@ -169,7 +170,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
                                 accessibility_mode);
  }
  
@@ -50,27 +30,25 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..404a0a8d99eb68a35c0c06fe1b1dbfa3
  base::Value::Dict BuildTargetDescriptor(Browser* browser) {
    base::Value::Dict target_data;
    target_data.Set(kSessionIdField, browser->session_id().id());
-@@ -203,7 +209,9 @@ void HandleAccessibilityRequestCallback(
+@@ -203,7 +204,7 @@ void HandleAccessibilityRequestCallback(
    DCHECK(ShouldHandleAccessibilityRequestCallback(path));
  
    base::Value::Dict data;
-+#if 0
-   PrefService* pref = Profile::FromBrowserContext(current_context)->GetPrefs();
-+#endif
+-  PrefService* pref = Profile::FromBrowserContext(current_context)->GetPrefs();
++  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
    ui::AXMode mode =
        content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
    bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
-@@ -235,8 +243,7 @@ void HandleAccessibilityRequestCallback(
-   // enabled.
+@@ -236,7 +237,7 @@ void HandleAccessibilityRequestCallback(
    data.Set(kViewsAccessibility, features::IsAccessibilityTreeForViewsEnabled());
  
--  std::string pref_api_type =
+   std::string pref_api_type =
 -      pref->GetString(prefs::kShownAccessibilityApiType);
-+  std::string pref_api_type = "blink";
++      std::string(pref->GetString(prefs::kShownAccessibilityApiType));
    bool pref_api_type_supported = false;
  
    std::vector<ui::AXApiType::Type> supported_api_types =
-@@ -303,11 +310,11 @@ void HandleAccessibilityRequestCallback(
+@@ -303,11 +304,11 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPagesField, std::move(page_list));
  
    base::Value::List browser_list;
@@ -80,36 +58,31 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..404a0a8d99eb68a35c0c06fe1b1dbfa3
      browser_list.Append(BuildTargetDescriptor(browser));
    }
 -#endif  // !BUILDFLAG(IS_ANDROID)
-+#endif // !BUILDFLAG(IS_ANDROID)
++#endif
    data.Set(kBrowsersField, std::move(browser_list));
  
    base::Value::List widgets_list;
-@@ -647,8 +654,10 @@ void AccessibilityUIMessageHandler::SetGlobalString(
+@@ -647,7 +648,8 @@ void AccessibilityUIMessageHandler::SetGlobalString(
    const std::string value = CheckJSValue(data.FindString(kValueField));
  
    if (string_name == kApiTypeField) {
-+#if 0
-     PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
+-    PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
++    PrefService* pref = static_cast<electron::ElectronBrowserContext*>(
++            web_ui()->GetWebContents()->GetBrowserContext())->prefs();
      pref->SetString(prefs::kShownAccessibilityApiType, value);
-+#endif
    }
  }
- 
-@@ -700,9 +709,13 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -700,7 +702,8 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
-+#if 0
-   PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
+-  PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
++  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(
++              web_contents->GetBrowserContext())->prefs();
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
-+#else
-+  ui::AXApiType::Type api_type = ui::AXApiType::kBlink;
-+#endif
    std::string accessibility_contents =
-       web_contents->DumpAccessibilityTree(api_type, property_filters);
-   result.Set(kTreeField, accessibility_contents);
-@@ -727,6 +740,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -727,6 +730,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -117,7 +90,7 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..404a0a8d99eb68a35c0c06fe1b1dbfa3
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        base::Value::Dict result = BuildTargetDescriptor(browser);
-@@ -739,6 +753,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -739,6 +743,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -125,25 +98,24 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..404a0a8d99eb68a35c0c06fe1b1dbfa3
  #endif  // !BUILDFLAG(IS_ANDROID)
    // No browser with the specified |session_id| was found.
    base::Value::Dict result;
-@@ -807,11 +822,15 @@ void AccessibilityUIMessageHandler::StopRecording(
+@@ -807,11 +812,13 @@ void AccessibilityUIMessageHandler::StopRecording(
  }
  
  ui::AXApiType::Type AccessibilityUIMessageHandler::GetRecordingApiType() {
-+#if 0
-   PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
+-  PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
 -  const std::vector<ui::AXApiType::Type> supported_types =
 -      content::AXInspectFactory::SupportedApis();
++  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(
++            web_ui()->GetWebContents()->GetBrowserContext())->prefs();
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
-+#else
-+  ui::AXApiType::Type api_type = ui::AXApiType::kBlink;
-+#endif
++
 +  const std::vector<ui::AXApiType::Type> supported_types =
 +      content::AXInspectFactory::SupportedApis();
    // Check to see if it is in the supported types list.
    if (std::find(supported_types.begin(), supported_types.end(), api_type) ==
        supported_types.end()) {
-@@ -881,8 +900,11 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -881,8 +888,11 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {

@@ -50,6 +50,7 @@
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/webui/accessibility_ui.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
@@ -413,6 +414,7 @@ void ElectronBrowserContext::InitPrefs() {
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
+  ElectronAccessibilityUIMessageHandler::RegisterPrefs(registry.get());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_)
     extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());

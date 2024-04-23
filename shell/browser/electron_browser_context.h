@@ -20,11 +20,11 @@
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/shell/browser/media/media_device_id_salt.h"
 #include "gin/arguments.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "shell/browser/media/media_device_id_salt.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
 class PrefService;
