@@ -34,8 +34,9 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
   describe('clipboard.readHTML()', () => {
     it('returns markup correctly', () => {
       const text = '<string>Hi</string>';
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : '<string>Hi</string>';
       clipboard.writeHTML(text);
-      expect(clipboard.readHTML()).to.equal(text);
+      expect(clipboard.readHTML()).to.equal(markup);
     });
   });
 
@@ -87,7 +88,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       const rtf = '{\\rtf1\\utf8 text}';
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      const markup = '<b>Hi</b>';
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : '<b>Hi</b>';
       const bookmark = { title: 'a title', url: 'test' };
       clipboard.write({
         text: 'test',
