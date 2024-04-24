@@ -11,7 +11,7 @@ on:
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false 
-        default: '0'
+        default: '1'
         type: string
       run-macos-publish:
         description: 'Run the publish jobs vs just the build jobs'
@@ -21,4 +21,10 @@ on:
 jobs:
   publish:
     uses: electron/electron/.github/workflows/macos-build.yml@gh-macos-publish
+    with:
+      IS_RELEASE: true
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_BUILD_TYPE: release
+      GENERATE_SYMBOLS: true
+      UPLOAD_TO_STORAGE: ${{ inputs.upload-to-storage }}
     secrets: inherit
