@@ -106,12 +106,9 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   const std::vector<std::string> argv = {kXdgSettings, "check",
                                          kXdgSettingsDefaultSchemeHandler,
                                          protocol, desktop_name};
-  const auto output = GetXdgAppOutput(argv);
-  if (!output)
-    return false;
-
   // Allow any reply that starts with "yes".
-  return base::StartsWith(output.value(), "yes", base::CompareCase::SENSITIVE);
+  const std::optional<std::string> output = GetXdgAppOutput(argv);
+  return output && output->starts_with("yes");
 }
 
 // Todo implement
