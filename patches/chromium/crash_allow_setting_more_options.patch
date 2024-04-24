@@ -116,10 +116,10 @@ index eb5bcfe0234c39526d6d162434476fe9e32d8184..8480d07e2607eb3c8c16b54a02077c04
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index 15addd5c5e6635ad3b5797d5986c79353590a583..f31ae6b9e8bfdcc32239d0f6859e29ea6b4112b1 100644
+index 0e00d26f79231a01e88981b30ff950e427cd31f4..70f014c75031f9529501e102f97e0e1adadb8ffb 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
-@@ -91,6 +91,7 @@ bool PlatformCrashpadInitialization(
+@@ -92,6 +92,7 @@ bool PlatformCrashpadInitialization(
  
      std::map<std::string, std::string> process_annotations;
      GetPlatformCrashpadAnnotations(&process_annotations);

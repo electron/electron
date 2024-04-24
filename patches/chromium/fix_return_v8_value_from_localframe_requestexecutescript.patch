@@ -8,7 +8,7 @@ v8::Value instead of base::Value.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index 256e590c3d6007591d6f31a43ff1913713d435f1..7c696ca1cbf3fa2d36c2eee53232e03e3f164573 100644
+index f4eac0c9f333a168288ecc2389286b51607fbd25..d5676879bb5652bf67429a5e582a5b486fc145f2 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
 @@ -271,6 +271,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,

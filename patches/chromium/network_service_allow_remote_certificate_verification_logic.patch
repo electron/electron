@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 388f7b68ccb2826a8cf1f31ad92c7cd0a1dda68c..89b5ca65cb5136c51bfd9393a9892bce2cc15988 100644
+index 431f8c52d059e0960e31351c5ed7e5d24710fa04..0fcd930a339fbc1719b84421babbacec23f2fd07 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -152,6 +152,11 @@
@@ -147,7 +147,7 @@ index 388f7b68ccb2826a8cf1f31ad92c7cd0a1dda68c..89b5ca65cb5136c51bfd9393a9892bce
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 0350e8a9b2fb925fd43c62a58fc51f5cce9da034..719c794c2832ade2627039adf7190f632a8cd9d5 100644
+index 610392bf8ead09815a1958e16274968d1ec6d843..62e543ca0eca806d939949573c9bddc172be4f6c 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -113,6 +113,7 @@ class URLMatcher;
@@ -177,7 +177,7 @@ index 0350e8a9b2fb925fd43c62a58fc51f5cce9da034..719c794c2832ade2627039adf7190f63
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e899c9cf40ace5cea49081efa1f4526a3b022038..af635541522d5e56a15876c6e5d7fbc59ce7b328 100644
+index ef58fdbe4a7a1ad8d5137a8356fcb1040f72e188..7d00344f982755b4cd40d0c0c2f596db6f428016 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -298,6 +298,16 @@ struct SocketBrokerRemotes {

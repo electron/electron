@@ -576,7 +576,7 @@ index 4ecdb28904fac480cf102fffdff24ae008ac88cf..0d7d20c1a7920b1961585b345d30d996
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9bbd7600f3 100644
+index 0856615eef543ef1163b688c7f74e7f15b2af062..06b46776ecaa117992d6c6366dfc70bcb7a73298 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -50,6 +50,7 @@
@@ -587,7 +587,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1293,14 +1294,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1305,14 +1306,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -604,7 +604,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
    if (!weak_this) {
      return;
    }
-@@ -1331,7 +1332,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1343,7 +1344,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -613,7 +613,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1346,7 +1347,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1358,7 +1359,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -622,7 +622,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
  
    if (render_frame_gone_) {
      return;
-@@ -1502,6 +1503,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1515,6 +1516,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -631,7 +631,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2096,17 +2099,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2110,17 +2113,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -654,7 +654,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2127,8 +2132,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2141,8 +2146,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -671,7 +671,7 @@ index 505374511412ef4dd4e1aa2c85ffa81a433ca66b..e38547d403d45ba0c3814bbcde28fc9b
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2390,29 +2402,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2404,29 +2416,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -750,10 +750,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..2631e9019e4c6617e2a8a90d30a21ca5
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a589ead8da8c42a9afde99d2ff88b715805fd94b..6675524af47b45e0506715f12e27982d43a1119c 100644
+index 4c697525e7cf5791a5fedf27cf42f6d43dba3a3c..f2607033cf00b211f56c3e3c7a981bf64abca8be 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2934,8 +2934,9 @@ source_set("browser") {
+@@ -2933,8 +2933,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

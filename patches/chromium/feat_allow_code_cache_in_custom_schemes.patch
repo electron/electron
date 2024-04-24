@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 47f39d608a07ece72d7cb9b6e79648b68dbe6b16..c9a6f2fa1ce856cc2b4e00401fa58408f361067d 100644
+index 8fc176cfd3a0411521c0f5e4f60b70ca333f60c8..e43f09d80bc9472a027bb11325803aab42b051a2 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -7,6 +7,7 @@
@@ -437,7 +437,7 @@ index edf357900d9c1ed796890148461e5c268a501ec0..3d28c3e31c4684baf0585cf0d208e97b
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index b044801738627c36c136459dc605c5b6e58b8423..cfce25d7e2729b5d3c86353d8df8b0c864238247 100644
+index e39a44057cebce7cdf90bcb02a7463e88bd271b4..e80b81d2ddeb2ec201b143d86bec6ee54ca49afc 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 4b783b88807b4257b9f1a278b5d97be47a167300..223136b7b189fdba8789bd4ae6499813613e25c0 100644
+index bb654683823f7ac8de2503a403b573f19b9b83f8..204036b9f844412183a58f872b4da23eed7312c9 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -40,6 +40,7 @@
@@ -58,7 +58,7 @@ index 4b783b88807b4257b9f1a278b5d97be47a167300..223136b7b189fdba8789bd4ae6499813
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 610938d92786cc033c19615364e5e45d54bf8ec6..11797f0429845bd3b654aff2bfa468460e4fd772 100644
+index 9d271e5f4e366755e37367b51c4df43f780270b5..17dadba9fdf0f0d29220b2e1ef80a5987b8d1d19 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -5,6 +5,7 @@
@@ -102,10 +102,10 @@ index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb5
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 98b12ad1e659b985beb173cbef53912f1465d6e7..fe235656782a5a788a697c6d50e1d250639f0b23 100644
+index 333907f2270c58c7a77525267f04ec2e02e2d72b..70257d959fab44bee4beef2f6328bfba4d671daf 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -578,8 +578,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -581,8 +581,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -113,9 +113,9 @@ index 98b12ad1e659b985beb173cbef53912f1465d6e7..fe235656782a5a788a697c6d50e1d250
 -void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
 +void V8Initializer::LoadV8SnapshotFromFileName(base::StringPiece file_name, V8SnapshotFileType snapshot_file_type) {
    if (g_mapped_snapshot) {
-     // TODO(crbug.com/802962): Confirm not loading different type of snapshot
+     // TODO(crbug.com/40558459): Confirm not loading different type of snapshot
      // files in a process.
-@@ -588,10 +587,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -591,10 +590,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =

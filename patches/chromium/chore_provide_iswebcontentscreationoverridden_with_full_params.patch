@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index c917e6bc90fd8009ac26bd7a442f7eeb77661196..8d4a95662f4080963864f241c9ac35a99e0ea0bd 100644
+index e611076abb7c411854248891ffff10539ee7f291..194accb2f65628558c5980f261b7e4e40d5114cb 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1915,12 +1915,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1914,12 +1914,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d5e79728b80d5b6ce7c16463721bf9e2d82292d8..7af7db3bf5a81695c06045e64f0626f3bee3206c 100644
+index 0b7aef4050e94d11c0813a7f1ea91e761f3182de..110de3b32c13db5b6feecaa6740c0f4c7627a7ff 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4524,8 +4524,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -260,7 +260,7 @@ index 2122c3d253c41df00bd93d93bc136d849c321c60..2f9fa9954adbf3ef90758141ed37ba78
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index 898d228537de0579f9d2daa1b45e637ce4977926..5403f57773e65984ef488f1571a5e183f2ce4a2b 100644
+index 1f0f61f33c28bee49d51acefad76da8f66f75b7c..e2e53c9f16a45fe24b50d897407adba57e744644 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 @@ -221,8 +221,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
@@ -288,7 +288,7 @@ index 8389455426d35b2d356c897f0f069ef1b1cba9e4..fede03e3f7df8ff45b8b3b2937a41ad7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index bd8b5ddfd8659b96e17263387435fbf92596e763..cd0dc484f735ec5109f5e1cca88e3948daecad4b 100644
+index d4391f44d75627ec7229184b84ba127ed4136d8e..db25aafc5e19ac0de7873141dd8a5451c97e6743 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -392,8 +392,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -316,10 +316,10 @@ index f0b71aba6dfb4682ce2e5b4c834b2526dcacb75c..d4b1857ca468ff97914d91d0c31298b7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 190aec11878864d89678edf9654eab923a47ee89..fca46e4edaed01ac1fe63c58a43b523a61b5fce9 100644
+index e671d8b41cfbaf5f1157e5186afaddc6530ba54a..a466659840b80b4f84a3956b2eb7029e3b71d272 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -573,8 +573,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -574,8 +574,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -358,7 +358,7 @@ index c9ba0256487325454f9cfd7d4905d3ac73e24189..4cf06fbf5cbc4db60ed343ac8caada39
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 1a2c66e329b6f42db3dc0bea7f18df53960fa088..0d879e3bcfc736d8dd7193204ab0fae9e26779a5 100644
+index 435002e18997ca7d6b660d617b7da0cf9450e653..91ef1006be0bd714f0c3078bce0d60fb86130d5f 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -442,8 +442,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
@@ -372,7 +372,7 @@ index 1a2c66e329b6f42db3dc0bea7f18df53960fa088..0d879e3bcfc736d8dd7193204ab0fae9
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index d7915d549e6dda928aad23be7f067386d519f499..da1723c3e83d42867a1bdd63183b244c67521212 100644
+index 4803ab17d0808c80fe4e5f85fcbe3db5a8d7990b..1b2434cb920abeb5d7909db6006cee2e092572a9 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -166,8 +166,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,

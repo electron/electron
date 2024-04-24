@@ -58,7 +58,7 @@ index d8ae896ee02888ee4ab375c4fd3569de27be925e..d4e97e92d353e298978a094aec276947
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 7dfa87a8e33a389c3dabef6b651cf251532d3177..98c150f0bd4a1a33e189ac57d4885c59bd8ec2ca 100644
+index f9881f244c5b3a6166283e08eafa14cdc8786f18..b64ff0e3b73140faf4e99dc3dc5d235ea917a934 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -64,6 +64,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -110,19 +110,19 @@ index 8736af0021dccba915e3d2303191ae3ec80f6e75..56f8384c3ff4959272363cb71e4c380e
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 220eab3370bb2632150f845d29ab7babf44472f5..6f055560ecfe480de1c7c8f4f2c22a5977043b9c 100644
+index 2a01487c8ff837357f6d62dba80115b0ec64c343..8b1ed51630dc4fe77bd0edadb85f04fb8962cdd8 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
-@@ -25,6 +25,8 @@
+@@ -24,6 +24,8 @@
+ #include "mojo/public/cpp/platform/named_platform_channel.h"
  #include "mojo/public/cpp/platform/platform_channel.h"
- #include "sandbox/win/src/sandbox_types.h"
  
 +#include <windows.h>
 +
  namespace {
  
  // Helper to avoid marking the log file as non-executable every time we launch a
-@@ -259,6 +261,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -132,6 +134,30 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
      mojo_channel_->PrepareToPassRemoteEndpoint(&options->handles_to_inherit,
                                                 command_line());
    }
@@ -153,7 +153,7 @@ index 220eab3370bb2632150f845d29ab7babf44472f5..6f055560ecfe480de1c7c8f4f2c22a59
    return true;
  }
  
-@@ -286,7 +312,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
+@@ -159,7 +185,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
    ChildProcessLauncherHelper::Process process;
    *launch_result =
        StartSandboxedProcess(delegate_.get(), *command_line(),
@@ -184,7 +184,7 @@ index 163d00f6a0f0ed89017b2a7e8c537de0db160229..b84ad0652585460612e3e64a7cc34090
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 20dcf8a82ccc5bfe8ff428cc3e91584b215c9810..776eb0badd4b191e9d08eba3fdba720e46a39d8b 100644
+index 4bb24555db8061318a25e02590618d5557383dd5..c564b64f25c3c2bf87ed5a93b0ce601d73aab177 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -178,11 +178,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -324,7 +324,7 @@ index 9791ae2f761043b9eecd9064a6fd39a6e2339af4..1083f1683a05825f51f5b2d71f8107d9
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 086089dc5929cb98be9423a6c2a3a0c40876c8eb..4cd54d37f6480558b49a87a9fe3bfb2b71e3edd9 100644
+index bb7667de8bb189d5daccf0ae824bffbb092f1c22..2e5beb5ac9dac293ca3d2824972d26d8fcd9fe06 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::

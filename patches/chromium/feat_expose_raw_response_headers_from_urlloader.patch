@@ -76,7 +76,7 @@ index 1dadf5b4cac21033b096757f1bb52e0d74966a54..d52d6e48d70bf162c5022cc991c2371d
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index deb406e3e23b21c26e401f2643218a47c105ba03..fcb98d37de587d4ab40015cd59d80e1236570a7d 100644
+index 3f8192e33f34c4b388509456491afb4bc8ebb1b6..0cc2ed7621579d52f5c5c0d5f787d036c8ff2c17 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -74,6 +74,9 @@ struct TrustedUrlRequestParams {
@@ -112,7 +112,7 @@ index 532905f5b23b384ee9e906a2477179da8aac1b55..42b9309eef5c838001295639f51ce6b3
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index adaae93ee5a8f1140eed2f6d9eb4ab7b2b2680a3..1daa5f67320883916ab350b3d453884d68e6fd65 100644
+index e748c330f05bf0e74c027d3cd45dba886919f449..de22d7539ff11d7de6f04e62803258c11a8286bc 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -704,6 +704,7 @@ URLLoader::URLLoader(
