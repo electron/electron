@@ -26,6 +26,7 @@ const interceptStringProtocol = protocol.interceptStringProtocol;
 const interceptBufferProtocol = protocol.interceptBufferProtocol;
 const interceptHttpProtocol = protocol.interceptHttpProtocol;
 const interceptStreamProtocol = protocol.interceptStreamProtocol;
+const interceptProtocol: (scheme: string, handler: (req: Electron.ProtocolRequest, callback: (res?: Electron.ProtocolResponse) => void) => void) => boolean = protocol.interceptProtocol;
 const unregisterProtocol = protocol.unregisterProtocol;
 const uninterceptProtocol = protocol.uninterceptProtocol;
 
@@ -747,6 +748,76 @@ describe('protocol module', () => {
       });
       const r = await ajax('http://fake-host', { type: 'POST', data: postData });
       expect(r.data).to.equal('GET');
+    });
+  });
+
+  describe('protocol.interceptProtocol', () => {
+    const text = 'Hi, Chaofan!';
+    it('callback with null can behave like no intercept', async () => {
+      const server = http.createServer((req, res) => {
+        res.end(text);
+      });
+      after(() => server.close());
+      const { url } = await listen(server);
+      interceptProtocol('http', (req, callback) => {
+        callback();
+      });
+      await contents.loadURL(url);
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal(text);
+    });
+
+    it('callback with {data} can response directly', async () => {
+      interceptProtocol('http', (req, callback) => {
+        callback({
+          data: 'hello'
+        });
+      });
+      await contents.loadURL('http://foo');
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello');
+    });
+
+    it('callback with null can behave like no intercept - redirect case', async () => {
+      const server = http.createServer((req, res) => {
+        if (req.url === '/serverRedirect') {
+          res.statusCode = 301;
+          res.setHeader('Location', `${url}/foo`);
+          res.end();
+        } else {
+          res.end(text);
+        }
+      });
+      after(() => server.close());
+      const { url } = await listen(server);
+      interceptProtocol('http', (req, callback) => {
+        callback();
+      });
+      await contents.loadURL(`${url}/serverRedirect`);
+      // Redirect should change the page url if not We may met the situation that returns data from page B to page A.
+      expect(await contents.getURL()).to.equal(`${url}/foo`);
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal(text);
+    });
+
+    it('callback with null can behave like no intercept - post case', async () => {
+      const server = http.createServer((req, res) => {
+        let body = '';
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
+        req.on('end', () => {
+          res.end(body);
+        });
+      });
+      after(() => server.close());
+      const { url } = await listen(server);
+      interceptProtocol('http', (req, callback) => {
+        callback();
+      });
+
+      const r = await ajax(url, {
+        method: 'POST',
+        body: text
+      });
+      expect(r.data).to.equal(text);
     });
   });
 

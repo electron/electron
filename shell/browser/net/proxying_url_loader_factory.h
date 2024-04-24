@@ -241,6 +241,16 @@ class ProxyingURLLoaderFactory
   bool IsForServiceWorkerScript() const;
 
  private:
+  static void StartLoading(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory,
+      ProtocolType type,
+      gin::Arguments* args);
   void OnTargetFactoryError();
   void OnProxyBindingError();
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
