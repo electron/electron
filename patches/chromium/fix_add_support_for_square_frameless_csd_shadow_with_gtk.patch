@@ -1,0 +1,192 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Misaki Kasumi <misakikasumi@outlook.com>
+Date: Sat, 13 Apr 2024 11:15:00 +0000
+Subject: fix: add support for square frameless CSD shadow with GTK
+
+This commit adds support for
+1) making GTK window frame square
+2) hiding GTK titlebar
+
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index ed3213e73959079e5bc119987da7c31cc07f2f27..048a72a7a90d2635824a55bb5d150f60ec9f6523 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -563,11 +563,12 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+ 
+ ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame,
+                                                        bool tiled,
+-                                                       bool maximized) {
+-  auto& provider = frame_providers_[solid_frame][tiled][maximized];
++                                                       bool maximized,
++                                                       bool square) {
++  auto& provider = frame_providers_[solid_frame][tiled][maximized][square];
+   if (!provider) {
+     provider =
+-        std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame, tiled, maximized);
++        std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame, tiled, maximized, square);
+   }
+   return provider.get();
+ }
+diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
+index e3cbfa3a1ac8c169c429e29c1262d0dd2a05a4b6..13b10cfb2cbcbae9ea8cacf2454c53aa1dcd14e6 100644
+--- a/ui/gtk/gtk_ui.h
++++ b/ui/gtk/gtk_ui.h
+@@ -108,7 +108,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
+   std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+   ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
+                                                   bool tiled,
+-                                                  bool maximized) override;
++                                                  bool maximized,
++                                                  bool square) override;
+ 
+  private:
+   using TintMap = std::map<int, color_utils::HSL>;
+@@ -192,7 +193,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
+   // while Chrome is running.  This 2D array is indexed first by whether the
+   // frame is translucent (0) or solid(1), then by whether the frame is normal
+   // (0) or tiled (1).
+-  std::unique_ptr<ui::WindowFrameProvider> frame_providers_[2][2][2];
++  std::unique_ptr<ui::WindowFrameProvider> frame_providers_[2][2][2][2];
+ 
+   // Objects to notify when the window frame button order changes.
+   base::ObserverList<ui::WindowButtonOrderObserver>::Unchecked
+diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
+index 52615c5c119c58f17850454e98d1240b141e8a09..53ce8a998adda304f3f4888eff568f708543ee28 100644
+--- a/ui/gtk/window_frame_provider_gtk.cc
++++ b/ui/gtk/window_frame_provider_gtk.cc
+@@ -45,7 +45,7 @@ GtkCssContext WindowContext(bool solid_frame, bool tiled, bool maximized, bool f
+   return AppendCssNodeToStyleContext({}, selector);
+ }
+ 
+-GtkCssContext DecorationContext(bool solid_frame, bool tiled, bool maximized, bool focused) {
++GtkCssContext DecorationContext(bool solid_frame, bool tiled, bool maximized, bool focused, bool square) {
+   auto context = WindowContext(solid_frame, tiled, maximized, focused);
+   // GTK4 renders the decoration directly on the window.
+   if (!GtkCheckVersion(4)) {
+@@ -62,6 +62,13 @@ GtkCssContext DecorationContext(bool solid_frame, bool tiled, bool maximized, bo
+     border-bottom-right-radius: 0;
+   })");
+ 
++  if (square) {
++    ApplyCssToContext(context, R"(* {
++      border-top-left-radius: 0;
++      border-top-right-radius: 0;
++    })");
++  }
++
+   return context;
+ }
+ 
+@@ -123,7 +130,7 @@ int ComputeTopCornerRadius() {
+   // need to experimentally determine the corner radius by rendering a sample.
+   // Additionally, in GTK4, the headerbar corners get clipped by the window
+   // rather than the headerbar having its own rounded corners.
+-  auto context = GtkCheckVersion(4) ? DecorationContext(false, false, false, false)
++  auto context = GtkCheckVersion(4) ? DecorationContext(false, false, false, false, false)
+                                     : HeaderContext(false, false, false, false);
+   ApplyCssToContext(context, R"(window, headerbar {
+     background-image: none;
+@@ -192,8 +199,8 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::Asset::operator=(
+ 
+ WindowFrameProviderGtk::Asset::~Asset() = default;
+ 
+-WindowFrameProviderGtk::WindowFrameProviderGtk(bool solid_frame, bool tiled, bool maximized)
+-    : solid_frame_(solid_frame), tiled_(tiled), maximized_(maximized) {
++WindowFrameProviderGtk::WindowFrameProviderGtk(bool solid_frame, bool tiled, bool maximized, bool square)
++    : solid_frame_(solid_frame), tiled_(tiled), maximized_(maximized), square_(square) {
+   GtkSettings* settings = gtk_settings_get_default();
+   // Unretained() is safe since WindowFrameProviderGtk will own the signals.
+   auto callback = base::BindRepeating(&WindowFrameProviderGtk::OnThemeChanged,
+@@ -337,6 +344,10 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
+              effective_frame_thickness_px.right(), 1, client_bounds_px.right(),
+              corner_insets.top(), effective_frame_thickness_px.right(), edge_h);
+ 
++  if (top_area_height_dip == 0) {
++    return;
++  }
++
+   const int top_area_bottom_dip = rect_dip.y() + top_area_height_dip;
+   const int top_area_bottom_px = base::ClampCeil(top_area_bottom_dip * scale);
+   const int top_area_height_px = top_area_bottom_px - client_bounds_px.y();
+@@ -372,7 +383,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
+ 
+   gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
+                              2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
+-  auto focused_context = DecorationContext(solid_frame_, tiled_, maximized_, true);
++  auto focused_context = DecorationContext(solid_frame_, tiled_, maximized_, true, square_);
+   frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
+   frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
+   gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
+@@ -380,7 +391,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
+                                      focused_context, scale);
+   asset.unfocused_bitmap =
+       PaintBitmap(bitmap_size, gfx::RectF(frame_bounds_dip),
+-                  DecorationContext(solid_frame_, tiled_, maximized_, false), scale);
++                  DecorationContext(solid_frame_, tiled_, maximized_, false, square_), scale);
+ 
+   return asset;
+ }
+diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
+index 94050a0136b78730f607f42991742e0434948d0e..14095c4058e01fb02397b7788f7a0e9f139b6a2e 100644
+--- a/ui/gtk/window_frame_provider_gtk.h
++++ b/ui/gtk/window_frame_provider_gtk.h
+@@ -20,7 +20,7 @@ namespace gtk {
+ 
+ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+  public:
+-  WindowFrameProviderGtk(bool solid_frame, bool tiled, bool maximized);
++  WindowFrameProviderGtk(bool solid_frame, bool tiled, bool maximized, bool square);
+ 
+   WindowFrameProviderGtk(const WindowFrameProviderGtk&) = delete;
+   WindowFrameProviderGtk& operator=(const WindowFrameProviderGtk&) = delete;
+@@ -67,6 +67,8 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+   const bool tiled_;
+   // Whether to draw the window decorations as maximized.
+   const bool maximized_;
++  // Whether to draw the top-left and top-right at square corners.
++  const bool square_;
+ 
+   // Scale-independent metric calculated based on the bitmaps.
+   std::optional<gfx::Insets> frame_thickness_dip_;
+diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
+index 7d13381eb1d16193bad0be1318e8ed199c6fb845..fbe1aa77eec35b484b57b8a034f445712d97617d 100644
+--- a/ui/linux/fallback_linux_ui.cc
++++ b/ui/linux/fallback_linux_ui.cc
+@@ -142,7 +142,8 @@ FallbackLinuxUi::CreateNavButtonProvider() {
+ ui::WindowFrameProvider* FallbackLinuxUi::GetWindowFrameProvider(
+     bool solid_frame,
+     bool tiled,
+-    bool maximized) {
++    bool maximized,
++    bool square) {
+   return nullptr;
+ }
+ 
+diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
+index 282b48038f83d4a6dafe734f639d994c245c67ac..da6dc74a9dc729cdaccb1fc61eefb0163cbbba89 100644
+--- a/ui/linux/fallback_linux_ui.h
++++ b/ui/linux/fallback_linux_ui.h
+@@ -67,7 +67,8 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
+   std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+   ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
+                                                   bool tiled,
+-                                                  bool maximized) override;
++                                                  bool maximized,
++                                                  bool square) override;
+ 
+  private:
+   std::optional<gfx::FontRenderParams> default_font_render_params_;
+diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
+index 4477a1012fef5ad6dd365d70d28eadd3db136ceb..bead34acf6023d3d8a427a5d38c5186a156a47c2 100644
+--- a/ui/linux/linux_ui.h
++++ b/ui/linux/linux_ui.h
+@@ -305,7 +305,8 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+   // the process ends.
+   virtual WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
+                                                       bool tiled,
+-                                                      bool maximized) = 0;
++                                                      bool maximized,
++                                                      bool square) = 0;
+ 
+  protected:
+   LinuxUiTheme();
