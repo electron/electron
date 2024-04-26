@@ -18,7 +18,7 @@ index bae3d8830c54f6399b5b92c63e0ced8ab8bd4250..36aaab23105fe87fe836a7afbb86acc9
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index be7a66b27e8c20287fc921bccf208b0fa47ba901..a2154129b2f4700768a7bb17422b4e78e6c27b4b 100644
+index 4bb0c9e975602b48caf5e9126edc06422464d425..85b81f5e2c0d793b5b87152277677fc7b2d0bd1b 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -51,7 +51,9 @@
@@ -31,7 +31,7 @@ index be7a66b27e8c20287fc921bccf208b0fa47ba901..a2154129b2f4700768a7bb17422b4e78
  /espresso/lib/
  /eyesfree/src
  /fuchsia-sdk/images
-@@ -104,6 +106,7 @@
+@@ -105,6 +107,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -39,7 +39,7 @@ index be7a66b27e8c20287fc921bccf208b0fa47ba901..a2154129b2f4700768a7bb17422b4e78
  /ninja/ninja*
  /node/*.tar.gz
  /node/linux/
-@@ -149,6 +152,7 @@
+@@ -150,6 +153,7 @@
  /soda-win64
  /speex
  /sqlite4java/lib/

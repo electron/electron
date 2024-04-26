@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a470137ff9571762b10121d4622f7fa8603cc28b..a853eacdaae7bfc55c1d3d208c3d6c57c0a6bffa 100644
+index 50f0eaa60d792ed971f987367f7a816f0e022e51..b8ae863f9e79c679bc185404835776fe6e7f15e1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1067,6 +1067,7 @@ component("base") {
+@@ -1068,6 +1068,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -433,7 +433,7 @@ index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 87b567bbfb314a96b0e091113c95b5b086b976e9..2be7b8547854800abaece082d80e3e9184e92c4d 100644
+index 53818b1885ccc5f7ba2e281b002b6e9ab4112b9d..9e088821c9164c9224605dc7ddc1ff0c2863ec84 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -2041,15 +2041,21 @@ - (NSAccessibilityRole)accessibilityRole {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 76fb3cb20c559222d72a269ec0339f3a09c7d992..f2e63fc6f60b2f432e6430db9663889f685e6f0b 100644
+index 0cf74caf8aeecf49fdc0a3a6fcc1f4964bb97cbb..dc46b42dbbceb17ce601dbd9653eace2b0faffd9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -496,6 +496,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 76fb3cb20c559222d72a269ec0339f3a09c7d992..f2e63fc6f60b2f432e6430db9663889f
  
    public_deps = [
      ":test_interfaces",
-@@ -2949,6 +2952,7 @@ test("content_unittests") {
+@@ -2953,6 +2956,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1417,7 +1417,7 @@ index 84e156b7ff28abc2071dde155e56a2a92a53b142..bd73dac7fe3ed256cab805a0815d31d4
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 9ba6a1d60c312c686e16461edb929be8ead4f34e..ee1cac554137b47bb2161aeb7b0bbd372b8feee4 100644
+index fa7f03026c5299f113d340728ae72991c9401bc1..806acccd8f42771f016c4167886371378e2649ca 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -361,6 +361,7 @@ component("base") {

@@ -100,10 +100,10 @@ index 5cd84c24fc17804cf228eb414838a5aae9d92f6d..9f9bdfe781a1375cd4be5f64879c899e
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index c72aaa6784a41ae7c97e0ed208e99e8125a73c48..50c7e5459d7901aac843eba8fdc4d2bdc695f241 100644
+index 0a190a577e505729947d31c34e4d36118944d977..f0feaa4a33e5b3ec14329c7310c5c30abb281fc8 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -241,6 +241,24 @@ void PrintDialogGtk::UpdateSettings(
+@@ -242,6 +242,24 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());
