@@ -63,10 +63,10 @@ index 62e543ca0eca806d939949573c9bddc172be4f6c..f40838545452b4ea16112165930d5b1d
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 7d00344f982755b4cd40d0c0c2f596db6f428016..acf98474d1e03d6eeb321f4e4b0117d7518ef600 100644
+index d5e579e9a794a3a9ffab915d6b12ef75f80eee6b..bc2771eb8a9ad2d37dd93b469a944c202e731d60 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1264,6 +1264,9 @@ interface NetworkContext {
+@@ -1266,6 +1266,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  

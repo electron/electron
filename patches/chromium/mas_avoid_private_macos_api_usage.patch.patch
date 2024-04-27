@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 50f0eaa60d792ed971f987367f7a816f0e022e51..b8ae863f9e79c679bc185404835776fe6e7f15e1 100644
+index ac5832a8bf15b872b80fe1f4c1dc1eaf6151f3cb..5a06229211841b620b0b399447dc8701dcad0a6b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1068,6 +1068,7 @@ component("base") {
@@ -459,7 +459,7 @@ index 53818b1885ccc5f7ba2e281b002b6e9ab4112b9d..9e088821c9164c9224605dc7ddc1ff0c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c41dac4a48d096a8ca9a8c318298bd1fe895bd12..4c697525e7cf5791a5fedf27cf42f6d43dba3a3c 100644
+index 5822f9bebc25c421c92fc07cf8c729e204d60c2b..a8c974a2fee38a49e93fd20ddfc499de2a27f38e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -884,7 +884,7 @@ index 6ec6a5b008faec2a381a85c8771f4e4d92488a1f..17c56fb2d296445440a7403ca73f1a64
  }
  
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 19a205a32f146c8536fa7646af7f2f7c9b3b62ee..4a32b99333d03324ae5d77e01c3a0a25f0eb3387 100644
+index 63414d8db326c0fdd44ed59f99400d5c16cfc93c..d80a104451c66017750d04c776355cfa4691d2a3 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -187,6 +187,8 @@ source_set("dns") {

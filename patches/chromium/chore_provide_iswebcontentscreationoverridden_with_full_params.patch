@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 934fd2de3c885b028bd1f65fb75b4a3d2b100545..43995c3e2180ed69389463cbff35fb644e778e2f 100644
+index 1f27054a9fafcb9cbebe146889f67d6d879ec9e8..bfa74b9ac80e4d914ff773390e376cd58aca424c 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1920,12 +1920,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1923,12 +1923,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 934fd2de3c885b028bd1f65fb75b4a3d2b100545..43995c3e2180ed69389463cbff35fb64
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 8369eccff86ada3f57590afcbef6aa5c8f774943..d62583ed6561c54ed7210a28ec6537b69270f316 100644
+index 360fbe3221df6ff9e3982b9a5f3825c83eb90083..bee87c20f380b2ce8912931bfdb98b79c53f9f95 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -963,8 +963,7 @@ class Browser : public TabStripModelObserver,
+@@ -962,8 +962,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -141,7 +141,7 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index c8048b9fb5de1d9d1bb7246ce756651f3008f857..ed0b72a026f9fe9ad2451756a29e7f5ad2540710 100644
+index 8d7b1b4e5bc85f5ffc7af5ee3464a85a03dd87de..2318e34306ff69d66169adb6aa5e7eafb9ab1079 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -81,8 +81,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b5693c5c8d4e5ffc092bf35eccf6186c28776417..615f4ea7964ff257309fb7ac9abcd3b9a76affec 100644
+index 792c42f74e5228504c7893f958855448a48b48ad..048610180e9231a7c0e5c44105fbc1be123e997e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4524,8 +4524,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4519,8 +4519,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -246,10 +246,10 @@ index 2e6025fa3f4cecedb6c563eba887463aea634830..c01071e1a103e20ca8f55828a7e52c1b
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 2122c3d253c41df00bd93d93bc136d849c321c60..2f9fa9954adbf3ef90758141ed37ba78efb4719f 100644
+index 1f6ed8031f34302db89ad169c06dabbe58402aea..f77ddc2ce044cc770c270ba58964a40547adcabe 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -333,8 +333,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -334,8 +334,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -316,7 +316,7 @@ index f0b71aba6dfb4682ce2e5b4c834b2526dcacb75c..d4b1857ca468ff97914d91d0c31298b7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index e671d8b41cfbaf5f1157e5186afaddc6530ba54a..a466659840b80b4f84a3956b2eb7029e3b71d272 100644
+index 1568736f6617ba4017a575748133cd9090401d71..d720359a092f1d21cbc216132b648c3f8319894c 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -574,8 +574,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(

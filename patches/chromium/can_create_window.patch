@@ -21,10 +21,10 @@ index e940fe2a1b5a162d4e4f22f0994522ccb7fabd93..48360d58835c7ce4253777b958a81a3d
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 27d137c647fb73905db48c1386da0556be44f771..08b935d2a23465890f4534a9cd2c2ae9b1b88477 100644
+index fdec27fde298f97cfcad2335eff6d8ea6e59dd5a..d4d316a57e90eacb3585f1b70fd534bbe5f7f2ac 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4618,6 +4618,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4613,6 +4613,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 27d137c647fb73905db48c1386da0556be44f771..08b935d2a23465890f4534a9cd2c2ae9
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4659,12 +4665,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4654,12 +4660,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,7 +66,7 @@ index 268f150c1cc987ea020192a86ab886ed206a0064..05856b853112072a18ec16589f2b442f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0ea27168765fe963aa966c0092241983dbb553d9..9c4ce079dd6c25ae1ff26625448cd21887fbc94f 100644
+index 0de68c70e9d18aab035eed9fe1385c0ce0714184..a03833252f0b28695da35e6b51801530e2c595f2 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -725,6 +725,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 0ea27168765fe963aa966c0092241983dbb553d9..9c4ce079dd6c25ae1ff26625448cd218
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ba1fef63ca952c989d999d9f319ef02847632ba1..63f3b31911b8d10201cae19bf691d0f0e9d0227f 100644
+index 87f519099fc0e315bfb493e75858beb5211a2a66..10ef1e906d8498cea76b754ead1040f1068be320 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -186,6 +186,7 @@ class NetworkService;
@@ -122,7 +122,7 @@ index f4d46dafea0a08e29ae0690b2e31cd8fc438453e..2e6025fa3f4cecedb6c563eba887463a
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 4e0033242b0439b01f841cc38e7a3028619c4971..2122c3d253c41df00bd93d93bc136d849c321c60 100644
+index e20b0fc50e08ca73bb7a5bffc2aef43543f1ad73..1f6ed8031f34302db89ad169c06dabbe58402aea 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -133,7 +133,7 @@ index 4e0033242b0439b01f841cc38e7a3028619c4971..2122c3d253c41df00bd93d93bc136d84
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/invalidate_type.h"
-@@ -354,6 +355,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -355,6 +356,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  
