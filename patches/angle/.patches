@@ -1,2 +1,3 @@
 m123_vulkan_fix_access_to_inactive_attributes.patch
 cherry-pick-f6672dbbe223.patch
+cherry-pick-ba3b4e239620.patch
