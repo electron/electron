@@ -91,7 +91,7 @@ index 3197e16ac26f17258bf3ef988df0f0e39c0df8ac..89d618a39c89ad3eb0069f2b5bd67f60
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 1bdf9c365ed8787efeb0fe636853fb7b16cab840..668a9c2f1ea861c9136d8c076afd20b2835ec453 100644
+index c0d1a3631a2367bb7cef2a62e5ad78619ca9f699..668a9c2f1ea861c9136d8c076afd20b2835ec453 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -87,6 +87,20 @@ namespace printing {
@@ -235,11 +235,12 @@ index 1bdf9c365ed8787efeb0fe636853fb7b16cab840..668a9c2f1ea861c9136d8c076afd20b2
    if (prefs && prefs->HasPrefPath(prefs::kPrintRasterizePdfDpi)) {
      int value = prefs->GetInteger(prefs::kPrintRasterizePdfDpi);
      if (value > 0)
-@@ -768,7 +795,21 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -768,8 +795,22 @@ void PrintViewManagerBase::UpdatePrintSettings(
      }
    }
  
 -#if BUILDFLAG(IS_WIN)
+-  // TODO(crbug.com/40260379):  Remove this if the printable areas can be made
 +  std::unique_ptr<PrinterQuery> query =
 +      queue_->CreatePrinterQuery(GetCurrentTargetFrame()->GetGlobalId());
 +  auto* query_ptr = query.get();
@@ -255,9 +256,10 @@ index 1bdf9c365ed8787efeb0fe636853fb7b16cab840..668a9c2f1ea861c9136d8c076afd20b2
 +                     std::move(callback)));
 +
 +#if 0 // See https://chromium-review.googlesource.com/412367
-   // TODO(crbug.com/1424368):  Remove this if the printable areas can be made
++  // TODO(crbug.com/1424368):  Remove this if the printable areas can be made
    // fully available from `PrintBackend::GetPrinterSemanticCapsAndDefaults()`
    // for in-browser queries.
+   if (printer_type == mojom::PrinterType::kLocal) {
 @@ -790,8 +831,6 @@ void PrintViewManagerBase::UpdatePrintSettings(
    }
  #endif
@@ -750,10 +752,10 @@ index b0ac94751454bd16b4e9bfdc071e2623813133ec..2631e9019e4c6617e2a8a90d30a21ca5
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4c697525e7cf5791a5fedf27cf42f6d43dba3a3c..f2607033cf00b211f56c3e3c7a981bf64abca8be 100644
+index a8c974a2fee38a49e93fd20ddfc499de2a27f38e..f6af4fd97750f2e6f51b70fcc8e8b1450002ccf7 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2933,8 +2933,9 @@ source_set("browser") {
+@@ -2935,8 +2935,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
