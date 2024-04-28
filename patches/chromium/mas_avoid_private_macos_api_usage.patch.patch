@@ -459,7 +459,7 @@ index 53818b1885ccc5f7ba2e281b002b6e9ab4112b9d..9e088821c9164c9224605dc7ddc1ff0c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 5822f9bebc25c421c92fc07cf8c729e204d60c2b..a8c974a2fee38a49e93fd20ddfc499de2a27f38e 100644
+index b1f559fad9229c5822918e14cbf6f5ec96c9ff4a..3b33b098d4617eef7dd0a8084e27a00c0d02449c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -543,7 +543,7 @@ index 5497f4e3faa66cc0a78d449e92d54c1da0cb041c..a768ff0ad1fd0aebc14f0432b9f4b88b
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 8ebb423bd018dc6a5b3537417cbab4cc942ea4de..98bc31ca51a59387d2b61b9d9a87fc8f3b1ae1fd 100644
+index 984286e99767e06a501fa4be409e35e39c0a2d59..bc878e003e17247f2255f28d41b6419034e58cae 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@

@@ -140,7 +140,7 @@ index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 6f86563fe6c80ecd3db75b9480e1ed13399ccc18..31ef1e43db6ea4a51333d1ae4f84c3c274e26b53 100644
+index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134032ce367 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -8,13 +8,18 @@

@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 792c42f74e5228504c7893f958855448a48b48ad..048610180e9231a7c0e5c44105fbc1be123e997e 100644
+index 330d6900e5e43a22ce554f7ceaa61d986a3c001e..610db0508667be62a13bb7f8453044cfe8fac028 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4519,8 +4519,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -246,7 +246,7 @@ index 2e6025fa3f4cecedb6c563eba887463aea634830..c01071e1a103e20ca8f55828a7e52c1b
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 1f6ed8031f34302db89ad169c06dabbe58402aea..f77ddc2ce044cc770c270ba58964a40547adcabe 100644
+index a093cac4660c1a3c38fc0baccee40780e0ee47cf..31b59d35aa1ff0ef3aaa48e16484b799a5b0241b 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -334,8 +334,7 @@ class CONTENT_EXPORT WebContentsDelegate {

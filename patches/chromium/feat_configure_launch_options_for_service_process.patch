@@ -18,7 +18,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index d8ae896ee02888ee4ab375c4fd3569de27be925e..d4e97e92d353e298978a094aec2769474496c260 100644
+index 613feee88115d32905a3f8889cdf51d71cd5b4ec..da2fefd7b6e93a6f8b6eb008ebaac976f4ce64ea 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -32,6 +32,7 @@
@@ -58,7 +58,7 @@ index d8ae896ee02888ee4ab375c4fd3569de27be925e..d4e97e92d353e298978a094aec276947
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index f9881f244c5b3a6166283e08eafa14cdc8786f18..b64ff0e3b73140faf4e99dc3dc5d235ea917a934 100644
+index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d7f3bb10f 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -64,6 +64,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -84,7 +84,7 @@ index f9881f244c5b3a6166283e08eafa14cdc8786f18..b64ff0e3b73140faf4e99dc3dc5d235e
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 8736af0021dccba915e3d2303191ae3ec80f6e75..56f8384c3ff4959272363cb71e4c380ee9125273 100644
+index e1c5d814236d306e427dc5f1bab3405c0fb4dd7e..bc991a819e20d586431115e530c44a83b231eb45 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -123,7 +123,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -163,7 +163,7 @@ index 2a01487c8ff837357f6d62dba80115b0ec64c343..8b1ed51630dc4fe77bd0edadb85f04fb
  }
  
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index 163d00f6a0f0ed89017b2a7e8c537de0db160229..b84ad0652585460612e3e64a7cc34090f7ad83d8 100644
+index be6402b33d7e0e2aab7cbb2844ba4600a166e7a9..642f8b6da39615d1c68584ff18fc57ceb95b84b2 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
 @@ -204,6 +204,16 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,

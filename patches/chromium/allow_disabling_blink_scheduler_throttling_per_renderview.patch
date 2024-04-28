@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 32b77897ef3669727fe05a1f3603a5f8335ec3cf..f1948d352bd71da5ec17d734e343bfd656d7ed69 100644
+index 1eb0f9919a29acf9f443f15ef5e7549138d73f7b..070ad96c753bc064c1af48a934a7a3bc7483174b 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -163,6 +163,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -23,7 +23,7 @@ index 32b77897ef3669727fe05a1f3603a5f8335ec3cf..f1948d352bd71da5ec17d734e343bfd6
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 67f642ae6346ea05236e37c8eadff2ef49b071d1..9ff037ce010d99bc58dde985a5954ff3b9666c14 100644
+index 25350f7be707e817abb1507b5dbc7749e998419e..7d9648cbd9b7345f9eec3192157e0d140486db32 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -714,6 +714,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -39,7 +39,7 @@ index 67f642ae6346ea05236e37c8eadff2ef49b071d1..9ff037ce010d99bc58dde985a5954ff3
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index a94977d7a76ae9952bbba0efe59a7cb5021a1c84..11c4f890eaeae1329ca5a6634a698aef7a288fb4 100644
+index 5b4e90e2a9293f6d59e92b16bd461500f8188cc7..b69f66e5cf009a340766c355d9ceea89a20546b2 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -139,6 +139,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -51,7 +51,7 @@ index a94977d7a76ae9952bbba0efe59a7cb5021a1c84..11c4f890eaeae1329ca5a6634a698aef
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index f9be88bc119a1829bd151d37978f9538b2210995..9dac65244134b1fb4e3c1c0b1052cd6721e86fc2 100644
+index ef10eb9f456f7e16566d22c9c5d674f03016585b..efc25342e674e5b37c8eac0a7f69dc700527af84 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -564,8 +564,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
