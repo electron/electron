@@ -1,7 +1,7 @@
-From ba3b4e239620c95792e7d23c2975be4ab26d153e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
-Date: Mon, 08 Apr 2024 10:14:45 -0400
-Subject: [PATCH] M123: SPIR-V: Fix const constructors with single scalar
+Date: Mon, 8 Apr 2024 10:14:45 -0400
+Subject: M123: SPIR-V: Fix const constructors with single scalar
 
 These constructors may be generated because of
 RemoveArrayLengthTraverser.
@@ -14,13 +14,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5473406
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
 Reviewed-by: Daniel Gagnon <dgagnon@google.com>
----
 
 diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
-index 88f21c4..7702c9a 100644
+index eddc5e724e8e949aff0624c6caf9aadec7c14647..57a71c5d13fbf5e458c26b084e1f9834edb37f58 100644
 --- a/src/compiler/translator/Compiler.cpp
 +++ b/src/compiler/translator/Compiler.cpp
-@@ -1061,6 +1061,11 @@
+@@ -1056,6 +1056,11 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
      {
          return false;
      }
@@ -33,10 +32,10 @@ index 88f21c4..7702c9a 100644
      if (!RemoveUnreferencedVariables(this, root, &mSymbolTable))
      {
 diff --git a/src/compiler/translator/spirv/OutputSPIRV.cpp b/src/compiler/translator/spirv/OutputSPIRV.cpp
-index 6eb72d6..1d85aff 100644
+index caa8f956716abf53aaeb58a5f654f5a4f04c4d6a..67b1fdd4784660483a408f1ee27ce48b05ffcb0a 100644
 --- a/src/compiler/translator/spirv/OutputSPIRV.cpp
 +++ b/src/compiler/translator/spirv/OutputSPIRV.cpp
-@@ -1335,6 +1335,8 @@
+@@ -1335,6 +1335,8 @@ spirv::IdRef OutputSPIRVTraverser::createComplexConstant(const TType &type,
  
      if (type.isMatrix() && !type.isArray())
      {
@@ -46,10 +45,10 @@ index 6eb72d6..1d85aff 100644
          spirv::IdRefList columnIds;
  
 diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
-index 2604bd7..2ea6984 100644
+index cfe6414d52647db92669be954cadd15344603559..a4035db329548491c91e2f7383f837001540c065 100644
 --- a/src/tests/gl_tests/GLSLTest.cpp
 +++ b/src/tests/gl_tests/GLSLTest.cpp
-@@ -8486,6 +8486,198 @@
+@@ -8486,6 +8486,198 @@ void main()
      EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
  }
  
