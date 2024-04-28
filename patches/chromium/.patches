@@ -156,3 +156,4 @@ cherry-pick-98bcf9ef5cdd.patch
 cherry-pick-013961609785.patch
 a11y_avoid_clearing_resetting_focus_on_an_already_focus_event.patch
 cherry-pick-b2cc7b7ac538.patch
+m120-lts_merge_fix_domarraybuffer_isdetached_and_comment_out.patch
