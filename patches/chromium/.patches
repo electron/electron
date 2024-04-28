@@ -134,3 +134,5 @@ fix_add_support_for_skipping_first_2_no-op_refreshes_in_thumb_cap.patch
 remove_dxdiag_telemetry_code.patch
 cherry-pick-2607ddacd643.patch
 cherry-pick-1b1f34234346.patch
+bindings_refactor_domdatastore.patch
+merge_fix_domarraybuffer_isdetached_and_comment_out_a_check.patch

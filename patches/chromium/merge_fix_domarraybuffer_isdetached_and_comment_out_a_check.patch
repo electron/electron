@@ -1,0 +1,206 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@google.com>
+Date: Tue, 9 Apr 2024 08:32:27 +0000
+Subject: Merge "Fix DOMArrayBuffer::IsDetached()" and "Comment out a CHECK
+ that a DOMAB has maximally one non-detached JSAB"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+1)
+
+A DOMArrayBuffer was maintaining its own "is_detached_" state, and
+would consider itself non-detached even if the corresponding
+JSArrayBuffer (or, all of them, in case there are several) was
+detached.
+
+Piping in the v8::Isolate would be a too big change for this fix, so this is using v8::Isolate::GetCurrent() for now.
+
+2)
+
+Comment out a CHECK that a DOMAB has maximally one non-detached JSAB
+
+Based on crash reports, this assumption is not true and has to be
+investigated.
+
+Removing this newly introduced CHECK to be able to merge fixes in this
+area - we still violate this invariant but the fixes are a step into
+the right direction.
+
+Fix in question:
+https://chromium-review.googlesource.com/5387887
+which also introduced this CHECK.
+
+(cherry picked from commit 04e7550d7aa3bf4ac4e49d7074972d357de139e6)
+
+Change-Id: I6a46721e24c6f04fe8252bc4a5e94caeec3a8b51
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5435035
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6367@{#667}
+Cr-Branched-From: d158c6dc6e3604e6f899041972edf26087a49740-refs/heads/main@{#1274542}
+
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
+index 44e2849c8e4dfc38834c88937dc561858c13e726..f26b6de5baded254d1ae5c3db458d0405e9751cb 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
+@@ -46,8 +46,19 @@ const WrapperTypeInfo& DOMArrayBuffer::wrapper_type_info_ =
+ 
+ static void AccumulateArrayBuffersForAllWorlds(
+     v8::Isolate* isolate,
+-    DOMArrayBuffer* object,
++    const DOMArrayBuffer* object,
+     v8::LocalVector<v8::ArrayBuffer>& buffers) {
++  if (!object->has_non_main_world_wrappers() && IsMainThread()) {
++    const DOMWrapperWorld& world = DOMWrapperWorld::MainWorld(isolate);
++    v8::Local<v8::Object> wrapper;
++    if (world.DomDataStore()
++            .Get</*entered_context=*/false>(isolate, object)
++            .ToLocal(&wrapper)) {
++      buffers.push_back(v8::Local<v8::ArrayBuffer>::Cast(wrapper));
++    }
++    return;
++  }
++
+   Vector<scoped_refptr<DOMWrapperWorld>> worlds;
+   DOMWrapperWorld::AllWorldsInIsolate(isolate, worlds);
+   for (const auto& world : worlds) {
+@@ -259,6 +270,52 @@ v8::Local<v8::Value> DOMArrayBuffer::Wrap(ScriptState* script_state) {
+                               wrapper);
+ }
+ 
++bool DOMArrayBuffer::IsDetached() const {
++  if (contents_.BackingStore() == nullptr) {
++    return is_detached_;
++  }
++  if (is_detached_) {
++    return true;
++  }
++
++  v8::Isolate* isolate = v8::Isolate::GetCurrent();
++  v8::HandleScope handle_scope(isolate);
++  v8::LocalVector<v8::ArrayBuffer> buffer_handles(isolate);
++  AccumulateArrayBuffersForAllWorlds(isolate, this, buffer_handles);
++
++  // There may be several v8::ArrayBuffers corresponding to the DOMArrayBuffer,
++  // but at most one of them may be non-detached.
++  int nondetached_count = 0;
++  int detached_count = 0;
++
++  for (const auto& buffer_handle : buffer_handles) {
++    if (buffer_handle->WasDetached()) {
++      ++detached_count;
++    } else {
++      ++nondetached_count;
++    }
++  }
++
++  // This CHECK fires even though it should not. TODO(330759272): Investigate
++  // under which conditions we end up with multiple non-detached JSABs for the
++  // same DOMAB and potentially restore this check.
++
++  // CHECK_LE(nondetached_count, 1);
++
++  return nondetached_count == 0 && detached_count > 0;
++}
++
++v8::Local<v8::Object> DOMArrayBuffer::AssociateWithWrapper(
++    v8::Isolate* isolate,
++    const WrapperTypeInfo* wrapper_type_info,
++    v8::Local<v8::Object> wrapper) {
++  if (!DOMWrapperWorld::Current(isolate).IsMainWorld()) {
++    has_non_main_world_wrappers_ = true;
++  }
++  return ScriptWrappable::AssociateWithWrapper(isolate, wrapper_type_info,
++                                               wrapper);
++}
++
+ DOMArrayBuffer* DOMArrayBuffer::Slice(size_t begin, size_t end) const {
+   begin = std::min(begin, ByteLength());
+   end = std::min(end, ByteLength());
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
+index a7d4bac99e608bcfaa02dc9bfcef20b5a29d0ddc..9d4827f548ca7db3be85011c68d8346fc8dfa909 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
+@@ -91,6 +91,17 @@ class CORE_EXPORT DOMArrayBuffer : public DOMArrayBufferBase {
+ 
+   void Trace(Visitor*) const override;
+ 
++  bool IsDetached() const override;
++
++  v8::Local<v8::Object> AssociateWithWrapper(
++      v8::Isolate* isolate,
++      const WrapperTypeInfo* wrapper_type_info,
++      v8::Local<v8::Object> wrapper) override;
++
++  bool has_non_main_world_wrappers() const {
++    return has_non_main_world_wrappers_;
++  }
++
+  private:
+   v8::Maybe<bool> TransferDetachable(v8::Isolate*,
+                                      v8::Local<v8::Value> detach_key,
+@@ -101,6 +112,8 @@ class CORE_EXPORT DOMArrayBuffer : public DOMArrayBufferBase {
+   // support only v8::String as the detach key type. It's also convenient that
+   // we can write `array_buffer->SetDetachKey(isolate, "my key")`.
+   TraceWrapperV8Reference<v8::String> detach_key_;
++
++  bool has_non_main_world_wrappers_ = false;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_base.h b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_base.h
+index 90c4c70755babdc8c88a7c6bf02803c5858c2194..43618b8ef4b831678b45c72ca47f5729c4f2aaef 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_base.h
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_base.h
+@@ -27,7 +27,9 @@ class CORE_EXPORT DOMArrayBufferBase : public ScriptWrappable {
+ 
+   size_t ByteLength() const { return contents_.DataLength(); }
+ 
+-  bool IsDetached() const { return is_detached_; }
++  // TODO(331348222): It doesn't make sense to detach DomSharedArrayBuffers,
++  // remove that possibility.
++  virtual bool IsDetached() const { return is_detached_; }
+ 
+   void Detach() { is_detached_ = true; }
+ 
+diff --git a/third_party/blink/renderer/modules/gamepad/BUILD.gn b/third_party/blink/renderer/modules/gamepad/BUILD.gn
+index 572d8ce27fa808707ae17ed05f14e2ed103f131e..a871cbd002795bf49ad48f0002ac4996135f8b10 100644
+--- a/third_party/blink/renderer/modules/gamepad/BUILD.gn
++++ b/third_party/blink/renderer/modules/gamepad/BUILD.gn
+@@ -55,6 +55,7 @@ source_set("unit_tests") {
+     "//testing/gtest",
+     "//third_party/blink/renderer/modules",
+     "//third_party/blink/renderer/platform",
++    "//third_party/blink/renderer/platform:test_support",
+     "//third_party/blink/renderer/platform/wtf",
+   ]
+ }
+diff --git a/third_party/blink/renderer/modules/gamepad/gamepad_comparisons_test.cc b/third_party/blink/renderer/modules/gamepad/gamepad_comparisons_test.cc
+index e0a7f48630ba423b19641232c026d72ba71dfc4b..b9f422e6fff36da62575d803f132573a24d03c05 100644
+--- a/third_party/blink/renderer/modules/gamepad/gamepad_comparisons_test.cc
++++ b/third_party/blink/renderer/modules/gamepad/gamepad_comparisons_test.cc
+@@ -4,9 +4,11 @@
+ 
+ #include "third_party/blink/renderer/modules/gamepad/gamepad_comparisons.h"
+ 
++#include "base/test/task_environment.h"
+ #include "device/gamepad/public/cpp/gamepad.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/renderer/modules/gamepad/gamepad.h"
++#include "third_party/blink/renderer/platform/testing/main_thread_isolate.h"
+ 
+ namespace blink {
+ 
+@@ -241,6 +243,11 @@ class GamepadComparisonsTest : public testing::Test {
+     list[0] = gamepad;
+     return list;
+   }
++
++ private:
++  // Needed so we can do v8::Isolate::GetCurrent().
++  base::test::TaskEnvironment task_environment_;
++  blink::test::MainThreadIsolate isolate_;
+ };
+ 
+ TEST_F(GamepadComparisonsTest, EmptyListCausesNoActivation) {
