@@ -167,7 +167,8 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        yarn add git://github.com/electron/build-tools.git#2bb63e2e7877491b52f972532b52adc979a6ec2f
+        export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
+        npm i -g @electron/build-tools
         e init --root=$(pwd) --out=Default testing
     - name: Checkout Electron
       uses: actions/checkout@v4
