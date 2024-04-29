@@ -69,3 +69,7 @@ v8_expose_public_symbols = true
 # Ref: https://chromium-review.googlesource.com/c/chromium/src/+/5426599
 # Ref: https://github.com/electron/electron/commit/8e20f16ea35eeaeb149ae63bad3703d782665f6a
 clang_unsafe_buffers_paths = ""
+
+# Disable snapshotting a page when printing for its content to be analyzed for
+# sensitive content by enterprise users.
+enterprise_content_analysis = false
