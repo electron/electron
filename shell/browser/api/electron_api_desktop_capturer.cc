@@ -50,6 +50,7 @@
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
+#if defined(USE_OZONE_PLATFORM_X11)
 // Private function in ui/base/x/x11_display_util.cc
 std::map<x11::RandR::Output, int> GetMonitors(int version,
                                               x11::RandR* randr,
@@ -143,6 +144,7 @@ std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
 
   return monitor_atom_to_display;
 }
+#endif
 #endif
 
 namespace gin {

@@ -20,12 +20,12 @@
 #include "ui/base/models/image_model.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/events/event_constants.h"
-#include "ui/events/keycodes/keyboard_code_conversion_x.h"
 
 #if defined(USE_OZONE)
 #include "ui/ozone/buildflags.h"
 #if BUILDFLAG(OZONE_PLATFORM_X11)
 #define USE_OZONE_PLATFORM_X11
+#include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #endif
 #include "ui/ozone/public/ozone_platform.h"
 #endif

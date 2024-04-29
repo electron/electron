@@ -613,7 +613,6 @@ source_set("electron_lib") {
     }
   }
   if (is_linux) {
-    libs = [ "xshmfence" ]
     deps += [
       ":electron_gtk_stubs",
       ":libnotify_loader",
@@ -623,8 +622,6 @@ source_set("electron_lib") {
       "//device/bluetooth",
       "//third_party/crashpad/crashpad/client",
       "//ui/base/ime/linux",
-      "//ui/events/devices/x11",
-      "//ui/events/platform/x11",
       "//ui/gtk:gtk_config",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
@@ -632,10 +629,15 @@ source_set("electron_lib") {
       "//ui/wm",
     ]
     if (ozone_platform_x11) {
+      libs = [ "xshmfence" ]
       sources += filenames.lib_sources_linux_x11
       public_deps += [
         "//ui/base/x",
         "//ui/ozone/platform/x11",
+      ]
+      deps += [
+        "//ui/events/devices/x11",
+        "//ui/events/platform/x11",
       ]
     }
     configs += [ ":gio_unix" ]

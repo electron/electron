@@ -175,17 +175,13 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
 
 bool CreateGlobalMenuBar() {
   return ui::OzonePlatform::GetInstance()
       ->GetPlatformProperties()
       .supports_global_application_menus;
 }
-
-#endif
-
-#if defined(USE_OZONE_PLATFORM_X11)
 
 bool IsX11() {
   return ui::OzonePlatform::GetInstance()
@@ -540,12 +536,10 @@ void NativeWindowViews::Show() {
 
   NotifyWindowShow();
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
-#endif
 
-#if defined(USE_OZONE_PLATFORM_X11)
   // On X11, setting Z order before showing the window doesn't take effect,
   // so we have to call it again.
   if (IsX11())
@@ -558,7 +552,7 @@ void NativeWindowViews::ShowInactive() {
 
   NotifyWindowShow();
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
 #endif
@@ -572,7 +566,7 @@ void NativeWindowViews::Hide() {
 
   NotifyWindowHide();
 
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowUnmapped();
 #endif
@@ -1309,7 +1303,7 @@ bool NativeWindowViews::IsFocusable() {
 }
 
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
-#if defined(USE_OZONE)
+#if defined(USE_OZONE_PLATFORM_X11)
   // Remove global menu bar.
   if (global_menu_bar_ && menu_model == nullptr) {
     global_menu_bar_.reset();
