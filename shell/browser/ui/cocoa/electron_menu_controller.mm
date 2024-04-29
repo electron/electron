@@ -31,10 +31,14 @@ using SharingItem = electron::ElectronMenuModel::SharingItem;
 
 namespace {
 
+static NSMenuItem* __strong recentDocumentsMenuItem_;
+static NSMenu* __strong recentDocumentsMenuSwap_;
+
 struct Role {
   SEL selector;
   const char* role;
 };
+
 Role kRolesMap[] = {
     {@selector(orderFrontStandardAboutPanel:), "about"},
     {@selector(hide:), "hide"},
