@@ -684,7 +684,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else if (const auto* const handler =
-                 protocol_registry->RegisteredProtocol(gurl.scheme())) {
+                 protocol_registry->FindRegistered(gurl.scheme())) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(handler->first, handler->second)));

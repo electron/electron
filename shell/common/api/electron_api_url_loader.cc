@@ -485,15 +485,17 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     const auto scheme = url.scheme();
     const auto* reg = ProtocolRegistry::FromBrowserContext(browser_context_);
 
-    if (const auto* proto = reg->InterceptedProtocol(scheme))
+    if (const auto* handler = reg->FindIntercepted(scheme))
       return network::SharedURLLoaderFactory::Create(
           std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(proto->first, proto->second)));
+              ElectronURLLoaderFactory::Create(handler->first,
+                                               handler->second)));
 
-    if (const auto* proto = reg->RegisteredProtocol(scheme))
+    if (const auto* handler = reg->FindRegistered(scheme))
       return network::SharedURLLoaderFactory::Create(
           std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(proto->first, proto->second)));
+              ElectronURLLoaderFactory::Create(handler->first,
+                                               handler->second)));
   }
 
   if (url.SchemeIsFile())

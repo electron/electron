@@ -39,7 +39,7 @@ class ProtocolRegistry {
                         const ProtocolHandler& handler);
   bool UnregisterProtocol(const std::string& scheme);
 
-  [[nodiscard]] const HandlersMap::mapped_type* RegisteredProtocol(
+  [[nodiscard]] const HandlersMap::mapped_type* FindRegistered(
       const std::string& scheme) const;
 
   bool InterceptProtocol(ProtocolType type,
@@ -47,7 +47,7 @@ class ProtocolRegistry {
                          const ProtocolHandler& handler);
   bool UninterceptProtocol(const std::string& scheme);
 
-  [[nodiscard]] const HandlersMap::mapped_type* InterceptedProtocol(
+  [[nodiscard]] const HandlersMap::mapped_type* FindIntercepted(
       const std::string& scheme) const;
 
  private:

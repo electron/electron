@@ -74,7 +74,7 @@ bool ProtocolRegistry::UnregisterProtocol(const std::string& scheme) {
   return handlers_.erase(scheme) != 0;
 }
 
-const HandlersMap::mapped_type* ProtocolRegistry::RegisteredProtocol(
+const HandlersMap::mapped_type* ProtocolRegistry::FindRegistered(
     const std::string& scheme) const {
   const auto& map = handlers_;
   const auto iter = map.find(scheme);
@@ -91,7 +91,7 @@ bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {
   return intercept_handlers_.erase(scheme) != 0;
 }
 
-const HandlersMap::mapped_type* ProtocolRegistry::InterceptedProtocol(
+const HandlersMap::mapped_type* ProtocolRegistry::FindIntercepted(
     const std::string& scheme) const {
   const auto& map = intercept_handlers_;
   const auto iter = map.find(scheme);
