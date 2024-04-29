@@ -41,11 +41,17 @@ class ProtocolRegistry {
   bool UnregisterProtocol(const std::string& scheme);
   bool IsProtocolRegistered(const std::string& scheme);
 
+  [[nodiscard]] const HandlersMap::mapped_type* RegisteredProtocol(
+      const std::string& scheme) const;
+
   bool InterceptProtocol(ProtocolType type,
                          const std::string& scheme,
                          const ProtocolHandler& handler);
   bool UninterceptProtocol(const std::string& scheme);
   bool IsProtocolIntercepted(const std::string& scheme);
+
+  [[nodiscard]] const HandlersMap::mapped_type* InterceptedProtocol(
+      const std::string& scheme) const;
 
  private:
   friend class ElectronBrowserContext;

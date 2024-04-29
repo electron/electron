@@ -473,47 +473,35 @@ void SimpleURLLoaderWrapper::Cancel() {
 }
 scoped_refptr<network::SharedURLLoaderFactory>
 SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
-  if (electron::IsUtilityProcess()) {
+  if (electron::IsUtilityProcess())
     return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
-  }
+
   CHECK(browser_context_);
-  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory;
-  auto* protocol_registry =
-      ProtocolRegistry::FromBrowserContext(browser_context_);
   // Explicitly handle intercepted protocols here, even though
   // ProxyingURLLoaderFactory would handle them later on, so that we can
   // correctly intercept file:// scheme URLs.
-  bool bypass_custom_protocol_handlers =
-      request_options_ & kBypassCustomProtocolHandlers;
-  if (!bypass_custom_protocol_handlers &&
-      protocol_registry->IsProtocolIntercepted(url.scheme())) {
-    auto& protocol_handler =
-        protocol_registry->intercept_handlers().at(url.scheme());
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-        ElectronURLLoaderFactory::Create(protocol_handler.first,
-                                         protocol_handler.second);
-    url_loader_factory = network::SharedURLLoaderFactory::Create(
-        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            std::move(pending_remote)));
-  } else if (!bypass_custom_protocol_handlers &&
-             protocol_registry->IsProtocolRegistered(url.scheme())) {
-    auto& protocol_handler = protocol_registry->handlers().at(url.scheme());
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-        ElectronURLLoaderFactory::Create(protocol_handler.first,
-                                         protocol_handler.second);
-    url_loader_factory = network::SharedURLLoaderFactory::Create(
-        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            std::move(pending_remote)));
-  } else if (url.SchemeIsFile()) {
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-        AsarURLLoaderFactory::Create();
-    url_loader_factory = network::SharedURLLoaderFactory::Create(
-        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            std::move(pending_remote)));
-  } else {
-    url_loader_factory = browser_context_->GetURLLoaderFactory();
+  if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
+      !bypass) {
+    const auto scheme = url.scheme();
+    const auto* reg = ProtocolRegistry::FromBrowserContext(browser_context_);
+
+    if (const auto* proto = reg->InterceptedProtocol(scheme))
+      return network::SharedURLLoaderFactory::Create(
+          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+              ElectronURLLoaderFactory::Create(proto->first, proto->second)));
+
+    if (const auto* proto = reg->RegisteredProtocol(scheme))
+      return network::SharedURLLoaderFactory::Create(
+          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+              ElectronURLLoaderFactory::Create(proto->first, proto->second)));
   }
-  return url_loader_factory;
+
+  if (url.SchemeIsFile())
+    return network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            AsarURLLoaderFactory::Create()));
+
+  return browser_context_->GetURLLoaderFactory();
 }
 
 // static
