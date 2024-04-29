@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Thu, 18 Apr 2024 13:07:04 -0400
+Subject: Replace dynamic_cast with virtual call (#6515)
+
+Make TextDiagnosticPrinter::setPrefix a virtual function in base class
+DiagnosticConsumer. This allows us to avoid using dynamic_cast in
+BackendConsumer::DxilDiagHandler, required for codebases that do not
+enable RTTI. This is also the only place in the codebase that uses RTTI
+(AFAICT).
+
+Bug: chromium:333420620
+Change-Id: Ida73077f24fdb4b705b5d868b04ac6cfecb30327
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5464347
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Reviewed-by: David Neto <dneto@google.com>
+
+diff --git a/tools/clang/include/clang/Basic/Diagnostic.h b/tools/clang/include/clang/Basic/Diagnostic.h
+index dc9f781c093c0bc8f6da773d514ac6d1503f842d..0b98dffb94185e242320409d43b74dae2c2a908d 100644
+--- a/tools/clang/include/clang/Basic/Diagnostic.h
++++ b/tools/clang/include/clang/Basic/Diagnostic.h
+@@ -1395,6 +1395,8 @@ public:
+   /// warnings and errors.
+   virtual void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
+                                 const Diagnostic &Info);
++
++  virtual void setPrefix(std::string Value) {} // HLSL Change
+ };
+ 
+ /// \brief A diagnostic client that ignores all diagnostics.
+diff --git a/tools/clang/include/clang/Frontend/TextDiagnosticPrinter.h b/tools/clang/include/clang/Frontend/TextDiagnosticPrinter.h
+index 04a570559fe06a0670ef8a7e6e94c40aa37e55a9..936031e09673a09c6e1164c515efce02ac51b910 100644
+--- a/tools/clang/include/clang/Frontend/TextDiagnosticPrinter.h
++++ b/tools/clang/include/clang/Frontend/TextDiagnosticPrinter.h
+@@ -45,7 +45,8 @@ public:
+   /// setPrefix - Set the diagnostic printer prefix string, which will be
+   /// printed at the start of any diagnostics. If empty, no prefix string is
+   /// used.
+-  void setPrefix(std::string Value) { Prefix = Value; }
++  // HLSL Change: add override
++  void setPrefix(std::string Value) override { Prefix = Value; }
+ 
+   void BeginSourceFile(const LangOptions &LO, const Preprocessor *PP) override;
+   void EndSourceFile() override;
+diff --git a/tools/clang/lib/CodeGen/CodeGenAction.cpp b/tools/clang/lib/CodeGen/CodeGenAction.cpp
+index 4fa721e812296356e31fc1bf6ea35ce295c2592c..68ebaadf5a8960c8def189248412136fe9543422 100644
+--- a/tools/clang/lib/CodeGen/CodeGenAction.cpp
++++ b/tools/clang/lib/CodeGen/CodeGenAction.cpp
+@@ -557,7 +557,7 @@ BackendConsumer::DxilDiagHandler(const llvm::DiagnosticInfoDxil &D) {
+ 
+   // If no location information is available, add function name
+   if (Loc.isInvalid()) {
+-    auto *DiagClient = dynamic_cast<TextDiagnosticPrinter*>(Diags.getClient());
++    auto *DiagClient = Diags.getClient();
+     auto *func = D.getFunction();
+     if (DiagClient && func)
+       DiagClient->setPrefix("Function: " + func->getName().str());
