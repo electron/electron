@@ -137,7 +137,7 @@ BluetoothChooser::GetDeviceList() {
   std::vector<electron::BluetoothChooser::DeviceInfo> vec;
   vec.reserve(device_map_.size());
   for (const auto& [device_id, device_name] : device_map_)
-    vec.emplace_back(device_id, device_name);
+    vec.push_back({device_id, device_name});
   return vec;
 }
 

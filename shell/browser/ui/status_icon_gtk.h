@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_STATUS_ICON_GTK_H_
 
 #include <memory>
+#include <vector>
 
 #include "ui/base/glib/glib_integers.h"
 #include "ui/base/glib/scoped_gobject.h"

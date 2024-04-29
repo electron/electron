@@ -342,8 +342,8 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     std::vector<DesktopCapturer::Source> window_sources;
     window_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
-      window_sources.emplace_back(list->GetSource(i), std::string(),
-                                  fetch_window_icons_);
+      window_sources.push_back(
+          {list->GetSource(i), std::string(), fetch_window_icons_});
     }
     std::move(window_sources.begin(), window_sources.end(),
               std::back_inserter(captured_sources_));
@@ -355,7 +355,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     std::vector<DesktopCapturer::Source> screen_sources;
     screen_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
-      screen_sources.emplace_back(list->GetSource(i), std::string());
+      screen_sources.push_back({list->GetSource(i), std::string()});
     }
 #if BUILDFLAG(IS_WIN)
     // Gather the same unique screen IDs used by the electron.screen API in
