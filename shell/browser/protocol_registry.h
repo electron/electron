@@ -33,7 +33,6 @@ class ProtocolRegistry {
   CreateNonNetworkNavigationURLLoaderFactory(const std::string& scheme);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
-  const HandlersMap& handlers() const { return handlers_; }
 
   bool RegisterProtocol(ProtocolType type,
                         const std::string& scheme,
