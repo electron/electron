@@ -361,7 +361,7 @@ class ChunkedDataPipeReadableStream
                               base::Unretained(this)));
     }
 
-    uint32_t num_bytes = buf->ByteLength();
+    size_t num_bytes = buf->ByteLength();
     if (size_ && num_bytes > *size_ - bytes_read_)
       num_bytes = *size_ - bytes_read_;
     MojoResult rv = data_pipe_->ReadData(
