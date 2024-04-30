@@ -9,7 +9,7 @@ This change adds the remote-debugging-address switch to the content switches to
 allow it to be used in Electron.
 
 diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
-index a11a8178ada26..6f0df20012edb 100644
+index a11a8178ada26332969da4fbb94486c236644ab9..6f0df20012edb82dcb5caceb3a8aaafaa3fd92a2 100644
 --- a/content/public/common/content_switches.cc
 +++ b/content/public/common/content_switches.cc
 @@ -669,6 +669,12 @@ const char kRegisterPepperPlugins[]         = "register-pepper-plugins";
@@ -26,7 +26,7 @@ index a11a8178ada26..6f0df20012edb 100644
  const char kRemoteDebuggingPort[]           = "remote-debugging-port";
  
 diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
-index b8f1c93f56c31..f02d9b86a900a 100644
+index b8f1c93f56c316d48d860dd570b9d6d23b4790c4..f02d9b86a900a5725eefdc7ae29e53d6d06e50f3 100644
 --- a/content/public/common/content_switches.h
 +++ b/content/public/common/content_switches.h
 @@ -189,6 +189,7 @@ CONTENT_EXPORT extern const char kReduceUserAgentPlatformOsCpu[];

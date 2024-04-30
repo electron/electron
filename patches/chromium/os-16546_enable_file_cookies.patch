@@ -7,10 +7,10 @@ Allow websites from file:// domain to access cookies
 Cherry picked from QtWebEngine I638d2cd24ea426d78cdaa90a58b94559bab4588f
 
 diff --git a/net/cookies/cookie_monster.cc b/net/cookies/cookie_monster.cc
-index 13911f2bd786d8fc8a6e073fad76f09fa4ae0b5a..08d7aff36b64d3676ae2f75b6d6990f0e58baae6 100644
+index 5c4352bb9fc1fd85373ee413b59a12967bd02710..cade2e3e281e87a5816f9619b6cf69f1bd30ea6d 100644
 --- a/net/cookies/cookie_monster.cc
 +++ b/net/cookies/cookie_monster.cc
-@@ -581,7 +581,7 @@ void CookieMonster::SetPersistSessionCookies(bool persist_session_cookies) {
+@@ -565,7 +565,7 @@ void CookieMonster::SetPersistSessionCookies(bool persist_session_cookies) {
  }
  
  const char* const CookieMonster::kDefaultCookieableSchemes[] = {"http", "https",

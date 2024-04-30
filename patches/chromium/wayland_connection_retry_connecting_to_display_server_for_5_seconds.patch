@@ -7,7 +7,7 @@ Brightsign weston server instance might not be up, at the point where
 Electron tries to connect to it. Retry for 5 seconds before giving up.
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_connection.cc b/ui/ozone/platform/wayland/host/wayland_connection.cc
-index 894f599d063c0..b3d1caaab3016 100644
+index 2a018c632898d39ee937a0da04bf035c0962b31f..e444e8d81009fed81987aafcf68575ef77f6f610 100644
 --- a/ui/ozone/platform/wayland/host/wayland_connection.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_connection.cc
 @@ -13,6 +13,7 @@

@@ -6,10 +6,10 @@ Subject: feat:os_14967_force_sniffing_file_urls
 This patch forces Mime Sniffing for file urls.
 
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index abf793bac1c3937dee803a6ec100e42c4bf78e31..495328dd787370992848a26b529191e2220bfa9a 100644
+index c3da6e9fe37b4278bbc2a2b3fab9a3ef0f0ffb42..75a2c553931fa6386e201146fbd5c868d84f454e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -359,7 +359,7 @@ bool ContentBrowserClient::IsFileAccessAllowed(
+@@ -379,7 +379,7 @@ bool ContentBrowserClient::IsFileAccessAllowed(
  }
  
  bool ContentBrowserClient::ForceSniffingFileUrlsForHtml() {

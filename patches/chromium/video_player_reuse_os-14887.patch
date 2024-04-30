@@ -3,15 +3,15 @@ From: Tariq Bashir <120014322+t-bashir-bs@users.noreply.github.com>
 Date: Fri, 12 Apr 2024 11:24:15 +0100
 Subject: Video player reuse OS-14887
 
-This change cherry picks the QtWebEngine changes in 
+This change cherry picks the QtWebEngine changes in
 I4093433d2153925338b12fd6ef5ed2f1a309eb73. Its purpose is to reuse the
 video player.
 
 diff --git a/third_party/blink/renderer/core/html/media/html_media_element.cc b/third_party/blink/renderer/core/html/media/html_media_element.cc
-index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fdb2d75750 100644
+index 33651550c977e7c2742da30266212623d61cbe60..459f0d8b3df2aab65527ea825b2402934b612d37 100644
 --- a/third_party/blink/renderer/core/html/media/html_media_element.cc
 +++ b/third_party/blink/renderer/core/html/media/html_media_element.cc
-@@ -734,6 +734,13 @@ void HTMLMediaElement::ParseAttribute(
+@@ -749,6 +749,13 @@ void HTMLMediaElement::ParseAttribute(
      // requires a style recalc.
      SetNeedsStyleRecalc(kLocalStyleChange,
                          StyleChangeReasonForTracing::FromAttribute(name));
@@ -25,7 +25,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
      // Trigger a reload, as long as the 'src' attribute is present.
      if (!params.new_value.IsNull()) {
        ignore_preload_none_ = false;
-@@ -1307,6 +1314,8 @@ void HTMLMediaElement::LoadNextSourceChild() {
+@@ -1320,6 +1327,8 @@ void HTMLMediaElement::LoadNextSourceChild() {
    String content_type;
    KURL media_url = SelectNextSourceChild(&content_type, kComplain);
    if (!media_url.IsValid()) {
@@ -34,7 +34,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
      WaitForSourceChange();
      return;
    }
-@@ -1501,8 +1510,15 @@ void HTMLMediaElement::StartPlayerLoad() {
+@@ -1512,8 +1521,15 @@ void HTMLMediaElement::StartPlayerLoad() {
      return;
    }
  
@@ -52,7 +52,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
  
    if (!web_media_player_) {
      MediaLoadingFailed(WebMediaPlayer::kNetworkStateFormatError,
-@@ -1513,17 +1529,19 @@ void HTMLMediaElement::StartPlayerLoad() {
+@@ -1524,17 +1540,19 @@ void HTMLMediaElement::StartPlayerLoad() {
  
    OnWebMediaPlayerCreated();
  
@@ -82,7 +82,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
  
    if (GetLayoutObject())
      GetLayoutObject()->SetShouldDoFullPaintInvalidation();
-@@ -3832,6 +3850,9 @@ TimeRanges* HTMLMediaElement::seekable() const {
+@@ -3788,6 +3806,9 @@ TimeRanges* HTMLMediaElement::seekable() const {
  }
  
  bool HTMLMediaElement::PotentiallyPlaying() const {
@@ -92,7 +92,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
    // Once we've reached the metadata state the WebMediaPlayer is ready to accept
    // play state changes.
    return ready_state_ >= kHaveMetadata && CouldPlayIfEnoughData();
-@@ -3946,6 +3967,8 @@ void HTMLMediaElement::StopPeriodicTimers() {
+@@ -3902,6 +3923,8 @@ void HTMLMediaElement::StopPeriodicTimers() {
  
  void HTMLMediaElement::
      ClearMediaPlayerAndAudioSourceProviderClientWithoutLocking() {
@@ -101,7 +101,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
    GetAudioSourceProvider().SetClient(nullptr);
    if (web_media_player_) {
      audio_source_provider_.Wrap(nullptr);
-@@ -3978,6 +4001,14 @@ void HTMLMediaElement::ClearMediaPlayer() {
+@@ -3934,6 +3957,14 @@ void HTMLMediaElement::ClearMediaPlayer() {
  
    pending_action_flags_ = 0;
    load_state_ = kWaitingForSource;
@@ -116,7 +116,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
  
    if (GetLayoutObject())
      GetLayoutObject()->SetShouldDoFullPaintInvalidation();
-@@ -4364,6 +4395,10 @@ void HTMLMediaElement::ConfigureTextTrackDisplay() {
+@@ -4320,6 +4351,10 @@ void HTMLMediaElement::ConfigureTextTrackDisplay() {
  void HTMLMediaElement::ResetMediaPlayerAndMediaSource() {
    CloseMediaSource();
  
@@ -128,7 +128,7 @@ index d7c8c81d4313ac1100e2a526c0fee08e1d4d8460..09ad65b0187bc22a80523bfdb340f5fd
      AudioSourceProviderClientLockScope scope(*this);
      ClearMediaPlayerAndAudioSourceProviderClientWithoutLocking();
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 5f91aa499ae04..f3596592a0af2 100644
+index 5f91aa499ae04a5a21135b7345747cdad694bd21..56615e4bd8cfd7f09c7433f701b57c8906e13d44 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -4553,5 +4553,8 @@

@@ -10,7 +10,7 @@ xdg_surface_set_window_geometry call. This is because we don't support aura shel
 and hence cannot use RequestWindowBounds calls to set the offset.
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
-index 8d35bbc02a649..695531d1d2805 100644
+index 8d35bbc02a649f69c6d9fe127bd8230843dff13e..695531d1d280586191c112060302a97fe981beb6 100644
 --- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
 @@ -715,6 +715,12 @@ void WaylandToplevelWindow::SetWindowGeometry(gfx::Size size_dip) {
