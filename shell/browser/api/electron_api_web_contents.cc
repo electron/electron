@@ -121,6 +121,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
+#include "shell/common/gin_converters/osr_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -764,6 +765,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::kOffScreen;
 
+  if (options.Get(options::kOffscreenUseSharedTexture, &b))
+    offscreen_use_shared_texture_ = b;
+
   // Init embedder earlier
   options.Get("embedder", &embedder_);
 
@@ -798,7 +802,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
-          false,
+          false, offscreen_use_shared_texture_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
@@ -818,7 +822,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
-        transparent,
+        transparent, offscreen_use_shared_texture_,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
@@ -3535,8 +3539,21 @@ bool WebContents::IsOffScreen() const {
   return type_ == Type::kOffScreen;
 }
 
-void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
-  Emit("paint", dirty_rect, gfx::Image::CreateFrom1xBitmap(bitmap));
+void WebContents::OnPaint(const gfx::Rect& dirty_rect,
+                          const SkBitmap& bitmap,
+                          const OffscreenSharedTexture& tex) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("texture", tex);
+
+  EmitWithoutEvent("paint", event, dirty_rect,
+                   gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 void WebContents::StartPainting() {

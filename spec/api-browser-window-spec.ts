@@ -15,6 +15,7 @@ import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-help
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { setTimeout as syncSetTimeout } from 'node:timers';
+import { nativeImage } from 'electron';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -374,7 +375,7 @@ describe('BrowserWindow module', () => {
     it('should emit did-fail-load event for files that do not exist', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL('file://a.txt');
-      const [, code, desc,, isMainFrame] = await didFailLoad;
+      const [, code, desc, , isMainFrame] = await didFailLoad;
       expect(code).to.equal(-6);
       expect(desc).to.equal('ERR_FILE_NOT_FOUND');
       expect(isMainFrame).to.equal(true);
@@ -382,7 +383,7 @@ describe('BrowserWindow module', () => {
     it('should emit did-fail-load event for invalid URL', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL('http://example:port');
-      const [, code, desc,, isMainFrame] = await didFailLoad;
+      const [, code, desc, , isMainFrame] = await didFailLoad;
       expect(desc).to.equal('ERR_INVALID_URL');
       expect(code).to.equal(-300);
       expect(isMainFrame).to.equal(true);
@@ -399,7 +400,7 @@ describe('BrowserWindow module', () => {
     it('should set `mainFrame = false` on did-fail-load events in iframes', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'));
-      const [,,,, isMainFrame] = await didFailLoad;
+      const [, , , , isMainFrame] = await didFailLoad;
       expect(isMainFrame).to.equal(false);
     });
     it('does not crash in did-fail-provisional-load handler', (done) => {
@@ -413,7 +414,7 @@ describe('BrowserWindow module', () => {
       const data = Buffer.alloc(2 * 1024 * 1024).toString('base64');
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL(`data:image/png;base64,${data}`);
-      const [, code, desc,, isMainFrame] = await didFailLoad;
+      const [, code, desc, , isMainFrame] = await didFailLoad;
       expect(desc).to.equal('ERR_INVALID_URL');
       expect(code).to.equal(-300);
       expect(isMainFrame).to.equal(true);
@@ -4542,7 +4543,7 @@ describe('BrowserWindow module', () => {
         fs.unlinkSync(savePageHtmlPath);
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
-      } catch {}
+      } catch { }
     });
 
     it('should throw when passing relative paths', async () => {
@@ -4590,7 +4591,7 @@ describe('BrowserWindow module', () => {
       try {
         await fs.promises.unlink(savePageMHTMLPath);
         await fs.promises.rmdir(tmpDir);
-      } catch {}
+      } catch { }
     });
 
     it('should save page to disk with HTMLComplete', async () => {
@@ -6367,7 +6368,7 @@ describe('BrowserWindow module', () => {
     it('creates offscreen window with correct size', async () => {
       const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-      const [,, data] = await paint;
+      const [, , data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
@@ -6462,6 +6463,67 @@ describe('BrowserWindow module', () => {
         await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
+    });
+  });
+
+  describe('offscreen rendering image', () => {
+    afterEach(closeAllWindows);
+
+    const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
+    ifit(nativeModulesEnabled && ['win32'].includes(process.platform))('use shared texture, hardware acceleration enabled', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true,
+          offscreenUseSharedTexture: true
+        },
+        transparent: true,
+        frame: false,
+        width: 100,
+        height: 100
+      });
+
+      const ExtractPixels = require('@electron-ci/osr-gpu');
+      w.webContents.once('paint', async (e, dirtyRect) => {
+        try {
+          expect(e.texture).to.be.not.null();
+          const pixels = ExtractPixels(e.texture!.textureInfo);
+          const img = nativeImage.createFromBitmap(pixels, { width: dirtyRect.width, height: dirtyRect.height, scaleFactor: 1 });
+          const target = await w.webContents.capturePage();
+          expect(img.toBitmap().equals(target.toBitmap())).to.equal(true);
+          done();
+        } catch (e) {
+          done(e);
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering-image.html'));
+    });
+
+    it('use shared memory, hardware acceleration enabled', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true,
+          offscreenUseSharedTexture: false
+        },
+        transparent: true,
+        frame: false,
+        width: 100,
+        height: 100
+      });
+
+      w.webContents.once('paint', async (e, dirtyRect, image) => {
+        try {
+          const target = await w.webContents.capturePage();
+          expect(image.toBitmap().equals(target.toBitmap())).to.equal(true);
+          done();
+        } catch (e) {
+          done(e);
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering-image.html'));
     });
   });
 

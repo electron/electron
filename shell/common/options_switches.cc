@@ -153,6 +153,8 @@ const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
 
 const char kOffscreen[] = "offscreen";
 
+const char kOffscreenUseSharedTexture[] = "offscreenUseSharedTexture";
+
 const char kNodeIntegrationInSubFrames[] = "nodeIntegrationInSubFrames";
 
 // Disable window resizing when HTML Fullscreen API is activated.

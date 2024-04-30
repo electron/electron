@@ -869,19 +869,33 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `texture` [OffscreenSharedTexture](structures/offscreen-shared-texture.md) (optional) _Experimental_ - The GPU shared texture of the frame, when `webPreferences.offscreenUseSharedTexture` is `true`.
 * `dirtyRect` [Rectangle](structures/rectangle.md)
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
-Emitted when a new frame is generated. Only the dirty area is passed in the
-buffer.
+Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
+
+When using shared texture, it is possible to pass texture to other processes through IPC, or handle the event in async handler.
+It is important to call `texture.release()` when the texture is no longer needed as soon as possible, before the underlying
+frame pool is drained. By managing the lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes.
 
 ```js
 const { BrowserWindow } = require('electron')
 
-const win = new BrowserWindow({ webPreferences: { offscreen: true } })
-win.webContents.on('paint', (event, dirty, image) => {
-  // updateBitmap(dirty, image.getBitmap())
+const win = new BrowserWindow({ webPreferences: { offscreen: true, offscreenUseSharedTexture: true } })
+win.webContents.on('paint', async (e, dirty, image) => {
+  if (e.texture) {
+    // You can handle the event in async handler
+    await new Promise(resolve => setTimeout(resolve, 50))
+    // importTextureHandle(dirty, e.texture.textureInfo)
+    // You can also pass the `textureInfo` to other processes (not `texture`, the `release` function is not passable)
+    // You have to release the texture at this process when you are done with it
+    e.texture.release()
+  } else {
+    // details.texture will be null when offscreenUseSharedTexture is false
+    // importBitmap(dirty, image.getBitmap())
+  }
 })
 win.loadURL('https://github.com')
 ```
