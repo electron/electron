@@ -107,6 +107,7 @@ auto_filenames = {
     "docs/api/structures/mouse-wheel-input-event.md",
     "docs/api/structures/notification-action.md",
     "docs/api/structures/notification-response.md",
+    "docs/api/structures/offscreen-shared-texture.md",
     "docs/api/structures/open-external-permission-request.md",
     "docs/api/structures/payment-discount.md",
     "docs/api/structures/permission-request.md",

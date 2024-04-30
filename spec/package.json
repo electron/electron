@@ -10,6 +10,7 @@
     "@electron-ci/echo": "file:./fixtures/native-addon/echo",
     "@electron-ci/is-valid-window": "file:./is-valid-window",
     "@electron-ci/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen/",
+    "@electron-ci/osr-gpu": "file:./fixtures/native-addon/osr-gpu/",
     "@electron/fuses": "^1.8.0",
     "@electron/packager": "^18.3.2",
     "@marshallofsound/mocha-appveyor-reporter": "^0.4.3",
