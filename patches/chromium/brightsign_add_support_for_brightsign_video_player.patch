@@ -8,7 +8,7 @@ with libvid.
 
 diff --git a/build/config/brightsign_build.gni b/build/config/brightsign_build.gni
 new file mode 100644
-index 0000000000000..41904fbec3bf4
+index 0000000000000000000000000000000000000000..41904fbec3bf4924d6fcc0e1ea7fbe2339753ba4
 --- /dev/null
 +++ b/build/config/brightsign_build.gni
 @@ -0,0 +1,4 @@
@@ -17,7 +17,7 @@ index 0000000000000..41904fbec3bf4
 +  is_brightsign = false
 +}
 diff --git a/build/config/ui.gni b/build/config/ui.gni
-index b560f372c638e..f7789634e0679 100644
+index b560f372c638e05efa5aeb602268b2639254e3fc..f7789634e06793e403a701ab2ac103b8424a58a8 100644
 --- a/build/config/ui.gni
 +++ b/build/config/ui.gni
 @@ -17,6 +17,7 @@
@@ -29,7 +29,7 @@ index b560f372c638e..f7789634e0679 100644
  import("//build/config/chromeos/args.gni")
  import("//build/config/chromeos/ui_mode.gni")
 diff --git a/cc/base/list_container.h b/cc/base/list_container.h
-index b8210f555323c..1cb225580e3fa 100644
+index b8210f555323c939f34f74feacb87c36eff78dd0..1cb225580e3fab0913cafe8a297fe6509a1c14e2 100644
 --- a/cc/base/list_container.h
 +++ b/cc/base/list_container.h
 @@ -157,9 +157,10 @@ class ListContainer {
@@ -46,7 +46,7 @@ index b8210f555323c..1cb225580e3fa 100644
  
    ListContainer& operator=(ListContainer&& other) {
 diff --git a/components/viz/common/BUILD.gn b/components/viz/common/BUILD.gn
-index 4fb0378822484..c394a705d0cca 100644
+index 4fb0378822484b126ca0a4a303c3d5cb19514c72..c394a705d0cca304321137b471b13e8e9214160b 100644
 --- a/components/viz/common/BUILD.gn
 +++ b/components/viz/common/BUILD.gn
 @@ -53,6 +53,7 @@ buildflag_header("buildflags") {
@@ -58,7 +58,7 @@ index 4fb0378822484..c394a705d0cca 100644
  }
  
 diff --git a/components/viz/common/display/overlay_strategy.cc b/components/viz/common/display/overlay_strategy.cc
-index 98f9630215701..edd83f5ceddc4 100644
+index 98f96302157018352ec02f30e2e4b9333a443bd9..edd83f5ceddc4df0453d28782b4433a23b29eb43 100644
 --- a/components/viz/common/display/overlay_strategy.cc
 +++ b/components/viz/common/display/overlay_strategy.cc
 @@ -26,6 +26,10 @@ std::vector<OverlayStrategy> ParseOverlayStrategies(
@@ -73,7 +73,7 @@ index 98f9630215701..edd83f5ceddc4 100644
      } else {
        LOG(ERROR) << "Unrecognized overlay strategy " << strategy_name;
 diff --git a/components/viz/common/display/overlay_strategy.h b/components/viz/common/display/overlay_strategy.h
-index 21a077054822d..870cc6d561359 100644
+index 21a077054822dbb81073af3348bc65ad1084e063..870cc6d561359e89b8c099abe07719b6536643e0 100644
 --- a/components/viz/common/display/overlay_strategy.h
 +++ b/components/viz/common/display/overlay_strategy.h
 @@ -24,8 +24,11 @@ enum class OverlayStrategy {
@@ -91,7 +91,7 @@ index 21a077054822d..870cc6d561359 100644
  };
  
 diff --git a/components/viz/common/quads/render_pass_io.cc b/components/viz/common/quads/render_pass_io.cc
-index fc1478dd07d6f..0674622c7f745 100644
+index fc1478dd07d6f8f28df4be9fead859b1fce0ed7a..2ae64f877a2be2117385237f4af0a41e9afdb31b 100644
 --- a/components/viz/common/quads/render_pass_io.cc
 +++ b/components/viz/common/quads/render_pass_io.cc
 @@ -1307,6 +1307,8 @@ void VideoHoleDrawQuadToDict(const VideoHoleDrawQuad* draw_quad,
@@ -120,7 +120,7 @@ index fc1478dd07d6f..0674622c7f745 100644
  }
  
 diff --git a/components/viz/common/quads/video_hole_draw_quad.cc b/components/viz/common/quads/video_hole_draw_quad.cc
-index cf4fd7dd563e0..b9f3a442ad2d4 100644
+index cf4fd7dd563e0d46fbf05881ded70a745eb5c03a..b9f3a442ad2d4496073756adb84eb956f445b1ea 100644
 --- a/components/viz/common/quads/video_hole_draw_quad.cc
 +++ b/components/viz/common/quads/video_hole_draw_quad.cc
 @@ -5,6 +5,7 @@
@@ -172,7 +172,7 @@ index cf4fd7dd563e0..b9f3a442ad2d4 100644
  
  }  // namespace viz
 diff --git a/components/viz/common/quads/video_hole_draw_quad.h b/components/viz/common/quads/video_hole_draw_quad.h
-index 921fdf89fff86..0a6cc21887857 100644
+index 921fdf89fff862fc0308eb73b4855159bb0d4d70..0a6cc21887857bec31d19b337dd0670690dcf9ae 100644
 --- a/components/viz/common/quads/video_hole_draw_quad.h
 +++ b/components/viz/common/quads/video_hole_draw_quad.h
 @@ -20,6 +20,7 @@ namespace viz {
@@ -210,7 +210,7 @@ index 921fdf89fff86..0a6cc21887857 100644
   private:
    void ExtendValue(base::trace_event::TracedValue* value) const override;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index c5d018ae78b48..e54190389a18d 100644
+index c5d018ae78b486ef4b3cc86a8091869f62aef534..e54190389a18d8e67dcaa8f5a3a4ac5f3382d7ef 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -3,6 +3,7 @@
@@ -250,7 +250,7 @@ index c5d018ae78b48..e54190389a18d 100644
    testonly = true
    sources = [
 diff --git a/components/viz/service/display/overlay_processor_ozone.cc b/components/viz/service/display/overlay_processor_ozone.cc
-index 55a473bd1a811..d94387b1d3626 100644
+index 55a473bd1a8116f24425953c62e041f6b20fce8b..d94387b1d3626eeabe83ef76802a1b3b1269146d 100644
 --- a/components/viz/service/display/overlay_processor_ozone.cc
 +++ b/components/viz/service/display/overlay_processor_ozone.cc
 @@ -31,6 +31,9 @@
@@ -278,7 +278,7 @@ index 55a473bd1a811..d94387b1d3626 100644
          NOTREACHED();
 diff --git a/components/viz/service/display/overlay_strategy_underlay_brightsign.cc b/components/viz/service/display/overlay_strategy_underlay_brightsign.cc
 new file mode 100644
-index 0000000000000..01f445f4d1e0d
+index 0000000000000000000000000000000000000000..01f445f4d1e0ddea2ba3e015c7200ce33ff8c317
 --- /dev/null
 +++ b/components/viz/service/display/overlay_strategy_underlay_brightsign.cc
 @@ -0,0 +1,361 @@
@@ -645,7 +645,7 @@ index 0000000000000..01f445f4d1e0d
 +}  // namespace viz
 diff --git a/components/viz/service/display/overlay_strategy_underlay_brightsign.h b/components/viz/service/display/overlay_strategy_underlay_brightsign.h
 new file mode 100644
-index 0000000000000..f9edc840c9e94
+index 0000000000000000000000000000000000000000..f9edc840c9e94613631e51d7034153089e2eb7c4
 --- /dev/null
 +++ b/components/viz/service/display/overlay_strategy_underlay_brightsign.h
 @@ -0,0 +1,91 @@
@@ -741,7 +741,7 @@ index 0000000000000..f9edc840c9e94
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_OVERLAY_STRATEGY_UNDERLAY_BRIGHTSIGN_H_
 diff --git a/components/viz/viz.gni b/components/viz/viz.gni
-index e837a64738d1a..d550a16ff4f99 100644
+index e837a64738d1a698d525c815af512e767f13947e..d550a16ff4f9959ae989d44708a63033f75c1f66 100644
 --- a/components/viz/viz.gni
 +++ b/components/viz/viz.gni
 @@ -23,6 +23,8 @@ enable_skia_graphite_tests =
@@ -754,7 +754,7 @@ index e837a64738d1a..d550a16ff4f99 100644
  viz_add_configs = [ "//build/config:precompiled_headers" ]
  
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 8d2053315bfa2..de1b544b1e496 100644
+index 8d2053315bfa2847c7c3602b87f9bd6458bd484d..de1b544b1e496dcf9f8a99719a988cc904758cb3 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -3463,6 +3463,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
@@ -766,7 +766,7 @@ index 8d2053315bfa2..de1b544b1e496 100644
      switches::kUseFakeCodecForPeerConnection,
      switches::kUseFakeUIForMediaStream,
 diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
-index 21643f75f1bc0..2536acb12a243 100644
+index 21643f75f1bc0cad501ceedc1231f94a9e4a5bc5..2536acb12a2433b1d5afb0d8bbf872e3958b0335 100644
 --- a/media/base/media_switches.cc
 +++ b/media/base/media_switches.cc
 @@ -23,6 +23,11 @@
@@ -782,7 +782,7 @@ index 21643f75f1bc0..2536acb12a243 100644
  const char kAudioBufferSize[] = "audio-buffer-size";
  
 diff --git a/media/base/media_switches.h b/media/base/media_switches.h
-index 7201da88eeca0..75c763127b52c 100644
+index 7201da88eeca0f2d1d75cb375a39f11b37aaf043..75c763127b52cf659cc1b631f000ccb9ed197564 100644
 --- a/media/base/media_switches.h
 +++ b/media/base/media_switches.h
 @@ -23,6 +23,10 @@ class CommandLine;
@@ -797,7 +797,7 @@ index 7201da88eeca0..75c763127b52c 100644
  
  #if BUILDFLAG(ENABLE_PASSTHROUGH_AUDIO_CODECS)
 diff --git a/media/base/video_frame.cc b/media/base/video_frame.cc
-index 888f28a79564d..963337d4fcf7a 100644
+index 888f28a79564db2e067da5e86691581668d3a87e..963337d4fcf7a989a07a52e424a7cba29885146a 100644
 --- a/media/base/video_frame.cc
 +++ b/media/base/video_frame.cc
 @@ -363,6 +363,21 @@ scoped_refptr<VideoFrame> VideoFrame::CreateVideoHoleFrame(
@@ -823,7 +823,7 @@ index 888f28a79564d..963337d4fcf7a 100644
  scoped_refptr<VideoFrame> VideoFrame::CreateZeroInitializedFrame(
      VideoPixelFormat format,
 diff --git a/media/base/video_frame.h b/media/base/video_frame.h
-index f3ac5cbd4694c..8de48cd220046 100644
+index f3ac5cbd4694c4bbf55f8051233080c50e40ccd5..8de48cd22004648888176b5d6f46d0c76aa9c2c2 100644
 --- a/media/base/video_frame.h
 +++ b/media/base/video_frame.h
 @@ -192,6 +192,19 @@ class MEDIA_EXPORT VideoFrame : public base::RefCountedThreadSafe<VideoFrame> {
@@ -847,7 +847,7 @@ index f3ac5cbd4694c..8de48cd220046 100644
    // the initial allocated buffers.
    static scoped_refptr<VideoFrame> CreateZeroInitializedFrame(
 diff --git a/media/base/video_frame_metadata.cc b/media/base/video_frame_metadata.cc
-index 24d284453fa57..4fc3b39ec69e2 100644
+index 24d284453fa5779ddb7bcf009bc9d0692b3aa630..4fc3b39ec69e2645ae372010277b43650cb7ae55 100644
 --- a/media/base/video_frame_metadata.cc
 +++ b/media/base/video_frame_metadata.cc
 @@ -10,17 +10,19 @@
@@ -881,7 +881,7 @@ index 24d284453fa57..4fc3b39ec69e2 100644
  #undef MERGE_VALUE_FIELD
  #undef MERGE_OPTIONAL_FIELD
 diff --git a/media/base/video_frame_metadata.h b/media/base/video_frame_metadata.h
-index b14a94a9987b7..19787efd2ad62 100644
+index b14a94a9987b71bff2f0f1453b0c70b8d6f1da08..19787efd2ad62f594f298f7a33a77c66f4ea7f92 100644
 --- a/media/base/video_frame_metadata.h
 +++ b/media/base/video_frame_metadata.h
 @@ -20,7 +20,7 @@ namespace media {
@@ -904,7 +904,7 @@ index b14a94a9987b7..19787efd2ad62 100644
  
  }  // namespace media
 diff --git a/media/media_options.gni b/media/media_options.gni
-index 669e9d4c38370..0279d6a77bd4b 100644
+index 669e9d4c38370b0d6f38d63f3d0cc92cdea9a0c2..0279d6a77bd4b366a2825cab1924fb236829a2e3 100644
 --- a/media/media_options.gni
 +++ b/media/media_options.gni
 @@ -2,6 +2,7 @@
@@ -926,7 +926,7 @@ index 669e9d4c38370..0279d6a77bd4b 100644
  
  # Use another declare_args() to allow dependence on args defined above.
 diff --git a/media/renderers/video_overlay_factory.cc b/media/renderers/video_overlay_factory.cc
-index 4bbb14b6c3029..b25c5e53ac02f 100644
+index 4bbb14b6c3029a7b365b39b05bbb9f429735e291..b25c5e53ac02fa2f0c8bf74635916298249845b3 100644
 --- a/media/renderers/video_overlay_factory.cc
 +++ b/media/renderers/video_overlay_factory.cc
 @@ -35,4 +35,30 @@ scoped_refptr<VideoFrame> VideoOverlayFactory::CreateFrame(
@@ -961,7 +961,7 @@ index 4bbb14b6c3029..b25c5e53ac02f 100644
 +
  }  // namespace media
 diff --git a/media/renderers/video_overlay_factory.h b/media/renderers/video_overlay_factory.h
-index 4cf02a77d08ca..e89bba5d9880a 100644
+index 4cf02a77d08ca3426cc961d365f0396fd1fb0cdd..e89bba5d9880aa0aab9a82bf1655629f9a9cfe59 100644
 --- a/media/renderers/video_overlay_factory.h
 +++ b/media/renderers/video_overlay_factory.h
 @@ -29,6 +29,8 @@ class MEDIA_EXPORT VideoOverlayFactory {
@@ -981,7 +981,7 @@ index 4cf02a77d08ca..e89bba5d9880a 100644
 \ No newline at end of file
 +#endif  // MEDIA_RENDERERS_VIDEO_OVERLAY_FACTORY_H_
 diff --git a/media/renderers/video_resource_updater.cc b/media/renderers/video_resource_updater.cc
-index 5bd1d11fd8d36..c30488c523851 100644
+index 5bd1d11fd8d3642c3bdbc5313388c496f787f215..c30488c523851e35ee591708b4e3acd50267d8a8 100644
 --- a/media/renderers/video_resource_updater.cc
 +++ b/media/renderers/video_resource_updater.cc
 @@ -647,6 +647,8 @@ void VideoResourceUpdater::ObtainFrameResources(
@@ -1003,7 +1003,7 @@ index 5bd1d11fd8d36..c30488c523851 100644
      }
      case VideoFrameResourceType::YUV:
 diff --git a/media/renderers/video_resource_updater.h b/media/renderers/video_resource_updater.h
-index 11d9cdee17a2e..8613d449ae5d9 100644
+index 11d9cdee17a2eb3d86655bf364fd452d8262bdbb..8613d449ae5d9c94167dbbf10570aea920a3e072 100644
 --- a/media/renderers/video_resource_updater.h
 +++ b/media/renderers/video_resource_updater.h
 @@ -233,6 +233,11 @@ class MEDIA_EXPORT VideoResourceUpdater
@@ -1019,7 +1019,7 @@ index 11d9cdee17a2e..8613d449ae5d9 100644
    // we can reduce the number of allocations and data transfers.
    std::vector<std::unique_ptr<PlaneResource>> all_resources_;
 diff --git a/services/viz/privileged/cpp/overlay_strategy_mojom_traits.h b/services/viz/privileged/cpp/overlay_strategy_mojom_traits.h
-index fcea817457ad6..ce15511e8aeb3 100644
+index fcea817457ad610a30f54052e4fb378c9b604ef0..ce15511e8aeb3dbb156b5f38ee85a2fccd671017 100644
 --- a/services/viz/privileged/cpp/overlay_strategy_mojom_traits.h
 +++ b/services/viz/privileged/cpp/overlay_strategy_mojom_traits.h
 @@ -25,6 +25,10 @@ struct EnumTraits<viz::mojom::OverlayStrategy, viz::OverlayStrategy> {
@@ -1047,7 +1047,7 @@ index fcea817457ad6..ce15511e8aeb3 100644
      return false;
    }
 diff --git a/services/viz/privileged/mojom/compositing/BUILD.gn b/services/viz/privileged/mojom/compositing/BUILD.gn
-index 4dfc82f185378..3f8f4ab86a6c2 100644
+index 4dfc82f18537852113dd70bf2edafeca5bf79073..3f8f4ab86a6c285c18baf442a454f9f142f39263 100644
 --- a/services/viz/privileged/mojom/compositing/BUILD.gn
 +++ b/services/viz/privileged/mojom/compositing/BUILD.gn
 @@ -48,6 +48,10 @@ mojom("compositing") {
@@ -1062,7 +1062,7 @@ index 4dfc82f185378..3f8f4ab86a6c2 100644
      {
        types = [
 diff --git a/services/viz/privileged/mojom/compositing/overlay_strategy.mojom b/services/viz/privileged/mojom/compositing/overlay_strategy.mojom
-index a4176d61db19d..7bdaf8990d9f2 100644
+index a4176d61db19de22add1f7bf10008afbe38b7b03..7bdaf8990d9f25ba45aa944b124eb35984274ef8 100644
 --- a/services/viz/privileged/mojom/compositing/overlay_strategy.mojom
 +++ b/services/viz/privileged/mojom/compositing/overlay_strategy.mojom
 @@ -15,4 +15,8 @@ enum OverlayStrategy {
@@ -1075,7 +1075,7 @@ index a4176d61db19d..7bdaf8990d9f2 100644
 +
  };
 diff --git a/services/viz/public/cpp/compositing/quads_mojom_traits.cc b/services/viz/public/cpp/compositing/quads_mojom_traits.cc
-index a16847555e39e..2a5aac26be3ee 100644
+index a16847555e39e5f4034db7bb5fec11ebf8d918e2..2a5aac26be3eef5eb17f9578642fb6eb146628e7 100644
 --- a/services/viz/public/cpp/compositing/quads_mojom_traits.cc
 +++ b/services/viz/public/cpp/compositing/quads_mojom_traits.cc
 @@ -5,6 +5,7 @@
@@ -1102,7 +1102,7 @@ index a16847555e39e..2a5aac26be3ee 100644
  
  // static
 diff --git a/services/viz/public/cpp/compositing/quads_mojom_traits.h b/services/viz/public/cpp/compositing/quads_mojom_traits.h
-index 5d16c5289a2c3..076c64a0b8922 100644
+index 5d16c5289a2c3e8ce205f1d14a160215cb63cc95..076c64a0b89223b200d04f83e569831173c7c366 100644
 --- a/services/viz/public/cpp/compositing/quads_mojom_traits.h
 +++ b/services/viz/public/cpp/compositing/quads_mojom_traits.h
 @@ -254,6 +254,20 @@ struct StructTraits<viz::mojom::VideoHoleQuadStateDataView, viz::DrawQuad> {
@@ -1127,7 +1127,7 @@ index 5d16c5289a2c3..076c64a0b8922 100644
                     viz::DrawQuad* out);
  };
 diff --git a/services/viz/public/mojom/compositing/quads.mojom b/services/viz/public/mojom/compositing/quads.mojom
-index 0f64fad1ff366..e361a5593cb5b 100644
+index 0f64fad1ff3666348e4b05bc7f5920d8a680c57b..e361a5593cb5b955299446e329e6dbbce2950c7f 100644
 --- a/services/viz/public/mojom/compositing/quads.mojom
 +++ b/services/viz/public/mojom/compositing/quads.mojom
 @@ -132,6 +132,8 @@ struct YUVVideoQuadState {
@@ -1140,7 +1140,7 @@ index 0f64fad1ff366..e361a5593cb5b 100644
  
  struct SharedElementQuadState {
 diff --git a/third_party/blink/public/platform/web_media_player.h b/third_party/blink/public/platform/web_media_player.h
-index 3fef2de0b3170..0001bd2a1908e 100644
+index 3fef2de0b3170dc1b4af1fbb7d828a917941a6fc..0001bd2a1908eef8c937ca8593f1e40715da85d9 100644
 --- a/third_party/blink/public/platform/web_media_player.h
 +++ b/third_party/blink/public/platform/web_media_player.h
 @@ -31,6 +31,8 @@
@@ -1169,7 +1169,7 @@ index 3fef2de0b3170..0001bd2a1908e 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/html/media/html_media_element.cc b/third_party/blink/renderer/core/html/media/html_media_element.cc
-index 48a8e906997dd..33651550c977e 100644
+index 48a8e906997ddb60695fab9c3fee3f3fcb1304c3..33651550c977e7c2742da30266212623d61cbe60 100644
 --- a/third_party/blink/renderer/core/html/media/html_media_element.cc
 +++ b/third_party/blink/renderer/core/html/media/html_media_element.cc
 @@ -1554,8 +1554,13 @@ void HTMLMediaElement::StartPlayerLoad() {
@@ -1188,7 +1188,7 @@ index 48a8e906997dd..33651550c977e 100644
      // Deferred media loading is not part of the spec, but intuition is that
      // this should not hold up the Window's "load" event (similar to user
 diff --git a/third_party/blink/renderer/platform/media/BUILD.gn b/third_party/blink/renderer/platform/media/BUILD.gn
-index 70623139cf985..58d63efce8b43 100644
+index 70623139cf985b6712c3fb807b2c406b292ea925..58d63efce8b43aa9cf4540924b4461268d4dcbdd 100644
 --- a/third_party/blink/renderer/platform/media/BUILD.gn
 +++ b/third_party/blink/renderer/platform/media/BUILD.gn
 @@ -2,8 +2,10 @@
@@ -1232,13 +1232,13 @@ index 70623139cf985..58d63efce8b43 100644
  source_set("unit_tests") {
 diff --git a/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc
 new file mode 100644
-index 0000000000000..71481b01133dc
+index 0000000000000000000000000000000000000000..7abaaed16555e635e37745fc064898fe1bf8c4e5
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc
 @@ -0,0 +1,115 @@
 +#include "third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h"
 +
-+#include "base/bind.h"
++#include "base/functional/bind.h"
 +#include "base/task/single_thread_task_runner.h"
 +#include "third_party/blink/public/web/web_local_frame.h"
 +#include "third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h"
@@ -1353,7 +1353,7 @@ index 0000000000000..71481b01133dc
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h
 new file mode 100644
-index 0000000000000..c34d368be76dc
+index 0000000000000000000000000000000000000000..c34d368be76dcbe5ae2c366e29d7449209bee5ab
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h
 @@ -0,0 +1,49 @@
@@ -1408,21 +1408,20 @@ index 0000000000000..c34d368be76dc
 +#endif
 diff --git a/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc
 new file mode 100644
-index 0000000000000..c5eddecf2b020
+index 0000000000000000000000000000000000000000..04ec35f10fecf37d4a0d3a9c1a6feee49713cd57
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc
-@@ -0,0 +1,819 @@
+@@ -0,0 +1,822 @@
 +// Copyright 2017 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
 +
 +#include "third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h"
-+#include "base/bind.h"
++#include "base/functional/bind.h"
 +#include "base/command_line.h"
 +#include "base/task/thread_pool.h"
 +#include "base/time/time.h"
 +#include "cc/layers/video_layer.h"
-+#include "media/base/bind_to_current_loop.h"
 +#include "media/base/media_switches.h"
 +#include "media/base/video_frame.h"
 +#include "media/renderers/paint_canvas_video_renderer.h"
@@ -1436,7 +1435,6 @@ index 0000000000000..c5eddecf2b020
 +#include "gpu/GLES2/gl2extchromium.h"
 +#include "gpu/command_buffer/client/gles2_interface.h"
 +
-+using media::BindToCurrentLoop;
 +namespace blink {
 +
 +static void VidPlayerErrorCallback(void* context,
@@ -1605,9 +1603,9 @@ index 0000000000000..c5eddecf2b020
 +  SetVideoFrameProviderClient(NULL);
 +  client_->SetCcLayer(nullptr);
 +
-+  for (const auto& text_track : textTrackMap) {
-+    client_->RemoveTextTrack(text_track.second.get());
-+  }
++  //for (const auto& text_track : textTrackMap) {
++  //  client_->RemoveTextTrack(text_track.second.get());
++  //}
 +  vid_player_destroy(vid_player_);
 +  main_task_runner_->DeleteSoon(FROM_HERE,
 +                                std::move(vid_player_listener_proxy_));
@@ -1885,6 +1883,10 @@ index 0000000000000..c5eddecf2b020
 +
 +bool WebMediaPlayerBrightsign::HasAvailableVideoFrame() const {
 +  return current_frame_.get();
++}
++
++bool WebMediaPlayerBrightsign::HasReadableVideoFrame() const {
++  return HasAvailableVideoFrame();
 +}
 +
 +void OnReleaseTexture(gpu::Mailbox mbox) {}
@@ -2231,13 +2233,13 @@ index 0000000000000..c5eddecf2b020
 +
 +void WebMediaPlayerBrightsign::OnContextLost() {}
 +
-+}  // namespace blink
++} // namespace blink
 diff --git a/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h
 new file mode 100644
-index 0000000000000..a9819121de41c
+index 0000000000000000000000000000000000000000..aeba267b6456ab3bb78573430ef1886d904ed75f
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h
-@@ -0,0 +1,263 @@
+@@ -0,0 +1,264 @@
 +// Copyright 2017 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -2248,7 +2250,7 @@ index 0000000000000..a9819121de41c
 +#include <chrono>
 +#include <libbvp/api.h>
 +#include <libvid/vid_player_c_bindings.h>
-+#include "base/callback.h"
++#include "base/functional/callback.h"
 +#include "base/memory/weak_ptr.h"
 +#include "base/task/single_thread_task_runner.h"
 +#include "cc/layers/video_frame_provider.h"
@@ -2257,7 +2259,7 @@ index 0000000000000..a9819121de41c
 +#include "third_party/blink/public/platform/media/video_frame_compositor.h"
 +#include "third_party/blink/public/platform/media/webmediaplayer_delegate.h"
 +#include "third_party/blink/public/platform/web_media_player.h"
-+#include "third_party/blink/renderer/platform/media/web_inband_text_track_impl.h"
++// #include "third_party/blink/renderer/platform/media/web_inband_text_track_impl.h"
 +
 +namespace cc {
 +class PaintCanvas;
@@ -2374,6 +2376,7 @@ index 0000000000000..a9819121de41c
 +  void SuspendForFrameClosed() override {}
 +
 +  bool HasAvailableVideoFrame() const override;
++  bool HasReadableVideoFrame() const override;
 +
 +  void Paint(cc::PaintCanvas*, const gfx::Rect&, cc::PaintFlags&) override {}
 +
@@ -2476,8 +2479,8 @@ index 0000000000000..a9819121de41c
 +  base::Lock video_frame_provider_client_lock_;
 +  base::RepeatingTimer frame_ready_timer_;
 +
-+  std::unordered_map<std::string, std::unique_ptr<WebInbandTextTrackImpl>>
-+      textTrackMap;
++  // std::unordered_map<std::string, std::unique_ptr<WebInbandTextTrackImpl>>
++  //     textTrackMap;
 +
 +  // The compositor layer for displaying the video content when using composited
 +  // playback
@@ -2502,7 +2505,7 @@ index 0000000000000..a9819121de41c
 +
 +#endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_MEDIA_BRIGHTSIGN_WEB_MEDIA_PLAYER_BRIGHTSIGN_H_
 diff --git a/third_party/blink/renderer/platform/media/web_media_player_builder.cc b/third_party/blink/renderer/platform/media/web_media_player_builder.cc
-index c059828d1236f..27222ca12e7ea 100644
+index c059828d1236fe34fb7aeecbc35d3aa685e0c8b7..27222ca12e7ea38477328b1e3ba60892a555d371 100644
 --- a/third_party/blink/renderer/platform/media/web_media_player_builder.cc
 +++ b/third_party/blink/renderer/platform/media/web_media_player_builder.cc
 @@ -6,6 +6,7 @@
