@@ -483,25 +483,31 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
     const auto scheme = url.scheme();
-    const auto* reg = ProtocolRegistry::FromBrowserContext(browser_context_);
+    const auto* const protocol_registry =
+        ProtocolRegistry::FromBrowserContext(browser_context_);
 
-    if (const auto* handler = reg->FindIntercepted(scheme))
+    if (const auto* const protocol_handler =
+            protocol_registry->FindIntercepted(scheme)) {
       return network::SharedURLLoaderFactory::Create(
           std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(handler->first,
-                                               handler->second)));
+              ElectronURLLoaderFactory::Create(protocol_handler->first,
+                                               protocol_handler->second)));
+    }
 
-    if (const auto* handler = reg->FindRegistered(scheme))
+    if (const auto* const protocol_handler =
+            protocol_registry->FindRegistered(scheme)) {
       return network::SharedURLLoaderFactory::Create(
           std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(handler->first,
-                                               handler->second)));
+              ElectronURLLoaderFactory::Create(protocol_handler->first,
+                                               protocol_handler->second)));
+    }
   }
 
-  if (url.SchemeIsFile())
+  if (url.SchemeIsFile()) {
     return network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             AsarURLLoaderFactory::Create()));
+  }
 
   return browser_context_->GetURLLoaderFactory();
 }
