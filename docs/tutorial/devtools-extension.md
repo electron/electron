@@ -20,9 +20,9 @@ locate its filesystem path, and then load it into your [Session][session] by cal
 Using the [React Developer Tools][react-devtools] as an example:
 
 1. Install the extension in Google Chrome.
-1. Navigate to `chrome://extensions`, and find its extension ID, which is a hash
+2. Navigate to `chrome://extensions`, and find its extension ID, which is a hash
    string like `fmkadmapgofadopljbjfkapdkoienihi`.
-1. Find out the filesystem location used by Chrome for storing extensions:
+3. Find out the filesystem location used by Chrome for storing extensions:
    * on Windows it is `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Extensions`;
    * on Linux it could be:
      * `~/.config/google-chrome/Default/Extensions/`
@@ -30,7 +30,7 @@ Using the [React Developer Tools][react-devtools] as an example:
      * `~/.config/google-chrome-canary/Default/Extensions/`
      * `~/.config/chromium/Default/Extensions/`
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
-1. Pass the location of the extension to the [`ses.loadExtension`][load-extension]
+4. Pass the location of the extension to the [`ses.loadExtension`][load-extension]
    API. For React Developer Tools `v4.9.0`, it looks something like:
 
    ```js
