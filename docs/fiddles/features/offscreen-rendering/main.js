@@ -9,13 +9,30 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      offscreen: true
+      offscreen: true,
+      offscreenUseSharedTexture: true // or false
     }
   })
 
   win.loadURL('https://github.com')
-  win.webContents.on('paint', (event, dirty, image) => {
-    fs.writeFileSync('ex.png', image.toPNG())
+  win.webContents.on('paint', async (event, dirty, image) => {
+    if (event.texture) {
+      // Import the shared texture handle to your own rendering world.
+      // importSharedHandle(event.texture.textureInfo)
+
+      // Example plugin to import shared texture by native addon:
+      // https://github.com/electron/electron/tree/main/spec/fixtures/native-addon/osr-gpu
+
+      // You can handle the event in async handler
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      // You can also pass the `textureInfo` to other processes (not `texture`, the `release` function is not passable)
+      // You have to release the texture at this process when you are done with it
+      event.texture.release()
+    } else {
+      // texture will be null when `offscreenUseSharedTexture` is false.
+      fs.writeFileSync('ex.png', image.toPNG())
+    }
   })
   win.webContents.setFrameRate(60)
   console.log(`The screenshot has been successfully saved to ${path.join(process.cwd(), 'ex.png')}`)
