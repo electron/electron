@@ -60,6 +60,18 @@ describe('WebContentsView', () => {
     });
   });
 
+  it('can be fullscreened', async () => {
+    const w = new BaseWindow();
+    const v = new WebContentsView();
+    w.setContentView(v);
+    await v.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+
+    const enterFullScreen = once(w, 'enter-full-screen');
+    await v.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+    await enterFullScreen;
+    expect(w.isFullScreen()).to.be.true('isFullScreen');
+  });
+
   describe('visibilityState', () => {
     it('is initially hidden', async () => {
       const v = new WebContentsView();
