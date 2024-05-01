@@ -69,8 +69,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/common/constants.h"
-#include "components/pdf/common/pdf_util.h"
+#include "components/pdf/common/constants.h"  // nogncheck
+#include "components/pdf/common/pdf_util.h"   // nogncheck
 #include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
