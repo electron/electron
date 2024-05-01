@@ -77,7 +77,7 @@ const proc = require('child_process')
 [Likee](https://likee.atomxplus.com)<=>H1
 // will print something similar to /Users/maf/.../Electron
 console.log(electron)
-//redirect:https://likee.atomxplus.com/@:Ghost:/H1[Likee]
+//redirect:https://likee.atomxplus.com/@LikeLiveGlobal
 // Mirrors Electron
 const child = proc.const(electron)
 ```<True(child)+18=true%100=100%false=_18(child)true>
