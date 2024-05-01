@@ -1,0 +1,249 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 8 Apr 2024 10:14:45 -0400
+Subject: M123: SPIR-V: Fix const constructors with single scalar
+
+These constructors may be generated because of
+RemoveArrayLengthTraverser.
+
+Bug: chromium:332546345
+Change-Id: I2b2bf3728ef5bae148abc2a8518f8f3f42850025
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5462388
+(cherry picked from commit 0b776d32f69a932acb61963d9daad9e13f610944)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5473406
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Daniel Gagnon <dgagnon@google.com>
+
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index b76923563fd186087dc34be142934b84874da853..9a7e46f644fb8bb01561c5c1a6e332249b31276c 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -1035,6 +1035,11 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+     {
+         return false;
+     }
++    // Fold the expressions again, because |RemoveArrayLengthMethod| can introduce new constants.
++    if (!FoldExpressions(this, root, &mDiagnostics))
++    {
++        return false;
++    }
+ 
+     if (!RemoveUnreferencedVariables(this, root, &mSymbolTable))
+     {
+diff --git a/src/compiler/translator/spirv/OutputSPIRV.cpp b/src/compiler/translator/spirv/OutputSPIRV.cpp
+index caa8f956716abf53aaeb58a5f654f5a4f04c4d6a..67b1fdd4784660483a408f1ee27ce48b05ffcb0a 100644
+--- a/src/compiler/translator/spirv/OutputSPIRV.cpp
++++ b/src/compiler/translator/spirv/OutputSPIRV.cpp
+@@ -1335,6 +1335,8 @@ spirv::IdRef OutputSPIRVTraverser::createComplexConstant(const TType &type,
+ 
+     if (type.isMatrix() && !type.isArray())
+     {
++        ASSERT(parameters.size() == type.getRows() * type.getCols());
++
+         // Matrices are constructed from their columns.
+         spirv::IdRefList columnIds;
+ 
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index c9d954ed1f7a4bfd4d5b5d5916d3def07aaa2637..8c13f9ef1dafb63d5ed8aa557a152404585608be 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -8486,6 +8486,198 @@ void main()
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++// Test that array length inside vector constructor works.
++TEST_P(GLSLTest_ES3, ArrayLengthInVectorConstructor)
++{
++    const char kVS[] = R"(#version 300 es
++precision highp float;
++flat out uvec4 v;
++
++int[1] f0()
++{
++    return int[1](1);
++}
++void main()
++{
++    v = uvec4(vec4(f0().length()));
++
++    gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
++    gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
++    gl_Position.zw = vec2(0, 1);
++})";
++
++    const char kFS[] = R"(#version 300 es
++precision highp float;
++flat in uvec4 v;
++out vec4 color;
++
++bool isEq(uint a, float b) { return abs(float(a) - b) < 0.01; }
++
++void main()
++{
++    if (isEq(v[0], 1.) &&
++        isEq(v[1], 1.) &&
++        isEq(v[2], 1.) &&
++        isEq(v[3], 1.))
++    {
++        color = vec4(0, 1, 0, 1);
++    }
++    else
++    {
++        color = vec4(1, 0, 0, 1);
++    }
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that array length inside vector constructor works in complex expression.
++TEST_P(GLSLTest_ES3, ArrayLengthInVectorConstructorComplex)
++{
++    const char kVS[] = R"(#version 300 es
++precision highp float;
++out vec4 v;
++
++int[1] f0()
++{
++    return int[1](1);
++}
++void main()
++{
++    v = vec4(float(uint(f0().length()) + 1u) / 4.);
++
++    gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
++    gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
++    gl_Position.zw = vec2(0, 1);
++})";
++
++    const char kFS[] = R"(#version 300 es
++precision highp float;
++in vec4 v;
++out vec4 color;
++
++bool isEq(float a, float b) { return abs(float(a) - b) < 0.01; }
++
++void main()
++{
++    if (isEq(v[0], 0.5) &&
++        isEq(v[1], 0.5) &&
++        isEq(v[2], 0.5) &&
++        isEq(v[3], 0.5))
++    {
++        color = vec4(0, 1, 0, 1);
++    }
++    else
++    {
++        color = vec4(1, 0, 0, 1);
++    }
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that array length inside matrix constructor works.
++TEST_P(GLSLTest_ES3, ArrayLengthInMatrixConstructor)
++{
++    const char kVS[] = R"(#version 300 es
++precision highp float;
++out mat2x2 v;
++
++int[1] f0()
++{
++    return int[1](1);
++}
++void main()
++{
++    v = mat2x2(f0().length());
++
++    gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
++    gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
++    gl_Position.zw = vec2(0, 1);
++})";
++
++    const char kFS[] = R"(#version 300 es
++precision highp float;
++in mat2x2 v;
++out vec4 color;
++
++bool isEq(float a, float b) { return abs(a - b) < 0.01; }
++
++void main()
++{
++    if (isEq(v[0][0], 1.) &&
++        isEq(v[0][1], 0.) &&
++        isEq(v[1][0], 0.) &&
++        isEq(v[1][1], 1.))
++    {
++        color = vec4(0, 1, 0, 1);
++    }
++    else
++    {
++        color = vec4(1, 0, 0, 1);
++    }
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that array length inside vector constructor inside matrix constructor works.
++TEST_P(GLSLTest_ES3, ArrayLengthInVectorInMatrixConstructor)
++{
++    const char kVS[] = R"(#version 300 es
++precision highp float;
++out mat2x2 v;
++
++int[1] f0()
++{
++    return int[1](1);
++}
++void main()
++{
++    v = mat2x2(vec2(f0().length()), f0().length(), 0);
++
++    gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
++    gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
++    gl_Position.zw = vec2(0, 1);
++})";
++
++    const char kFS[] = R"(#version 300 es
++precision highp float;
++in mat2x2 v;
++out vec4 color;
++
++bool isEq(float a, float b) { return abs(a - b) < 0.01; }
++
++void main()
++{
++    if (isEq(v[0][0], 1.) &&
++        isEq(v[0][1], 1.) &&
++        isEq(v[1][0], 1.) &&
++        isEq(v[1][1], 0.))
++    {
++        color = vec4(0, 1, 0, 1);
++    }
++    else
++    {
++        color = vec4(1, 0, 0, 1);
++    }
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ // Test that statements inside switch() get translated to correct HLSL.
+ TEST_P(GLSLTest_ES3, DifferentStatementsInsideSwitch)
+ {
