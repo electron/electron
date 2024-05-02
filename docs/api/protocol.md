@@ -184,6 +184,65 @@ Removes a protocol handler registered with `protocol.handle`.
 
 Returns `boolean` - Whether `scheme` is already handled.
 
+### `protocol.interceptProtocol(scheme, handler)`
+
+* `scheme` string
+* `handler` Function
+  * `request` [ProtocolRequest](structures/protocol-request.md)
+  * `callback` Function
+    * `response` (string | [ProtocolResponse](structures/protocol-response.md)) (optional)
+
+Returns `boolean` - Whether the protocol was successfully registered
+
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which you can response with a new http request or file or buffer or stream or
+behave as if there is no interceptions.
+
+Examples:
+
+Response with a new http request.
+
+```js
+const sess = session.fromPartition('persist:example')
+sess.protocol.interceptProtocol('https', (request, callback) => {
+  callback({
+    url: 'https://example.com',
+    referrer: 'https://example.com',
+    method: 'POST',
+    uploadData: { contentType: 'text/plain', data: 'Hello World' },
+    session: sess
+  })
+})
+```
+
+But please notice the code above. if the scheme is http and send a new http request in the handler that will hit the handler again. You must end up not responding with a new http request.
+
+Response with file.
+
+```js
+protocol.interceptProtocol('https', (request, callback) => {
+  callback({
+    path: '/path/to/the/file'
+  })
+})
+```
+
+Response with data.
+
+```js
+protocol.interceptProtocol('https', (request, callback) => {
+  callback({ mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>') })
+})
+```
+
+Response as if it hasn't been intercepted.
+
+```js
+protocol.interceptProtocol('https', (request, callback) => {
+  callback()
+})
+```
+
 ### `protocol.registerFileProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
