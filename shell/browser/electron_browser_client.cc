@@ -214,7 +214,7 @@
 #include "components/pdf/browser/pdf_document_helper.h"             // nogncheck
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
-#include "components/pdf/common/constants.h"
+#include "components/pdf/common/constants.h"  // nogncheck
 #include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 

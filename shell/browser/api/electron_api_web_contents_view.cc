@@ -89,6 +89,9 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
       widget->GetNativeWindowProperty(electron::kElectronNativeWindowKey));
   if (!native_window)
     return;
+  // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
+  // because that's handled in the WebContents dtor called prior.
+  api_web_contents_->SetOwnerWindow(native_window);
   native_window->AddDraggableRegionProvider(this);
 }
 
