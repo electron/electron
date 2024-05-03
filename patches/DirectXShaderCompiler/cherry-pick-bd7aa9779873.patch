@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Thu, 25 Apr 2024 16:49:11 -0400
+Subject: Fixed crash in loop unroll caused by bug in structurize loop exits
+ (#6548)
+
+Fixed a bug in `hlsl::RemoveUnstructuredLoopExits` where when a new
+exiting block is created from splitting, it was added to the current
+loop being processed, when it could also part of an inner loop. Not
+adding the new block to inner loops that it's part of makes the inner
+loops malformed, and causes crash.
+
+This fix adds the new block to the inner most loop that it should be
+part of. Also adds the `StructurizeLoopExits` option to `loop-unroll`
+pass, which was missing before.
+
+Bug: chromium:333508731
+Change-Id: I7efc21bc61aeb81b4906a600c35272af232710ea
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5490380
+Reviewed-by: James Price <jrprice@google.com>
+Reviewed-by: Ben Clayton <bclayton@chromium.org>
+
+diff --git a/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp b/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp
+index b6a07d6b27a23ee3831e84cee82299d6d405a288..ef6718f0f22ee33e3f16f9801a64c1a6fb6c653a 100644
+--- a/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp
++++ b/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp
+@@ -447,7 +447,12 @@ static bool RemoveUnstructuredLoopExitsIteration(BasicBlock *exiting_block,
+       new_exiting_block->splitBasicBlock(new_exiting_block->getFirstNonPHI());
+   new_exiting_block->setName("dx.struct_exit.new_exiting");
+   new_not_exiting_block->setName(old_name);
+-  L->addBasicBlockToLoop(new_not_exiting_block, *LI);
++  // Query for new_exiting_block's own loop to add new_not_exiting_block to.
++  // It's possible that new_exiting_block is part of another inner loop
++  // separate from L. If added directly to L, the inner loop(s) will not
++  // contain new_not_exiting_block, making them malformed.
++  Loop *inner_loop_of_exiting_block = LI->getLoopFor(new_exiting_block);
++  inner_loop_of_exiting_block->addBasicBlockToLoop(new_not_exiting_block, *LI);
+ 
+   // Branch to latch_exit
+   new_exiting_block->getTerminator()->eraseFromParent();
+diff --git a/lib/Transforms/Scalar/LoopUnrollPass.cpp b/lib/Transforms/Scalar/LoopUnrollPass.cpp
+index dd520f7e57d25311be7f3773849a00efaabe6717..b17a5a4a0bc368f16020c4153370ea2c92e5c26c 100644
+--- a/lib/Transforms/Scalar/LoopUnrollPass.cpp
++++ b/lib/Transforms/Scalar/LoopUnrollPass.cpp
+@@ -155,6 +155,18 @@ namespace {
+     bool UserAllowPartial;
+     bool UserRuntime;
+ 
++    // HLSL Change - begin
++    // Function overrides that resolve options when used for DxOpt
++    void applyOptions(PassOptions O) override {
++      GetPassOptionBool(O, "StructurizeLoopExits", &StructurizeLoopExits,
++                        false);
++    }
++    void dumpConfig(raw_ostream &OS) override {
++      LoopPass::dumpConfig(OS);
++      OS << ",StructurizeLoopExits=" << StructurizeLoopExits;
++    }
++    // HLSL Change - end
++
+     bool runOnLoop(Loop *L, LPPassManager &LPM) override;
+ 
+     /// This transformation requires natural loop information & requires that
+diff --git a/tools/clang/test/DXC/loop_structurize_exit_inner_latch_regression.ll b/tools/clang/test/DXC/loop_structurize_exit_inner_latch_regression.ll
+new file mode 100644
+index 0000000000000000000000000000000000000000..743135541cd8faec287164ba3b321a59432832b6
+--- /dev/null
++++ b/tools/clang/test/DXC/loop_structurize_exit_inner_latch_regression.ll
+@@ -0,0 +1,75 @@
++; RUN: %dxopt %s -S -loop-unroll,StructurizeLoopExits=1 | FileCheck %s
++; RUN: %dxopt %s -S -dxil-loop-unroll,StructurizeLoopExits=1 | FileCheck %s
++
++; CHECK: mul nsw i32
++; CHECK: mul nsw i32
++; CHECK-NOT: mul nsw i32
++
++; This is a regression test for a crash in loop unroll. When there are multiple
++; exits, the compiler will run hlsl::RemoveUnstructuredLoopExits to try to
++; avoid unstructured code.
++;
++; In this test, the compiler will try to unroll the middle loop. The exit edge
++; from %land.lhs.true to %if.then will be removed, and %if.end will be split at
++; the beginning, and branch to %if.end instead.
++;
++; Since the new split block at %if.end becomes the new latch of the inner-most
++; loop, it needs to be added to the Loop analysis structure of the inner loop.
++; However, it was only added to the current middle loop that is being unrolled.
++
++target datalayout = "e-m:e-p:32:32-i1:32-i8:32-i16:32-i32:32-i64:64-f16:32-f32:32-f64:64-n8:16:32:64"
++target triple = "dxil-ms-dx"
++
++; Function Attrs: nounwind
++define void @main(i32 *%arg0, i32 *%arg1, i32 *%arg2) #0 {
++entry:
++  br label %while.body.3.preheader.lr.ph
++
++while.body.3.preheader.lr.ph.loopexit:            ; preds = %for.inc
++  br label %while.body.3.preheader.lr.ph
++
++while.body.3.preheader.lr.ph:                     ; preds = %while.body.3.preheader.lr.ph.loopexit, %entry
++  br label %while.body.3.preheader
++
++while.body.3.preheader:                           ; preds = %while.body.3.preheader.lr.ph, %for.inc
++  %i.0 = phi i32 [ 0, %while.body.3.preheader.lr.ph ], [ %inc, %for.inc ]
++  br label %while.body.3
++
++while.body.3:                                     ; preds = %while.body.3.preheader, %if.end
++  %load_arg0 = load i32, i32* %arg0
++  %cmp4 = icmp sgt i32 %load_arg0, 0
++  br i1 %cmp4, label %land.lhs.true, label %if.end
++
++land.lhs.true:                                    ; preds = %while.body.3
++  %load_arg1 = load i32, i32* %arg1
++  %load_arg2 = load i32, i32* %arg2
++  %mul = mul nsw i32 %load_arg2, %load_arg1
++  %cmp7 = icmp eq i32 %mul, 10
++  br i1 %cmp7, label %if.then, label %if.end
++
++if.then:                                          ; preds = %land.lhs.true
++  ret void
++
++if.end:                                           ; preds = %land.lhs.true, %while.body.3
++  %cmp10 = icmp sle i32 %i.0, 4
++  br i1 %cmp10, label %for.inc, label %while.body.3
++
++for.inc:                                          ; preds = %if.end
++  %inc = add nsw i32 %i.0, 1
++  %cmp = icmp slt i32 %inc, 2
++  br i1 %cmp, label %while.body.3.preheader, label %while.body.3.preheader.lr.ph.loopexit, !llvm.loop !3
++}
++
++attributes #0 = { nounwind }
++attributes #1 = { nounwind readnone }
++attributes #2 = { nounwind readonly }
++
++!llvm.module.flags = !{!0}
++!pauseresume = !{!1}
++!llvm.ident = !{!2}
++
++!0 = !{i32 2, !"Debug Info Version", i32 3}
++!1 = !{!"hlsl-dxilemit", !"hlsl-dxilload"}
++!2 = !{!"dxc(private) 1.8.0.14563 (main, 07ce88034-dirty)"}
++!3 = distinct !{!3, !4}
++!4 = !{!"llvm.loop.unroll.full"}
+diff --git a/utils/hct/hctdb.py b/utils/hct/hctdb.py
+index 77f5671016eb66a4ddf8a943ec8cb05e8d87c9cd..ca8d16bd2562e26e8572413499d32dc2232de5c0 100644
+--- a/utils/hct/hctdb.py
++++ b/utils/hct/hctdb.py
+@@ -6680,6 +6680,12 @@ class db_dxil(object):
+                     "t": "unsigned",
+                     "d": "Unrolled size limit for loops with an unroll(full) or unroll_count pragma.",
+                 },
++                {
++                    "n": "StructurizeLoopExits",
++                    "t": "bool",
++                    "c": 1,
++                    "d": "Whether the unroller should try to structurize loop exits first.",
++                },
+             ],
+         )
+         add_pass("mldst-motion", "MergedLoadStoreMotion", "MergedLoadStoreMotion", [])
