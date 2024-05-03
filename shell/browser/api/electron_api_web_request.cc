@@ -107,12 +107,14 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
       if (base::EqualsCaseInsensitiveASCII("Content-Disposition", key) &&
           !value.empty()) {
         net::HttpContentDisposition header(value, std::string());
-        std::string decodedFilename =
-            header.is_attachment() ? " attachment" : " inline";
-        // The filename must be encased in double quotes for serialization
-        // to happen correctly.
-        std::string filename = "\"" + header.filename() + "\"";
-        value = decodedFilename + "; filename=" + filename;
+        if (!header.filename().empty()) {
+          std::string decodedFilename =
+              header.is_attachment() ? " attachment" : " inline";
+          // The filename must be encased in double quotes for serialization
+          // to happen correctly.
+          std::string filename = "\"" + header.filename() + "\"";
+          value = decodedFilename + "; filename=" + filename;
+        }
       }
       response_headers.EnsureList(key)->Append(value);
     }

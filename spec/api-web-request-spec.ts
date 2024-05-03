@@ -28,6 +28,13 @@ describe('webRequest module', () => {
       ]);
       const content = req.url;
       res.end(content);
+    } else if (req.url === '/contentDisposition-invalid') {
+      res.writeHead(200, [
+        'content-disposition',
+        Buffer.from('attachment; filename*=UTF-8"test.json"').toString('binary')
+      ]);
+      const content = req.url;
+      res.end(content);
     } else {
       res.setHeader('Custom', ['Header']);
       let content = req.url;
@@ -481,6 +488,17 @@ describe('webRequest module', () => {
       const disposition = Buffer.from('attachment; filename=aa中aa.txt').toString('binary');
       expect(headers).to.to.have.property('content-disposition', disposition);
       expect(data).to.equal('/contentDisposition');
+    });
+
+    it('does not change content-disposition header when it is invalid', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachment; filename*=UTF-8"test.json"']);
+        callback({});
+      });
+      const { data, headers } = await ajax(defaultURL + 'contentDisposition-invalid');
+      const disposition = Buffer.from('attachment; filename*=UTF-8"test.json"').toString('binary');
+      expect(headers).to.to.have.property('content-disposition', disposition);
+      expect(data).to.equal('/contentDisposition-invalid');
     });
 
     it('follows server redirect', async () => {
