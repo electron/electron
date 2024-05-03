@@ -38,9 +38,6 @@
     "ws": "^7.4.6",
     "yargs": "^16.0.3"
   },
-  "optionalDependencies": {
-    "@nut-tree/nut-js": "^3.1.2"
-  },
   "resolutions": {
     "nan": "file:../../third_party/nan",
     "dbus-native/optimist/minimist": "1.2.7",
