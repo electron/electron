@@ -137,9 +137,7 @@ async function loadApplicationPackage (packagePath: string) {
     // Run the app.
     await import(url.pathToFileURL(filePath).toString());
   } catch (e) {
-    console.error('App threw an error during load');
-    console.error((e as Error).stack || e);
-    throw e;
+    showErrorMessage(`App threw an error during load of ${packagePath}\n\n${(e as Error).stack || (e as Error).message || e}`);
   }
 }
 
