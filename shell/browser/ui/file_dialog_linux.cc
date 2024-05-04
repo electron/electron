@@ -29,6 +29,37 @@ DialogSettings::~DialogSettings() = default;
 
 namespace {
 
+ui::SelectFileDialog::Type GetDialogType(int properties) {
+  if (properties & OPEN_DIALOG_OPEN_FILE) {
+    return ui::SelectFileDialog::SELECT_OPEN_FILE;
+  } else if (properties & OPEN_DIALOG_OPEN_DIRECTORY) {
+    return ui::SelectFileDialog::SELECT_FOLDER;
+  } else if (properties & OPEN_DIALOG_MULTI_SELECTIONS) {
+    return ui::SelectFileDialog::SELECT_OPEN_MULTI_FILE;
+  }
+}
+
+ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
+  ui::SelectFileDialog::FileTypeInfo file_type_info;
+
+  for (const auto& filter : filters) {
+    auto [name, extension_group] = filter;
+    file_type_info.extension_description_overrides.push_back(
+        base::UTF8ToUTF16(name));
+
+    bool has_all_files_wildcard =
+        std::any_of(extension_group.begin(), extension_group.end(),
+                    [](std::string ext) { return ext == "*"; });
+    if (has_all_files_wildcard) {
+      file_type_info.include_all_files = true;
+    } else {
+      file_type_info.extensions.push_back(extension_group);
+    }
+  }
+
+  return file_type_info;
+}
+
 class FileChooserDialog : public ui::SelectFileDialog::Listener {
  public:
   enum class DialogType { OPEN, SAVE };
@@ -42,28 +73,31 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     // Clean up dialog_...
   }
 
-  void RunSaveAsynchronous(gin_helper::Promise<gin_helper::Dictionary> promise,
-                           const DialogSettings& settings) {
+  void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
+                     const DialogSettings& settings) {
     promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
         std::move(promise));
     type_ = DialogType::SAVE;
+    ui::SelectFileDialog::FileTypeInfo file_info =
+        GetFilterInfo(settings.filters);
     dialog_->SelectFile(
         ui::SelectFileDialog::SELECT_SAVEAS_FILE,
         base::UTF8ToUTF16(settings.title), settings.default_path,
-        nullptr /* file_types */, 0 /* file_type_index */,
+        &file_info /* file_types */, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window->GetNativeWindow(), nullptr /* params */);
   }
 
-  void RunOpenAsynchronous(gin_helper::Promise<gin_helper::Dictionary> promise,
-                           const DialogSettings& settings) {
+  void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
+                     const DialogSettings& settings) {
     promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
         std::move(promise));
     type_ = DialogType::OPEN;
+    ui::SelectFileDialog::FileTypeInfo file_info =
+        GetFilterInfo(settings.filters);
     dialog_->SelectFile(
-        ui::SelectFileDialog::SELECT_OPEN_FILE,
-        base::UTF8ToUTF16(settings.title), settings.default_path,
-        nullptr /* file_types */, 0 /* file_type_index */,
+        GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
+        settings.default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window->GetNativeWindow(), nullptr /* params */);
   }
@@ -125,7 +159,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
       &run_loop, paths));
 
   FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunSaveAsynchronous(std::move(promise), settings);
+  dialog->RunOpenDialog(std::move(promise), settings);
   run_loop.Run();
   return paths->size() > 0;
 }
@@ -133,7 +167,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunOpenAsynchronous(std::move(promise), settings);
+  dialog->RunOpenDialog(std::move(promise), settings);
 }
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
@@ -148,7 +182,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
       &run_loop, path));
 
   FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunSaveAsynchronous(std::move(promise), settings);
+  dialog->RunSaveDialog(std::move(promise), settings);
   run_loop.Run();
   return !path->empty();
 }
@@ -156,7 +190,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunSaveAsynchronous(std::move(promise), settings);
+  dialog->RunSaveDialog(std::move(promise), settings);
 }
 
 }  // namespace file_dialog
