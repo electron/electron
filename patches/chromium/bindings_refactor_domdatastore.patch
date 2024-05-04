@@ -1,0 +1,1231 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Tue, 30 Jan 2024 16:05:33 +0000
+Subject: bindings: Refactor DOMDataStore
+
+Make DOMDataStore the entity that can set wrapper references in all
+worlds, using inline storage where supported and otherwise fall back
+to the wrapper map.
+
+This is a refactoring that does not change any semantics but should
+make fast paths more obvious.
+
+Bug: chromium:1520621
+Change-Id: Id8fd21d7598d818d3e820cc728f7f9357c1ec2d6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5245546
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1253935}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
+index c15355bf971294b99e9bb484faad84ff760398eb..770fd0a15c4a3521315b70e46a3646e361432508 100644
+--- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
++++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
+@@ -122,9 +122,17 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+                ToScriptWrappable(global->GetPrototype().As<v8::Object>()));
+     }
+     V8DOMWrapper::ClearNativeInfo(GetIsolate(), global);
+-    DOMWrapperWorld::ClearWrapperIfEqualTo(GetFrame()->DomWindow(), global);
++    script_state_->World().DomDataStore().ClearIfEqualTo(
++        GetFrame()->DomWindow(), global);
++#if DCHECK_IS_ON()
++    Vector<scoped_refptr<DOMWrapperWorld>> all_worlds;
++    DOMWrapperWorld::AllWorldsInIsolate(script_state_->GetIsolate(),
++                                        all_worlds);
++    for (auto& world : all_worlds) {
++      DCHECK(!world->DomDataStore().EqualTo(GetFrame()->DomWindow(), global));
++    }
++#endif  // DCHECK_IS_ON()
+     script_state_->DetachGlobalObject();
+-
+ #if DCHECK_IS_ON()
+     DidDetachGlobalObject();
+ #endif
+@@ -534,7 +542,7 @@ void LocalWindowProxy::NamedItemAdded(HTMLDocument* document,
+ 
+   ScriptState::Scope scope(script_state_);
+   v8::Local<v8::Object> document_wrapper =
+-      world_->DomDataStore().Get(document, GetIsolate());
++      world_->DomDataStore().Get(GetIsolate(), document).ToLocalChecked();
+   // When a non-configurable own property (e.g. unforgeable attribute) already
+   // exists, `SetAccessor` fails and throws. Ignore the exception because own
+   // properties have priority over named properties.
+@@ -561,7 +569,7 @@ void LocalWindowProxy::NamedItemRemoved(HTMLDocument* document,
+     return;
+   ScriptState::Scope scope(script_state_);
+   v8::Local<v8::Object> document_wrapper =
+-      world_->DomDataStore().Get(document, GetIsolate());
++      world_->DomDataStore().Get(GetIsolate(), document).ToLocalChecked();
+   document_wrapper
+       ->Delete(GetIsolate()->GetCurrentContext(), V8String(GetIsolate(), name))
+       .ToChecked();
+diff --git a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc
+index d53c06ed5d436bd22898470c3de297d80e6ebae3..f1bbf27750c6d269a3d02f08348d78a2bd4ee375 100644
+--- a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc
++++ b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc
+@@ -64,7 +64,7 @@ ObservableArrayExoticObjectImpl::ObservableArrayExoticObjectImpl(
+ v8::Local<v8::Value> ObservableArrayExoticObjectImpl::Wrap(
+     ScriptState* script_state) {
+   v8::Isolate* isolate = script_state->GetIsolate();
+-  DCHECK(!DOMDataStore::ContainsWrapper(this, isolate));
++  DCHECK(!DOMDataStore::ContainsWrapper(isolate, this));
+ 
+   // The proxy target object must be a JS Array (v8::Array) by definition.
+   // Especially it's important that IsArray(proxy) evaluates to true.
+diff --git a/third_party/blink/renderer/bindings/core/v8/remote_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/remote_window_proxy.cc
+index 3caa238f10adc7294cac000aedf326d097758362..89211fcb8cb37549446ea9bbb14e1ae3a21afe1c 100644
+--- a/third_party/blink/renderer/bindings/core/v8/remote_window_proxy.cc
++++ b/third_party/blink/renderer/bindings/core/v8/remote_window_proxy.cc
+@@ -75,10 +75,16 @@ void RemoteWindowProxy::DisposeContext(Lifecycle next_status,
+     v8::HandleScope handle_scope(GetIsolate());
+     v8::Local<v8::Object> global = global_proxy_.Get(GetIsolate());
+     V8DOMWrapper::ClearNativeInfo(GetIsolate(), global);
+-    DOMWrapperWorld::ClearWrapperIfEqualTo(GetFrame()->DomWindow(), global);
++    world_->DomDataStore().ClearIfEqualTo(GetFrame()->DomWindow(), global);
+ #if DCHECK_IS_ON()
++    Vector<scoped_refptr<DOMWrapperWorld>> all_worlds;
++    DOMWrapperWorld::AllWorldsInIsolate(GetIsolate(), all_worlds);
++    for (auto& world : all_worlds) {
++      DCHECK(!world->DomDataStore().EqualTo(GetFrame()->DomWindow(), global));
++    }
++
+     DidDetachGlobalObject();
+-#endif
++#endif  // DCHECK_IS_ON()
+   }
+ 
+   DCHECK_EQ(lifecycle_, Lifecycle::kContextIsInitialized);
+diff --git a/third_party/blink/renderer/bindings/core/v8/to_v8_traits.h b/third_party/blink/renderer/bindings/core/v8/to_v8_traits.h
+index 30ddc5b219c7d6d7630557e90d209a90bd0e00cd..45f4c36c20cc2db00ff6769c08271e629de99634 100644
+--- a/third_party/blink/renderer/bindings/core/v8/to_v8_traits.h
++++ b/third_party/blink/renderer/bindings/core/v8/to_v8_traits.h
+@@ -240,9 +240,10 @@ namespace bindings {
+     ScriptState* script_state,
+     ScriptWrappable* script_wrappable) {
+   CHECK(script_wrappable);
+-  v8::Local<v8::Value> wrapper =
+-      DOMDataStore::GetWrapper(script_wrappable, script_state->GetIsolate());
+-  if (LIKELY(!wrapper.IsEmpty())) {
++  v8::Local<v8::Object> wrapper;
++  if (LIKELY(
++          DOMDataStore::GetWrapper(script_state->GetIsolate(), script_wrappable)
++              .ToLocal(&wrapper))) {
+     return wrapper;
+   }
+ 
+@@ -255,9 +256,9 @@ namespace bindings {
+     ScriptWrappable* script_wrappable,
+     v8::Local<v8::Object> creation_context_object) {
+   CHECK(script_wrappable);
+-  v8::Local<v8::Value> wrapper =
+-      DOMDataStore::GetWrapper(script_wrappable, isolate);
+-  if (LIKELY(!wrapper.IsEmpty())) {
++  v8::Local<v8::Object> wrapper;
++  if (LIKELY(DOMDataStore::GetWrapper(isolate, script_wrappable)
++                 .ToLocal(&wrapper))) {
+     return wrapper;
+   }
+ 
+diff --git a/third_party/blink/renderer/bindings/modules/v8/v8_context_snapshot_impl.cc b/third_party/blink/renderer/bindings/modules/v8/v8_context_snapshot_impl.cc
+index a8d881630c81218d231e955eb1dabb266b81b309..e6ed0f24ea30453ae35a7d5e140085f6c5fdb432 100644
+--- a/third_party/blink/renderer/bindings/modules/v8/v8_context_snapshot_impl.cc
++++ b/third_party/blink/renderer/bindings/modules/v8/v8_context_snapshot_impl.cc
+@@ -15,6 +15,7 @@
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_window.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/html/html_document.h"
++#include "third_party/blink/renderer/platform/bindings/dom_data_store.h"
+ #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h"
+ #include "third_party/blink/renderer/platform/bindings/v8_object_constructor.h"
+@@ -245,9 +246,10 @@ void DeserializeInternalFieldCallback(v8::Local<v8::Object> object,
+       V8DOMWrapper::SetNativeInfo(deserializer_data->isolate, object,
+                                   V8HTMLDocument::GetWrapperTypeInfo(),
+                                   deserializer_data->html_document);
+-      bool result = deserializer_data->html_document->SetWrapper(
+-          deserializer_data->isolate, V8HTMLDocument::GetWrapperTypeInfo(),
+-          object);
++      const bool result =
++          DOMDataStore::SetWrapperInInlineStorage</*entered_context=*/false>(
++              deserializer_data->isolate, deserializer_data->html_document,
++              V8HTMLDocument::GetWrapperTypeInfo(), object);
+       CHECK(result);
+       break;
+     }
+diff --git a/third_party/blink/renderer/core/dom/text.cc b/third_party/blink/renderer/core/dom/text.cc
+index fbbfa23941811c4dd6e56cd6a13244b77cc39783..f79f59a91bf66ce07b4401accab88f1f3dbc3e53 100644
+--- a/third_party/blink/renderer/core/dom/text.cc
++++ b/third_party/blink/renderer/core/dom/text.cc
+@@ -144,7 +144,7 @@ Text* Text::splitText(unsigned offset, ExceptionState& exception_state) {
+ 
+   // [NewObject] must always create a new wrapper.  Check that a wrapper
+   // does not exist yet.
+-  DCHECK(DOMDataStore::GetWrapper(new_text, GetDocument().GetAgent().isolate())
++  DCHECK(DOMDataStore::GetWrapper(GetDocument().GetAgent().isolate(), new_text)
+              .IsEmpty());
+ 
+   return new_text;
+diff --git a/third_party/blink/renderer/core/frame/dom_window.cc b/third_party/blink/renderer/core/frame/dom_window.cc
+index 41dfa6067538064d4b7f21c143baaee21dae5528..db557dc5f118cb0190085f61a799709791f7a606 100644
+--- a/third_party/blink/renderer/core/frame/dom_window.cc
++++ b/third_party/blink/renderer/core/frame/dom_window.cc
+@@ -106,7 +106,8 @@ v8::Local<v8::Object> DOMWindow::AssociateWithWrapper(
+     v8::Local<v8::Object> wrapper) {
+   // Using the world directly avoids fetching it from a potentially
+   // half-initialized context.
+-  if (world->DomDataStore().Set(isolate, this, wrapper_type_info, wrapper)) {
++  if (world->DomDataStore().Set</*entered_context=*/false>(
++          isolate, this, wrapper_type_info, wrapper)) {
+     V8DOMWrapper::SetNativeInfo(isolate, wrapper, wrapper_type_info, this);
+     DCHECK(V8DOMWrapper::HasInternalFieldsSet(wrapper));
+   }
+diff --git a/third_party/blink/renderer/core/frame/location.cc b/third_party/blink/renderer/core/frame/location.cc
+index f9dbd16a03d80224b0d3e28a46917fbbe337d8a2..31676b163494573f77e65f1362678385bb1bb68e 100644
+--- a/third_party/blink/renderer/core/frame/location.cc
++++ b/third_party/blink/renderer/core/frame/location.cc
+@@ -56,7 +56,7 @@ v8::Local<v8::Value> Location::Wrap(ScriptState* script_state) {
+   // the cross-origin status changes by changing properties like
+   // |document.domain|.
+   if (IsA<RemoteDOMWindow>(dom_window_.Get())) {
+-    DCHECK(!DOMDataStore::ContainsWrapper(this, script_state->GetIsolate()));
++    DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+     DOMWrapperWorld& world = script_state->World();
+     v8::Isolate* isolate = script_state->GetIsolate();
+diff --git a/third_party/blink/renderer/core/script/detect_javascript_frameworks.cc b/third_party/blink/renderer/core/script/detect_javascript_frameworks.cc
+index 15efc675f87b855e1b868be80cf5b98338ee2bbe..4fcace96ccfa5ec5897590480099fe60ccdfd921 100644
+--- a/third_party/blink/renderer/core/script/detect_javascript_frameworks.cc
++++ b/third_party/blink/renderer/core/script/detect_javascript_frameworks.cc
+@@ -95,12 +95,14 @@ inline void CheckPropertyMatches(Element& element,
+                                  v8::Local<v8::Context> context,
+                                  v8::Isolate* isolate,
+                                  JavaScriptFrameworkDetectionResult& result) {
+-  v8::Local<v8::Object> v8_element = dom_data_store.Get(&element, isolate);
+-  if (v8_element.IsEmpty())
++  v8::Local<v8::Object> v8_element;
++  if (!dom_data_store.Get(isolate, &element).ToLocal(&v8_element)) {
+     return;
++  }
+   v8::Local<v8::Array> property_names;
+-  if (!v8_element->GetOwnPropertyNames(context).ToLocal(&property_names))
++  if (!v8_element->GetOwnPropertyNames(context).ToLocal(&property_names)) {
+     return;
++  }
+ 
+   DEFINE_STATIC_LOCAL(AtomicString, vue_string, ("__vue__"));
+   DEFINE_STATIC_LOCAL(AtomicString, vue_app_string, ("__vue_app__"));
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
+index 69060a1e5f6937896d385b5ceb70f2d49ef8669c..44e2849c8e4dfc38834c88937dc561858c13e726 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
+@@ -51,9 +51,12 @@ static void AccumulateArrayBuffersForAllWorlds(
+   Vector<scoped_refptr<DOMWrapperWorld>> worlds;
+   DOMWrapperWorld::AllWorldsInIsolate(isolate, worlds);
+   for (const auto& world : worlds) {
+-    v8::Local<v8::Object> wrapper = world->DomDataStore().Get(object, isolate);
+-    if (!wrapper.IsEmpty())
++    v8::Local<v8::Object> wrapper;
++    if (world->DomDataStore()
++            .Get</*entered_context=*/false>(isolate, object)
++            .ToLocal(&wrapper)) {
+       buffers.push_back(v8::Local<v8::ArrayBuffer>::Cast(wrapper));
++    }
+   }
+ }
+ 
+@@ -237,7 +240,7 @@ DOMArrayBuffer* DOMArrayBuffer::CreateUninitializedOrNull(
+ }
+ 
+ v8::Local<v8::Value> DOMArrayBuffer::Wrap(ScriptState* script_state) {
+-  DCHECK(!DOMDataStore::ContainsWrapper(this, script_state->GetIsolate()));
++  DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+   const WrapperTypeInfo* wrapper_type_info = GetWrapperTypeInfo();
+ 
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_data_view.cc b/third_party/blink/renderer/core/typed_arrays/dom_data_view.cc
+index 59d8e8553b3c43ea68f43019974703d6fc0e83b8..fe5f1104ea156361f397cfa69944e6c19eb4ceb3 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_data_view.cc
++++ b/third_party/blink/renderer/core/typed_arrays/dom_data_view.cc
+@@ -50,7 +50,7 @@ DOMDataView* DOMDataView::Create(DOMArrayBufferBase* buffer,
+ }
+ 
+ v8::Local<v8::Value> DOMDataView::Wrap(ScriptState* script_state) {
+-  DCHECK(!DOMDataStore::ContainsWrapper(this, script_state->GetIsolate()));
++  DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+   const WrapperTypeInfo* wrapper_type_info = GetWrapperTypeInfo();
+   v8::Local<v8::Value> v8_buffer =
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_shared_array_buffer.cc b/third_party/blink/renderer/core/typed_arrays/dom_shared_array_buffer.cc
+index 62278876ae55934c878dc22b97c8c6df1731e350..4ad4a143e1b08cea59a79171a0f7521f4e5aaa72 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_shared_array_buffer.cc
++++ b/third_party/blink/renderer/core/typed_arrays/dom_shared_array_buffer.cc
+@@ -38,7 +38,7 @@ const WrapperTypeInfo& DOMSharedArrayBuffer::wrapper_type_info_ =
+ #endif
+ 
+ v8::Local<v8::Value> DOMSharedArrayBuffer::Wrap(ScriptState* script_state) {
+-  DCHECK(!DOMDataStore::ContainsWrapper(this, script_state->GetIsolate()));
++  DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+   const WrapperTypeInfo* wrapper_type_info = GetWrapperTypeInfo();
+   v8::Local<v8::SharedArrayBuffer> wrapper;
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_typed_array.cc b/third_party/blink/renderer/core/typed_arrays/dom_typed_array.cc
+index 2d874ba75ab27369f34ee9e51d6989fbf2e6da46..ba88280f7a7931dd7c23949ab2e9dd9ec424c31a 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_typed_array.cc
++++ b/third_party/blink/renderer/core/typed_arrays/dom_typed_array.cc
+@@ -12,7 +12,7 @@ namespace blink {
+ template <typename T, typename V8TypedArray, bool clamped>
+ v8::Local<v8::Value> DOMTypedArray<T, V8TypedArray, clamped>::Wrap(
+     ScriptState* script_state) {
+-  DCHECK(!DOMDataStore::ContainsWrapper(this, script_state->GetIsolate()));
++  DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+   const WrapperTypeInfo* wrapper_type_info = GetWrapperTypeInfo();
+   DOMArrayBufferBase* buffer = BufferBase();
+diff --git a/third_party/blink/renderer/platform/bindings/dom_data_store.cc b/third_party/blink/renderer/platform/bindings/dom_data_store.cc
+index f6b574ba2460b149f45379117e52a9d82b3bcad4..5bc84b868dbf072e9e2cb8c4aeee22a5ed4a9c57 100644
+--- a/third_party/blink/renderer/platform/bindings/dom_data_store.cc
++++ b/third_party/blink/renderer/platform/bindings/dom_data_store.cc
+@@ -6,8 +6,8 @@
+ 
+ namespace blink {
+ 
+-DOMDataStore::DOMDataStore(v8::Isolate* isolate, bool is_main_world)
+-    : is_main_world_(is_main_world) {}
++DOMDataStore::DOMDataStore(v8::Isolate* isolate, bool can_use_inline_storage)
++    : can_use_inline_storage_(can_use_inline_storage) {}
+ 
+ void DOMDataStore::Dispose() {
+   for (auto& it : wrapper_map_) {
+diff --git a/third_party/blink/renderer/platform/bindings/dom_data_store.h b/third_party/blink/renderer/platform/bindings/dom_data_store.h
+index db1c7e1592b01ed6b29a607a598b810b81aadde4..7153e8db04789ef2961b8de5e2a3d47fe747237a 100644
+--- a/third_party/blink/renderer/platform/bindings/dom_data_store.h
++++ b/third_party/blink/renderer/platform/bindings/dom_data_store.h
+@@ -44,175 +44,389 @@
+ 
+ namespace blink {
+ 
+-// Holds a map specialized to map between ScriptWrappable objects and their
+-// wrappers and provides an API to perform common operations with this map and
+-// manage wrappers in a single world. Each world (DOMWrapperWorld) holds a
+-// single map instance to hold wrappers only for that world.
++// DOMDataStore is the entity responsible for managing wrapper references (C++
++// to JS) in different worlds and settings (get/set wrapper, set return value).
++// Such references are stored in two ways:
++// - Inline in ScriptWrappable (or CustomWrappable); or
++// - In an ephemeron map in the DOMDataStore instance that is tied to a context
++//   in a V8 Isolate.
++//
++// The methods on DOMDataStore generally come in two forms:
++// - static methods: Have fast paths for inline storage (e.g. main world on the
++//   main rendering thread) and otherwise consider the current world, i.e., the
++//   world that corresponds to the current context
++//   (`v8::Isolate::GetCurrentContext()`).
++// - instance methods: Have fast paths for inline storage and consider the
++//   world the methods are invoked on. The calls are faster than the static
++//   calls if the DOMDataStore is already around.
++//
++// Exceptions are methods that operate on all worlds instead of the current
++// world. The methods mention this fact explicitly.
+ class DOMDataStore final : public GarbageCollected<DOMDataStore> {
+  public:
+   static DOMDataStore& Current(v8::Isolate* isolate) {
+     return DOMWrapperWorld::Current(isolate).DomDataStore();
+   }
+ 
+-  static bool SetReturnValue(v8::ReturnValue<v8::Value> return_value,
+-                             ScriptWrappable* object) {
+-    if (CanUseMainWorldWrapper())
+-      return object->SetReturnValue(return_value);
+-    return Current(return_value.GetIsolate())
+-        .SetReturnValueFrom(return_value, object);
+-  }
++  // Sets the `return_value` from `value`. Can be used from any world. Will only
++  // consider the current world.
++  static inline bool SetReturnValue(v8::ReturnValue<v8::Value> return_value,
++                                    ScriptWrappable* value);
+ 
+-  static bool SetReturnValueForMainWorld(
++  // Sets the `return_value` from `value` in a world that can use inline
++  // storage.
++  static inline bool SetReturnValueFromInlineStorage(
+       v8::ReturnValue<v8::Value> return_value,
+-      ScriptWrappable* object) {
+-    return object->SetReturnValue(return_value);
+-  }
+-
+-  static bool SetReturnValueFast(v8::ReturnValue<v8::Value> return_value,
+-                                 ScriptWrappable* object,
+-                                 v8::Local<v8::Object> holder,
+-                                 const ScriptWrappable* wrappable) {
+-    if (HolderContainsWrapperForMainWorld(holder, wrappable)) {
+-      // Verify our assumptions about the main world.
+-      DCHECK(Current(return_value.GetIsolate()).is_main_world_);
+-      return object->SetReturnValue(return_value);
+-    }
+-    return Current(return_value.GetIsolate())
+-        .SetReturnValueFrom(return_value, object);
+-  }
++      const ScriptWrappable* value);
+ 
+-  static v8::Local<v8::Object> GetWrapper(ScriptWrappable* object,
+-                                          v8::Isolate* isolate) {
+-    if (CanUseMainWorldWrapper())
+-      return object->MainWorldWrapper(isolate);
+-    return Current(isolate).Get(object, isolate);
+-  }
++  // Sets the `return_value` from `value` if already wrapped and returns false
++  // otherwise. Will use the `v8_receiver` and `blink_receiver` to check whether
++  // inline storage can be used.  Can be used from any world. Will only consider
++  // the current world.
++  static inline bool SetReturnValueFast(v8::ReturnValue<v8::Value> return_value,
++                                        ScriptWrappable* value,
++                                        v8::Local<v8::Object> v8_receiver,
++                                        const ScriptWrappable* blink_receiver);
+ 
+-  // Associates the given |object| with the given |wrapper| if the object is
+-  // not yet associated with any wrapper.  Returns true if the given wrapper
+-  // is associated with the object, or false if the object is already
+-  // associated with a wrapper.  In the latter case, |wrapper| will be updated
+-  // to the existing wrapper.
+-  [[nodiscard]] static bool SetWrapper(v8::Isolate* isolate,
+-                                       ScriptWrappable* object,
+-                                       const WrapperTypeInfo* wrapper_type_info,
+-                                       v8::Local<v8::Object>& wrapper) {
+-    if (CanUseMainWorldWrapper())
+-      return object->SetWrapper(isolate, wrapper_type_info, wrapper);
+-    return Current(isolate).Set(isolate, object, wrapper_type_info, wrapper);
+-  }
++  // Returns the wrapper for `object` in the world corresponding to `isolate`.
++  // Can be used from any world. Will only consider the current world.
++  static inline v8::MaybeLocal<v8::Object> GetWrapper(
++      v8::Isolate* isolate,
++      const ScriptWrappable* object);
+ 
+-  static bool ContainsWrapper(const ScriptWrappable* object,
+-                              v8::Isolate* isolate) {
+-    return Current(isolate).ContainsWrapper(object);
+-  }
++  // Associates the given `object` with the given `wrapper` if the object is not
++  // yet associated with any wrapper.  Returns true if the given wrapper is
++  // associated with the object, or false if the object is already associated
++  // with a wrapper.  In the latter case, `wrapper` will be updated to the
++  // existing wrapper. Can be used from any world. Will only consider the
++  // current world.
++  [[nodiscard]] static inline bool SetWrapper(
++      v8::Isolate* isolate,
++      ScriptWrappable* object,
++      const WrapperTypeInfo* wrapper_type_info,
++      v8::Local<v8::Object>& wrapper);
++
++  // Same as `SetWrapper()` with the difference that it only considers inline
++  // storage. Can be used from any world.
++  template <bool entered_context = true>
++  [[nodiscard]] static inline bool SetWrapperInInlineStorage(
++      v8::Isolate* isolate,
++      ScriptWrappable* object,
++      const WrapperTypeInfo* wrapper_type_info,
++      v8::Local<v8::Object>& wrapper);
++
++  // Checks for the wrapper pair in all worlds and clears the first found pair.
++  // This should only be needed for garbage collection. All other callsites
++  // should know their worlds.
++  template <typename HandleType>
++  static inline bool ClearWrapperInAnyWorldIfEqualTo(ScriptWrappable* object,
++                                                     const HandleType& handle);
+ 
+-  DOMDataStore(v8::Isolate* isolate, bool is_main_world);
++  // Clears the inline storage wrapper if it is equal to `handle`. Can be used
++  // from any world.
++  template <typename HandleType>
++  static inline bool ClearInlineStorageWrapperIfEqualTo(
++      ScriptWrappable* object,
++      const HandleType& handle);
++
++  // Checks whether a wrapper for `object` exists. Can be used from any world.
++  // Will only consider the current world.
++  static inline bool ContainsWrapper(v8::Isolate* isolate,
++                                     const ScriptWrappable* object);
++
++  DOMDataStore(v8::Isolate* isolate, bool);
+   DOMDataStore(const DOMDataStore&) = delete;
+   DOMDataStore& operator=(const DOMDataStore&) = delete;
+ 
+   // Clears all references.
+   void Dispose();
+ 
+-  v8::Local<v8::Object> Get(ScriptWrappable* object, v8::Isolate* isolate) {
+-    if (is_main_world_)
+-      return object->MainWorldWrapper(isolate);
+-    auto it = wrapper_map_.find(object);
+-    if (it != wrapper_map_.end())
+-      return it->value.Get(isolate);
+-    return v8::Local<v8::Object>();
+-  }
+-
+-  [[nodiscard]] bool Set(v8::Isolate* isolate,
+-                         ScriptWrappable* object,
+-                         const WrapperTypeInfo* wrapper_type_info,
+-                         v8::Local<v8::Object>& wrapper) {
+-    DCHECK(object);
+-    DCHECK(!wrapper.IsEmpty());
+-    if (is_main_world_)
+-      return object->SetWrapper(isolate, wrapper_type_info, wrapper);
+-
+-    auto result = wrapper_map_.insert(
+-        object, wrapper_type_info->SupportsDroppingWrapper()
+-                    ? TraceWrapperV8Reference<v8::Object>(
+-                          isolate, wrapper,
+-                          TraceWrapperV8Reference<v8::Object>::IsDroppable{})
+-                    : TraceWrapperV8Reference<v8::Object>(isolate, wrapper));
+-    // TODO(mlippautz): Check whether there's still recursive cases of
+-    // Wrap()/AssociateWithWrapper() that can run into the case of an existing
+-    // entry.
+-    if (UNLIKELY(!result.is_new_entry)) {
+-      DCHECK(!result.stored_value->value.IsEmpty());
+-      wrapper = result.stored_value->value.Get(isolate);
+-    }
+-    return result.is_new_entry;
+-  }
++  // Same as `GetWrapper()` but for a single world.
++  template <bool entered_context = true>
++  inline v8::MaybeLocal<v8::Object> Get(v8::Isolate* isolate,
++                                        const ScriptWrappable* object);
++
++  // Same as `SetWrapper()` but for a single world.
++  template <bool entered_context = true>
++  [[nodiscard]] inline bool Set(v8::Isolate* isolate,
++                                ScriptWrappable* object,
++                                const WrapperTypeInfo* wrapper_type_info,
++                                v8::Local<v8::Object>& wrapper);
++
++  // Same as `ContainsWrapper()` but for a single world.
++  inline bool Contains(const ScriptWrappable* object) const;
++
++  // Returns true if the pair {object, handle} exists in the current world.
++  template <typename HandleType>
++  inline bool EqualTo(const ScriptWrappable* object, const HandleType& handle);
+ 
++  // Clears the connection between object and handle in the current world.
+   template <typename HandleType>
+-  bool ClearWrapperIfEqualTo(ScriptWrappable* object,
++  inline bool ClearIfEqualTo(ScriptWrappable* object,
+                              const HandleType& handle) {
+-    DCHECK(!is_main_world_);
+-    const auto& it = wrapper_map_.find(object);
+-    if (it != wrapper_map_.end() && it->value == handle) {
+-      it->value.Reset();
+-      wrapper_map_.erase(it);
+-      return true;
++    if (can_use_inline_storage_) {
++      return ClearInlineStorageWrapperIfEqualTo(object, handle);
+     }
+-    return false;
++    return ClearInMapIfEqualTo(object, handle);
+   }
+ 
+-  bool SetReturnValueFrom(v8::ReturnValue<v8::Value> return_value,
+-                          ScriptWrappable* object) {
+-    if (is_main_world_)
+-      return object->SetReturnValue(return_value);
+-    auto it = wrapper_map_.find(object);
+-    if (it != wrapper_map_.end()) {
+-      return_value.SetNonEmpty(it->value);
++  // Clears the connection between object and handle in the current world
++  // assuming no inline storage is available for this world.
++  template <typename HandleType>
++  inline bool ClearInMapIfEqualTo(const ScriptWrappable* object,
++                                  const HandleType& handle) {
++    DCHECK(!can_use_inline_storage_);
++    if (const auto& it = wrapper_map_.find(object);
++        it != wrapper_map_.end() && it->value == handle) {
++      it->value.Reset();
++      wrapper_map_.erase(it);
+       return true;
+     }
+     return false;
+   }
+ 
+-  bool ContainsWrapper(const ScriptWrappable* object) {
+-    if (is_main_world_)
+-      return object->ContainsWrapper();
+-    return base::Contains(wrapper_map_, object);
+-  }
+-
+   virtual void Trace(Visitor*) const;
+ 
+  private:
+-  // We can use a wrapper stored in a ScriptWrappable when we're in the main
+-  // world.  This method does the fast check if we're in the main world. If this
++  // We can use the inline storage in a ScriptWrappable when we're in the main
++  // world. This method does the fast check if we're in the main world. If this
+   // method returns true, it is guaranteed that we're in the main world. On the
+   // other hand, if this method returns false, nothing is guaranteed (we might
+   // be in the main world).
+-  static bool CanUseMainWorldWrapper() {
++  static bool CanUseInlineStorageForWrapper() {
+     return !WTF::MayNotBeMainThread() &&
+            !DOMWrapperWorld::NonMainWorldsExistInMainThread();
+   }
+ 
+-  static bool HolderContainsWrapperForMainWorld(
+-      v8::Local<v8::Object> holder,
++  inline bool SetReturnValueFrom(v8::ReturnValue<v8::Value> return_value,
++                                 const ScriptWrappable* value);
++
++  using WrapperRefType = decltype(ScriptWrappable::wrapper_);
++
++  // Convenience methods for accessing the inlined storage.
++  static inline WrapperRefType& GetUncheckedInlineStorage(
++      ScriptWrappable* wrappable) {
++    return wrappable->wrapper_;
++  }
++  static inline const WrapperRefType& GetUncheckedInlineStorage(
+       const ScriptWrappable* wrappable) {
+-    // The first fastest way is to check that there is only the main world
+-    // on the main thread.
+-    if (CanUseMainWorldWrapper()) {
+-      return true;
+-    }
+-    // The second fastest way to check if we're in the main world is to
+-    // check if the wrappable's wrapper is the same as the holder.
+-    DCHECK(wrappable);
+-    return wrappable->IsEqualTo(holder);
++    return GetUncheckedInlineStorage(const_cast<ScriptWrappable*>(wrappable));
++  }
++  static inline WrapperRefType& GetInlineStorage(v8::Isolate* isolate,
++                                                 ScriptWrappable* wrappable) {
++    // The following will crash if no context is entered. This is by design. The
++    // validation can be skipped with `SetWrapperInInlineStorage<false>()`.
++    DCHECK(Current(isolate).can_use_inline_storage_);
++    return GetUncheckedInlineStorage(wrappable);
++  }
++  static inline const WrapperRefType& GetInlineStorage(
++      v8::Isolate* isolate,
++      const ScriptWrappable* wrappable) {
++    return GetInlineStorage(isolate, const_cast<ScriptWrappable*>(wrappable));
+   }
+ 
+-  bool is_main_world_;
++  // Specifies whether this data store is allowed to use inline storage of a
++  // ScriptWrappable and can avoid using the ephemeron map below.
++  const bool can_use_inline_storage_;
+   // Ephemeron map: V8 wrapper will be kept alive as long as ScriptWrappable is.
+   HeapHashMap<WeakMember<const ScriptWrappable>,
+               TraceWrapperV8Reference<v8::Object>>
+       wrapper_map_;
+ };
+ 
++// static
++bool DOMDataStore::SetReturnValue(v8::ReturnValue<v8::Value> return_value,
++                                  ScriptWrappable* value) {
++  if (CanUseInlineStorageForWrapper()) {
++    return SetReturnValueFromInlineStorage(return_value, value);
++  }
++  return Current(return_value.GetIsolate())
++      .SetReturnValueFrom(return_value, value);
++}
++
++// static
++bool DOMDataStore::SetReturnValueFromInlineStorage(
++    v8::ReturnValue<v8::Value> return_value,
++    const ScriptWrappable* value) {
++  const auto& ref = GetInlineStorage(return_value.GetIsolate(), value);
++  if (!ref.IsEmpty()) {
++    return_value.SetNonEmpty(ref);
++    return true;
++  }
++  return false;
++}
++
++// static
++bool DOMDataStore::SetReturnValueFast(v8::ReturnValue<v8::Value> return_value,
++                                      ScriptWrappable* object,
++                                      v8::Local<v8::Object> v8_receiver,
++                                      const ScriptWrappable* blink_receiver) {
++  // Fast checks for using inline storage:
++  // 1. Fast check for inline storage.
++  // 2. If the receiver receiver's inline wrapper is the V8 receiver. In this
++  //    case we know we are in the world that can use inline storage.
++  DCHECK(blink_receiver);
++  DCHECK(!v8_receiver.IsEmpty());
++  if (CanUseInlineStorageForWrapper() ||
++      v8_receiver == GetUncheckedInlineStorage(blink_receiver)) {
++    return SetReturnValueFromInlineStorage(return_value, object);
++  }
++  return Current(return_value.GetIsolate())
++      .SetReturnValueFrom(return_value, object);
++}
++
++bool DOMDataStore::SetReturnValueFrom(v8::ReturnValue<v8::Value> return_value,
++                                      const ScriptWrappable* value) {
++  if (can_use_inline_storage_) {
++    return SetReturnValueFromInlineStorage(return_value, value);
++  }
++  if (const auto it = wrapper_map_.find(value); it != wrapper_map_.end()) {
++    return_value.SetNonEmpty(it->value);
++    return true;
++  }
++  return false;
++}
++
++// static
++v8::MaybeLocal<v8::Object> DOMDataStore::GetWrapper(
++    v8::Isolate* isolate,
++    const ScriptWrappable* object) {
++  if (CanUseInlineStorageForWrapper()) {
++    return GetInlineStorage(isolate, object).Get(isolate);
++  }
++  return Current(isolate).Get(isolate, object);
++}
++
++template <bool entered_context>
++v8::MaybeLocal<v8::Object> DOMDataStore::Get(v8::Isolate* isolate,
++                                             const ScriptWrappable* object) {
++  if (can_use_inline_storage_) {
++    return entered_context ? GetInlineStorage(isolate, object).Get(isolate)
++                           : GetUncheckedInlineStorage(object).Get(isolate);
++  }
++  if (const auto it = wrapper_map_.find(object); it != wrapper_map_.end()) {
++    return it->value.Get(isolate);
++  }
++  return {};
++}
++
++// static
++bool DOMDataStore::SetWrapper(v8::Isolate* isolate,
++                              ScriptWrappable* object,
++                              const WrapperTypeInfo* wrapper_type_info,
++                              v8::Local<v8::Object>& wrapper) {
++  if (CanUseInlineStorageForWrapper()) {
++    return SetWrapperInInlineStorage(isolate, object, wrapper_type_info,
++                                     wrapper);
++  }
++  return Current(isolate).Set(isolate, object, wrapper_type_info, wrapper);
++}
++
++// static
++template <bool entered_context>
++bool DOMDataStore::SetWrapperInInlineStorage(
++    v8::Isolate* isolate,
++    ScriptWrappable* object,
++    const WrapperTypeInfo* wrapper_type_info,
++    v8::Local<v8::Object>& wrapper) {
++  DCHECK(!wrapper.IsEmpty());
++  auto& ref = entered_context ? GetInlineStorage(isolate, object)
++                              : GetUncheckedInlineStorage(object);
++  if (UNLIKELY(!ref.IsEmpty())) {
++    wrapper = ref.Get(isolate);
++    return false;
++  }
++  if (wrapper_type_info->SupportsDroppingWrapper()) {
++    ref.Reset(isolate, wrapper,
++              TraceWrapperV8Reference<v8::Object>::IsDroppable{});
++  } else {
++    ref.Reset(isolate, wrapper);
++  }
++  DCHECK(!ref.IsEmpty());
++  return true;
++}
++
++template <bool entered_context>
++bool DOMDataStore::Set(v8::Isolate* isolate,
++                       ScriptWrappable* object,
++                       const WrapperTypeInfo* wrapper_type_info,
++                       v8::Local<v8::Object>& wrapper) {
++  DCHECK(object);
++  DCHECK(!wrapper.IsEmpty());
++  if (can_use_inline_storage_) {
++    return SetWrapperInInlineStorage<entered_context>(
++        isolate, object, wrapper_type_info, wrapper);
++  }
++  auto result = wrapper_map_.insert(
++      object, wrapper_type_info->SupportsDroppingWrapper()
++                  ? TraceWrapperV8Reference<v8::Object>(
++                        isolate, wrapper,
++                        TraceWrapperV8Reference<v8::Object>::IsDroppable{})
++                  : TraceWrapperV8Reference<v8::Object>(isolate, wrapper));
++  // TODO(mlippautz): Check whether there's still recursive cases of
++  // Wrap()/AssociateWithWrapper() that can run into the case of an existing
++  // entry.
++  if (UNLIKELY(!result.is_new_entry)) {
++    DCHECK(!result.stored_value->value.IsEmpty());
++    wrapper = result.stored_value->value.Get(isolate);
++  }
++  return result.is_new_entry;
++}
++
++//  static
++bool DOMDataStore::ContainsWrapper(v8::Isolate* isolate,
++                                   const ScriptWrappable* object) {
++  if (CanUseInlineStorageForWrapper()) {
++    return !GetInlineStorage(isolate, object).IsEmpty();
++  }
++  return Current(isolate).Contains(object);
++}
++
++// Same as `ContainsWrapper()` but for a single world.
++bool DOMDataStore::Contains(const ScriptWrappable* object) const {
++  if (can_use_inline_storage_) {
++    return !GetUncheckedInlineStorage(object).IsEmpty();
++  }
++  return base::Contains(wrapper_map_, object);
++}
++
++// static
++template <typename HandleType>
++bool DOMDataStore::ClearWrapperInAnyWorldIfEqualTo(ScriptWrappable* object,
++                                                   const HandleType& handle) {
++  if (LIKELY(ClearInlineStorageWrapperIfEqualTo(object, handle))) {
++    return true;
++  }
++  return DOMWrapperWorld::ClearWrapperInAnyNonInlineStorageWorldIfEqualTo(
++      object, handle);
++}
++
++// static
++template <typename HandleType>
++bool DOMDataStore::ClearInlineStorageWrapperIfEqualTo(
++    ScriptWrappable* object,
++    const HandleType& handle) {
++  auto& ref = GetUncheckedInlineStorage(object);
++  if (ref == handle) {
++    ref.Reset();
++    return true;
++  }
++  return false;
++}
++
++template <typename HandleType>
++bool DOMDataStore::EqualTo(const ScriptWrappable* object,
++                           const HandleType& handle) {
++  if (can_use_inline_storage_) {
++    return GetUncheckedInlineStorage(object) == handle;
++  }
++  if (const auto& it = wrapper_map_.find(object);
++      it != wrapper_map_.end() && it->value == handle) {
++    return true;
++  }
++  return false;
++}
++
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_BINDINGS_DOM_DATA_STORE_H_
+diff --git a/third_party/blink/renderer/platform/bindings/dom_wrapper_world.cc b/third_party/blink/renderer/platform/bindings/dom_wrapper_world.cc
+index e330dd46f1ed0bee4f209ab0ce2c058ca52f4029..663d5ecbfe3e2b7440e34e6c90d9738f666a8905 100644
+--- a/third_party/blink/renderer/platform/bindings/dom_wrapper_world.cc
++++ b/third_party/blink/renderer/platform/bindings/dom_wrapper_world.cc
+@@ -291,12 +291,12 @@ int DOMWrapperWorld::GenerateWorldIdForType(WorldType world_type) {
+ }
+ 
+ // static
+-bool DOMWrapperWorld::ClearNonMainWorldWrapperIfEqualTo(
++bool DOMWrapperWorld::ClearWrapperInAnyNonInlineStorageWorldIfEqualTo(
+     ScriptWrappable* object,
+     const v8::Local<v8::Object>& handle) {
+   for (DOMWrapperWorld* world : GetWorldMap().Values()) {
+     DOMDataStore& data_store = world->DomDataStore();
+-    if (data_store.ClearWrapperIfEqualTo(object, handle)) {
++    if (data_store.ClearInMapIfEqualTo(object, handle)) {
+       return true;
+     }
+   }
+@@ -304,12 +304,12 @@ bool DOMWrapperWorld::ClearNonMainWorldWrapperIfEqualTo(
+ }
+ 
+ // static
+-bool DOMWrapperWorld::ClearNonMainWorldWrapperIfEqualTo(
++bool DOMWrapperWorld::ClearWrapperInAnyNonInlineStorageWorldIfEqualTo(
+     ScriptWrappable* object,
+     const v8::TracedReference<v8::Object>& handle) {
+   for (DOMWrapperWorld* world : GetWorldMap().Values()) {
+     DOMDataStore& data_store = world->DomDataStore();
+-    if (data_store.ClearWrapperIfEqualTo(object, handle)) {
++    if (data_store.ClearInMapIfEqualTo(object, handle)) {
+       return true;
+     }
+   }
+diff --git a/third_party/blink/renderer/platform/bindings/dom_wrapper_world.h b/third_party/blink/renderer/platform/bindings/dom_wrapper_world.h
+index b8fccf776cb01c120ac589072f5183d0f4318bdf..ec51d8bbed1af2a192211d19a89ced7da643dda8 100644
+--- a/third_party/blink/renderer/platform/bindings/dom_wrapper_world.h
++++ b/third_party/blink/renderer/platform/bindings/dom_wrapper_world.h
+@@ -171,24 +171,17 @@ class PLATFORM_EXPORT DOMWrapperWorld : public RefCounted<DOMWrapperWorld> {
+     return *v8_object_data_store_;
+   }
+ 
+-  // Clear the reference pointing from |object| to |handle| in any world.
+-  template <typename HandleType>
+-  inline static bool ClearWrapperIfEqualTo(ScriptWrappable* object,
+-                                           const HandleType& handle);
+-
+-  // Clear the reference pointing from |object| to |handle| in the main world.
+-  template <typename HandleType>
+-  inline static bool ClearMainWorldWrapperIfEqualTo(ScriptWrappable* object,
+-                                                    const HandleType& handle);
+-
+- private:
+-  static bool ClearNonMainWorldWrapperIfEqualTo(
++  // Methods iterate all worlds and invokes the clearing methods on
++  // DOMDataStore. The WorldMap is only known to the DOMWrapperWorld and as such
++  // the iteration cannot be folded into DOMDataStore.
++  static bool ClearWrapperInAnyNonInlineStorageWorldIfEqualTo(
+       ScriptWrappable* object,
+       const v8::Local<v8::Object>& handle);
+-  static bool ClearNonMainWorldWrapperIfEqualTo(
++  static bool ClearWrapperInAnyNonInlineStorageWorldIfEqualTo(
+       ScriptWrappable* object,
+       const v8::TracedReference<v8::Object>& handle);
+ 
++private:
+   DOMWrapperWorld(v8::Isolate*, WorldType, int32_t world_id);
+ 
+   static unsigned number_of_non_main_worlds_in_main_thread_;
+@@ -204,24 +197,6 @@ class PLATFORM_EXPORT DOMWrapperWorld : public RefCounted<DOMWrapperWorld> {
+   Persistent<V8ObjectDataStore> v8_object_data_store_;
+ };
+ 
+-// static
+-template <typename HandleType>
+-bool DOMWrapperWorld::ClearMainWorldWrapperIfEqualTo(ScriptWrappable* object,
+-                                                     const HandleType& handle) {
+-  return object->ClearMainWorldWrapperIfEqualTo(handle);
+-}
+-
+-// static
+-template <typename HandleType>
+-bool DOMWrapperWorld::ClearWrapperIfEqualTo(ScriptWrappable* object,
+-                                            const HandleType& handle) {
+-  if (ClearMainWorldWrapperIfEqualTo(object, handle)) {
+-    return true;
+-  }
+-  // Slow path: |object| may point to |handle| in any non-main DOM world.
+-  return DOMWrapperWorld::ClearNonMainWorldWrapperIfEqualTo(object, handle);
+-}
+-
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_BINDINGS_DOM_WRAPPER_WORLD_H_
+diff --git a/third_party/blink/renderer/platform/bindings/frozen_array_base.cc b/third_party/blink/renderer/platform/bindings/frozen_array_base.cc
+index 4af0f5ef920e981e6cf0b7ff1e53d69d1bd41a29..5d01d17390f4de24190956f56e2784929266c21d 100644
+--- a/third_party/blink/renderer/platform/bindings/frozen_array_base.cc
++++ b/third_party/blink/renderer/platform/bindings/frozen_array_base.cc
+@@ -39,9 +39,9 @@ v8::Local<v8::Value> FrozenArrayBase::ToV8(ScriptState* script_state) const {
+ }
+ 
+ v8::Local<v8::Value> FrozenArrayBase::ToV8(ScriptState* script_state) {
+-  v8::Local<v8::Object> wrapper = script_state->World().DomDataStore().Get(
+-      this, script_state->GetIsolate());
+-  if (LIKELY(!wrapper.IsEmpty())) {
++  v8::Local<v8::Object> wrapper;
++  if (LIKELY(DOMDataStore::GetWrapper(script_state->GetIsolate(), this)
++                 .ToLocal(&wrapper))) {
+     return wrapper;
+   }
+ 
+@@ -49,7 +49,7 @@ v8::Local<v8::Value> FrozenArrayBase::ToV8(ScriptState* script_state) {
+ }
+ 
+ v8::Local<v8::Value> FrozenArrayBase::Wrap(ScriptState* script_state) {
+-  DCHECK(!script_state->World().DomDataStore().ContainsWrapper(this));
++  DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+   v8::Local<v8::Value> wrapper = MakeV8ArrayToBeFrozen(script_state);
+ 
+diff --git a/third_party/blink/renderer/platform/bindings/script_wrappable.cc b/third_party/blink/renderer/platform/bindings/script_wrappable.cc
+index 92fa7df37915a3f456562f9cc0ef20436bfcad5f..9733be3a28b1eb315e7774dcb5a197143457cf8c 100644
+--- a/third_party/blink/renderer/platform/bindings/script_wrappable.cc
++++ b/third_party/blink/renderer/platform/bindings/script_wrappable.cc
+@@ -20,9 +20,9 @@ struct SameSizeAsScriptWrappable {
+ ASSERT_SIZE(ScriptWrappable, SameSizeAsScriptWrappable);
+ 
+ v8::Local<v8::Value> ScriptWrappable::ToV8(ScriptState* script_state) {
+-  v8::Local<v8::Value> wrapper =
+-      DOMDataStore::GetWrapper(this, script_state->GetIsolate());
+-  if (LIKELY(!wrapper.IsEmpty())) {
++  v8::Local<v8::Object> wrapper;
++  if (LIKELY(DOMDataStore::GetWrapper(script_state->GetIsolate(), this)
++                 .ToLocal(&wrapper))) {
+     return wrapper;
+   }
+   return Wrap(script_state);
+@@ -31,8 +31,8 @@ v8::Local<v8::Value> ScriptWrappable::ToV8(ScriptState* script_state) {
+ v8::Local<v8::Value> ScriptWrappable::ToV8(
+     v8::Isolate* isolate,
+     v8::Local<v8::Object> creation_context_object) {
+-  v8::Local<v8::Value> wrapper = DOMDataStore::GetWrapper(this, isolate);
+-  if (LIKELY(!wrapper.IsEmpty())) {
++  v8::Local<v8::Object> wrapper;
++  if (LIKELY(DOMDataStore::GetWrapper(isolate, this).ToLocal(&wrapper))) {
+     return wrapper;
+   }
+   CHECK(!creation_context_object.IsEmpty());
+@@ -44,7 +44,7 @@ v8::Local<v8::Value> ScriptWrappable::ToV8(
+ v8::Local<v8::Value> ScriptWrappable::Wrap(ScriptState* script_state) {
+   const WrapperTypeInfo* wrapper_type_info = GetWrapperTypeInfo();
+ 
+-  DCHECK(!DOMDataStore::ContainsWrapper(this, script_state->GetIsolate()));
++  DCHECK(!DOMDataStore::ContainsWrapper(script_state->GetIsolate(), this));
+ 
+   v8::Local<v8::Object> wrapper =
+       V8DOMWrapper::CreateWrapper(script_state, wrapper_type_info);
+@@ -61,7 +61,7 @@ v8::Local<v8::Object> ScriptWrappable::AssociateWithWrapper(
+ }
+ 
+ void ScriptWrappable::Trace(Visitor* visitor) const {
+-  visitor->Trace(main_world_wrapper_);
++  visitor->Trace(wrapper_);
+ }
+ 
+ const char* ScriptWrappable::NameInHeapSnapshot() const {
+diff --git a/third_party/blink/renderer/platform/bindings/script_wrappable.h b/third_party/blink/renderer/platform/bindings/script_wrappable.h
+index ba1b49d06bd26f4f04767a953ffa2d918a5d93e9..858ae35448ba23ddc200cc8a44d3b77f47e69e35 100644
+--- a/third_party/blink/renderer/platform/bindings/script_wrappable.h
++++ b/third_party/blink/renderer/platform/bindings/script_wrappable.h
+@@ -42,6 +42,7 @@
+ 
+ namespace blink {
+ 
++class DOMDataStore;
+ class ScriptState;
+ 
+ // ScriptWrappable provides a way to map from/to C++ DOM implementation to/from
+@@ -174,78 +175,22 @@ class PLATFORM_EXPORT ScriptWrappable
+       const WrapperTypeInfo*,
+       v8::Local<v8::Object> wrapper);
+ 
+-  // Associates this instance with the given |wrapper| if this instance is not
+-  // yet associated with any wrapper.  Returns true if the given wrapper is
+-  // associated with this instance, or false if this instance is already
+-  // associated with a wrapper.  In the latter case, |wrapper| will be updated
+-  // to the existing wrapper.
+-  [[nodiscard]] bool SetWrapper(v8::Isolate* isolate,
+-                                const WrapperTypeInfo* wrapper_type_info,
+-                                v8::Local<v8::Object>& wrapper) {
+-    DCHECK(!wrapper.IsEmpty());
+-    if (UNLIKELY(ContainsWrapper())) {
+-      wrapper = MainWorldWrapper(isolate);
+-      return false;
+-    }
+-    if (wrapper_type_info->SupportsDroppingWrapper()) {
+-      main_world_wrapper_.Reset(
+-          isolate, wrapper, TraceWrapperV8Reference<v8::Object>::IsDroppable{});
+-    } else {
+-      main_world_wrapper_.Reset(isolate, wrapper);
+-    }
+-    DCHECK(ContainsWrapper());
+-    return true;
+-  }
+-
+-  bool IsEqualTo(const v8::Local<v8::Object>& other) const {
+-    return main_world_wrapper_ == other;
+-  }
+-
+-  bool SetReturnValue(v8::ReturnValue<v8::Value> return_value) {
+-    const bool contains_wrapper = ContainsWrapper();
+-    if (contains_wrapper) {
+-      return_value.SetNonEmpty(main_world_wrapper_);
+-    }
+-    return contains_wrapper;
+-  }
+-
+-
+  protected:
+   ScriptWrappable() = default;
+ 
+  private:
+-  bool ContainsWrapper() const { return !main_world_wrapper_.IsEmpty(); }
+-
+-  v8::Local<v8::Object> MainWorldWrapper(v8::Isolate* isolate) const {
+-    return main_world_wrapper_.Get(isolate);
+-  }
+-
+-  // Clear the main world wrapper if it is set to |handle|.
+-  template <typename HandleType>
+-  inline bool ClearMainWorldWrapperIfEqualTo(const HandleType& handle);
+-
+   static_assert(
+       std::is_trivially_destructible<
+           TraceWrapperV8Reference<v8::Object>>::value,
+       "TraceWrapperV8Reference<v8::Object> should be trivially destructible.");
+ 
+-  TraceWrapperV8Reference<v8::Object> main_world_wrapper_;
+-
+-  // These classes are exceptionally allowed to directly interact with the main
+-  // world wrapper.
++  // Inline storage for the a single wrapper reference. Only
++  // `DOMDataStore::UncheckedInlineStorageForWrappable()` should access this
++  // field.
++  TraceWrapperV8Reference<v8::Object> wrapper_;
+   friend class DOMDataStore;
+-  friend class DOMWrapperWorld;
+ };
+ 
+-template <typename HandleType>
+-bool ScriptWrappable::ClearMainWorldWrapperIfEqualTo(const HandleType& handle) {
+-  if (main_world_wrapper_ == handle) {
+-    main_world_wrapper_.Reset();
+-    return true;
+-  }
+-  return false;
+-}
+-
+ // Defines |GetWrapperTypeInfo| virtual method which returns the WrapperTypeInfo
+ // of the instance. Also declares a static member of type WrapperTypeInfo, of
+ // which the definition is given by the IDL code generator.
+diff --git a/third_party/blink/renderer/platform/bindings/v8_set_return_value.h b/third_party/blink/renderer/platform/bindings/v8_set_return_value.h
+index 6cf3278d7a186ad97b49841fb9bddd584582b9f7..2987c64bdbed2a7b797cd04a9b35a95c3f3f7aa9 100644
+--- a/third_party/blink/renderer/platform/bindings/v8_set_return_value.h
++++ b/third_party/blink/renderer/platform/bindings/v8_set_return_value.h
+@@ -50,16 +50,16 @@ struct V8ReturnValue {
+   enum InterfaceObject { kInterfaceObject };
+   enum NamespaceObject { kNamespaceObject };
+ 
+-  // Selects the appropriate creation context.
+-  static v8::Local<v8::Object> CreationContext(
++  // Selects the appropriate receiver from which e.g. the creation context can
++  // be retrieved.
++  static v8::Local<v8::Object> GetReceiver(
+       const v8::FunctionCallbackInfo<v8::Value>& info) {
+     return info.This();
+   }
+-  static v8::Local<v8::Object> CreationContext(
++  static v8::Local<v8::Object> GetReceiver(
+       const v8::PropertyCallbackInfo<v8::Value>& info) {
+     return info.Holder();
+   }
+-
+   // Helper function for ScriptWrappable
+   template <typename CallbackInfo>
+   static void SetWrapper(const CallbackInfo& info,
+@@ -290,12 +290,13 @@ void V8SetReturnValue(const CallbackInfo& info,
+   if (UNLIKELY(!value))
+     return info.GetReturnValue().SetNull();
+   ScriptWrappable* wrappable = const_cast<ScriptWrappable*>(value);
+-  if (DOMDataStore::SetReturnValueForMainWorld(info.GetReturnValue(),
+-                                               wrappable))
++  if (DOMDataStore::SetReturnValueFromInlineStorage(info.GetReturnValue(),
++                                                    wrappable)) {
+     return;
++  }
+   V8ReturnValue::SetWrapper(
+       info, wrappable,
+-      V8ReturnValue::CreationContext(info)->GetCreationContextChecked());
++      V8ReturnValue::GetReceiver(info)->GetCreationContextChecked());
+ }
+ 
+ template <typename CallbackInfo>
+@@ -304,12 +305,13 @@ void V8SetReturnValue(const CallbackInfo& info,
+                       V8ReturnValue::MainWorld) {
+   DCHECK(DOMWrapperWorld::Current(info.GetIsolate()).IsMainWorld());
+   ScriptWrappable* wrappable = const_cast<ScriptWrappable*>(&value);
+-  if (DOMDataStore::SetReturnValueForMainWorld(info.GetReturnValue(),
+-                                               wrappable))
++  if (DOMDataStore::SetReturnValueFromInlineStorage(info.GetReturnValue(),
++                                                    wrappable)) {
+     return;
++  }
+   V8ReturnValue::SetWrapper(
+       info, wrappable,
+-      V8ReturnValue::CreationContext(info)->GetCreationContextChecked());
++      V8ReturnValue::GetReceiver(info)->GetCreationContextChecked());
+ }
+ 
+ template <typename CallbackInfo>
+@@ -320,13 +322,13 @@ void V8SetReturnValue(const CallbackInfo& info,
+     return info.GetReturnValue().SetNull();
+   ScriptWrappable* wrappable = const_cast<ScriptWrappable*>(value);
+   if (DOMDataStore::SetReturnValueFast(info.GetReturnValue(), wrappable,
+-                                       V8ReturnValue::CreationContext(info),
++                                       V8ReturnValue::GetReceiver(info),
+                                        receiver)) {
+     return;
+   }
+   V8ReturnValue::SetWrapper(
+       info, wrappable,
+-      V8ReturnValue::CreationContext(info)->GetCreationContextChecked());
++      V8ReturnValue::GetReceiver(info)->GetCreationContextChecked());
+ }
+ 
+ template <typename CallbackInfo>
+@@ -335,13 +337,13 @@ void V8SetReturnValue(const CallbackInfo& info,
+                       const ScriptWrappable* receiver) {
+   ScriptWrappable* wrappable = const_cast<ScriptWrappable*>(&value);
+   if (DOMDataStore::SetReturnValueFast(info.GetReturnValue(), wrappable,
+-                                       V8ReturnValue::CreationContext(info),
++                                       V8ReturnValue::GetReceiver(info),
+                                        receiver)) {
+     return;
+   }
+   V8ReturnValue::SetWrapper(
+       info, wrappable,
+-      V8ReturnValue::CreationContext(info)->GetCreationContextChecked());
++      V8ReturnValue::GetReceiver(info)->GetCreationContextChecked());
+ }
+ 
+ template <typename CallbackInfo>
+@@ -353,7 +355,7 @@ void V8SetReturnValue(const CallbackInfo& info,
+     return info.GetReturnValue().SetNull();
+   ScriptWrappable* wrappable = const_cast<ScriptWrappable*>(value);
+   if (DOMDataStore::SetReturnValueFast(info.GetReturnValue(), wrappable,
+-                                       V8ReturnValue::CreationContext(info),
++                                       V8ReturnValue::GetReceiver(info),
+                                        receiver)) {
+     return;
+   }
+@@ -369,7 +371,7 @@ void V8SetReturnValue(const CallbackInfo& info,
+   //    with the current context will still have the correct v8::Isolate and
+   //    DOMWrapperWorld.
+   v8::Local<v8::Context> context;
+-  if (!V8ReturnValue::CreationContext(info)->GetCreationContext().ToLocal(
++  if (!V8ReturnValue::GetReceiver(info)->GetCreationContext().ToLocal(
+           &context)) {
+     context = info.GetIsolate()->GetCurrentContext();
+   }
+@@ -383,7 +385,7 @@ void V8SetReturnValue(const CallbackInfo& info,
+                       V8ReturnValue::MaybeCrossOrigin) {
+   ScriptWrappable* wrappable = const_cast<ScriptWrappable*>(&value);
+   if (DOMDataStore::SetReturnValueFast(info.GetReturnValue(), wrappable,
+-                                       V8ReturnValue::CreationContext(info),
++                                       V8ReturnValue::GetReceiver(info),
+                                        receiver)) {
+     return;
+   }
+@@ -399,7 +401,7 @@ void V8SetReturnValue(const CallbackInfo& info,
+   //    with the current context will still have the correct v8::Isolate and
+   //    DOMWrapperWorld.
+   v8::Local<v8::Context> context;
+-  if (!V8ReturnValue::CreationContext(info)->GetCreationContext().ToLocal(
++  if (!V8ReturnValue::GetReceiver(info)->GetCreationContext().ToLocal(
+           &context)) {
+     context = info.GetIsolate()->GetCurrentContext();
+   }
+diff --git a/third_party/blink/renderer/platform/heap/thread_state.cc b/third_party/blink/renderer/platform/heap/thread_state.cc
+index 55434e8c3a6d57ff8088821e7c4777334d9119b8..f68b52c7fd23f2b296abf8493fa52b216d68fe98 100644
+--- a/third_party/blink/renderer/platform/heap/thread_state.cc
++++ b/third_party/blink/renderer/platform/heap/thread_state.cc
+@@ -10,6 +10,7 @@
+ #include "base/functional/callback.h"
+ #include "base/notreached.h"
+ #include "gin/public/v8_platform.h"
++#include "third_party/blink/renderer/platform/bindings/dom_data_store.h"
+ #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/bindings/wrapper_type_info.h"
+@@ -46,7 +47,7 @@ class BlinkRootsHandler final : public v8::EmbedderRootsHandler {
+   // generation garbage collections.
+   void ResetRoot(const v8::TracedReference<v8::Value>& handle) final {
+     const v8::TracedReference<v8::Object>& traced = handle.As<v8::Object>();
+-    bool success = DOMWrapperWorld::ClearWrapperIfEqualTo(
++    bool success = DOMDataStore::ClearWrapperInAnyWorldIfEqualTo(
+         ToScriptWrappable(traced), traced);
+     // Since V8 found a handle, Blink needs to find it as well when trying to
+     // remove it.
+@@ -55,7 +56,7 @@ class BlinkRootsHandler final : public v8::EmbedderRootsHandler {
+ 
+   bool TryResetRoot(const v8::TracedReference<v8::Value>& handle) final {
+     const v8::TracedReference<v8::Object>& traced = handle.As<v8::Object>();
+-    return DOMWrapperWorld::ClearMainWorldWrapperIfEqualTo(
++    return DOMDataStore::ClearInlineStorageWrapperIfEqualTo(
+         ToScriptWrappable(traced), traced);
+   }
+ };
