@@ -57,8 +57,10 @@ class ElectronDesktopWindowTreeHostLinux
   // views::OnDeviceScaleFactorChanged:
   void OnDeviceScaleFactorChanged() override;
 
+  // views::DesktopWindowTreeHostLinux:
+  void UpdateFrameHints() override;
+
  private:
-  void UpdateFrameHints();
   void UpdateClientDecorationHints(ClientFrameViewLinux* view);
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
