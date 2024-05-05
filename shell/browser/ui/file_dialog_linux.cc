@@ -83,7 +83,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   }
 
   ~FileChooserDialog() override {
-    // Clean up dialog_...
+    // TODO(codebytere): anything we need to do here?
   }
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
