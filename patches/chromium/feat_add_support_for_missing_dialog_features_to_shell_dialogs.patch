@@ -1,0 +1,243 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 5 May 2024 09:17:17 +0000
+Subject: feat: add support for missing dialog features to //shell_dialogs
+
+This CL adds support for the following features to //shell_dialogs:
+* buttonLabel - Custom label for the confirmation button.
+* showHiddenFiles - Show hidden files in dialog.
+* showOverwriteConfirmation - Whether the user will be presented a confirmation dialog if the user types a file name that already exists.
+
+This may be partially upstreamed to Chromium in the future.
+
+diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
+index 698f97b23f851c02af037880585c82d4494da63f..4096b8e1dbb74b187b18bd1353ccc6a429610f4d 100644
+--- a/ui/gtk/select_file_dialog_linux_gtk.cc
++++ b/ui/gtk/select_file_dialog_linux_gtk.cc
+@@ -62,14 +62,18 @@ const char* GetCancelLabel() {
+   return cancel;
+ }
+ 
+-const char* GetOpenLabel() {
++const char* GetOpenLabel(const std::string& label) {
++  if (!label.empty())
++    return label.c_str();
+   if (!GtkCheckVersion(4))
+     return "gtk-open";  // In GTK3, this is GTK_STOCK_OPEN.
+   static const char* open = GtkGettext("_Open");
+   return open;
+ }
+ 
+-const char* GetSaveLabel() {
++const char* GetSaveLabel(const std::string& label) {
++  if (!label.empty())
++    return label.c_str();
+   if (!GtkCheckVersion(4))
+     return "gtk-save";  // In GTK3, this is GTK_STOCK_SAVE.
+   static const char* save = GtkGettext("_Save");
+@@ -243,6 +247,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+ 
+   std::string title_string = base::UTF16ToUTF8(title);
+ 
++  ExtraSettings extra_settings = std::make_tuple("", true, false);
++  if (params)
++    extra_settings = *(reinterpret_cast<ExtraSettings*>(params));
++
+   set_file_type_index(file_type_index);
+   if (file_types)
+     set_file_types(*file_types);
+@@ -261,23 +269,23 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+     case SELECT_UPLOAD_FOLDER:
+     case SELECT_EXISTING_FOLDER:
+       dialog = CreateSelectFolderDialog(type, title_string, default_path,
+-                                        owning_window);
++                                        owning_window, extra_settings);
+       connect("response",
+               &SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse);
+       break;
+     case SELECT_OPEN_FILE:
+-      dialog = CreateFileOpenDialog(title_string, default_path, owning_window);
++      dialog = CreateFileOpenDialog(title_string, default_path, owning_window, extra_settings);
+       connect("response",
+               &SelectFileDialogLinuxGtk::OnSelectSingleFileDialogResponse);
+       break;
+     case SELECT_OPEN_MULTI_FILE:
+       dialog =
+-          CreateMultiFileOpenDialog(title_string, default_path, owning_window);
++          CreateMultiFileOpenDialog(title_string, default_path, owning_window, extra_settings);
+       connect("response",
+               &SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse);
+       break;
+     case SELECT_SAVEAS_FILE:
+-      dialog = CreateSaveAsDialog(title_string, default_path, owning_window);
++      dialog = CreateSaveAsDialog(title_string, default_path, owning_window, extra_settings);
+       connect("response",
+               &SelectFileDialogLinuxGtk::OnSelectSingleFileDialogResponse);
+       break;
+@@ -412,10 +420,12 @@ void SelectFileDialogLinuxGtk::FileNotSelected(GtkWidget* dialog) {
+ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+     const std::string& title,
+     const base::FilePath& default_path,
+-    gfx::NativeWindow parent) {
++    gfx::NativeWindow parent,
++    ExtraSettings settings) {
+   GtkWidget* dialog = GtkFileChooserDialogNew(
+       title.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_OPEN, GetCancelLabel(),
+-      GTK_RESPONSE_CANCEL, GetOpenLabel(), GTK_RESPONSE_ACCEPT);
++      GTK_RESPONSE_CANCEL, GetOpenLabel(std::get<0>(settings)),
++      GTK_RESPONSE_ACCEPT);
+   SetGtkTransientForAura(dialog, parent);
+   AddFilters(GTK_FILE_CHOOSER(dialog));
+ 
+@@ -431,6 +441,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+     GtkFileChooserSetCurrentFolder(GTK_FILE_CHOOSER(dialog),
+                                    *last_opened_path());
+   }
++  gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog),
++                                   std::get<2>(settings));
+   return dialog;
+ }
+ 
+@@ -438,7 +450,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+     Type type,
+     const std::string& title,
+     const base::FilePath& default_path,
+-    gfx::NativeWindow parent) {
++    gfx::NativeWindow parent,
++    ExtraSettings settings) {
+   std::string title_string = title;
+   if (title_string.empty()) {
+     title_string =
+@@ -450,7 +463,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+       (type == SELECT_UPLOAD_FOLDER)
+           ? l10n_util::GetStringUTF8(
+                 IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON)
+-          : GetOpenLabel();
++          : GetOpenLabel(std::get<0>(settings));
+ 
+   GtkWidget* dialog = GtkFileChooserDialogNew(
+       title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+@@ -473,18 +486,20 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+   gtk_file_filter_add_mime_type(only_folders, "text/directory");
+   gtk_file_chooser_add_filter(chooser, only_folders);
+   gtk_file_chooser_set_select_multiple(chooser, FALSE);
++  gtk_file_chooser_set_show_hidden(chooser, std::get<2>(settings));
+   return dialog;
+ }
+ 
+ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenDialog(
+     const std::string& title,
+     const base::FilePath& default_path,
+-    gfx::NativeWindow parent) {
++    gfx::NativeWindow parent,
++    ExtraSettings settings) {
+   std::string title_string =
+       !title.empty() ? title
+                      : l10n_util::GetStringUTF8(IDS_OPEN_FILE_DIALOG_TITLE);
+ 
+-  GtkWidget* dialog = CreateFileOpenHelper(title_string, default_path, parent);
++  GtkWidget* dialog = CreateFileOpenHelper(title_string, default_path, parent, settings);
+   gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+   return dialog;
+ }
+@@ -492,12 +507,14 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenDialog(
+ GtkWidget* SelectFileDialogLinuxGtk::CreateMultiFileOpenDialog(
+     const std::string& title,
+     const base::FilePath& default_path,
+-    gfx::NativeWindow parent) {
++    gfx::NativeWindow parent,
++    ExtraSettings settings) {
+   std::string title_string =
+       !title.empty() ? title
+                      : l10n_util::GetStringUTF8(IDS_OPEN_FILES_DIALOG_TITLE);
+ 
+-  GtkWidget* dialog = CreateFileOpenHelper(title_string, default_path, parent);
++  GtkWidget* dialog =
++      CreateFileOpenHelper(title_string, default_path, parent, settings);
+   gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), TRUE);
+   return dialog;
+ }
+@@ -505,15 +522,16 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateMultiFileOpenDialog(
+ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+     const std::string& title,
+     const base::FilePath& default_path,
+-    gfx::NativeWindow parent) {
++    gfx::NativeWindow parent,
++    ExtraSettings settings) {
+   std::string title_string =
+       !title.empty() ? title
+                      : l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE);
+ 
+   GtkWidget* dialog = GtkFileChooserDialogNew(
+       title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SAVE,
+-      GetCancelLabel(), GTK_RESPONSE_CANCEL, GetSaveLabel(),
+-      GTK_RESPONSE_ACCEPT);
++      GetCancelLabel(), GTK_RESPONSE_CANCEL,
++      GetSaveLabel(std::get<0>(settings)), GTK_RESPONSE_ACCEPT);
+   SetGtkTransientForAura(dialog, parent);
+ 
+   AddFilters(GTK_FILE_CHOOSER(dialog));
+@@ -539,8 +557,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+   // Overwrite confirmation is always enabled in GTK4.
+   if (!GtkCheckVersion(4)) {
+     gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog),
+-                                                   TRUE);
++                                                   std::get<1>(settings));
+   }
++  gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog),
++                                   std::get<2>(settings));
+   return dialog;
+ }
+ 
+diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
+index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..9474e52c736b60c2060a359249c31b838e70a5c2 100644
+--- a/ui/gtk/select_file_dialog_linux_gtk.h
++++ b/ui/gtk/select_file_dialog_linux_gtk.h
+@@ -15,6 +15,9 @@
+ 
+ namespace gtk {
+ 
++// [label, show_overwrite_confirmation, show_hidden]
++typedef std::tuple<std::string, bool, bool> ExtraSettings;
++
+ // Implementation of SelectFileDialog that shows a Gtk common dialog for
+ // choosing a file or folder. This acts as a modal dialog.
+ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -90,19 +93,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+   GtkWidget* CreateSelectFolderDialog(Type type,
+                                       const std::string& title,
+                                       const base::FilePath& default_path,
+-                                      gfx::NativeWindow parent);
++                                      gfx::NativeWindow parent,
++                                      ExtraSettings settings);
+ 
+   GtkWidget* CreateFileOpenDialog(const std::string& title,
+                                   const base::FilePath& default_path,
+-                                  gfx::NativeWindow parent);
++                                  gfx::NativeWindow parent,
++                                  ExtraSettings settings);
+ 
+   GtkWidget* CreateMultiFileOpenDialog(const std::string& title,
+                                        const base::FilePath& default_path,
+-                                       gfx::NativeWindow parent);
++                                       gfx::NativeWindow parent,
++                                       ExtraSettings settings);
+ 
+   GtkWidget* CreateSaveAsDialog(const std::string& title,
+                                 const base::FilePath& default_path,
+-                                gfx::NativeWindow parent);
++                                gfx::NativeWindow parent,
++                                ExtraSettings settings);
+ 
+   // Removes and returns the |params| associated with |dialog| from
+   // |params_map_|.
+@@ -121,7 +128,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+   // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
+   GtkWidget* CreateFileOpenHelper(const std::string& title,
+                                   const base::FilePath& default_path,
+-                                  gfx::NativeWindow parent);
++                                  gfx::NativeWindow parent,
++                                  ExtraSettings settings);
+ 
+   // Callback for when the user responds to a Save As or Open File dialog.
+   void OnSelectSingleFileDialogResponse(GtkWidget* dialog, int response_id);
