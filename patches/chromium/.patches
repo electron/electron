@@ -137,3 +137,4 @@ cherry-pick-1b1f34234346.patch
 bindings_refactor_domdatastore.patch
 merge_fix_domarraybuffer_isdetached_and_comment_out_a_check.patch
 cherry-pick-98bcf9ef5cdd.patch
+cherry-pick-c1f25647c2fc.patch
