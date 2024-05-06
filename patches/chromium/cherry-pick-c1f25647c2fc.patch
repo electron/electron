@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Johannes Kron <kron@chromium.org>
 Date: Tue, 13 Feb 2024 23:22:49 +0000
-Subject: [ThumbnailCapturerMac] Update thumbnail size when sources are
- selected
+Subject: Update thumbnail size when sources are selected
 
 (cherry picked from commit c1f25647c2fcbf5e5a2d574feb284bc7284b944d)
 
