@@ -1947,7 +1947,6 @@ describe('chromium features', () => {
           switch (parsedUrl.pathname) {
             case '/localStorage' : filename = 'local_storage.html'; break;
             case '/sessionStorage' : filename = 'session_storage.html'; break;
-            case '/WebSQL' : filename = 'web_sql.html'; break;
             case '/indexedDB' : filename = 'indexed_db.html'; break;
             case '/cookie' : filename = 'cookie.html'; break;
             default : filename = '';
@@ -1984,13 +1983,6 @@ describe('chromium features', () => {
         contents.loadURL(`${protocolName}://host/sessionStorage`);
         const [, error] = await response;
         expect(error).to.equal('Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.');
-      });
-
-      it('cannot access WebSQL database', async () => {
-        const response = once(ipcMain, 'web-sql-response');
-        contents.loadURL(`${protocolName}://host/WebSQL`);
-        const [, error] = await response;
-        expect(error).to.equal('Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.');
       });
 
       it('cannot access indexedDB', async () => {
@@ -2059,171 +2051,6 @@ describe('chromium features', () => {
 
       testLocalStorageAfterXSiteRedirect('after a cross-site redirect');
       testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true });
-    });
-
-    describe('enableWebSQL webpreference', () => {
-      const origin = `${standardScheme}://fake-host`;
-      const filePath = path.join(fixturesPath, 'pages', 'storage', 'web_sql.html');
-      const sqlPartition = 'web-sql-preference-test';
-      const sqlSession = session.fromPartition(sqlPartition);
-      const securityError = 'An attempt was made to break through the security policy of the user agent.';
-      let contents: WebContents, w: BrowserWindow;
-
-      before(() => {
-        sqlSession.protocol.registerFileProtocol(standardScheme, (request, callback) => {
-          callback({ path: filePath });
-        });
-      });
-
-      after(() => {
-        sqlSession.protocol.unregisterProtocol(standardScheme);
-      });
-
-      afterEach(async () => {
-        if (contents) {
-          contents.destroy();
-          contents = null as any;
-        }
-        await closeAllWindows();
-        (w as any) = null;
-      });
-
-      it('default value allows websql', async () => {
-        contents = (webContents as typeof ElectronInternal.WebContents).create({
-          session: sqlSession,
-          nodeIntegration: true,
-          contextIsolation: false
-        });
-        contents.loadURL(origin);
-        const [, error] = await once(ipcMain, 'web-sql-response');
-        expect(error).to.be.null();
-      });
-
-      it('when set to false can disallow websql', async () => {
-        contents = (webContents as typeof ElectronInternal.WebContents).create({
-          session: sqlSession,
-          nodeIntegration: true,
-          enableWebSQL: false,
-          contextIsolation: false
-        });
-        contents.loadURL(origin);
-        const [, error] = await once(ipcMain, 'web-sql-response');
-        expect(error).to.equal(securityError);
-      });
-
-      it('when set to false does not disable indexedDB', async () => {
-        contents = (webContents as typeof ElectronInternal.WebContents).create({
-          session: sqlSession,
-          nodeIntegration: true,
-          enableWebSQL: false,
-          contextIsolation: false
-        });
-        contents.loadURL(origin);
-        const [, error] = await once(ipcMain, 'web-sql-response');
-        expect(error).to.equal(securityError);
-        const dbName = 'random';
-        const result = await contents.executeJavaScript(`
-          new Promise((resolve, reject) => {
-            try {
-              let req = window.indexedDB.open('${dbName}');
-              req.onsuccess = (event) => {
-                let db = req.result;
-                resolve(db.name);
-              }
-              req.onerror = (event) => { resolve(event.target.code); }
-            } catch (e) {
-              resolve(e.message);
-            }
-          });
-        `);
-        expect(result).to.equal(dbName);
-      });
-
-      it('child webContents can override when the embedder has allowed websql', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            webviewTag: true,
-            session: sqlSession,
-            contextIsolation: false
-          }
-        });
-        w.webContents.loadURL(origin);
-        const [, error] = await once(ipcMain, 'web-sql-response');
-        expect(error).to.be.null();
-        const webviewResult = once(ipcMain, 'web-sql-response');
-        await w.webContents.executeJavaScript(`
-          new Promise((resolve, reject) => {
-            const webview = new WebView();
-            webview.setAttribute('src', '${origin}');
-            webview.setAttribute('webpreferences', 'enableWebSQL=0,contextIsolation=no');
-            webview.setAttribute('partition', '${sqlPartition}');
-            webview.setAttribute('nodeIntegration', 'on');
-            document.body.appendChild(webview);
-            webview.addEventListener('dom-ready', () => resolve());
-          });
-        `);
-        const [, childError] = await webviewResult;
-        expect(childError).to.equal(securityError);
-      });
-
-      it('child webContents cannot override when the embedder has disallowed websql', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableWebSQL: false,
-            webviewTag: true,
-            session: sqlSession,
-            contextIsolation: false
-          }
-        });
-        w.webContents.loadURL('data:text/html,<html></html>');
-        const webviewResult = once(ipcMain, 'web-sql-response');
-        await w.webContents.executeJavaScript(`
-          new Promise((resolve, reject) => {
-            const webview = new WebView();
-            webview.setAttribute('src', '${origin}');
-            webview.setAttribute('webpreferences', 'enableWebSQL=1,contextIsolation=no');
-            webview.setAttribute('partition', '${sqlPartition}');
-            webview.setAttribute('nodeIntegration', 'on');
-            document.body.appendChild(webview);
-            webview.addEventListener('dom-ready', () => resolve());
-          });
-        `);
-        const [, childError] = await webviewResult;
-        expect(childError).to.equal(securityError);
-      });
-
-      it('child webContents can use websql when the embedder has allowed websql', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            webviewTag: true,
-            session: sqlSession,
-            contextIsolation: false
-          }
-        });
-        w.webContents.loadURL(origin);
-        const [, error] = await once(ipcMain, 'web-sql-response');
-        expect(error).to.be.null();
-        const webviewResult = once(ipcMain, 'web-sql-response');
-        await w.webContents.executeJavaScript(`
-          new Promise((resolve, reject) => {
-            const webview = new WebView();
-            webview.setAttribute('src', '${origin}');
-            webview.setAttribute('webpreferences', 'enableWebSQL=1,contextIsolation=no');
-            webview.setAttribute('partition', '${sqlPartition}');
-            webview.setAttribute('nodeIntegration', 'on');
-            document.body.appendChild(webview);
-            webview.addEventListener('dom-ready', () => resolve());
-          });
-        `);
-        const [, childError] = await webviewResult;
-        expect(childError).to.be.null();
-      });
     });
 
     describe('DOM storage quota increase', () => {

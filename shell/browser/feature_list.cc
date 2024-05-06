@@ -37,9 +37,6 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
 
-  // TODO(codebytere): Remove WebSQL support per crbug.com/695592.
-  enable_features += std::string(",") + blink::features::kWebSQLAccess.name;
-
 #if BUILDFLAG(IS_WIN)
   disable_features +=
       // Disable async spellchecker suggestions for Windows, which causes
