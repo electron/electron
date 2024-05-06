@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommy Steimel <steimel@chromium.org>
+Date: Tue, 23 Apr 2024 19:29:23 +0000
+Subject: Don't assume the enter event window is a LocalDOMWindow
+
+This CL changes DocumentPictureInPictureEvent to store a DOMWindow
+instead of a LocalDOMWindow to prevent crashes when the window it gets
+is actually a RemoteDOMWindow.
+
+(cherry picked from commit 2314741cdf2c4a6e11234dda7006ec0dd9005bbb)
+
+Bug: 335003891
+Change-Id: I86a0ec5a89b51a26d5dd89559f86e6e4d6c3e8fe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5467978
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1290122}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5477908
+Auto-Submit: Tommy Steimel <steimel@chromium.org>
+Commit-Queue: Frank Liberato <liberato@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6367@{#974}
+Cr-Branched-From: d158c6dc6e3604e6f899041972edf26087a49740-refs/heads/main@{#1274542}
+
+diff --git a/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.cc b/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.cc
+index 037813c62c2f0dfc78b3451320a799a349ffde23..572d0803c25a99ef5dfd631e7872b05a681f0444 100644
+--- a/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.cc
++++ b/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.cc
+@@ -8,7 +8,7 @@ namespace blink {
+ 
+ DocumentPictureInPictureEvent* DocumentPictureInPictureEvent::Create(
+     const AtomicString& type,
+-    LocalDOMWindow* document_picture_in_picture_window) {
++    DOMWindow* document_picture_in_picture_window) {
+   return MakeGarbageCollected<DocumentPictureInPictureEvent>(
+       type, document_picture_in_picture_window);
+ }
+@@ -19,13 +19,13 @@ DocumentPictureInPictureEvent* DocumentPictureInPictureEvent::Create(
+   return MakeGarbageCollected<DocumentPictureInPictureEvent>(type, initializer);
+ }
+ 
+-LocalDOMWindow* DocumentPictureInPictureEvent::window() const {
++DOMWindow* DocumentPictureInPictureEvent::window() const {
+   return document_picture_in_picture_window_.Get();
+ }
+ 
+ DocumentPictureInPictureEvent::DocumentPictureInPictureEvent(
+     AtomicString const& type,
+-    LocalDOMWindow* document_picture_in_picture_window)
++    DOMWindow* document_picture_in_picture_window)
+     : Event(type, Bubbles::kYes, Cancelable::kNo),
+       document_picture_in_picture_window_(document_picture_in_picture_window) {}
+ 
+@@ -33,8 +33,7 @@ DocumentPictureInPictureEvent::DocumentPictureInPictureEvent(
+     AtomicString const& type,
+     const DocumentPictureInPictureEventInit* initializer)
+     : Event(type, initializer),
+-      document_picture_in_picture_window_(
+-          static_cast<LocalDOMWindow*>(initializer->window())) {}
++      document_picture_in_picture_window_(initializer->window()) {}
+ 
+ void DocumentPictureInPictureEvent::Trace(Visitor* visitor) const {
+   visitor->Trace(document_picture_in_picture_window_);
+diff --git a/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.h b/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.h
+index 7af2022146905a3c3d71e1420aaa68da30e6a9ce..59cd8cb7a2e3a2e2a81db1d146f8075b13755c0e 100644
+--- a/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.h
++++ b/third_party/blink/renderer/modules/document_picture_in_picture/document_picture_in_picture_event.h
+@@ -6,7 +6,7 @@
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_DOCUMENT_PICTURE_IN_PICTURE_DOCUMENT_PICTURE_IN_PICTURE_EVENT_H_
+ 
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_document_picture_in_picture_event_init.h"
+-#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/dom_window.h"
+ #include "third_party/blink/renderer/modules/event_modules.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+ 
+@@ -18,22 +18,21 @@ class MODULES_EXPORT DocumentPictureInPictureEvent final : public Event {
+   DEFINE_WRAPPERTYPEINFO();
+ 
+  public:
+-  static DocumentPictureInPictureEvent* Create(const AtomicString&,
+-                                               LocalDOMWindow*);
++  static DocumentPictureInPictureEvent* Create(const AtomicString&, DOMWindow*);
+   static DocumentPictureInPictureEvent* Create(
+       const AtomicString&,
+       const DocumentPictureInPictureEventInit*);
+ 
+-  DocumentPictureInPictureEvent(AtomicString const&, LocalDOMWindow*);
++  DocumentPictureInPictureEvent(AtomicString const&, DOMWindow*);
+   DocumentPictureInPictureEvent(AtomicString const&,
+                                 const DocumentPictureInPictureEventInit*);
+ 
+-  LocalDOMWindow* window() const;
++  DOMWindow* window() const;
+ 
+   void Trace(Visitor*) const override;
+ 
+  private:
+-  Member<LocalDOMWindow> document_picture_in_picture_window_;
++  Member<DOMWindow> document_picture_in_picture_window_;
+ };
+ 
+ }  // namespace blink
