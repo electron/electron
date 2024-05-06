@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Johannes Kron <kron@chromium.org>
+Date: Tue, 13 Feb 2024 23:22:49 +0000
+Subject: Update thumbnail size when sources are selected
+
+(cherry picked from commit c1f25647c2fcbf5e5a2d574feb284bc7284b944d)
+
+Bug: b/40281869
+Change-Id: I2d5a3954886bc6a5742321aeab415362da19c0ce
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5285701
+Commit-Queue: Johannes Kron <kron@chromium.org>
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1260137}
+
+diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
+index ebe194e9d4a77d74996cb575364a32b61ccfac52..b27f6348d338d8952716b51825586e5d29b75651 100644
+--- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
++++ b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
+@@ -365,6 +365,8 @@ void API_AVAILABLE(macos(14.0))
+     gfx::Size thumbnail_size) {
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+ 
++  thumbnail_size_ = thumbnail_size;
++
+   // The iteration is in reverse order so that the sources
+   // first in the list are captured first. This way we make sure that the first
+   // thumbnails in the view are captured first.
