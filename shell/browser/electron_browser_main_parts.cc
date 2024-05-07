@@ -28,7 +28,7 @@
 #include "components/os_crypt/sync/key_storage_config_linux.h"
 #include "components/os_crypt/sync/key_storage_util_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
-#include "components/password_manager/core/browser/password_manager_switches.h"
+#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
