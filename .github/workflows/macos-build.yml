@@ -31,7 +31,7 @@ jobs:
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
     - name: Setup Node.js/npm
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: 20.11.x
         cache: yarn
@@ -178,7 +178,7 @@ jobs:
       run: |
         brew update && brew install azure-cli
     - name: Setup Node.js/npm
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: 20.11.x
         cache: yarn
@@ -512,7 +512,7 @@ jobs:
       with:
         path: src/electron
     - name: Setup Node.js/npm
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: 20.11.x
         cache: yarn
