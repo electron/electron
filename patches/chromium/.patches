@@ -138,3 +138,4 @@ bindings_refactor_domdatastore.patch
 merge_fix_domarraybuffer_isdetached_and_comment_out_a_check.patch
 cherry-pick-98bcf9ef5cdd.patch
 cherry-pick-c1f25647c2fc.patch
+a11y_avoid_clearing_resetting_focus_on_an_already_focus_event.patch
