@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
 Date: Fri, 8 Mar 2024 21:16:50 +0000
-Subject: [a11y] Avoid clearing/resetting focus on an already focus event
+Subject: Avoid clearing/resetting focus on an already focus event
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
