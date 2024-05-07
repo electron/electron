@@ -57,6 +57,7 @@
     "klaw": "^3.0.0",
     "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
+    "markdownlint-cli2": "^0.13.0",
     "minimist": "^1.2.6",
     "null-loader": "^4.0.0",
     "pre-flight": "^1.1.0",
@@ -139,7 +140,7 @@
     ],
     "docs/api/**/*.md": [
       "ts-node script/gen-filenames.ts",
-      "electron-markdownlint --config .markdownlint.autofix.json --fix",
+      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix",
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
