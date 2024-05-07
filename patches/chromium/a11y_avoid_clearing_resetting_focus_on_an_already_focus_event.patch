@@ -31,10 +31,10 @@ Auto-Submit: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
 Cr-Commit-Position: refs/heads/main@{#1270380}
 
 diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
-index a94e88e79c4fb5ed1336a776eafe3e302f5d50f8..a5c4b06e278f805e81799b2d19f27bffe0701c68 100644
+index ab0b45feae0fe0dbe6a98c4daf45d097b11ba86f..5c7bd43aac78fa41c7a9b2acad97569bf98a2b45 100644
 --- a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
 +++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
-@@ -5095,19 +5095,6 @@ bool AXNodeObject::OnNativeFocusAction() {
+@@ -5087,19 +5087,6 @@ bool AXNodeObject::OnNativeFocusAction() {
      return true;
    }
  
