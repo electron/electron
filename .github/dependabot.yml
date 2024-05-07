@@ -5,7 +5,5 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
-    groups:
-      github-actions:
     schedule:
       interval: weekly
