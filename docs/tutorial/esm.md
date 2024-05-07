@@ -78,7 +78,8 @@ JavaScript transpilers (e.g. Babel, TypeScript) have historically supported ES M
 syntax before Node.js supported ESM imports by turning these calls to CommonJS
 `require` calls.
 
-<details><summary>Example: @babel/plugin-transform-modules-commonjs</summary>
+<details>
+<summary>Example: @babel/plugin-transform-modules-commonjs</summary>
 
 The `@babel/plugin-transform-modules-commonjs` plugin will transform
 ESM imports down to `require` calls. The exact syntax will depend on the
