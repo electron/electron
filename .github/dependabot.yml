@@ -7,7 +7,5 @@ updates:
     directory: /
     groups:
       github-actions:
-        patterns:
-          - "*"  # Group all Actions updates into a single larger pull request
     schedule:
       interval: weekly
