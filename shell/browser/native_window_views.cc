@@ -1070,6 +1070,11 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
   return widget()->GetZOrderLevel();
 }
 
+// We previous called widget()->CenterWindow() here, but in
+// Chromium CL 4916277 behavior was changed to center relative to the
+// parent window if there is one. We want to keep the old behavior
+// for now to avoid breaking API contract, but should consider the long
+// term plan for this aligning with upstream.
 void NativeWindowViews::Center() {
 #if BUILDFLAG(IS_LINUX)
   auto display =

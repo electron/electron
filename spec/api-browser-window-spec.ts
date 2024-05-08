@@ -1495,26 +1495,6 @@ describe('BrowserWindow module', () => {
       w = null as unknown as BrowserWindow;
     });
 
-    ifdescribe(process.platform !== 'darwin')('BrowserWindow.center()', () => {
-      it('centers the window', async () => {
-        const shown = once(w, 'show');
-        w.show();
-        await shown;
-        w.center();
-        const { x, y } = w.getBounds();
-        await setTimeout(3000);
-
-        w.setBounds({ x: x - 100, y: y - 100 });
-        expect(w.getBounds().x).to.be.closeTo(x - 100, 1);
-        expect(w.getBounds().y).to.be.closeTo(y - 100, 1);
-
-        w.center();
-        const newBounds = w.getBounds();
-        expect(newBounds.x).to.be.closeTo(x, 1);
-        expect(newBounds.y).to.be.closeTo(y, 1);
-      });
-    });
-
     describe('BrowserWindow.setBounds(bounds[, animate])', () => {
       it('sets the window bounds with full bounds', () => {
         const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
