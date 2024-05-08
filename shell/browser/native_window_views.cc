@@ -39,6 +39,7 @@
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/ozone/public/ozone_platform.h"
@@ -80,9 +81,9 @@
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
-#include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
+#include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
 
@@ -1070,7 +1071,17 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
 }
 
 void NativeWindowViews::Center() {
-  widget()->CenterWindow(GetSize());
+#if BUILDFLAG(IS_LINUX)
+  auto display =
+      display::Screen::GetScreen()->GetDisplayNearestWindow(GetNativeWindow());
+  gfx::Rect window_bounds_in_screen = display.work_area();
+  window_bounds_in_screen.ClampToCenteredSize(GetSize());
+  widget()->SetBounds(window_bounds_in_screen);
+#else
+  HWND hwnd = GetAcceleratedWidget();
+  gfx::Size size = display::win::ScreenWin::DIPToScreenSize(hwnd, GetSize());
+  gfx::CenterAndSizeWindow(hwnd, hwnd, size);
+#endif
 }
 
 void NativeWindowViews::Invalidate() {
