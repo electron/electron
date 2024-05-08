@@ -1,7 +1,7 @@
-From c67f290ef0f0433acb766c024d28c6f59f48b909 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
 Date: Mon, 29 Apr 2024 15:27:36 -0400
-Subject: [PATCH] M124: GL: Sync unpack state for glCompressedTexSubImage3D
+Subject: M124: GL: Sync unpack state for glCompressedTexSubImage3D
 
 Unpack state is supposed to be ignored for compressed tex image calls
 but some drivers use it anyways and read incorrect data.
@@ -17,13 +17,12 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5518811
 Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
 Reviewed-by: Srinivas Sista <srinivassista@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 2481c65..71ad147 100644
+index c659aacb9e48d7eab033f0ea59d3514f557a430b..f96eefe53f11a8a57fc88998c2ba22a2dacf1d65 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
-@@ -664,6 +664,7 @@
+@@ -664,6 +664,7 @@ angle::Result TextureGL::setCompressedSubImage(const gl::Context *context,
          nativegl::GetCompressedSubTexImageFormat(functions, features, format);
  
      stateManager->bindTexture(getType(), mTextureID);
