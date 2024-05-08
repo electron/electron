@@ -394,36 +394,6 @@ index 994b9573822fd3eb0588e87edaa0e505aa5102fb..bb84f5ab43cb5be42019921e5dc2fc01
  #if OPENSSL_VERSION_MAJOR >= 3
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
-diff --git a/src/node.cc b/src/node.cc
-index 10e04ed8a28bd010e4887ad5b9af3886f7b32a53..012dd487e8db232d068bce358ad44b14e78d0fe9 100644
---- a/src/node.cc
-+++ b/src/node.cc
-@@ -1079,7 +1079,8 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
-   }
- 
-   if (!(flags & ProcessInitializationFlags::kNoInitOpenSSL)) {
--#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
-+#if HAVE_OPENSSL
-+#if !defined(OPENSSL_IS_BORINGSSL)
-     auto GetOpenSSLErrorString = []() -> std::string {
-       std::string ret;
-       ERR_print_errors_cb(
-@@ -1179,13 +1180,13 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
-       CHECK(crypto::CSPRNG(buffer, length).is_ok());
-       return true;
-     });
--
-+#endif // !defined(OPENSSL_IS_BORINGSSL)
-     {
-       std::string extra_ca_certs;
-       if (credentials::SafeGetenv("NODE_EXTRA_CA_CERTS", &extra_ca_certs))
-         crypto::UseExtraCaCerts(extra_ca_certs);
-     }
--#endif  // HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
-+#endif  // HAVE_OPENSSL
-   }
- 
-   if (!(flags & ProcessInitializationFlags::kNoInitializeNodeV8Platform)) {
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
 index 844c5ac2c2b948b3be35cb3e447717a510a463a6..72a75ee0bf391ea508441f49413f85c5b735b259 100644
 --- a/src/node_metadata.cc
