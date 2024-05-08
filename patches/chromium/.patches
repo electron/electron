@@ -153,3 +153,4 @@ fix_paintimage_deserialization_arbitrary-read_issue.patch
 reland_sensors_winrt_call_onreadingchangedcallback_via.patch
 cherry-pick-1b1f34234346.patch
 cherry-pick-98bcf9ef5cdd.patch
+cherry-pick-013961609785.patch
