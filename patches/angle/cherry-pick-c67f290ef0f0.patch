@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 29 Apr 2024 15:27:36 -0400
+Subject: M124: GL: Sync unpack state for glCompressedTexSubImage3D
+
+Unpack state is supposed to be ignored for compressed tex image calls
+but some drivers use it anyways and read incorrect data.
+
+Texture3DTestES3.PixelUnpackStateTexSubImage covers this case.
+
+Bug: chromium:337766133
+Change-Id: Ic11a056113b1850bd5b4d6840527164a12849a22
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5498735
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit 1bb1ee061fe0bce322fb93b447a72e72c993a1f2)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5518811
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Reviewed-by: Srinivas Sista <srinivassista@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index c659aacb9e48d7eab033f0ea59d3514f557a430b..f96eefe53f11a8a57fc88998c2ba22a2dacf1d65 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -664,6 +664,7 @@ angle::Result TextureGL::setCompressedSubImage(const gl::Context *context,
+         nativegl::GetCompressedSubTexImageFormat(functions, features, format);
+ 
+     stateManager->bindTexture(getType(), mTextureID);
++    ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
+     if (nativegl::UseTexImage2D(getType()))
+     {
+         ASSERT(area.z == 0 && area.depth == 1);
