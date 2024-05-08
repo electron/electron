@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Date: Fri, 8 Mar 2024 21:16:50 +0000
+Subject: Avoid clearing/resetting focus on an already focus event
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When we set the focus via an accessibility API on an element that
+is already focused, we first remove the focus and reset it. This
+leads to blur/focusout/focusin events being fired again.
+
+This behavior is different than the one we get when we set focus
+programmatically, with a mouse, or a keyboard, on an already
+focused element. In order to keep the same experience across all
+input modalities, this CL removes the divergent focus behavior
+for accessibility APIs.
+
+We tried to remove this code two years ago (CL:3547796) but it
+got reverted due to bug:40850837. This time, I made sure to discuss
+this issue with the Chrome Android accessibility owners to make 
+sure it's safe to remove. They landed CL:5345750, and then gave
+us the green light to land this CL.
+
+Fixed: 40830307
+Change-Id: I8ad70ed6813e0ae52238292f1b7e6d038a5238f1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5356613
+Reviewed-by: Mark Schillaci <mschillaci@google.com>
+Commit-Queue: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Auto-Submit: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1270380}
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+index ab0b45feae0fe0dbe6a98c4daf45d097b11ba86f..5c7bd43aac78fa41c7a9b2acad97569bf98a2b45 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+@@ -5087,19 +5087,6 @@ bool AXNodeObject::OnNativeFocusAction() {
+     return true;
+   }
+ 
+-  // If this node is already the currently focused node, then calling
+-  // focus() won't do anything.  That is a problem when focus is removed
+-  // from the webpage to chrome, and then returns.  In these cases, we need
+-  // to do what keyboard and mouse focus do, which is reset focus first.
+-  if (document->FocusedElement() == element) {
+-    document->ClearFocusedElement();
+-
+-    // Calling ClearFocusedElement could result in changes to the document,
+-    // like this AXObject becoming detached.
+-    if (IsDetached())
+-      return false;
+-  }
+-
+   if (base::FeatureList::IsEnabled(blink::features::kSimulateClickOnAXFocus)) {
+     // If the object is not natively focusable but can be focused using an ARIA
+     // active descendant, perform a native click instead. This will enable Web
