@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matteo Collina <hello@matteocollina.com>
+Date: Thu, 7 Mar 2024 17:28:25 +0100
+Subject: stream: do not defer construction by one microtick
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes: https://github.com/nodejs/node/issues/51993
+PR-URL: https://github.com/nodejs/node/pull/52005
+Reviewed-By: Robert Nagy <ronagy@icloud.com>
+Reviewed-By: Michaël Zasso <targos@protonmail.com>
+
+diff --git a/lib/internal/streams/destroy.js b/lib/internal/streams/destroy.js
+index cfb49f2c7c72730356e530e22cb13adca38f5991..08f1fca0d5de26c80839e30b33e96ff2a59561eb 100644
+--- a/lib/internal/streams/destroy.js
++++ b/lib/internal/streams/destroy.js
+@@ -267,7 +267,7 @@ function constructNT(stream) {
+     } else if (err) {
+       errorOrDestroy(stream, err, true);
+     } else {
+-      process.nextTick(emitConstructNT, stream);
++      stream.emit(kConstruct);
+     }
+   }
+ 
+@@ -280,10 +280,6 @@ function constructNT(stream) {
+   }
+ }
+ 
+-function emitConstructNT(stream) {
+-  stream.emit(kConstruct);
+-}
+-
+ function isRequest(stream) {
+   return stream?.setHeader && typeof stream.abort === 'function';
+ }
