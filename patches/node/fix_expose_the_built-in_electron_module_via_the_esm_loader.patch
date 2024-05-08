@@ -111,7 +111,7 @@ diff --git a/lib/internal/url.js b/lib/internal/url.js
 index 428c2f1bec4a8e149b8058406d1393a6690ff31a..979455cb44f5edba6d178a6c36a330d707a2395e 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1457,6 +1457,8 @@ function fileURLToPath(path) {
+@@ -1459,6 +1459,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
@@ -119,4 +119,5 @@ index 428c2f1bec4a8e149b8058406d1393a6690ff31a..979455cb44f5edba6d178a6c36a330d7
 +    return 'electron';
    if (path.protocol !== 'file:')
      throw new ERR_INVALID_URL_SCHEME('file');
-   return isWindows ? getPathFromURLWin32(path) : getPathFromURLPosix(path);
+   return (windows ?? isWindows) ? getPathFromURLWin32(path) : getPathFromURLPosix(path);
+
