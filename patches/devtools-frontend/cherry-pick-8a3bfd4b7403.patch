@@ -1,0 +1,41 @@
+From 8a3bfd4b74038b16733245dde9a94c1a99522852 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Tue, 09 Jan 2024 16:47:29 -0800
+Subject: [PATCH] Add support of the Worklet target
+
+This is in preparation for the back-end to report regular renderer
+based worklets (such as CSS / Animation / Audio) as worklets rather
+than workers. A sepratate target type from workers is needed since
+unlike workers, these lack support for multiple domains, including
+Network and Target.
+
+Bug: 1517088
+Change-Id: Id2919baaeec90c9259ace33e7249b5eccec031b7
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/5183275
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Commit-Queue: Danil Somsikov <dsv@chromium.org>
+Auto-Submit: Andrey Kosyakov <caseq@chromium.org>
+---
+
+diff --git a/front_end/core/sdk/Target.ts b/front_end/core/sdk/Target.ts
+index 736c567..7d2e42b 100644
+--- a/front_end/core/sdk/Target.ts
++++ b/front_end/core/sdk/Target.ts
+@@ -70,6 +70,9 @@
+         this.#capabilitiesMask = Capability.JS | Capability.Log | Capability.Network | Capability.Target |
+             Capability.IO | Capability.Media | Capability.Emulation | Capability.EventBreakpoints;
+         break;
++      case Type.Worklet:
++        this.#capabilitiesMask = Capability.JS | Capability.Log | Capability.EventBreakpoints;
++        break;
+       case Type.Node:
+         this.#capabilitiesMask = Capability.JS;
+         break;
+@@ -254,6 +257,7 @@
+   Node = 'node',
+   Browser = 'browser',
+   AuctionWorklet = 'auction-worklet',
++  Worklet = 'worklet',
+   Tab = 'tab',
+ }
+ 
