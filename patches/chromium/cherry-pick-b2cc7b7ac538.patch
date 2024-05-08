@@ -1,7 +1,7 @@
-From b2cc7b7ac538b11bbe08f0d3141c31f4a7ca5894 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
-Date: Wed, 08 May 2024 15:32:48 +0000
-Subject: [PATCH] Viz: Tolerate SinkGroup destruction during submit
+Date: Wed, 8 May 2024 15:32:48 +0000
+Subject: Viz: Tolerate SinkGroup destruction during submit
 
 Fixed: 339266700
 Change-Id: I8c0ea8c540948016346b00db64fe33260d2446f0
@@ -10,10 +10,9 @@ Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
 Reviewed-by: Jonathan Ross <jonross@chromium.org>
 Commit-Queue: Ken Rockot <rockot@google.com>
 Cr-Commit-Position: refs/heads/main@{#1298119}
----
 
 diff --git a/components/viz/service/frame_sinks/frame_sink_bundle_impl.cc b/components/viz/service/frame_sinks/frame_sink_bundle_impl.cc
-index 3d4c5e5..3fce9ac 100644
+index a43e274a920a7cc189652c29eb2fe4a09ab66ded..9fefc2446d9c95964db512e4c98654c3fcc4e8b4 100644
 --- a/components/viz/service/frame_sinks/frame_sink_bundle_impl.cc
 +++ b/components/viz/service/frame_sinks/frame_sink_bundle_impl.cc
 @@ -4,12 +4,15 @@
@@ -32,7 +31,7 @@ index 3d4c5e5..3fce9ac 100644
  #include "build/build_config.h"
  #include "components/viz/service/frame_sinks/compositor_frame_sink_impl.h"
  #include "components/viz/service/frame_sinks/frame_sink_manager_impl.h"
-@@ -45,6 +48,10 @@
+@@ -45,6 +48,10 @@ class FrameSinkBundleImpl::SinkGroup : public BeginFrameObserver {
  
    bool IsEmpty() const { return frame_sinks_.empty(); }
  
@@ -43,7 +42,7 @@ index 3d4c5e5..3fce9ac 100644
    void AddFrameSink(uint32_t sink_id) {
      frame_sinks_.insert(sink_id);
  
-@@ -206,6 +213,8 @@
+@@ -206,6 +213,8 @@ class FrameSinkBundleImpl::SinkGroup : public BeginFrameObserver {
    std::set<uint32_t> unacked_submissions_;
  
    BeginFrameArgs last_used_begin_frame_args_;
@@ -52,7 +51,7 @@ index 3d4c5e5..3fce9ac 100644
  };
  
  FrameSinkBundleImpl::FrameSinkBundleImpl(
-@@ -282,8 +291,9 @@
+@@ -282,8 +291,9 @@ void FrameSinkBundleImpl::SetWantsBeginFrameAcks(uint32_t sink_id) {
  
  void FrameSinkBundleImpl::Submit(
      std::vector<mojom::BundledFrameSubmissionPtr> submissions) {
@@ -64,7 +63,7 @@ index 3d4c5e5..3fce9ac 100644
    // Count the frame submissions before processing anything. This ensures that
    // any frames submitted here will be acked together in a batch, and not acked
    // individually in case they happen to ack synchronously within
-@@ -294,10 +304,10 @@
+@@ -294,10 +304,10 @@ void FrameSinkBundleImpl::Submit(
    // through to the client without batching.
    for (auto& submission : submissions) {
      if (auto* group = GetSinkGroup(submission->sink_id)) {
@@ -77,7 +76,7 @@ index 3d4c5e5..3fce9ac 100644
        }
      }
    }
-@@ -327,12 +337,16 @@
+@@ -327,12 +337,16 @@ void FrameSinkBundleImpl::Submit(
      }
    }
  
