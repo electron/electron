@@ -455,7 +455,15 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
   // Make sure we're about to launch a known executable
+#if BUILDFLAG(IS_LINUX)
+  // On Linux, do not perform this check for /proc/self/exe. It will always
+  // point to the currently running executable so this check is not
+  // necessary, and if the executable has been deleted it will return a fake
+  // name that causes this check to fail.
+  if (command_line->GetProgram() != base::FilePath(base::kProcSelfExe)) {
+#else
   {
+#endif
     ScopedAllowBlockingForElectron allow_blocking;
     base::FilePath child_path;
     base::FilePath program =
