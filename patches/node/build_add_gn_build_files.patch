@@ -2365,7 +2365,7 @@ index 0000000000000000000000000000000000000000..a6cdf33f2c0bcca4d7b4eacaa407f1ac
 +      transformed_f.write(transformed_contents)
 +
 diff --git a/tools/install.py b/tools/install.py
-index 17b0947aaca4cd63ce6b57ffc4835eae7f74e76e..c6fa8a931f6a1357592a8447b1abbfe0c894aefd 100755
+index b132c7bf26c02886a7ab341a1973bf449744ba0f..171b383a4b6c2528d11dd5f89a6837fd071bcf4b 100755
 --- a/tools/install.py
 +++ b/tools/install.py
 @@ -284,6 +284,7 @@ def headers(options, action):
@@ -2388,7 +2388,7 @@ index 17b0947aaca4cd63ce6b57ffc4835eae7f74e76e..c6fa8a931f6a1357592a8447b1abbfe0
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index 0fa9c5954d24a555a1e7c50fdb4b43c17cb1452d..9a77af51630aec5437a09aae1d7296e2e1238809
+index e0f3d8844718ab8a6478c40ff713c1fd6bcff95a..c73a5b666dbaf555c749d836c20a7ae19a840847
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -30,6 +30,7 @@ namespace js2c {
