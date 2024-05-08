@@ -24,10 +24,10 @@ index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c2
        wrap->object()->Has(env->context(), env->handle_onclose_symbol())
        .FromMaybe(false)) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index e9d50ac402b01208eb06504afcdfaf8d1e982bcd..c728c11145bdc7bfce59c3c20fa43508ea4482fb 100644
+index ca8575e9a21b9a0b8089484a04abe702b2fe6d4e..df1d9cb4fd0442ec6ce6164a136b7a5fbcbe5b67 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -459,6 +459,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
+@@ -460,6 +460,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
  void ContextifyContext::PropertyGetterCallback(
      Local<Name> property,
      const PropertyCallbackInfo<Value>& args) {
@@ -35,7 +35,7 @@ index e9d50ac402b01208eb06504afcdfaf8d1e982bcd..c728c11145bdc7bfce59c3c20fa43508
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -466,6 +467,8 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -467,6 +468,8 @@ void ContextifyContext::PropertyGetterCallback(
  
    Local<Context> context = ctx->context();
    Local<Object> sandbox = ctx->sandbox();
@@ -44,7 +44,7 @@ index e9d50ac402b01208eb06504afcdfaf8d1e982bcd..c728c11145bdc7bfce59c3c20fa43508
    MaybeLocal<Value> maybe_rv =
        sandbox->GetRealNamedProperty(context, property);
    if (maybe_rv.IsEmpty()) {
-@@ -475,6 +478,11 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -476,6 +479,11 @@ void ContextifyContext::PropertyGetterCallback(
  
    Local<Value> rv;
    if (maybe_rv.ToLocal(&rv)) {

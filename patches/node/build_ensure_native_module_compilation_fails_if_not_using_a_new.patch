@@ -7,10 +7,10 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 292cd621dd6d2a6bfcbf959c5910563446492fd9..722b4c3d376ce6eaa683397b693f9bad8f2aa584 100644
+index 096cb79db88ce65c3cc57111feb673f37cfd3bb1..a2b0c2a12160b1f59379c552b30b91c3ee65cc12 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -86,6 +86,8 @@
+@@ -87,6 +87,8 @@
      'v8_use_perfetto': 0,
      'tsan%': 0,
  
@@ -19,7 +19,7 @@ index 292cd621dd6d2a6bfcbf959c5910563446492fd9..722b4c3d376ce6eaa683397b693f9bad
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -285,6 +287,7 @@
+@@ -286,6 +288,7 @@
      # Defines these mostly for node-gyp to pickup.
      'defines': [
        '_GLIBCXX_USE_CXX11_ABI=1',
@@ -27,7 +27,7 @@ index 292cd621dd6d2a6bfcbf959c5910563446492fd9..722b4c3d376ce6eaa683397b693f9bad
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -391,6 +394,11 @@
+@@ -415,6 +418,11 @@
            }],
          ],
        }],
@@ -40,10 +40,10 @@ index 292cd621dd6d2a6bfcbf959c5910563446492fd9..722b4c3d376ce6eaa683397b693f9bad
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index 00c8513d6820ec862bffb06063e9b1ae27d6043d..8169c674d672b7206b3765bcbf68cde04ba2d915 100755
+index 11c0df455451d4ab4bea066a8361246cbf10bf1d..c30052f02f97df78e0d9294784cb3efb3fd2d1a7 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1496,6 +1496,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1501,6 +1501,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):
@@ -52,7 +52,7 @@ index 00c8513d6820ec862bffb06063e9b1ae27d6043d..8169c674d672b7206b3765bcbf68cde0
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 13e29b98d0c91badee41b53c37b4763f73e02e87..16c3ad349e942b83764c7772178baa5057cd64f3 100644
+index c267ed1eeaa2d8b6ecd5a1563a4e9440bf0cca00..e55256996f2c85b0ae3854cbd1b83ca88a3e22cb 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

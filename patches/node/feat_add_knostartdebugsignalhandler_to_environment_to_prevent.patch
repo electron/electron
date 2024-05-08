@@ -7,10 +7,10 @@ Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
 This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 022f1507ce6a72d0ef140409efba476c7ef7825a..ac4295f495e240331a183b4a0a22d7437fc85271 100644
+index 099e7352e68af6179f143741c626d8f539b568bb..63ce35ba68b48a55d8150395304bf86c2bf23aae 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -669,6 +669,10 @@ inline bool Environment::no_global_search_paths() const {
+@@ -677,6 +677,10 @@ inline bool Environment::no_global_search_paths() const {
           !options_->global_search_paths;
  }
  
@@ -22,7 +22,7 @@ index 022f1507ce6a72d0ef140409efba476c7ef7825a..ac4295f495e240331a183b4a0a22d743
    // configure --no-browser-globals
  #ifdef NODE_NO_BROWSER_GLOBALS
 diff --git a/src/env.h b/src/env.h
-index bb84f5ab43cb5be42019921e5dc2fc010d7b9018..f0a1d5ef2b45d4c27c5660177c9805acee19e5f2 100644
+index c0c99456471788d40218152291a32db5fbdf1101..910c69b6d1d17ef25201dbb39d3d074f4f3f011f 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -801,6 +801,7 @@ class Environment : public MemoryRetainer {
@@ -51,10 +51,10 @@ index 63c8ae14abb3dee3c4a628d1042c2e9e25688806..4e1eb17dd174e18a814fce6b170d75d1
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index dbe6aa42075524f66a8f76bb945255f5195359cd..13e29b98d0c91badee41b53c37b4763f73e02e87 100644
+index 24dd1d9fe8de5993863f9fcd0ce7f65ec5460cce..c267ed1eeaa2d8b6ecd5a1563a4e9440bf0cca00 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -657,7 +657,11 @@ enum Flags : uint64_t {
+@@ -658,7 +658,11 @@ enum Flags : uint64_t {
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where one has already been created,
    // e.g. Blink's in Chromium.
