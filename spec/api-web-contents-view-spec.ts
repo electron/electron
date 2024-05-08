@@ -1,8 +1,10 @@
 import { closeAllWindows } from './lib/window-helpers';
 import { expect } from 'chai';
 
-import { BaseWindow, View, WebContentsView } from 'electron/main';
+import { BaseWindow, View, WebContentsView, webContents } from 'electron/main';
 import { once } from 'node:events';
+import { defer } from './lib/spec-helpers';
+import { BrowserWindow } from 'electron';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
@@ -15,6 +17,48 @@ describe('WebContentsView', () => {
   it('can be instantiated with no webPreferences', () => {
     // eslint-disable-next-line no-new
     new WebContentsView({});
+  });
+
+  it('accepts existing webContents object', async () => {
+    const currentWebContentsCount = webContents.getAllWebContents().length;
+
+    const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
+    defer(() => wc.destroy());
+    await wc.loadURL('about:blank');
+
+    const webContentsView = new WebContentsView({
+      webContents: wc
+    });
+
+    expect(webContentsView.webContents).to.eq(wc);
+    expect(webContents.getAllWebContents().length).to.equal(currentWebContentsCount + 1, 'expected only single webcontents to be created');
+  });
+
+  it('should throw error when created with already attached webContents to BrowserWindow', () => {
+    const browserWindow = new BrowserWindow();
+    defer(() => browserWindow.webContents.destroy());
+
+    const webContentsView = new WebContentsView();
+    defer(() => webContentsView.webContents.destroy());
+
+    browserWindow.contentView.addChildView(webContentsView);
+    defer(() => browserWindow.contentView.removeChildView(webContentsView));
+
+    expect(() => new WebContentsView({
+      webContents: webContentsView.webContents
+    })).to.throw('options.webContents is already attached to a window');
+  });
+
+  it('should throw error when created with already attached webContents to other WebContentsView', () => {
+    const browserWindow = new BrowserWindow();
+
+    const webContentsView = new WebContentsView();
+    defer(() => webContentsView.webContents.destroy());
+    webContentsView.webContents.loadURL('about:blank');
+
+    expect(() => new WebContentsView({
+      webContents: browserWindow.webContents
+    })).to.throw('options.webContents is already attached to a window');
   });
 
   it('can be used as content view', () => {
