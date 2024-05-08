@@ -570,17 +570,16 @@ index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc
  };
  
  const decryptError = common.hasOpenSSL3 ?
-@@ -221,8 +220,8 @@ function test_rsa(padding, encryptOaepHash, decryptOaepHash) {
-     oaepHash: encryptOaepHash
+@@ -222,7 +222,8 @@ function test_rsa(padding, encryptOaepHash, decryptOaepHash) {
    }, bufferToEncrypt);
  
--
+ 
 -  if (padding === constants.RSA_PKCS1_PADDING) {
 +  // BoringSSL does not support RSA_PKCS1_PADDING.
 +  if (false) {
-     assert.throws(() => {
-       crypto.privateDecrypt({
-         key: rsaKeyPem,
+     // TODO(richardlau): see if it's possible to determine implicit rejection
+     // support when dynamically linked against OpenSSL.
+     if (!process.config.variables.node_shared_openssl) {
 @@ -415,7 +414,7 @@ assert.throws(() => {
    assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
  }
