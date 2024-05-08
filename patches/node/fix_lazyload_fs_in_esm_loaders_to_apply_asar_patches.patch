@@ -81,8 +81,8 @@ diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/
 index 11d64bfd66259a5c5cf089de713af35ec9cde2aa..4831f3678cde9b4edad04922932c8239a7908a04 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -32,7 +32,7 @@ function lazyTypes() {
- const { containsModuleSyntax } = internalBinding('contextify');
+@@ -36,7 +36,7 @@ const {
+ 
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
 -const { readFileSync } = require('fs');
