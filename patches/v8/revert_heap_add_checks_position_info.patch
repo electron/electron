@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Tue, 7 May 2024 15:50:31 -0700
+Subject: Revert "[heap] Add checks for ensuring position info slow path is not
+ used in heap snapshot"
+
+This reverts commit ca51566b53be5507ff184704767c7a9220a68733.
+
+diff --git a/src/common/assert-scope.cc b/src/common/assert-scope.cc
+index 0ea1a04fed062658fa36c239d323e70d0358b57d..1b996b14e490a6fe1b3636f9147728f07cca141f 100644
+--- a/src/common/assert-scope.cc
++++ b/src/common/assert-scope.cc
+@@ -108,8 +108,6 @@ template class PerThreadAssertScope<CODE_DEPENDENCY_CHANGE_ASSERT, true>;
+ template class PerThreadAssertScope<CODE_ALLOCATION_ASSERT, false>;
+ template class PerThreadAssertScope<CODE_ALLOCATION_ASSERT, true>;
+ template class PerThreadAssertScope<GC_MOLE, false>;
+-template class PerThreadAssertScope<POSITION_INFO_SLOW_ASSERT, false>;
+-template class PerThreadAssertScope<POSITION_INFO_SLOW_ASSERT, true>;
+ 
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/common/assert-scope.h b/src/common/assert-scope.h
+index 27fbc04bc880f2ea68dc7a126b8091a3b5ab4025..42d9649c5250c06a4d39ba0306cbdea0b0e5a8c3 100644
+--- a/src/common/assert-scope.h
++++ b/src/common/assert-scope.h
+@@ -30,7 +30,6 @@ enum PerThreadAssertType {
+   CODE_ALLOCATION_ASSERT,
+   // Dummy type for disabling GC mole.
+   GC_MOLE,
+-  POSITION_INFO_SLOW_ASSERT,
+ };
+ 
+ template <PerThreadAssertType kType, bool kAllow>
+@@ -258,14 +257,6 @@ using DisallowGarbageCollection =
+ // work.
+ using DisableGCMole = PerThreadAssertScopeDebugOnly<GC_MOLE, false>;
+ 
+-// Scope to ensure slow path for obtaining position info is not called
+-using DisallowPositionInfoSlow =
+-    PerThreadAssertScopeDebugOnly<POSITION_INFO_SLOW_ASSERT, false>;
+-
+-// Scope to add an exception to disallowing position info slow path
+-using AllowPositionInfoSlow =
+-    PerThreadAssertScopeDebugOnly<POSITION_INFO_SLOW_ASSERT, true>;
+-
+ // The DISALLOW_GARBAGE_COLLECTION macro can be used to define a
+ // DisallowGarbageCollection field in classes that isn't present in release
+ // builds.
+@@ -337,8 +328,6 @@ extern template class PerThreadAssertScope<CODE_DEPENDENCY_CHANGE_ASSERT, true>;
+ extern template class PerThreadAssertScope<CODE_ALLOCATION_ASSERT, false>;
+ extern template class PerThreadAssertScope<CODE_ALLOCATION_ASSERT, true>;
+ extern template class PerThreadAssertScope<GC_MOLE, false>;
+-extern template class PerThreadAssertScope<POSITION_INFO_SLOW_ASSERT, false>;
+-extern template class PerThreadAssertScope<POSITION_INFO_SLOW_ASSERT, true>;
+ 
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 15e428ad2a870cae1c9efcb7fa2426b88d25b3c7..0794d0346eedd69489f70725d26dc206411d6c8b 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -4357,7 +4357,6 @@ namespace {
+ template <typename Char>
+ bool GetPositionInfoSlowImpl(base::Vector<Char> source, int position,
+                              Script::PositionInfo* info) {
+-  DCHECK(DisallowPositionInfoSlow::IsAllowed());
+   if (position < 0) {
+     position = 0;
+   }
+diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
+index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..ceec8ee0ccf178a5671f760835ac0aad8848b0ea 100644
+--- a/src/profiler/heap-snapshot-generator.cc
++++ b/src/profiler/heap-snapshot-generator.cc
+@@ -2994,6 +2994,7 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
+   IsolateSafepointScope scope(heap_);
+ 
+   Isolate* isolate = heap_->isolate();
++  v8_heap_explorer_.PopulateLineEnds();
+   auto temporary_global_object_tags =
+       v8_heap_explorer_.CollectTemporaryGlobalObjectsTags();
+ 
+@@ -3005,7 +3006,6 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
+   // DisallowGarbageCollection scope as the HeapObjectIterator used during
+   // snapshot creation enters a safepoint as well. However, in practice we
+   // already enter a safepoint above so that should never trigger a GC.
+-  DisallowPositionInfoSlow no_position_info_slow;
+ 
+   NullContextForSnapshotScope null_context_scope(isolate);
+ 
+@@ -3016,7 +3016,6 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
+ 
+   snapshot_->AddSyntheticRootEntries();
+ 
+-  v8_heap_explorer_.PopulateLineEnds();
+   if (!FillReferences()) return false;
+ 
+   snapshot_->FillChildren();
+@@ -3087,7 +3086,6 @@ bool HeapSnapshotGenerator::FillReferences() {
+ const int HeapSnapshotJSONSerializer::kNodeFieldsCount = 7;
+ 
+ void HeapSnapshotJSONSerializer::Serialize(v8::OutputStream* stream) {
+-  DisallowHeapAllocation no_heap_allocation;
+   v8::base::ElapsedTimer timer;
+   timer.Start();
+   DCHECK_NULL(writer_);
