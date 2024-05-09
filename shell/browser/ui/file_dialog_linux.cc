@@ -95,13 +95,14 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         GetFilterInfo(settings.filters);
     std::tuple<std::string, bool, bool> extra_settings =
         GetSettingsTuple(settings);
-    dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
-                        base::UTF8ToUTF16(settings.title),
-                        settings.default_path, &file_info /* file_types */,
-                        0 /* file_type_index */,
-                        base::FilePath::StringType() /* default_extension */,
-                        settings.parent_window->GetNativeWindow(),
-                        static_cast<void*>(&extra_settings));
+    dialog_->SelectFile(
+        ui::SelectFileDialog::SELECT_SAVEAS_FILE,
+        base::UTF8ToUTF16(settings.title), settings.default_path,
+        &file_info /* file_types */, 0 /* file_type_index */,
+        base::FilePath::StringType() /* default_extension */,
+        settings.parent_window ? settings.parent_window->GetNativeWindow()
+                               : nullptr,
+        static_cast<void*>(&extra_settings));
   }
 
   void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -117,7 +118,8 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
         settings.default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
-        settings.parent_window->GetNativeWindow(),
+        settings.parent_window ? settings.parent_window->GetNativeWindow()
+                               : nullptr,
         static_cast<void*>(&extra_settings));
   }
 
