@@ -189,6 +189,14 @@ void View::AddChildViewAt(gin::Handle<View> child,
   // has a View, possibly a wrapper view around the underlying platform View.
   if (!view_)
     return;
+
+  // This will CHECK and crash in View::AddChildViewAtImpl if not handled here.
+  if (view_ == child->view()) {
+    gin_helper::ErrorThrower(isolate()).ThrowError(
+        "A view cannot be added as its own child");
+    return;
+  }
+
   size_t index =
       std::min(child_views_.size(), maybe_index.value_or(child_views_.size()));
   child_views_.emplace(child_views_.begin() + index,     // index
