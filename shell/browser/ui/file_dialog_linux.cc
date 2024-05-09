@@ -16,7 +16,6 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/browser/ui/select_file_policy.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/gtk/select_file_dialog_linux_gtk.h"  // nogncheck
@@ -67,14 +66,9 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
  public:
   enum class DialogType { OPEN, SAVE };
 
-  FileChooserDialog() {
-    dialog_ = ui::SelectFileDialog::Create(
-        this, std::make_unique<ElectronSelectFilePolicy>(nullptr));
-  }
+  FileChooserDialog() { dialog_ = ui::SelectFileDialog::Create(this, nullptr); }
 
-  ~FileChooserDialog() override {
-    // TODO(codebytere): anything we need to do here?
-  }
+  ~FileChooserDialog() override = default;
 
   gtk::ExtraSettings GetExtraSettings(const DialogSettings& settings) {
     gtk::ExtraSettings extra;
@@ -107,8 +101,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
                      const DialogSettings& settings) {
-    promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
-        std::move(promise));
+    promise_ = std::move(promise);
     RunSaveDialogImpl(settings);
   }
 
@@ -134,8 +127,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
   void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
                      const DialogSettings& settings) {
-    promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
-        std::move(promise));
+    promise_ = std::move(promise);
     RunOpenDialogImpl(settings);
   }
 
@@ -161,8 +153,10 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     if (callback_) {
       std::move(callback_).Run(dict);
     } else {
-      promise_->Resolve(dict);
+      promise_.Resolve(dict);
     }
+
+    delete this;
   }
 
   void MultiFilesSelected(const std::vector<ui::SelectedFileInfo>& files,
@@ -176,8 +170,10 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     if (callback_) {
       std::move(callback_).Run(dict);
     } else {
-      promise_->Resolve(dict);
+      promise_.Resolve(dict);
     }
+
+    delete this;
   }
 
   void FileSelectionCanceled(void* params) override {
@@ -194,15 +190,17 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     if (callback_) {
       std::move(callback_).Run(dict);
     } else {
-      promise_->Resolve(dict);
+      promise_.Resolve(dict);
     }
+
+    delete this;
   }
 
  private:
   DialogType type_;
   scoped_refptr<ui::SelectFileDialog> dialog_;
   base::OnceCallback<void(gin_helper::Dictionary)> callback_;
-  std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> promise_;
+  gin_helper::Promise<gin_helper::Dictionary> promise_;
 };
 
 }  // namespace
