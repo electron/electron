@@ -31,14 +31,15 @@ DialogSettings::~DialogSettings() = default;
 namespace {
 
 ui::SelectFileDialog::Type GetDialogType(int properties) {
-  if (properties & OPEN_DIALOG_OPEN_FILE) {
+  if (properties & OPEN_DIALOG_OPEN_FILE)
     return ui::SelectFileDialog::SELECT_OPEN_FILE;
-  } else if (properties & OPEN_DIALOG_OPEN_DIRECTORY) {
+    
+  if (properties & OPEN_DIALOG_OPEN_DIRECTORY)
     return ui::SelectFileDialog::SELECT_FOLDER;
-  } else if (properties & OPEN_DIALOG_MULTI_SELECTIONS) {
+    
+  if (properties & OPEN_DIALOG_MULTI_SELECTIONS)
     return ui::SelectFileDialog::SELECT_OPEN_MULTI_FILE;
-  }
-
+    
   return ui::SelectFileDialog::SELECT_OPEN_FILE;
 }
 
@@ -56,18 +57,16 @@ std::tuple<std::string, bool, bool> GetSettingsTuple(
 ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   ui::SelectFileDialog::FileTypeInfo file_type_info;
 
-  for (const auto& filter : filters) {
-    auto [name, extension_group] = filter;
+  for (const auto& [name, extension_group] : filters) {
     file_type_info.extension_description_overrides.push_back(
         base::UTF8ToUTF16(name));
 
-    bool has_all_files_wildcard =
-        std::any_of(extension_group.begin(), extension_group.end(),
-                    [](std::string ext) { return ext == "*"; });
+    const bool has_all_files_wildcard = base::ranges::any_of(
+        extension_group, [](const auto& ext) { return ext == "*"; });
     if (has_all_files_wildcard) {
       file_type_info.include_all_files = true;
     } else {
-      file_type_info.extensions.push_back(extension_group);
+      file_type_info.extensions.emplace_back(extension_group);
     }
   }
 
@@ -224,7 +223,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   dialog->RunOpenDialog(std::move(cb), settings);
 
   run_loop.Run();
-  return paths->size() > 0;
+  return !paths->empty();
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
