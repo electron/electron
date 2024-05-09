@@ -398,12 +398,6 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   CHECK(linux_ui);
   linux_ui_getter_ = std::make_unique<LinuxUiGetterImpl>();
 
-  // Try loading gtk symbols used by Electron.
-  electron::InitializeElectron_gtk(gtk::GetLibGtk());
-  if (!electron::IsElectron_gtkInitialized()) {
-    electron::UninitializeElectron_gtk();
-  }
-
   electron::InitializeElectron_gdk_pixbuf(gtk::GetLibGdkPixbuf());
   CHECK(electron::IsElectron_gdk_pixbufInitialized())
       << "Failed to initialize libgdk_pixbuf-2.0.so.0";

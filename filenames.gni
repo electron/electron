@@ -40,8 +40,6 @@ filenames = {
     "shell/browser/ui/gtk/menu_util.cc",
     "shell/browser/ui/gtk/menu_util.h",
     "shell/browser/ui/message_box_gtk.cc",
-    "shell/browser/ui/select_file_policy.cc",
-    "shell/browser/ui/select_file_policy.h",
     "shell/browser/ui/status_icon_gtk.cc",
     "shell/browser/ui/status_icon_gtk.h",
     "shell/browser/ui/tray_icon_linux.cc",
