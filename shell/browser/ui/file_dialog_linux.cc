@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Microsoft, Gmbh.
+// Copyright (c) 2024 Microsoft, GmbH.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -31,9 +31,6 @@ DialogSettings::~DialogSettings() = default;
 namespace {
 
 ui::SelectFileDialog::Type GetDialogType(int properties) {
-  if (properties & OPEN_DIALOG_OPEN_FILE)
-    return ui::SelectFileDialog::SELECT_OPEN_FILE;
-
   if (properties & OPEN_DIALOG_OPEN_DIRECTORY)
     return ui::SelectFileDialog::SELECT_FOLDER;
 
@@ -75,6 +72,8 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     extra.button_label = settings.button_label;
     extra.show_overwrite_confirmation =
         settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
+    extra.allow_multiple_selection =
+        settings.properties & OPEN_DIALOG_MULTI_SELECTIONS;
     if (type_ == DialogType::SAVE) {
       extra.show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
     } else {
