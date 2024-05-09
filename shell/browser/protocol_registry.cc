@@ -4,7 +4,6 @@
 
 #include "shell/browser/protocol_registry.h"
 
-#include "base/stl_util.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/fuses.h"
 #include "shell/browser/electron_browser_context.h"
@@ -75,8 +74,11 @@ bool ProtocolRegistry::UnregisterProtocol(const std::string& scheme) {
   return handlers_.erase(scheme) != 0;
 }
 
-bool ProtocolRegistry::IsProtocolRegistered(const std::string& scheme) {
-  return base::Contains(handlers_, scheme);
+const HandlersMap::mapped_type* ProtocolRegistry::FindRegistered(
+    const std::string& scheme) const {
+  const auto& map = handlers_;
+  const auto iter = map.find(scheme);
+  return iter != std::end(map) ? &iter->second : nullptr;
 }
 
 bool ProtocolRegistry::InterceptProtocol(ProtocolType type,
@@ -89,8 +91,11 @@ bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {
   return intercept_handlers_.erase(scheme) != 0;
 }
 
-bool ProtocolRegistry::IsProtocolIntercepted(const std::string& scheme) {
-  return base::Contains(intercept_handlers_, scheme);
+const HandlersMap::mapped_type* ProtocolRegistry::FindIntercepted(
+    const std::string& scheme) const {
+  const auto& map = intercept_handlers_;
+  const auto iter = map.find(scheme);
+  return iter != std::end(map) ? &iter->second : nullptr;
 }
 
 }  // namespace electron
