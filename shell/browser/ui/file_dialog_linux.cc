@@ -19,7 +19,7 @@
 #include "shell/browser/ui/select_file_policy.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "ui/gtk/select_file_dialog_linux_gtk.h"
+#include "ui/gtk/select_file_dialog_linux_gtk.h"  // nogncheck
 #include "ui/shell_dialogs/select_file_dialog.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -42,15 +42,6 @@ ui::SelectFileDialog::Type GetDialogType(int properties) {
     return ui::SelectFileDialog::SELECT_OPEN_MULTI_FILE;
 
   return ui::SelectFileDialog::SELECT_OPEN_FILE;
-}
-
-gtk::ExtraSettings GetExtraSettings(const DialogSettings& settings) {
-  gtk::ExtraSettings extra;
-  extra.button_label = settings.button_label;
-  extra.show_overwrite_confirmation =
-      settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
-  extra.show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
-  return extra;
 }
 
 ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
@@ -83,6 +74,20 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
   ~FileChooserDialog() override {
     // TODO(codebytere): anything we need to do here?
+  }
+
+  gtk::ExtraSettings GetExtraSettings(const DialogSettings& settings) {
+    gtk::ExtraSettings extra;
+    extra.button_label = settings.button_label;
+    extra.show_overwrite_confirmation =
+        settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
+    if (type_ == DialogType::SAVE) {
+      extra.show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
+    } else {
+      extra.show_hidden = settings.properties & OPEN_DIALOG_SHOW_HIDDEN_FILES;
+    }
+
+    return extra;
   }
 
   void RunSaveDialogImpl(const DialogSettings& settings) {
