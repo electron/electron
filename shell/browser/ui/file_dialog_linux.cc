@@ -13,6 +13,7 @@
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/select_file_policy.h"
@@ -86,10 +87,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     // TODO(codebytere): anything we need to do here?
   }
 
-  void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
-                     const DialogSettings& settings) {
-    promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
-        std::move(promise));
+  void RunSaveDialogImpl(const DialogSettings& settings) {
     type_ = DialogType::SAVE;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
@@ -105,10 +103,20 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         static_cast<void*>(&extra_settings));
   }
 
-  void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
+  void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
                      const DialogSettings& settings) {
     promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
         std::move(promise));
+    RunSaveDialogImpl(settings);
+  }
+
+  void RunSaveDialog(base::OnceCallback<void(gin_helper::Dictionary)> callback,
+                     const DialogSettings& settings) {
+    callback_ = std::move(callback);
+    RunSaveDialogImpl(settings);
+  }
+
+  void RunOpenDialogImpl(const DialogSettings& settings) {
     type_ = DialogType::OPEN;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
@@ -123,11 +131,25 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         static_cast<void*>(&extra_settings));
   }
 
+  void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
+                     const DialogSettings& settings) {
+    promise_ = std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
+        std::move(promise));
+    RunOpenDialogImpl(settings);
+  }
+
+  void RunOpenDialog(base::OnceCallback<void(gin_helper::Dictionary)> callback,
+                     const DialogSettings& settings) {
+    callback_ = std::move(callback);
+    RunOpenDialogImpl(settings);
+  }
+
   void FileSelected(const ui::SelectedFileInfo& file,
                     int index,
                     void* params) override {
-    v8::HandleScope scope(promise_->isolate());
-    auto dict = gin_helper::Dictionary::CreateEmpty(promise_->isolate());
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("canceled", false);
     if (type_ == DialogType::SAVE) {
       dict.Set("filePath", file.file_path);
@@ -135,33 +157,50 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
       dict.Set("filePaths", std::vector<base::FilePath>{file.file_path});
     }
 
-    promise_->Resolve(dict);
+    if (callback_) {
+      std::move(callback_).Run(dict);
+    } else {
+      promise_->Resolve(dict);
+    }
   }
 
   void MultiFilesSelected(const std::vector<ui::SelectedFileInfo>& files,
                           void* params) override {
-    v8::HandleScope scope(promise_->isolate());
-    auto dict = gin_helper::Dictionary::CreateEmpty(promise_->isolate());
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("canceled", false);
     dict.Set("filePaths", ui::SelectedFileInfoListToFilePathList(files));
-    promise_->Resolve(dict);
+
+    if (callback_) {
+      std::move(callback_).Run(dict);
+    } else {
+      promise_->Resolve(dict);
+    }
   }
 
   void FileSelectionCanceled(void* params) override {
-    v8::HandleScope scope(promise_->isolate());
-    auto dict = gin_helper::Dictionary::CreateEmpty(promise_->isolate());
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("canceled", true);
     if (type_ == DialogType::SAVE) {
       dict.Set("filePath", base::FilePath());
     } else {
       dict.Set("filePaths", std::vector<base::FilePath>());
     }
-    promise_->Resolve(dict);
+
+    if (callback_) {
+      std::move(callback_).Run(dict);
+    } else {
+      promise_->Resolve(dict);
+    }
   }
 
  private:
   DialogType type_;
   scoped_refptr<ui::SelectFileDialog> dialog_;
+  base::OnceCallback<void(gin_helper::Dictionary)> callback_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> promise_;
 };
 
@@ -169,18 +208,21 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
 bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths) {
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  gin_helper::Promise<gin_helper::Dictionary> promise;
-  promise.Then(base::BindOnce(
-      [](base::RunLoop* loop, std::vector<base::FilePath>* paths,
+  auto cb = base::BindOnce(
+      [](base::RepeatingClosure cb, std::vector<base::FilePath>* file_paths,
          gin_helper::Dictionary result) {
-        result.Get("filePaths", paths);
-        loop->Quit();
+        result.Get("filePaths", file_paths);
+        std::move(cb).Run();
       },
-      &run_loop, paths));
+      run_loop.QuitClosure(), paths);
 
   FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunOpenDialog(std::move(promise), settings);
+  dialog->RunOpenDialog(std::move(cb), settings);
+
   run_loop.Run();
   return paths->size() > 0;
 }
@@ -193,14 +235,15 @@ void ShowOpenDialog(const DialogSettings& settings,
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  gin_helper::Promise<gin_helper::Dictionary> promise;
-  promise.Then(base::BindOnce(
-      [](base::RunLoop* loop, base::FilePath* path,
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  auto cb = base::BindOnce(
+      [](base::RepeatingClosure cb, base::FilePath* file_path,
          gin_helper::Dictionary result) {
-        result.Get("filePath", path);
-        loop->Quit();
+        result.Get("filePath", file_path);
+        std::move(cb).Run();
       },
-      &run_loop, path));
+      run_loop.QuitClosure(), path);
 
   FileChooserDialog* dialog = new FileChooserDialog();
   dialog->RunSaveDialog(std::move(promise), settings);
