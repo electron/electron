@@ -674,7 +674,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
   resource_request.site_for_cookies = net::SiteForCookies::FromUrl(gurl);
   resource_request.headers.AddHeadersFromString(headers);
 
-  auto* protocol_registry = ProtocolRegistry::FromBrowserContext(
+  const auto* const protocol_registry = ProtocolRegistry::FromBrowserContext(
       GetDevToolsWebContents()->GetBrowserContext());
   NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
   if (gurl.SchemeIsFile()) {
@@ -683,14 +683,12 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
-  } else if (protocol_registry->IsProtocolRegistered(gurl.scheme())) {
-    auto& protocol_handler = protocol_registry->handlers().at(gurl.scheme());
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-        ElectronURLLoaderFactory::Create(protocol_handler.first,
-                                         protocol_handler.second);
+  } else if (const auto* const protocol_handler =
+                 protocol_registry->FindRegistered(gurl.scheme())) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            std::move(pending_remote)));
+            ElectronURLLoaderFactory::Create(protocol_handler->first,
+                                             protocol_handler->second)));
   } else {
     auto* partition = GetDevToolsWebContents()
                           ->GetBrowserContext()
