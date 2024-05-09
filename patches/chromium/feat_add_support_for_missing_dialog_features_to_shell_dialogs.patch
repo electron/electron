@@ -11,7 +11,7 @@ This CL adds support for the following features to //shell_dialogs:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index 698f97b23f851c02af037880585c82d4494da63f..54f4a3da2641ce1c9e92c133d6369ec7c018c560 100644
+index 698f97b23f851c02af037880585c82d4494da63f..0a3b701a701289a2124214e7421a6383ff7f0320 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
 @@ -243,6 +243,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
@@ -109,10 +109,12 @@ index 698f97b23f851c02af037880585c82d4494da63f..54f4a3da2641ce1c9e92c133d6369ec7
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -473,18 +487,20 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -472,19 +486,21 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+   gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
    gtk_file_chooser_add_filter(chooser, only_folders);
-   gtk_file_chooser_set_select_multiple(chooser, FALSE);
+-  gtk_file_chooser_set_select_multiple(chooser, FALSE);
++  gtk_file_chooser_set_select_multiple(chooser, settings.allow_multiple_selection);
 +  gtk_file_chooser_set_show_hidden(chooser, settings.show_hidden);
    return dialog;
  }
@@ -184,10 +186,10 @@ index 698f97b23f851c02af037880585c82d4494da63f..54f4a3da2641ce1c9e92c133d6369ec7
  }
  
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..0620fb5beb7b96973b6a8320eda00b86a5856353 100644
+index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..af181afd9db1351cd886ba24dd651c7bf2f8a716 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
-@@ -15,6 +15,12 @@
+@@ -15,6 +15,13 @@
  
  namespace gtk {
  
@@ -195,12 +197,13 @@ index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..0620fb5beb7b96973b6a8320eda00b86
 +  std::string button_label;
 +  bool show_overwrite_confirmation = true;
 +  bool show_hidden = false;
++  bool allow_multiple_selection = false;
 +};
 +
  // Implementation of SelectFileDialog that shows a Gtk common dialog for
  // choosing a file or folder. This acts as a modal dialog.
  class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
-@@ -90,19 +96,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -90,19 +97,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    GtkWidget* CreateSelectFolderDialog(Type type,
                                        const std::string& title,
                                        const base::FilePath& default_path,
@@ -228,7 +231,7 @@ index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..0620fb5beb7b96973b6a8320eda00b86
  
    // Removes and returns the |params| associated with |dialog| from
    // |params_map_|.
-@@ -121,7 +131,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -121,7 +132,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
    GtkWidget* CreateFileOpenHelper(const std::string& title,
                                    const base::FilePath& default_path,
