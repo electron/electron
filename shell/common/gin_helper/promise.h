@@ -11,7 +11,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "base/debug/stack_trace.h"
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -134,7 +133,6 @@ class Promise : public PromiseBase {
   template <typename... ResolveType>
   v8::MaybeLocal<v8::Promise> Then(
       base::OnceCallback<void(ResolveType...)> cb) {
-    base::debug::StackTrace().Print();
     static_assert(sizeof...(ResolveType) <= 1,
                   "A promise's 'Then' callback should only receive at most one "
                   "parameter");
