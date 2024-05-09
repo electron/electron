@@ -19,6 +19,7 @@
 #include "shell/browser/ui/select_file_policy.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "ui/gtk/select_file_dialog_linux_gtk.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -33,25 +34,23 @@ namespace {
 ui::SelectFileDialog::Type GetDialogType(int properties) {
   if (properties & OPEN_DIALOG_OPEN_FILE)
     return ui::SelectFileDialog::SELECT_OPEN_FILE;
-    
+
   if (properties & OPEN_DIALOG_OPEN_DIRECTORY)
     return ui::SelectFileDialog::SELECT_FOLDER;
-    
+
   if (properties & OPEN_DIALOG_MULTI_SELECTIONS)
     return ui::SelectFileDialog::SELECT_OPEN_MULTI_FILE;
-    
+
   return ui::SelectFileDialog::SELECT_OPEN_FILE;
 }
 
-// [save_label, show_overwrite_confirmation, show_hidden, ]
-std::tuple<std::string, bool, bool> GetSettingsTuple(
-    const DialogSettings& settings) {
-  bool show_overwrite_confirmation =
+gtk::ExtraSettings GetExtraSettings(const DialogSettings& settings) {
+  gtk::ExtraSettings extra;
+  extra.button_label = settings.button_label;
+  extra.show_overwrite_confirmation =
       settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
-  bool show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
-
-  return std::make_tuple(settings.button_label, show_overwrite_confirmation,
-                         show_hidden);
+  extra.show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
+  return extra;
 }
 
 ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
@@ -90,8 +89,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     type_ = DialogType::SAVE;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
-    std::tuple<std::string, bool, bool> extra_settings =
-        GetSettingsTuple(settings);
+    auto extra_settings = GetExtraSettings(settings);
     dialog_->SelectFile(
         ui::SelectFileDialog::SELECT_SAVEAS_FILE,
         base::UTF8ToUTF16(settings.title), settings.default_path,
@@ -119,8 +117,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     type_ = DialogType::OPEN;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
-    std::tuple<std::string, bool, bool> extra_settings =
-        GetSettingsTuple(settings);
+    auto extra_settings = GetExtraSettings(settings);
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
         settings.default_path, &file_info, 0 /* file_type_index */,
