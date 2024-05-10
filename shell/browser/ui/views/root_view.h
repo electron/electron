@@ -46,7 +46,7 @@ class RootView : public views::View {
   void RegisterAcceleratorsWithFocusManager(ElectronMenuModel* menu_model);
   void UnregisterAcceleratorsWithFocusManager();
 
-  views::View* GetMainView() { return &main_view_; }
+  [[nodiscard]] views::View& main_view() { return main_view_; }
 
   // views::View:
   gfx::Size GetMinimumSize() const override;
