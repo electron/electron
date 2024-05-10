@@ -535,8 +535,9 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), std::nullopt, ukm::kInvalidSourceIdObj,
-          factory_builder, &header_client, nullptr, nullptr, nullptr, nullptr);
+          url::Origin(), net::IsolationInfo(), std::nullopt,
+          ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
+          nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
