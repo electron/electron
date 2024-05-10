@@ -8,10 +8,10 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 7af928a9a030c0bc1efe069f0a4004adc5ae9c14..e1b04e1e2f76a3d9ba4575844e1ae49dd909ecb2 100644
+index 0ef41b4efc339b5e5022927e2ee1cf1da35ad288..8e6ab35f658e59b253667370471a2eb761eb37f6 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
-@@ -47,9 +47,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
+@@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
  }
  #endif
  
@@ -22,7 +22,7 @@ index 7af928a9a030c0bc1efe069f0a4004adc5ae9c14..e1b04e1e2f76a3d9ba4575844e1ae49d
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -57,7 +57,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -58,7 +58,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
  
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 0836ea5c4015ef30622532af1608ef46bc60a863..a8ba726fea0a6be4009c71d5e9fb39fecc515e62 100644
+index 6354ce53aab6ba907606e578a1df0b8df9c84f58..5713c742a947e5a6687370b4da99f0bc9deb80de 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -167,6 +167,8 @@ viz_component("service") {
@@ -595,10 +595,10 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index b8792901aeb7d1f8ee459bab05c3cc592f38aaa1..04a8c6f55e2308e0ee545072f2fe5c53641a8607 100644
+index c9056afecb36a7a20e33458fe96459d2e957b9cf..188ca7507635d50c3b8174538d703f0e7247126d 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -31,6 +31,7 @@ struct RootCompositorFrameSinkParams {
+@@ -33,6 +33,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
@@ -618,7 +618,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 9019859a51edf098d75a8098d409cc1cddccd0af..50a06cf8eb3141cfd296b15cc188afc9628be511 100644
+index 234c0f68328a87b6b80222bdf64065ca55b246c8..48690a48e26e7acb13d2a44cf7454da9e80596df 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ namespace mojom {
@@ -656,7 +656,7 @@ index 9019859a51edf098d75a8098d409cc1cddccd0af..50a06cf8eb3141cfd296b15cc188afc9
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -549,6 +563,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -548,6 +562,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  
@@ -687,7 +687,7 @@ index 86d5be8b3778ced67e65d3f1e22b6aef467c7042..a2044ee0440339247cc91e06a7a0c323
    gfx::Size pixel_size;
    float scale_factor = 1.f;
 diff --git a/ui/gfx/mojom/ca_layer_params.mojom b/ui/gfx/mojom/ca_layer_params.mojom
-index 1944ef571b1f12fbee8dff553ad4de913c794efb..529296cbf858d2aaeb7b5fbe1ae8f36e4ec1d485 100644
+index c380e4882d699232869c88bc65dc4d396bb95780..7d3c81b200cc9b390084a35ab5d0fc1904137144 100644
 --- a/ui/gfx/mojom/ca_layer_params.mojom
 +++ b/ui/gfx/mojom/ca_layer_params.mojom
 @@ -18,5 +18,6 @@ struct CALayerParams {

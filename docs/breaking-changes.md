@@ -14,6 +14,12 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (31.0)
 
+### Removed: `WebSQL` support
+
+Chromium has removed support for WebSQL upstream, transitioning it to Android only. See
+[Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/fWYb6evVA-w/m/wGI863zaAAAJ)
+for more information.
+
 ### Behavior Changed: `nativeImage.toDataURL` will preseve PNG colorspace
 
 PNG decoder implementation has been changed to preserve colorspace data, the

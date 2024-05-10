@@ -658,6 +658,7 @@ source_set("electron_lib") {
     libs += [ "dwmapi.lib" ]
     sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
+      "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
       "//ui/wm",
