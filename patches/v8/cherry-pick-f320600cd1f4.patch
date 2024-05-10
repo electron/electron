@@ -1,0 +1,28 @@
+From f320600cd1f48ba6bb57c0395823fe0c5e5ec52e Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Thu, 09 May 2024 12:03:28 -0700
+Subject: [PATCH] [wasm-gc] Only normalize JSObject targets in SetOrCopyDataProperties
+
+Bug: 339458194
+Change-Id: I4d6eebdd921971fa28d7c474535d978900ba633f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5527397
+Reviewed-by: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#93811}
+---
+
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index c3f5d31..13b787f 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -434,9 +434,7 @@
+       Nothing<bool>());
+ 
+   if (!from->HasFastProperties() && target->HasFastProperties() &&
+-      !IsJSGlobalProxy(*target)) {
+-    // JSProxy is always in slow-mode.
+-    DCHECK(!IsJSProxy(*target));
++      IsJSObject(*target) && !IsJSGlobalProxy(*target)) {
+     // Convert to slow properties if we're guaranteed to overflow the number of
+     // descriptors.
+     int source_length;
