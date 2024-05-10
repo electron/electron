@@ -212,6 +212,8 @@ console.log(webFrame.getResourceUsage())
 
 This will generate:
 
+<!-- eslint-skip -->
+
 ```js
 {
   images: {

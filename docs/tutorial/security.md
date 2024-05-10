@@ -280,7 +280,7 @@ security-conscious developers might want to assume the very opposite.
 
 ```js title='main.js (Main Process)'
 const { session } = require('electron')
-const { URL } = require('url')
+const { URL } = require('node:url')
 
 session
   .fromPartition('some-partition')
@@ -610,7 +610,7 @@ sometimes be fooled - a `startsWith('https://example.com')` test would let
 `https://example.com.attacker.com` through.
 
 ```js title='main.js (Main Process)'
-const { URL } = require('url')
+const { URL } = require('node:url')
 const { app } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {

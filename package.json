@@ -6,7 +6,7 @@
   "devDependencies": {
     "@azure/storage-blob": "^12.9.0",
     "@electron/asar": "^3.2.1",
-    "@electron/docs-parser": "^1.2.0",
+    "@electron/docs-parser": "^1.2.1",
     "@electron/fiddle-core": "^1.0.4",
     "@electron/github-app-auth": "^2.0.0",
     "@electron/lint-roller": "^2.2.0",
@@ -41,6 +41,7 @@
     "eslint": "^8.41.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-markdown": "^5.0.0",
     "eslint-plugin-mocha": "^7.0.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
