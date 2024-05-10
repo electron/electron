@@ -32,7 +32,7 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
 }  // namespace
 
 RootView::RootView(NativeWindow* window)
-    : window_(window),
+    : window_{raw_ref<NativeWindow>::from_ptr(window)},
       last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
   set_owned_by_client();
   views::BoxLayout* layout =
@@ -62,7 +62,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
     return;
 
   if (!menu_bar_) {
-    menu_bar_ = std::make_unique<MenuBar>(window_, this);
+    menu_bar_ = std::make_unique<MenuBar>(&window_.get(), this);
     menu_bar_->set_owned_by_client();
     if (!menu_bar_autohide_)
       SetMenuBarVisibility(true);
