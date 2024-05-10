@@ -9,10 +9,10 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 1a0c7f5f204f00b52747ebb7800b39a3479f1178..52a1b350c8b5a13b4c0636b43f4773b72872f025 100644
+index 0d38b25bcb43f0bbedc1e71508e840a862c28a3c..94a36af528dfa220cfae6b9b1b0be1318502311b 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
-@@ -4,11 +4,14 @@
+@@ -4,10 +4,13 @@
  
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  
@@ -21,20 +21,19 @@ index 1a0c7f5f204f00b52747ebb7800b39a3479f1178..52a1b350c8b5a13b4c0636b43f4773b7
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/grit/generated_resources.h"
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
- #include "components/omnibox/browser/omnibox_field_trial.h"
  #include "components/vector_icons/vector_icons.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
-@@ -28,9 +31,11 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+@@ -26,7 +29,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+     : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
-   auto* icon = &views::kIcCloseIcon;
+-  auto* icon = &vector_icons::kCloseChromeRefreshIcon;
++  auto* icon = &views::kIcCloseIcon;
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-   if (OmniboxFieldTrial::IsChromeRefreshIconsEnabled()) {
-     icon = &vector_icons::kCloseChromeRefreshIcon;
-   }
++  icon = &vector_icons::kCloseChromeRefreshIcon;
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
    SetImageModel(views::Button::STATE_NORMAL,
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
