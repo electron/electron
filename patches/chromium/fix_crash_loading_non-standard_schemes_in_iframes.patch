@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index df5d941c3352ee6db5d45a8fa59fb58748572eb3..c7194f5de911e9889c9bcb007a78e743e98f28fc 100644
+index e3dd21898b85eb92b063725aef0578359e2f91ab..213913553d9234a145b215d6e83df1e6b1b3ca75 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10406,6 +10406,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10408,6 +10408,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
      }
    }
  
@@ -40,10 +40,10 @@ index df5d941c3352ee6db5d45a8fa59fb58748572eb3..c7194f5de911e9889c9bcb007a78e743
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 3da074ee7aa19368523ad33530f3284d258a6336..4879f1b6698e6407cb0ddabefde5290b4a0a06b5 100644
+index 64c16ba819c634ca5a19e423f25daf820ae05383..cf1893a72e1902280b0d840dd819bb28b0042a71 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2179,6 +2179,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2180,6 +2180,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 3da074ee7aa19368523ad33530f3284d258a6336..4879f1b6698e6407cb0ddabefde5290b
    StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2231,6 +2235,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2232,6 +2236,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");
@@ -63,5 +63,5 @@ index 3da074ee7aa19368523ad33530f3284d258a6336..4879f1b6698e6407cb0ddabefde5290b
 +    debug_info_builder.Append("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
    } else if (url_.IsAboutSrcdocURL()) {
-     // If there's no owner_document and this is a srcdoc load, then get the
-     // origin from the remote parent. A srcdoc navigation with no owner_document
+     // If there's no owner_document and this is a sandboxed srcdoc load, then
+     // get the origin from the remote parent. In general, a srcdoc navigation
