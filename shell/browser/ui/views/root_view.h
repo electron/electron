@@ -47,7 +47,7 @@ class RootView : public views::View {
   void RegisterAcceleratorsWithFocusManager(ElectronMenuModel* menu_model);
   void UnregisterAcceleratorsWithFocusManager();
 
-  views::View* GetMainView() { return main_view_; }
+  views::View* GetMainView() { return &main_view_.get(); }
 
   // views::View:
   gfx::Size GetMinimumSize() const override;
@@ -65,7 +65,7 @@ class RootView : public views::View {
   bool menu_bar_alt_pressed_ = false;
 
   // Main view area.
-  raw_ptr<views::View> main_view_;
+  const raw_ref<views::View> main_view_;
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;
