@@ -469,13 +469,15 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 }
 
 void NativeWindowViews::SetContentView(views::View* view) {
-  if (content_view()) {
-    root_view_.main_view().RemoveChildView(content_view());
-  }
+  auto& main_view = root_view_.main_view();
+
+  if (content_view())
+    main_view.RemoveChildView(content_view());
+
   set_content_view(view);
   focused_view_ = view;
-  root_view_.main_view().AddChildView(content_view());
-  root_view_.main_view().DeprecatedLayoutImmediately();
+  main_view.AddChildView(content_view());
+  main_view.DeprecatedLayoutImmediately();
 }
 
 void NativeWindowViews::Close() {
