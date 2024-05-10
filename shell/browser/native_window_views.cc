@@ -477,7 +477,7 @@ void NativeWindowViews::SetContentView(views::View* view) {
   set_content_view(view);
   focused_view_ = view;
   main_view.AddChildView(view);
-  main_view.DeprecatedLayoutImmediately();
+  main_view.InvalidateLayout();
 }
 
 void NativeWindowViews::Close() {
