@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index bae3d8830c54f6399b5b92c63e0ced8ab8bd4250..36aaab23105fe87fe836a7afbb86acc98d01320a 100644
+index d68701e2ae7ee1c34ceb69eb2b66fb59ee759553..f54a985784cc03e4bfec86ec362c1a75aa286556 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -213,6 +213,7 @@ vs-chromium-project.txt
+@@ -212,6 +212,7 @@ vs-chromium-project.txt
  /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml
@@ -18,7 +18,7 @@ index bae3d8830c54f6399b5b92c63e0ced8ab8bd4250..36aaab23105fe87fe836a7afbb86acc9
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 4bb0c9e975602b48caf5e9126edc06422464d425..85b81f5e2c0d793b5b87152277677fc7b2d0bd1b 100644
+index 93d81d190c00a50993bdfbac3d3dec1ce17b26c5..7c78ca1483c87b2cfea42e1c35dba82e0a047144 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -51,7 +51,9 @@
@@ -31,7 +31,7 @@ index 4bb0c9e975602b48caf5e9126edc06422464d425..85b81f5e2c0d793b5b87152277677fc7
  /espresso/lib/
  /eyesfree/src
  /fuchsia-sdk/images
-@@ -105,6 +107,7 @@
+@@ -106,6 +108,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -39,11 +39,11 @@ index 4bb0c9e975602b48caf5e9126edc06422464d425..85b81f5e2c0d793b5b87152277677fc7
  /ninja/ninja*
  /node/*.tar.gz
  /node/linux/
-@@ -150,6 +153,7 @@
+@@ -151,6 +154,7 @@
  /soda-win64
  /speex
  /sqlite4java/lib/
 +/squirrel.mac
- /subresource-filter-ruleset/data/UnindexedRules
+ /subresource-filter-ruleset/data/*
  /swift-format
  /swift-toolchain
