@@ -471,12 +471,12 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 void NativeWindowViews::SetContentView(views::View* view) {
   auto& main_view = root_view_.main_view();
 
-  if (content_view())
-    main_view.RemoveChildView(content_view());
+  if (auto* prev_view = content_view())
+    main_view.RemoveChildView(prev_view);
 
   set_content_view(view);
   focused_view_ = view;
-  main_view.AddChildView(content_view());
+  main_view.AddChildView(view);
   main_view.DeprecatedLayoutImmediately();
 }
 
