@@ -57,6 +57,8 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
+  void ReorderChildView(gin::Handle<View> child, size_t index);
+
   std::vector<v8::Global<v8::Object>> child_views_;
 
   bool delete_view_ = true;
