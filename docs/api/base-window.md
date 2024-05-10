@@ -294,6 +294,7 @@ e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```js
 const { BaseWindow } = require('electron')
+
 const win = new BaseWindow()
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
@@ -502,6 +503,7 @@ A `boolean` property that determines whether the window is excluded from the app
 
 ```js @ts-expect-error=[12]
 const { Menu, BaseWindow } = require('electron')
+
 const win = new BaseWindow({ height: 600, width: 600 })
 
 const template = [
@@ -727,6 +729,7 @@ Resizes and moves the window to the supplied bounds. Any properties that are not
 
 ```js
 const { BaseWindow } = require('electron')
+
 const win = new BaseWindow()
 
 // set all bounds properties
@@ -987,6 +990,7 @@ a HTML-rendered toolbar. For example:
 
 ```js
 const { BaseWindow } = require('electron')
+
 const win = new BaseWindow()
 
 const toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
