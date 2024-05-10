@@ -147,7 +147,7 @@ index 6e5bbe07d0c337b36f3157c2e6404fdc91849fd1..7ec682833213de9054a8c30751436d12
    DHPointer dh;
    {
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index b4447102a8478639a5aa774e583834d79808603f..678be07feb394530b944c1b356265416f2d50742 100644
+index b4447102a8478639a5aa774e583834d79808603f..ecf938d51ccdbfcb825d44c5ed4ea1229cb05389 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -154,13 +154,11 @@ bool DiffieHellman::Init(BignumPointer&& bn_p, int g) {
@@ -201,7 +201,7 @@ index b4447102a8478639a5aa774e583834d79808603f..678be07feb394530b944c1b356265416
    V("modp5", BN_get_rfc3526_prime_1536);
    V("modp14", BN_get_rfc3526_prime_2048);
    V("modp15", BN_get_rfc3526_prime_3072);
-@@ -559,15 +556,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -559,15 +556,21 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
  
@@ -212,17 +212,19 @@ index b4447102a8478639a5aa774e583834d79808603f..678be07feb394530b944c1b356265416
      key_params = EVPKeyPointer(EVP_PKEY_new());
      CHECK(key_params);
      CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
+-  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
 +#else
 +    return EVPKeyCtxPointer();
 +#endif
-   } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
++  } else if (std::get_if<int>(&params->params.prime)) {
      EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
      EVP_PKEY* raw_params = nullptr;
 +#ifndef OPENSSL_IS_BORINGSSL
++    int* prime_size = std::get_if<int>(&params->params.prime);
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -581,6 +583,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -581,6 +584,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
  
      key_params = EVPKeyPointer(raw_params);

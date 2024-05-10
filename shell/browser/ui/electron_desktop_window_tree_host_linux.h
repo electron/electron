@@ -44,6 +44,8 @@ class ElectronDesktopWindowTreeHostLinux
   void OnWidgetInitDone() override;
 
   // ui::PlatformWindowDelegate
+  gfx::Insets CalculateInsetsInDIP(
+      ui::PlatformWindowState window_state) const override;
   void OnBoundsChanged(const BoundsChange& change) override;
   void OnWindowStateChanged(ui::PlatformWindowState old_state,
                             ui::PlatformWindowState new_state) override;
@@ -55,8 +57,10 @@ class ElectronDesktopWindowTreeHostLinux
   // views::OnDeviceScaleFactorChanged:
   void OnDeviceScaleFactorChanged() override;
 
+  // views::DesktopWindowTreeHostLinux:
+  void UpdateFrameHints() override;
+
  private:
-  void UpdateFrameHints();
   void UpdateClientDecorationHints(ClientFrameViewLinux* view);
   void UpdateWindowState(ui::PlatformWindowState new_state);
 

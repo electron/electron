@@ -9,7 +9,7 @@ Electron does not support Profiles, so this Profile::FromBrowserContext()
 call is not needed and will not link. This change patches it out.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index a0c5971008d6d7238f2cf13c046a0e19d5454c7a..f22ddd167a1613732d7166d18050400818bf32f0 100644
+index 8c2a705b69da50604fb4c441ff4e2f5207ef3230..991c622fe8af434fa28405f15eb14c27b1062d22 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -44,6 +44,7 @@ namespace {

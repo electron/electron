@@ -7,7 +7,7 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index cdaa098dd404ae477d208375cc4c9ca1b5ac43e4..cb2529a65f62c40e39d7cd4c96e50e1b72abbd53 100644
+index 3c85af05bc101c6c2134ebc9e5476561534695b1..202b9f4154198b357d7fa816f7d163ffb22c1ea5 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -151,9 +151,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
@@ -38,7 +38,7 @@ index c19eb72e8d37fe8145b813d07875addf793e12dc..a5db8841773618814ac90f740201d4d7
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index fea54671857bd6f110fa70c80ee72e2d3dc64ea0..d1eeb2e904e3077555cf29b366744e9e02cada70 100644
+index ceb53cac221dbc4991bdf6a58050d381f047e6c6..fffa83247d337d7c920526af5e2dddeae7451062 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -472,7 +472,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,

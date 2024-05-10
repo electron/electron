@@ -29,7 +29,7 @@ index 6022a0af4241fe65bd03d7cbf95785e8879dc78e..ec9e4c6ece9014b66e7d65e99cda2b95
    objects_.clear();
    platform_representations_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index 08fce03a51ded80c8dfe59f17a438ace21f8daa7..ffbd0cbff14ae7af2d00d5949f6b608e998e0429 100644
+index 96ba9abb9b7efab79adbf299c6bd3b4f7a4501e1..0916b81ec5b3cb123185b7cff332120ee498fb57 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
 @@ -89,6 +89,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {

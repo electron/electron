@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 36d1f6ece92295a39e3b4c64e3d9546e70866a69..bf4d47d0f4ad754f3a8d523319b2f764ae906234 100644
+index 65424ae52561367e1300c43a8d6edf67e0d169dc..6e168d7022bd3147292760836553fff9bad63d14 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -340,7 +340,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -341,7 +341,8 @@ void Compositor::SetLayerTreeFrameSink(
    if (display_private_) {
      disabled_swap_until_resize_ = false;
      display_private_->Resize(size());
@@ -25,7 +25,7 @@ index 36d1f6ece92295a39e3b4c64e3d9546e70866a69..bf4d47d0f4ad754f3a8d523319b2f764
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -552,7 +553,9 @@ void Compositor::SetVisible(bool visible) {
+@@ -553,7 +554,9 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_)
@@ -51,10 +51,10 @@ index 36d1f6ece92295a39e3b4c64e3d9546e70866a69..bf4d47d0f4ad754f3a8d523319b2f764
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 50a06cf8eb3141cfd296b15cc188afc9628be511..edaa26116a980818f090c878f5086c3e87e143f4 100644
+index 48690a48e26e7acb13d2a44cf7454da9e80596df..b6c4d4fe03f51f5453f0da7f4a48e19535607de2 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -509,6 +509,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -508,6 +508,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -65,7 +65,7 @@ index 50a06cf8eb3141cfd296b15cc188afc9628be511..edaa26116a980818f090c878f5086c3e
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -641,6 +645,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -638,6 +642,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  
