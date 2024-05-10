@@ -22,4 +22,36 @@ describe('View', () => {
       w.contentView.addChildView(w.contentView);
     }).to.throw('A view cannot be added as its own child');
   });
+
+  it('does not crash when attempting to add a child multiple times', () => {
+    w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const v = new View();
+    w.contentView.addChildView(v);
+    w.contentView.addChildView(v);
+    w.contentView.addChildView(v);
+
+    expect(w.contentView.children).to.have.lengthOf(1);
+  });
+
+  it('correctly reorders children', () => {
+    w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const v1 = new View();
+    const v2 = new View();
+    const v3 = new View();
+    w.contentView.addChildView(v1);
+    w.contentView.addChildView(v2);
+    w.contentView.addChildView(v3);
+
+    expect(w.contentView.children).to.deep.equal([v1, v2, v3]);
+
+    w.contentView.addChildView(v1);
+    w.contentView.addChildView(v2);
+    expect(w.contentView.children).to.deep.equal([v3, v1, v2]);
+  });
 });

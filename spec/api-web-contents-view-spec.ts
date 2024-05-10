@@ -36,6 +36,25 @@ describe('WebContentsView', () => {
     v.removeChildView(wcv);
   });
 
+  it('correctly reorders children', () => {
+    const w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const wcv1 = new WebContentsView();
+    const wcv2 = new WebContentsView();
+    const wcv3 = new WebContentsView();
+    w.contentView.addChildView(wcv1);
+    w.contentView.addChildView(wcv2);
+    w.contentView.addChildView(wcv3);
+
+    expect(w.contentView.children).to.deep.equal([wcv1, wcv2, wcv3]);
+
+    w.contentView.addChildView(wcv1);
+    w.contentView.addChildView(wcv2);
+    expect(w.contentView.children).to.deep.equal([wcv3, wcv1, wcv2]);
+  });
+
   function triggerGCByAllocation () {
     const arr = [];
     for (let i = 0; i < 1000000; i++) {
@@ -79,7 +98,7 @@ describe('WebContentsView', () => {
       expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('hidden');
     });
 
-    it('becomes visibile when attached', async () => {
+    it('becomes visible when attached', async () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
