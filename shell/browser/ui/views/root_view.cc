@@ -34,8 +34,7 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
 RootView::RootView(NativeWindow* window)
     : window_{raw_ref<NativeWindow>::from_ptr(window)},
       main_view_{raw_ref<views::View>::from_ptr(
-          AddChildView(std::make_unique<views::View>()))},
-      last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
+          AddChildView(std::make_unique<views::View>()))} {
   set_owned_by_client();
   views::BoxLayout* layout =
       SetLayoutManager(std::make_unique<views::BoxLayout>(
@@ -117,7 +116,7 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
       SetMenuBarVisibility(true);
 
       View* focused_view = GetFocusManager()->GetFocusedView();
-      last_focused_view_tracker_->SetView(focused_view);
+      last_focused_view_tracker_.SetView(focused_view);
       menu_bar_->RequestFocus();
     }
 
@@ -138,7 +137,7 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
       SetMenuBarVisibility(!menu_bar_visible_);
 
     View* focused_view = GetFocusManager()->GetFocusedView();
-    last_focused_view_tracker_->SetView(focused_view);
+    last_focused_view_tracker_.SetView(focused_view);
     if (menu_bar_visible_) {
       menu_bar_->RequestFocus();
       // Show accelerators when menu bar is focused
@@ -151,7 +150,7 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
 }
 
 void RootView::RestoreFocus() {
-  View* last_focused_view = last_focused_view_tracker_->view();
+  View* last_focused_view = last_focused_view_tracker_.view();
   if (last_focused_view) {
     GetFocusManager()->SetFocusedViewWithReason(
         last_focused_view,

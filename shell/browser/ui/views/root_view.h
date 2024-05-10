@@ -70,7 +70,7 @@ class RootView : public views::View {
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;
 
-  std::unique_ptr<views::ViewTracker> last_focused_view_tracker_;
+  views::ViewTracker last_focused_view_tracker_;
 };
 
 }  // namespace electron
