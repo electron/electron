@@ -1,6 +1,7 @@
 {
   "extends": "@electron/lint-roller/configs/markdownlint.json",
   "no-angle-brackets": true,
+  "no-curly-braces": true,
   "no-inline-html": {
     "allowed_elements": [
       "br",
