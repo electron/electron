@@ -26,10 +26,10 @@ index a062418a22ec911a1b2d3032c0668e762bfa3cd9..14f98001c553e6eaac75a7d54188556c
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 1dfbc143a91e50a7421e28c2960f2cf8d81a5800..4cfda323ce1847ac34bc60bca22a2044e66b92fe 100644
+index c053926291ea4aa8343d91fa5b913fd778c7f345..54b5d891fc64fb5641d450ebe6bfb47dbd351926 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -846,6 +846,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -834,6 +834,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  

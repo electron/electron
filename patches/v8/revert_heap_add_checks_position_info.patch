@@ -63,10 +63,10 @@ index 27fbc04bc880f2ea68dc7a126b8091a3b5ab4025..42d9649c5250c06a4d39ba0306cbdea0
  }  // namespace internal
  }  // namespace v8
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 15e428ad2a870cae1c9efcb7fa2426b88d25b3c7..cebe0cff397e8558bdb0e77dde609fe97dc7842f 100644
+index 13b88372499b95ccd072f045de094a2855b2687e..ad383d2fa8934ffad0922241fd641a321571b89f 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -4357,7 +4357,6 @@ namespace {
+@@ -4361,7 +4361,6 @@ namespace {
  template <typename Char>
  bool GetPositionInfoSlowImpl(base::Vector<Char> source, int position,
                               Script::PositionInfo* info) {
@@ -74,7 +74,7 @@ index 15e428ad2a870cae1c9efcb7fa2426b88d25b3c7..cebe0cff397e8558bdb0e77dde609fe9
    if (position < 0) {
      position = 0;
    }
-@@ -4404,11 +4403,25 @@ int GetLength(const String::LineEndsVector& vector) {
+@@ -4408,11 +4407,25 @@ int GetLength(const String::LineEndsVector& vector) {
  }
  
  int GetLength(const Tagged<FixedArray>& array) { return array->length(); }
@@ -103,7 +103,7 @@ index 15e428ad2a870cae1c9efcb7fa2426b88d25b3c7..cebe0cff397e8558bdb0e77dde609fe9
    const int ends_len = GetLength(ends);
    if (ends_len == 0) return false;
  
-@@ -4447,31 +4460,6 @@ bool GetLineEndsContainerPositionInfo(const LineEndsContainer& ends,
+@@ -4451,31 +4464,6 @@ bool GetLineEndsContainerPositionInfo(const LineEndsContainer& ends,
      info->column = position - info->line_start;
    }
  
@@ -135,7 +135,7 @@ index 15e428ad2a870cae1c9efcb7fa2426b88d25b3c7..cebe0cff397e8558bdb0e77dde609fe9
    // Line end is position of the linebreak character.
    info->line_end = GetLineEnd(ends, info->line);
    if (info->line_end > 0) {
-@@ -4540,23 +4528,6 @@ bool Script::GetPositionInfoWithLineEnds(
+@@ -4544,23 +4532,6 @@ bool Script::GetPositionInfoWithLineEnds(
    return true;
  }
  
@@ -317,10 +317,10 @@ index d04bb9bf73b4b5725c99dade26510f4964ec0d4b..bb59c92a780160c4168349bfc5d523df
    AddressToTraceMap address_to_trace_;
  };
 diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
-index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..bd79fcbd0867bfe693d6e09753767107c2291391 100644
+index 1b7170bd84c29d9e6228e92a8e3ad46d50967a15..417a487bd6767b15bb177394f4273af21bd64883 100644
 --- a/src/profiler/heap-snapshot-generator.cc
 +++ b/src/profiler/heap-snapshot-generator.cc
-@@ -2994,6 +2994,7 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
+@@ -2999,6 +2999,7 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
    IsolateSafepointScope scope(heap_);
  
    Isolate* isolate = heap_->isolate();
@@ -328,7 +328,7 @@ index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..bd79fcbd0867bfe693d6e09753767107
    auto temporary_global_object_tags =
        v8_heap_explorer_.CollectTemporaryGlobalObjectsTags();
  
-@@ -3005,7 +3006,6 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
+@@ -3010,7 +3011,6 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
    // DisallowGarbageCollection scope as the HeapObjectIterator used during
    // snapshot creation enters a safepoint as well. However, in practice we
    // already enter a safepoint above so that should never trigger a GC.
@@ -336,7 +336,7 @@ index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..bd79fcbd0867bfe693d6e09753767107
  
    NullContextForSnapshotScope null_context_scope(isolate);
  
-@@ -3016,7 +3016,6 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
+@@ -3021,7 +3021,6 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
  
    snapshot_->AddSyntheticRootEntries();
  
@@ -344,7 +344,7 @@ index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..bd79fcbd0867bfe693d6e09753767107
    if (!FillReferences()) return false;
  
    snapshot_->FillChildren();
-@@ -3087,9 +3086,12 @@ bool HeapSnapshotGenerator::FillReferences() {
+@@ -3092,9 +3091,12 @@ bool HeapSnapshotGenerator::FillReferences() {
  const int HeapSnapshotJSONSerializer::kNodeFieldsCount = 7;
  
  void HeapSnapshotJSONSerializer::Serialize(v8::OutputStream* stream) {
@@ -358,7 +358,7 @@ index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..bd79fcbd0867bfe693d6e09753767107
    DCHECK_NULL(writer_);
    writer_ = new OutputStreamWriter(stream);
    SerializeImpl();
-@@ -3447,17 +3449,10 @@ void HeapSnapshotJSONSerializer::SerializeTraceNodeInfos() {
+@@ -3452,17 +3454,10 @@ void HeapSnapshotJSONSerializer::SerializeTraceNodeInfos() {
      // The cast is safe because script id is a non-negative Smi.
      buffer_pos =
          utoa(static_cast<unsigned>(info->script_id), buffer, buffer_pos);
@@ -379,7 +379,7 @@ index 4f3494d4677312ebc6b7e86ef64e08b434e9f77b..bd79fcbd0867bfe693d6e09753767107
      buffer[buffer_pos++] = '\0';
      writer_->AddString(buffer.begin());
 diff --git a/test/cctest/test-heap-profiler.cc b/test/cctest/test-heap-profiler.cc
-index 6e85e2c65d5542a2a67fa078d04ed5b82a89f0ff..a9528e3452b9873fb64da6aa9528d51239cb9afa 100644
+index 4885cab74f95378a9ff884d58a8c089624985a8f..f1e869f28e00c0449e85b00f3f4626e0941e4c43 100644
 --- a/test/cctest/test-heap-profiler.cc
 +++ b/test/cctest/test-heap-profiler.cc
 @@ -2841,6 +2841,8 @@ TEST(ArrayGrowLeftTrim) {
