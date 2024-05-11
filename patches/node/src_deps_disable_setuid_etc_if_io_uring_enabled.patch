@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tobias=20Nie=C3=9Fen?= <tniessen@tnie.de>
+Date: Mon, 9 Oct 2023 08:10:00 +0000
+Subject: src,deps: disable setuid() etc if io_uring enabled
+
+Within Node.js, attempt to determine if libuv is using io_uring. If it
+is, disable process.setuid() and other user identity setters.
+
+We cannot fully prevent users from changing the process's user identity,
+but this should still prevent some accidental, dangerous scenarios.
+
+PR-URL: https://github.com/nodejs-private/node-private/pull/529
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+CVE-ID: CVE-2024-22017
+
+diff --git a/deps/uv/src/unix/linux.c b/deps/uv/src/unix/linux.c
+index 656206c6ca8e808a840e006d776eeb64b4b14923..0c99718510fe1ca449ec685f323171475ab16552 100644
+--- a/deps/uv/src/unix/linux.c
++++ b/deps/uv/src/unix/linux.c
+@@ -442,6 +442,14 @@ static int uv__use_io_uring(void) {
+ }
+ 
+ 
++UV_EXTERN int uv__node_patch_is_using_io_uring(void) {
++  // This function exists only in the modified copy of libuv in the Node.js
++  // repository. Node.js checks if this function exists and, if it does, uses it
++  // to determine whether libuv is using io_uring or not.
++  return uv__use_io_uring();
++}
++
++
+ static void uv__iou_init(int epollfd,
+                          struct uv__iou* iou,
+                          uint32_t entries,
+diff --git a/doc/api/cli.md b/doc/api/cli.md
+index 053c0f94aef5b1681d1ab0513bcc76063ab3a2a6..9b32639532bf6377aade96b86faccf050a396e63 100644
+--- a/doc/api/cli.md
++++ b/doc/api/cli.md
+@@ -2605,8 +2605,9 @@ various asynchronous I/O operations.
+ 
+ `io_uring` is disabled by default due to security concerns. When `io_uring`
+ is enabled, applications must not change the user identity of the process at
+-runtime, neither through JavaScript functions such as [`process.setuid()`][] nor
+-through native addons that can invoke system functions such as [`setuid(2)`][].
++runtime. In this case, JavaScript functions such as [`process.setuid()`][] are
++unavailable, and native addons must not invoke system functions such as
++[`setuid(2)`][].
+ 
+ This environment variable is implemented by a dependency of Node.js and may be
+ removed in future versions of Node.js. No stability guarantees are provided for
+diff --git a/src/node_credentials.cc b/src/node_credentials.cc
+index c1f7a4f2acbdf66a45230e2b9fdd860d9d3b4458..3b5eec8244024f58713c668c9dcd84617a18db88 100644
+--- a/src/node_credentials.cc
++++ b/src/node_credentials.cc
+@@ -1,4 +1,5 @@
+ #include "env-inl.h"
++#include "node_errors.h"
+ #include "node_external_reference.h"
+ #include "node_internals.h"
+ #include "util-inl.h"
+@@ -12,6 +13,7 @@
+ #include <unistd.h>  // setuid, getuid
+ #endif
+ #ifdef __linux__
++#include <dlfcn.h>  // dlsym()
+ #include <linux/capability.h>
+ #include <sys/auxv.h>
+ #include <sys/syscall.h>
+@@ -232,6 +234,45 @@ static gid_t gid_by_name(Isolate* isolate, Local<Value> value) {
+   }
+ }
+ 
++#ifdef __linux__
++extern "C" {
++int uv__node_patch_is_using_io_uring(void);
++
++int uv__node_patch_is_using_io_uring(void) __attribute__((weak));
++
++typedef int (*is_using_io_uring_fn)(void);
++}
++#endif  // __linux__
++
++static bool UvMightBeUsingIoUring() {
++#ifdef __linux__
++  // Support for io_uring is only included in libuv 1.45.0 and later, and only
++  // on Linux (and Android, but there it is always disabled). The patch that we
++  // apply to libuv to work around the io_uring security issue adds a function
++  // that tells us whether io_uring is being used. If that function is not
++  // present, we assume that we are dynamically linking against an unpatched
++  // version.
++  static std::atomic<is_using_io_uring_fn> check =
++      uv__node_patch_is_using_io_uring;
++  if (check == nullptr) {
++    check = reinterpret_cast<is_using_io_uring_fn>(
++        dlsym(RTLD_DEFAULT, "uv__node_patch_is_using_io_uring"));
++  }
++  return uv_version() >= 0x012d00u && (check == nullptr || (*check)());
++#else
++  return false;
++#endif
++}
++
++static bool ThrowIfUvMightBeUsingIoUring(Environment* env, const char* fn) {
++  if (UvMightBeUsingIoUring()) {
++    node::THROW_ERR_INVALID_STATE(
++        env, "%s() disabled: io_uring may be enabled. See CVE-2024-22017.", fn);
++    return true;
++  }
++  return false;
++}
++
+ static void GetUid(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+   CHECK(env->has_run_bootstrapping_code());
+@@ -267,6 +308,8 @@ static void SetGid(const FunctionCallbackInfo<Value>& args) {
+   CHECK_EQ(args.Length(), 1);
+   CHECK(args[0]->IsUint32() || args[0]->IsString());
+ 
++  if (ThrowIfUvMightBeUsingIoUring(env, "setgid")) return;
++
+   gid_t gid = gid_by_name(env->isolate(), args[0]);
+ 
+   if (gid == gid_not_found) {
+@@ -286,6 +329,8 @@ static void SetEGid(const FunctionCallbackInfo<Value>& args) {
+   CHECK_EQ(args.Length(), 1);
+   CHECK(args[0]->IsUint32() || args[0]->IsString());
+ 
++  if (ThrowIfUvMightBeUsingIoUring(env, "setegid")) return;
++
+   gid_t gid = gid_by_name(env->isolate(), args[0]);
+ 
+   if (gid == gid_not_found) {
+@@ -305,6 +350,8 @@ static void SetUid(const FunctionCallbackInfo<Value>& args) {
+   CHECK_EQ(args.Length(), 1);
+   CHECK(args[0]->IsUint32() || args[0]->IsString());
+ 
++  if (ThrowIfUvMightBeUsingIoUring(env, "setuid")) return;
++
+   uid_t uid = uid_by_name(env->isolate(), args[0]);
+ 
+   if (uid == uid_not_found) {
+@@ -324,6 +371,8 @@ static void SetEUid(const FunctionCallbackInfo<Value>& args) {
+   CHECK_EQ(args.Length(), 1);
+   CHECK(args[0]->IsUint32() || args[0]->IsString());
+ 
++  if (ThrowIfUvMightBeUsingIoUring(env, "seteuid")) return;
++
+   uid_t uid = uid_by_name(env->isolate(), args[0]);
+ 
+   if (uid == uid_not_found) {
+@@ -364,6 +413,8 @@ static void SetGroups(const FunctionCallbackInfo<Value>& args) {
+   CHECK_EQ(args.Length(), 1);
+   CHECK(args[0]->IsArray());
+ 
++  if (ThrowIfUvMightBeUsingIoUring(env, "setgroups")) return;
++
+   Local<Array> groups_list = args[0].As<Array>();
+   size_t size = groups_list->Length();
+   MaybeStackBuffer<gid_t, 64> groups(size);
+@@ -395,6 +446,8 @@ static void InitGroups(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsUint32() || args[0]->IsString());
+   CHECK(args[1]->IsUint32() || args[1]->IsString());
+ 
++  if (ThrowIfUvMightBeUsingIoUring(env, "initgroups")) return;
++
+   Utf8Value arg0(env->isolate(), args[0]);
+   gid_t extra_group;
+   bool must_free;
+diff --git a/test/parallel/test-process-setuid-io-uring.js b/test/parallel/test-process-setuid-io-uring.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..93193ac2f8ab99f0cf8f2de368bc27958c92be76
+--- /dev/null
++++ b/test/parallel/test-process-setuid-io-uring.js
+@@ -0,0 +1,43 @@
++'use strict';
++const common = require('../common');
++
++const assert = require('node:assert');
++const { execFileSync } = require('node:child_process');
++
++if (!common.isLinux) {
++  common.skip('test is Linux specific');
++}
++
++if (process.arch !== 'x64' && process.arch !== 'arm64') {
++  common.skip('io_uring support on this architecture is uncertain');
++}
++
++const kv = /^(\d+)\.(\d+)\.(\d+)/.exec(execFileSync('uname', ['-r'])).slice(1).map((n) => parseInt(n, 10));
++if (((kv[0] << 16) | (kv[1] << 8) | kv[2]) < 0x050ABA) {
++  common.skip('io_uring is likely buggy due to old kernel');
++}
++
++const userIdentitySetters = [
++  ['setuid', [1000]],
++  ['seteuid', [1000]],
++  ['setgid', [1000]],
++  ['setegid', [1000]],
++  ['setgroups', [[1000]]],
++  ['initgroups', ['nodeuser', 1000]],
++];
++
++for (const [fnName, args] of userIdentitySetters) {
++  const call = `process.${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')})`;
++  const code = `try { ${call}; } catch (err) { console.log(err); }`;
++
++  const stdout = execFileSync(process.execPath, ['-e', code], {
++    encoding: 'utf8',
++    env: { ...process.env, UV_USE_IO_URING: '1' },
++  });
++
++  const msg = new RegExp(`^Error: ${fnName}\\(\\) disabled: io_uring may be enabled\\. See CVE-[X0-9]{4}-`);
++  assert.match(stdout, msg);
++  assert.match(stdout, /code: 'ERR_INVALID_STATE'/);
++
++  console.log(call, stdout.slice(0, stdout.indexOf('\n')));
++}
