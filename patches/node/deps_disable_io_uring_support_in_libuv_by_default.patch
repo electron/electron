@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tobias=20Nie=C3=9Fen?= <tniessen@tnie.de>
+Date: Tue, 19 Sep 2023 16:01:49 +0000
+Subject: deps: disable io_uring support in libuv by default
+
+setuid() does not affect libuv's internal io_uring operations if
+initialized before the call to setuid(). This potentially allows the
+process to perform privileged operations despite presumably having
+dropped such privileges through a call to setuid(). Similar concerns
+apply to other functions that modify the process's user identity.
+
+This commit changes libuv's io_uring behavior from opt-out (through
+UV_USE_IO_URING=0) to opt-in (through UV_USE_IO_URING=1) until we figure
+out a better long-term solution.
+
+PR-URL: https://github.com/nodejs-private/node-private/pull/529
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+CVE-ID: CVE-2024-22017
+
+diff --git a/deps/uv/src/unix/linux.c b/deps/uv/src/unix/linux.c
+index 48b9c2c43e104079d3ccb5d830d1d79f891fb1a3..656206c6ca8e808a840e006d776eeb64b4b14923 100644
+--- a/deps/uv/src/unix/linux.c
++++ b/deps/uv/src/unix/linux.c
+@@ -431,8 +431,9 @@ static int uv__use_io_uring(void) {
+   use = atomic_load_explicit(&use_io_uring, memory_order_relaxed);
+ 
+   if (use == 0) {
++    /* Disable io_uring by default due to CVE-2024-22017. */
+     val = getenv("UV_USE_IO_URING");
+-    use = val == NULL || atoi(val) ? 1 : -1;
++    use = val != NULL && atoi(val) ? 1 : -1;
+     atomic_store_explicit(&use_io_uring, use, memory_order_relaxed);
+   }
+ 
+diff --git a/doc/api/cli.md b/doc/api/cli.md
+index f50b22f729c28386823d64ef8c9d5fc36c0bf9b1..053c0f94aef5b1681d1ab0513bcc76063ab3a2a6 100644
+--- a/doc/api/cli.md
++++ b/doc/api/cli.md
+@@ -2596,6 +2596,22 @@ threadpool by setting the `'UV_THREADPOOL_SIZE'` environment variable to a value
+ greater than `4` (its current default value). For more information, see the
+ [libuv threadpool documentation][].
+ 
++### `UV_USE_IO_URING=value`
++
++Enable or disable libuv's use of `io_uring` on supported platforms.
++
++On supported platforms, `io_uring` can significantly improve the performance of
++various asynchronous I/O operations.
++
++`io_uring` is disabled by default due to security concerns. When `io_uring`
++is enabled, applications must not change the user identity of the process at
++runtime, neither through JavaScript functions such as [`process.setuid()`][] nor
++through native addons that can invoke system functions such as [`setuid(2)`][].
++
++This environment variable is implemented by a dependency of Node.js and may be
++removed in future versions of Node.js. No stability guarantees are provided for
++the behavior of this environment variable.
++
+ ## Useful V8 options
+ 
+ V8 has its own set of CLI options. Any V8 CLI option that is provided to `node`
+@@ -2693,6 +2709,8 @@ done
+ [`dnsPromises.lookup()`]: dns.md#dnspromiseslookuphostname-options
+ [`import` specifier]: esm.md#import-specifiers
+ [`process.setUncaughtExceptionCaptureCallback()`]: process.md#processsetuncaughtexceptioncapturecallbackfn
++[`process.setuid()`]: process.md#processsetuidid
++[`setuid(2)`]: https://man7.org/linux/man-pages/man2/setuid.2.html
+ [`tls.DEFAULT_MAX_VERSION`]: tls.md#tlsdefault_max_version
+ [`tls.DEFAULT_MIN_VERSION`]: tls.md#tlsdefault_min_version
+ [`unhandledRejection`]: process.md#event-unhandledrejection
