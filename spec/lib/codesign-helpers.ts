@@ -1,6 +1,5 @@
 import * as cp from 'node:child_process';
 import * as fs from 'fs-extra';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { expect } from 'chai';
 
@@ -32,7 +31,7 @@ export function getCodesignIdentity () {
   return identity;
 }
 
-export async function copyApp (newDir: string, fixture: string | null = 'initial') {
+export async function copyMacOSFixtureApp (newDir: string, fixture: string | null = 'initial') {
   const appBundlePath = path.resolve(process.execPath, '../../..');
   const newPath = path.resolve(newDir, 'Electron.app');
   cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
@@ -85,15 +84,4 @@ export function spawn (cmd: string, args: string[], opts: any = {}) {
 
 export function signApp (appPath: string, identity: string) {
   return spawn('codesign', ['-s', identity, '--deep', '--force', appPath]);
-};
-
-export async function withTempDirectory (fn: (dir: string) => Promise<void>, autoCleanUp = true) {
-  const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
-  try {
-    await fn(dir);
-  } finally {
-    if (autoCleanUp) {
-      cp.spawnSync('rm', ['-r', dir]);
-    }
-  }
 };
