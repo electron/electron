@@ -471,10 +471,10 @@ index cee9eeba25fc1f6354125474a9031c7d9f5cddde..96296202bfca08b997d71f18ce967050
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 9d090273ee1d1ba9dd289074750a764885368e4e..66c6b588b32ed06540a357447240008cbb6d73f3 100644
+index b1dd00ab48e22e1e248728e0400b00e92553e8fd..253670f014c4fc13ad99d674e8dcbf145c17fcc7 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -21,7 +21,9 @@
+@@ -20,7 +20,9 @@
  #include "ui/accessibility/ax_role_properties.h"
  #include "ui/accessibility/platform/ax_platform_tree_manager_delegate.h"
  #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
@@ -484,7 +484,7 @@ index 9d090273ee1d1ba9dd289074750a764885368e4e..66c6b588b32ed06540a357447240008c
  
  namespace {
  
-@@ -225,6 +227,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -224,6 +226,7 @@ void PostAnnouncementNotification(NSString* announcement,
          return;
        }
  
@@ -492,7 +492,7 @@ index 9d090273ee1d1ba9dd289074750a764885368e4e..66c6b588b32ed06540a357447240008c
        BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
        if (root_manager) {
          BrowserAccessibilityManagerMac* root_manager_mac =
-@@ -247,6 +250,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -246,6 +249,7 @@ void PostAnnouncementNotification(NSString* announcement,
            return;
          }
        }
@@ -500,7 +500,7 @@ index 9d090273ee1d1ba9dd289074750a764885368e4e..66c6b588b32ed06540a357447240008c
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -648,6 +652,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -647,6 +651,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -508,7 +508,7 @@ index 9d090273ee1d1ba9dd289074750a764885368e4e..66c6b588b32ed06540a357447240008c
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -676,6 +681,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -675,6 +680,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -1417,7 +1417,7 @@ index 84e156b7ff28abc2071dde155e56a2a92a53b142..bd73dac7fe3ed256cab805a0815d31d4
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 700a93c1dafec61efe2bf164f108b4ca8a9644d3..cd3d9e0f8a2b38f1f0d66f9e33977a98706b217a 100644
+index 3b28b01cebedfbc66539e3516a69643198b15fd1..2fa4a07272a7df30641c1dae22a7ac6bbc5466ea 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -363,6 +363,7 @@ component("base") {

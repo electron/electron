@@ -8,10 +8,10 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 375387438bc37a024b3e59c52581dafead258534..0bf551041721189ee67427f5379c12460d02bf4c 100644
+index 32c123c13e67dcde28a71fb7a7a4a0ba45198ce5..734c93be0e96ae9e892838521875baa48186bd21 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -25,6 +25,7 @@
+@@ -26,6 +26,7 @@
  #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
  #include "ui/base/ui_base_types.h"
  #include "ui/gfx/mojom/delegated_ink_point_renderer.mojom.h"
@@ -44,10 +44,10 @@ index 74dd43d520ecb071d56064c1fa8ebb9472620614..2d6ed112db34bf06f3a75bdd24f62854
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cb218d7605f327de0cea1c66e7545b1377fb1479..af61f659c3b06227e1eff319b62c53b6383f1374 100644
+index 55b4eca20530d7bd3cbb853756d533831e6e09e3..6a8f38e50a21989234ee193e6f631187c2107374 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5347,6 +5347,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5351,6 +5351,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index cb218d7605f327de0cea1c66e7545b1377fb1479..af61f659c3b06227e1eff319b62c53b6
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index f3b8927de51b1821781e89284a468bffa009ebd6..3fc9d02bae7d548d9f573f0fec0a3791119d43f6 100644
+index 5c9b6e8ef5cd917a3630f729e2fc801899d0ec91..2c1eb60d736a47eca764dabe094933b507a22e1f 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1072,6 +1072,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1074,6 +1074,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index f3b8927de51b1821781e89284a468bffa009ebd6..3fc9d02bae7d548d9f573f0fec0a3791
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 5080762ffcee22e7c4d038300b2fcb5c7d4e8950..aa8708e1fb8fb0e3ab132498d22da7f7e3337fcc 100644
+index 33ce8386f5ca581fb5235f576b30f397cf70dc21..dded86686fb51c2d143cd07a7993ca1be2f462d9 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@
