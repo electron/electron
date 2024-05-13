@@ -1,5 +1,6 @@
 import * as cp from 'node:child_process';
-import * as fs from 'fs-extra';
+import * as fs from 'original-fs';
+import * as fsExtra from 'fs-extra';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -16,18 +17,19 @@ export async function copyApp (targetDir: string): Promise<string> {
   // one by one
   const baseDir = path.dirname(process.execPath);
   const zipManifestPath = path.resolve(__dirname, '..', '..', 'script', 'zip_manifests', `dist_zip.${process.platform === 'win32' ? 'win' : 'linux'}.${process.arch}.manifest`);
-  const filesToCopy = (await fs.promises.readFile(zipManifestPath, 'utf-8')).split('\n');
+  const filesToCopy = (fs.readFileSync(zipManifestPath, 'utf-8')).split('\n').filter(f => f !== 'LICENSE' && f !== 'LICENSES.chromium.html' && f !== 'version' && f.trim());
   await Promise.all(
-    filesToCopy.map(rel =>
-      fs.promises.cp(path.resolve(baseDir, rel), path.resolve(targetDir, rel))
-    )
+    filesToCopy.map(async rel => {
+      await fsExtra.mkdirp(path.dirname(path.resolve(targetDir, rel)));
+      fs.copyFileSync(path.resolve(baseDir, rel), path.resolve(targetDir, rel));
+    })
   );
 
   return path.resolve(targetDir, path.basename(process.execPath));
 }
 
 export async function withTempDirectory (fn: (dir: string) => Promise<void>, autoCleanUp = true) {
-  const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
+  const dir = await fsExtra.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
   try {
     await fn(dir);
   } finally {

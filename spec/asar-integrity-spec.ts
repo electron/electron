@@ -46,6 +46,9 @@ function spawn (cmd: string, args: string[], opts: any = {}) {
   });
 };
 
+const CRASHED_EXIT_CODE = process.platform === 'win32' ? 2147483651 : null;
+const CRASHED_SIGNAL = process.platform === 'win32' ? null : 'SIGTRAP';
+
 describe('fuses', function () {
   this.timeout(120000);
 
@@ -75,19 +78,30 @@ describe('fuses', function () {
   });
 
   afterEach(async () => {
-    await originalFs.promises.rm(tmpDir, { recursive: true });
+    for (let attempt = 0; attempt <= 3; attempt++) {
+      // Somtimes windows holds on to a DLL during the crash for a little bit, so we try a few times to delete it
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+      try {
+        await originalFs.promises.rm(tmpDir, { recursive: true });
+        break;
+      } catch {}
+    }
   });
 
   ifdescribe(process.platform === 'win32' || process.platform === 'darwin')('ASAR Integrity', () => {
     let pathToAsar: string;
 
     beforeEach(async () => {
-      pathToAsar = path.resolve(appPath, 'Contents', 'Resources', 'default_app.asar');
+      if (process.platform === 'darwin') {
+        pathToAsar = path.resolve(appPath, 'Contents', 'Resources', 'default_app.asar');
+      } else {
+        pathToAsar = path.resolve(path.dirname(appPath), 'resources', 'default_app.asar');
+      }
 
       if (process.platform === 'win32') {
         await resedit(appPath, {
           asarIntegrity: {
-            'resources/default_app.asar': {
+            'resources\\default_app.asar': {
               algorithm: 'SHA256',
               hash: nodeCrypto.createHash('sha256').update(getRawHeader(pathToAsar).headerString).digest('hex')
             }
@@ -116,8 +130,8 @@ describe('fuses', function () {
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"'));
 
         const res = await launchApp(['--version']);
-        expect(res.code).to.equal(null);
-        expect(res.signal).to.equal('SIGTRAP');
+        expect(res.code).to.equal(CRASHED_EXIT_CODE);
+        expect(res.signal).to.equal(CRASHED_SIGNAL);
         expect(res.out).to.include('Integrity check failed for asar archive');
       });
 
@@ -142,8 +156,8 @@ describe('fuses', function () {
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not'));
 
         const res = await launchApp();
-        expect(res.code).to.equal(null);
-        expect(res.signal).to.equal('SIGTRAP');
+        expect(res.code).to.equal(CRASHED_EXIT_CODE);
+        expect(res.signal).to.equal(CRASHED_SIGNAL);
         expect(res.out).to.include('Failed to validate block while ending ASAR file stream');
       });
     });
