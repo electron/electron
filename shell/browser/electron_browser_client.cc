@@ -565,16 +565,6 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitch("profile-electron-init");
     }
 
-    // Extension background pages don't have WebContentsPreferences, but they
-    // support WebSQL by default.
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-    content::RenderProcessHost* process =
-        content::RenderProcessHost::FromID(process_id);
-    if (extensions::ProcessMap::Get(process->GetBrowserContext())
-            ->Contains(process_id))
-      command_line->AppendSwitch(switches::kEnableWebSQL);
-#endif
-
     content::WebContents* web_contents =
         GetWebContentsFromProcessID(process_id);
     if (web_contents) {
@@ -1303,6 +1293,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     int render_process_id,
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
+    const net::IsolationInfo& isolation_info,
     std::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
     network::URLLoaderFactoryBuilder& factory_builder,

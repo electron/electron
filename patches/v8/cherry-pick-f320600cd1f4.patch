@@ -11,7 +11,7 @@ Commit-Queue: Shu-yu Guo <syg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#93811}
 
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 6c99451fab8bf7d5b08735dd9a4863b5978596d3..fa13ac023ebd7ea7cbb52b9e6924af1b21146676 100644
+index a90f88a638530c565f279e249ff03d3385b01089..9cb671370b9abfd3939e382c33bae8da8491b487 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
 @@ -434,9 +434,7 @@ Maybe<bool> JSReceiver::SetOrCopyDataProperties(

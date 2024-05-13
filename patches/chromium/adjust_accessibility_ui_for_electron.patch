@@ -10,17 +10,17 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 45b085ebb5096b2cdd083337371539a249c7a0a8..9a0a6cb8b37c60641c2c51aa489fbf22cdb123cb 100644
+index aff8a187b6d81172bf5930c6da6bfed4d7989057..5923e39ae94cabd716d845c86db5f84c3c51e2cb 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-@@ -44,6 +44,7 @@
+@@ -43,6 +43,7 @@
  #include "content/public/browser/web_contents.h"
  #include "content/public/browser/web_contents_delegate.h"
  #include "content/public/browser/web_ui_data_source.h"
 +#include "electron/shell/browser/electron_browser_context.h"
  #include "ui/accessibility/accessibility_features.h"
+ #include "ui/accessibility/ax_updates_and_events.h"
  #include "ui/accessibility/platform/ax_platform_node.h"
- #include "ui/accessibility/platform/ax_platform_node_delegate.h"
 @@ -169,7 +170,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
                                 accessibility_mode);
  }
@@ -128,10 +128,10 @@ index 45b085ebb5096b2cdd083337371539a249c7a0a8..9a0a6cb8b37c60641c2c51aa489fbf22
 +#endif
  }
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.h b/chrome/browser/ui/webui/accessibility/accessibility_ui.h
-index b62ebe504451d7dcd057a3fb6fa64ecd8897c26f..b0e54b76fa9a42df789b12f2e7e6d1ebd41b6aed 100644
+index 45dead36d71f1c91e1be607180e548854083304c..79a2742e6b95e9ab8257c0f1af75eeebce8566e9 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.h
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.h
-@@ -27,6 +27,8 @@ class ScopedAccessibilityMode;
+@@ -30,6 +30,8 @@ class ScopedAccessibilityMode;
  class WebContents;
  }  // namespace content
  
@@ -140,7 +140,7 @@ index b62ebe504451d7dcd057a3fb6fa64ecd8897c26f..b0e54b76fa9a42df789b12f2e7e6d1eb
  namespace user_prefs {
  class PrefRegistrySyncable;
  }  // namespace user_prefs
-@@ -79,6 +81,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
+@@ -82,6 +84,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
    static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
  
   private:
