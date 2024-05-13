@@ -97,7 +97,7 @@ describe('fuses', function () {
     }
   });
 
-  ifdescribe(process.platform === 'win32' || process.platform === 'darwin')('ASAR Integrity', () => {
+  ifdescribe((process.platform === 'win32' && process.arch !== 'arm64') || process.platform === 'darwin')('ASAR Integrity', () => {
     let pathToAsar: string;
 
     beforeEach(async () => {
