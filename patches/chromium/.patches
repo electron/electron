@@ -141,3 +141,4 @@ cherry-pick-c1f25647c2fc.patch
 cherry-pick-013961609785.patch
 a11y_avoid_clearing_resetting_focus_on_an_already_focus_event.patch
 cherry-pick-b2cc7b7ac538.patch
+feat_add_support_for_missing_dialog_features_to_shell_dialogs.patch
