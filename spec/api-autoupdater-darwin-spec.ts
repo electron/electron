@@ -7,9 +7,10 @@ import * as path from 'node:path';
 import * as psList from 'ps-list';
 import { AddressInfo } from 'node:net';
 import { ifdescribe, ifit } from './lib/spec-helpers';
-import { copyApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn, withTempDirectory } from './lib/codesign-helpers';
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import * as uuid from 'uuid';
 import { autoUpdater, systemPreferences } from 'electron';
+import { withTempDirectory } from './lib/fs-helpers';
 
 // We can only test the auto updater on darwin non-component builds
 ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
@@ -65,7 +66,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     if (!cachedZips[key]) {
       let updateZipPath: string;
       await withTempDirectory(async (dir) => {
-        const secondAppPath = await copyApp(dir, fixture);
+        const secondAppPath = await copyMacOSFixtureApp(dir, fixture);
         const appPJPath = path.resolve(secondAppPath, 'Contents', 'Resources', 'app', 'package.json');
         await fs.writeFile(
           appPJPath,
@@ -98,7 +99,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
   // On arm64 builds the built app is self-signed by default so the setFeedURL call always works
   ifit(process.arch !== 'arm64')('should fail to set the feed URL when the app is not signed', async () => {
     await withTempDirectory(async (dir) => {
-      const appPath = await copyApp(dir);
+      const appPath = await copyMacOSFixtureApp(dir);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
       console.log(launchResult);
       expect(launchResult.code).to.equal(1);
@@ -108,7 +109,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
   it('should cleanly set the feed URL when the app is signed', async () => {
     await withTempDirectory(async (dir) => {
-      const appPath = await copyApp(dir);
+      const appPath = await copyMacOSFixtureApp(dir);
       await signApp(appPath, identity);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
       expect(launchResult.code).to.equal(0);
@@ -149,7 +150,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
     it('should hit the update endpoint when checkForUpdates is called', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir, 'check');
+        const appPath = await copyMacOSFixtureApp(dir, 'check');
         await signApp(appPath, identity);
         server.get('/update-check', (req, res) => {
           res.status(204).send();
@@ -166,7 +167,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
     it('should hit the update endpoint with customer headers when checkForUpdates is called', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir, 'check-with-headers');
+        const appPath = await copyMacOSFixtureApp(dir, 'check-with-headers');
         await signApp(appPath, identity);
         server.get('/update-check', (req, res) => {
           res.status(204).send();
@@ -183,7 +184,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
     it('should hit the download endpoint when an update is available and error if the file is bad', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir, 'update');
+        const appPath = await copyMacOSFixtureApp(dir, 'update');
         await signApp(appPath, identity);
         server.get('/update-file', (req, res) => {
           res.status(500).send('This is not a file');
@@ -217,7 +218,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       mutateAppPostSign?: Mutation;
     }, fn: (appPath: string, zipPath: string) => Promise<void>) => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir, opts.startFixture);
+        const appPath = await copyMacOSFixtureApp(dir, opts.startFixture);
         await opts.mutateAppPreSign?.mutate(appPath);
         const infoPath = path.resolve(appPath, 'Contents', 'Info.plist');
         await fs.writeFile(
