@@ -9,6 +9,7 @@ An example of implementing a protocol that has the same effect as the
 
 ```js
 const { app, protocol, net } = require('electron')
+const path = require('node:path')
 const url = require('node:url')
 
 app.whenReady().then(() => {
