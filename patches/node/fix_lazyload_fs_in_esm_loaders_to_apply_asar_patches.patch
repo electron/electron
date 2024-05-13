@@ -78,11 +78,11 @@ index 8c9e8bfb4e828d044b236a11c0890cb4f0161050..30f6abd5d2d3fb7aceaa6191ebd99642
      // Check for !stat.isDirectory()
      if (stat !== 1) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 11d64bfd66259a5c5cf089de713af35ec9cde2aa..4831f3678cde9b4edad04922932c8239a7908a04 100644
+index 232cf43c500056896eb754c15334858038b0525c..5e79fc2c04ffb6006229920cc1ab61b537fed4c0 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -32,7 +32,7 @@ function lazyTypes() {
- const { containsModuleSyntax } = internalBinding('contextify');
+@@ -36,7 +36,7 @@ const {
+ 
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
 -const { readFileSync } = require('fs');
@@ -90,7 +90,7 @@ index 11d64bfd66259a5c5cf089de713af35ec9cde2aa..4831f3678cde9b4edad04922932c8239
  const { dirname, extname, isAbsolute } = require('path');
  const {
    loadBuiltinModule,
-@@ -376,7 +376,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -358,7 +358,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
  
    try {
      // We still need to read the FS to detect the exports.
@@ -99,7 +99,7 @@ index 11d64bfd66259a5c5cf089de713af35ec9cde2aa..4831f3678cde9b4edad04922932c8239
    } catch {
      // Continue regardless of error.
    }
-@@ -445,7 +445,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -427,7 +427,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).

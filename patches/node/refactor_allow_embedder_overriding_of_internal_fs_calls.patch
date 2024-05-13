@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 8812c3b35184b2f58f3d1e1a1b4f14b7120325cc..932f5035d7f4e11113420dc095014682778a79a6 100644
+index d42e766555a83ec7421b13c2bf75bfd28f086102..57125a271394dda0d3aa3a261ba087c978582c29 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -134,6 +134,10 @@ process.domain = null;
@@ -22,10 +22,10 @@ index 8812c3b35184b2f58f3d1e1a1b4f14b7120325cc..932f5035d7f4e11113420dc095014682
  const binding = internalBinding('builtins');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index e384e3e6c4e584132bb6a9831a554502f289133a..46140285cf6b73c154a067c5f0f0931add5e9275 100644
+index 276ab42c22b796ee07ce66744187adca6a8b8da4..155485dbab0d46bb225fa40e99f555d805659c4f 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -100,7 +100,7 @@ const { containsModuleSyntax } = internalBinding('contextify');
+@@ -102,7 +102,7 @@ const {
  const assert = require('internal/assert');
  const fs = require('fs');
  const path = require('path');
@@ -34,7 +34,7 @@ index e384e3e6c4e584132bb6a9831a554502f289133a..46140285cf6b73c154a067c5f0f0931a
  const { safeGetenv } = internalBinding('credentials');
  const {
    privateSymbols: {
-@@ -194,7 +194,7 @@ function stat(filename) {
+@@ -196,7 +196,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) { return result; }
    }
