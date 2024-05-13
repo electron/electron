@@ -33,7 +33,7 @@ index 2ce1e8a7dcca2ba153d387d11970c72b5f43c167..590303d1b78e2c28d7c3338196b12fcf
      node_platform = "win32"
    } else if (target_os == "mac") {
 diff --git a/src/env.cc b/src/env.cc
-index 9f83720fefc77342dd45cdf1eebfac613262ad63..309b39fb2b1116824c0c1c2ae86d8e1113e31c3d 100644
+index 5c75e5b99d9415163640ab90f5891c0fee067a88..5f8bb37d117d82123b81f5f4b32735150184fa74 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -557,7 +557,8 @@ IsolateData::IsolateData(Isolate* isolate,

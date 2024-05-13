@@ -494,7 +494,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { access } = fs;
-  fs.access = function (pathArgument: string, mode: any, callback: any) {
+  fs.access = function (pathArgument: string, mode: number, callback: any) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return access.apply(this, arguments);
     const { asarPath, filePath } = pathInfo;
@@ -539,7 +539,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     nextTick(callback);
   };
 
-  fs.promises.access = util.promisify(fs.access);
+  const { access: accessPromise } = fs.promises;
+  fs.promises.access = function (pathArgument: string, mode: number) {
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) {
+      return accessPromise.apply(this, arguments);
+    }
+
+    const p = util.promisify(fs.access);
+    return p(pathArgument, mode);
+  };
 
   const { accessSync } = fs;
   fs.accessSync = function (pathArgument: string, mode: any) {

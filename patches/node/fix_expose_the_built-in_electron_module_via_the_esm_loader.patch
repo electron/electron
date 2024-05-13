@@ -73,10 +73,10 @@ index b56ad6cc833f00f58bf3925e9fd82a8f5b7b9bd7..8c9e8bfb4e828d044b236a11c0890cb4
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index ca547699d00ed125fd3b9d383d67b9606f89d199..11d64bfd66259a5c5cf089de713af35ec9cde2aa 100644
+index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c15334858038b0525c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -301,7 +301,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -283,7 +283,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -85,7 +85,7 @@ index ca547699d00ed125fd3b9d383d67b9606f89d199..11d64bfd66259a5c5cf089de713af35e
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -323,8 +323,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -305,8 +305,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -96,7 +96,7 @@ index ca547699d00ed125fd3b9d383d67b9606f89d199..11d64bfd66259a5c5cf089de713af35e
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -349,6 +349,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -331,6 +331,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source);
  });
  
@@ -108,10 +108,10 @@ index ca547699d00ed125fd3b9d383d67b9606f89d199..11d64bfd66259a5c5cf089de713af35e
  // or as the initial entry point when the ESM loader handles a CommonJS entry.
  translators.set('commonjs', async function commonjsStrategy(url, source,
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 428c2f1bec4a8e149b8058406d1393a6690ff31a..979455cb44f5edba6d178a6c36a330d707a2395e 100644
+index 34fb672ecb62b83cfb6a3a7484354165f4b02a85..679cb1302dfeb4a50d34219efccc73b518587066 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1457,6 +1457,8 @@ function fileURLToPath(path) {
+@@ -1459,6 +1459,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
@@ -119,4 +119,4 @@ index 428c2f1bec4a8e149b8058406d1393a6690ff31a..979455cb44f5edba6d178a6c36a330d7
 +    return 'electron';
    if (path.protocol !== 'file:')
      throw new ERR_INVALID_URL_SCHEME('file');
-   return isWindows ? getPathFromURLWin32(path) : getPathFromURLPosix(path);
+   return (windows ?? isWindows) ? getPathFromURLWin32(path) : getPathFromURLPosix(path);

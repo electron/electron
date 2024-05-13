@@ -10,7 +10,7 @@ already been called.
 This should be upstreamed.
 
 diff --git a/src/node.cc b/src/node.cc
-index 012dd487e8db232d068bce358ad44b14e78d0fe9..a1062226bebd18ec84302ebdc4c4dbac352f51ae 100644
+index 3e4f1b5d730865fae61f8bfbc58c14c6a59fb33a..7478ef81eb9b275eb5f45b528582e5bbd30e60ec 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -650,6 +650,7 @@ static void PlatformInit(ProcessInitializationFlags::Flags flags) {
@@ -22,7 +22,7 @@ index 012dd487e8db232d068bce358ad44b14e78d0fe9..a1062226bebd18ec84302ebdc4c4dbac
  #endif  // NODE_USE_V8_WASM_TRAP_HANDLER
    }
 diff --git a/src/node.h b/src/node.h
-index 16c3ad349e942b83764c7772178baa5057cd64f3..5ade64874ec08474f05db226cf19a043fa26592e 100644
+index e55256996f2c85b0ae3854cbd1b83ca88a3e22cb..76e2459eceed127e69c686f26fd5bd369b81f1af 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -275,6 +275,10 @@ enum Flags : uint32_t {
