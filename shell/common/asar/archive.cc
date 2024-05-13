@@ -115,7 +115,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     info->executable = *executable;
   }
 
-#if BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   if (load_integrity &&
       electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
     if (const base::Value::Dict* integrity = node->FindDict("integrity")) {

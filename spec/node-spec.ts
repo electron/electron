@@ -4,10 +4,11 @@ import * as fs from 'fs-extra';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { copyApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn, withTempDirectory } from './lib/codesign-helpers';
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { webContents } from 'electron/main';
 import { EventEmitter } from 'node:stream';
 import { once } from 'node:events';
+import { withTempDirectory } from './lib/fs-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -683,7 +684,7 @@ describe('node feature', () => {
 
     it('is disabled when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir);
+        const appPath = await copyMacOSFixtureApp(dir);
         await signApp(appPath, identity);
         // Invoke Electron by using the system node binary as middle layer, so
         // the check of NODE_OPTIONS will think the process is started by other
@@ -696,7 +697,7 @@ describe('node feature', () => {
 
     it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async function () {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir);
+        const appPath = await copyMacOSFixtureApp(dir);
         await signApp(appPath, identity);
         // Find system node and copy it to app bundle.
         const nodePath = process.env.PATH?.split(path.delimiter).find(dir => fs.existsSync(path.join(dir, 'node')));
@@ -715,7 +716,7 @@ describe('node feature', () => {
 
     it('is respected when invoked from self', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir, null);
+        const appPath = await copyMacOSFixtureApp(dir, null);
         await signApp(appPath, identity);
         const appExePath = path.join(appPath, 'Contents/MacOS/Electron');
         const { code, out } = await spawn(appExePath, [script, appExePath]);
