@@ -77,10 +77,6 @@ BrowserWindow.prototype._init = function (this: BWT) {
 
   this._browserViews = [];
 
-  this.on('close', () => {
-    this._browserViews.forEach(b => b.webContents?.close({ waitForBeforeUnload: true }));
-  });
-
   // Notify the creation of the window.
   app.emit('browser-window-created', { preventDefault () {} }, this);
 
