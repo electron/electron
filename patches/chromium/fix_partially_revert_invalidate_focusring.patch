@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Mon, 6 May 2024 11:03:08 -0700
+Subject: fix: partially revert views invalidate FocusRing when its host is
+ invalidated
+
+This reverts commit f425c438dfb11fb714655c999ba8c74b58393425. This
+commit seems to be causing a sporadic crash on Ubuntu and other Linux
+distros. This patch can be reverted when the issue is fixed upstream, or
+when the crash is addressed.
+
+diff --git a/ui/views/view.cc b/ui/views/view.cc
+index 94b026cda4738e489f1d7201c996f6db70d018ed..32ec794f4683be5ded78dcf310d3623b8748c236 100644
+--- a/ui/views/view.cc
++++ b/ui/views/view.cc
+@@ -911,16 +911,6 @@ void View::Layout(PassKey) {
+ }
+ 
+ void View::InvalidateLayout() {
+-  if (invalidating_) {
+-    return;
+-  }
+-
+-  // There is no need to `InvalidateLayout()` when `Widget::IsClosed()`.
+-  if (Widget* widget = GetWidget(); widget && widget->IsClosed()) {
+-    return;
+-  }
+-
+-  base::AutoReset<bool> invalidating(&invalidating_, true);
+   // We should never need to invalidate during a layout call; this tracks
+   // how many times that is happening.
+   ++invalidates_during_layout_;
+@@ -928,11 +918,6 @@ void View::InvalidateLayout() {
+   // Always invalidate up. This is needed to handle the case of us already being
+   // valid, but not our parent.
+   needs_layout_ = true;
+-
+-  for (ViewObserver& observer : observers_) {
+-    observer.OnViewLayoutInvalidated(this);
+-  }
+-
+   if (HasLayoutManager()) {
+     GetLayoutManager()->InvalidateLayout();
+   }
+diff --git a/ui/views/view.h b/ui/views/view.h
+index ea7d5441dbbfb713a6ffb57bcc07fb55fa574016..54b4c0a2871f214a4806fd863f32b8d010c09058 100644
+--- a/ui/views/view.h
++++ b/ui/views/view.h
+@@ -2343,9 +2343,6 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+   // it is happening.
+   int invalidates_during_layout_ = 0;
+ 
+-  // Whether this view is in the middle of InvalidateLayout().
+-  bool invalidating_ = false;
+-
+   // The View's LayoutManager defines the sizing heuristics applied to child
+   // Views. The default is absolute positioning according to bounds_.
+   std::unique_ptr<LayoutManager> layout_manager_;
