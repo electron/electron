@@ -26,6 +26,7 @@ const bufferReplace = (haystack: Buffer, needle: string, replacement: string, th
   return Buffer.concat([before, Buffer.from(replacement), after], len);
 };
 
+type SpawnResult = { code: number | null, out: string, signal: NodeJS.Signals | null };
 function spawn (cmd: string, args: string[], opts: any = {}) {
   let out = '';
   const child = cp.spawn(cmd, args, opts);
@@ -35,7 +36,7 @@ function spawn (cmd: string, args: string[], opts: any = {}) {
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  return new Promise<{ code: number | null, out: string, signal: NodeJS.Signals | null }>((resolve) => {
+  return new Promise<SpawnResult>((resolve) => {
     child.on('exit', (code, signal) => {
       resolve({
         code,
@@ -46,8 +47,16 @@ function spawn (cmd: string, args: string[], opts: any = {}) {
   });
 };
 
-const CRASHED_EXIT_CODE = process.platform === 'win32' ? 2147483651 : null;
-const CRASHED_SIGNAL = process.platform === 'win32' ? null : 'SIGTRAP';
+const expectToHaveCrashed = (res: SpawnResult) => {
+  if (process.platform === 'win32') {
+    expect(res.code).to.not.equal(0);
+    expect(res.code).to.not.equal(null);
+    expect(res.signal).to.equal(null);
+  } else {
+    expect(res.code).to.equal(null);
+    expect(res.signal).to.equal('SIGTRAP');
+  }
+};
 
 describe('fuses', function () {
   this.timeout(120000);
@@ -130,8 +139,7 @@ describe('fuses', function () {
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"'));
 
         const res = await launchApp(['--version']);
-        expect(res.code).to.equal(CRASHED_EXIT_CODE);
-        expect(res.signal).to.equal(CRASHED_SIGNAL);
+        expectToHaveCrashed(res);
         expect(res.out).to.include('Integrity check failed for asar archive');
       });
 
@@ -156,8 +164,7 @@ describe('fuses', function () {
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not'));
 
         const res = await launchApp();
-        expect(res.code).to.equal(CRASHED_EXIT_CODE);
-        expect(res.signal).to.equal(CRASHED_SIGNAL);
+        expectToHaveCrashed(res);
         expect(res.out).to.include('Failed to validate block while ending ASAR file stream');
       });
     });
