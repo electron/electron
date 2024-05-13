@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index af61f659c3b06227e1eff319b62c53b6383f1374..6c196126f5f2544595a42d7bbe636bf88ccc6116 100644
+index 6a8f38e50a21989234ee193e6f631187c2107374..e9a9a2499ae33bd8128c8c018a26cce2115fc89d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4570,8 +4570,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4574,8 +4574,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -344,10 +344,10 @@ index ab81b9e60cd6334b8342a83bbffc588d256b54c7..eca73c0305617e98cc10568de036c7e7
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index f70d2c05e721f1651fd1b3399df20a86aea9e1be..7cb4837698c6569fe35f935d364da62b7c8285ef 100644
+index 0ed0d3a22c0fcb15c70fab4dc740c27a18c37da4..24608ddccafe0783c71788593b678aa06e17fd67 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -189,8 +189,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -190,8 +190,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

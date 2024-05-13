@@ -28,7 +28,7 @@ index f9d3219990dcf4f4a829567d567072df59a70ada..ca8281faaff601bf591cf5a2b185e4ba
  
    // Returns the http referrer of original request which initited this load.
 diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
-index b6a67a19666b86c80c40d72ad13da5b0d37b4bc9..53f95d3f7384f854d55cd72dd14f65de6eadb537 100644
+index 1acdd38e9711b7bae4c6787bd34ba37ef9de8b49..2d853ae0c01e6855575d72e9c6a7a38aaa0b2529 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.h
 +++ b/third_party/blink/renderer/core/loader/document_loader.h
 @@ -312,7 +312,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
