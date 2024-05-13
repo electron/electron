@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 1ed186b597eece7c34cb69c8e1e20870555a040d..7d201bb6b822f0401c3be2bc52d65bc71463748b 100644
+index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b5f43c167 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -1,14 +1,406 @@
@@ -102,7 +102,7 @@ index 1ed186b597eece7c34cb69c8e1e20870555a040d..7d201bb6b822f0401c3be2bc52d65bc7
 +fs_files = node_files.fs_files
 +original_fs_files = []
 +foreach(file, fs_files) {
-+  original_fs_files += [string_replace(string_replace(file, "internal/fs/", "internal/original-fs/"), "lib/fs.js", "lib/original-fs.js")]
++  original_fs_files += [string_replace(string_replace(string_replace(file, "internal/fs/", "internal/original-fs/"), "lib/fs.js", "lib/original-fs.js"), "lib/fs/", "lib/original-fs/")]
 +}
 +
 +copy("node_js2c_inputs") {
@@ -1258,7 +1258,7 @@ index 0000000000000000000000000000000000000000..af9cbada10203b387fb9732b346583b1
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..12f844c771c19c8d27dcfb9210dcf7bc77b2e994
+index 0000000000000000000000000000000000000000..424b6f4f9d89c43a2c0404d1a5cb03828f29d906
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,739 @@
@@ -1277,7 +1277,8 @@ index 0000000000000000000000000000000000000000..12f844c771c19c8d27dcfb9210dcf7bc
 +    "lib/internal/fs/sync_write_stream.js",
 +    "lib/internal/fs/utils.js",
 +    "lib/internal/fs/watchers.js",
-+    "lib/fs.js"
++    "lib/fs.js",
++    "lib/fs/promises.js"
 +  ],
 +  "headers": [
 +    {
@@ -1465,7 +1466,6 @@ index 0000000000000000000000000000000000000000..12f844c771c19c8d27dcfb9210dcf7bc
 +    "lib/dns/promises.js",
 +    "lib/domain.js",
 +    "lib/events.js",
-+    "lib/fs/promises.js",
 +    "lib/http.js",
 +    "lib/http2.js",
 +    "lib/https.js",
@@ -2341,7 +2341,7 @@ index 0000000000000000000000000000000000000000..7848ddb1841b6d4f36e9376c73564eb4
 +    f.write('\n')
 diff --git a/tools/generate_original_fs.py b/tools/generate_original_fs.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..a6cdf33f2c0bcca4d7b4eacaa407f1ac5bdcb5cb
+index 0000000000000000000000000000000000000000..9be3ac447f9a4dde23fefc26e0b922b4ba88f083
 --- /dev/null
 +++ b/tools/generate_original_fs.py
 @@ -0,0 +1,19 @@
@@ -2355,7 +2355,7 @@ index 0000000000000000000000000000000000000000..a6cdf33f2c0bcca4d7b4eacaa407f1ac
 +for fs_file in fs_files:
 +  with open(os.path.join(node_root_dir, fs_file), 'r') as f:
 +    contents = f.read()
-+    original_fs_file = fs_file.replace('internal/fs/', 'internal/original-fs/').replace('lib/fs.js', 'lib/original-fs.js')
++    original_fs_file = fs_file.replace('internal/fs/', 'internal/original-fs/').replace('lib/fs.js', 'lib/original-fs.js').replace('lib/fs/', 'lib/original-fs/')
 +
 +    with open(os.path.join(out_dir, fs_file), 'w') as original_f:
 +      original_f.write(contents)
