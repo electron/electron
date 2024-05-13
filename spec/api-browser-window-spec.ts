@@ -1503,6 +1503,13 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getBounds(), fullBounds);
       });
 
+      it('rounds non-integer bounds', () => {
+        w.setBounds({ x: 440.5, y: 225.1, width: 500.4, height: 400.9 });
+
+        const bounds = w.getBounds();
+        expect(bounds).to.deep.equal({ x: 441, y: 225, width: 500, height: 401 });
+      });
+
       it('sets the window bounds with partial bounds', () => {
         const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
         w.setBounds(fullBounds);
