@@ -83,7 +83,7 @@ class DataPipeReader {
     }
 
     // Read.
-    uint32_t length = remaining_size_;
+    size_t length = remaining_size_;
     result = data_pipe_->ReadData(head_, &length, MOJO_READ_DATA_FLAG_NONE);
     if (result == MOJO_RESULT_OK) {  // success
       remaining_size_ -= length;

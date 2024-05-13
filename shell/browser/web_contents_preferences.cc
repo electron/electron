@@ -124,7 +124,6 @@ void WebContentsPreferences::Clear() {
   images_ = true;
   text_areas_are_resizable_ = true;
   webgl_ = true;
-  enable_websql_ = true;
   enable_preferred_size_mode_ = false;
   web_security_ = true;
   allow_running_insecure_content_ = false;
@@ -183,7 +182,6 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get(options::kTextAreasAreResizable,
                       &text_areas_are_resizable_);
   web_preferences.Get(options::kWebGL, &webgl_);
-  web_preferences.Get(options::kEnableWebSQL, &enable_websql_);
   web_preferences.Get(options::kEnablePreferredSizeMode,
                       &enable_preferred_size_mode_);
   web_preferences.Get(options::kWebSecurity, &web_security_);
@@ -382,7 +380,6 @@ void WebContentsPreferences::SaveLastPreferences() {
   dict.Set(options::kSandbox, IsSandboxed());
   dict.Set(options::kContextIsolation, context_isolation_);
   dict.Set(options::kJavaScript, javascript_);
-  dict.Set(options::kEnableWebSQL, enable_websql_);
   dict.Set(options::kWebviewTag, webview_tag_);
   dict.Set("disablePopups", disable_popups_);
   dict.Set(options::kWebSecurity, web_security_);
@@ -492,7 +489,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
   prefs->enable_plugins = plugins_;
   prefs->webview_tag = webview_tag_;
-  prefs->enable_websql = enable_websql_;
 
   prefs->v8_cache_options = v8_cache_options_;
 }

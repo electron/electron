@@ -14,7 +14,7 @@ This really isn't ideal at all, we need to refactor desktopCapturer (read comple
 to use StartUpdating and handle the events instead of using the "get the list once" method.
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index 0c6fccf16a11bbaff10115308e4b489490e5d3e6..e5ec31054a43989e630115605de435399d36559b 100644
+index 7a879b2f5332f98927c5e3858dd31c5de169e5ce..75191362088d2d875330fb2044a4682b8a20e342 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
 @@ -143,6 +143,8 @@ class DesktopMediaList {

@@ -806,7 +806,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 #endif
 
   void ClearCache(v8::Isolate* isolate) {
-    isolate->IdleNotificationDeadline(0.5);
     blink::WebCache::Clear();
     base::MemoryPressureListener::NotifyMemoryPressure(
         base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);

@@ -81,18 +81,11 @@ if (is_linux) {
     ]
   }
 
-  # Generates electron_gtk_stubs.h header which contains
-  # stubs for extracting function ptrs from the gtk library.
-  # Function signatures for which stubs are required should be
-  # declared in electron_gtk.sigs, currently this file contains
-  # signatures for the functions used with native file chooser
-  # implementation. In future, this file can be extended to contain
-  # gtk4 stubs to switch gtk version in runtime.
+  # Generates headers which contain stubs for extracting function ptrs
+  # from the gtk library. Function signatures for which stubs are
+  # required should be declared in the sig files.
   generate_stubs("electron_gtk_stubs") {
-    sigs = [
-      "shell/browser/ui/electron_gdk_pixbuf.sigs",
-      "shell/browser/ui/electron_gtk.sigs",
-    ]
+    sigs = [ "shell/browser/ui/electron_gdk_pixbuf.sigs" ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
     public_deps = [ "//ui/gtk:gtk_config" ]
@@ -665,6 +658,7 @@ source_set("electron_lib") {
     libs += [ "dwmapi.lib" ]
     sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
+      "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
       "//ui/wm",

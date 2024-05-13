@@ -44,6 +44,7 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
+  int GetTranslucentTopAreaHeight() const;
   // Returns which edges of the frame are tiled.
   const ui::WindowTiledEdges& tiled_edges() const { return tiled_edges_; }
   void set_tiled_edges(ui::WindowTiledEdges tiled_edges) {
