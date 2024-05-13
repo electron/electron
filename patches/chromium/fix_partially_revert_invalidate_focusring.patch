@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Mon, 6 May 2024 11:03:08 -0700
+Subject: fix: partially revert views invalidate FocusRing when its host is
+ invalidated
+
+This reverts commit f425c438dfb11fb714655c999ba8c74b58393425. This
+commit seems to be causing a sporadic crash on Ubuntu and other Linux
+distros. This patch can be reverted when the issue is fixed upstream, or
+when the crash is addressed.
+
+diff --git a/ui/views/view.cc b/ui/views/view.cc
+index 81109f7679aaef16f3045f61e349af42e7464a03..c734f8522d2912210f04ecb8f2bba2f904c53535 100644
+--- a/ui/views/view.cc
++++ b/ui/views/view.cc
+@@ -929,11 +929,6 @@ void View::Layout(PassKey) {
+ }
+ 
+ void View::InvalidateLayout() {
+-  if (invalidating_) {
+-    return;
+-  }
+-
+-  base::AutoReset<bool> invalidating(&invalidating_, true);
+   // We should never need to invalidate during a layout call; this tracks
+   // how many times that is happening.
+   ++invalidates_during_layout_;
+@@ -941,11 +936,6 @@ void View::InvalidateLayout() {
+   // Always invalidate up. This is needed to handle the case of us already being
+   // valid, but not our parent.
+   needs_layout_ = true;
+-
+-  for (ViewObserver& observer : observers_) {
+-    observer.OnViewLayoutInvalidated(this);
+-  }
+-
+   if (HasLayoutManager()) {
+     GetLayoutManager()->InvalidateLayout();
+   }
+diff --git a/ui/views/view.h b/ui/views/view.h
+index 6cca6e9e7627d8495128d42887b0c950ee85d1d7..69ab9fa2b82848fdf49d8cf099ddad224460312a 100644
+--- a/ui/views/view.h
++++ b/ui/views/view.h
+@@ -2350,9 +2350,6 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+   // it is happening.
+   int invalidates_during_layout_ = 0;
+ 
+-  // Whether this view is in the middle of InvalidateLayout().
+-  bool invalidating_ = false;
+-
+   // The View's LayoutManager defines the sizing heuristics applied to child
+   // Views. The default is absolute positioning according to bounds_.
+   std::unique_ptr<LayoutManager> layout_manager_;
