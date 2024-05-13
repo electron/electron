@@ -10,10 +10,10 @@ distros. This patch can be reverted when the issue is fixed upstream, or
 when the crash is addressed.
 
 diff --git a/ui/views/view.cc b/ui/views/view.cc
-index 94b026cda4738e489f1d7201c996f6db70d018ed..32ec794f4683be5ded78dcf310d3623b8748c236 100644
+index 81109f7679aaef16f3045f61e349af42e7464a03..c734f8522d2912210f04ecb8f2bba2f904c53535 100644
 --- a/ui/views/view.cc
 +++ b/ui/views/view.cc
-@@ -911,16 +911,6 @@ void View::Layout(PassKey) {
+@@ -929,11 +929,6 @@ void View::Layout(PassKey) {
  }
  
  void View::InvalidateLayout() {
@@ -21,16 +21,11 @@ index 94b026cda4738e489f1d7201c996f6db70d018ed..32ec794f4683be5ded78dcf310d3623b
 -    return;
 -  }
 -
--  // There is no need to `InvalidateLayout()` when `Widget::IsClosed()`.
--  if (Widget* widget = GetWidget(); widget && widget->IsClosed()) {
--    return;
--  }
--
 -  base::AutoReset<bool> invalidating(&invalidating_, true);
    // We should never need to invalidate during a layout call; this tracks
    // how many times that is happening.
    ++invalidates_during_layout_;
-@@ -928,11 +918,6 @@ void View::InvalidateLayout() {
+@@ -941,11 +936,6 @@ void View::InvalidateLayout() {
    // Always invalidate up. This is needed to handle the case of us already being
    // valid, but not our parent.
    needs_layout_ = true;
@@ -43,10 +38,10 @@ index 94b026cda4738e489f1d7201c996f6db70d018ed..32ec794f4683be5ded78dcf310d3623b
      GetLayoutManager()->InvalidateLayout();
    }
 diff --git a/ui/views/view.h b/ui/views/view.h
-index ea7d5441dbbfb713a6ffb57bcc07fb55fa574016..54b4c0a2871f214a4806fd863f32b8d010c09058 100644
+index 6cca6e9e7627d8495128d42887b0c950ee85d1d7..69ab9fa2b82848fdf49d8cf099ddad224460312a 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
-@@ -2343,9 +2343,6 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+@@ -2350,9 +2350,6 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
    // it is happening.
    int invalidates_during_layout_ = 0;
  
