@@ -270,7 +270,7 @@ bool Archive::Init() {
   }
 
   header_size_ = 8 + size;
-  header_ = std::move(value->GetDict());
+  header_ = std::move(*value).TakeDict();
   return true;
 }
 
