@@ -244,10 +244,8 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   for (const auto it : dict) {
-    if (it.second.is_string()) {
-      std::string value = it.second.GetString();
-      out->SetHeader(it.first, value);
-    }
+    if (it.second.is_string())
+      out->SetHeader(it.first, std::move(it.second).TakeString());
   }
   return true;
 }
