@@ -426,20 +426,7 @@ void NativeWindowMac::Focus(bool focus) {
     // If we're a panel window, we do not want to activate the app,
     // which enables Electron-apps to build Spotlight-like experiences.
     if (!IsPanel()) {
-      // On macOS < Sonoma, "activateIgnoringOtherApps:NO" would not
-      // activate apps if focusing a window that is inActive. That
-      // changed with macOS Sonoma, which also deprecated
-      // "activateIgnoringOtherApps".
-      //
-      // There's a slim chance we should have never called
-      // activateIgnoringOtherApps, but we tried that many years ago
-      // and saw weird focus bugs on other macOS versions. So, to make
-      // this safe, we're gating by versions.
-      if (@available(macOS 14.0, *)) {
-        [[NSApplication sharedApplication] activate];
-      } else {
-        [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
-      }
+      [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
     }
     [window_ makeKeyAndOrderFront:nil];
   } else {
