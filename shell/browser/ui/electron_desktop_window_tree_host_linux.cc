@@ -87,9 +87,15 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
     ui::WindowTiledEdges new_tiled_edges) {
-  static_cast<ClientFrameViewLinux*>(
-      native_window_view_->widget()->non_client_view()->frame_view())
-      ->set_tiled_edges(new_tiled_edges);
+  // CreateNonClientFrameView creates `ClientFrameViewLinux` only when both
+  // frame and client_frame booleans are set, otherwise it is a different type
+  // of view.
+  if (native_window_view_->has_frame() &&
+      native_window_view_->has_client_frame()) {
+    static_cast<ClientFrameViewLinux*>(
+        native_window_view_->widget()->non_client_view()->frame_view())
+        ->set_tiled_edges(new_tiled_edges);
+  }
   UpdateFrameHints();
 }
 
