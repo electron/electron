@@ -41,6 +41,17 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents properties', () => {
+    afterEach(closeAllWindows);
+
+    it('has expected additional enumerable properties', () => {
+      const w = new BrowserWindow({ show: false });
+      const properties = Object.getOwnPropertyNames(w.webContents);
+      expect(properties).to.include('ipc');
+      expect(properties).to.include('navigationHistory');
+    });
+  });
+
   describe('fromId()', () => {
     it('returns undefined for an unknown id', () => {
       expect(webContents.fromId(12345)).to.be.undefined();
