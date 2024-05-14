@@ -218,7 +218,7 @@ async function installSpecModules (dir) {
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
     await fs.remove(path.resolve(dir, 'node_modules'));
   }
-  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
+  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile', '--ignore-engines'], {
     env,
     cwd: dir,
     stdio: 'inherit',
