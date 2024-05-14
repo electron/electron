@@ -56,7 +56,7 @@ executors:
         # 2xlarge should not be used directly, use the pipeline param instead
         enum: ["medium", "electronjs/aks-linux-medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
     docker:
-      - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
+      - image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
     resource_class: << parameters.size >>
 
   macos:
