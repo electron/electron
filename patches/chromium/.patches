@@ -133,3 +133,4 @@ refactor_expose_file_system_access_blocklist.patch
 cherry-pick-013961609785.patch
 feat_add_support_for_missing_dialog_features_to_shell_dialogs.patch
 fix_partially_revert_invalidate_focusring.patch
+cherry-pick-2412177bf518.patch
