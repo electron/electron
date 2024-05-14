@@ -2,3 +2,4 @@ chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 merged_wasm_gc_scan_the_code_field_of_the_wasminternalfunction.patch
 cherry-pick-f320600cd1f4.patch
+cherry-pick-b3c01ac1e60a.patch
