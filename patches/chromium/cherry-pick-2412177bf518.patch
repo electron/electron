@@ -1,0 +1,42 @@
+From 2412177bf51898691beca7799f5f792828fde78b Mon Sep 17 00:00:00 2001
+From: Greg Thompson <grt@chromium.org>
+Date: Wed, 24 Apr 2024 12:19:19 +0000
+Subject: [PATCH] Revert "Enable EnableWatermarkView feature flag by default"
+
+This reverts commit 6b879855954baf55fad208dc4c7c49db918d9372.
+
+Reason for revert: feature breaks accessibility tools.
+
+Original change's description:
+> Enable EnableWatermarkView feature flag by default
+>
+> Bug: b/329686629
+> Change-Id: Ic7dc3c52f8bbc6e555615c257cf181e386aab123
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5463163
+> Commit-Queue: Nasser Al-shawwa <alshawwa@chromium.org>
+> Reviewed-by: Dominique Fauteux-Chapleau <domfc@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1289484}
+
+Bug: 336559397, b/329686629
+Change-Id: If6d88f8c2cc16154e8c396a7f199bbca63429899
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5479768
+Commit-Queue: Dominique Fauteux-Chapleau <domfc@chromium.org>
+Auto-Submit: Greg Thompson <grt@chromium.org>
+Reviewed-by: Dominique Fauteux-Chapleau <domfc@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/heads/main@{#1291820}
+---
+
+diff --git a/chrome/common/chrome_features.cc b/chrome/common/chrome_features.cc
+index 047a2313..eb4aa38 100644
+--- a/chrome/common/chrome_features.cc
++++ b/chrome/common/chrome_features.cc
+@@ -235,7 +235,7 @@
+ 
+ BASE_FEATURE(kEnableWatermarkView,
+              "EnableWatermarkView",
+-             base::FEATURE_ENABLED_BY_DEFAULT);
++             base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+ // Whether to allow installed-by-default web apps to be installed or not.
