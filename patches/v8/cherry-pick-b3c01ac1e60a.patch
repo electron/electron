@@ -1,7 +1,7 @@
-From b3c01ac1e60afc9addad9942f7a9a6c5e8a4a6da Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shu-yu Guo <syg@chromium.org>
 Date: Mon, 13 May 2024 11:23:20 -0700
-Subject: [PATCH] [compiler] Don't build AccessInfo for storing to module exports
+Subject: Don't build AccessInfo for storing to module exports
 
 Bug: 340221135
 Change-Id: I5af35be6ebf6a69db1c4687107503575b23973c4
@@ -9,13 +9,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5534518
 Reviewed-by: Adam Klein <adamk@chromium.org>
 Commit-Queue: Shu-yu Guo <syg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#93872}
----
 
 diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
-index 2e81109..a81a8e8 100644
+index 7cff878839c85cd9c6571ee48f1a0fce081f4471..9d022ba402d7bfdd5ca745a4193ee0de0e3d755e 100644
 --- a/src/compiler/access-info.cc
 +++ b/src/compiler/access-info.cc
-@@ -527,6 +527,14 @@
+@@ -526,6 +526,14 @@ PropertyAccessInfo AccessorAccessInfoHelper(
          Cell::cast(module_namespace->module()->exports()->Lookup(
              isolate, name.object(),
              Smi::ToInt(Object::GetHash(*name.object())))));
@@ -31,10 +30,10 @@ index 2e81109..a81a8e8 100644
        // This module has not been fully initialized yet.
        return PropertyAccessInfo::Invalid(zone);
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index 4d9c6dd..753eb4b 100644
+index 73ead492da3ee56a80ee088d9440abb2d9ae8cdd..efcdd6d2028a5e0f0ec1149925ab2e1fe5f90412 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -4169,19 +4169,28 @@
+@@ -4001,19 +4001,28 @@ ReduceResult MaglevGraphBuilder::TryBuildPropertyStore(
          access_info.holder().value());
    }
  
