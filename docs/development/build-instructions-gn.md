@@ -329,3 +329,7 @@ Error: Cannot find module '/Users/<user>/.electron_build_tools/src/e'
 ```
 
 We recommend installing Node through [nvm](https://github.com/nvm-sh/nvm). This allows for easier Node version management, and is often a fix for missing `e` modules.
+
+### RBE authentication randomly fails with "Token not valid"
+
+This could be caused by the local clock time on the machine being off by a small amount. Use [time.is](https://time.is/) to check.
