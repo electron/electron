@@ -22,7 +22,6 @@ auto_filenames = {
     "docs/api/download-item.md",
     "docs/api/environment-variables.md",
     "docs/api/extensions.md",
-    "docs/api/file-object.md",
     "docs/api/global-shortcut.md",
     "docs/api/in-app-purchase.md",
     "docs/api/incoming-message.md",

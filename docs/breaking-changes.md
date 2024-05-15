@@ -12,6 +12,38 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (32.0)
+
+### Removed: `File.path`
+
+The nonstandard `path` property of the Web `File` object was added in an early version of Electron as a convenience method for working with native files when doing everything in the renderer was more common. However, it represents a deviation from the standard and poses a minor security risk as well, so beginning in Electron 32.0 it has been removed in favor of the [`webUtils.getPathForFile`](api/web-utils.md#webutilsgetpathforfilefile) method.
+
+```js
+// Before (renderer)
+
+const file = document.querySelector('input[type=file]')
+alert(`Uploaded file path was: ${file.path}`)
+```
+
+```js
+// After (renderer)
+
+const file = document.querySelector('input[type=file]')
+electron.showFilePath(file)
+
+// (preload)
+const { contextBridge, webUtils } = require('electron')
+
+contextBridge.exposeInMainWorld('electron', {
+  showFilePath (file) {
+    // It's best not to expose the full file path to the web content if
+    // possible.
+    const path = webUtils.getPathForFile(file)
+    alert(`Uploaded file path was: ${path}`)
+  }
+})
+```
+
 ## Planned Breaking API Changes (31.0)
 
 ### Removed: `WebSQL` support

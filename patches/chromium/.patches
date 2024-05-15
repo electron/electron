@@ -1,6 +1,5 @@
 build_gn.patch
 accelerator.patch
-blink_file_path.patch
 blink_local_frame.patch
 can_create_window.patch
 disable_hidden.patch
