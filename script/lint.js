@@ -278,7 +278,7 @@ const LINTERS = [{
 
     // Run markdownlint on all Markdown files
     for (const chunk of chunkFilenames(filenames)) {
-      spawnAndCheckExitCode('electron-markdownlint', chunk);
+      spawnAndCheckExitCode('markdownlint-cli2', chunk);
     }
 
     // Run the remaining checks only in docs
