@@ -32,15 +32,15 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
 }  // namespace
 
 RootView::RootView(NativeWindow* window)
-    : window_(window),
-      last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
+    : window_{raw_ref<NativeWindow>::from_ptr(window)},
+      main_view_{raw_ref<views::View>::from_ptr(
+          AddChildView(std::make_unique<views::View>()))} {
   set_owned_by_client();
   views::BoxLayout* layout =
       SetLayoutManager(std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kVertical));
-  main_view_ = AddChildView(std::make_unique<views::View>());
   main_view_->SetUseDefaultFillLayout(true);
-  layout->SetFlexForView(main_view_, 1);
+  layout->SetFlexForView(&main_view_.get(), 1);
 }
 
 RootView::~RootView() = default;
@@ -62,7 +62,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
     return;
 
   if (!menu_bar_) {
-    menu_bar_ = std::make_unique<MenuBar>(window_, this);
+    menu_bar_ = std::make_unique<MenuBar>(&window_.get(), this);
     menu_bar_->set_owned_by_client();
     if (!menu_bar_autohide_)
       SetMenuBarVisibility(true);
@@ -116,7 +116,7 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
       SetMenuBarVisibility(true);
 
       View* focused_view = GetFocusManager()->GetFocusedView();
-      last_focused_view_tracker_->SetView(focused_view);
+      last_focused_view_tracker_.SetView(focused_view);
       menu_bar_->RequestFocus();
     }
 
@@ -137,7 +137,7 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
       SetMenuBarVisibility(!menu_bar_visible_);
 
     View* focused_view = GetFocusManager()->GetFocusedView();
-    last_focused_view_tracker_->SetView(focused_view);
+    last_focused_view_tracker_.SetView(focused_view);
     if (menu_bar_visible_) {
       menu_bar_->RequestFocus();
       // Show accelerators when menu bar is focused
@@ -150,7 +150,7 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
 }
 
 void RootView::RestoreFocus() {
-  View* last_focused_view = last_focused_view_tracker_->view();
+  View* last_focused_view = last_focused_view_tracker_.view();
   if (last_focused_view) {
     GetFocusManager()->SetFocusedViewWithReason(
         last_focused_view,
