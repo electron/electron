@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Thu, 16 May 2024 10:59:28 -0700
+Subject: fix: accommodate v8#5403888
+
+This fixes Node to accommodate a change in V8. It should be upstreamed (or
+discarded when Node handles this itself).
+
+Removal OK if Node builds without this :)
+
+diff --git a/src/memory_tracker-inl.h b/src/memory_tracker-inl.h
+index 0e4f2870a5aae5e469f14c5fdacdd6ea2855703d..abc18e96bdb73a30d1137472c14a2dfd1599d226 100644
+--- a/src/memory_tracker-inl.h
++++ b/src/memory_tracker-inl.h
+@@ -27,7 +27,7 @@ class MemoryRetainerNode : public v8::EmbedderGraph::Node {
+       : retainer_(retainer) {
+     CHECK_NOT_NULL(retainer_);
+     v8::HandleScope handle_scope(tracker->isolate());
+-    v8::Local<v8::Object> obj = retainer_->WrappedObject();
++    v8::Local<v8::Value> obj = retainer_->WrappedObject().As<v8::Value>();
+     if (!obj.IsEmpty()) wrapper_node_ = tracker->graph()->V8Node(obj);
+ 
+     name_ = retainer_->MemoryInfoName();
+@@ -230,7 +230,7 @@ void MemoryTracker::TrackField(const char* edge_name,
+                                const v8::Local<T>& value,
+                                const char* node_name) {
+   if (!value.IsEmpty())
+-    graph_->AddEdge(CurrentNode(), graph_->V8Node(value), edge_name);
++    graph_->AddEdge(CurrentNode(), graph_->V8Node(value.template As<v8::Value>()), edge_name);
+ }
+ 
+ template <typename T>
