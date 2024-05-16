@@ -15,7 +15,7 @@ Refs changes in:
 This patch reverts the changes to fix associated crashes in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/frame.cc b/third_party/blink/renderer/core/frame/frame.cc
-index 0a742bbbd5e8e1eb3610cc32f785f779e8907e75..26967019244d409dadf4533405d4d5d27c75b73c 100644
+index 0e21d9c3194198e7540c7b3a84e8aed691821cbb..c0f5d92f8613ca380295cca7f55456d6fbcd6d1f 100644
 --- a/third_party/blink/renderer/core/frame/frame.cc
 +++ b/third_party/blink/renderer/core/frame/frame.cc
 @@ -125,14 +125,6 @@ bool Frame::Detach(FrameDetachType type) {

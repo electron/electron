@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7af70d486bfef1be6265d4f7136b73bc371dd92e..8747282d74b9418e509bca4cdc3399b3ba1bae44 100644
+index 575149b2f3246c1bcc88b046fb1ae2dbeaa3b2a2..704ff05b8ec8475ad215bbde4ee6ab587a61c818 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1068,6 +1068,7 @@ component("base") {
@@ -1260,7 +1260,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 9f1346108a24fdc93147eb31411d94c1f9064a44..238405c2f811d80ab58673d69b7a16e201e51818 100644
+index 4feaed1ede9739cb92860c995c1f9730ff0abe84..8110ad78d07b1ebb8234865e619ab45551a1c6f0 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -317,6 +317,7 @@ component("core") {

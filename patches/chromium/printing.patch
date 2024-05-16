@@ -578,7 +578,7 @@ index 938c5cede9ca90744d48db46cd0f6168b3b2f02c..db6ebf06bbfe0ed084fa794f54d99791
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59f0ce4209 100644
+index 94056885d7da6b858e48188c5de773d1f4dfc513..d5c17873a6082d02fbf91980482e32c0fb4b758d 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -589,7 +589,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1324,14 +1325,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1216,14 +1217,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -606,7 +606,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
    if (!weak_this) {
      return;
    }
-@@ -1362,7 +1363,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1254,7 +1255,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -615,7 +615,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1377,7 +1378,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1269,7 +1270,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -624,7 +624,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
  
    if (render_frame_gone_) {
      return;
-@@ -1534,6 +1535,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1426,6 +1427,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -633,7 +633,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2126,17 +2129,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2018,17 +2021,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -656,7 +656,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2157,8 +2162,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2049,8 +2054,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -673,7 +673,7 @@ index c17dd6609855011c2ee8a61bdaf0850c79b4e555..4e3f6cd8db8260cf14d3673f015abb59
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2419,29 +2431,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2311,29 +2323,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,

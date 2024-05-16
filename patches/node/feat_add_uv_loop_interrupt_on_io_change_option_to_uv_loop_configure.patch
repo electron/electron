@@ -266,7 +266,7 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +# include <sys/types.h>
 +# include <sys/time.h>
 +#endif
- 
++
 +static uv_loop_t main_loop;
 +static uv_loop_t external_loop;
 +static uv_thread_t embed_thread;
@@ -274,18 +274,15 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +static uv_async_t embed_async;
 +static uv_async_t main_async;
 +static volatile int embed_closed;
++
++static uv_timer_t main_timer;
++static int main_timer_called;
+ 
  
 -static void thread_main(void* arg) {
 -  ASSERT_LE(0, uv_barrier_wait(&barrier));
 -  uv_sleep(250);
 -  ASSERT_EQ(0, uv_async_send(&async));
--}
-+static uv_timer_t main_timer;
-+static int main_timer_called;
- 
- 
--static void async_cb(uv_async_t* handle) {
--  uv_close((uv_handle_t*) handle, NULL);
 +#if defined(_WIN32)
 +static void embed_thread_poll_win(HANDLE iocp, int timeout) {
 +  DWORD bytes;
@@ -324,23 +321,10 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +    r = select(fd + 1, &readset, NULL, NULL, timeout >= 0 ? &tv : NULL);
 +#endif
 +  } while (r == -1 && errno == EINTR);
- }
++}
 +#endif /* !_WIN32 */
- 
- 
--TEST_IMPL(embed) {
--  uv_thread_t thread;
--  uv_loop_t* loop;
--
--  loop = uv_default_loop();
--  ASSERT_EQ(0, uv_async_init(loop, &async, async_cb));
--  ASSERT_EQ(0, uv_barrier_init(&barrier, 2));
--  ASSERT_EQ(0, uv_thread_create(&thread, thread_main, NULL));
--  ASSERT_LE(0, uv_barrier_wait(&barrier));
--
--  while (uv_loop_alive(loop)) {
--#if defined(_WIN32) || defined(_AIX)
--    ASSERT_LE(0, uv_run(loop, UV_RUN_ONCE));
++
++
 +static void embed_thread_runner(void* arg) {
 +  int timeout;
 +
@@ -353,24 +337,17 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +
 +#if defined(_WIN32)
 +    embed_thread_poll_win(main_loop.iocp, timeout);
- #else
--    int rc;
--    do {
--      struct pollfd p;
--      p.fd = uv_backend_fd(loop);
--      p.events = POLLIN;
--      p.revents = 0;
--      rc = poll(&p, 1, uv_backend_timeout(loop));
--    } while (rc == -1 && errno == EINTR);
--    ASSERT_LE(0, uv_run(loop, UV_RUN_NOWAIT));
++#else
 +    embed_thread_poll_unix(uv_backend_fd(&main_loop), timeout);
- #endif
++#endif
 +
 +    uv_async_send(&embed_async);
-   }
-+}
-+
-+
++  }
+ }
+ 
+ 
+-static void async_cb(uv_async_t* handle) {
+-  uv_close((uv_handle_t*) handle, NULL);
 +static void embed_cb(uv_async_t* async) {
 +  /* Run tasks in main loop */
 +  uv_run(&main_loop, UV_RUN_NOWAIT);
@@ -419,19 +396,43 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +  uv_sem_destroy(&embed_sem);
 +  uv_loop_close(&external_loop);
 +  uv_loop_close(&main_loop);
-+}
-+
-+
-+TEST_IMPL(embed) {
+ }
+ 
+ 
+ TEST_IMPL(embed) {
+-  uv_thread_t thread;
+-  uv_loop_t* loop;
 +  init_loops();
-+
+ 
+-  loop = uv_default_loop();
+-  ASSERT_EQ(0, uv_async_init(loop, &async, async_cb));
+-  ASSERT_EQ(0, uv_barrier_init(&barrier, 2));
+-  ASSERT_EQ(0, uv_thread_create(&thread, thread_main, NULL));
+-  ASSERT_LE(0, uv_barrier_wait(&barrier));
 +  /* Start timer in main loop */
 +  uv_timer_init(&main_loop, &main_timer);
 +  uv_timer_start(&main_timer, main_timer_cb, 250, 0);
-+
+ 
+-  while (uv_loop_alive(loop)) {
+-#if defined(_WIN32) || defined(_AIX)
+-    ASSERT_LE(0, uv_run(loop, UV_RUN_ONCE));
+-#else
+-    int rc;
+-    do {
+-      struct pollfd p;
+-      p.fd = uv_backend_fd(loop);
+-      p.events = POLLIN;
+-      p.revents = 0;
+-      rc = poll(&p, 1, uv_backend_timeout(loop));
+-    } while (rc == -1 && errno == EINTR);
+-    ASSERT_LE(0, uv_run(loop, UV_RUN_NOWAIT));
+-#endif
+-  }
 +  run_loop();
 +  ASSERT_EQ(main_timer_called, 1);
-+
+ 
+-  ASSERT_EQ(0, uv_thread_join(&thread));
+-  uv_barrier_destroy(&barrier);
 +  return 0;
 +}
 +
@@ -456,9 +457,7 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +     polling in embed thread */
 +  uv_timer_init(&external_loop, &external_timer);
 +  uv_timer_start(&external_timer, external_timer_cb, 100, 0);
- 
--  ASSERT_EQ(0, uv_thread_join(&thread));
--  uv_barrier_destroy(&barrier);
++
 +  run_loop();
 +  ASSERT_EQ(main_timer_called, 1);
  
