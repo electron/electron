@@ -10,19 +10,6 @@ Reviewed-by: Danil Somsikov <dsv@chromium.org>
 Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
 ---
 
-diff --git a/front_end/core/sdk/ChildTargetManager.ts b/front_end/core/sdk/ChildTargetManager.ts
-index f2b6e42..895bdc7 100644
---- a/front_end/core/sdk/ChildTargetManager.ts
-+++ b/front_end/core/sdk/ChildTargetManager.ts
-@@ -172,6 +172,8 @@
-       type = Type.Frame;
-     } else if (targetInfo.type === 'worker') {
-       type = Type.Worker;
-+    } else if (targetInfo.type === 'worklet') {
-+      type = Type.Worklet;
-     } else if (targetInfo.type === 'shared_worker') {
-       type = Type.SharedWorker;
-     } else if (targetInfo.type === 'shared_storage_worklet') {
 diff --git a/test/e2e/BUILD.gn b/test/e2e/BUILD.gn
 index cac27fe..1e70e50 100644
 --- a/test/e2e/BUILD.gn
