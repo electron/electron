@@ -1,2 +1,4 @@
+chore_expose_ui_to_allow_electron_to_set_dock_side.patch
+fix_support_for_worklet_targets.patch
 cherry-pick-8a3bfd4b7403.patch
 cherry-pick-19a4eebd05a7.patch
