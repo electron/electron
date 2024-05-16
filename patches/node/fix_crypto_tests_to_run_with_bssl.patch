@@ -995,26 +995,29 @@ diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-we
 index d1ca571af4be713082d32093bfb8a65f2aef9800..57b8df2ce18df58ff54b2d828af67e3c2e082fe0 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
-@@ -18,14 +18,15 @@ const kWrappingData = {
+@@ -18,16 +18,17 @@ const kWrappingData = {
      wrap: { label: new Uint8Array(8) },
      pair: true
    },
 -  'AES-CTR': {
-+  'AES-CBC': {
-     generate: { length: 128 },
+-    generate: { length: 128 },
 -    wrap: { counter: new Uint8Array(16), length: 64 },
-+    wrap: { iv: new Uint8Array(16) },
+-    pair: false
+-  },
+   'AES-CBC': {
+     generate: { length: 128 },
+     wrap: { iv: new Uint8Array(16) },
      pair: false
    },
--  'AES-CBC': {
 +  /*
 +  'AES-CTR': {
-     generate: { length: 128 },
--    wrap: { iv: new Uint8Array(16) },
++    generate: { length: 128 },
 +    wrap: { counter: new Uint8Array(16), length: 64 },
-     pair: false
-   },
++    pair: false
++  },
    'AES-GCM': {
+     generate: { length: 128 },
+     wrap: {
 @@ -42,6 +43,7 @@ const kWrappingData = {
      wrap: { },
      pair: false
