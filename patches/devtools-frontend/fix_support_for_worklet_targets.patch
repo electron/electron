@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Tue, 12 Mar 2024 19:58:44 -0700
+Subject: Fix support for worklet targets
+
+Fixes an issue where console.log() did not work in AudioWorkletGlobalScope.
+
+Bug: 327027138
+Change-Id: I051565c591645f0a4ccc297825d299c0764501ca
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/5367245
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+
+diff --git a/front_end/core/sdk/ChildTargetManager.ts b/front_end/core/sdk/ChildTargetManager.ts
+index d7b902baba05bdc3b977b385894051387b03cac0..87235daf8d237b3a64b646823ec545b6699596a4 100644
+--- a/front_end/core/sdk/ChildTargetManager.ts
++++ b/front_end/core/sdk/ChildTargetManager.ts
+@@ -173,6 +173,8 @@ export class ChildTargetManager extends SDKModel<EventTypes> implements Protocol
+       type = Type.Frame;
+     } else if (targetInfo.type === 'worker') {
+       type = Type.Worker;
++    } else if (targetInfo.type === 'worklet') {
++      type = Type.Worklet;
+     } else if (targetInfo.type === 'shared_worker') {
+       type = Type.SharedWorker;
+     } else if (targetInfo.type === 'shared_storage_worklet') {
