@@ -46,3 +46,4 @@ deprecate_vector_v8_local_in_v8.patch
 fix_remove_deprecated_errno_constants.patch
 build_enable_perfetto.patch
 fix_add_source_location_for_v8_task_runner.patch
+fix_accommodate_v8_5403888.patch
