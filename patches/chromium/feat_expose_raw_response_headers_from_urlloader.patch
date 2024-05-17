@@ -61,19 +61,20 @@ index d147b20dfea8928f9d5fded8037cf4f873d5b8e9..a7cbff37d1ebfd6b2ba8b248282e0dd5
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 32218c469a135fe903b8fc02d6388258e144bd03..86b824dd3345bb812a24621d4b27bda7b9c07630 100644
+index 32218c469a135fe903b8fc02d6388258e144bd03..02fb800c1cc51e8371b8d5cdbce69227a91386eb 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -76,6 +76,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
-   static bool include_request_cookies_with_response(
+@@ -77,6 +77,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.include_request_cookies_with_response;
+   }
 +  static bool report_raw_headers(
 +      const network::ResourceRequest::TrustedParams& trusted_params) {
 +    return trusted_params.report_raw_headers;
-   }
++  }
    static mojo::PendingRemote<network::mojom::CookieAccessObserver>
    cookie_observer(
+       const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
 index 1d510b64f480ba516009cb1d995fbe9ca29ec164..d6d17abbb058c2e4109ab98a3db1bdf7734ba4c9 100644
 --- a/services/network/public/mojom/url_request.mojom
