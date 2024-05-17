@@ -181,6 +181,9 @@ def parse_args():
   parser.add_argument('--verbose',
                       action='store_true',
                       help='Mooooorreee logs')
+  parser.add_argument('-g', '--gh_actions',
+                      help='Sets needed variables for GitHub Actions test runs',
+                      action='store_true')
   return parser.parse_args()
 
 
@@ -340,6 +343,10 @@ def upload_electron(release, file_path, args):
   except NonZipFileError:
     pass
 
+  is_gh_actions = False
+  if args.gh_actions:
+    is_gh_actions = True
+
   # if upload_to_storage is set, skip github upload.
   # todo (vertedinde): migrate this variable to upload_to_storage
   if args.upload_to_storage:
@@ -349,18 +356,18 @@ def upload_electron(release, file_path, args):
     return
 
   # Upload the file.
-  upload_io_to_github(release, filename, file_path, args.version)
+  upload_io_to_github(release, filename, file_path, args.version, is_gh_actions)
 
   # Upload the checksum file.
   upload_sha256_checksum(args.version, file_path)
 
 
-def upload_io_to_github(release, filename, filepath, version):
+def upload_io_to_github(release, filename, filepath, version, is_gh_actions):
   print(f'Uploading {filename} to GitHub')
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
   with subprocess.Popen([TS_NODE, script_path, filepath,
-                         filename, str(release['id']), version],
+                         filename, str(release['id']), version, is_gh_actions],
                         stdout=subprocess.PIPE, 
                         stderr=subprocess.STDOUT) as upload_process:
     if is_verbose_mode():
