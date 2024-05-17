@@ -17,7 +17,6 @@ const filePath = process.argv[2];
 const fileName = process.argv[3];
 const releaseId = parseInt(process.argv[4], 10);
 const releaseVersion = process.argv[5];
-const isGHActions = process.argv[6];
 
 if (isNaN(releaseId)) {
   throw new TypeError('Provided release ID was not a valid integer');
