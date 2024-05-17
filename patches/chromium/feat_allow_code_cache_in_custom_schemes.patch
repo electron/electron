@@ -54,12 +54,13 @@ index 8fc176cfd3a0411521c0f5e4f60b70ca333f60c8..e43f09d80bc9472a027bb11325803aab
 -  DCHECK(resource_url.SchemeIsHTTPOrHTTPS() ||
 -         resource_url_is_chrome_or_chrome_untrusted ||
 -         blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.scheme()));
- 
+-
 -  // |origin_lock| should be either empty or should have
 -  // Http/Https/chrome/chrome-untrusted schemes and it should not be a URL with
 -  // opaque origin. Empty origin_locks are allowed when the renderer is not
 -  // locked to an origin.
 -  bool origin_lock_is_chrome_or_chrome_untrusted =
++
 +  const bool resource_url_embedder =
 +      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme());
 +  DCHECK(resource_url_http || resource_url_webui || resource_url_embedder);
@@ -80,15 +81,16 @@ index 8fc176cfd3a0411521c0f5e4f60b70ca333f60c8..e43f09d80bc9472a027bb11325803aab
 -        origin_lock_is_chrome_or_chrome_untrusted ||
 -        blink::CommonSchemeRegistry::IsExtensionScheme(origin_lock.scheme())) &&
 -       !url::Origin::Create(origin_lock).opaque()));
-+  const bool origin_lock_for_embedder =
-+      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
- 
+-
 -  // The chrome and chrome-untrusted schemes are only used with the WebUI
 -  // code cache type.
 -  DCHECK_EQ(origin_lock_is_chrome_or_chrome_untrusted,
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
 -  DCHECK_EQ(resource_url_is_chrome_or_chrome_untrusted,
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
++  const bool origin_lock_for_embedder =
++      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
++
 +  DCHECK(origin_lock_empty || ((origin_lock_for_http || origin_lock_for_webui ||
 +                                origin_lock_for_embedder) &&
 +                               !url::Origin::Create(origin_lock).opaque()));
