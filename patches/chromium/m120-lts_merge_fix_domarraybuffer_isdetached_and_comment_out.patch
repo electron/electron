@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@google.com>
 Date: Thu, 16 May 2024 17:11:21 +0000
-Subject: [M120-LTS] Merge "Fix DOMArrayBuffer::IsDetached()" and "Comment out
- a CHECK that a DOMAB has maximally one non-detached JSAB"
+Subject: Merge "Fix DOMArrayBuffer::IsDetached()" and "Comment out a CHECK
+ that a DOMAB has maximally one non-detached JSAB"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
