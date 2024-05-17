@@ -63,7 +63,7 @@ index 27fbc04bc880f2ea68dc7a126b8091a3b5ab4025..42d9649c5250c06a4d39ba0306cbdea0
  }  // namespace internal
  }  // namespace v8
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 13b88372499b95ccd072f045de094a2855b2687e..ad383d2fa8934ffad0922241fd641a321571b89f 100644
+index d83783a5560a355684a866e1aca2cc081835919b..f8622e1311838df9548bc1839cd40d17af02a7d2 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
 @@ -4361,7 +4361,6 @@ namespace {

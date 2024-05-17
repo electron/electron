@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3ede70d5d17be983fb3d23709e169b758600a86c..625c7ea5db8d33c8c1cdb2b1ab6c411eeceb7531 100644
+index 17600afb7d4fccf7017896253ca85c46e99c4246..47c808da98875e030660c060c24d2c99030639fc 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -969,7 +969,6 @@ if (is_win) {
@@ -34,7 +34,7 @@ index 3ede70d5d17be983fb3d23709e169b758600a86c..625c7ea5db8d33c8c1cdb2b1ab6c411e
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 3197e16ac26f17258bf3ef988df0f0e39c0df8ac..89d618a39c89ad3eb0069f2b5bd67f6024c3260e 100644
+index 163eacc8bb6654880d37111923a87ea5a6134485..565258e9bd4cc52e347e1f4a72ee29ec4a847690 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -97,6 +97,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -91,7 +91,7 @@ index 3197e16ac26f17258bf3ef988df0f0e39c0df8ac..89d618a39c89ad3eb0069f2b5bd67f60
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index c5fad6fd8e27beb3a215ada9470f8670f44404a5..eb3e3da5af57cabc821ac6663790b8e9148a1f3e 100644
+index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8b203fb2e 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -87,6 +87,20 @@ namespace printing {
@@ -578,7 +578,7 @@ index 938c5cede9ca90744d48db46cd0f6168b3b2f02c..db6ebf06bbfe0ed084fa794f54d99791
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 94056885d7da6b858e48188c5de773d1f4dfc513..d5c17873a6082d02fbf91980482e32c0fb4b758d 100644
+index 48f79882e5606e5151c3c010fab71cdaf9028473..a5373d18363d689c6401c013c91cda7b57de45c4 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -752,10 +752,10 @@ index cc65c4ac5c3910fbe0d00f639a0e727408cfa922..706c95ac3b84ac43adc5f6502c517c31
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 96296202bfca08b997d71f18ce967050f4e94fdb..08075e3af06c9fbce8c202b96542cedf6ee6bb64 100644
+index 279f4dbeef63d64a1dc96abe3d795a2a298b6c8b..e02af917f9d86db9100d79d5dd84e944ff3a74f5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2939,8 +2939,9 @@ source_set("browser") {
+@@ -2944,8 +2944,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -768,7 +768,7 @@ index 96296202bfca08b997d71f18ce967050f4e94fdb..08075e3af06c9fbce8c202b96542cedf
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 87ffdf6f44029700ef615b16366e3a9805e7d3ff..ea407211ca4e33b87de5ed6002ebe1a2ef76372f 100644
+index 1099879ad849f05671ce9cc0b85d8303c9eaf7d9..f9fbdd4ce20a6fef96b384880d077ed7762696c7 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -154,7 +154,6 @@ void PrintingContext::UsePdfSettings() {

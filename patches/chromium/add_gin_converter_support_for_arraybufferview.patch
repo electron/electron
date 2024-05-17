@@ -39,7 +39,7 @@ index 62209cadaec7314d2d4ec3e63e1bc88394afa4a9..b035bfe1fd16fb6ca8be33bf446ff857
                                                Local<External> val) {
    return val.As<Value>();
 diff --git a/gin/converter.h b/gin/converter.h
-index 828e59f4640e84ae9e4517b9ed9bc13b154fa9f2..c3d97c4e46fe47076299e475be7eec74cbc5783c 100644
+index 37b528f24785ee330b507e33bcdfaeb09a3ed594..76802f6d06b551f9fad0196fadae2aaf748a32cc 100644
 --- a/gin/converter.h
 +++ b/gin/converter.h
 @@ -190,6 +190,15 @@ struct GIN_EXPORT Converter<v8::Local<v8::ArrayBuffer> > {

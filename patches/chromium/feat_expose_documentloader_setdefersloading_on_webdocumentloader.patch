@@ -28,10 +28,10 @@ index f9d3219990dcf4f4a829567d567072df59a70ada..ca8281faaff601bf591cf5a2b185e4ba
  
    // Returns the http referrer of original request which initited this load.
 diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
-index 1acdd38e9711b7bae4c6787bd34ba37ef9de8b49..2d853ae0c01e6855575d72e9c6a7a38aaa0b2529 100644
+index 43985afefb4b82fadc1b3dd7f258328168cab100..635e6dcbddf7439318b698b6184533efc4d9a113 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.h
 +++ b/third_party/blink/renderer/core/loader/document_loader.h
-@@ -312,7 +312,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+@@ -313,7 +313,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
        std::optional<scheduler::TaskAttributionId>
            soft_navigation_heuristics_task_id);
  

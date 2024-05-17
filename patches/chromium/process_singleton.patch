@@ -51,7 +51,7 @@ index 23a8257aa2a0a671cf7af35aff9906891091606d..31f5b160e4cd755cfb56a62b04261ee1
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index f530a455c540ab7c6b75589b92e1e3948c1755c8..32b086c726abc3b825216548149ff164c8c1faf7 100644
+index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee270f4f5e 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -90,7 +90,7 @@ index f530a455c540ab7c6b75589b92e1e3948c1755c8..32b086c726abc3b825216548149ff164
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
 @@ -366,6 +370,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
-   NOTREACHED();
+   NOTREACHED_IN_MIGRATION();
    return false;
 +#endif
  }
@@ -129,7 +129,7 @@ index f530a455c540ab7c6b75589b92e1e3948c1755c8..32b086c726abc3b825216548149ff164
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1047,11 +1071,32 @@ bool ProcessSingleton::Create() {
+@@ -1048,11 +1072,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.

@@ -84,7 +84,7 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index e1c5d814236d306e427dc5f1bab3405c0fb4dd7e..bc991a819e20d586431115e530c44a83b231eb45 100644
+index fd327c2e5046b9874c4776c754fd010b1ce4d23c..07f0d082b0fe1ef5f73c9223ba84da964565519e 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -123,7 +123,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -184,7 +184,7 @@ index be6402b33d7e0e2aab7cbb2844ba4600a166e7a9..642f8b6da39615d1c68584ff18fc57ce
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 4d28d2368ac0307c5cc43a6aa8f0f308ba934501..fc77cd17db0acc7ca20e7cf06fb708d196fa15e3 100644
+index c3b2641dfd983f97e4868fbcaaff40b0e20a0f64..23f417b6e09b3a0fe40d93481b7de85634579e5c 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -178,11 +178,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -628,7 +628,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 05a9bd7063f7800f608a3b77d5d48f76cf93ed7d..aea341b39c0ecdb89b3ae2f9308aed88615163de 100644
+index 3354330593ebcd1a9cb2f444977b37e9f79b9d90..0b38d2e5b70a0c5bb09fd003f340a52bf39e0eb4 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -765,11 +765,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

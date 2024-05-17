@@ -26,7 +26,7 @@ index a062418a22ec911a1b2d3032c0668e762bfa3cd9..14f98001c553e6eaac75a7d54188556c
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index c053926291ea4aa8343d91fa5b913fd778c7f345..54b5d891fc64fb5641d450ebe6bfb47dbd351926 100644
+index 6c317b6ebc622dd884fe38f42adf83ba6d2fe772..daa384e383f65e21179ee6c5c5c21c0a7427bd9f 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -834,6 +834,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
@@ -67,7 +67,7 @@ index 38c079e1f9c371854922afccdd73dac65a75240d..f5f0b31af8c18a6e290bcc3605bf43f5
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index fc4eee1c0b3b2906ddc004d6069ff62ee5ee4a3a..587c47b92935fa740390eacdb0f73be6da5027c8 100644
+index c2ab4a14aa8bd81bdcd358da3b6ed98c47a7e0e4..e8a377ee65c388dc696976f6860ef273d07493e8 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
 @@ -756,6 +756,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {

@@ -23,10 +23,10 @@ index 902d84ad70adc9496f3af989465a99b6f44b077a..3ce043eea32c41130aa59ab8570a05b3
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2d7d13fc9f361bc3e4b16e4db008c042f492704a..dc96cd01365491a2384e9d27e384b680c3e86a23 100644
+index 882cd68b98f3919b1565b694ea365cb5c7c8387d..1a98c4d4688f0f2e71ce5f05740b614fad9c9b0d 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4692,6 +4692,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4691,6 +4691,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -53,7 +53,7 @@ index b4e2293651bb0e234aa8119c2afece5faa11a758..37af654883ec39c761cc4fcaab9d2206
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 2bb6e24cf5b83b8f6cf523d648307608ede1b538..1fe4df62e66fd10267e72d91176529fccabe83aa 100644
+index a31299ea7d0e9003cfcdf12780a7b65e0302414a..e56c104ff993cd525da211c948a8d80396baa9c0 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -645,6 +645,9 @@ class BLINK_EXPORT WebLocalFrameClient {
@@ -67,10 +67,10 @@ index 2bb6e24cf5b83b8f6cf523d648307608ede1b538..1fe4df62e66fd10267e72d91176529fc
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 50352340def787f5c6a382b622c37905ee79302c..97a79a4bfbcdd63ec01b201571fdccf2701ae40b 100644
+index 7fe0374717656c4907ff33c2cbd62509173cdb96..f4b5ab6cafa3a80425d6b7c6897052dc092caba1 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -215,6 +215,7 @@ void LocalWindowProxy::Initialize() {
+@@ -216,6 +216,7 @@ void LocalWindowProxy::Initialize() {
    }
  
    InstallConditionalFeatures();

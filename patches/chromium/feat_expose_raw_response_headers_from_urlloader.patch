@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 3d4cc0dbf277edd29cb2dddbd5cb37b6b5fa4c26..ea85b63e87ee38619dedf609c0b95c39698c7657 100644
+index b220ca953b1dbbb1465d87f08c140026c3fee5b0..2a5bc2735c4d632b2f3e9b76dd525ba88fd04148 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -155,6 +155,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -49,7 +49,7 @@ index 7e84c5373d432512a7543430db49022b5f89cc99..1df3a8c178981391856c611e5a78c7d9
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index d147b20dfea8928f9d5fded8037cf4f873d5b8e9..a7cbff37d1ebfd6b2ba8b248282e0dd50b95e63e 100644
+index 821dd730ca216f5ac5b20ec434463fbeee54458e..a2f2d4d03ab40c47ed938686ea78bd6054680def 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -95,6 +95,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
@@ -111,7 +111,7 @@ index 64ec7b5a4bfb08a2bbd75ce03a602b36e6b0f278..f726e1ccf33dee59a131f881fa000f50
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 5867c5caadf92071fded1abf180bbe6562d99651..c31ed568bb4a627be8611c933c0bb58482edc7cb 100644
+index fa66c3213c1de47aa8d897818debb4c518dcf96c..e20cf51b1d1cce9bd989780545e31a26d6ac93ba 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -707,6 +707,7 @@ URLLoader::URLLoader(

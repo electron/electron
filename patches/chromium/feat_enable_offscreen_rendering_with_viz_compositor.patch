@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 0ef41b4efc339b5e5022927e2ee1cf1da35ad288..8e6ab35f658e59b253667370471a2eb761eb37f6 100644
+index 0ad0fcd3d3ab1f13c3fc133db39135679bf84735..94cb46494157f7683931c54e135572245da79ae0 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -37,7 +37,7 @@ index 0ef41b4efc339b5e5022927e2ee1cf1da35ad288..8e6ab35f658e59b253667370471a2eb7
 +#if BUILDFLAG(IS_WIN)
  void HostDisplayClient::AddChildWindowToBrowser(
      gpu::SurfaceHandle child_window) {
-   NOTREACHED();
+   NOTREACHED_IN_MIGRATION();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
 index cb16487f9fc0811ef577d455098f09e3000db86a..d67c0f8bce3c6a8f7643409e07e21e789b4bd391 100644
 --- a/components/viz/host/host_display_client.h
@@ -117,7 +117,7 @@ index a4e6ad16fd2def9bbed7cd11ea13ba365a9f7322..20a426e6f7dff17c22dd05d75d601a56
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index e8e3237bb2b8f134be81441ada743ad78f147d97..a5c5360377d9d5f6e46b0ff023ca302128bfb327 100644
+index 54a83ba9fe1e96f339117220da002987df98cd26..c89264115ea44bd7cabde7ff1123a5f05c8b0a1d 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,12 +25,14 @@
@@ -520,7 +520,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 77e2c89d55746f16d81b013085c2937d643f4821..59f68d1d36eb3826b7f829ad825a4f7bd3205fb8 100644
+index 4ce81412cad4ed61643e245b237aa12527edd993..f87ac9cf73ceba1735293f760b032a804ad63b89 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -595,10 +595,10 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index c9056afecb36a7a20e33458fe96459d2e957b9cf..188ca7507635d50c3b8174538d703f0e7247126d 100644
+index 3ede19b5c518c87b70333a8c94d958dc9f12b284..3daf805b8720915f6dcc7ef14afa736d643f228a 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -33,6 +33,7 @@ struct RootCompositorFrameSinkParams {
+@@ -34,6 +34,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;

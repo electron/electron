@@ -8,7 +8,7 @@ v8::Value instead of base::Value.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index ff0b6fbbb7369974a4f2bfd449781486c217ffec..a0cf7725986fb0d36a3c834d4135c41cb0bc29dd 100644
+index 424b73ed6ccda8a29ddfb17e7c1ed2dbbe222711..2391a8e29a9501b7f2461867991819bb7afcaa07 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
 @@ -318,6 +318,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
@@ -64,7 +64,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 1b3ee460f8571602c8d1fc22e709ce44d6095d7a..d1d36c4f15153135aecfb7bcd236179471c75894 100644
+index 6419ae97beb84c0ffafdf1d650e1821080fcb614..4ea3e6c7ae7db5140e26dc94ca2803f87f9c6eda 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3043,6 +3043,7 @@ void LocalFrame::RequestExecuteScript(
@@ -97,7 +97,7 @@ index d308371459f51cb07bc1d54da144cd31fe2277af..2898ea5917c4887cc2aaf1ad5286e666
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index b7d6446ffef5bb318acab2ee2a26d8a0763bcf4d..55993aa047658bacd86f53eea77601f8bf0a1473 100644
+index 72a5ae6c7ede80fa2f5c088c5f3acf35a7116737..acb1d814098b9526511135d4101d70a57e7b2777 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -955,6 +955,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
@@ -204,7 +204,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 0fc6dddb724333c6f948b724c1d5fd68f0c3b8d6..12fc1ff9c6bd5809b1197886e1a2bf7eda64ec36 100644
+index c26778abe26ffde769b7f6b72ef6ab81b70677c8..fb547e38422505c370e31bc7c0420e121275457a 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -289,6 +289,7 @@ void ExecuteScriptsInMainWorld(
@@ -216,7 +216,7 @@ index 0fc6dddb724333c6f948b724c1d5fd68f0c3b8d6..12fc1ff9c6bd5809b1197886e1a2bf7e
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 2af87b7d7dcebf7a682cd55a771e152c9390f0ef..c5e01a6e09e2b3d9bafa3df2e7359e64a27917fe 100644
+index 1b27d94a5442bdf7451cbaca03dc1f1bd9bfa8e2..fb7c28099d68757a031a6801ccee22dd066fe220 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1089,14 +1089,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
