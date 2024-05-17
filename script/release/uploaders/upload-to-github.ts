@@ -17,7 +17,6 @@ const filePath = process.argv[2];
 const fileName = process.argv[3];
 const releaseId = parseInt(process.argv[4], 10);
 const releaseVersion = process.argv[5];
-const isGHActions = process.argv[6];
 
 if (isNaN(releaseId)) {
   throw new TypeError('Provided release ID was not a valid integer');
@@ -44,10 +43,13 @@ const getHeaders = (filePath: string, fileName: string) => {
   };
 };
 
-const targetRepo = releaseVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
-const uploadDefaultUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
-const uploadGHActionsTestUrl = `https://uploads.github.com/repos/electron/test-releases/releases/${releaseId}/assets{?name,label}`;
-const uploadUrl = isGHActions ? uploadGHActionsTestUrl : uploadDefaultUrl;
+function getRepo () {
+  if (process.env.IS_GHA_RELEASE) return 'test-releases';
+  return releaseVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+}
+
+const targetRepo = getRepo();
+const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
 let retry = 0;
 
 function uploadToGitHub () {

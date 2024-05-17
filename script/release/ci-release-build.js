@@ -421,8 +421,7 @@ function runRelease (targetBranch, options) {
   } else {
     buildCircleCI(targetBranch, options);
     buildAppVeyor(targetBranch, options);
-    // TODO(vertedinde): Enable GH Actions in defaults when ready
-    // buildGHActions(targetBranch, options);
+    buildGHActions(targetBranch, options);
   }
   console.log(`${jobRequestedCount} jobs were requested.`);
 }

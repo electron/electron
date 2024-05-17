@@ -40,6 +40,7 @@ env:
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
   CHECK_DIST_MANIFEST: '1'
+  IS_GHA_RELEASE: true
 
 jobs:
   checkout:
@@ -701,10 +702,10 @@ jobs:
         cd src/electron
         if [ ${{ inputs.UPLOAD_TO_STORAGE }} == "1" ]; then
           echo 'Uploading Electron release distribution to Azure'
-          # script/release/uploaders/upload.py --verbose --upload_to_storage
+          script/release/uploaders/upload.py --verbose --upload_to_storage
         else
           echo 'Uploading Electron release distribution to GitHub releases'
-          # script/release/uploaders/upload.py --verbose
+          script/release/uploaders/upload.py --verbose
         fi
   test:
     if: ${{ inputs.IS_RELEASE == false }}

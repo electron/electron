@@ -32,7 +32,12 @@ const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
-const targetRepo = pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+function getRepo () {
+  if (process.env.IS_GHA_RELEASE) return 'test-releases';
+  return pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+}
+
+const targetRepo = getRepo();
 let failureCount = 0;
 
 async function getDraftRelease (version, skipValidation) {
