@@ -8,3 +8,4 @@ merged_wasm_check_for_type-definition_count_limit.patch
 merged_runtime_recreate_enum_cache_on_map_update_if_any_previous.patch
 cherry-pick-f320600cd1f4.patch
 cherry-pick-b3c01ac1e60a.patch
+cherry-pick-6503a987d966.patch
