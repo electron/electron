@@ -1,7 +1,7 @@
-From 6503a987d9666e0f4f320c222de2683a7dae1e84 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Victor Gomes <victorgomes@chromium.org>
 Date: Thu, 21 Mar 2024 09:59:19 +0100
-Subject: [PATCH] [objects] Deal with large strings in NoSideEffectsErrorToString
+Subject: Deal with large strings in NoSideEffectsErrorToString
 
 If name is too big, StringBuilder will fail to even add
 "<a very large string>" suffix.
@@ -15,13 +15,12 @@ Commit-Queue: Victor Gomes <victorgomes@chromium.org>
 Reviewed-by: Patrick Thier <pthier@chromium.org>
 Auto-Submit: Victor Gomes <victorgomes@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#92932}
----
 
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 9e2ab08..d175ebe 100644
+index a05fe442f5a0d0a341cf8053e86d810c1a196fa4..a20fc42daaeba10244a43170be9aa08f4fb7a4cc 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -469,14 +469,27 @@
+@@ -470,14 +470,27 @@ Handle<String> NoSideEffectsErrorToString(Isolate* isolate,
    if (name_str->length() == 0) return msg_str;
    if (msg_str->length() == 0) return name_str;
  

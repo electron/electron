@@ -1,7 +1,8 @@
-From 2a434fd0af6bbcaa6da648f51b696a33a6bcdd04 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
-Date: Wed, 08 May 2024 13:38:38 -0400
-Subject: [PATCH] Fix invalid IR from scalarrepl-param-hlsl in ReplaceConstantWithInst (#6556)
+Date: Wed, 8 May 2024 13:38:38 -0400
+Subject: Fix invalid IR from scalarrepl-param-hlsl in ReplaceConstantWithInst
+ (#6556)
 
 ReplaceConstantWithInst(C, V) replaces uses of C in the current function
 with V. If such a use C is an instruction I, the it replaces uses of C
@@ -18,13 +19,12 @@ Change-Id: I2a8bf64094298b49a1887cc7c1334e91a745c396
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5525429
 Reviewed-by: James Price <jrprice@google.com>
 Reviewed-by: dan sinclair <dsinclair@google.com>
----
 
 diff --git a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
-index 3f8ffdb..9b843ef 100644
+index bd429ae98b0e11bbb2b95c68392b82eb222f64a4..1ef9a002a46f3acd14be6e1cb456efcbd398b416 100644
 --- a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
 +++ b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
-@@ -3271,15 +3271,34 @@
+@@ -3271,15 +3271,34 @@ bool SROA_Helper::DoScalarReplacement(GlobalVariable *GV,
    return true;
  }
  
@@ -61,7 +61,7 @@ index 3f8ffdb..9b843ef 100644
      } else {
        // Skip unused ConstantExpr.
        if (U->user_empty())
-@@ -3288,10 +3307,12 @@
+@@ -3288,10 +3307,12 @@ static void ReplaceConstantWithInst(Constant *C, Value *V,
        Instruction *Inst = CE->getAsInstruction();
        Builder.Insert(Inst);
        Inst->replaceUsesOfWith(C, V);
@@ -75,7 +75,7 @@ index 3f8ffdb..9b843ef 100644
  }
  
  static void ReplaceUnboundedArrayUses(Value *V, Value *Src) {
-@@ -3531,7 +3552,8 @@
+@@ -3531,7 +3552,8 @@ static bool ReplaceMemcpy(Value *V, Value *Src, MemCpyInst *MC,
        } else {
          // Replace Constant with a non-Constant.
          IRBuilder<> Builder(MC);
@@ -85,7 +85,7 @@ index 3f8ffdb..9b843ef 100644
        }
      } else {
        // Try convert special pattern for cbuffer which copy array of float4 to
-@@ -3539,7 +3561,8 @@
+@@ -3539,7 +3561,8 @@ static bool ReplaceMemcpy(Value *V, Value *Src, MemCpyInst *MC,
        if (!tryToReplaceCBVec4ArrayToScalarArray(V, TyV, Src, TySrc, MC, DL)) {
          IRBuilder<> Builder(MC);
          Src = Builder.CreateBitCast(Src, V->getType());
@@ -95,7 +95,7 @@ index 3f8ffdb..9b843ef 100644
        }
      }
    } else {
-@@ -5447,9 +5470,9 @@
+@@ -5443,9 +5466,9 @@ void SROA_Parameter_HLSL::flattenArgument(
          if (Ty->isPointerTy())
            Ty = Ty->getPointerElementType();
          unsigned size = DL.getTypeAllocSize(Ty);
@@ -109,7 +109,7 @@ index 3f8ffdb..9b843ef 100644
            argTy = argTy->getPointerElementType();
 diff --git a/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-const-to-local-and-back.hlsl b/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-const-to-local-and-back.hlsl
 new file mode 100644
-index 0000000..0f30050
+index 0000000000000000000000000000000000000000..0f30050e69decaf7da3f2ae645611c1a49a4a719
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-const-to-local-and-back.hlsl
 @@ -0,0 +1,45 @@
@@ -160,7 +160,7 @@ index 0000000..0f30050
 +}
 diff --git a/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-const-to-local-and-back.ll b/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-const-to-local-and-back.ll
 new file mode 100644
-index 0000000..6ca08ab
+index 0000000000000000000000000000000000000000..6ca08ab3a9c500cacb715f63ee407c7add4fc51c
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-const-to-local-and-back.ll
 @@ -0,0 +1,253 @@
