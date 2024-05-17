@@ -393,6 +393,18 @@ describe('utilityProcess module', () => {
       expect(output).to.include(result);
     });
 
+    it('can access exposed main process modules from the utility process', async () => {
+      const result = 'Message from utility process';
+      const child = utilityProcess.fork(path.join(fixturesPath, 'expose-main-process-module.js'));
+      await once(child, 'spawn');
+      child.postMessage(result);
+      const [data] = await once(child, 'message');
+      expect(data).to.equal('granted');
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
+
     it('can establish communication channel with sandboxed renderer', async () => {
       const result = 'Message from sandboxed renderer';
       const w = new BrowserWindow({

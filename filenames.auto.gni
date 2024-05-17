@@ -358,6 +358,7 @@ auto_filenames = {
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",
     "lib/utility/api/net.ts",
+    "lib/utility/api/system-preferences.ts",
     "lib/utility/init.ts",
     "lib/utility/parent-port.ts",
     "package.json",
