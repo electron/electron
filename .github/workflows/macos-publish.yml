@@ -1,0 +1,30 @@
+name: Publish MacOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      macos-publish-arch-limit:
+        description: 'The allowed arches for macos-publish'
+        type: choice
+        default: all
+        options: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+      upload-to-storage:
+        description: 'Uploads to Azure storage'
+        required: false 
+        default: '1'
+        type: string
+      run-macos-publish:
+        description: 'Run the publish jobs vs just the build jobs'
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    uses: electron/electron/.github/workflows/macos-build.yml@gh-actions-mac-publish
+    with:
+      IS_RELEASE: true
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_BUILD_TYPE: release
+      GENERATE_SYMBOLS: true
+      UPLOAD_TO_STORAGE: ${{ inputs.upload-to-storage }}
+    secrets: inherit

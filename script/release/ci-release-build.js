@@ -36,10 +36,6 @@ const ghActionsPublishWorkflows = [
   'macos-publish'
 ];
 
-const ghActionsPublishIndividualArches = {
-  'macos-publish': ['osx-x64', 'mas-x64', 'osx-arm64', 'mas-arm64']
-};
-
 let jobRequestedCount = 0;
 
 async function makeRequest ({ auth, username, password, url, headers, body, method }) {
@@ -82,11 +78,6 @@ async function githubActionsCall (targetBranch, workflowName, options) {
     buildRequest.parameters['upload-to-storage'] = '1';
   }
   buildRequest.parameters[`run-${workflowName}`] = true;
-  if (options.arch) {
-    const validArches = ghActionsPublishIndividualArches[workflowName];
-    assert(validArches.includes(options.arch), `Unknown GitHub Actions architecture "${options.arch}".  Valid values are ${JSON.stringify(validArches)}`);
-    buildRequest.parameters['macos-publish-arch-limit'] = options.arch;
-  }
 
   jobRequestedCount++;
   try {

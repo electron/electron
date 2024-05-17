@@ -8,13 +8,14 @@ else
   BUILD_TYPE="mas"
 fi
 
-rm -rf generated_artifacts_${BUILD_TYPE}
-mkdir generated_artifacts_${BUILD_TYPE}
+echo Creating generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}...
+rm -rf generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
+mkdir generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
 
 mv_if_exist() {
   if [ -f "$1" ] || [ -d "$1" ]; then
     echo Storing $1
-    mv $1 generated_artifacts_${BUILD_TYPE}
+    mv $1 generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
   else
     echo Skipping $1 - It is not present on disk
   fi
@@ -22,7 +23,7 @@ mv_if_exist() {
 cp_if_exist() {
   if [ -f "$1" ] || [ -d "$1" ]; then
     echo Storing $1
-    cp $1 generated_artifacts_${BUILD_TYPE}
+    cp $1 generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
   else
     echo Skipping $1 - It is not present on disk
   fi

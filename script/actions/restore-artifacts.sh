@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eo pipefail
 
 mv_if_exist() {
-  if [ -f "generated_artifacts_${BUILD_TYPE}/$1" ] || [ -d "generated_artifacts_${BUILD_TYPE}/$1" ]; then
+  if [ -f "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ] || [ -d "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ]; then
     echo Restoring $1 to $2
     mkdir -p $2
-    mv generated_artifacts_${BUILD_TYPE}/$1 $2
+    mv generated_artifacts_${BUILD_TYPE_${TARGET_ARCH}}/$1 $2
   else
     echo Skipping $1 - It is not present on disk
   fi
