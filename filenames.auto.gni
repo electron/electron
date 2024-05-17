@@ -350,6 +350,7 @@ auto_filenames = {
 
   utility_bundle_deps = [
     "lib/browser/api/net-fetch.ts",
+    "lib/browser/api/system-preferences.ts",
     "lib/browser/message-port-main.ts",
     "lib/common/api/net-client-request.ts",
     "lib/common/define-properties.ts",
@@ -358,7 +359,6 @@ auto_filenames = {
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",
     "lib/utility/api/net.ts",
-    "lib/utility/api/system-preferences.ts",
     "lib/utility/init.ts",
     "lib/utility/parent-port.ts",
     "package.json",
