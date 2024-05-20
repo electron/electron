@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Benjamin <davidben@chromium.org>
+Date: Fri, 10 May 2024 15:10:48 +0000
+Subject: Fix size calculations in V8StringToUTF8
+
+While I'm here, remove the unnecessary use of base::WriteInto, which is
+a remnant of C++03 copy-on-write strings. Also ask V8 not to write a
+NUL terminator because std::(u16)string already owns that byte.
+
+(cherry picked from commit f414dc31032a453f4a6c88977d7894fcb3cba44e)
+
+Bug: 338574384
+Change-Id: I5c6eaa99093925db799736f321eab92d35f5acbb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5515743
+Reviewed-by: mmenke <mmenke@chromium.org>
+Commit-Queue: David Benjamin <davidben@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1297196}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5527764
+Auto-Submit: David Benjamin <davidben@chromium.org>
+Commit-Queue: mmenke <mmenke@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6367@{#1148}
+Cr-Branched-From: d158c6dc6e3604e6f899041972edf26087a49740-refs/heads/main@{#1274542}
+
+diff --git a/services/proxy_resolver/proxy_resolver_v8.cc b/services/proxy_resolver/proxy_resolver_v8.cc
+index eca8014359b60f54d47c46aa7e106da83ec8a85f..da8232b229f3c6387d5ec063b197650ea24ec292 100644
+--- a/services/proxy_resolver/proxy_resolver_v8.cc
++++ b/services/proxy_resolver/proxy_resolver_v8.cc
+@@ -17,6 +17,7 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/raw_ptr_exclusion.h"
+ #include "base/notreached.h"
++#include "base/numerics/safe_conversions.h"
+ #include "base/strings/string_tokenizer.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -148,25 +149,22 @@ const size_t kMaxStringBytesForCopy = 256;
+ 
+ // Converts a V8 String to a UTF8 std::string.
+ std::string V8StringToUTF8(v8::Isolate* isolate, v8::Local<v8::String> s) {
+-  int len = s->Length();
+-  std::string result;
+-  if (len > 0)
+-    s->WriteUtf8(isolate, base::WriteInto(&result, len + 1));
+-  return result;
++  int len = s->Utf8Length(isolate);
++  std::string str(base::checked_cast<size_t>(len), '\0');
++  s->WriteUtf8(isolate, str.data(), len, /*nchars_ref=*/nullptr,
++               v8::String::NO_NULL_TERMINATION);
++  return str;
+ }
+ 
+ // Converts a V8 String to a UTF16 std::u16string.
+ std::u16string V8StringToUTF16(v8::Isolate* isolate, v8::Local<v8::String> s) {
+   int len = s->Length();
+-  std::u16string result;
+-  // Note that the reinterpret cast is because on Windows string16 is an alias
+-  // to wstring, and hence has character type wchar_t not uint16_t.
+-  if (len > 0) {
+-    s->Write(isolate,
+-             reinterpret_cast<uint16_t*>(base::WriteInto(&result, len + 1)), 0,
+-             len);
+-  }
+-  return result;
++  std::u16string str(base::checked_cast<size_t>(len), '\0');
++  // `char16_t` and `uint16_t` are not the same type, but we build with strict
++  // aliasing off. See https://crbug.com/42209752.
++  s->Write(isolate, reinterpret_cast<uint16_t*>(str.data()), /*start=*/0, len,
++           v8::String::NO_NULL_TERMINATION);
++  return str;
+ }
+ 
+ // Converts an ASCII std::string to a V8 string.
+diff --git a/services/proxy_resolver/test/data/proxy_resolver_v8_unittest/pac_library_unittest.js b/services/proxy_resolver/test/data/proxy_resolver_v8_unittest/pac_library_unittest.js
+index 3414dc0b4a33a64c8fe09b0d2a5cd48123a5d9ac..1b8bc17862f0c3cfa4fdc97121619afac8777a9d 100644
+--- a/services/proxy_resolver/test/data/proxy_resolver_v8_unittest/pac_library_unittest.js
++++ b/services/proxy_resolver/test/data/proxy_resolver_v8_unittest/pac_library_unittest.js
+@@ -69,6 +69,11 @@ Tests.testIsPlainHostName = function(t) {
+   t.expectFalse(isPlainHostName("."));
+   t.expectFalse(isPlainHostName(".:"));
+ 
++  // These are not really hostnames, but `isPlainHostName` accepts any dotless,
++  // non-IP string.
++  t.expectTrue(isPlainHostName("\uffff".repeat(256)));
++  t.expectTrue(isPlainHostName(""));
++
+   // Valid IPv6 address
+   t.expectFalse(isPlainHostName("::1"));
+ 
+@@ -178,6 +183,7 @@ Tests.testSortIpAddressList = function(t) {
+   t.expectEquals(null, sortIpAddressList());
+   t.expectEquals(null, sortIpAddressList(null));
+   t.expectEquals(null, sortIpAddressList(null, null));
++  t.expectEquals(null, sortIpAddressList("\uffff".repeat(256)));
+ };
+ 
+ Tests.testIsInNetEx = function(t) {
+@@ -223,10 +229,14 @@ Tests.testIsInNetEx = function(t) {
+   // Invalid IP address.
+   t.expectFalse(isInNetEx("256.0.0.1", "198.95.249.79"));
+   t.expectFalse(isInNetEx("127.0.0.1 ", "127.0.0.1/32"));  // Extra space.
++  t.expectFalse(isInNetEx("\uffff".repeat(256), "127.0.0.1/32"));
++  t.expectFalse(isInNetEx("", "127.0.0.1/32"));
+ 
+   // Invalid prefix.
+   t.expectFalse(isInNetEx("198.95.115.10", "198.95.0.0/34"));
+   t.expectFalse(isInNetEx("127.0.0.1", "127.0.0.1"));  // Missing '/' in prefix.
++  t.expectFalse(isInNetEx("127.0.0.1", "\uffff".repeat(256)));
++  t.expectFalse(isInNetEx("127.0.0.1", ""));
+ };
+ 
+ Tests.testWeekdayRange = function(t) {
+@@ -465,4 +475,3 @@ MockDate.setCurrent = function(currentDateString) {
+ 
+ // Bind the methods to proxy requests to the wrapped Date().
+ MockDate.init();
+-
