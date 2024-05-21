@@ -24,7 +24,7 @@ namespace electron::api {
 
 class Screen : public gin::Wrappable<Screen>,
                public gin_helper::EventEmitterMixin<Screen>,
-               public display::DisplayObserver {
+               private display::DisplayObserver {
  public:
   static v8::Local<v8::Value> Create(gin_helper::ErrorThrower error_thrower);
 
