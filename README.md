@@ -9,8 +9,8 @@ View these docs in other languages on our [Crowdin](https://crowdin.com/project/
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
-[Chromium](https://www.chromium.org) and is used by the [Visual Studio
-Code](https://github.com/Microsoft/vscode/) and many other [apps](https://electronjs.org/apps).
+[Chromium](https://www.chromium.org) and is used by the
+[Visual Studio Code](https://github.com/Microsoft/vscode/) and many other [apps](https://electronjs.org/apps).
 
 Follow [@electronjs](https://twitter.com/electronjs) on Twitter for important
 announcements.
