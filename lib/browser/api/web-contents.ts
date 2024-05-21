@@ -477,6 +477,21 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   }
 };
 
+WebContents.prototype.invoke = async function (...args) {
+  // Check if the first argument is an object (options) or string (channel)
+  if (typeof args[0] === 'string') {
+    const channel = args.shift();
+    return this.mainFrame.invoke(channel, ...args);
+  }
+
+  if (typeof args[0] === 'object') {
+    const options = args.shift();
+    return this.mainFrame.invoke(options, ...args);
+  };
+
+  throw new Error('Invalid arguments for invoke method');
+};
+
 const addReplyToEvent = (event: Electron.IpcMainEvent) => {
   const { processId, frameId } = event;
   event.reply = (channel: string, ...args: any[]) => {
