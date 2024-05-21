@@ -102,6 +102,7 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
+    _invoke<T>(channel: string, args: any[]): Promise<{ error: string, result: T }>;
   }
 
   interface WebFrame {
@@ -163,6 +164,10 @@ declare namespace Electron {
   }
 
   interface IpcMainInvokeEvent {
+    _replyChannel: ReplyChannel;
+  }
+
+  interface IpcRendererInvokeEvent {
     _replyChannel: ReplyChannel;
   }
 

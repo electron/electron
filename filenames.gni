@@ -638,6 +638,7 @@ filenames = {
     "shell/common/gin_helper/pinnable.h",
     "shell/common/gin_helper/promise.cc",
     "shell/common/gin_helper/promise.h",
+    "shell/common/gin_helper/reply_channel.h",
     "shell/common/gin_helper/trackable_object.cc",
     "shell/common/gin_helper/trackable_object.h",
     "shell/common/gin_helper/wrappable.cc",

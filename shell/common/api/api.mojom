@@ -10,6 +10,13 @@ interface ElectronRenderer {
       bool internal,
       string channel,
       blink.mojom.CloneableMessage arguments);
+  
+  // Emits an event on |channel| from the ipcRenderer JavaScript object in the renderer
+  // process, and returns the response.
+  Invoke(
+      string channel,
+      int32 routingId,
+      blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
