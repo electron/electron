@@ -272,7 +272,7 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   content::RenderFrame* main_frame_;
 };
 
-class SpellCheckerHolder final : public content::RenderFrameObserver {
+class SpellCheckerHolder final : private content::RenderFrameObserver {
  public:
   // Find existing holder for the |render_frame|.
   static SpellCheckerHolder* FromRenderFrame(
