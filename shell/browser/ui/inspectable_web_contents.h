@@ -34,7 +34,7 @@ class InspectableWebContentsView;
 
 class InspectableWebContents
     : public content::DevToolsAgentHostClient,
-      public content::WebContentsObserver,
+      private content::WebContentsObserver,
       public content::WebContentsDelegate,
       public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
