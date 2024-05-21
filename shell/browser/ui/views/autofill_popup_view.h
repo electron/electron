@@ -58,8 +58,8 @@ class AutofillPopupChildView : public views::View {
 };
 
 class AutofillPopupView : public views::WidgetDelegateView,
-                          public views::WidgetFocusChangeListener,
-                          public views::WidgetObserver,
+                          private views::WidgetFocusChangeListener,
+                          private views::WidgetObserver,
                           public views::DragController {
  public:
   explicit AutofillPopupView(AutofillPopup* popup,
