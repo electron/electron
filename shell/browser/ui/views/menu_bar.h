@@ -21,8 +21,8 @@ class MenuButton;
 namespace electron {
 
 class MenuBar : public views::AccessiblePaneView,
-                public MenuDelegate::Observer,
-                public NativeWindowObserver {
+                private MenuDelegate::Observer,
+                private NativeWindowObserver {
   METADATA_HEADER(MenuBar, views::AccessiblePaneView)
 
  public:
