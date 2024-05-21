@@ -219,8 +219,40 @@ documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel).
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in
 the host page instead of the main process.
 
+### `ipcRenderer.handle(channel, listener)`
+
+* `channel` string
+* `listener` Function\<Promise\<any\> | any\>
+  * `event` [IpcRendererInvokeEvent][ipc-renderer-invoke-event]
+  * `...args` any[]
+
+Adds a handler for an `invoke`able IPC. This handler will be called whenever webContents in the main process calls `webContents.invoke([options], channel, ...args)`.
+
+If `listener` returns a Promise, the eventual result of the promise will be
+returned as a reply to the remote caller. Otherwise, the return value of the
+listener will be used as the value of the reply.
+
+The `event` that is passed as the first argument to the handler is the same as that passed to a regular event listener. It includes information about which ipcRenderer is the source of the invoke request.
+
+### `ipcRenderer.handleOnce(channel, listener)`
+
+* `channel` string
+* `listener` Function\<Promise\<any\> | any\>
+  * `event` [IpcRendererInvokeEvent][ipc-renderer-invoke-event]
+  * `...args` any[]
+
+Handles a single `invoke`able IPC message, then removes the listener. See
+`ipcRenderer.handle(channel, listener)`.
+
+### `ipcRenderer.removeHandler(channel)`
+
+* `channel` string
+
+Removes any handler for `channel`, if present.
+
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`window.postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
 [`MessagePort`]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
 [ipc-renderer-event]: ./structures/ipc-renderer-event.md
+[ipc-renderer-invoke-event]:../api/structures/ipc-renderer-invoke-event.md

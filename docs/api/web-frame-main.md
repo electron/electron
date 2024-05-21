@@ -139,6 +139,35 @@ ipcRenderer.on('port', (e, msg) => {
 })
 ```
 
+#### `frame.invoke([options,] channel, ...args)`
+
+* `options` Object (optional)
+  * `maxTimeoutMs` number
+* `channel` string
+* `...args` any[]
+
+Returns `Promise<any>` - Resolves with the response from the renderer process.
+
+Send an asynchronous message to the renderer process via `channel` and expect a result
+asynchronously. Arguments will be serialized with the [Structured Clone
+Algorithm][SCA], just like [`postMessage`][], so prototype chains will not be
+included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
+throw an exception.
+
+:::warning
+
+Sending non-standard JavaScript types such as DOM objects or
+special Electron objects will throw an exception.
+
+:::
+
+`options` is an optional parameter that specifies the maximum amount of time (in milliseconds) to wait for a response from the renderer process before rejecting the promise. This is useful in scenarios where the function might take a long time to complete, or where it might not complete at all due renderer process termination.
+
+If `maxTimeoutMs` is not provided, a default value of 5000 milliseconds (5 seconds) is used. This means that if the function doesn't receive a response within 5 seconds, it will time out and throw an error.
+
+The main process should listen for `channel` with
+[`ipcRenderer.handle()`](./ipc-renderer.md#ipcrendererhandlechannel-listener).
+
 ### Instance Properties
 
 #### `frame.ipc` _Readonly_
