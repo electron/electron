@@ -330,7 +330,7 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
 }  // namespace
 
 class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
-                         public content::RenderFrameObserver {
+                         private content::RenderFrameObserver {
  public:
   static gin::WrapperInfo kWrapperInfo;
 
