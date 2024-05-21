@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Thu, 21 Mar 2024 09:59:19 +0100
+Subject: Deal with large strings in NoSideEffectsErrorToString
+
+If name is too big, StringBuilder will fail to even add
+"<a very large string>" suffix.
+
+In this case, we truncate name first.
+
+Bug: 329699609
+Change-Id: I6e4440c07eae84371f44b54f88127e2c70af0db5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5378286
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#92932}
+
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index a05fe442f5a0d0a341cf8053e86d810c1a196fa4..a20fc42daaeba10244a43170be9aa08f4fb7a4cc 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -470,14 +470,27 @@ Handle<String> NoSideEffectsErrorToString(Isolate* isolate,
+   if (name_str->length() == 0) return msg_str;
+   if (msg_str->length() == 0) return name_str;
+ 
+-  IncrementalStringBuilder builder(isolate);
+-  builder.AppendString(name_str);
+-  builder.AppendCStringLiteral(": ");
++  constexpr const char error_suffix[] = "<a very large string>";
++  constexpr int error_suffix_size = sizeof(error_suffix);
++  int suffix_size = std::min(error_suffix_size, msg_str->length());
+ 
+-  if (builder.Length() + msg_str->length() <= String::kMaxLength) {
+-    builder.AppendString(msg_str);
++  IncrementalStringBuilder builder(isolate);
++  if (name_str->length() + suffix_size + 2 /* ": " */ > String::kMaxLength) {
++    constexpr const char connector[] = "... : ";
++    int connector_size = sizeof(connector);
++    Handle<String> truncated_name = isolate->factory()->NewProperSubString(
++        name_str, 0, name_str->length() - error_suffix_size - connector_size);
++    builder.AppendString(truncated_name);
++    builder.AppendCStringLiteral(connector);
++    builder.AppendCStringLiteral(error_suffix);
+   } else {
+-    builder.AppendCStringLiteral("<a very large string>");
++    builder.AppendString(name_str);
++    builder.AppendCStringLiteral(": ");
++    if (builder.Length() + msg_str->length() <= String::kMaxLength) {
++      builder.AppendString(msg_str);
++    } else {
++      builder.AppendCStringLiteral(error_suffix);
++    }
+   }
+ 
+   return builder.Finish().ToHandleChecked();
