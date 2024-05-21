@@ -87,7 +87,7 @@ index 88bfc034f4bf8f54452ebea1aae88dc83feb148c..940fd488aad20f688d82718688549000
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 4dc2261877b8386e7c1f5447f0b3e315068e5d84..8e6e10ff4174bac1e5ad09882f79fed05752c360 100644
+index ca4b494c9cd2f6e606f3aaeca210061c19e7eb2d..26fd1b6f4744a4ff944ee4197cb7b081b1825f70 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -405,6 +405,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {

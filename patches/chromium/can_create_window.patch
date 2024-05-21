@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 2d28bd72ebd3f8df3bcbc83001f433a5894bef78..615fd246d92ff0c162ad7f681a27ff87244eddd3 100644
+index 74c760f27d053ba390673fe24174b9777dc7a569..b85cf5bcd26083d22d267530785b688c516296a1 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -8556,6 +8556,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 2d28bd72ebd3f8df3bcbc83001f433a5894bef78..615fd246d92ff0c162ad7f681a27ff87
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index eb8806de374f62aaf85ec943fb616d8ea62b85c0..c64e612c0b51813430ee6150c159dd51a0d8b6ed 100644
+index ee38896c28465100492c3ab2f48d2fab83a6e6da..765e9c3fc8d7aa742494e4d8b913a88555b9ab85 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4696,6 +4696,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -122,7 +122,7 @@ index e6bf6fc6aba4e6639c48961f3bec1e8361e9b289..9fc61717f6c9e49940629f10b8316e08
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 284ee93d45966fae30557d02ae801149aecb40a6..cdb19ec60e0ac5bc149cc3cd6e4bf96b35178e9f 100644
+index cd4fe7aa368b4b718bdd4780fba4c1a8b27362da..872dbb844cf3a4cb051798dc2b5b393f6e740898 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -133,7 +133,7 @@ index 284ee93d45966fae30557d02ae801149aecb40a6..cdb19ec60e0ac5bc149cc3cd6e4bf96b
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/invalidate_type.h"
-@@ -355,6 +356,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -356,6 +357,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  

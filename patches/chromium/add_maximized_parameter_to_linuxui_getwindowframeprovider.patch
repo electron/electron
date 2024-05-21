@@ -51,10 +51,10 @@ index 0432ea4f5906502a4f6def46ab064292a6628218..e3cbfa3a1ac8c169c429e29c1262d0dd
    // Objects to notify when the window frame button order changes.
    base::ObserverList<ui::WindowButtonOrderObserver>::Unchecked
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b141e8a09 100644
+index e24cce85b453ecee9a4854bfdf7b8eeb6814f8c3..d3e3e9b918011c433b4ac6ded245803410ccb5d4 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
-@@ -30,20 +30,23 @@ constexpr int kMaxFrameSizeDip = 64;
+@@ -29,20 +29,23 @@ constexpr int kMaxFrameSizeDip = 64;
  // will get an incorrect hint as to which pixels are fully opaque.
  constexpr int kMaxCornerRadiusDip = 32;
  
@@ -81,7 +81,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    // GTK4 renders the decoration directly on the window.
    if (!GtkCheckVersion(4)) {
      context = AppendCssNodeToStyleContext(context, "decoration");
-@@ -62,8 +65,8 @@ GtkCssContext DecorationContext(bool solid_frame, bool tiled, bool focused) {
+@@ -61,8 +64,8 @@ GtkCssContext DecorationContext(bool solid_frame, bool tiled, bool focused) {
    return context;
  }
  
@@ -92,7 +92,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    context =
        AppendCssNodeToStyleContext(context, "headerbar.header-bar.titlebar");
    if (!focused) {
-@@ -120,8 +123,8 @@ int ComputeTopCornerRadius() {
+@@ -117,8 +120,8 @@ int ComputeTopCornerRadius() {
    // need to experimentally determine the corner radius by rendering a sample.
    // Additionally, in GTK4, the headerbar corners get clipped by the window
    // rather than the headerbar having its own rounded corners.
@@ -103,7 +103,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    ApplyCssToContext(context, R"(window, headerbar {
      background-image: none;
      background-color: black;
-@@ -155,7 +158,7 @@ int ComputeTopCornerRadius() {
+@@ -152,7 +155,7 @@ int ComputeTopCornerRadius() {
  bool HeaderIsTranslucent() {
    // The arbitrary square size to render a sample header.
    constexpr int kHeaderSize = 32;
@@ -112,7 +112,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    double opacity = GetOpacityFromContext(context);
    if (opacity < 1.0) {
      return true;
-@@ -189,8 +192,8 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::Asset::operator=(
+@@ -186,8 +189,8 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::Asset::operator=(
  
  WindowFrameProviderGtk::Asset::~Asset() = default;
  
@@ -123,7 +123,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    GtkSettings* settings = gtk_settings_get_default();
    // Unretained() is safe since WindowFrameProviderGtk will own the signals.
    auto callback = base::BindRepeating(&WindowFrameProviderGtk::OnThemeChanged,
-@@ -340,7 +343,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
+@@ -337,7 +340,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
  
    auto header =
        PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
@@ -132,7 +132,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    image = gfx::ImageSkia::CreateFrom1xBitmap(header);
    // In GTK4, the headerbar gets clipped by the window.
    if (GtkCheckVersion(4)) {
-@@ -369,7 +372,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
+@@ -366,7 +369,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
  
    gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
                               2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
@@ -141,7 +141,7 @@ index 0b8fa0ec76098e0319b2e853719166d405cd3828..52615c5c119c58f17850454e98d1240b
    frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
    frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
    gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
-@@ -377,7 +380,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
+@@ -374,7 +377,7 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::GetOrCreateAsset(
                                       focused_context, scale);
    asset.unfocused_bitmap =
        PaintBitmap(bitmap_size, gfx::RectF(frame_bounds_dip),

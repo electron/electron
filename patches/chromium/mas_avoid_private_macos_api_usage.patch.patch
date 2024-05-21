@@ -459,7 +459,7 @@ index 9f703d6da81c1a0e8a4fe6bcb885b8d3217e14f1..97e1706959ab7784b758779b3d69d975
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 42ad9b47b0a63ceb7f639073c7de93410a0519a4..1cacb0e5ec6d58ca9f6a248ad3f67f58fc713ed2 100644
+index cd93a040d9b10ec1d9dc1ca1bbfbacd4d1625610..9ab396dd022154fcb712f1c2432bb62bef6bc1cc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a6812451a1c9a1dc1f20ee29ded32ce3591e8b0e..951291cc8fbfcf496066beedd6900453180d47a7 100644
+index 3325f775f92d83a5a7d96036648962703a95bb5f..1f92159d58bdce9d59793a2220f5ce7dcb7d2b8c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -500,6 +500,7 @@ static_library("test_support") {
+@@ -502,6 +502,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index a6812451a1c9a1dc1f20ee29ded32ce3591e8b0e..951291cc8fbfcf496066beedd6900453
    ]
  
    public_deps = [
-@@ -1109,6 +1110,7 @@ static_library("browsertest_support") {
+@@ -1097,6 +1098,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index a6812451a1c9a1dc1f20ee29ded32ce3591e8b0e..951291cc8fbfcf496066beedd6900453
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1723,6 +1725,7 @@ test("content_browsertests") {
+@@ -1711,6 +1713,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index a6812451a1c9a1dc1f20ee29ded32ce3591e8b0e..951291cc8fbfcf496066beedd6900453
  
    public_deps = [
      ":test_interfaces",
-@@ -2965,6 +2968,7 @@ test("content_unittests") {
+@@ -2953,6 +2956,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
