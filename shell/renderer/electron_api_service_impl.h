@@ -32,9 +32,14 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
 
   void BindTo(mojo::PendingReceiver<mojom::ElectronRenderer> receiver);
 
+  // mojom::ElectronRenderer:
   void Message(bool internal,
                const std::string& channel,
                blink::CloneableMessage arguments) override;
+  void Invoke(const std::string& channel,
+              int routingId,
+              blink::CloneableMessage arguments,
+              InvokeCallback callback) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,

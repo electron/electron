@@ -197,6 +197,33 @@ void WebFrameMain::Send(v8::Isolate* isolate,
   GetRendererApi()->Message(internal, channel, std::move(message));
 }
 
+v8::Local<v8::Promise> WebFrameMain::Invoke(v8::Isolate* isolate,
+                                            const std::string& channel,
+                                            v8::Local<v8::Value> args) {
+  if (!CheckRenderFrame()) {
+    return v8::Local<v8::Promise>();
+  }
+
+  blink::CloneableMessage message;
+  if (!gin::ConvertFromV8(isolate, args, &message)) {
+    isolate->ThrowException(v8::Exception::Error(
+        gin::StringToV8(isolate, "Failed to serialize arguments")));
+    return v8::Local<v8::Promise>();
+  }
+
+  gin_helper::Promise<blink::CloneableMessage> promise(isolate);
+  auto handle = promise.GetHandle();
+
+  GetRendererApi()->Invoke(
+      channel, RoutingID(), std::move(message),
+      base::BindOnce(
+          [](gin_helper::Promise<blink::CloneableMessage> promise,
+             blink::CloneableMessage result) { promise.Resolve(result); },
+          std::move(promise)));
+
+  return handle;
+}
+
 const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
   MaybeSetupMojoConnection();
   return renderer_api_;
@@ -403,6 +430,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
   gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("reload", &WebFrameMain::Reload)
+      .SetMethod("_invoke", &WebFrameMain::Invoke)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)

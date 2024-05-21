@@ -101,6 +101,9 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
             bool internal,
             const std::string& channel,
             v8::Local<v8::Value> args);
+  v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
+                                const std::string& channel,
+                                v8::Local<v8::Value> args);
   void PostMessage(v8::Isolate* isolate,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,

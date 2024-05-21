@@ -16,6 +16,8 @@
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/reply_channel.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -96,6 +98,23 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
   InvokeIpcCallback(context, "onMessage", argv);
 }
 
+void EmitInvokeEvent(v8::Local<v8::Context> context,
+                     const std::string& channel,
+                     gin::Handle<gin_helper::internal::Event> event,
+                     v8::Local<v8::Value> args) {
+  auto* isolate = context->GetIsolate();
+
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  v8::MicrotasksScope script_scope(isolate, context->GetMicrotaskQueue(),
+                                   v8::MicrotasksScope::kRunMicrotasks);
+
+  std::vector<v8::Local<v8::Value>> argv = {
+      event.ToV8().As<v8::Object>(), gin::ConvertToV8(isolate, channel), args};
+
+  InvokeIpcCallback(context, "-ipc-invoke", argv);
+}
+
 }  // namespace
 
 ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
@@ -167,6 +186,52 @@ void ElectronApiServiceImpl::Message(bool internal,
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
   EmitIPCEvent(context, internal, channel, {}, args);
+}
+
+void ElectronApiServiceImpl::Invoke(const std::string& channel,
+                                    int routingId,
+                                    blink::CloneableMessage arguments,
+                                    InvokeCallback callback) {
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+
+  if (!frame) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    gin_helper::ReplyChannel<InvokeCallback>::Create(isolate,
+                                                     std::move(callback))
+        ->SendError("webFrame does not exist");
+    return;
+  }
+
+  v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
+  v8::Context::Scope context_scope(context);
+
+  if (render_frame()->GetRoutingID() != routingId) {
+    gin_helper::ReplyChannel<InvokeCallback>::Create(isolate,
+                                                     std::move(callback))
+        ->SendError("Routing ID does not match the current webFrame");
+    return;
+  }
+
+  v8::MicrotasksScope script_scope(isolate, context->GetMicrotaskQueue(),
+                                   v8::MicrotasksScope::kRunMicrotasks);
+  // Make an event object for the IPC message.
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+
+  gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+
+  // add callback to the event object
+  dict.Set("_replyChannel", gin_helper::ReplyChannel<InvokeCallback>::Create(
+                                isolate, std::move(callback)));
+  // webFrame routingId
+  dict.Set("frameId", routingId);
+
+  v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
+
+  EmitInvokeEvent(context, channel, event, args);
 }
 
 void ElectronApiServiceImpl::ReceivePostMessage(
