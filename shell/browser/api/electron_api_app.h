@@ -50,9 +50,9 @@ namespace api {
 class App : public ElectronBrowserClient::Delegate,
             public gin::Wrappable<App>,
             public gin_helper::EventEmitterMixin<App>,
-            public BrowserObserver,
-            public content::GpuDataManagerObserver,
-            public content::BrowserChildProcessObserver {
+            private BrowserObserver,
+            private content::GpuDataManagerObserver,
+            private content::BrowserChildProcessObserver {
  public:
   using FileIconCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
