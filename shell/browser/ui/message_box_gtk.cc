@@ -47,7 +47,7 @@ base::flat_map<int, GtkWidget*>& GetDialogsMap() {
   return *dialogs;
 }
 
-class GtkMessageBox : public NativeWindowObserver {
+class GtkMessageBox : private NativeWindowObserver {
  public:
   explicit GtkMessageBox(const MessageBoxSettings& settings)
       : id_(settings.id),
