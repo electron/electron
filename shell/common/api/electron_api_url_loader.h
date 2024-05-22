@@ -46,8 +46,8 @@ namespace electron::api {
 class SimpleURLLoaderWrapper
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
-      public network::SimpleURLLoaderStreamConsumer,
-      public network::mojom::URLLoaderNetworkServiceObserver {
+      private network::SimpleURLLoaderStreamConsumer,
+      private network::mojom::URLLoaderNetworkServiceObserver {
  public:
   ~SimpleURLLoaderWrapper() override;
   static gin::Handle<SimpleURLLoaderWrapper> Create(gin::Arguments* args);
