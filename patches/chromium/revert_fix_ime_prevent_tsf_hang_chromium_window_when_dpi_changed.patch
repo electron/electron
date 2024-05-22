@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Wed, 22 May 2024 11:05:46 -0700
+Subject: Revert "fix: ime: Prevent TSF hang Chromium window when DPI changed"
+
+This reverts commit 9577a678355605656c7664e6367b0144948dad84.
+
+Reason for revert: This causes performance issues while typing and hangs the browser. See https://issues.chromium.org/issues/328859185#comment10
+
+diff --git a/ui/base/ime/init/input_method_initializer.cc b/ui/base/ime/init/input_method_initializer.cc
+index bddb5c062a89f69a59a5a58dda36ef720fee9592..a500669ac54e79f433b9fbf5292dd37a1c7ae57a 100644
+--- a/ui/base/ime/init/input_method_initializer.cc
++++ b/ui/base/ime/init/input_method_initializer.cc
+@@ -32,16 +32,6 @@ void ShutdownInputMethod() {
+ #endif
+ }
+ 
+-void RestartInputMethod() {
+-#if !BUILDFLAG(IS_CHROMEOS_ASH) && BUILDFLAG(IS_WIN)
+-  // Some tests don't have a TSFBridge and may cause error if we set one.
+-  if (TSFBridge::GetInstance()) {
+-    TSFBridge::Shutdown();
+-    TSFBridge::Initialize();
+-  }
+-#endif
+-}
+-
+ void InitializeInputMethodForTesting() {
+ #if defined(USE_AURA) && BUILDFLAG(IS_LINUX)
+   GetInputMethodContextFactoryForTest() =
+diff --git a/ui/base/ime/init/input_method_initializer.h b/ui/base/ime/init/input_method_initializer.h
+index ef14c6e3d8f5ccbb58b079e2bbfa1d9f20ab8931..358bdc9a4188b7d910af6f7d308df5f38d35715b 100644
+--- a/ui/base/ime/init/input_method_initializer.h
++++ b/ui/base/ime/init/input_method_initializer.h
+@@ -17,10 +17,6 @@ COMPONENT_EXPORT(UI_BASE_IME_INIT) void InitializeInputMethod();
+ // called in the UI thread after input method is used.
+ COMPONENT_EXPORT(UI_BASE_IME_INIT) void ShutdownInputMethod();
+ 
+-// https://crbug.com/41486958
+-// Prevent TSF from hanging on Windows, for details read links above.
+-COMPONENT_EXPORT(UI_BASE_IME_INIT) void RestartInputMethod();
+-
+ // Initializes thread-local resources for input method. This function is
+ // intended to be called from Setup function of unit tests.
+ COMPONENT_EXPORT(UI_BASE_IME_INIT) void InitializeInputMethodForTesting();
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 6f638b2003ff86bc06bd82402ab358dfb61c58b7..af1855545cf2892c89f4d218f3bacfd9a57e0bb5 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -37,7 +37,6 @@
+ #include "ui/accessibility/platform/ax_fragment_root_win.h"
+ #include "ui/accessibility/platform/ax_platform_node_win.h"
+ #include "ui/accessibility/platform/ax_system_caret_win.h"
+-#include "ui/base/ime/init/input_method_initializer.h"
+ #include "ui/base/ime/text_input_client.h"
+ #include "ui/base/ime/text_input_type.h"
+ #include "ui/base/ui_base_features.h"
+@@ -1874,14 +1873,6 @@ LRESULT HWNDMessageHandler::OnDpiChanged(UINT msg,
+   SetBoundsInternal(gfx::Rect(*reinterpret_cast<RECT*>(l_param)), false);
+   delegate_->HandleWindowScaleFactorChanged(scaling_factor);
+ 
+-  // https://crbug.com/41486958
+-  // On Windows, TSF will hang the browser window and stuck KEYBOARD and MOUSE
+-  // window messages when user is using a non-English IME (Chinese: Microsoft
+-  // Pinyin, etc..) and try typing on any textarea after a DPI change when
+-  // window is minimized. This hacky workaround fix that problem, as same
+-  // reproduce procedure no longer triggers the hang.
+-  ui::RestartInputMethod();
+-
+   return 0;
+ }
+ 
