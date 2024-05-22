@@ -29,8 +29,8 @@
 namespace electron {
 
 class ClientFrameViewLinux : public FramelessView,
-                             public ui::NativeThemeObserver,
-                             public ui::WindowButtonOrderObserver {
+                             private ui::NativeThemeObserver,
+                             private ui::WindowButtonOrderObserver {
   METADATA_HEADER(ClientFrameViewLinux, FramelessView)
 
  public:
