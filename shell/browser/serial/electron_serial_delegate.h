@@ -20,7 +20,7 @@ namespace electron {
 class SerialChooserController;
 
 class ElectronSerialDelegate : public content::SerialDelegate,
-                               public SerialChooserContext::PortObserver {
+                               private SerialChooserContext::PortObserver {
  public:
   ElectronSerialDelegate();
   ~ElectronSerialDelegate() override;
