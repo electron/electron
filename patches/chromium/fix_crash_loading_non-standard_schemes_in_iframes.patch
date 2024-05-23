@@ -40,10 +40,10 @@ index 909f2f6f5a4ca3e4b8e4ff17d5363d6fc2af2cd2..d22c46d1c96e883ee953a11b5602573a
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index eda326643af0c777f2a5735f6e0c204134d053e7..d89c76f69b8d2b6d329d0de4a8ddc25175367d24 100644
+index a4b8c3d8d366c027f61ba41cb5f5fb4d503b3956..e6f2764929ac1b0ddb01c08284278c9908385f06 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2220,6 +2220,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2226,6 +2226,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index eda326643af0c777f2a5735f6e0c204134d053e7..d89c76f69b8d2b6d329d0de4a8ddc251
    StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2272,6 +2276,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2278,6 +2282,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");
@@ -62,6 +62,6 @@ index eda326643af0c777f2a5735f6e0c204134d053e7..d89c76f69b8d2b6d329d0de4a8ddc251
 +             !is_standard) {
 +    debug_info_builder.Append("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
-   } else if (url_.IsAboutSrcdocURL()) {
-     // If there's no owner_document and this is a sandboxed srcdoc load, then
-     // get the origin from the remote parent. In general, a srcdoc navigation
+   } else {
+     debug_info_builder.Append("use_url_with_precursor");
+     // Otherwise, create an origin that propagates precursor information
