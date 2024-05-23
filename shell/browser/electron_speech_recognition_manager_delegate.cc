@@ -32,7 +32,7 @@ void ElectronSpeechRecognitionManagerDelegate::OnRecognitionEnd(
 
 void ElectronSpeechRecognitionManagerDelegate::OnRecognitionResults(
     int session_id,
-    const std::vector<media::mojom::SpeechRecognitionResultPtr>& results) {}
+    const std::vector<media::mojom::WebSpeechRecognitionResultPtr>& results) {}
 
 void ElectronSpeechRecognitionManagerDelegate::OnRecognitionError(
     int session_id,
