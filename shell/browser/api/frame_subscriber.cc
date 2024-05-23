@@ -131,7 +131,7 @@ void FrameSubscriber::OnFrameCaptured(
       SkImageInfo::MakeN32(content_rect.width(), content_rect.height(),
                            kPremul_SkAlphaType),
       pixels,
-      media::VideoFrame::RowBytes(media::VideoFrame::kARGBPlane,
+      media::VideoFrame::RowBytes(media::VideoFrame::Plane::kARGB,
                                   info->pixel_format, info->coded_size.width()),
       [](void* addr, void* context) {
         delete static_cast<FramePinner*>(context);
