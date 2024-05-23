@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/base64.h"
 #include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
@@ -600,12 +601,25 @@ base::Value::Dict CreateFileSystemValue(const FileSystem& file_system) {
   return value;
 }
 
-void WriteToFile(const base::FilePath& path, const std::string& content) {
+void WriteToFile(const base::FilePath& path,
+                 const std::string& content,
+                 bool is_base64) {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
-  base::WriteFile(path, content.data(), content.size());
+  if (!is_base64) {
+    base::WriteFile(path, content);
+    return;
+  }
+
+  const std::optional<std::vector<uint8_t>> decoded_content =
+      base::Base64Decode(content);
+  if (decoded_content) {
+    base::WriteFile(path, decoded_content.value());
+  } else {
+    LOG(ERROR) << "Invalid base64. Not writing " << path;
+  }
 }
 
 void AppendToFile(const base::FilePath& path, const std::string& content) {
@@ -3919,7 +3933,8 @@ void WebContents::ExitPictureInPicture() {
 
 void WebContents::DevToolsSaveToFile(const std::string& url,
                                      const std::string& content,
-                                     bool save_as) {
+                                     bool save_as,
+                                     bool is_base64) {
   base::FilePath path;
   auto it = saved_files_.find(url);
   if (it != saved_files_.end() && !save_as) {
@@ -3942,8 +3957,8 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "savedURL", base::Value(url),
       base::Value(path.AsUTF8Unsafe()));
-  file_task_runner_->PostTask(FROM_HERE,
-                              base::BindOnce(&WriteToFile, path, content));
+  file_task_runner_->PostTask(
+      FROM_HERE, base::BindOnce(&WriteToFile, path, content, is_base64));
 }
 
 void WebContents::DevToolsAppendToFile(const std::string& url,

@@ -732,9 +732,10 @@ void InspectableWebContents::ShowItemInFolder(
 
 void InspectableWebContents::SaveToFile(const std::string& url,
                                         const std::string& content,
-                                        bool save_as) {
+                                        bool save_as,
+                                        bool is_base64) {
   if (delegate_)
-    delegate_->DevToolsSaveToFile(url, content, save_as);
+    delegate_->DevToolsSaveToFile(url, content, save_as, is_base64);
 }
 
 void InspectableWebContents::AppendToFile(const std::string& url,

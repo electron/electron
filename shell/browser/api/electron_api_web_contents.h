@@ -738,7 +738,8 @@ class WebContents : public ExclusiveAccessContext,
   // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
                           const std::string& content,
-                          bool save_as) override;
+                          bool save_as,
+                          bool is_base64) override;
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
   void DevToolsRequestFileSystems() override;
