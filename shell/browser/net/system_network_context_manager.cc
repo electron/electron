@@ -262,11 +262,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   net::SecureDnsMode default_secure_dns_mode = net::SecureDnsMode::kOff;
   std::string default_doh_templates;
   if (base::FeatureList::IsEnabled(features::kDnsOverHttps)) {
-    if (features::kDnsOverHttpsFallbackParam.Get()) {
-      default_secure_dns_mode = net::SecureDnsMode::kAutomatic;
-    } else {
-      default_secure_dns_mode = net::SecureDnsMode::kSecure;
-    }
+    default_secure_dns_mode = net::SecureDnsMode::kSecure;
     default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
   }
 

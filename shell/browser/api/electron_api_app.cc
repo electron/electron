@@ -1570,11 +1570,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   net::SecureDnsMode secure_dns_mode = net::SecureDnsMode::kOff;
   std::string default_doh_templates;
   if (base::FeatureList::IsEnabled(features::kDnsOverHttps)) {
-    if (features::kDnsOverHttpsFallbackParam.Get()) {
-      secure_dns_mode = net::SecureDnsMode::kAutomatic;
-    } else {
-      secure_dns_mode = net::SecureDnsMode::kSecure;
-    }
+    secure_dns_mode = net::SecureDnsMode::kSecure;
     default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
   }
 
