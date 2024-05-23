@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Thu, 23 May 2024 13:02:49 -0600
+Subject: Revert "[api][cleanup] Remove SetAccessor and SetNativeDataProperty"
+
+This reverts commit 5d84c48eb907b8cd6db8f017e0263049de25443d, which
+landed in:
+https://chromium-review.googlesource.com/c/v8/v8/+/5497515
+
+This change breaks Node.js in complicated ways. We should wait for
+Node.js to ingest these changes, incorporate their changes, and then
+remove this patch.
+
+diff --git a/include/v8-template.h b/include/v8-template.h
+index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259191ed3db 100644
+--- a/include/v8-template.h
++++ b/include/v8-template.h
+@@ -80,6 +80,27 @@ class V8_EXPORT Template : public Data {
+    * \param attribute The attributes of the property for which an accessor
+    *   is added.
+    */
++  V8_DEPRECATED("Use SetNativeDataProperty without AccessControl instead")
++  void SetNativeDataProperty(
++      Local<String> name, AccessorGetterCallback getter,
++      AccessorSetterCallback setter, Local<Value> data,
++      PropertyAttribute attribute, AccessControl settings,
++      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
++      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
++  V8_DEPRECATED("Use SetNativeDataProperty without AccessControl instead")
++  void SetNativeDataProperty(
++      Local<Name> name, AccessorNameGetterCallback getter,
++      AccessorNameSetterCallback setter, Local<Value> data,
++      PropertyAttribute attribute, AccessControl settings,
++      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
++      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
++  V8_DEPRECATED("Use SetNativeDataProperty with Local<Name> instead")
++  void SetNativeDataProperty(
++      Local<String> name, AccessorGetterCallback getter,
++      AccessorSetterCallback setter = nullptr,
++      Local<Value> data = Local<Value>(), PropertyAttribute attribute = None,
++      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
++      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
+   void SetNativeDataProperty(
+       Local<Name> name, AccessorNameGetterCallback getter,
+       AccessorNameSetterCallback setter = nullptr,
+@@ -1042,6 +1063,13 @@ class V8_EXPORT ObjectTemplate : public Template {
+    * \param attribute The attributes of the property for which an accessor
+    *   is added.
+    */
++  V8_DEPRECATED("Use SetAccessor with Local<Name> instead")
++  void SetAccessor(
++      Local<String> name, AccessorGetterCallback getter,
++      AccessorSetterCallback setter = nullptr,
++      Local<Value> data = Local<Value>(), PropertyAttribute attribute = None,
++      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
++      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
+   V8_DEPRECATE_SOON("Use SetNativeDataProperty instead")
+   void SetAccessor(
+       Local<Name> name, AccessorNameGetterCallback getter,
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 817fcfdb10f35dbf7175dfcc9daae7ff4fc02e69..8c4de9fa39fd7f288c5810e6ae29de7347bf6619 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -1587,6 +1587,41 @@ void TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,
+ }
+ }  // namespace
+ 
++void Template::SetNativeDataProperty(v8::Local<String> name,
++                                     AccessorGetterCallback getter,
++                                     AccessorSetterCallback setter,
++                                     v8::Local<Value> data,
++                                     PropertyAttribute attribute,
++                                     v8::AccessControl settings,
++                                     SideEffectType getter_side_effect_type,
++                                     SideEffectType setter_side_effect_type) {
++  TemplateSetAccessor(this, name, getter, setter, data, attribute, true, false,
++                      getter_side_effect_type, setter_side_effect_type);
++}
++
++void Template::SetNativeDataProperty(v8::Local<Name> name,
++                                     AccessorNameGetterCallback getter,
++                                     AccessorNameSetterCallback setter,
++                                     v8::Local<Value> data,
++                                     PropertyAttribute attribute,
++                                     v8::AccessControl settings,
++                                     SideEffectType getter_side_effect_type,
++                                     SideEffectType setter_side_effect_type) {
++  TemplateSetAccessor(this, name, getter, setter, data, attribute, true, false,
++                      getter_side_effect_type, setter_side_effect_type);
++}
++
++void Template::SetNativeDataProperty(v8::Local<String> name,
++                                     AccessorGetterCallback getter,
++                                     AccessorSetterCallback setter,
++                                     v8::Local<Value> data,
++                                     PropertyAttribute attribute,
++                                     SideEffectType getter_side_effect_type,
++                                     SideEffectType setter_side_effect_type) {
++  TemplateSetAccessor(this, name, getter, setter, data, attribute, true, false,
++                      getter_side_effect_type, setter_side_effect_type);
++}
++
+ void Template::SetNativeDataProperty(v8::Local<Name> name,
+                                      AccessorNameGetterCallback getter,
+                                      AccessorNameSetterCallback setter,
+@@ -1621,6 +1656,18 @@ void Template::SetIntrinsicDataProperty(Local<Name> name, Intrinsic intrinsic,
+                                  static_cast<i::PropertyAttributes>(attribute));
+ }
+ 
++void ObjectTemplate::SetAccessor(v8::Local<String> name,
++                                 AccessorGetterCallback getter,
++                                 AccessorSetterCallback setter,
++                                 v8::Local<Value> data,
++                                 PropertyAttribute attribute,
++                                 SideEffectType getter_side_effect_type,
++                                 SideEffectType setter_side_effect_type) {
++  TemplateSetAccessor(this, name, getter, setter, data, attribute,
++                      i::v8_flags.disable_old_api_accessors, false,
++                      getter_side_effect_type, setter_side_effect_type);
++}
++
+ void ObjectTemplate::SetAccessor(v8::Local<Name> name,
+                                  AccessorNameGetterCallback getter,
+                                  AccessorNameSetterCallback setter,
