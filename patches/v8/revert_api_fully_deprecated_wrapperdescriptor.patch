@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Wed, 22 May 2024 14:52:25 -0600
+Subject: Revert "[api] Fully deprecated WrapperDescriptor"
+
+This reverts commit d40595e47174f06da1e5ca94bc5a3277a470a1de, which
+landed in:
+https://chromium-review.googlesource.com/c/v8/v8/+/5526611
+
+This change breaks Node.js in complicated ways. We should wait for
+Node.js to ingest these changes, incorporate their changes, and then
+remove this patch.
+
+diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
+index ef7f6322f722b3e96c9b798db441bf92fd1c811d..9eafe636811d17ce9bc510d56e472e921da1f686 100644
+--- a/include/v8-cppgc.h
++++ b/include/v8-cppgc.h
+@@ -50,10 +50,10 @@ struct WrapperDescriptor final {
+    */
+   static constexpr uint16_t kUnknownEmbedderId = UINT16_MAX;
+ 
+-  V8_DEPRECATED("WrapperDescriptor is deprecated, see crbug.com/338411141.")
++  V8_DEPRECATE_SOON("WrapperDescriptor is deprecated, see crbug.com/338411141.")
+   constexpr WrapperDescriptor() = default;
+ 
+-  V8_DEPRECATED("WrapperDescriptor is deprecated, see crbug.com/338411141.")
++  V8_DEPRECATE_SOON("WrapperDescriptor is deprecated, see crbug.com/338411141.")
+   constexpr WrapperDescriptor(InternalFieldIndex wrappable_type_index,
+                               InternalFieldIndex wrappable_instance_index,
+                               uint16_t embedder_id_for_garbage_collected)
+@@ -87,7 +87,7 @@ struct V8_EXPORT CppHeapCreateParams {
+       : custom_spaces(std::move(custom_spaces)) {}
+   END_ALLOW_USE_DEPRECATED()
+ 
+-  V8_DEPRECATED("WrapperDescriptor is deprecated, see crbug.com/338411141.")
++  V8_DEPRECATE_SOON("WrapperDescriptor is deprecated, see crbug.com/338411141.")
+   CppHeapCreateParams(
+       std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces,
+       WrapperDescriptor wrapper_descriptor)
+@@ -191,7 +191,6 @@ class V8_EXPORT CppHeap {
+   /**
+    * \returns the wrapper descriptor of this CppHeap.
+    */
+-  V8_DEPRECATED("WrapperDescriptor is deprecated, see crbug.com/338411141.")
+   v8::WrapperDescriptor wrapper_descriptor() const;
+ 
+  private:
+diff --git a/test/unittests/heap/cppgc-js/unified-heap-unittest.cc b/test/unittests/heap/cppgc-js/unified-heap-unittest.cc
+index 436ae905e3e00d6efb70e32d09604c2f0aaa5a5c..bb5f081e146481a24ea4c6e4e6d063fed2c7f51f 100644
+--- a/test/unittests/heap/cppgc-js/unified-heap-unittest.cc
++++ b/test/unittests/heap/cppgc-js/unified-heap-unittest.cc
+@@ -761,10 +761,8 @@ TEST_F(UnifiedHeapTest, WrapperDescriptorGetter) {
+   v8::Isolate* isolate = v8_isolate();
+   auto* wrappable_object =
+       cppgc::MakeGarbageCollected<Wrappable2>(allocation_handle());
+-  START_ALLOW_USE_DEPRECATED()
+   v8::WrapperDescriptor descriptor =
+       isolate->GetCppHeap()->wrapper_descriptor();
+-  END_ALLOW_USE_DEPRECATED()
+   v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(isolate);
+   int size = std::max(descriptor.wrappable_type_index,
+                       descriptor.wrappable_instance_index) +
