@@ -174,7 +174,7 @@ class OffScreenRenderWidgetHostView
 
   bool TransformPointToCoordSpaceForView(
       const gfx::PointF& point,
-      RenderWidgetHostViewBase* target_view,
+      RenderWidgetHostViewInput* target_view,
       gfx::PointF* transformed_point) override;
 
   // RenderFrameMetadataProvider::Observer:
