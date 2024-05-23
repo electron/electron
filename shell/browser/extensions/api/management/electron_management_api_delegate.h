@@ -69,7 +69,7 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
                      extensions::LaunchType launch_type) const override;
   GURL GetIconURL(const extensions::Extension* extension,
                   int icon_size,
-                  ExtensionIconSet::MatchType match,
+                  ExtensionIconSet::Match match,
                   bool grayscale) const override;
   GURL GetEffectiveUpdateURL(const extensions::Extension& extension,
                              content::BrowserContext* context) const override;
