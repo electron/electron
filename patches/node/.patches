@@ -46,3 +46,4 @@ deprecate_vector_v8_local_in_v8.patch
 fix_remove_deprecated_errno_constants.patch
 build_enable_perfetto.patch
 fix_add_source_location_for_v8_task_runner.patch
+cherry-pick_src_remove_calls_to_recently_deprecated_v8_apis.patch
