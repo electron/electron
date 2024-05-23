@@ -21,9 +21,6 @@ void ElectronSpeechRecognitionManagerDelegate::OnRecognitionStart(
 
 void ElectronSpeechRecognitionManagerDelegate::OnAudioStart(int session_id) {}
 
-void ElectronSpeechRecognitionManagerDelegate::OnEnvironmentEstimationComplete(
-    int session_id) {}
-
 void ElectronSpeechRecognitionManagerDelegate::OnSoundStart(int session_id) {}
 
 void ElectronSpeechRecognitionManagerDelegate::OnSoundEnd(int session_id) {}
