@@ -1,7 +1,7 @@
-From 3e037e195e508dea045f5626862412e8f64fc919 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shu-yu Guo <syg@chromium.org>
 Date: Tue, 21 May 2024 10:06:20 -0700
-Subject: [PATCH] [parser] Using FunctionParsingScope for parsing class static blocks
+Subject: Using FunctionParsingScope for parsing class static blocks
 
 Class static blocks contain statements, don't inherit the
 ExpressionScope stack.
@@ -13,13 +13,12 @@ Commit-Queue: Shu-yu Guo <syg@chromium.org>
 Commit-Queue: Adam Klein <adamk@chromium.org>
 Reviewed-by: Adam Klein <adamk@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#94014}
----
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index 660fdd2..de4df35 100644
+index 39e3a8d5d59acbe9405f351fa6c57121c1900657..2aa1bb6c0f8f6e098a3ddf3f54ec2d0d5af9dc24 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -2447,7 +2447,7 @@
+@@ -2445,7 +2445,7 @@ bool Scope::MustAllocate(Variable* var) {
      var->set_is_used();
      if (inner_scope_calls_eval_ && !var->is_this()) var->SetMaybeAssigned();
    }
@@ -29,10 +28,10 @@ index 660fdd2..de4df35 100644
    return !var->IsGlobalObjectProperty() && var->is_used();
  }
 diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
-index 40914d3..65c338f 100644
+index 009befd607bbe9135d604550018e36d681340718..6001ea622dfe0d1e4ccd4b42351b7368fd0892ce 100644
 --- a/src/parsing/parser-base.h
 +++ b/src/parsing/parser-base.h
-@@ -2661,6 +2661,7 @@
+@@ -2661,6 +2661,7 @@ typename ParserBase<Impl>::BlockT ParserBase<Impl>::ParseClassStaticBlock(
    }
  
    FunctionState initializer_state(&function_state_, &scope_, initializer_scope);
