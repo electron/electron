@@ -465,6 +465,7 @@ source_set("electron_lib") {
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/mojom",
+    "//media/mojo/mojom:web_speech_recognition",
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",

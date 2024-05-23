@@ -32,11 +32,11 @@ void ElectronSpeechRecognitionManagerDelegate::OnRecognitionEnd(
 
 void ElectronSpeechRecognitionManagerDelegate::OnRecognitionResults(
     int session_id,
-    const std::vector<blink::mojom::SpeechRecognitionResultPtr>& results) {}
+    const std::vector<media::mojom::SpeechRecognitionResultPtr>& results) {}
 
 void ElectronSpeechRecognitionManagerDelegate::OnRecognitionError(
     int session_id,
-    const blink::mojom::SpeechRecognitionError& error) {}
+    const media::mojom::SpeechRecognitionError& error) {}
 
 void ElectronSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
     int session_id,

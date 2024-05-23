@@ -34,10 +34,10 @@ class ElectronSpeechRecognitionManagerDelegate
   void OnRecognitionEnd(int session_id) override;
   void OnRecognitionResults(
       int session_id,
-      const std::vector<blink::mojom::SpeechRecognitionResultPtr>&) override;
+      const std::vector<media::mojom::SpeechRecognitionResultPtr>&) override;
   void OnRecognitionError(
       int session_id,
-      const blink::mojom::SpeechRecognitionError& error) override;
+      const media::mojom::SpeechRecognitionError& error) override;
   void OnAudioLevelsChange(int session_id,
                            float volume,
                            float noise_volume) override;
