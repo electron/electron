@@ -34,7 +34,7 @@ class ElectronSpeechRecognitionManagerDelegate
   void OnRecognitionEnd(int session_id) override;
   void OnRecognitionResults(
       int session_id,
-      const std::vector<media::mojom::SpeechRecognitionResultPtr>&) override;
+      const std::vector<media::mojom::WebSpeechRecognitionResultPtr>&) override;
   void OnRecognitionError(
       int session_id,
       const media::mojom::SpeechRecognitionError& error) override;
