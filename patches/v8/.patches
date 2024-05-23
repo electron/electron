@@ -4,3 +4,4 @@ merged_wasm_gc_scan_the_code_field_of_the_wasminternalfunction.patch
 cherry-pick-f320600cd1f4.patch
 cherry-pick-b3c01ac1e60a.patch
 cherry-pick-6503a987d966.patch
+cherry-pick-3e037e195e50.patch
