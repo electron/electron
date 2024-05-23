@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0fd8801d3b8d957e64c8bed82ec7e5b25514cef7..cbd107439454bcf6cdb188f655f9d4efe2febe66 100644
+index f4543a2e459c2b945f4b20cb83037c3f814c0f74..af096cb7083a256d1a150c619da96e2961527c46 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1068,6 +1068,7 @@ component("base") {
+@@ -1058,6 +1058,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index 9f703d6da81c1a0e8a4fe6bcb885b8d3217e14f1..97e1706959ab7784b758779b3d69d975
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index cd93a040d9b10ec1d9dc1ca1bbfbacd4d1625610..9ab396dd022154fcb712f1c2432bb62bef6bc1cc 100644
+index 62618587d4cf11721247e9f8f1b7f16d9250ba19..33c4487e828817e70e4e72ecc1665247ae48fbfd 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -620,10 +620,10 @@ index 066bea940f2889351e6cc151cfc10da3a7e86f6a..17041909bf5d8fb9df9cd550f473522c
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index d80cdfcc88d89155825c085558772617cf33ad7e..c48d2fa394ab2c39d15ff70ebbf5d3cd5046d804 100644
+index 4acb73f39de91b9dfd9b1e6d25c911983c91dc93..22513b5aa30d0fa549d06d5d58312b0a2aa07b27 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
+@@ -226,6 +226,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -1596,10 +1596,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a4bfc58afdac395314ec37a90c23846484f5b1e7..110848c9399b0ff45fc7ad49fc6e9daaba4371b3 100644
+index a14ebf37508ab6e419507c41536689052d52439c..60cb9b1df27453103649deb4f6a6e26b4c9e3c89 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -715,6 +715,7 @@ component("views") {
+@@ -716,6 +716,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1607,7 +1607,7 @@ index a4bfc58afdac395314ec37a90c23846484f5b1e7..110848c9399b0ff45fc7ad49fc6e9daa
    }
  
    if (is_win) {
-@@ -1144,6 +1145,8 @@ source_set("test_support") {
+@@ -1145,6 +1146,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

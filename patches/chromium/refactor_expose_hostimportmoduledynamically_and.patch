@@ -7,10 +7,10 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index b4af8b62a25cbeaab4a13d7b7962a44144cf55f6..d6a697a69ab3d3ba17c125690196b54ed9d49657 100644
+index a445d416190aed0ced5fd6745cd0a587f0f7a3f1..3f81d9615908c87c01f5c6f7036384c51b642972 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -624,7 +624,9 @@ bool JavaScriptCompileHintsMagicEnabledCallback(
+@@ -610,7 +610,9 @@ bool JavaScriptCompileHintsMagicEnabledCallback(
        execution_context);
  }
  
@@ -21,7 +21,7 @@ index b4af8b62a25cbeaab4a13d7b7962a44144cf55f6..d6a697a69ab3d3ba17c125690196b54e
      v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
-@@ -702,7 +704,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+@@ -688,7 +690,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
  }
  
  // https://html.spec.whatwg.org/C/#hostgetimportmetaproperties
@@ -30,7 +30,7 @@ index b4af8b62a25cbeaab4a13d7b7962a44144cf55f6..d6a697a69ab3d3ba17c125690196b54e
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    v8::Isolate* isolate = context->GetIsolate();
-@@ -745,9 +747,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
+@@ -731,9 +733,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
    return os;
  }
  
@@ -40,7 +40,7 @@ index b4af8b62a25cbeaab4a13d7b7962a44144cf55f6..d6a697a69ab3d3ba17c125690196b54e
  void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -769,9 +768,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
+@@ -755,9 +754,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
        SharedArrayBufferConstructorEnabledCallback);
    isolate->SetJavaScriptCompileHintsMagicEnabledCallback(
        JavaScriptCompileHintsMagicEnabledCallback);

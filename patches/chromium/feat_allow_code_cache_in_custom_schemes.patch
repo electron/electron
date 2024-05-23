@@ -407,11 +407,11 @@ index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756db
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index bf08f7438a773f621aeb362300528b1e52d47d5a..d33b508200305dc69ec5367307d73a1ca3ae2c18 100644
+index 1e65bf770d3574ff2ff469d3809d8e7cf2ed8f13..7aa1304fe9c5d22f09c26083e68d2680db01afb5 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -125,6 +125,9 @@ struct SchemeRegistry {
-       kChromiumXCallback,
+@@ -128,6 +128,9 @@ struct SchemeRegistry {
+       kCrosApps,
    };
  
 +  // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
@@ -420,7 +420,7 @@ index bf08f7438a773f621aeb362300528b1e52d47d5a..d33b508200305dc69ec5367307d73a1c
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -706,6 +709,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -709,6 +712,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
