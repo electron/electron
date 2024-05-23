@@ -143,7 +143,7 @@ class Dictionary : public gin::Dictionary {
               if (gin::TryConvertToV8(info.GetIsolate(), val, &v8_value))
                 info.GetReturnValue().Set(v8_value);
             },
-            nullptr, v8_value_accessor, v8::DEFAULT, attribute)
+            nullptr, v8_value_accessor, attribute)
         .ToChecked();
   }
 
