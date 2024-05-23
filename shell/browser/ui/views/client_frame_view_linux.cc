@@ -58,7 +58,6 @@ ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
     case views::Button::STATE_COUNT:
     default:
       NOTREACHED();
-      return ui::NavButtonProvider::ButtonState::kNormal;
   }
 }
 

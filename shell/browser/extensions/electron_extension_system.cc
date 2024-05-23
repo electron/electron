@@ -190,14 +190,12 @@ void ElectronExtensionSystem::InstallUpdate(
     bool install_immediately,
     InstallUpdateCallback install_update_callback) {
   NOTREACHED();
-  base::DeletePathRecursively(temp_dir);
 }
 
 bool ElectronExtensionSystem::FinishDelayedInstallationIfReady(
     const std::string& extension_id,
     bool install_immediately) {
   NOTREACHED();
-  return false;
 }
 
 void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(

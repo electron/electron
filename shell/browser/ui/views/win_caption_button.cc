@@ -138,7 +138,6 @@ int WinCaptionButton::GetButtonDisplayOrderIndex() const {
       break;
     default:
       NOTREACHED();
-      return 0;
   }
 
   // Reverse the ordering if we're in RTL mode
@@ -207,7 +206,6 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
 
     default:
       NOTREACHED();
-      return;
   }
 }
 

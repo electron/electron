@@ -355,7 +355,6 @@ void BrowserProcessImpl::SetLinuxStorageBackend(
       break;
     case os_crypt::SelectedLinuxBackend::DEFER:
       NOTREACHED();
-      break;
   }
 }
 #endif  // BUILDFLAG(IS_LINUX)
