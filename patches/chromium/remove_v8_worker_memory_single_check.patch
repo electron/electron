@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bouke van der Bijl <i@bou.ke>
+Date: Fri, 24 May 2024 10:32:10 +0200
+Subject: Remove check that there's only one V8 context in a worker
+
+Electron has multiple because of the Node.js isolate.
+
+diff --git a/third_party/blink/renderer/controller/performance_manager/v8_worker_memory_reporter.cc b/third_party/blink/renderer/controller/performance_manager/v8_worker_memory_reporter.cc
+index 0cad8137efb2a8f2ae7e60bc1c0422ba00bcf547..abde7739103cc92eb9b9c8e82bb4b48e57e2dbaf 100644
+--- a/third_party/blink/renderer/controller/performance_manager/v8_worker_memory_reporter.cc
++++ b/third_party/blink/renderer/controller/performance_manager/v8_worker_memory_reporter.cc
+@@ -94,8 +94,8 @@ void WorkerMeasurementDelegate::MeasurementComplete(
+   DCHECK(worker_thread_->IsCurrentThread());
+   WorkerOrWorkletGlobalScope* global_scope = worker_thread_->GlobalScope();
+   DCHECK(global_scope);
+-  DCHECK_LE(result.contexts.size(), 1u);
+-  DCHECK_LE(result.sizes_in_bytes.size(), 1u);
++  // DCHECK_LE(result.contexts.size(), 1u);
++  // DCHECK_LE(result.sizes_in_bytes.size(), 1u);
+   size_t bytes = result.unattributed_size_in_bytes;
+   for (size_t size : result.sizes_in_bytes) {
+     bytes += size;

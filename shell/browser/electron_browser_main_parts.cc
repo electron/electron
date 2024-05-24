@@ -29,6 +29,8 @@
 #include "components/os_crypt/sync/key_storage_util_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
+#include "components/performance_manager/embedder/graph_features.h"
+#include "components/performance_manager/embedder/performance_manager_lifetime.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
@@ -364,6 +366,9 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 }
 
 void ElectronBrowserMainParts::PostCreateThreads() {
+  performance_manager_lifetime_ =
+      std::make_unique<performance_manager::PerformanceManagerLifetime>(
+          performance_manager::GraphFeatures::WithMinimal(), base::DoNothing());
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
@@ -610,6 +615,8 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();
 #endif
+
+  performance_manager_lifetime_.reset();
 }
 
 #if !BUILDFLAG(IS_MAC)

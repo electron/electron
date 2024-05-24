@@ -20,6 +20,10 @@
 #include "ui/display/screen.h"
 #include "ui/views/layout/layout_provider.h"
 
+namespace performance_manager {
+class PerformanceManagerLifetime;
+}  // namespace performance_manager
+
 class BrowserProcessImpl;
 class IconManager;
 
@@ -171,6 +175,9 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   std::unique_ptr<IconManager> icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
+
+  std::unique_ptr<performance_manager::PerformanceManagerLifetime>
+      performance_manager_lifetime_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<ElectronExtensionsClient> extensions_client_;

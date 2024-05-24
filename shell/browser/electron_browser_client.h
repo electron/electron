@@ -88,6 +88,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
       mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
           map) override;
+  std::unique_ptr<content::WebContentsViewDelegate> GetWebContentsViewDelegate(
+      content::WebContents* web_contents) override;
 #if BUILDFLAG(IS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,

@@ -32,6 +32,7 @@
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "components/performance_manager/embedder/performance_manager_registry.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
@@ -49,6 +50,7 @@
 #include "content/public/browser/tts_platform.h"
 #include "content/public/browser/url_loader_request_interceptor.h"
 #include "content/public/browser/weak_document_ptr.h"
+#include "content/public/browser/web_contents_view_delegate.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -1563,6 +1565,9 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
     service_manager::BinderRegistry* registry,
     blink::AssociatedInterfaceRegistry* associated_registry,
     content::RenderProcessHost* render_process_host) {
+  performance_manager::PerformanceManagerRegistry::GetInstance()
+      ->CreateProcessNodeAndExposeInterfacesToRendererProcess(
+          registry, render_process_host);
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
@@ -1573,6 +1578,8 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     content::RenderFrameHost* render_frame_host,
     mojo::BinderMapWithContext<content::RenderFrameHost*>* map) {
+  performance_manager::PerformanceManagerRegistry::GetInstance()
+      ->ExposeInterfacesToRenderFrame(map);
   map->Add<network_hints::mojom::NetworkHintsHandler>(
       base::BindRepeating(&BindNetworkHintsHandler));
   map->Add<blink::mojom::BadgeService>(
@@ -1717,6 +1724,15 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
         map) {
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
+}
+
+std::unique_ptr<content::WebContentsViewDelegate>
+ElectronBrowserClient::GetWebContentsViewDelegate(
+    content::WebContents* web_contents) {
+  performance_manager::PerformanceManagerRegistry::GetInstance()
+      ->MaybeCreatePageNodeForWebContents(web_contents);
+  return content::ContentBrowserClient::GetWebContentsViewDelegate(
+      web_contents);
 }
 
 #if BUILDFLAG(IS_MAC)
