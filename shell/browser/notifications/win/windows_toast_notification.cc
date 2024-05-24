@@ -146,7 +146,7 @@ void WindowsToastNotification::Remove() {
     return;
 
   ScopedHString group(kGroup);
-  ScopedHString tag(base::as_wcstr(base::UTF8ToUTF16(notification_id())));
+  ScopedHString tag(base::as_wcstr(base::UTF8ToUTF16(std::to_string(std::hash<std::string>{}(notification_id())))));
   notification_history->RemoveGroupedTagWithId(tag, group, app_id);
 }
 
@@ -199,7 +199,7 @@ HRESULT WindowsToastNotification::ShowInternal(
   REPORT_AND_RETURN_IF_FAILED(toast2->put_Group(group),
                               "WinAPI: Setting group failed");
 
-  ScopedHString tag(base::as_wcstr(base::UTF8ToUTF16(notification_id())));
+  ScopedHString tag(base::as_wcstr(base::UTF8ToUTF16(std::to_string(std::hash<std::string>{}(notification_id())))));
   REPORT_AND_RETURN_IF_FAILED(toast2->put_Tag(tag),
                               "WinAPI: Setting tag failed");
 
