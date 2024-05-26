@@ -8,6 +8,7 @@ const fs = require('node:fs');
 const minimist = require('minimist');
 const path = require('node:path');
 const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
+const os = require('node:os');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -55,7 +56,7 @@ const CPPLINT_FILTERS = [
 ];
 
 function spawnAndCheckExitCode (cmd, args, opts) {
-  opts = { stdio: 'inherit', ...opts };
+  opts = { stdio: 'inherit', ...opts, shell: true };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
     // the subprocess failed or timed out
@@ -124,7 +125,7 @@ const LINTERS = [{
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc-2.17');
     const args = ['--rcfile=' + rcfile, ...filenames];
     const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
-    spawnAndCheckExitCode('pylint-2.17', args, { env });
+    spawnAndCheckExitCode(IS_WINDOWS ? 'pylint-2.17.bat' : 'pylint-2.17', args, { env });
   }
 }, {
   key: 'javascript',
@@ -171,7 +172,7 @@ const LINTERS = [{
         ...process.env
       };
       // Users may not have depot_tools in PATH.
-      env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
+      env.PATH = `${env.PATH ?? env.Path}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];
       if (!opts.fix) args.push('--dry-run');
       const result = childProcess.spawnSync('gn', args, { env, stdio: 'inherit', shell: true });
@@ -217,7 +218,7 @@ const LINTERS = [{
       }
 
       // Read the patch list
-      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
+      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split(os.EOL);
       const patchFileSet = new Set(patchFileList);
       patchFileList.reduce((seen, file) => {
         if (seen.has(file)) {
