@@ -1,4 +1,4 @@
-import { ipcRenderer, webFrame } from 'electron/renderer';
+import { ipcRenderer } from 'electron/renderer';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
 import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
@@ -23,7 +23,6 @@ v8Util.setHiddenValue(global, 'ipcNative', {
   },
 
   '-ipc-invoke': async function (event: Electron.IpcRendererInvokeEvent, channel: string, args: any[]) {
-    addSenderToEvent(event, ipcRenderer);
     const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
     const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
@@ -76,12 +75,4 @@ webFrameInit();
 if (process.isMainFrame) {
   const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
   securityWarnings(nodeIntegration);
-}
-
-function addSenderToEvent (event: Electron.IpcRendererInvokeEvent, sender: Electron.IpcRenderer) {
-  event.sender = sender;
-
-  Object.defineProperty(event, 'senderFrame', {
-    get: () => webFrame.findFrameByRoutingId(event.frameId)
-  });
 }
