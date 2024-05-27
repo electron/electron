@@ -36,6 +36,8 @@ class InspectableWebContentsView : public views::View {
     return inspectable_web_contents_;
   }
 
+  views::WebView* contents_web_view() const { return contents_web_view_; }
+
   // The delegate manages its own life.
   void SetDelegate(InspectableWebContentsViewDelegate* delegate) {
     delegate_ = delegate;
@@ -67,8 +69,9 @@ class InspectableWebContentsView : public views::View {
 
   std::unique_ptr<views::Widget> devtools_window_;
   raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
-  raw_ptr<views::View> contents_web_view_ = nullptr;
   raw_ptr<views::WebView> devtools_web_view_ = nullptr;
+  raw_ptr<views::WebView> contents_web_view_ = nullptr;
+  raw_ptr<views::View> contents_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_ = false;

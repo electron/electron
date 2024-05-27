@@ -10,6 +10,10 @@
 #include <string>
 #include <utility>
 
+#include "ash/style/rounded_rect_cutout_path_builder.h"
+// HACK: The ash dep is not included in builds, but this file has no transitive
+// dependencies. If this ever breaks, we can copy the file into //shell/browser
+#include "ash/style/rounded_rect_cutout_path_builder.cc"
 #include "gin/data_object_builder.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
@@ -338,6 +342,38 @@ void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
 }
 
+void View::SetBorderRadius(int radius) {
+  border_radius_ = radius;
+  ApplyBorderRadius();
+}
+
+void View::ApplyBorderRadius() {
+  if (!border_radius_.has_value() || !view_)
+    return;
+
+  auto size = view_->bounds().size();
+
+  // Restrict border radius to the constraints set in the path builder class.
+  // If the constraints are exceeded, the builder will crash.
+  int radius;
+  {
+    float r = border_radius_.value() * 1.f;
+    r = std::min(r, size.width() / 2.f);
+    r = std::min(r, size.height() / 2.f);
+    r = std::max(r, 0.f);
+    radius = std::floor(r);
+  }
+
+  // RoundedRectCutoutPathBuilder has a minimum size of 32 x 32.
+  if (radius > 0 && size.width() >= 32 && size.height() >= 32) {
+    auto builder = ash::RoundedRectCutoutPathBuilder(gfx::SizeF(size));
+    builder.CornerRadius(radius);
+    view_->SetClipPath(builder.Build());
+  } else {
+    view_->SetClipPath(SkPath());
+  }
+}
+
 void View::SetVisible(bool visible) {
   if (!view_)
     return;
@@ -345,6 +381,7 @@ void View::SetVisible(bool visible) {
 }
 
 void View::OnViewBoundsChanged(views::View* observed_view) {
+  ApplyBorderRadius();
   Emit("bounds-changed");
 }
 
@@ -393,6 +430,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBounds", &View::SetBounds)
       .SetMethod("getBounds", &View::GetBounds)
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
+      .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setLayout", &View::SetLayout)
       .SetMethod("setVisible", &View::SetVisible);
 }
