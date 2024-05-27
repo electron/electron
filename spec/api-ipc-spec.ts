@@ -10,7 +10,7 @@ const v8Util = process._linkedBinding('electron_common_v8_util');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('ipc module', () => {
-  describe('invoke', () => {
+  describe('ipcRenderer.invoke', () => {
     let w: BrowserWindow;
 
     before(async () => {
@@ -120,6 +120,104 @@ describe('ipc module', () => {
       w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       const [, { error }] = await once(ipcMain, 'result');
       expect(error).to.match(/reply was never sent/);
+    });
+  });
+
+  describe('webContents.invoke', () => {
+    let w: BrowserWindow;
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      await w.loadURL('about:blank');
+    });
+    after(async () => {
+      w.destroy();
+    });
+
+    it('receives a response from a synchronous handler', async () => {
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.handleOnce('test', () => 123);
+      }})()`);
+      const result = await w.webContents.invoke('test');
+      expect(result).to.equal(123);
+    });
+
+    it('receives a response from a asynchronous handler', async () => {
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.handleOnce('test', async () => {
+          await new Promise(resolve => setTimeout(resolve, 0));
+          return 123;
+        });
+      }})()`);
+      const result = await w.webContents.invoke('test');
+      expect(result).to.equal(123);
+    });
+
+    it('receives an error from a synchronous handler', async () => {
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.handleOnce('test', () => {
+          throw new Error('some error');
+        });
+      }})()`);
+
+      try {
+        await w.webContents.invoke('test');
+        expect.fail('Expected invoke to throw an error');
+      } catch (e: any) {
+        expect(e.message).to.include('some error');
+      }
+    });
+
+    it('receives an error from an asynchronous handler', async () => {
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.handleOnce('test', async () => {
+          await new Promise(resolve => setTimeout(resolve, 0));
+          throw new Error('some error');
+        });
+      }})()`);
+
+      try {
+        await w.webContents.invoke('test');
+        expect.fail('Expected invoke to throw an error');
+      } catch (e: any) {
+        expect(e.message).to.include('some error');
+      }
+    });
+
+    it('throws an error if no handler is registered', async () => {
+      try {
+        await w.webContents.invoke('test');
+        expect.fail('Expected invoke to throw an error');
+      } catch (e: any) {
+        expect(e.message).to.include('No handler registered');
+      }
+    });
+
+    it('throws an error when invoking a handler that was removed', async () => {
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.handleOnce('test', () => { });
+      }})()`);
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.removeHandler('test');
+      }})()`);
+      try {
+        await w.webContents.invoke('test');
+        expect.fail('Expected invoke to throw an error');
+      } catch (e: any) {
+        expect(e.message).to.include('No handler registered');
+      }
+    });
+
+    it('throws an error if the handler does not respond within the timeout', async () => {
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.handleOnce('test', () => new Promise(resolve => setTimeout(() => resolve(123), 3000)));
+      }})()`);
+      try {
+        await w.webContents.invoke({ maxTimeoutMs: 1000 }, 'test');
+        expect.fail('Expected invoke to throw a timeout error');
+      } catch (e: any) {
+        expect(e.message).to.include("Timeout after 1000ms waiting for IPC response on channel 'test'");
+      }
     });
   });
 
