@@ -84,14 +84,14 @@ InspectableWebContentsView::InspectableWebContentsView(
     auto* contents_web_view = new views::WebView(nullptr);
     contents_web_view->SetWebContents(
         inspectable_web_contents_->GetWebContents());
-    contents_web_view_ = contents_web_view;
+    contents_view_ = contents_web_view_ = contents_web_view;
   } else {
-    contents_web_view_ = new views::Label(u"No content under offscreen mode");
+    contents_view_ = new views::Label(u"No content under offscreen mode");
   }
 
   devtools_web_view_->SetVisible(false);
   AddChildView(devtools_web_view_.get());
-  AddChildView(contents_web_view_.get());
+  AddChildView(contents_view_.get());
 }
 
 InspectableWebContentsView::~InspectableWebContentsView() {
@@ -209,7 +209,7 @@ const std::u16string InspectableWebContentsView::GetTitle() {
 
 void InspectableWebContentsView::Layout(PassKey) {
   if (!devtools_web_view_->GetVisible()) {
-    contents_web_view_->SetBoundsRect(GetContentsBounds());
+    contents_view_->SetBoundsRect(GetContentsBounds());
     // Propagate layout call to all children, for example browser views.
     LayoutSuperclass<View>(this);
     return;
@@ -227,7 +227,7 @@ void InspectableWebContentsView::Layout(PassKey) {
   new_contents_bounds.set_x(GetMirroredXForRect(new_contents_bounds));
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
-  contents_web_view_->SetBoundsRect(new_contents_bounds);
+  contents_view_->SetBoundsRect(new_contents_bounds);
 
   // Propagate layout call to all children, for example browser views.
   LayoutSuperclass<View>(this);

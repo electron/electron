@@ -82,8 +82,19 @@ function imageCenter (image: NativeImage): Electron.Point {
     y: size.height / 2
   };
 }
+
+/** Resolve when approx. one frame has passed (60FPS) */
+export async function nextFrameTime (): Promise<void> {
+  return await new Promise(resolve => {
+    setTimeout(resolve, 1000 / 60);
+  });
+}
+
 /**
  * Utilities for creating and inspecting a screen capture.
+ *
+ * Set `PAUSE_CAPTURE_TESTS` env var to briefly pause during screen
+ * capture for easier inspection.
  *
  * NOTE: Not yet supported on Linux in CI due to empty sources list.
  */
@@ -133,6 +144,10 @@ export class ScreenCapture {
       throw new Error(
         `Unable to find screen capture for display '${display.id}'\n\tAvailable displays: ${displayIds}`
       );
+    }
+
+    if (process.env.PAUSE_CAPTURE_TESTS) {
+      await new Promise((resolve) => setTimeout(resolve, 1e3));
     }
 
     return new ScreenCapture(captureSource.thumbnail);

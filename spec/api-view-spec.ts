@@ -54,4 +54,15 @@ describe('View', () => {
     w.contentView.addChildView(v2);
     expect(w.contentView.children).to.deep.equal([v3, v1, v2]);
   });
+
+  it('allows setting various border radius values', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius(10);
+    v.setBorderRadius(0);
+    v.setBorderRadius(-10);
+    v.setBorderRadius(9999999);
+    v.setBorderRadius(-9999999);
+  });
 });
