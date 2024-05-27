@@ -2,7 +2,7 @@ import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
 
 const { WebFrameMain, fromId } = process._linkedBinding('electron_browser_web_frame_main');
-const DEFAULT_TIMEOUT = 5000;
+const DEFAULT_TIMEOUT = 30000;
 
 Object.defineProperty(WebFrameMain.prototype, 'ipc', {
   get () {
