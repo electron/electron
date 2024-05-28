@@ -59,6 +59,7 @@ class NodeService : public node::mojom::NodeService {
 
   // mojom::NodeService implementation:
   void Initialize(node::mojom::NodeServiceParamsPtr params) override;
+  void SetTermination(SetTerminationCallback callback) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last
@@ -66,6 +67,8 @@ class NodeService : public node::mojom::NodeService {
   // there are crashes in the node::Environment destructor, they
   // will be propagated to the exit handler.
   mojo::Receiver<node::mojom::NodeService> receiver_{this};
+
+  base::OnceCallback<void(uint64_t exit_code)> termination_callback_;
 
   bool node_env_stopped_ = false;
 
