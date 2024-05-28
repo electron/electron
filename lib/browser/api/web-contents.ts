@@ -511,6 +511,47 @@ const loggingEnabled = () => {
   return environment.hasVar('ELECTRON_ENABLE_LOGGING') || commandLine.hasSwitch('enable-logging');
 };
 
+// Deprecation warnings for navigation related APIs.
+WebContents.prototype.canGoBack = function () {
+  deprecate.warnOnce('webContents.canGoBack', 'webContents.navigationHistory.canGoBack');
+  return this.canGoBack();
+};
+
+WebContents.prototype.canGoForward = function () {
+  deprecate.warnOnce('webContents.canGoForward', 'webContents.navigationHistory.canGoForward');
+  return this.canGoForward();
+};
+
+WebContents.prototype.canGoToOffset = function (index: number) {
+  deprecate.warnOnce('webContents.canGoToOffset', 'webContents.navigationHistory.canGoToOffset');
+  return this.canGoToOffset(index);
+};
+
+WebContents.prototype.clearHistory = function () {
+  deprecate.warnOnce('webContents.clearHistory', 'webContents.navigationHistory.clear');
+  return this.clearHistory();
+};
+
+WebContents.prototype.goBack = function () {
+  deprecate.warnOnce('webContents.goBack', 'webContents.navigationHistory.goBack');
+  return this.goBack();
+};
+
+WebContents.prototype.goForward = function () {
+  deprecate.warnOnce('webContents.goForward', 'webContents.navigationHistory.goForward');
+  return this.goForward();
+};
+
+WebContents.prototype.goToIndex = function (index: number) {
+  deprecate.warnOnce('webContents.goToIndex', 'webContents.navigationHistory.goToIndex');
+  return this.goToIndex(index);
+};
+
+WebContents.prototype.goToOffset = function (index: number) {
+  deprecate.warnOnce('webContents.goToOffset', 'webContents.navigationHistory.goToOffset');
+  return this.goToOffset(index);
+};
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   const prefs = this.getLastWebPreferences() || {};
