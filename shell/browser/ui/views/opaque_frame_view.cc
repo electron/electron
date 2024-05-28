@@ -331,7 +331,7 @@ bool OpaqueFrameView::IsFrameCondensed() const {
 }
 
 gfx::Insets OpaqueFrameView::RestoredFrameBorderInsets() const {
-  return gfx::Insets(kFrameBorderThickness);
+  return gfx::Insets();
 }
 
 gfx::Insets OpaqueFrameView::RestoredFrameEdgeInsets() const {
@@ -543,16 +543,6 @@ int OpaqueFrameView::GetTopAreaHeight() const {
 int OpaqueFrameView::GetWindowCaptionSpacing(views::FrameButton button_id,
                                              bool leading_spacing,
                                              bool is_leading_button) const {
-  if (leading_spacing) {
-    if (is_leading_button) {
-      // If we're the first button and maximized, add width to the right
-      // hand side of the screen.
-      return IsFrameCondensed() && is_leading_button
-                 ? kFrameBorderThickness -
-                       views::NonClientFrameView::kFrameShadowThickness
-                 : 0;
-    }
-  }
   return 0;
 }
 

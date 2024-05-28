@@ -40,7 +40,7 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
-#elif BUILDFLAG (IS_LINUX)
+#elif BUILDFLAG(IS_LINUX)
 #include "shell/browser/ui/views/opaque_frame_view.h"
 #endif
 
@@ -1047,7 +1047,7 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                       gin_helper::Arguments* args) {
+                                    gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
   if (!window_->IsWindowControlsOverlayEnabled()) {
     args->ThrowError("Titlebar overlay is not enabled");
@@ -1295,6 +1295,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setThumbnailClip", &BaseWindow::SetThumbnailClip)
       .SetMethod("setThumbnailToolTip", &BaseWindow::SetThumbnailToolTip)
       .SetMethod("setAppDetails", &BaseWindow::SetAppDetails)
+#endif
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
       .SetMethod("setTitleBarOverlay", &BaseWindow::SetTitleBarOverlay)
 #endif
       .SetProperty("id", &BaseWindow::GetID);
