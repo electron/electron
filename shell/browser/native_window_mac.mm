@@ -457,11 +457,7 @@ void NativeWindowMac::Show() {
 
   // Panels receive key focus when shown but should not activate the app.
   if (!IsPanel()) {
-    if (@available(macOS 14.0, *)) {
-      [[NSApplication sharedApplication] activate];
-    } else {
-      [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
-    }
+    [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
   }
   [window_ makeKeyAndOrderFront:nil];
 }
