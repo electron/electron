@@ -3,11 +3,6 @@ name: Publish MacOS
 on:
   workflow_dispatch:
     inputs:
-      macos-publish-arch-limit:
-        description: 'The allowed arches for macos-publish'
-        type: choice
-        default: all
-        options: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false 
@@ -20,6 +15,7 @@ on:
 
 jobs:
   publish:
+  # TODO(vertedinde): Change this to main before merge
     uses: electron/electron/.github/workflows/macos-build.yml@gh-actions-mac-publish
     with:
       IS_RELEASE: true

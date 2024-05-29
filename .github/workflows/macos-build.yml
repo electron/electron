@@ -12,7 +12,7 @@ on:
       GN_CONFIG:
         required: false
         type: string
-        default: false//electron/build/args/testing.gn
+        default: //electron/build/args/testing.gn
       GN_BUILD_TYPE:
         required: false
         type: string
@@ -189,8 +189,10 @@ jobs:
   build:
     strategy:
       fail-fast: false
+      # macos-large is x64, macos-xlarge is arm64
+      # More runner information: https://github.com/actions/runner-images/blob/main/README.md#available-images
       matrix:
-        arch: [ macos-13-large, macos-14-xlarge ]
+        arch: [ macos-14-large, macos-14-xlarge ]
     runs-on: ${{ matrix.arch }}
     needs: checkout
     steps:
@@ -227,6 +229,7 @@ jobs:
           echo "TARGET_ARCH="arm64"" >> $GITHUB_ENV
           echo "target_cpu="arm64"" >> $GITHUB_ENV
           echo "host_cpu="arm64"" >> $GITHUB_ENV
+          echo "GCLIENT_EXTRA_ARGS=--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64" >> $GITHUB_ENV
         fi
     - name: Get Depot Tools
       timeout-minutes: 5
@@ -500,24 +503,21 @@ jobs:
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
     - name: Generate FFMpeg
+      if: github.event.inputs.IS_RELEASE == 'true'
       run: |
-        if [ ${{ inputs.IS_RELEASE }} == "true" ]; then
-          cd src
-          gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-          autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
-        fi
+        cd src
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
+        autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries
+      if: github.event.inputs.IS_RELEASE == 'true'
       run: |
-        if [ ${{ inputs.IS_RELEASE }} == "true" ]; then
-          cd src
-          autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
-        fi
+        cd src
+        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate TypeScript Definitions
+      if: github.event.inputs.IS_RELEASE == 'true'
       run: |
-        if [ ${{ inputs.IS_RELEASE }} == "true" ]; then
-          cd src/electron
-          node script/yarn create-typescript-definitions
-        fi
+        cd src/electron
+        node script/yarn create-typescript-definitions
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
@@ -567,7 +567,6 @@ jobs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
-    # Additional Targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
     - name: Build Electron dist.zip (mas)
       run: |
         cd src
