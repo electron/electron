@@ -229,7 +229,6 @@ jobs:
           echo "TARGET_ARCH="arm64"" >> $GITHUB_ENV
           echo "target_cpu="arm64"" >> $GITHUB_ENV
           echo "host_cpu="arm64"" >> $GITHUB_ENV
-          echo "GCLIENT_EXTRA_ARGS=--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64" >> $GITHUB_ENV
         fi
     - name: Get Depot Tools
       timeout-minutes: 5
