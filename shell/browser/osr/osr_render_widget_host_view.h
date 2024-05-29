@@ -55,8 +55,6 @@ class ElectronBeginFrameTimer;
 
 class ElectronDelegatedFrameHostClient;
 
-typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
-    OnPaintCallback;
 typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView
@@ -66,6 +64,7 @@ class OffScreenRenderWidgetHostView
       private OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                bool offscreen_use_shared_texture,
                                 bool painting,
                                 int frame_rate,
                                 const OnPaintCallback& callback,
@@ -200,7 +199,9 @@ class OffScreenRenderWidgetHostView
   void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
-  void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
+  void OnPaint(const gfx::Rect& damage_rect,
+               const SkBitmap& bitmap,
+               const OffscreenSharedTexture& texture);
   void OnPopupPaint(const gfx::Rect& damage_rect);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
 
@@ -226,6 +227,10 @@ class OffScreenRenderWidgetHostView
 
   void SetFrameRate(int frame_rate);
   int frame_rate() const { return frame_rate_; }
+
+  bool offscreen_use_shared_texture() const {
+    return offscreen_use_shared_texture_;
+  }
 
   ui::Layer* root_layer() const { return root_layer_.get(); }
 
@@ -270,6 +275,7 @@ class OffScreenRenderWidgetHostView
   std::set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;
+  const bool offscreen_use_shared_texture_;
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
 
