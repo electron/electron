@@ -1144,7 +1144,7 @@ Returns `boolean` - Whether the browser can go forward to next web page.
 
 Returns `boolean` - Whether the web page can go to `offset`.
 
-**Deprecated:** Should use the new [`contents.navigationHistory.canGoToOffset`](navigation-history.md#navigationhistorycangotooffset) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.canGoToOffset`](navigation-history.md#navigationhistorycangotooffsetoffset) API.
 
 #### `contents.clearHistory()` _Deprecated_
 
@@ -1170,7 +1170,7 @@ Makes the browser go forward a web page.
 
 Navigates browser to the specified absolute web page index.
 
-**Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindex) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindexindex) API.
 
 #### `contents.goToOffset(offset)` _Deprecated_
 
@@ -1178,7 +1178,7 @@ Navigates browser to the specified absolute web page index.
 
 Navigates to the specified offset from the "current entry".
 
-**Deprecated:** Should use the new [`contents.navigationHistory.goToOffset`](navigation-history.md#navigationhistorygotooffset) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.goToOffset`](navigation-history.md#navigationhistorygotooffsetoffset) API.
 
 #### `contents.isCrashed()`
 
