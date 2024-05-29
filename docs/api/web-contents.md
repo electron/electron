@@ -1178,7 +1178,7 @@ Navigates browser to the specified absolute web page index.
 
 Navigates to the specified offset from the "current entry".
 
-**Deprecated:** Should use the new [`contents.navigationHistory.goToOffset`](navigation-history.md#navigationhistorygotooffsetoffset) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.goToOffset`](navigation-history.md#navigationhistorygotooffset) API.
 
 #### `contents.isCrashed()`
 
