@@ -1170,7 +1170,7 @@ Makes the browser go forward a web page.
 
 Navigates browser to the specified absolute web page index.
 
-**Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindexindex) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindex) API.
 
 #### `contents.goToOffset(offset)` _Deprecated_
 
