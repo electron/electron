@@ -392,6 +392,7 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
       platform_util::GetLoginItemEnabled(options.type, options.service_name);
   settings.open_at_login =
       status == "enabled" || status == "enabled-deprecated";
+  settings.opened_at_login = was_launched_at_login_;
   if (@available(macOS 13, *))
     settings.status = status;
 #else
@@ -405,6 +406,7 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
       settings = settings_deprecated;
     } else {
       settings.open_at_login = status == "enabled";
+      settings.opened_at_login = was_launched_at_login_;
       settings.status = status;
     }
   } else {
