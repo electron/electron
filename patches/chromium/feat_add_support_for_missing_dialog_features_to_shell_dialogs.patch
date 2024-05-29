@@ -245,8 +245,31 @@ index 20ad001988831afca73315c577f90c824a36e282..57a8d35ace583eaafb526f70935d21c0
    // Returns true if the SelectFileDialog class returned by
    // NewSelectFileDialogImplKDE will actually work.
    static bool CheckKDEDialogWorksOnUIThread(std::string& kdialog_version);
+diff --git a/ui/shell_dialogs/select_file_dialog_linux_kde.cc b/ui/shell_dialogs/select_file_dialog_linux_kde.cc
+index 302147116649575649e44c0fc87e2b0a915db5db..49a4ee5d2a3552b1352c28344e4091308a93daa9 100644
+--- a/ui/shell_dialogs/select_file_dialog_linux_kde.cc
++++ b/ui/shell_dialogs/select_file_dialog_linux_kde.cc
+@@ -480,6 +480,9 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
+   int title_message_id = (type == SELECT_UPLOAD_FOLDER)
+                              ? IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE
+                              : IDS_SELECT_FOLDER_DIALOG_TITLE;
++  ExtraSettings extra_settings;
++  if (params)
++    extra_settings = *(static_cast<ExtraSettings*>(params));
+   pipe_task_runner_->PostTaskAndReplyWithResult(
+       FROM_HERE,
+       base::BindOnce(
+@@ -487,7 +490,7 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
+           KDialogParams(
+               "--getexistingdirectory", GetTitle(title, title_message_id),
+               default_path.empty() ? *last_opened_path() : default_path, parent,
+-              false, false)),
++              false, extra_settings.allow_multiple_selection)),
+       base::BindOnce(
+           &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
+           parent, params));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 9e4cc2a3fa2db0397655550a2c6209543f32cbd7..80a20e40157d24be5761d21de771e186f9ca3ef8 100644
+index 9e4cc2a3fa2db0397655550a2c6209543f32cbd7..caad1879a46fcb285ba4d4384ff46a7223046b15 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -219,6 +219,10 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
@@ -324,7 +347,20 @@ index 9e4cc2a3fa2db0397655550a2c6209543f32cbd7..80a20e40157d24be5761d21de771e186
    dbus::MessageWriter options_writer(nullptr);
    writer->OpenArray("{sv}", &options_writer);
  
-@@ -563,6 +570,7 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -554,8 +561,10 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+                      response_handle_token);
+ 
+   if (type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER) {
+-    AppendStringOption(&options_writer, kFileChooserOptionAcceptLabel,
+-                       l10n_util::GetStringUTF8(
++    const std::string accept_label = settings.button_label.empty()
++                            ? kFileChooserOptionAcceptLabel
++                            : settings.button_label;
++    AppendStringOption(&options_writer, accept_label, l10n_util::GetStringUTF8(
+                            IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
+   }
+ 
+@@ -563,6 +572,7 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);
