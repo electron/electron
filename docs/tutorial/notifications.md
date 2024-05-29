@@ -161,7 +161,7 @@ Notifications are sent using `libnotify`, which can show notifications on any
 desktop environment that follows [Desktop Notifications Specification][notification-spec],
 including Cinnamon, Enlightenment, Unity, GNOME, and KDE.
 
-[notification-spec]: https://developer-old.gnome.org/notification-spec/
+[notification-spec]: [https://developer-old.gnome.org/notification-spec/](https://web.archive.org/web/20240303155839/https://developer-old.gnome.org/notification-spec/)
 [app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
 [set-app-user-model-id]: ../api/app.md#appsetappusermodelidid-windows
 [squirrel-events]: https://github.com/electron/windows-installer/blob/main/README.md#handling-squirrel-events
