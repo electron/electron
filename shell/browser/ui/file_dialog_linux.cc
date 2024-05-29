@@ -67,8 +67,9 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
   ~FileChooserDialog() override = default;
 
-  gtk::ExtraSettings GetExtraSettings(const DialogSettings& settings) {
-    gtk::ExtraSettings extra;
+  ui::SelectFileDialogLinux::ExtraSettings GetExtraSettings(
+      const DialogSettings& settings) {
+    ui::SelectFileDialogLinux::ExtraSettings extra;
     extra.button_label = settings.button_label;
     extra.show_overwrite_confirmation =
         settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
