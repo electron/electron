@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3a878723a 100644
+index a9e025b1d611c..d04e399638116 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -7,6 +7,7 @@
@@ -117,7 +117,7 @@ index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac27d22cf9 100644
+index f5c5ff2c89489..fdd2e2483171c 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
 @@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
@@ -140,7 +140,7 @@ index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134032ce367 100644
+index b6dd7405a5c92..253918a2e54c9 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -8,13 +8,18 @@
@@ -255,7 +255,7 @@ index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index b083cd89c46e676f26a7c28eda091cedbf9a5a97..84736ba6b3ae6111f1cebad862989daadb838234 100644
+index b083cd89c46e6..84736ba6b3ae6 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -374,7 +374,7 @@ index b083cd89c46e676f26a7c28eda091cedbf9a5a97..84736ba6b3ae6111f1cebad862989daa
            process_lock.lock_url().scheme())) {
      return process_lock.lock_url();
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9cebbd809f38 100644
+index ce9644d33fe83..fd486d4637ae4 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
 @@ -98,6 +98,14 @@ void RegisterContentSchemes(bool should_lock_registry) {
@@ -393,7 +393,7 @@ index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9ceb
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756dba452183e 100644
+index 9dc2d5a33858d..ebf0bb23b9aed 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -142,6 +142,9 @@ class CONTENT_EXPORT ContentClient {
@@ -407,11 +407,11 @@ index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756db
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 1e65bf770d3574ff2ff469d3809d8e7cf2ed8f13..7aa1304fe9c5d22f09c26083e68d2680db01afb5 100644
+index 9e0cebaf43754..34f9e8627f2a5 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -128,6 +128,9 @@ struct SchemeRegistry {
-       kCrosApps,
+@@ -130,6 +130,9 @@ struct SchemeRegistry {
+       kDrivefs,
    };
  
 +  // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
@@ -420,7 +420,7 @@ index 1e65bf770d3574ff2ff469d3809d8e7cf2ed8f13..7aa1304fe9c5d22f09c26083e68d2680
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -709,6 +712,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -711,6 +714,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -437,7 +437,7 @@ index 1e65bf770d3574ff2ff469d3809d8e7cf2ed8f13..7aa1304fe9c5d22f09c26083e68d2680
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index e39a44057cebce7cdf90bcb02a7463e88bd271b4..e80b81d2ddeb2ec201b143d86bec6ee54ca49afc 100644
+index e39a44057cebc..e80b81d2ddeb2 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
