@@ -63,10 +63,10 @@ index 27fbc04bc880f2ea68dc7a126b8091a3b5ab4025..42d9649c5250c06a4d39ba0306cbdea0
  }  // namespace internal
  }  // namespace v8
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 39820690c7ff2fa5053987e98b3db6728b441a3a..47199f336b7a097dee880f0976ff1c1a88b456d3 100644
+index d83783a5560a355684a866e1aca2cc081835919b..f8622e1311838df9548bc1839cd40d17af02a7d2 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -4362,7 +4362,6 @@ namespace {
+@@ -4361,7 +4361,6 @@ namespace {
  template <typename Char>
  bool GetPositionInfoSlowImpl(base::Vector<Char> source, int position,
                               Script::PositionInfo* info) {
@@ -74,7 +74,7 @@ index 39820690c7ff2fa5053987e98b3db6728b441a3a..47199f336b7a097dee880f0976ff1c1a
    if (position < 0) {
      position = 0;
    }
-@@ -4409,11 +4408,25 @@ int GetLength(const String::LineEndsVector& vector) {
+@@ -4408,11 +4407,25 @@ int GetLength(const String::LineEndsVector& vector) {
  }
  
  int GetLength(const Tagged<FixedArray>& array) { return array->length(); }
@@ -103,7 +103,7 @@ index 39820690c7ff2fa5053987e98b3db6728b441a3a..47199f336b7a097dee880f0976ff1c1a
    const int ends_len = GetLength(ends);
    if (ends_len == 0) return false;
  
-@@ -4452,31 +4465,6 @@ bool GetLineEndsContainerPositionInfo(const LineEndsContainer& ends,
+@@ -4451,31 +4464,6 @@ bool GetLineEndsContainerPositionInfo(const LineEndsContainer& ends,
      info->column = position - info->line_start;
    }
  
@@ -135,7 +135,7 @@ index 39820690c7ff2fa5053987e98b3db6728b441a3a..47199f336b7a097dee880f0976ff1c1a
    // Line end is position of the linebreak character.
    info->line_end = GetLineEnd(ends, info->line);
    if (info->line_end > 0) {
-@@ -4545,23 +4533,6 @@ bool Script::GetPositionInfoWithLineEnds(
+@@ -4544,23 +4532,6 @@ bool Script::GetPositionInfoWithLineEnds(
    return true;
  }
  

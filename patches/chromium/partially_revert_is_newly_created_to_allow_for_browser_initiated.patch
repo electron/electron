@@ -10,10 +10,10 @@ an about:blank check to this area.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/5403876
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index eec93da530d7de884c48da3705c5c8eecb41b30c..08baa0de75aab320220f6e41ad05b0611de1197d 100644
+index 5bb8b33b5aebea4198c743822efadeeee593f430..078fa37e5e12b24be5dee62a5ecbb922071f87c2 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -789,8 +789,8 @@ void VerifyThatBrowserAndRendererCalculatedOriginsToCommitMatch(
+@@ -786,8 +786,8 @@ void VerifyThatBrowserAndRendererCalculatedOriginsToCommitMatch(
    // TODO(crbug.com/40092527): Consider adding a separate boolean that
    // tracks this instead of piggybacking `origin_calculation_debug_info`.
    if (renderer_side_origin.opaque() &&

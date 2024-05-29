@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 98de040583e1148fbadd6e666006164156515bb9..5fe52240c556c9eb3163330f1d22585a5fdff5be 100644
+index a9b2453b377ec6bc7ed856991ad29d9f38d382d3..f7ef6faa8c66d17a9e7ce268cdfe6fb700fe4d05 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -40,6 +40,7 @@
@@ -48,7 +48,7 @@ index 98de040583e1148fbadd6e666006164156515bb9..5fe52240c556c9eb3163330f1d22585a
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -974,7 +981,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -972,7 +979,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -58,7 +58,7 @@ index 98de040583e1148fbadd6e666006164156515bb9..5fe52240c556c9eb3163330f1d22585a
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 9d271e5f4e366755e37367b51c4df43f780270b5..17dadba9fdf0f0d29220b2e1ef80a5987b8d1d19 100644
+index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..a3905996445e1cb0d566cad31c409b5dd82e8365 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -5,6 +5,7 @@
@@ -69,7 +69,7 @@ index 9d271e5f4e366755e37367b51c4df43f780270b5..17dadba9fdf0f0d29220b2e1ef80a598
  #include "build/build_config.h"
  #include "content/public/browser/content_browser_client.h"
  #include "content/public/common/content_client.h"
-@@ -87,6 +88,10 @@ std::optional<int> ContentMainDelegate::PostEarlyInitialization(
+@@ -91,6 +92,10 @@ std::optional<int> ContentMainDelegate::PostEarlyInitialization(
    return std::nullopt;
  }
  
@@ -81,7 +81,7 @@ index 9d271e5f4e366755e37367b51c4df43f780270b5..17dadba9fdf0f0d29220b2e1ef80a598
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb555b551e7 100644
+index f482ce44b4339e0cf2a57a6a4f9db4d1be5fa178..d6fd25ccd747a7a0620f103cb0f101d3137348fa 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -10,6 +10,7 @@
@@ -92,7 +92,7 @@ index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb5
  #include "build/build_config.h"
  #include "content/common/content_export.h"
  #include "content/public/common/main_function_params.h"
-@@ -168,6 +169,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -176,6 +177,8 @@ class CONTENT_EXPORT ContentMainDelegate {
    virtual bool ShouldHandleConsoleControlEvents();
  #endif
  
@@ -102,10 +102,10 @@ index 2b0919b9a56bd37a398109777dfd199d777a9f74..823f44ab0303ccd6c7502ec65560ddb5
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 8dadd2b452eda1e1f9eeb628980e73b58081292c..796bee6bd39ad32cf0549c9d006edfe5dfb25061 100644
+index a68bca2c4a5967caea90663427f52f94564a1058..e2000c1996de6f92c0751949d863602192f1cfe6 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -584,8 +584,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -591,8 +591,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index 8dadd2b452eda1e1f9eeb628980e73b58081292c..796bee6bd39ad32cf0549c9d006edfe5
    if (g_mapped_snapshot) {
      // TODO(crbug.com/40558459): Confirm not loading different type of snapshot
      // files in a process.
-@@ -594,10 +593,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -601,10 +600,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =

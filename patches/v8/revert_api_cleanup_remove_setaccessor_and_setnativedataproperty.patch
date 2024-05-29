@@ -58,7 +58,7 @@ index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259
    void SetAccessor(
        Local<Name> name, AccessorNameGetterCallback getter,
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 817fcfdb10f35dbf7175dfcc9daae7ff4fc02e69..8c4de9fa39fd7f288c5810e6ae29de7347bf6619 100644
+index 1f543a0e3e10da315ee7aa06d7c5b354552e8094..fb7f88b1af1759b3ed64c7573b35eeb79be7ec92 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -1587,6 +1587,41 @@ void TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,

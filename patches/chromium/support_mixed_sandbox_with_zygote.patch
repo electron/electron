@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0dc200c1fed81bca8a15c033835e4adbdf440540..119d21fe06160fad4f42b1400dd4458f7635f429 100644
+index 665e181a11d3f3f87ba1c74fd67e4f09fe36d973..29c3aa3c362fdfd6b53459a6edc73733384166bc 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1731,9 +1731,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1740,9 +1740,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              *cmd_line, IsPdf(), /*is_jit_disabled=*/IsPdf());

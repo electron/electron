@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 17600afb7d4fccf7017896253ca85c46e99c4246..47c808da98875e030660c060c24d2c99030639fc 100644
+index b64c62f8e201fb9bc7fbbe36db2139ebed239462..b58a88dabe61c22fe1b0e3fa00eeec98d6cad2ea 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -969,7 +969,6 @@ if (is_win) {
+@@ -974,7 +974,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 17600afb7d4fccf7017896253ca85c46e99c4246..47c808da98875e030660c060c24d2c99
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -978,6 +977,10 @@ if (is_win) {
+@@ -983,6 +982,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -555,7 +555,7 @@ index ca71560874a0189068dd11fbc039f5673bf6bd96..a8551d95e64da2afbc1685b2df8f1fc3
                        mojom::PrintFailureReason reason) override;
  
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 938c5cede9ca90744d48db46cd0f6168b3b2f02c..db6ebf06bbfe0ed084fa794f54d9979154de5078 100644
+index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f611c46da1 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -303,7 +303,7 @@ union PrintWithParamsResult {
@@ -578,7 +578,7 @@ index 938c5cede9ca90744d48db46cd0f6168b3b2f02c..db6ebf06bbfe0ed084fa794f54d99791
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004becdba00 100644
+index 07084c2b44d2a0bdfea3702b70f764214ed7e482..32bf4f5a13fbea452ed44a654a3fd9f257624531 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -589,7 +589,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1216,14 +1217,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1222,14 +1223,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -606,7 +606,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
    if (!weak_this) {
      return;
    }
-@@ -1254,12 +1255,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1260,12 +1261,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -624,7 +624,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint) {
      return;
-@@ -1276,9 +1279,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1282,9 +1285,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
  
      is_loading_ = frame->WillPrintSoon();
      if (is_loading_) {
@@ -638,7 +638,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
        SetupOnStopLoadingTimeout();
        return;
      }
-@@ -1288,7 +1292,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1294,7 +1298,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -647,7 +647,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
  
    if (render_frame_gone_) {
      return;
-@@ -1445,6 +1449,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1451,6 +1455,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -656,7 +656,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2037,17 +2043,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2043,17 +2049,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -679,7 +679,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2068,8 +2076,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2074,8 +2082,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -696,7 +696,7 @@ index 1a0b4b8ec5fd4e9a57fd3318c063e2735ed581cb..e6131d88e7a6f856221bd81e800b5004
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2330,29 +2345,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2336,29 +2351,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -785,10 +785,10 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 33c4487e828817e70e4e72ecc1665247ae48fbfd..01e6764295c4baf713c38b939e17066f1adde58e 100644
+index 228d5ce0c42e53e420a364756be9e190652492c3..d6d384c31708e514335227e2ec512fa29593b072 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2951,8 +2951,9 @@ source_set("browser") {
+@@ -2949,8 +2949,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

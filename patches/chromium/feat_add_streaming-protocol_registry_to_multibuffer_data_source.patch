@@ -65,7 +65,7 @@ index d7e736b32c66c2e6a3acb6755ce620fcfc041e44..589072f4c7551a4290c554a38603dc54
  
  void MultiBufferDataSource::SetReader(MultiBufferReader* reader) {
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-index faad2219254615fedba155c41598478026190788..f1e8feb1f235faed58f76346622eaa22f5a351f4 100644
+index 619ba42558204becad88ca4805a900323f0ae4ad..a24d6f10843cd790f7a1c7e6215eae39250767f2 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 @@ -34,6 +34,8 @@ namespace blink {

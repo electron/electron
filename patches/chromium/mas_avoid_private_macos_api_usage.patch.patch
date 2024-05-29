@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f4543a2e459c2b945f4b20cb83037c3f814c0f74..af096cb7083a256d1a150c619da96e2961527c46 100644
+index b00b7edeb4666dcd87e6da37f62480b4601709fb..8501f7b03bb22787f4c22251b0b7e48a859a5091 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1058,6 +1058,7 @@ component("base") {
@@ -370,7 +370,7 @@ index 7fbc649a45bea2181523a1875f0112021f0b9251..e15f59c3dedf587df6664cef1913a8e7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 35b6474193b3ff8c0efb87347b021b2fe7429189..782622e04634f76317e8b772035eff185b5369a1 100644
+index f28503c3bd02b51da148624b3545c7feeccad511..aeb4e82629b7d4828a6717708112f28eb9f35079 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -362,6 +362,7 @@ viz_component("service") {
@@ -381,7 +381,7 @@ index 35b6474193b3ff8c0efb87347b021b2fe7429189..782622e04634f76317e8b772035eff18
    }
  
    if (is_android || use_ozone) {
-@@ -634,6 +635,7 @@ viz_source_set("unit_tests") {
+@@ -633,6 +634,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -459,7 +459,7 @@ index 9f703d6da81c1a0e8a4fe6bcb885b8d3217e14f1..97e1706959ab7784b758779b3d69d975
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 62618587d4cf11721247e9f8f1b7f16d9250ba19..33c4487e828817e70e4e72ecc1665247ae48fbfd 100644
+index 0aa754beaa3ddeed28b032855f3ea29987178c85..228d5ce0c42e53e420a364756be9e190652492c3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -543,7 +543,7 @@ index 4905c99f5ecb772f1370a026c5fd5f0538c3a2b5..6b9d4e0edee173d3d4cdfcddef30d6e7
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 171b23961a552164dbe0aca77254c209c25d1201..ff8cc073c47f1bba79e41997ecb1dbb312f5e483 100644
+index ca703d1d90b54b2afde94517ae2c09de239fd97e..2bcdca6ef52dbe5c5d6063ce076d660778fb0bb3 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -608,10 +608,10 @@ index 171b23961a552164dbe0aca77254c209c25d1201..ff8cc073c47f1bba79e41997ecb1dbb3
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 066bea940f2889351e6cc151cfc10da3a7e86f6a..17041909bf5d8fb9df9cd550f473522c3153bcbb 100644
+index bf628d658c0736841610d119ace2eb6db355c92e..fcd965bbe062678a197eaec2b1df5b67713a5ea9 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -247,6 +247,7 @@ source_set("common") {
+@@ -250,6 +250,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3325f775f92d83a5a7d96036648962703a95bb5f..1f92159d58bdce9d59793a2220f5ce7dcb7d2b8c 100644
+index 9e075f785a912eb13f3a3f668c6ef0a7711110ea..0335fc4631c9af60782e08f66d78561c3ccdf20f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -502,6 +502,7 @@ static_library("test_support") {
+@@ -504,6 +504,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index 3325f775f92d83a5a7d96036648962703a95bb5f..1f92159d58bdce9d59793a2220f5ce7d
    ]
  
    public_deps = [
-@@ -1097,6 +1098,7 @@ static_library("browsertest_support") {
+@@ -1101,6 +1102,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 3325f775f92d83a5a7d96036648962703a95bb5f..1f92159d58bdce9d59793a2220f5ce7d
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1711,6 +1713,7 @@ test("content_browsertests") {
+@@ -1715,6 +1717,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 3325f775f92d83a5a7d96036648962703a95bb5f..1f92159d58bdce9d59793a2220f5ce7d
  
    public_deps = [
      ":test_interfaces",
-@@ -2953,6 +2956,7 @@ test("content_unittests") {
+@@ -2962,6 +2965,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -736,7 +736,7 @@ index 3325f775f92d83a5a7d96036648962703a95bb5f..1f92159d58bdce9d59793a2220f5ce7d
    public_deps = [ "//content:content_resources" ]
  
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 84d0f2cd2b7366e37876ed80eef9461afedd6385..ae498eb3b2cade9729806e2be04c5a2570f5de5f 100644
+index c28458b5ddc8ef74e82125a983344b1daf65dda6..48e6d48962a2228d26444dbdbcfa1637e67a8c56 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -151,6 +151,8 @@ static_library("web_test_browser") {
@@ -897,10 +897,10 @@ index 63414d8db326c0fdd44ed59f99400d5c16cfc93c..d80a104451c66017750d04c776355cfa
  
  # The standard API of net/dns.
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 04c2079aac882cb2913583d4692302fdf564a74d..2a03be8bb4b089473e61601323646d257da5e39e 100644
+index 70d5665ad7b9ef62370497636af919ede2508ad4..3f6816de14f4bd19422a2b04830649d1d12e9179 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -130,8 +130,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -135,8 +135,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
  
    bool Watch() override {
      CheckOnCorrectSequence();
@@ -910,7 +910,7 @@ index 04c2079aac882cb2913583d4692302fdf564a74d..2a03be8bb4b089473e61601323646d25
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -148,6 +148,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -153,6 +153,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
        success = false;
      }
  #endif  // !BUILDFLAG(IS_IOS)
@@ -1417,7 +1417,7 @@ index 84e156b7ff28abc2071dde155e56a2a92a53b142..bd73dac7fe3ed256cab805a0815d31d4
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 3b28b01cebedfbc66539e3516a69643198b15fd1..2fa4a07272a7df30641c1dae22a7ac6bbc5466ea 100644
+index 70342aaf70db9d0d53494ea98c4eec5e36c58de5..ecf8c102cbb6110eabeba95053a2fdfb739c954c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -363,6 +363,7 @@ component("base") {
@@ -1517,7 +1517,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 96f0d3a75a639a69eab6ef12f27c7b23df99d508..d89c075498c060379d42f6089cddb41999f7220e 100644
+index 761d9361972720855719ae3418e19c623c465361..752744e489b9b2c184012562985e7803ef685b17 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -69,6 +69,10 @@ component("display") {
@@ -1532,7 +1532,7 @@ index 96f0d3a75a639a69eab6ef12f27c7b23df99d508..d89c075498c060379d42f6089cddb419
  
    if (is_win) {
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 268934b96daccacd1cbd0a441d60ceb9043d7c15..6889b083f5aa314417832210f76e110cf5eb45a6 100644
+index cd08cb3b7c95a8fd418524652bb345945291112a..13c6cc142262781450d1075fe85f86ada3f9f60f 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -171,7 +171,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
@@ -1554,7 +1554,7 @@ index 268934b96daccacd1cbd0a441d60ceb9043d7c15..6889b083f5aa314417832210f76e110c
    // Query the display's refresh rate.
    {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 22f952d7b866d7976c8abbefa5bcf29c9119e407..63bb21ce595973bdeed7d6c24d3202a8eb69eb69 100644
+index 060744da5ed7e6d814a94b2b8576ff672c980c85..0cdd00f78c1518e29bc935e4b35399091882de71 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
