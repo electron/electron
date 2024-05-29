@@ -1,7 +1,7 @@
-From 22db6918bac965f2fa612c8764208d150630b804 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Josip Sokcevic <sokcevic@chromium.org>
-Date: Thu, 09 May 2024 18:45:52 +0000
-Subject: [PATCH] [DEPS] Add hook to delete stale files
+Date: Thu, 9 May 2024 18:45:52 +0000
+Subject: Add hook to delete stale files
 
 download_from_google_storage leaves archive data on disk, near .sha1
 files. As we move those hooks to native DEPS, we no longer need to do
@@ -24,16 +24,16 @@ Auto-Submit: Josip Sokcevic <sokcevic@chromium.org>
 Reviewed-by: Dirk Pranke <dpranke@google.com>
 Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1298764}
----
 
 diff --git a/DEPS b/DEPS
-index 67e55ca..2b297b9f 100644
+index b15e782d99659792fa03fea7cf7abf9df3425803..35690149aa76c7557a83f5d1291e41181708359b 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -4808,6 +4808,17 @@
+@@ -4660,6 +4660,17 @@ hooks = [
+         '--disable',
      ],
    },
-   {
++  {
 +    # Ensure we remove any file from disk that is no longer needed (e.g. after
 +    # hooks to native GCS deps migration).
 +    'name': 'remove_stale_files',
@@ -44,21 +44,12 @@ index 67e55ca..2b297b9f 100644
 +        'src/third_party/test_fonts/test_fonts.tar.gz', # Remove after 20240901
 +    ],
 +  },
-+  {
+   {
      # Ensure that we don't accidentally reference any .pyc files whose
      # corresponding .py files have since been deleted.
-     # We could actually try to avoid generating .pyc files, crbug.com/500078.
-diff --git a/third_party/test_fonts/.gitignore b/third_party/test_fonts/.gitignore
-index 408190411..695e8503 100644
---- a/third_party/test_fonts/.gitignore
-+++ b/third_party/test_fonts/.gitignore
-@@ -1,3 +1,2 @@
- test_fonts/
--test_fonts.tar.gz
- /.*
 diff --git a/tools/remove_stale_files.py b/tools/remove_stale_files.py
 new file mode 100755
-index 0000000..5973fd5
+index 0000000000000000000000000000000000000000..5973fd57bc99e7e702346eb048985c599268c2b2
 --- /dev/null
 +++ b/tools/remove_stale_files.py
 @@ -0,0 +1,23 @@
