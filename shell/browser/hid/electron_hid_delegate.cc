@@ -41,7 +41,7 @@ namespace electron {
 
 // Manages the HidDelegate observers for a single browser context.
 class ElectronHidDelegate::ContextObservation
-    : public HidChooserContext::DeviceObserver {
+    : private HidChooserContext::DeviceObserver {
  public:
   ContextObservation(ElectronHidDelegate* parent,
                      content::BrowserContext* browser_context)

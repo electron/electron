@@ -65,12 +65,12 @@ class Session : public gin::Wrappable<Session>,
                 public gin_helper::EventEmitterMixin<Session>,
                 public gin_helper::CleanedUpAtExit,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-                public SpellcheckHunspellDictionary::Observer,
+                private SpellcheckHunspellDictionary::Observer,
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-                public extensions::ExtensionRegistryObserver,
+                private extensions::ExtensionRegistryObserver,
 #endif
-                public content::DownloadManager::Observer {
+                private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static gin::Handle<Session> CreateFrom(

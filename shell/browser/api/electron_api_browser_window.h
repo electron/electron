@@ -16,8 +16,8 @@
 namespace electron::api {
 
 class BrowserWindow : public BaseWindow,
-                      public content::WebContentsObserver,
-                      public ExtendedWebContentsObserver {
+                      private content::WebContentsObserver,
+                      private ExtendedWebContentsObserver {
  public:
   static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
                                         gin::Arguments* args);

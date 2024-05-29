@@ -61,9 +61,9 @@ typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
-      public content::RenderFrameMetadataProvider::Observer,
+      private content::RenderFrameMetadataProvider::Observer,
       public ui::CompositorDelegate,
-      public OffscreenViewProxyObserver {
+      private OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
                                 bool painting,

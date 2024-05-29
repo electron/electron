@@ -88,7 +88,7 @@ namespace electron {
 
 // Manages the UsbDelegate observers for a single browser context.
 class ElectronUsbDelegate::ContextObservation
-    : public UsbChooserContext::DeviceObserver {
+    : private UsbChooserContext::DeviceObserver {
  public:
   ContextObservation(ElectronUsbDelegate* parent,
                      content::BrowserContext* browser_context)

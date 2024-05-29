@@ -21,7 +21,7 @@ class RenderFrameHost;
 namespace electron {
 class ElectronWebContentsUtilityHandlerImpl
     : public mojom::ElectronWebContentsUtility,
-      public content::WebContentsObserver {
+      private content::WebContentsObserver {
  public:
   explicit ElectronWebContentsUtilityHandlerImpl(
       content::RenderFrameHost* render_frame_host,
