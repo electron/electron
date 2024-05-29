@@ -1150,7 +1150,7 @@ Returns `boolean` - Whether the web page can go to `offset`.
 
 Clears the navigation history.
 
-**Deprecated:** Should use the new [`contents.navigationHistory.clearHistory`](navigation-history.md#navigationhistoryclear) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.clear`](navigation-history.md#navigationhistoryclear) API.
 
 #### `contents.goBack()` _Deprecated_
 
