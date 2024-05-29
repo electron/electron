@@ -109,10 +109,11 @@ views::View* FramelessView::TargetForRect(views::View* root,
   return NonClientFrameView::TargetForRect(root, rect);
 }
 
-gfx::Size FramelessView::CalculatePreferredSize() const {
+gfx::Size FramelessView::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
   return frame_->non_client_view()
-      ->GetWindowBoundsForClientBounds(
-          gfx::Rect(frame_->client_view()->GetPreferredSize()))
+      ->GetWindowBoundsForClientBounds(gfx::Rect(
+          frame_->client_view()->CalculatePreferredSize(available_size)))
       .size();
 }
 
