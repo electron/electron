@@ -1144,7 +1144,7 @@ Returns `boolean` - Whether the browser can go forward to next web page.
 
 Returns `boolean` - Whether the web page can go to `offset`.
 
-**Deprecated:** Should use the new [`contents.navigationHistory.canGoToOffset`](navigation-history.md#navigationhistorycangotooffsetoffset) API.
+**Deprecated:** Should use the new [`contents.navigationHistory.canGoToOffset`](navigation-history.md#navigationhistorycangotooffset) API.
 
 #### `contents.clearHistory()` _Deprecated_
 
