@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "content/public/common/input/native_web_keyboard_event.h"
+#include "components/input/native_web_keyboard_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
 #include "ui/views/layout/box_layout.h"

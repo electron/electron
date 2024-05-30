@@ -11,8 +11,8 @@
 #include "shell/browser/ui/autofill_popup.h"
 
 #include "base/memory/raw_ptr.h"
+#include "components/input/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
-#include "content/public/common/input/native_web_keyboard_event.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "ui/accessibility/ax_node_data.h"

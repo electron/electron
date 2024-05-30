@@ -8,9 +8,9 @@
 #include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
+#include "components/input/native_web_keyboard_event.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/input/native_web_keyboard_event.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
