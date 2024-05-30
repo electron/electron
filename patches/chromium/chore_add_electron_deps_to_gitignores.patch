@@ -18,7 +18,7 @@ index 50992a3f4502d46a1bc2713c25bec6095c541ffa..121a09d7fa00162fe64ce901cae96d8f
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index cf8c90ed06cfc86f4b16dca831b2449f683408d3..b6f3e854ab82e5bd5475d8d08e13afbf87644249 100644
+index 1ea2bf302c4dc2eb6aca5f2439e0f061a6ba0814..48670aceec3596b88bd87ed99a50a68c37eb7bce 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -51,7 +51,9 @@
@@ -31,7 +31,7 @@ index cf8c90ed06cfc86f4b16dca831b2449f683408d3..b6f3e854ab82e5bd5475d8d08e13afbf
  /espresso/lib/
  /eyesfree/src
  /fuchsia-sdk/images
-@@ -107,6 +109,7 @@
+@@ -106,6 +108,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -39,7 +39,7 @@ index cf8c90ed06cfc86f4b16dca831b2449f683408d3..b6f3e854ab82e5bd5475d8d08e13afbf
  /ninja/ninja*
  /node/*.tar.gz
  /node/linux/
-@@ -155,6 +158,7 @@
+@@ -154,6 +157,7 @@
  /spirv-headers/src
  /spirv-tools/src
  /sqlite4java/lib/

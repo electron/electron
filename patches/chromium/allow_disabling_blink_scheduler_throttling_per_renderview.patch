@@ -23,7 +23,7 @@ index 8a921c9310b2540b4b4d7d7383406698993d40d7..348e0de3e5193e6f97a4c83f43476497
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index d39f6f582109e7323372c032048544738372cf41..9ba70f021fd72e5861566e89f40af3edf4dea7e1 100644
+index 47d647c7f7bf167b6a583dad0f917688ebeeef81..3528aaa980baa57d515e7b60c5f1b9c68de46773 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -713,6 +713,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {

@@ -155,10 +155,10 @@ index e4c31867e264c4f9aa2a451a934eda705826a1a3..f6325a210aec33aa63257bdf3bc542d8
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 47a42f5a595c0a14e24feba9f61ab9d686e08354..2e48e6606496fe1a17d3565496a1e9e5400e50d5 100644
+index ed870b61ab257f1c919cbbeb7274e9cc634c6fb1..036ac637a225c3a0f2201a0f72b3f6c2500f8c45 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -178,14 +178,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -180,14 +180,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -358,7 +358,7 @@ index 0ed0d3a22c0fcb15c70fab4dc740c27a18c37da4..24608ddccafe0783c71788593b678aa0
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 1a2c66e329b6f42db3dc0bea7f18df53960fa088..0d879e3bcfc736d8dd7193204ab0fae9e26779a5 100644
+index 4c13506bb361e5e0d52e8ef923db0de822452346..7f208d6f3cfc36319924b9bb99a7f0de9f2aceac 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -442,8 +442,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(

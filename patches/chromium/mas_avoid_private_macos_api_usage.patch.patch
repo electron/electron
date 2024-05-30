@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b00b7edeb4666dcd87e6da37f62480b4601709fb..8501f7b03bb22787f4c22251b0b7e48a859a5091 100644
+index 6ae3c1065d14c93dc4fa0dfd0895bef2d2e8c429..03f67da89a61185da74a198842a69c1a6ae6831a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1058,6 +1058,7 @@ component("base") {
@@ -390,10 +390,10 @@ index f28503c3bd02b51da148624b3545c7feeccad511..aeb4e82629b7d4828a6717708112f28e
  
    if (is_win) {
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f89cffa25 100644
+index 436ba4fab9b9875b2026a5cde5f4b4d392a85ac7..94921ce819a7569ed7b72c93879c7ecc93be4798 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -64,7 +64,9 @@ explicit RenderWidgetHostNSViewBridgeOwner(
+@@ -63,7 +63,9 @@ explicit RenderWidgetHostNSViewBridgeOwner(
        const RenderWidgetHostNSViewBridgeOwner&) = delete;
  
   private:
@@ -403,7 +403,7 @@ index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f
    void OnMojoDisconnect() { delete this; }
  
    std::unique_ptr<blink::WebCoalescedInputEvent> TranslateEvent(
-@@ -76,6 +78,7 @@ explicit RenderWidgetHostNSViewBridgeOwner(
+@@ -75,6 +77,7 @@ explicit RenderWidgetHostNSViewBridgeOwner(
    }
  
    id GetAccessibilityElement() override {
@@ -411,7 +411,7 @@ index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f
      if (!remote_accessibility_element_) {
        base::ProcessId browser_pid = base::kNullProcessId;
        std::vector<uint8_t> element_token;
-@@ -86,6 +89,9 @@ id GetAccessibilityElement() override {
+@@ -85,6 +88,9 @@ id GetAccessibilityElement() override {
            ui::RemoteAccessibility::GetRemoteElementFromToken(element_token);
      }
      return remote_accessibility_element_;
@@ -421,7 +421,7 @@ index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f
    }
  
    // RenderWidgetHostNSViewHostHelper implementation.
-@@ -104,8 +110,10 @@ id GetFocusedBrowserAccessibilityElement() override {
+@@ -103,8 +109,10 @@ id GetFocusedBrowserAccessibilityElement() override {
      return [bridgedContentView accessibilityFocusedUIElement];
    }
    void SetAccessibilityWindow(NSWindow* window) override {
@@ -433,7 +433,7 @@ index 0181e431874fcd9949be755e840af5afa32fdffa..2d9598de81977c7107e5f45d321e390f
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 9f703d6da81c1a0e8a4fe6bcb885b8d3217e14f1..97e1706959ab7784b758779b3d69d9756077f7fc 100644
+index 0dcfb75bea8b721562d7e5c6ce05a2d282b6ed39..905373983f42f74272619a36d464ccc12a094384 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -2063,15 +2063,21 @@ - (NSAccessibilityRole)accessibilityRole {
@@ -459,7 +459,7 @@ index 9f703d6da81c1a0e8a4fe6bcb885b8d3217e14f1..97e1706959ab7784b758779b3d69d975
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0aa754beaa3ddeed28b032855f3ea29987178c85..228d5ce0c42e53e420a364756be9e190652492c3 100644
+index 68ca9736b55ce771386253cbc15c4221fb790dc1..cb02bb8bb3d66aa38725861e572032365e93dd1d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -543,7 +543,7 @@ index 4905c99f5ecb772f1370a026c5fd5f0538c3a2b5..6b9d4e0edee173d3d4cdfcddef30d6e7
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index ca703d1d90b54b2afde94517ae2c09de239fd97e..2bcdca6ef52dbe5c5d6063ce076d660778fb0bb3 100644
+index 92f20fa01dea3e6febfb724621f14816d132ad96..8289d73e1138393b788b5e4eb24996c7a477a9ad 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -608,10 +608,10 @@ index ca703d1d90b54b2afde94517ae2c09de239fd97e..2bcdca6ef52dbe5c5d6063ce076d6607
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index bf628d658c0736841610d119ace2eb6db355c92e..fcd965bbe062678a197eaec2b1df5b67713a5ea9 100644
+index fc29dd8b3fdba8260fb373ca2d54552980e5bf98..60816e2787cbb8448cfada4790f708c5f69442d9 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -250,6 +250,7 @@ source_set("common") {
+@@ -249,6 +249,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9e075f785a912eb13f3a3f668c6ef0a7711110ea..0335fc4631c9af60782e08f66d78561c3ccdf20f 100644
+index d2484cb2985c14e54c100adcd3d81ef34d48d350..45d3dfaf19b3a61ffb6e0a4ced50be28cf59f6e2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -711,7 +711,7 @@ index 9e075f785a912eb13f3a3f668c6ef0a7711110ea..0335fc4631c9af60782e08f66d78561c
    ]
  
    public_deps = [
-@@ -1101,6 +1102,7 @@ static_library("browsertest_support") {
+@@ -1103,6 +1104,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 9e075f785a912eb13f3a3f668c6ef0a7711110ea..0335fc4631c9af60782e08f66d78561c
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1715,6 +1717,7 @@ test("content_browsertests") {
+@@ -1717,6 +1719,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 9e075f785a912eb13f3a3f668c6ef0a7711110ea..0335fc4631c9af60782e08f66d78561c
  
    public_deps = [
      ":test_interfaces",
-@@ -2962,6 +2965,7 @@ test("content_unittests") {
+@@ -2963,6 +2966,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1260,10 +1260,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 4feaed1ede9739cb92860c995c1f9730ff0abe84..8110ad78d07b1ebb8234865e619ab45551a1c6f0 100644
+index 2a9d420eabfee17a39604e525af6f0fa95fafc04..0883cfc964881922f3f5b04426923544c49a2273 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -317,6 +317,7 @@ component("core") {
+@@ -330,6 +330,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -1713,7 +1713,7 @@ index b50e6f05254ea9e12985fa18b5468c3c020cf3cf..43051bb6a54ed56b2f920555f096494e
  }
  
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index fabfde10ab21d62b0cefd6f53bd22bbb6784035f..1560165dff9f77dd77ec7d656f0613472f9e24b8 100644
+index 111d6432586f47833dde50678b908c76ad88d37a..45601d06f85ba618fe38c96ae28c47d306784e53 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
 @@ -19,6 +19,9 @@ component("webview") {
