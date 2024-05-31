@@ -225,8 +225,8 @@ with CommonJS module syntax:
 <details>
 <summary>Module capitalization conventions</summary>
 
-You might have noticed the capitalization difference between the **a**pp
-and **B**rowser**W**indow modules. Electron follows typical JavaScript conventions here,
+You might have noticed the capitalization difference between the **app**
+and **BrowserWindow** modules. Electron follows typical JavaScript conventions here,
 where PascalCase modules are instantiable class constructors (e.g. BrowserWindow, Tray,
 Notification) whereas camelCase modules are not instantiable (e.g. app, ipcRenderer, webContents).
 
