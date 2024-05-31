@@ -6477,8 +6477,7 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    // FIXME(codebytere): figure out why these are failing on macOS arm64.
-    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('should not display a visible background', async () => {
+    ifit(hasCapturableScreen())('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6501,9 +6500,7 @@ describe('BrowserWindow module', () => {
       const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
       await foregroundWindow.loadFile(colorFile);
 
-      await setTimeout(1000);
-
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = ScreenCapture.createForDisplay(display);
       await screenCapture.expectColorAtPointOnDisplayMatches(
         HexColors.GREEN,
         (size) => ({
@@ -6520,8 +6517,7 @@ describe('BrowserWindow module', () => {
       );
     });
 
-    // FIXME(codebytere): figure out why these are failing on macOS arm64.
-    ifit(process.platform === 'darwin' && process.arch !== 'arm64')('Allows setting a transparent window via CSS', async () => {
+    ifit(hasCapturableScreen())('Allows setting a transparent window via CSS', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6547,14 +6543,11 @@ describe('BrowserWindow module', () => {
       foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
       await once(ipcMain, 'set-transparent');
 
-      await setTimeout(1000);
-
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = ScreenCapture.createForDisplay(display);
       await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make background transparent if falsy', async () => {
+    ifit(hasCapturableScreen())('should not make background transparent if falsy', async () => {
       const display = screen.getPrimaryDisplay();
 
       for (const transparent of [false, undefined]) {
@@ -6566,8 +6559,7 @@ describe('BrowserWindow module', () => {
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        await setTimeout(1000);
-        const screenCapture = await ScreenCapture.createForDisplay(display);
+        const screenCapture = ScreenCapture.createForDisplay(display);
         // color-scheme is set to dark so background should not be white
         await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
 
@@ -6579,8 +6571,7 @@ describe('BrowserWindow module', () => {
   describe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
-    // Linux/WOA doesn't return any capture sources.
-    ifit(process.platform === 'darwin')('should display the set color', async () => {
+    ifit(hasCapturableScreen())('should display the set color', async () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
@@ -6592,9 +6583,7 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await once(w, 'ready-to-show');
 
-      await setTimeout(1000);
-
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = ScreenCapture.createForDisplay(display);
       await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });
