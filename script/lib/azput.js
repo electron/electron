@@ -2,6 +2,9 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 const path = require('node:path');
 
+// TODO(vertedinde): This variable is a test variable in GHA, sending test
+// artifacts to a test account. Change to the real electron artifacts
+// storage account when ready.
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.ELECTRON_ARTIFACTS_BLOB_STORAGE);
 
 const args = require('minimist')(process.argv.slice(2));

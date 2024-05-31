@@ -14,7 +14,12 @@ const readline = require('node:readline');
 const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
 const bumpType = args._[0];
-const targetRepo = bumpType === 'nightly' ? 'nightlies' : 'electron';
+const targetRepo = getRepo();
+
+function getRepo () {
+  if (process.env.IS_GHA_RELEASE) return 'test-releases';
+  return bumpType === 'nightly' ? 'nightlies' : 'electron';
+}
 
 const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
