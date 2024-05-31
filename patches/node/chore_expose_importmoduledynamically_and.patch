@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 39e87338dc5a799a8a30bd2399b8ec5d6b554fad..7b1939fa25379b333f2be07f4ff483f53d8a2ac6 100644
+index d7867864bba7141b7ba12b171d185a94ed25d01d..d93a248d8a96fe1dffa08b39cfe3ea7b368db54a 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -24,7 +24,7 @@ const {
@@ -23,7 +23,7 @@ index 39e87338dc5a799a8a30bd2399b8ec5d6b554fad..7b1939fa25379b333f2be07f4ff483f5
  const {
    loadPreloadModules,
    initializeFrozenIntrinsics,
-@@ -239,12 +239,13 @@ let _forceDefaultLoader = false;
+@@ -236,12 +236,13 @@ let _forceDefaultLoader = false;
   * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
   */
  function initializeESM(forceDefaultLoader = false) {
