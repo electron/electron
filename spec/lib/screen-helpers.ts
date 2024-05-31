@@ -75,18 +75,17 @@ function areColorsSimilar (
   return distance <= distanceThreshold;
 }
 
-function imageCenter (image: NativeImage): Electron.Point {
-  const size = image.getSize();
+function displayCenter (display: Electron.Display): Electron.Point {
   return {
-    x: size.width / 2,
-    y: size.height / 2
+    x: display.size.width / 2,
+    y: display.size.height / 2
   };
 }
 
-/** Resolve when approx. one frame has passed (60FPS) */
+/** Resolve when approx. one frame has passed (30FPS) */
 export async function nextFrameTime (): Promise<void> {
-  return await new Promise(resolve => {
-    setTimeout(resolve, 1000 / 60);
+  return await new Promise((resolve) => {
+    setTimeout(resolve, 1000 / 30);
   });
 }
 
@@ -99,50 +98,51 @@ export async function nextFrameTime (): Promise<void> {
  * NOTE: Not yet supported on Linux in CI due to empty sources list.
  */
 export class ScreenCapture {
+  /** Timeout to wait for expected color to match. */
+  static TIMEOUT = 2000;
+
   /** Use the async constructor `ScreenCapture.create()` instead. */
-  private constructor (image: NativeImage) {
-    this.image = image;
+  private constructor (display: Electron.Display) {
+    this.display = display;
   }
 
-  public static async create (): Promise<ScreenCapture> {
+  public static create (): ScreenCapture {
     const display = screen.getPrimaryDisplay();
-    return ScreenCapture._createImpl(display);
+    return new ScreenCapture(display);
   }
 
-  public static async createForDisplay (
-    display: Electron.Display
-  ): Promise<ScreenCapture> {
-    return ScreenCapture._createImpl(display);
+  public static createForDisplay (display: Electron.Display): ScreenCapture {
+    return new ScreenCapture(display);
   }
 
   public async expectColorAtCenterMatches (hexColor: string) {
-    return this._expectImpl(imageCenter(this.image), hexColor, true);
+    return this._expectImpl(displayCenter(this.display), hexColor, true);
   }
 
   public async expectColorAtCenterDoesNotMatch (hexColor: string) {
-    return this._expectImpl(imageCenter(this.image), hexColor, false);
+    return this._expectImpl(displayCenter(this.display), hexColor, false);
   }
 
   public async expectColorAtPointOnDisplayMatches (
     hexColor: string,
     findPoint: (displaySize: Electron.Size) => Electron.Point
   ) {
-    return this._expectImpl(findPoint(this.image.getSize()), hexColor, true);
+    return this._expectImpl(findPoint(this.display.size), hexColor, true);
   }
 
-  private static async _createImpl (display: Electron.Display) {
+  private async captureFrame (): Promise<NativeImage> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
-      thumbnailSize: display.size
+      thumbnailSize: this.display.size
     });
 
     const captureSource = sources.find(
-      (source) => source.display_id === display.id.toString()
+      (source) => source.display_id === this.display.id.toString()
     );
     if (captureSource === undefined) {
       const displayIds = sources.map((source) => source.display_id).join(', ');
       throw new Error(
-        `Unable to find screen capture for display '${display.id}'\n\tAvailable displays: ${displayIds}`
+        `Unable to find screen capture for display '${this.display.id}'\n\tAvailable displays: ${displayIds}`
       );
     }
 
@@ -150,7 +150,7 @@ export class ScreenCapture {
       await new Promise((resolve) => setTimeout(resolve, 1e3));
     }
 
-    return new ScreenCapture(captureSource.thumbnail);
+    return captureSource.thumbnail;
   }
 
   private async _expectImpl (
@@ -158,15 +158,29 @@ export class ScreenCapture {
     expectedColor: string,
     matchIsExpected: boolean
   ) {
-    const actualColor = getPixelColor(this.image, point);
-    const colorsMatch = areColorsSimilar(expectedColor, actualColor);
-    const gotExpectedResult = matchIsExpected ? colorsMatch : !colorsMatch;
+    let frame: Electron.NativeImage;
+    let actualColor: string;
+    let gotExpectedResult: boolean = false;
+    const expiration = Date.now() + ScreenCapture.TIMEOUT;
+
+    // Continuously capture frames until we either see the expected result or
+    // reach a timeout. This helps avoid flaky tests in which a short waiting
+    // period is required for the expected result.
+    do {
+      frame = await this.captureFrame();
+      actualColor = getPixelColor(frame, point);
+      const colorsMatch = areColorsSimilar(expectedColor, actualColor);
+      gotExpectedResult = matchIsExpected ? colorsMatch : !colorsMatch;
+      if (gotExpectedResult) break;
+
+      await nextFrameTime(); // limit framerate
+    } while (Date.now() < expiration);
 
     if (!gotExpectedResult) {
       // Save the image as an artifact for better debugging
       const artifactName = await createArtifactWithRandomId(
         (id) => `color-mismatch-${id}.png`,
-        this.image.toPNG()
+        frame.toPNG()
       );
       throw new AssertionError(
         `Expected color at (${point.x}, ${point.y}) to ${
@@ -176,7 +190,7 @@ export class ScreenCapture {
     }
   }
 
-  private image: NativeImage;
+  private display: Electron.Display;
 }
 
 /**
@@ -189,5 +203,5 @@ export class ScreenCapture {
  * - Win32 x64: virtual screen display is 0x0
  */
 export const hasCapturableScreen = () => {
-  return process.platform === 'darwin';
+  return process.env.CI ? process.platform === 'darwin' : true;
 };

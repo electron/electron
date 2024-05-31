@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { ScreenCapture } from './lib/screen-helpers';
+import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { once } from 'node:events';
 
 describe('BrowserView module', () => {
@@ -75,8 +75,7 @@ describe('BrowserView module', () => {
       }).not.to.throw();
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('sets the background color to transparent if none is set', async () => {
+    ifit(hasCapturableScreen())('sets the background color to transparent if none is set', async () => {
       const display = screen.getPrimaryDisplay();
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
@@ -90,12 +89,11 @@ describe('BrowserView module', () => {
       w.setBrowserView(view);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = ScreenCapture.createForDisplay(display);
       await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('successfully applies the background color', async () => {
+    ifit(hasCapturableScreen())('successfully applies the background color', async () => {
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
       const VIEW_BACKGROUND_COLOR = '#ff00ff';
       const display = screen.getPrimaryDisplay();
@@ -111,7 +109,7 @@ describe('BrowserView module', () => {
       w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = ScreenCapture.createForDisplay(display);
       await screenCapture.expectColorAtCenterMatches(VIEW_BACKGROUND_COLOR);
     });
   });

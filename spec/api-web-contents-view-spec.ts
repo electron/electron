@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 import { once } from 'node:events';
-import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { closeAllWindows } from './lib/window-helpers';
 import { defer, ifdescribe } from './lib/spec-helpers';
@@ -235,9 +234,6 @@ describe('WebContentsView', () => {
 
       const backgroundUrl = `data:text/html,<style>html{background:${encodeURIComponent(HexColors.GREEN)}}</style>`;
 
-      // CI seems to need more time before Views appear
-      const delayCapture = () => process.env.CI && setTimeoutAsync(1000);
-
       beforeEach(async () => {
         display = screen.getPrimaryDisplay();
 
@@ -266,7 +262,6 @@ describe('WebContentsView', () => {
         ];
 
         await readyForCapture;
-        await delayCapture();
       });
 
       afterEach(() => {
@@ -275,7 +270,7 @@ describe('WebContentsView', () => {
       });
 
       it('should render with cutout corners', async () => {
-        const screenCapture = await ScreenCapture.createForDisplay(display);
+        const screenCapture = ScreenCapture.createForDisplay(display);
 
         for (const corner of corners) {
           await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
@@ -290,8 +285,7 @@ describe('WebContentsView', () => {
         v.setBorderRadius(0);
 
         await nextFrameTime();
-        await delayCapture();
-        const screenCapture = await ScreenCapture.createForDisplay(display);
+        const screenCapture = ScreenCapture.createForDisplay(display);
         await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, () => corner);
         await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
       });
@@ -305,10 +299,9 @@ describe('WebContentsView', () => {
         const readyForCapture = once(v.webContents, 'ready-to-show');
         v.webContents.loadURL(backgroundUrl);
         await readyForCapture;
-        await delayCapture();
 
         const corner = corners[0];
-        const screenCapture = await ScreenCapture.createForDisplay(display);
+        const screenCapture = ScreenCapture.createForDisplay(display);
         await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
         await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
       });
