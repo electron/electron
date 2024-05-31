@@ -15,8 +15,7 @@ on:
 
 jobs:
   publish:
-  # TODO(vertedinde): Change this to main before merge
-    uses: electron/electron/.github/workflows/macos-build.yml@gh-actions-mac-publish
+    uses: electron/electron/.github/workflows/macos-build.yml@361b37592af3e79606440ca0c229c27df78676cf
     with:
       IS_RELEASE: true
       GN_CONFIG: //electron/build/args/release.gn
