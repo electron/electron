@@ -549,7 +549,7 @@ index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a5
    });
  
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc3192b2f2 100644
+index ecda345989789d0745b631385e7411305c1c6375..542a0a16f3f2eba4efd31e807a3bc34b6752d798 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -28,12 +28,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -570,7 +570,7 @@ index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc
  };
  
  const decryptError = common.hasOpenSSL3 ?
-@@ -222,7 +222,8 @@ function test_rsa(padding, encryptOaepHash, decryptOaepHash) {
+@@ -222,7 +221,8 @@ function test_rsa(padding, encryptOaepHash, decryptOaepHash) {
    }, bufferToEncrypt);
  
  
@@ -580,7 +580,7 @@ index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc
      // TODO(richardlau): see if it's possible to determine implicit rejection
      // support when dynamically linked against OpenSSL.
      if (!process.config.variables.node_shared_openssl) {
-@@ -415,7 +414,7 @@ assert.throws(() => {
+@@ -419,7 +419,7 @@ assert.throws(() => {
    assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
  }
  
@@ -589,13 +589,13 @@ index 438037acc867c2bd6e34ffdcd1e706f8d0ff6a57..65611c79d0e93bf7f91948b2a0105cdc
  //
  // Test DSA signing and verification
  //
-@@ -490,3 +489,4 @@ const input = 'I AM THE WALRUS';
+@@ -494,3 +494,4 @@ const input = 'I AM THE WALRUS';
  
    assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index b39ec22dceb5b704f8c262bd38163d93ac1a3b47..89cfa9fc49719e5a6f2c5b96f25c61340286cadb 100644
+index 56e5c16c2867f019caccf42f228193cae6167150..dc585c44db9894ae57a5e11d453af03e1ea4f211 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -28,6 +28,7 @@ const keySize = 2048;

@@ -10,10 +10,10 @@ in.
 This should be upstreamed.
 
 diff --git a/common.gypi b/common.gypi
-index 722b4c3d376ce6eaa683397b693f9bad8f2aa584..b003ddf5763a0f5c3289a7ff39d71f3d828b73db 100644
+index 1fad20645d059ad5f3efaa9279f582f99cb1006b..4fbb33550e8a044b92997a42eb6603f151ba1043 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -133,6 +133,7 @@
+@@ -134,6 +134,7 @@
        ['target_arch in "arm ia32 mips mipsel ppc"', {
          'v8_enable_pointer_compression': 0,
          'v8_enable_31bit_smis_on_64bit_arch': 0,
@@ -22,10 +22,10 @@ index 722b4c3d376ce6eaa683397b693f9bad8f2aa584..b003ddf5763a0f5c3289a7ff39d71f3d
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
 diff --git a/configure.py b/configure.py
-index 8169c674d672b7206b3765bcbf68cde04ba2d915..ac5990cf48703ae2e10ad86915aacdad25206f0e 100755
+index c30052f02f97df78e0d9294784cb3efb3fd2d1a7..5fb89e56fde52d01b3806ec4e8549cbeb5ffca66 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1510,6 +1510,7 @@ def configure_v8(o):
+@@ -1515,6 +1515,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_maglev'] = 1 if options.v8_enable_maglev else 0
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0

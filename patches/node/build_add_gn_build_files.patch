@@ -1256,7 +1256,7 @@ index 0000000000000000000000000000000000000000..af9cbada10203b387fb9732b346583b1
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..00d92911872660c710f35311a4e23d2429c806e9
+index 0000000000000000000000000000000000000000..d18a59b6629849588e31f977e8d537ff5b11f7e4
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,738 @@
@@ -2362,7 +2362,7 @@ index 0000000000000000000000000000000000000000..a6cdf33f2c0bcca4d7b4eacaa407f1ac
 +      transformed_f.write(transformed_contents)
 +
 diff --git a/tools/install.py b/tools/install.py
-index 17b0947aaca4cd63ce6b57ffc4835eae7f74e76e..393e5bf6a5595ad9db2800bfa0d241b32d602150 100755
+index b132c7bf26c02886a7ab341a1973bf449744ba0f..912a10c1edd76b1ed9ccfd446059c03a8ca712af 100755
 --- a/tools/install.py
 +++ b/tools/install.py
 @@ -390,7 +390,7 @@ def parse_options(args):
@@ -2377,7 +2377,7 @@ index 17b0947aaca4cd63ce6b57ffc4835eae7f74e76e..393e5bf6a5595ad9db2800bfa0d241b3
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index 0fa9c5954d24a555a1e7c50fdb4b43c17cb1452d..9a77af51630aec5437a09aae1d7296e2e1238809
+index e0f3d8844718ab8a6478c40ff713c1fd6bcff95a..c73a5b666dbaf555c749d836c20a7ae19a840847
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -30,6 +30,7 @@ namespace js2c {
