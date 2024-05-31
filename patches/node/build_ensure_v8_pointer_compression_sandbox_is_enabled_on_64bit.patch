@@ -10,7 +10,7 @@ in.
 This should be upstreamed.
 
 diff --git a/common.gypi b/common.gypi
-index a2b0c2a12160b1f59379c552b30b91c3ee65cc12..0c0ac7920f00ed1a1561f17fa7cfe9a127f02820 100644
+index 1fad20645d059ad5f3efaa9279f582f99cb1006b..4fbb33550e8a044b92997a42eb6603f151ba1043 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -134,6 +134,7 @@
