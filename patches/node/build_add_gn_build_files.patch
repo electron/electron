@@ -1256,7 +1256,7 @@ index 0000000000000000000000000000000000000000..af9cbada10203b387fb9732b346583b1
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..e7fb3a02c03b175ada689ceefff1846080e94566
+index 0000000000000000000000000000000000000000..dbe1b5b8a483dbb62cefc8668555e8de254c0243
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,738 @@
@@ -1565,7 +1565,6 @@ index 0000000000000000000000000000000000000000..e7fb3a02c03b175ada689ceefff18460
 +    "lib/internal/modules/esm/fetch_module.js",
 +    "lib/internal/modules/esm/formats.js",
 +    "lib/internal/modules/esm/get_format.js",
-+    "lib/internal/modules/esm/handle_process_exit.js",
 +    "lib/internal/modules/esm/hooks.js",
 +    "lib/internal/modules/esm/initialize_import_meta.js",
 +    "lib/internal/modules/esm/load.js",
@@ -1600,7 +1599,6 @@ index 0000000000000000000000000000000000000000..e7fb3a02c03b175ada689ceefff18460
 +    "lib/internal/policy/manifest.js",
 +    "lib/internal/policy/sri.js",
 +    "lib/internal/priority_queue.js",
-+    "lib/internal/process/esm_loader.js",
 +    "lib/internal/process/execution.js",
 +    "lib/internal/process/per_thread.js",
 +    "lib/internal/process/permission.js",
@@ -1778,6 +1776,7 @@ index 0000000000000000000000000000000000000000..e7fb3a02c03b175ada689ceefff18460
 +    "src/handle_wrap.cc",
 +    "src/heap_utils.cc",
 +    "src/histogram.cc",
++    "src/internal_only_v8.cc",
 +    "src/js_native_api.h",
 +    "src/js_native_api_types.h",
 +    "src/js_native_api_v8.cc",
