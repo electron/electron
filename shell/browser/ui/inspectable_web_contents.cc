@@ -978,7 +978,7 @@ void InspectableWebContents::WebContentsDestroyed() {
 
 bool InspectableWebContents::HandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   auto* delegate = web_contents_->GetDelegate();
   return !delegate || delegate->HandleKeyboardEvent(source, event);
 }

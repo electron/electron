@@ -1718,7 +1718,7 @@ void NativeWindowViews::OnWidgetMove() {
 
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   if (widget_destroyed_)
     return;
 

@@ -231,9 +231,8 @@ class NativeWindowViews : public NativeWindow,
   void SetEnabledInternal(bool enabled);
 
   // NativeWindow:
-  void HandleKeyboardEvent(
-      content::WebContents*,
-      const content::NativeWebKeyboardEvent& event) override;
+  void HandleKeyboardEvent(content::WebContents*,
+                           const input::NativeWebKeyboardEvent& event) override;
 
   // ui::EventHandler:
   void OnMouseEvent(ui::MouseEvent* event) override;

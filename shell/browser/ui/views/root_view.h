@@ -14,7 +14,7 @@
 #include "ui/views/view.h"
 #include "ui/views/view_tracker.h"
 
-namespace content {
+namespace input {
 struct NativeWebKeyboardEvent;
 }
 
@@ -40,7 +40,7 @@ class RootView : public views::View {
   bool is_menu_bar_auto_hide() const { return menu_bar_autohide_; }
   void SetMenuBarVisibility(bool visible);
   bool is_menu_bar_visible() const { return menu_bar_visible_; }
-  void HandleKeyEvent(const content::NativeWebKeyboardEvent& event);
+  void HandleKeyEvent(const input::NativeWebKeyboardEvent& event);
   void ResetAltState();
   void RestoreFocus();
   // Register/Unregister accelerators supported by the menu model.

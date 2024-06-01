@@ -1258,7 +1258,7 @@ void WebContents::UpdateTargetURL(content::WebContents* source,
 
 bool WebContents::HandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   if (type_ == Type::kWebView && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
     return embedder_->HandleKeyboardEvent(source, event);
@@ -1273,7 +1273,7 @@ bool WebContents::HandleKeyboardEvent(
 // code.
 bool WebContents::PlatformHandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
   if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
@@ -1291,7 +1291,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   if (exclusive_access_manager_.HandleUserKeyEvent(event))
     return content::KeyboardEventProcessingResult::HANDLED;
 
@@ -1299,7 +1299,7 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
       event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
     // For backwards compatibility, pretend that `kRawKeyDown` events are
     // actually `kKeyDown`.
-    content::NativeWebKeyboardEvent tweaked_event(event);
+    input::NativeWebKeyboardEvent tweaked_event(event);
     if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
       tweaked_event.SetType(blink::WebInputEvent::Type::kKeyDown);
     bool prevent_default = Emit("before-input-event", tweaked_event);
@@ -3344,7 +3344,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       return;
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event(
+    input::NativeWebKeyboardEvent keyboard_event(
         blink::WebKeyboardEvent::Type::kRawKeyDown,
         blink::WebInputEvent::Modifiers::kNoModifiers, ui::EventTimeForNow());
     if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {

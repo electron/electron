@@ -204,7 +204,7 @@ class InspectableWebContents
 
   // content::WebContentsDelegate:
   bool HandleKeyboardEvent(content::WebContents*,
-                           const content::NativeWebKeyboardEvent&) override;
+                           const input::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       scoped_refptr<content::FileSelectListener> listener,

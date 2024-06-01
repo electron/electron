@@ -15,12 +15,12 @@ namespace electron {
 
 namespace {
 
-bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
+bool IsAltKey(const input::NativeWebKeyboardEvent& event) {
   return event.windows_key_code == ui::VKEY_MENU;
 }
 
-bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
-  typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
+bool IsAltModifier(const input::NativeWebKeyboardEvent& event) {
+  using Modifiers = input::NativeWebKeyboardEvent::Modifiers;
   int modifiers = event.GetModifiers();
   modifiers &= ~Modifiers::kNumLockOn;
   modifiers &= ~Modifiers::kCapsLockOn;
@@ -98,7 +98,7 @@ void RootView::SetMenuBarVisibility(bool visible) {
   InvalidateLayout();
 }
 
-void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
+void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {
   if (!menu_bar_)
     return;
 
