@@ -63,6 +63,30 @@ index b20b3cd229efcd9701791309361b7d106f315900..6b2820c9dcce5e658b694f53e75d9370
  }
  
  module.exports = {
+diff --git a/src/inspector/tracing_agent.cc b/src/inspector/tracing_agent.cc
+index e7b6d3b3ea63bdc80e569f56209e958b4fcde328..6be2d4a02efb49a245ca021d78cdb778fedea7f5 100644
+--- a/src/inspector/tracing_agent.cc
++++ b/src/inspector/tracing_agent.cc
+@@ -85,16 +85,17 @@ class InspectorTraceWriter : public node::tracing::AsyncTraceWriter {
+                                 std::shared_ptr<MainThreadHandle> main_thread)
+       : frontend_object_id_(frontend_object_id), main_thread_(main_thread) {}
+ 
++#ifndef V8_USE_PERFETTO
+   void AppendTraceEvent(
+       v8::platform::tracing::TraceObject* trace_event) override {
+     if (!json_writer_)
+       json_writer_.reset(TraceWriter::CreateJSONTraceWriter(stream_, "value"));
+     json_writer_->AppendTraceEvent(trace_event);
+   }
++#endif
+ 
+   void Flush(bool) override {
+-    if (!json_writer_)
+-      return;
++    if (!json_writer_) return;
+     json_writer_.reset();
+     std::ostringstream result(
+         "{\"method\":\"NodeTracing.dataCollected\",\"params\":",
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
 index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e94a001d7 100644
 --- a/src/tracing/agent.cc

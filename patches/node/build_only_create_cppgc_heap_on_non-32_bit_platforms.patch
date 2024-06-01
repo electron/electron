@@ -18,7 +18,7 @@ See https://gist.github.com/codebytere/275ec8923253fd6559b3d36115f7b31b for more
 This should be fixed and re-enabled on all platforms.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 2ce1e8a7dcca2ba153d387d11970c72b5f43c167..590303d1b78e2c28d7c3338196b12fcf14f65b28 100644
+index 7ec10a1a9fba29bbbe264cf30047ac5ce5324232..3156d4dc14dcb46ef538f2ce53f6c959f5fce399 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -181,6 +181,10 @@ config("node_internal_config") {

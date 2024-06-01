@@ -452,6 +452,7 @@ source_set("electron_lib") {
     "//components/security_state/content",
     "//components/upload_list",
     "//components/user_prefs",
+    "//components/viz/client",
     "//components/viz/host",
     "//components/viz/service",
     "//components/webrtc",
@@ -468,6 +469,7 @@ source_set("electron_lib") {
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",
+    "//services/cert_verifier/public/mojom",
     "//services/device/public/cpp/bluetooth:bluetooth",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
@@ -547,10 +549,6 @@ source_set("electron_lib") {
   }
   if (!is_mac) {
     sources += filenames.lib_sources_views
-  }
-
-  if (is_component_build) {
-    defines += [ "NODE_SHARED_MODE" ]
   }
 
   if (enable_fake_location_provider) {

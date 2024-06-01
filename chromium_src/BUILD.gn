@@ -196,9 +196,17 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_aura.cc",
-      "//ui/views/native_window_tracker_aura.cc",
-      "//ui/views/native_window_tracker_aura.h",
     ]
+
+    if (!is_component_build) {
+      sources += [
+        "//ui/views/native_window_tracker_aura.cc",
+        "//ui/views/native_window_tracker_aura.h",
+      ]
+    } else {
+      deps += [ "//ui/views" ]
+    }
+
     deps += [ "//components/eye_dropper" ]
   }
 
@@ -238,6 +246,9 @@ static_library("chrome") {
       "//components/webapps/common:mojo_bindings",
     ]
     deps += [ "//components/segmentation_platform/public/proto" ]
+    libs = [
+      "wbemuuid.lib",  # For CLSID_WbemLocator used in util_win\av_products.cc
+    ]
   }
 
   if (is_mac) {

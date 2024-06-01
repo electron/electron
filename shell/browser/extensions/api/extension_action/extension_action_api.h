@@ -174,7 +174,6 @@ class ExtensionActionGetPopupFunction : public ExtensionActionFunction {
 class ExtensionActionOpenPopupFunction : public ExtensionActionFunction {
  protected:
   ~ExtensionActionOpenPopupFunction() override {}
-  ResponseAction RunExtensionAction() override;
 };
 
 // getBadgeText

@@ -1,0 +1,135 @@
+Subject: [PATCH] fix: electron component build
+---
+Index: content/browser/gpu/compositor_util.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/content/browser/gpu/compositor_util.h b/content/browser/gpu/compositor_util.h
+--- a/content/browser/gpu/compositor_util.h	(revision d24db0c8f929a4f5997c6aead9f1364b2a93cf90)
++++ b/content/browser/gpu/compositor_util.h	(revision 5d18e0511f01bcdd5df0708ec324bc600482e246)
+@@ -10,6 +10,7 @@
+ #include <vector>
+ 
+ #include "base/values.h"
++#include "content/common/content_export.h"
+ 
+ namespace content {
+ 
+@@ -36,7 +37,7 @@
+ // Returns true if main thread can be pipelined with activation.
+ bool IsMainFrameBeforeActivationEnabled();
+ 
+-base::Value GetFeatureStatus();
++CONTENT_EXPORT base::Value GetFeatureStatus();
+ base::Value GetProblems();
+ std::vector<std::string> GetDriverBugWorkarounds();
+ 
+Index: content/browser/keyboard_lock/keyboard_lock_service_impl.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/content/browser/keyboard_lock/keyboard_lock_service_impl.h b/content/browser/keyboard_lock/keyboard_lock_service_impl.h
+--- a/content/browser/keyboard_lock/keyboard_lock_service_impl.h	(revision d24db0c8f929a4f5997c6aead9f1364b2a93cf90)
++++ b/content/browser/keyboard_lock/keyboard_lock_service_impl.h	(revision 5d18e0511f01bcdd5df0708ec324bc600482e246)
+@@ -19,7 +19,7 @@
+ 
+ class RenderFrameHost;
+ 
+-class KeyboardLockServiceImpl final
++class CONTENT_EXPORT KeyboardLockServiceImpl final
+     : public DocumentService<blink::mojom::KeyboardLockService> {
+  public:
+   static void CreateMojoService(
+Index: content/browser/renderer_host/input/mouse_wheel_phase_handler.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
+--- a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h	(revision d24db0c8f929a4f5997c6aead9f1364b2a93cf90)
++++ b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h	(revision 5d18e0511f01bcdd5df0708ec324bc600482e246)
+@@ -9,6 +9,7 @@
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+ #include "content/browser/renderer_host/render_widget_host_delegate.h"
++#include "content/common/content_export.h"
+ #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
+ #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
+ 
+@@ -51,7 +52,7 @@
+ // The MouseWheelPhaseHandler is responsible for adding the proper phase to
+ // wheel events. Phase information is necessary for wheel scrolling since it
+ // shows the start and end of a scrolling sequence.
+-class MouseWheelPhaseHandler {
++class CONTENT_EXPORT MouseWheelPhaseHandler {
+  public:
+   MouseWheelPhaseHandler(RenderWidgetHostViewBase* const host_view);
+ 
+Index: third_party/abseil-cpp/generate_def_files.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/third_party/abseil-cpp/generate_def_files.py b/third_party/abseil-cpp/generate_def_files.py
+--- a/third_party/abseil-cpp/generate_def_files.py	(revision d24db0c8f929a4f5997c6aead9f1364b2a93cf90)
++++ b/third_party/abseil-cpp/generate_def_files.py	(revision 5d18e0511f01bcdd5df0708ec324bc600482e246)
+@@ -60,6 +60,7 @@
+ 
+   flavor = _DebugOrRelease(is_debug)
+   gn_args = [
++      'import("//electron/build/args/all.gn")',
+       'ffmpeg_branding = "Chrome"',
+       'is_component_build = true',
+       'is_debug = {}'.format(str(is_debug).lower()),
+@@ -82,7 +83,7 @@
+       logging.error('dumpbin not found. Run tools\win\setenv.bat.')
+       exit(1)
+   cwd = os.getcwd()
+-  with tempfile.TemporaryDirectory(dir=cwd) as out_dir:
++  with tempfile.TemporaryDirectory(dir=f'{cwd}/out') as out_dir:
+     logging.info('[%s - %s] Creating tmp out dir in %s', cpu, flavor, out_dir)
+     subprocess.check_call([gn, 'gen', out_dir, '--args=' + ' '.join(gn_args)],
+                           cwd=cwd)
+@@ -143,6 +144,10 @@
+           # there on x86, but the x86 toolchain falls over when you include it!
+           if cpu == 'x86' and symbol.startswith('_'):
+             symbol = symbol[1:]
++            
++          # Strip some mysterious bad symbols that contains path `third_party`
++          if 'third_party' in symbol:
++            continue
+           absl_symbols.add(symbol)
+ 
+     logging.info('[%s - %s] Found %d absl symbols.', cpu, flavor, len(absl_symbols))
+@@ -159,9 +164,6 @@
+       for s in sorted(absl_symbols):
+         f.write('    {}\n'.format(s))
+ 
+-    # Hack, it looks like there is a race in the directory cleanup.
+-    time.sleep(10)
+-
+   logging.info('[%s - %s] .def file successfully generated.', cpu, flavor)
+ 
+ 
+Index: third_party/blink/public/web/web_message_port_converter.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
+--- a/third_party/blink/public/web/web_message_port_converter.h	(revision d24db0c8f929a4f5997c6aead9f1364b2a93cf90)
++++ b/third_party/blink/public/web/web_message_port_converter.h	(revision 5d18e0511f01bcdd5df0708ec324bc600482e246)
+@@ -27,8 +27,9 @@
+   static std::optional<MessagePortChannel>
+   DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);
+ 
+-  BLINK_EXPORT static v8::Local<v8::Value>
+-  EntangleAndInjectMessagePortChannel(v8::Local<v8::Context>, MessagePortChannel);
++  static v8::Local<v8::Value> EntangleAndInjectMessagePortChannel(
++      v8::Local<v8::Context>,
++      MessagePortChannel);
+ };
+ 
+ }  // namespace blink

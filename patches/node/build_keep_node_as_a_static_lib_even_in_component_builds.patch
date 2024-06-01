@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Romain Pokrzywka <rpokrzywka@nvidia.com>
+Date: Fri, 27 Aug 2021 11:19:38 -0500
+Subject: build: keep Node as a static lib even in component builds
+
+There are too many unexported symbols accessed from Electron
+when Node is built as a DLL, just build it as a static lib always.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index d0641c5cbc3c527ce7a73d12118fb42db325be01..f5d9815470fcf9e08c30dab0a9aa16563aaaa41c 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -130,11 +130,6 @@ config("node_internal_config") {
+   if (node_module_version != "") {
+     defines += [ "NODE_MODULE_VERSION=" + node_module_version ]
+   }
+-  if (is_component_build) {
+-    defines += [
+-      "NODE_SHARED_MODE",
+-    ]
+-  }
+ 
+   if (target_cpu == "x86") {
+     node_arch = "ia32"
+@@ -179,7 +174,7 @@ config("node_internal_config") {
+   }
+ }
+ 
+-component("node_lib") {
++static_library("node_lib") {
+   deps = [
+     ":node_js2c",
+     "deps/cares",
