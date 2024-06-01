@@ -460,10 +460,6 @@ source_set("chrome_spellchecker") {
 
   if (enable_builtin_spellchecker) {
     sources += [
-      "//chrome/browser/profiles/profile_keyed_service_factory.cc",
-      "//chrome/browser/profiles/profile_keyed_service_factory.h",
-      "//chrome/browser/profiles/profile_selections.cc",
-      "//chrome/browser/profiles/profile_selections.h",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
       "//chrome/browser/spellchecker/spell_check_initialization_host_impl.cc",
