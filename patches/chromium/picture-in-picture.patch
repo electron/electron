@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 0d38b25bcb43f0bbedc1e71508e840a862c28a3c..94a36af528dfa220cfae6b9b1b0be1318502311b 100644
+index d236578cefc347e772305ac7ec54b9734e4aa20b..6bb89cea3b6b91ec8ea351ed60c4e4056a6340bb 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,10 +4,13 @@
@@ -26,7 +26,7 @@ index 0d38b25bcb43f0bbedc1e71508e840a862c28a3c..94a36af528dfa220cfae6b9b1b0be131
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
-@@ -26,7 +29,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+@@ -27,7 +30,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  

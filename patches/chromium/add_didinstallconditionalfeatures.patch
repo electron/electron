@@ -23,7 +23,7 @@ index 902d84ad70adc9496f3af989465a99b6f44b077a..3ce043eea32c41130aa59ab8570a05b3
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 82a801152817eae8d5f24d088adb2701bcb84357..c689bd0aae596fc1d16440f90eeba0e53b676022 100644
+index 1cd7227ba0455df3409fbc0d20059c2184868c86..e46742c22fd41d18e69c3627f52209400e5c4716 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4691,6 +4691,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
@@ -40,7 +40,7 @@ index 82a801152817eae8d5f24d088adb2701bcb84357..c689bd0aae596fc1d16440f90eeba0e5
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 04d1b2579974cb3a1c47efd09b849a4bd83986c7..c50df484cc7c8011fa202dda4fe962c1aaa01724 100644
+index 3c088dd974176bb740fff9e7084299fc4326eb89..8d2edc32c33dfe0e2cd1fddb97b05bad83171776 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -645,6 +645,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -53,7 +53,7 @@ index 04d1b2579974cb3a1c47efd09b849a4bd83986c7..c50df484cc7c8011fa202dda4fe962c1
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index a31299ea7d0e9003cfcdf12780a7b65e0302414a..e56c104ff993cd525da211c948a8d80396baa9c0 100644
+index 03bf5ef3fc6664421d832ed001a613e37fa90e90..9e44146ddc56ef3627ac73da63830ea8dd188b02 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -645,6 +645,9 @@ class BLINK_EXPORT WebLocalFrameClient {
