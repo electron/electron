@@ -437,6 +437,7 @@ source_set("electron_lib") {
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:browser_util",
+    "//components/input:input",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
