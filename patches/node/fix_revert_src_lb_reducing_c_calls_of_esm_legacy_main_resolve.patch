@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 06d23dac1d0f591893643ed2c32711eb2b5c0675..585437ce6a5382cd8657e02e4f3bcefc92206d7b 100644
+index 30f6abd5d2d3fb7aceaa6191ebd99642e34d9ee4..cd5f59a5c27afd74f68c920a6ab5b8bc7992458c 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -36,10 +36,9 @@ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
@@ -24,13 +24,13 @@ index 06d23dac1d0f591893643ed2c32711eb2b5c0675..585437ce6a5382cd8657e02e4f3bcefc
  const inputTypeFlag = getOptionValue('--input-type');
 -const { URL, pathToFileURL, fileURLToPath, isURL } = require('internal/url');
 +const { URL, pathToFileURL, fileURLToPath, isURL, toPathIfFileURL } = require('internal/url');
- const { getCWDURL } = require('internal/util');
+ const { getCWDURL, setOwnProperty } = require('internal/util');
  const { canParse: URLCanParse } = internalBinding('url');
 -const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -58,7 +57,7 @@ const { Module: CJSModule } = require('internal/modules/cjs/loader');
+@@ -59,7 +58,7 @@ const { Module: CJSModule } = require('internal/modules/cjs/loader');
  const { getPackageScopeConfig } = require('internal/modules/esm/package_config');
  const { getConditionsSet } = require('internal/modules/esm/utils');
  const packageJsonReader = require('internal/modules/package_json_reader');
@@ -39,7 +39,7 @@ index 06d23dac1d0f591893643ed2c32711eb2b5c0675..585437ce6a5382cd8657e02e4f3bcefc
  
  /**
   * @typedef {import('internal/modules/esm/package_config.js').PackageConfig} PackageConfig
-@@ -161,34 +160,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
+@@ -162,34 +161,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
  
  const realpathCache = new SafeMap();
  
@@ -81,7 +81,7 @@ index 06d23dac1d0f591893643ed2c32711eb2b5c0675..585437ce6a5382cd8657e02e4f3bcefc
  
  /**
   * Legacy CommonJS main resolution:
-@@ -203,22 +181,44 @@ const legacyMainResolveExtensionsIndexes = {
+@@ -204,22 +182,44 @@ const legacyMainResolveExtensionsIndexes = {
   * @returns {URL}
   */
  function legacyMainResolve(packageJSONUrl, packageConfig, base) {
@@ -142,7 +142,7 @@ index 06d23dac1d0f591893643ed2c32711eb2b5c0675..585437ce6a5382cd8657e02e4f3bcefc
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index f3d8c35d4963d84aef1cb2e15627a959215b8ab2..5b42f671f7a8f1814e086cd9855fff7edaa87851 100644
+index 0ec5c6f4845e7b1f279caabca43a06ab41193d00..1e66de2fb7860a0d0dcab6c7bded90a048886cf8 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -19,14 +19,11 @@
@@ -160,7 +160,7 @@ index f3d8c35d4963d84aef1cb2e15627a959215b8ab2..5b42f671f7a8f1814e086cd9855fff7e
  #include "node_process-inl.h"
  #include "node_stat_watcher.h"
  #include "node_url.h"
-@@ -2971,134 +2968,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
+@@ -3116,134 +3113,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
  
  }  // namespace
  
@@ -295,7 +295,7 @@ index f3d8c35d4963d84aef1cb2e15627a959215b8ab2..5b42f671f7a8f1814e086cd9855fff7e
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("stats_field_array", stats_field_array);
    tracker->TrackField("stats_field_bigint_array", stats_field_bigint_array);
-@@ -3198,19 +3067,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+@@ -3343,19 +3212,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
    return info;
  }
  
@@ -315,7 +315,7 @@ index f3d8c35d4963d84aef1cb2e15627a959215b8ab2..5b42f671f7a8f1814e086cd9855fff7e
  static void CreatePerIsolateProperties(IsolateData* isolate_data,
                                         Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-@@ -3265,7 +3121,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -3410,7 +3266,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
    SetMethod(isolate, target, "mkdtemp", Mkdtemp);
  
    StatWatcher::CreatePerIsolateProperties(isolate_data, target);
@@ -323,7 +323,7 @@ index f3d8c35d4963d84aef1cb2e15627a959215b8ab2..5b42f671f7a8f1814e086cd9855fff7e
  
    target->Set(
        FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3338,7 +3193,6 @@ BindingData* FSReqBase::binding_data() {
+@@ -3483,7 +3338,6 @@ BindingData* FSReqBase::binding_data() {
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(Access);
    StatWatcher::RegisterExternalReferences(registry);

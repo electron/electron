@@ -120,7 +120,6 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
 
 JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
-  platform_->DrainTasks(isolate_);
 
   {
     v8::HandleScope scope(isolate_);
