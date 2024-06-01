@@ -268,25 +268,25 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   widget()->AddObserver(this);
 
-  views::Widget::InitParams params;
-  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+  using InitParams = views::Widget::InitParams;
+  auto params = InitParams{InitParams::WIDGET_OWNS_NATIVE_WIDGET,
+                           InitParams::TYPE_WINDOW};
   params.bounds = bounds;
   params.delegate = this;
-  params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
   if (IsTranslucent() || has_client_frame())
-    params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
+    params.opacity = InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
   if (IsTranslucent() && !has_frame())
-    params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
+    params.shadow_type = InitParams::ShadowType::kNone;
 
   bool focusable;
   if (options.Get(options::kFocusable, &focusable) && !focusable)
-    params.activatable = views::Widget::InitParams::Activatable::kNo;
+    params.activatable = InitParams::Activatable::kNo;
 
 #if BUILDFLAG(IS_WIN)
   if (parent)
