@@ -407,11 +407,11 @@ index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756db
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 2dc0eb29573c3061129db39d21f048cb2697eab7..ae863392d4d814f1e4e9e1cb9f8737aaf03e3668 100644
+index a07a55156c2368c92f873687881fc85c45429f90..a8f5d318f8dd25ced687b33a8330fc6367834b24 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -133,6 +133,9 @@ struct SchemeRegistry {
-       kSteam,
+@@ -135,6 +135,9 @@ struct SchemeRegistry {
+       kMaterializedViewScheme,
    };
  
 +  // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
@@ -420,7 +420,7 @@ index 2dc0eb29573c3061129db39d21f048cb2697eab7..ae863392d4d814f1e4e9e1cb9f8737aa
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -714,6 +717,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -716,6 +719,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
