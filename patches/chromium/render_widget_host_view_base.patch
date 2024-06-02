@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index d79eb66e64d620e71c65696cefd747feb7a6b24a..63f94f175cd4ff43f57215291f379db5928e9a32 100644
+index 140981bfea3fb..588e41c1b37b3 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -742,6 +742,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
@@ -24,17 +24,16 @@ index d79eb66e64d620e71c65696cefd747feb7a6b24a..63f94f175cd4ff43f57215291f379db5
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 5a957b0a923edbf5faffa35d692ce009b0a57217..67b32c71ec6063e937887bcc66689382170336da 100644
+index 1a7932a580836..dc31ac9ef4dc7 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -25,11 +25,13 @@
+@@ -26,10 +26,12 @@
  #include "components/viz/common/surfaces/scoped_surface_id_allocator.h"
  #include "components/viz/common/surfaces/surface_id.h"
  #include "content/browser/renderer_host/display_feature.h"
 -#include "content/common/content_export.h"
 +#include "content/browser/renderer_host/visible_time_request_trigger.h"
 +#include "content/browser/web_contents/web_contents_view.h"
- #include "content/common/input/event_with_latency_info.h"
  #include "content/common/input/input_router_impl.h"
  #include "content/common/input/render_widget_host_view_input.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
