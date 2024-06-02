@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 6ae3c1065d14c93dc4fa0dfd0895bef2d2e8c429..03f67da89a61185da74a198842a69c1a6ae6831a 100644
+index 5604721f6c29390342c84a96a564c5b4a106b2bb..2facafe1ec1262adee91ce8af4815ceab7901151 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1058,6 +1058,7 @@ component("base") {
+@@ -1059,6 +1059,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index ea7957d89c1c44ce7cae2f0d4548fb67b60543ca..04f78e4f395df7ad3be39ff4a373e0d7
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index b493b974e3d2ea2b725954ecc07d5492f0f2ed26..20b7f32cc3f21c8b5dd28118a0d29c29f654c6be 100644
+index 66883de2936a5320e2b5d5f4b78ee3e6df33ec5e..aacff98d5c73c6859968ae9ff0d13e6814b7516c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -517,7 +517,7 @@ index b1dd00ab48e22e1e248728e0400b00e92553e8fd..253670f014c4fc13ad99d674e8dcbf14
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 8b406871fcdf77f3b0ef61675f2d8706d177d008..a5f262579697b763cfa69d9d6bcde7992e7d45b1 100644
+index fe37e5d17d217ad2a7861ac9dba2e61de5a063aa..ab8c04e648f320412de16ce31c134b28c11eb01e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -49,7 +49,9 @@ class ScopedPasswordInputEnabler;
@@ -543,7 +543,7 @@ index 8b406871fcdf77f3b0ef61675f2d8706d177d008..a5f262579697b763cfa69d9d6bcde799
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 8fff189dfa0e857711107b58fb6089c2e29d73b2..ceec7a9c2ad4a181dea7ca18de2154c6371d275b 100644
+index e9a73bafeb1ef85ef6ebbc870b66fbde2076b306..679c9e92ef3f8e984e8cc4d6b99afbbf33383e8b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -608,7 +608,7 @@ index 8fff189dfa0e857711107b58fb6089c2e29d73b2..ceec7a9c2ad4a181dea7ca18de2154c6
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index fc29dd8b3fdba8260fb373ca2d54552980e5bf98..60816e2787cbb8448cfada4790f708c5f69442d9 100644
+index 4d169795cd87c26d2264f4b89334f50c532bc4e7..365154bac05faec52591cc6b4138dcf0bbcadcbb 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -249,6 +249,7 @@ source_set("common") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 36c659b5ffb052f7e32e8e65100d6c13a1e83bd1..2482f551082442b7bff75c5afbf8c70630081828 100644
+index 3ef71bc05d64a81ed0021b12a2a33cb38b66755d..bdc722349f1e03ad4063f563014041b1a7e0a105 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 36c659b5ffb052f7e32e8e65100d6c13a1e83bd1..2482f551082442b7bff75c5afbf8c706
  
    public_deps = [
      ":test_interfaces",
-@@ -2970,6 +2973,7 @@ test("content_unittests") {
+@@ -2968,6 +2971,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

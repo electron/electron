@@ -21,7 +21,7 @@ index a85684210525467e7d5d696b067dad30635857eb..072c2205ea9878c46921662cb4c2d7fc
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2802ef6d32648c17d0e04414329f88e8003347de..54a61410d178abaf95ecba1e29f0c3f066006bb6 100644
+index f43ec47a8c6504a2f1911bce5259a292b6e1aded..50a6d0835c70795a3c7865c305b9389936939ee9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4713,6 +4713,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -51,10 +51,10 @@ index 2802ef6d32648c17d0e04414329f88e8003347de..54a61410d178abaf95ecba1e29f0c3f0
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index d72ce84100f584832b22058648e7f21ae8325236..4f010247091564573b1511f163c5d874f2d431b6 100644
+index 6df9186bcee6a56da11da8e365c7cf5b4375e366..0fdda1a6e0ac98a8c8619b4d4fab597788155d2e 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -603,6 +603,10 @@ struct CreateNewWindowParams {
+@@ -605,6 +605,10 @@ struct CreateNewWindowParams {
    // The navigation initiator's user activation and ad status.
    blink.mojom.NavigationInitiatorActivationAndAdStatus
        initiator_activation_and_ad_status;
@@ -79,7 +79,7 @@ index e12d133f6990d26437ea33a17b38470c47ecb303..2a0266c488221816dd2dd2e08973f07a
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 501251359d920ab0c4c84562db3adb529c45efb3..d966153bfaacda34f8ee8ac5c7646e5684b17191 100644
+index 0b892d57a54ac277176d5021672c9582722dbc27..92d19ecf2c52d912cc16ce60eb8782ffacc6c685 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -187,6 +187,7 @@ class NetworkService;
@@ -100,7 +100,7 @@ index 501251359d920ab0c4c84562db3adb529c45efb3..d966153bfaacda34f8ee8ac5c7646e56
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index fee7593a060e975271ba3dcd7096a09362684021..c2d7b639a2c0dcaa3db0569088413028071dff69 100644
+index 7351bcf45b46a3668ee5d58135c3f5b28a37aacd..fdd2c2be6bc8c75eacfd85d1b1e1531e4715f6a0 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -30,6 +30,17 @@ namespace content {
@@ -122,7 +122,7 @@ index fee7593a060e975271ba3dcd7096a09362684021..c2d7b639a2c0dcaa3db0569088413028
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index c9af060059d36ee9b321e11aae382472200f8438..5cb3eb0b0afcabfedb8badb4bb89345d311035e4 100644
+index fd851a9347dd6920e035bc9183991ea2a275aff4..579a796fcfdecf44ab415ceebc30b4278cda112b 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -210,10 +210,10 @@ index 78956238f8d959580e928d2590866b2f4da3d218..806b3337ec8a8ad7c89681857b4e81dc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 0feb686fc595658dd82d7a13ee4ab0313201e390..240b8ecf7562d713adf6f06b24fd511956fa3812 100644
+index 679a9f2aeeebb2b238f6fabaebb40c67c60c09b9..7dee70f410e1c137b2953c112d15ad584d3c554e 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2228,6 +2228,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2251,6 +2251,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  
