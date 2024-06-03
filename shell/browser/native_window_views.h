@@ -38,8 +38,8 @@ gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds);
 #endif
 
 class NativeWindowViews : public NativeWindow,
-                          public views::WidgetObserver,
-                          public ui::EventHandler {
+                          private views::WidgetObserver,
+                          private ui::EventHandler {
  public:
   NativeWindowViews(const gin_helper::Dictionary& options,
                     NativeWindow* parent);

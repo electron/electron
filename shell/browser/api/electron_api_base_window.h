@@ -26,7 +26,7 @@ namespace electron::api {
 class View;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
-                   public NativeWindowObserver {
+                   private NativeWindowObserver {
  public:
   static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 

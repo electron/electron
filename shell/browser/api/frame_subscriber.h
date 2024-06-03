@@ -27,8 +27,8 @@ namespace electron::api {
 
 class WebContents;
 
-class FrameSubscriber : public content::WebContentsObserver,
-                        public viz::mojom::FrameSinkVideoConsumer {
+class FrameSubscriber : private content::WebContentsObserver,
+                        private viz::mojom::FrameSinkVideoConsumer {
  public:
   using FrameCaptureCallback =
       base::RepeatingCallback<void(const gfx::Image&, const gfx::Rect&)>;

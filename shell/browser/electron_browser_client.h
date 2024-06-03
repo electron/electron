@@ -43,7 +43,7 @@ class PlatformNotificationService;
 class ElectronWebAuthenticationDelegate;
 
 class ElectronBrowserClient : public content::ContentBrowserClient,
-                              public content::RenderProcessHostObserver {
+                              private content::RenderProcessHostObserver {
  public:
   static ElectronBrowserClient* Get();
   static void SetApplicationLocale(const std::string& locale);

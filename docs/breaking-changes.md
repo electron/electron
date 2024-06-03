@@ -12,6 +12,38 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (32.0)
+
+### Removed: `File.path`
+
+The nonstandard `path` property of the Web `File` object was added in an early version of Electron as a convenience method for working with native files when doing everything in the renderer was more common. However, it represents a deviation from the standard and poses a minor security risk as well, so beginning in Electron 32.0 it has been removed in favor of the [`webUtils.getPathForFile`](api/web-utils.md#webutilsgetpathforfilefile) method.
+
+```js
+// Before (renderer)
+
+const file = document.querySelector('input[type=file]')
+alert(`Uploaded file path was: ${file.path}`)
+```
+
+```js
+// After (renderer)
+
+const file = document.querySelector('input[type=file]')
+electron.showFilePath(file)
+
+// (preload)
+const { contextBridge, webUtils } = require('electron')
+
+contextBridge.exposeInMainWorld('electron', {
+  showFilePath (file) {
+    // It's best not to expose the full file path to the web content if
+    // possible.
+    const path = webUtils.getPathForFile(file)
+    alert(`Uploaded file path was: ${path}`)
+  }
+})
+```
+
 ## Planned Breaking API Changes (31.0)
 
 ### Removed: `WebSQL` support
@@ -684,8 +716,8 @@ document.getElementById('webview').addEventListener('new-window', () => {
 ### Deprecated: BrowserWindow `scroll-touch-*` events
 
 The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
-BrowserWindow are deprecated. Instead, use the newly available [`input-event`
-event](api/web-contents.md#event-input-event) on WebContents.
+BrowserWindow are deprecated. Instead, use the newly available
+[`input-event` event](api/web-contents.md#event-input-event) on WebContents.
 
 ```js
 // Deprecated
@@ -710,8 +742,8 @@ win.webContents.on('input-event', (_, event) => {
 ### Behavior Changed: V8 Memory Cage enabled
 
 The V8 memory cage has been enabled, which has implications for native modules
-which wrap non-V8 memory with `ArrayBuffer` or `Buffer`. See the [blog post
-about the V8 memory cage](https://www.electronjs.org/blog/v8-memory-cage) for
+which wrap non-V8 memory with `ArrayBuffer` or `Buffer`. See the
+[blog post about the V8 memory cage](https://www.electronjs.org/blog/v8-memory-cage) for
 more details.
 
 ### API Changed: `webContents.printToPDF()`
@@ -1313,8 +1345,7 @@ const w = new BrowserWindow({
 })
 ```
 
-We [recommend moving away from the remote
-module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
+We [recommend moving away from the remote module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
 ### `protocol.unregisterProtocol`
 
@@ -1474,12 +1505,11 @@ You can see the original API proposal and reasoning [here](https://github.com/el
 
 ### Behavior Changed: Values sent over IPC are now serialized with Structured Clone Algorithm
 
-The algorithm used to serialize objects sent over IPC (through
-`ipcRenderer.send`, `ipcRenderer.sendSync`, `WebContents.send` and related
-methods) has been switched from a custom algorithm to V8's built-in [Structured
-Clone Algorithm][SCA], the same algorithm used to serialize messages for
-`postMessage`. This brings about a 2x performance improvement for large
-messages, but also brings some breaking changes in behavior.
+The algorithm used to serialize objects sent over IPC (through `ipcRenderer.send`,
+`ipcRenderer.sendSync`, `WebContents.send` and related methods) has been switched from a custom
+algorithm to V8's built-in [Structured Clone Algorithm][SCA], the same algorithm used to serialize
+messages for `postMessage`. This brings about a 2x performance improvement for large messages,
+but also brings some breaking changes in behavior.
 
 * Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
   such values, over IPC will now throw an exception, instead of silently
@@ -1986,8 +2016,8 @@ app.getGPUInfo('basic')
 When building native modules for windows, the `win_delay_load_hook` variable in
 the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
-message like `Cannot find module`. See the [native module
-guide](./tutorial/using-native-node-modules.md) for more.
+message like `Cannot find module`.
+See the [native module guide](./tutorial/using-native-node-modules.md) for more.
 
 ### Removed: IA32 Linux support
 

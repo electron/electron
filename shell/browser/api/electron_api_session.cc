@@ -262,7 +262,7 @@ class ClearDataTask {
   // of a full |ClearDataTask|. This class manages its own lifetime, cleaning
   // itself up after the operation completes and notifies the task of the
   // result.
-  class ClearDataOperation : public BrowsingDataRemover::Observer {
+  class ClearDataOperation : private BrowsingDataRemover::Observer {
    public:
     static void Run(std::shared_ptr<ClearDataTask> task,
                     BrowsingDataRemover* remover,

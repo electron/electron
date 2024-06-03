@@ -51,7 +51,7 @@ Unsupported options are:
 --http-parser
 ```
 
-If the [`nodeOptions` fuse](../tutorial/fuses.md#L27) is disabled, `NODE_OPTIONS` will be ignored.
+If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_OPTIONS` will be ignored.
 
 ### `NODE_EXTRA_CA_CERTS`
 
@@ -61,7 +61,7 @@ See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api
 export NODE_EXTRA_CA_CERTS=/path/to/cert.pem 
 ```
 
-If the [`nodeOptions` fuse](../tutorial/fuses.md#L27) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored.
+If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored.
 
 ### `GOOGLE_API_KEY`
 
@@ -145,16 +145,16 @@ debugging purposes.
 Prints Chromium's internal logging to the console.
 
 Setting this variable is the same as passing `--enable-logging`
-on the command line. For more info, see `--enable-logging` in [command-line
-switches](./command-line-switches.md#--enable-loggingfile).
+on the command line. For more info, see `--enable-logging` in
+[command-line switches](./command-line-switches.md#--enable-loggingfile).
 
 ### `ELECTRON_LOG_FILE`
 
 Sets the file destination for Chromium's internal logging.
 
 Setting this variable is the same as passing `--log-file`
-on the command line. For more info, see `--log-file` in [command-line
-switches](./command-line-switches.md#--log-filepath).
+on the command line. For more info, see `--log-file` in
+[command-line switches](./command-line-switches.md#--log-filepath).
 
 ### `ELECTRON_DEBUG_NOTIFICATIONS`
 

@@ -39,7 +39,7 @@ jobs:
         fi
     - name: (Optionally) Update Appveyor Image
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
-      uses: mikefarah/yq@c35ec752e38ea0c096d3c44e13cfc0797ac394d8 # v4.43.1
+      uses: mikefarah/yq@557dcb87b8efe786f89a12c09e9046b4753ab72e # v4.44.1
       with:
         cmd: |
           yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor.yml" > "appveyor2.yml"
@@ -60,7 +60,7 @@ jobs:
         git add appveyor-woa.yml
     - name: (Optionally) Commit to Branch
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
-      uses: dsanders11/github-app-commit-action@1dd0a2d22c564461d3f598b6858856e8842d7a16 # v1.1.0
+      uses: dsanders11/github-app-commit-action@48d2ff8c1a855eb15d16afa97ae12616456d7cbc # v1.4.0
       with:
         message: 'build: update appveyor image to latest version'
         ref: bump-appveyor-image

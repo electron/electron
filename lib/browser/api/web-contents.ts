@@ -541,7 +541,8 @@ WebContents.prototype._init = function () {
       length: this._historyLength.bind(this),
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this)
     },
-    writable: false
+    writable: false,
+    enumerable: true
   });
 
   // Dispatch IPC messages to the ipc module.

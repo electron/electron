@@ -45,6 +45,12 @@ let npmTag = '';
 
 const currentElectronVersion = getElectronVersion();
 const isNightlyElectronVersion = currentElectronVersion.includes('nightly');
+const targetRepo = getRepo();
+
+function getRepo () {
+  if (process.env.IS_GHA_RELEASE) return 'test-releases';
+  return isNightlyElectronVersion ? 'nightlies' : 'electron';
+}
 
 new Promise((resolve, reject) => {
   temp.mkdir('electron-npm', (err, dirPath) => {
@@ -78,7 +84,7 @@ new Promise((resolve, reject) => {
 
     return octokit.repos.listReleases({
       owner: 'electron',
-      repo: isNightlyElectronVersion ? 'nightlies' : 'electron'
+      repo: targetRepo
     });
   })
   .then((releases) => {
@@ -98,7 +104,7 @@ new Promise((resolve, reject) => {
     }
 
     const typingsContent = await getAssetContents(
-      isNightlyElectronVersion ? 'nightlies' : 'electron',
+      targetRepo,
       tsdAsset.id
     );
 
@@ -113,7 +119,7 @@ new Promise((resolve, reject) => {
     }
 
     const checksumsContent = await getAssetContents(
-      isNightlyElectronVersion ? 'nightlies' : 'electron',
+      targetRepo,
       checksumsAsset.id
     );
 

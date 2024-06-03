@@ -1,0 +1,26 @@
+name: Publish MacOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload-to-storage:
+        description: 'Uploads to Azure storage'
+        required: false 
+        default: '1'
+        type: string
+      run-macos-publish:
+        description: 'Run the publish jobs vs just the build jobs'
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+  # TODO(vertedinde): Change this to main before merge
+    uses: electron/electron/.github/workflows/macos-build.yml@gh-actions-mac-publish
+    with:
+      IS_RELEASE: true
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_BUILD_TYPE: release
+      GENERATE_SYMBOLS: true
+      UPLOAD_TO_STORAGE: ${{ inputs.upload-to-storage }}
+    secrets: inherit

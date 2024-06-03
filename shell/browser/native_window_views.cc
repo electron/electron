@@ -1085,7 +1085,7 @@ void NativeWindowViews::Center() {
 #else
   HWND hwnd = GetAcceleratedWidget();
   gfx::Size size = display::win::ScreenWin::DIPToScreenSize(hwnd, GetSize());
-  gfx::CenterAndSizeWindow(hwnd, hwnd, size);
+  gfx::CenterAndSizeWindow(nullptr, hwnd, size);
 #endif
 }
 

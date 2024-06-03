@@ -142,7 +142,7 @@ index 30f6abd5d2d3fb7aceaa6191ebd99642e34d9ee4..cd5f59a5c27afd74f68c920a6ab5b8bc
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 913fdf2d7826b7879c37c5833162cffa903eb3c3..d9a4053fa595d0b3b63f7fcdc3f21ee897c4f520 100644
+index 0ec5c6f4845e7b1f279caabca43a06ab41193d00..1e66de2fb7860a0d0dcab6c7bded90a048886cf8 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -19,14 +19,11 @@
@@ -160,7 +160,7 @@ index 913fdf2d7826b7879c37c5833162cffa903eb3c3..d9a4053fa595d0b3b63f7fcdc3f21ee8
  #include "node_process-inl.h"
  #include "node_stat_watcher.h"
  #include "node_url.h"
-@@ -2988,134 +2985,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
+@@ -3116,134 +3113,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
  
  }  // namespace
  
@@ -295,7 +295,7 @@ index 913fdf2d7826b7879c37c5833162cffa903eb3c3..d9a4053fa595d0b3b63f7fcdc3f21ee8
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("stats_field_array", stats_field_array);
    tracker->TrackField("stats_field_bigint_array", stats_field_bigint_array);
-@@ -3215,19 +3084,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+@@ -3343,19 +3212,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
    return info;
  }
  
@@ -315,7 +315,7 @@ index 913fdf2d7826b7879c37c5833162cffa903eb3c3..d9a4053fa595d0b3b63f7fcdc3f21ee8
  static void CreatePerIsolateProperties(IsolateData* isolate_data,
                                         Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-@@ -3282,7 +3138,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -3410,7 +3266,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
    SetMethod(isolate, target, "mkdtemp", Mkdtemp);
  
    StatWatcher::CreatePerIsolateProperties(isolate_data, target);
@@ -323,7 +323,7 @@ index 913fdf2d7826b7879c37c5833162cffa903eb3c3..d9a4053fa595d0b3b63f7fcdc3f21ee8
  
    target->Set(
        FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3355,7 +3210,6 @@ BindingData* FSReqBase::binding_data() {
+@@ -3483,7 +3338,6 @@ BindingData* FSReqBase::binding_data() {
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(Access);
    StatWatcher::RegisterExternalReferences(registry);
