@@ -17,7 +17,6 @@ const bumpType = args._[0];
 const targetRepo = getRepo();
 
 function getRepo () {
-  if (process.env.IS_GHA_RELEASE) return 'test-releases';
   return bumpType === 'nightly' ? 'nightlies' : 'electron';
 }
 
@@ -128,7 +127,23 @@ async function createRelease (branchToTarget, isBeta) {
     process.exit(1);
   });
 
+  const ghaTestRelease = await octokit.repos.createRelease({
+    owner: 'electron',
+    repo: 'test-releases',
+    tag_name: newVersion,
+    draft: true,
+    name: `electron ${newVersion}`,
+    body: releaseBody,
+    prerelease: releaseIsPrelease,
+    target_commitish: newVersion.includes('nightly') ? 'main' : branchToTarget
+  }).catch(err => {
+    console.log(`${fail} Error creating new GHA test release: `, err);
+  });
+
   console.log(`Release has been created with id: ${release.data.id}.`);
+  if (ghaTestRelease && ghaTestRelease.data) {
+    console.log(`Test Release has been created with id: ${ghaTestRelease.data.id}.`);
+  }
   console.log(`${pass} Draft release for ${newVersion} successful.`);
 }
 
