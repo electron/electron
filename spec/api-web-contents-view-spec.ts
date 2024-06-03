@@ -270,7 +270,7 @@ describe('WebContentsView', () => {
       });
 
       it('should render with cutout corners', async () => {
-        const screenCapture = ScreenCapture.createForDisplay(display);
+        const screenCapture = new ScreenCapture(display);
 
         for (const corner of corners) {
           await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
@@ -285,7 +285,7 @@ describe('WebContentsView', () => {
         v.setBorderRadius(0);
 
         await nextFrameTime();
-        const screenCapture = ScreenCapture.createForDisplay(display);
+        const screenCapture = new ScreenCapture(display);
         await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, () => corner);
         await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
       });
@@ -301,7 +301,7 @@ describe('WebContentsView', () => {
         await readyForCapture;
 
         const corner = corners[0];
-        const screenCapture = ScreenCapture.createForDisplay(display);
+        const screenCapture = new ScreenCapture(display);
         await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
         await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
       });

@@ -101,18 +101,8 @@ export class ScreenCapture {
   /** Timeout to wait for expected color to match. */
   static TIMEOUT = 2000;
 
-  /** Use the async constructor `ScreenCapture.create()` instead. */
-  private constructor (display: Electron.Display) {
-    this.display = display;
-  }
-
-  public static create (): ScreenCapture {
-    const display = screen.getPrimaryDisplay();
-    return new ScreenCapture(display);
-  }
-
-  public static createForDisplay (display: Electron.Display): ScreenCapture {
-    return new ScreenCapture(display);
+  constructor (display?: Electron.Display) {
+    this.display = display || screen.getPrimaryDisplay();
   }
 
   public async expectColorAtCenterMatches (hexColor: string) {
