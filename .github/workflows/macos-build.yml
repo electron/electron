@@ -202,6 +202,7 @@ jobs:
         export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
         npm i -g @electron/build-tools
         e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }} --import ${{ inputs.GN_BUILD_TYPE }}
+        e use ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
       uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       with:
@@ -449,17 +450,12 @@ jobs:
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-    - name: Default GN gen
+    - name: Build Electron (darwin)
       run: |
         cd src/electron
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
-        gn gen out/Default --args="import(\"${{ inputs.GN_CONFIG }}\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-    - name: Build Electron (darwin)
-      run: |
-        cd src
-        e use ${{ inputs.GN_BUILD_TYPE }}
         ulimit -n 10000
         sudo launchctl limit maxfiles 65536 200000
 
@@ -554,7 +550,7 @@ jobs:
         key: ${{ runner.os }}-build-artifacts-darwin-${{ env.TARGET_ARCH }}-${{ github.sha }}
     - name: Create MAS Config
       run: |
-        mv src/electron/.github/workflows/config/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
+        mv src/electron/.github/workflows/config/${{ inputs.GN_BUILD_TYPE }}/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         e use mas
     - name: Build Electron (mas)
