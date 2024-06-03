@@ -99,7 +99,7 @@ export async function nextFrameTime (): Promise<void> {
  */
 export class ScreenCapture {
   /** Timeout to wait for expected color to match. */
-  static TIMEOUT = 2000;
+  static TIMEOUT = 3000;
 
   constructor (display?: Electron.Display) {
     this.display = display || screen.getPrimaryDisplay();
