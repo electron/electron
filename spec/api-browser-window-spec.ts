@@ -6513,7 +6513,7 @@ describe('BrowserWindow module', () => {
       const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
       await foregroundWindow.loadFile(colorFile);
 
-      const screenCapture = ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtPointOnDisplayMatches(
         HexColors.GREEN,
         (size) => ({
@@ -6556,7 +6556,7 @@ describe('BrowserWindow module', () => {
       foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
       await once(ipcMain, 'set-transparent');
 
-      const screenCapture = ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
@@ -6572,7 +6572,7 @@ describe('BrowserWindow module', () => {
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        const screenCapture = ScreenCapture.createForDisplay(display);
+        const screenCapture = new ScreenCapture(display);
         // color-scheme is set to dark so background should not be white
         await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
 
@@ -6596,7 +6596,7 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await once(w, 'ready-to-show');
 
-      const screenCapture = ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });

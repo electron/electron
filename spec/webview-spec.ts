@@ -801,7 +801,7 @@ describe('<webview> tag', function () {
         src: 'data:text/html,foo'
       });
 
-      const screenCapture = ScreenCapture.create();
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
@@ -811,7 +811,7 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=yes'
       });
 
-      const screenCapture = ScreenCapture.create();
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
@@ -821,7 +821,7 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=no'
       });
 
-      const screenCapture = ScreenCapture.create();
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });
