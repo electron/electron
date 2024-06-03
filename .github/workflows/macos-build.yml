@@ -16,7 +16,7 @@ on:
       GN_BUILD_TYPE:
         required: false
         type: string
-        default: testing
+        default: release
       GENERATE_SYMBOLS: 
         required: false
         type: boolean
@@ -36,6 +36,7 @@ env:
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  GN_CONFIG: ${{ inputs.GN_CONFIG }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
@@ -200,7 +201,8 @@ jobs:
       run: |
         export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
         npm i -g @electron/build-tools
-        e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }}
+        e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }} --import ${{ inputs.GN_BUILD_TYPE }}
+        e use ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
       uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       with:
@@ -335,7 +337,11 @@ jobs:
         cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
         python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
 
-        DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+        if  [ "$TARGET_ARCH" == "arm64" ]; then
+          DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+        else
+          DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
+        fi
         python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
 
         echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
@@ -454,9 +460,9 @@ jobs:
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
-
         ulimit -n 10000
         sudo launchctl limit maxfiles 65536 200000
+
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
@@ -548,7 +554,7 @@ jobs:
         key: ${{ runner.os }}-build-artifacts-darwin-${{ env.TARGET_ARCH }}-${{ github.sha }}
     - name: Create MAS Config
       run: |
-        mv src/electron/.github/workflows/config/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
+        mv src/electron/.github/workflows/config/${{ inputs.GN_BUILD_TYPE }}/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         e use mas
     - name: Build Electron (mas)
@@ -718,7 +724,8 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        yarn add git://github.com/electron/build-tools.git#2bb63e2e7877491b52f972532b52adc979a6ec2f
+        export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
+        npm i -g @electron/build-tools
         e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
       uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
