@@ -12,11 +12,11 @@ on:
       GN_CONFIG:
         required: false
         type: string
-        default: //electron/build/args/testing.gn
+        default: //electron/build/args/release.gn
       GN_BUILD_TYPE:
         required: false
         type: string
-        default: testing
+        default: release
       GENERATE_SYMBOLS: 
         required: false
         type: boolean
@@ -36,6 +36,7 @@ env:
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  GN_CONFIG: ${{ inputs.GN_CONFIG }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
