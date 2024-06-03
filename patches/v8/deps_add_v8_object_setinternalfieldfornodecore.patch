@@ -46,10 +46,10 @@ index c2ea59d3652a2e8a2ff6435982624996ef35ab17..4636df9df1fc2feb9aff2634140edf11
    V8_INLINE static void* GetAlignedPointerFromInternalField(
        const BasicTracedReference<Object>& object, int index) {
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 4da1884244121627992da41d9050485ec8a0a846..c03b91fe377ee6120838828ad0f1656152761b52 100644
+index 82dc80ad3d1546e9ee2e976a43a510a8f8b2d73c..498582940eb4e279c17c832f3bda395764a60231 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -6284,14 +6284,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
+@@ -6293,14 +6293,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
        isolate);
  }
  

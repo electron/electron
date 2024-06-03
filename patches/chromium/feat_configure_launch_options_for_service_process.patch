@@ -84,7 +84,7 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index e1c5d814236d306e427dc5f1bab3405c0fb4dd7e..bc991a819e20d586431115e530c44a83b231eb45 100644
+index 79610c54b8d25b22122354563140e9e4be2399e9..13890efec15a91c465010a6e7ccd3c1c753ee9e7 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -123,7 +123,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -97,7 +97,7 @@ index e1c5d814236d306e427dc5f1bab3405c0fb4dd7e..bc991a819e20d586431115e530c44a83
    options->disclaim_responsibility = delegate_->DisclaimResponsibility();
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
-@@ -187,6 +188,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -193,6 +194,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
          base::StringPrintf("%s%d", sandbox::switches::kSeatbeltClient, pipe));
    }
  

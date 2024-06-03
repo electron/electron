@@ -871,10 +871,10 @@ index 808f4e1c7beb03cc5377465882940eea94ad61a7..d001436c3a5a8a0fc25995519772478f
  }  // namespace
  #endif
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index f8ad27c9ed6a3c690fe63d5ffc19b1064f68ced8..fbabb626c6c567a2f492544b43b2ef1abc6e9286 100644
+index a5070091785d80a47d1d9d9977803cd1de8b2054..b280a0d58fc03257aa1763cd15791db4ddede7c1 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -970,7 +970,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -971,7 +971,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());

@@ -216,7 +216,7 @@ index 0fc6dddb724333c6f948b724c1d5fd68f0c3b8d6..12fc1ff9c6bd5809b1197886e1a2bf7e
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 2af87b7d7dcebf7a682cd55a771e152c9390f0ef..c5e01a6e09e2b3d9bafa3df2e7359e64a27917fe 100644
+index 852e52c7c8358db2a4fd73fc9d53b32cd7cc7672..a6958e6092fff11a4b002ee5cf635b1127aa594e 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1089,14 +1089,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
