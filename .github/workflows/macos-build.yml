@@ -448,15 +448,21 @@ jobs:
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-    - name: Build Electron (darwin)
+    - name: Default GN gen
       run: |
         cd src/electron
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
-
+        gn gen out/Default --args="import(\"${{ inputs.GN_CONFIG }}\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+    - name: Build Electron (darwin)
+      run: |
+        cd src
+        e show configs
+        e use ${{ inputs.GN_BUILD_TYPE }}
         ulimit -n 10000
         sudo launchctl limit maxfiles 65536 200000
+
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
