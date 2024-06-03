@@ -817,7 +817,7 @@ index a4f541e3f4095a0f537137ae371555adc80c0023..f93f0b5bf8c47efbc67039d50e3bcd29
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 0cc98a9a797286f077b9bfa404f0f547e9966593..947baedbb6159fedd4ad38dcd03b2b6b769ebec9 100644
+index d75db1f8fbdf12cf07ba19e3f2c68136ef33f021..dc0238d5a78b434c722b84adf3dbbcebaa19e847 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -23,7 +23,9 @@
