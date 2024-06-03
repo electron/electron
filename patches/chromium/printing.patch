@@ -91,7 +91,7 @@ index 163eacc8bb6654880d37111923a87ea5a6134485..565258e9bd4cc52e347e1f4a72ee29ec
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8b203fb2e 100644
+index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..3084546bee021eb2752335b8d31d48d28a6e5af1 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -87,6 +87,20 @@ namespace printing {
@@ -187,6 +187,15 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
  
    for (auto& observer : GetTestObservers()) {
      observer.OnPrintNow(rfh);
+@@ -295,7 +319,7 @@ void PrintViewManagerBase::PrintDocument(
+     const gfx::Size& page_size,
+     const gfx::Rect& content_area,
+     const gfx::Point& offsets) {
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+   if (content_analysis_before_printing_document_) {
+     std::move(content_analysis_before_printing_document_)
+         .Run(print_data, page_size, content_area, offsets);
 @@ -342,12 +366,13 @@ void PrintViewManagerBase::OnDidUpdatePrintableArea(
    }
    PRINTER_LOG(EVENT) << "Paper printable area updated for vendor id "
@@ -223,6 +232,33 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
    set_cookie(settings->params->document_cookie);
    std::move(callback).Run(std::move(settings));
  }
+@@ -436,7 +466,7 @@ void PrintViewManagerBase::StartLocalPrintJob(
+     PrinterHandler::PrintCallback callback) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+ 
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+   // Populating `content_analysis_before_printing_document_` if needed should be
+   // done first in this function's workflow, this way other code can check if
+   // content analysis is going to happen and delay starting `print_job_` to
+@@ -669,7 +699,7 @@ void PrintViewManagerBase::GetDefaultPrintSettings(
+ 
+ #if BUILDFLAG(ENABLE_OOP_PRINTING)
+   if (ShouldPrintJobOop() &&
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+       !analyzing_content_ &&
+ #endif
+       !query_with_ui_client_id().has_value()) {
+@@ -697,7 +727,7 @@ void PrintViewManagerBase::GetDefaultPrintSettings(
+ 
+   // Sometimes it is desired to get the PDF settings as opposed to the settings
+   // of the default system print driver.
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+   bool want_pdf_settings = analyzing_content_;
+ #else
+   bool want_pdf_settings = false;
 @@ -741,10 +771,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
    // `job_settings` does not yet contain the rasterized PDF dpi, so if the user
    // has the print preference set, fetch it for use in
@@ -278,6 +314,15 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
  }
  
  void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
+@@ -834,7 +873,7 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
+     return;
+   }
+ #endif
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+   std::optional<enterprise_connectors::ContentAnalysisDelegate::Data>
+       scanning_data = enterprise_data_protection::GetPrintAnalysisData(
+           web_contents(), enterprise_data_protection::PrintScanningContext::
 @@ -864,11 +903,9 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie,
    // destroyed.  In such cases the error notification to the user will
    // have already been displayed, and a second message should not be
@@ -382,6 +427,15 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
    return true;
  }
  
+@@ -1105,7 +1159,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+     // Ensure that any residual registration of printing client is released.
+     // This might be necessary in some abnormal cases, such as the associated
+     // render process having terminated.
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+     if (!analyzing_content_) {
+       UnregisterSystemPrintClient();
+     }
 @@ -1115,6 +1169,11 @@ void PrintViewManagerBase::ReleasePrintJob() {
    }
  #endif
@@ -412,6 +466,15 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
      return true;
  
    if (!cookie) {
+@@ -1187,7 +1246,7 @@ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
+     return false;
+   }
+ 
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+   // Don't start printing if enterprise checks are being performed to check if
+   // printing is allowed, or if content analysis is going to take place right
+   // before starting `print_job_`.
 @@ -1318,6 +1377,8 @@ void PrintViewManagerBase::CompleteScriptedPrint(
    auto callback_wrapper = base::BindOnce(
        &PrintViewManagerBase::ScriptedPrintReply, weak_ptr_factory_.GetWeakPtr(),
@@ -421,7 +484,7 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
  #if BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
    DisableThirdPartyBlocking();
  #endif
-@@ -1332,7 +1393,7 @@ void PrintViewManagerBase::CompleteScriptedPrint(
+@@ -1332,10 +1393,10 @@ void PrintViewManagerBase::CompleteScriptedPrint(
        params->expected_pages_count, params->has_selection, params->margin_type,
        params->is_scripted, !render_process_host->IsPdf(),
        base::BindOnce(&OnDidScriptedPrint, queue_, std::move(printer_query),
@@ -429,9 +492,13 @@ index c68d3d2f7fdaab62aac24b79e0cf71e0eb84cf72..6ce7dbf1d53564fe9d046cf6615cc2e8
 +                     std::move(callback_wrapper), std::move(cancel_job_wrapper)));
  }
  
- #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+ void PrintViewManagerBase::CompletePrintDocumentAfterContentAnalysis(
+     scoped_refptr<base::RefCountedMemory> print_data,
+     const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 1917f8b94962d7a4c83f139623a5f5d352011627..1fcc90cf6f9c143b956d9d9422098e85bbf54b21 100644
+index 1917f8b94962d7a4c83f139623a5f5d352011627..47ef610c43c4dcfee0cf528eb2e6075b579117ee 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -52,6 +52,8 @@ class PrinterQuery;
@@ -480,6 +547,15 @@ index 1917f8b94962d7a4c83f139623a5f5d352011627..1fcc90cf6f9c143b956d9d9422098e85
   protected:
  #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
    using PrintDocumentCallback =
+@@ -229,7 +243,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+                                      mojom::ScriptedPrintParamsPtr params,
+                                      ScriptedPrintCallback callback);
+ 
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if 0
+   // Helper method bound to `content_analysis_before_printing_document_` when
+   // content analysis should happen right before the document is to be printed.
+   // This method is virtual for testing purposes.
 @@ -293,6 +307,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
                                  bool success);
  #endif
