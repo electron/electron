@@ -12,7 +12,7 @@ on:
       GN_CONFIG:
         required: false
         type: string
-        default: //electron/build/args/release.gn
+        default: //electron/build/args/testing.gn
       GN_BUILD_TYPE:
         required: false
         type: string
@@ -201,7 +201,7 @@ jobs:
       run: |
         export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
         npm i -g @electron/build-tools
-        e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }}
+        e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }} --import ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
       uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       with:
@@ -459,7 +459,6 @@ jobs:
     - name: Build Electron (darwin)
       run: |
         cd src
-        e show configs
         e use ${{ inputs.GN_BUILD_TYPE }}
         ulimit -n 10000
         sudo launchctl limit maxfiles 65536 200000
