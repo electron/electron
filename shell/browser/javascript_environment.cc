@@ -75,15 +75,28 @@ struct base::trace_event::TraceValue::Helper<
 
 namespace electron {
 
+namespace {
+
+gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
+  std::unique_ptr<v8::Isolate::CreateParams> create_params =
+      gin::IsolateHolder::getDefaultIsolateParams();
+  // Align behavior with V8 Isolate default for Node.js.
+  // This is necessary for important aspects of Node.js
+  // including heap and cpu profilers to function properly.
+
+  return gin::IsolateHolder(
+      base::SingleThreadTaskRunner::GetCurrentDefault(),
+      gin::IsolateHolder::kSingleThread,
+      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
+      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, isolate);
+}
+
+}  // namespace
+
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
-    : isolate_holder_(base::SingleThreadTaskRunner::GetCurrentDefault(),
-                      gin::IsolateHolder::kSingleThread,
-                      gin::IsolateHolder::IsolateType::kUtility,
-                      gin::IsolateHolder::getDefaultIsolateParams(),
-                      gin::IsolateHolder::IsolateCreationMode::kNormal,
-                      nullptr,
-                      Initialize(event_loop, setup_wasm_streaming)),
+    : isolate_holder_{CreateIsolateHolder(
+          Initialize(event_loop, setup_wasm_streaming))},
       isolate_{isolate_holder_.isolate()},
       locker_{isolate_} {
   isolate_->Enter();
