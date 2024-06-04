@@ -3505,16 +3505,42 @@ describe('navigator.usb', () => {
     `, true);
   };
 
+  const getDevices: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.usb.getDevices().then(devices => devices.map(device => device.toString())).catch(err => err.toString());
+    `, true);
+  };
+
   const notFoundError = 'NotFoundError: Failed to execute \'requestDevice\' on \'USB\': No device selected.';
 
   after(() => {
     server.close();
     closeAllWindows();
   });
+
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
     session.defaultSession.setDevicePermissionHandler(null);
     session.defaultSession.removeAllListeners('select-usb-device');
+  });
+
+  it('does not crash when using in-memory partitions', async () => {
+    const sesWin = new BrowserWindow({
+      webPreferences: {
+        partition: 'test-partition'
+      }
+    });
+
+    await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<body>');
+    });
+
+    serverUrl = (await listen(server)).url;
+
+    const devices = await getDevices();
+    expect(devices).to.be.an('array').that.is.empty();
   });
 
   it('does not return a device if select-usb-device event is not defined', async () => {
