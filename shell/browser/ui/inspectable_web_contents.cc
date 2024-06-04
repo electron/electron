@@ -888,6 +888,12 @@ void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
   std::move(callback).Run(&result);
 }
 
+void InspectableWebContents::GetHostConfig(DispatchCallback callback) {
+  base::Value::Dict response_dict;
+  base::Value response = base::Value(std::move(response_dict));
+  std::move(callback).Run(&response);
+}
+
 void InspectableWebContents::ConnectionReady() {}
 
 void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
