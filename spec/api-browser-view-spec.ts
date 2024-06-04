@@ -536,6 +536,28 @@ describe('BrowserView module', () => {
   });
 
   describe('shutdown behavior', () => {
+    it('emits the destroyed event when the host BrowserWindow is closed', async () => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+      await view.webContents.loadURL(`data:text/html,
+        <html>
+          <body>
+            <div id="bv_id">HELLO BROWSERVIEW</div>
+          </body>
+        </html>
+      `);
+
+      const query = 'document.getElementById("bv_id").textContent';
+      const contentBefore = await view.webContents.executeJavaScript(query);
+      expect(contentBefore).to.equal('HELLO BROWSERVIEW');
+
+      w.close();
+
+      const destroyed = once(view.webContents, 'destroyed');
+      const closed = once(w, 'closed');
+      await Promise.all([destroyed, closed]);
+    });
+
     it('does not destroy its webContents if an owner BrowserWindow close event is prevented', async () => {
       view = new BrowserView();
       w.addBrowserView(view);
