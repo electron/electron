@@ -12,7 +12,7 @@ Node.js to ingest these changes, incorporate their changes, and then
 remove this patch.
 
 diff --git a/include/v8-template.h b/include/v8-template.h
-index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259191ed3db 100644
+index 4d8386865e6ac7dfb300477a456632c8565ab4c5..7946d61daa79f292d7568578852e19db3d82b4bb 100644
 --- a/include/v8-template.h
 +++ b/include/v8-template.h
 @@ -80,6 +80,27 @@ class V8_EXPORT Template : public Data {
@@ -58,10 +58,10 @@ index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259
    void SetAccessor(
        Local<Name> name, AccessorNameGetterCallback getter,
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 817fcfdb10f35dbf7175dfcc9daae7ff4fc02e69..8c4de9fa39fd7f288c5810e6ae29de7347bf6619 100644
+index 498582940eb4e279c17c832f3bda395764a60231..923be64f52d108d68b22e71514764313b6d6adb6 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -1587,6 +1587,41 @@ void TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,
+@@ -1588,6 +1588,41 @@ void TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,
  }
  }  // namespace
  
@@ -103,7 +103,7 @@ index 817fcfdb10f35dbf7175dfcc9daae7ff4fc02e69..8c4de9fa39fd7f288c5810e6ae29de73
  void Template::SetNativeDataProperty(v8::Local<Name> name,
                                       AccessorNameGetterCallback getter,
                                       AccessorNameSetterCallback setter,
-@@ -1621,6 +1656,18 @@ void Template::SetIntrinsicDataProperty(Local<Name> name, Intrinsic intrinsic,
+@@ -1622,6 +1657,18 @@ void Template::SetIntrinsicDataProperty(Local<Name> name, Intrinsic intrinsic,
                                   static_cast<i::PropertyAttributes>(attribute));
  }
  
