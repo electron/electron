@@ -59,7 +59,6 @@ class NodeService : public node::mojom::NodeService {
 
   // mojom::NodeService implementation:
   void Initialize(node::mojom::NodeServiceParamsPtr params) override;
-  void SetTermination(SetTerminationCallback callback) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last
