@@ -63,6 +63,32 @@ See [crbug.com/332584706](https://issues.chromium.org/issues/332584706) for more
 
 This brings the behavior to parity with Windows and Linux. Prior behavior: The first `flashFrame(true)` bounces the dock icon only once (using the [NSInformationalRequest](https://developer.apple.com/documentation/appkit/nsrequestuserattentiontype/nsinformationalrequest) level) and `flashFrame(false)` does nothing. New behavior: Flash continuously until `flashFrame(false)` is called. This uses the [NSCriticalRequest](https://developer.apple.com/documentation/appkit/nsrequestuserattentiontype/nscriticalrequest) level instead. To explicitly use `NSInformationalRequest` to cause a single dock icon bounce, it is still possible to use [`dock.bounce('informational')`](https://www.electronjs.org/docs/latest/api/dock#dockbouncetype-macos).
 
+### Deprecated: `clearHistory`, `canGoBack`, `goBack`, `canGoForward`, `goForward`, `canGoToOffset`, `goToOffset` on `WebContents`
+
+The navigation-related APIs are now deprecated.
+
+These APIs have been moved to the `navigationHistory` property of `WebContents` to provide a more structured and intuitive interface for managing navigation history.
+
+```js
+// Deprecated
+win.webContents.clearHistory()
+win.webContents.canGoBack()
+win.webContents.goBack()
+win.webContents.canGoForward()
+win.webContents.goForward()
+win.webContents.canGoToOffset()
+win.webContents.goToOffset(index)
+
+// Replace with
+win.webContents.navigationHistory.clear()
+win.webContents.navigationHistory.canGoBack()
+win.webContents.navigationHistory.goBack()
+win.webContents.navigationHistory.canGoForward()
+win.webContents.navigationHistory.goForward()
+win.webContents.navigationHistory.canGoToOffset()
+win.webContents.navigationHistory.goToOffset(index)
+```
+
 ## Planned Breaking API Changes (30.0)
 
 ### Behavior Changed: cross-origin iframes now use Permission Policy to access features

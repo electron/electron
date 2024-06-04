@@ -21,7 +21,7 @@ Returns `boolean` - Whether the browser can go forward to next web page.
 
 * `offset` Integer
 
-Returns `boolean` - Whether the web page can go to `offset`.
+Returns `boolean` - Whether the web page can go to the specified `offset` from the current entry.
 
 #### `navigationHistory.clear()`
 
@@ -60,7 +60,7 @@ Navigates browser to the specified absolute web page index.
 
 * `offset` Integer
 
-Navigates to the specified offset from the "current entry".
+Navigates to the specified offset from the current entry.
 
 #### `navigationHistory.length()`
 
