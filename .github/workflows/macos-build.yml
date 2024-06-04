@@ -555,7 +555,7 @@ jobs:
         key: ${{ runner.os }}-build-artifacts-darwin-${{ env.TARGET_ARCH }}-${{ github.sha }}
     - name: Create MAS Config
       run: |
-        mv src/electron/.github/workflows/config/${{ inputs.GN_BUILD_TYPE }}/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
+        mv src/electron/.github/workflows/config/${{ inputs.GN_BUILD_TYPE }}/arm64/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         e use mas
     - name: Build Electron (mas)
@@ -652,20 +652,14 @@ jobs:
         build-type: [ darwin, mas ]
     # macos-large is x64, macos-xlarge is arm64
     # More runner information: https://github.com/actions/runner-images/blob/main/README.md#available-images
-    runs-on: macos-14-large
+    runs-on: macos-14-xlarge
     needs: checkout
     steps:
-    - name: Test Matrix Conditional
-      if: ${{ matrix.build-type == 'mas' }}
-      run: |
-        echo ${{ matrix.build-type }}
-        echo ${{ matrix.build-type == 'mas' }}
-        echo ${{ matrix.build-type }} == 'mas'
     - name: Load Build Tools
       run: |
         export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
         npm i -g @electron/build-tools
-        e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }} --import ${{ inputs.GN_BUILD_TYPE }}
+        e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }} --import ${{ inputs.GN_BUILD_TYPE }} --target-cpu x64
         e use ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
       uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
@@ -1029,7 +1023,7 @@ jobs:
       if: ${{ matrix.build-type == 'mas' }}
       run: |
         echo ${{ matrix.build-type }}
-        mv src/electron/.github/workflows/config/${{ inputs.GN_BUILD_TYPE }}/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
+        mv src/electron/.github/workflows/config/${{ inputs.GN_BUILD_TYPE }}/x64/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         e use mas
     - name: Build Electron (mas)
