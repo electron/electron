@@ -254,13 +254,18 @@ jobs:
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
       # or it was uploaded in the checkout job for a previous commit.
-      run: |
-        az storage blob download \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $DEPSHASH \
-          --file $DEPSHASH.tar \
+      uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+      with:
+        timeout_minutes: 20
+        max_attempts: 3
+        retry_on: error
+        command: |
+          az storage blob download \
+            --account-name $AZURE_STORAGE_ACCOUNT \
+            --account-key $AZURE_STORAGE_KEY \
+            --container-name $AZURE_STORAGE_CONTAINER_NAME \
+            --name $DEPSHASH \
+            --file $DEPSHASH.tar \
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
