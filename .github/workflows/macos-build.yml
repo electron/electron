@@ -682,16 +682,9 @@ jobs:
         node script/yarn install
     - name: Load Target Arch & CPU
       run: |
-        ARCH=$(uname -m)
-        if [ "$ARCH" == "x86_64" ]; then
-          echo "TARGET_ARCH="x64"" >> $GITHUB_ENV
-          echo "target_cpu="x64"" >> $GITHUB_ENV
-          echo "host_cpu="x64"" >> $GITHUB_ENV
-        else
-          echo "TARGET_ARCH="arm64"" >> $GITHUB_ENV
-          echo "target_cpu="arm64"" >> $GITHUB_ENV
-          echo "host_cpu="arm64"" >> $GITHUB_ENV
-        fi
+        echo "TARGET_ARCH="x64"" >> $GITHUB_ENV
+        echo "target_cpu="x64"" >> $GITHUB_ENV
+        echo "host_cpu="x64"" >> $GITHUB_ENV
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
