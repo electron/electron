@@ -239,9 +239,7 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
     GetAllUtilityProcessWrappers().Remove(pid_);
   CloseConnectorPort();
 
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  if (node::Environment::GetCurrent(isolate))
-    EmitWithoutEvent("exit", exit_code);
+  EmitWithoutEvent("exit", exit_code);
 
   Unpin();
 }
