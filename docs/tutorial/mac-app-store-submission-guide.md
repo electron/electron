@@ -104,19 +104,7 @@ the App Sandbox. The standard darwin build of Electron will fail to launch
 when run under App Sandbox.
 
 When signing the app with `@electron/osx-sign`, it will automatically add the
-necessary entitlements to your app's entitlements, but if you are using custom
-entitlements, you must ensure App Sandbox capacity is added:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-  <dict>
-    <key>com.apple.security.app-sandbox</key>
-    <true/>
-  </dict>
-</plist>
-```
+necessary entitlements to your app's entitlements.
 
 <details>
 <summary>Extra steps without `electron-osx-sign`</summary>
@@ -124,7 +112,7 @@ entitlements, you must ensure App Sandbox capacity is added:
 If you are signing your app without using `@electron/osx-sign`, you must ensure
 the app bundle's entitlements have at least following keys:
 
-```xml
+```xml title='entitlements.plist'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -257,9 +245,42 @@ more information.
 
 ### Additional entitlements
 
+Every app running under the App Sandbox will run under a limited set of permissions,
+which limits potential damage from malicious code.
 Depending on which Electron APIs your app uses, you may need to add additional
 entitlements to your app's entitlements file. Otherwise, the App Sandbox may
 prevent you from using them.
+
+Entitlements are specified using a file with format like
+property list (`.plist`) or XML. You must provide an entitlement file for the
+application bundle itself and a child entitlement file which basically describes
+an inheritance of properties, specified for all other enclosing executable files
+like binaries, frameworks (`.framework`), and dynamically linked libraries (`.dylib`).
+
+A full list of entitlements is available in the [App Sandbox][app-sandboxing]
+documentation, but below are a few entitlements you might need for your
+MAS app.
+
+With `@electron/osx-sign`, you can set custom entitlements per file as such:
+
+```js @ts-nocheck
+const { signAsync } = require('@electron/osx-sign')
+
+function getEntitlementsForFile (filePath) {
+  if (filePath.startsWith('my-path-1')) {
+    return './my-path-1.plist'
+  } else {
+    return './alternate.plist'
+  }
+}
+
+signAsync({
+  optionsForFile: (filePath) => ({
+    // Ensure you return the right entitlements path here based on the file being signed.
+    entitlements: getEntitlementsForFile(filePath)
+  })
+})
+```
 
 #### Network access
 
