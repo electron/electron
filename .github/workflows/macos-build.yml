@@ -972,7 +972,7 @@ jobs:
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
     - name: Generate FFMpeg
-      if: ${{ matrix.build-type == 'darwin' }} && ${{ inputs.IS_RELEASE == true }}
+      if: ${{ matrix.build-type == 'darwin' && inputs.IS_RELEASE == true }}
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
@@ -983,14 +983,14 @@ jobs:
         cd src
         autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate TypeScript Definitions
-      if: ${{ matrix.build-type == 'darwin' }} && ${{ inputs.IS_RELEASE == true }}
+      if: ${{ matrix.build-type == 'darwin' && inputs.IS_RELEASE == true }}
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
-      if: ${{ matrix.build-type == 'darwin' }} && ${{ inputs.IS_RELEASE == true }}
+      if: ${{ matrix.build-type == 'darwin' && inputs.IS_RELEASE == true }}
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts
       if: ${{ matrix.build-type == 'darwin' }}
