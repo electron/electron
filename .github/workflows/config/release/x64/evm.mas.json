@@ -9,7 +9,7 @@
     "args": [
       "import(\"//electron/build/args/release.gn\")",
       "use_remoteexec = true",
-      "target_arch = x64",
+      "target_cpu = \"x64\"",
       "is_mas_build = true"
     ],
     "out": "Default"
