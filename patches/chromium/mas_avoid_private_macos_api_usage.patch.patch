@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5604721f6c29390342c84a96a564c5b4a106b2bb..2facafe1ec1262adee91ce8af4815ceab7901151 100644
+index 9c05322b1599410c1b04334315be29cfbb8fc6d7..18cc427e0d3c0b39d78668784c8304ab0bf87658 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1059,6 +1059,7 @@ component("base") {
+@@ -1052,6 +1052,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index ea7957d89c1c44ce7cae2f0d4548fb67b60543ca..04f78e4f395df7ad3be39ff4a373e0d7
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 66883de2936a5320e2b5d5f4b78ee3e6df33ec5e..aacff98d5c73c6859968ae9ff0d13e6814b7516c 100644
+index 6d5fd4133598c17a2dfcf1a4bd2732435353ed1f..24b1ea6fc5fef18b199518ae730713baaa8c0530 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3ef71bc05d64a81ed0021b12a2a33cb38b66755d..bdc722349f1e03ad4063f563014041b1a7e0a105 100644
+index 02b51f9dae40ed3976cf43a7d5cf837ea639d7c9..ca71960c438930e59e372ff3ad7837cb6d9e34d4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index 3ef71bc05d64a81ed0021b12a2a33cb38b66755d..bdc722349f1e03ad4063f563014041b1
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1717,6 +1719,7 @@ test("content_browsertests") {
+@@ -1718,6 +1720,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 3ef71bc05d64a81ed0021b12a2a33cb38b66755d..bdc722349f1e03ad4063f563014041b1
  
    public_deps = [
      ":test_interfaces",
-@@ -2968,6 +2971,7 @@ test("content_unittests") {
+@@ -2971,6 +2974,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

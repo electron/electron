@@ -19,7 +19,7 @@ index 412e1fb55f901c573455fbea722f5f371e0c0566..725b67ea1ab00bc3a834221a77e2b722
      const GURL& origin,
      const GURL& document_url,
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.h b/chrome/browser/notifications/platform_notification_service_impl.h
-index 231a266a4c8d8a729baa701c47cb19348e199f79..8828b216e515d557e381549f1253f48e24342c33 100644
+index c173f8a6cde9ab519075987fa451afb63c6580a9..4a1f128d9252a4a858d5ba8c6991bb183de7f064 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.h
 +++ b/chrome/browser/notifications/platform_notification_service_impl.h
 @@ -57,6 +57,7 @@ class PlatformNotificationServiceImpl

@@ -37,7 +37,7 @@ index b220ca953b1dbbb1465d87f08c140026c3fee5b0..2a5bc2735c4d632b2f3e9b76dd525ba8
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 7e84c5373d432512a7543430db49022b5f89cc99..1df3a8c178981391856c611e5a78c7d9d1e2c5bd 100644
+index 0355643854d4eba4bc6061e924e3553b1499f5be..287e40c7bf6145b9ea8e48389cb7e9885a8c877f 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -73,6 +73,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {

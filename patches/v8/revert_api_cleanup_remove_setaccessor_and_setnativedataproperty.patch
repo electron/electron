@@ -12,10 +12,10 @@ Node.js to ingest these changes, incorporate their changes, and then
 remove this patch.
 
 diff --git a/include/v8-template.h b/include/v8-template.h
-index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259191ed3db 100644
+index a783612073760fa1207f5dac23a6cd559428e5fe..0f1761286e94b390148b23164cc7e14343b317f1 100644
 --- a/include/v8-template.h
 +++ b/include/v8-template.h
-@@ -80,6 +80,27 @@ class V8_EXPORT Template : public Data {
+@@ -102,6 +102,27 @@ class V8_EXPORT Template : public Data {
     * \param attribute The attributes of the property for which an accessor
     *   is added.
     */
@@ -43,7 +43,7 @@ index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259
    void SetNativeDataProperty(
        Local<Name> name, AccessorNameGetterCallback getter,
        AccessorNameSetterCallback setter = nullptr,
-@@ -1042,6 +1063,13 @@ class V8_EXPORT ObjectTemplate : public Template {
+@@ -1064,6 +1085,13 @@ class V8_EXPORT ObjectTemplate : public Template {
     * \param attribute The attributes of the property for which an accessor
     *   is added.
     */
@@ -54,14 +54,14 @@ index 7c96a233f1915f527e11d0b9a7bd8ebd5ea4cb89..2f025bf6a9f98bbef4b7566ba6f61259
 +      Local<Value> data = Local<Value>(), PropertyAttribute attribute = None,
 +      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
 +      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
-   V8_DEPRECATE_SOON("Use SetNativeDataProperty instead")
-   void SetAccessor(
-       Local<Name> name, AccessorNameGetterCallback getter,
+   V8_DEPRECATED(
+       "Use SetNativeDataProperty or SetAccessorProperty instead depending on "
+       "the required semantics. See http://crbug.com/336325111. This method "
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 7c658ede89bf12dfa8358d018f2ef4220f09fe3c..09e20af5cdc27b5be652db514f7fc653a076bb24 100644
+index a544aeddd7310f60b1cbc1496174a8d2ccdf775e..87a1b039384ad00f4c72f58a012282c46b414e6b 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -1587,6 +1587,41 @@ void TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,
+@@ -1588,6 +1588,41 @@ void TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,
  }
  }  // namespace
  
@@ -103,7 +103,7 @@ index 7c658ede89bf12dfa8358d018f2ef4220f09fe3c..09e20af5cdc27b5be652db514f7fc653
  void Template::SetNativeDataProperty(v8::Local<Name> name,
                                       AccessorNameGetterCallback getter,
                                       AccessorNameSetterCallback setter,
-@@ -1621,6 +1656,18 @@ void Template::SetIntrinsicDataProperty(Local<Name> name, Intrinsic intrinsic,
+@@ -1622,6 +1657,18 @@ void Template::SetIntrinsicDataProperty(Local<Name> name, Intrinsic intrinsic,
                                   static_cast<i::PropertyAttributes>(attribute));
  }
  
