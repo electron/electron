@@ -25,7 +25,6 @@ on:
         required: false
         type: string
         default: '0'
-      
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -42,6 +41,7 @@ env:
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
   CHECK_DIST_MANIFEST: '1'
   IS_GHA_RELEASE: true
+  ELECTRON_OUT_DIR: Default
 
 jobs:
   checkout:
