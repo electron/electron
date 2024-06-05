@@ -945,15 +945,10 @@ std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
 std::string App::GetLocaleCountryCode() {
   std::string region;
 #if BUILDFLAG(IS_WIN)
-  WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
-
-  if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR)) ||
-      GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR))) {
-    base::WideToUTF8(locale_name, wcslen(locale_name), &region);
+  WCHAR geo_name[LOCALE_NAME_MAX_LENGTH] = {0};
+  int result = GetUserDefaultGeoName(geo_name, sizeof(geo_name) / sizeof(WCHAR));
+  if (result > 0) {
+    base::WideToUTF8(geo_name, wcslen(geo_name), &region);
   }
 #elif BUILDFLAG(IS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
