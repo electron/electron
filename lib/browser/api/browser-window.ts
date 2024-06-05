@@ -54,7 +54,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
 
   this._browserViews = [];
 
-  this.on('close', () => {
+  this.on('closed', () => {
     this._browserViews.forEach(b => b.webContents?.close({ waitForBeforeUnload: true }));
   });
 

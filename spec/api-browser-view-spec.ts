@@ -25,10 +25,12 @@ describe('BrowserView module', () => {
   });
 
   afterEach(async () => {
-    const p = once(w.webContents, 'destroyed');
-    await closeWindow(w);
-    w = null as any;
-    await p;
+    if (!w.isDestroyed()) {
+      const p = once(w.webContents, 'destroyed');
+      await closeWindow(w);
+      w = null as any;
+      await p;
+    }
 
     if (view && view.webContents) {
       const p = once(view.webContents, 'destroyed');
@@ -534,6 +536,53 @@ describe('BrowserView module', () => {
   });
 
   describe('shutdown behavior', () => {
+    it('emits the destroyed event when the host BrowserWindow is closed', async () => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+      await view.webContents.loadURL(`data:text/html,
+        <html>
+          <body>
+            <div id="bv_id">HELLO BROWSERVIEW</div>
+          </body>
+        </html>
+      `);
+
+      const query = 'document.getElementById("bv_id").textContent';
+      const contentBefore = await view.webContents.executeJavaScript(query);
+      expect(contentBefore).to.equal('HELLO BROWSERVIEW');
+
+      w.close();
+
+      const destroyed = once(view.webContents, 'destroyed');
+      const closed = once(w, 'closed');
+      await Promise.all([destroyed, closed]);
+    });
+
+    it('does not destroy its webContents if an owner BrowserWindow close event is prevented', async () => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+      await view.webContents.loadURL(`data:text/html,
+        <html>
+          <body>
+            <div id="bv_id">HELLO BROWSERVIEW</div>
+          </body>
+        </html>
+      `);
+
+      const query = 'document.getElementById("bv_id").textContent';
+      const contentBefore = await view.webContents.executeJavaScript(query);
+      expect(contentBefore).to.equal('HELLO BROWSERVIEW');
+
+      w.once('close', (e) => {
+        e.preventDefault();
+      });
+
+      w.close();
+
+      const contentAfter = await view.webContents.executeJavaScript(query);
+      expect(contentAfter).to.equal('HELLO BROWSERVIEW');
+    });
+
     it('does not crash on exit', async () => {
       const rc = await startRemoteControlApp();
       await rc.remotely(() => {
