@@ -508,18 +508,18 @@ jobs:
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
     - name: Generate FFMpeg
-      if: github.event.inputs.IS_RELEASE == true
+      if: ${{ inputs.IS_RELEASE == true }}
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries
-      if: github.event.inputs.IS_RELEASE == true
+      if: ${{ inputs.IS_RELEASE == true }}
       run: |
         cd src
         autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate TypeScript Definitions
-      if: github.event.inputs.IS_RELEASE == true
+      if: ${{ inputs.IS_RELEASE == true }}
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
