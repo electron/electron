@@ -47,3 +47,4 @@ fix_remove_deprecated_errno_constants.patch
 build_enable_perfetto.patch
 fix_add_source_location_for_v8_task_runner.patch
 cherry-pick_src_remove_calls_to_recently_deprecated_v8_apis.patch
+test_update_v8-stats_test_for_v8_12_6.patch
