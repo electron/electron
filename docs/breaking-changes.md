@@ -44,6 +44,32 @@ contextBridge.exposeInMainWorld('electron', {
 })
 ```
 
+### Deprecated: `clearHistory`, `canGoBack`, `goBack`, `canGoForward`, `goForward`, `canGoToOffset`, `goToOffset` on `WebContents`
+
+The navigation-related APIs are now deprecated.
+
+These APIs have been moved to the `navigationHistory` property of `WebContents` to provide a more structured and intuitive interface for managing navigation history.
+
+```js
+// Deprecated
+win.webContents.clearHistory()
+win.webContents.canGoBack()
+win.webContents.goBack()
+win.webContents.canGoForward()
+win.webContents.goForward()
+win.webContents.canGoToOffset()
+win.webContents.goToOffset(index)
+
+// Replace with
+win.webContents.navigationHistory.clear()
+win.webContents.navigationHistory.canGoBack()
+win.webContents.navigationHistory.goBack()
+win.webContents.navigationHistory.canGoForward()
+win.webContents.navigationHistory.goForward()
+win.webContents.navigationHistory.canGoToOffset()
+win.webContents.navigationHistory.goToOffset(index)
+```
+
 ## Planned Breaking API Changes (31.0)
 
 ### Removed: `WebSQL` support
@@ -52,7 +78,7 @@ Chromium has removed support for WebSQL upstream, transitioning it to Android on
 [Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/fWYb6evVA-w/m/wGI863zaAAAJ)
 for more information.
 
-### Behavior Changed: `nativeImage.toDataURL` will preseve PNG colorspace
+### Behavior Changed: `nativeImage.toDataURL` will preserve PNG colorspace
 
 PNG decoder implementation has been changed to preserve colorspace data, the
 encoded data returned from this function now matches it.

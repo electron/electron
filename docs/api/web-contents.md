@@ -1124,43 +1124,59 @@ Reloads the current web page.
 
 Reloads current page and ignores cache.
 
-#### `contents.canGoBack()`
+#### `contents.canGoBack()` _Deprecated_
 
 Returns `boolean` - Whether the browser can go back to previous web page.
 
-#### `contents.canGoForward()`
+**Deprecated:** Should use the new [`contents.navigationHistory.canGoBack`](navigation-history.md#navigationhistorycangoback) API.
+
+#### `contents.canGoForward()` _Deprecated_
 
 Returns `boolean` - Whether the browser can go forward to next web page.
 
-#### `contents.canGoToOffset(offset)`
+**Deprecated:** Should use the new [`contents.navigationHistory.canGoForward`](navigation-history.md#navigationhistorycangoforward) API.
+
+#### `contents.canGoToOffset(offset)` _Deprecated_
 
 * `offset` Integer
 
 Returns `boolean` - Whether the web page can go to `offset`.
 
-#### `contents.clearHistory()`
+**Deprecated:** Should use the new [`contents.navigationHistory.canGoToOffset`](navigation-history.md#navigationhistorycangotooffsetoffset) API.
+
+#### `contents.clearHistory()` _Deprecated_
 
 Clears the navigation history.
 
-#### `contents.goBack()`
+**Deprecated:** Should use the new [`contents.navigationHistory.clear`](navigation-history.md#navigationhistoryclear) API.
+
+#### `contents.goBack()` _Deprecated_
 
 Makes the browser go back a web page.
 
-#### `contents.goForward()`
+**Deprecated:** Should use the new [`contents.navigationHistory.goBack`](navigation-history.md#navigationhistorygoback) API.
+
+#### `contents.goForward()` _Deprecated_
 
 Makes the browser go forward a web page.
 
-#### `contents.goToIndex(index)`
+**Deprecated:** Should use the new [`contents.navigationHistory.goForward`](navigation-history.md#navigationhistorygoforward) API.
+
+#### `contents.goToIndex(index)` _Deprecated_
 
 * `index` Integer
 
 Navigates browser to the specified absolute web page index.
 
-#### `contents.goToOffset(offset)`
+**Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindexindex) API.
+
+#### `contents.goToOffset(offset)` _Deprecated_
 
 * `offset` Integer
 
 Navigates to the specified offset from the "current entry".
+
+**Deprecated:** Should use the new [`contents.navigationHistory.goToOffset`](navigation-history.md#navigationhistorygotooffsetoffset) API.
 
 #### `contents.isCrashed()`
 

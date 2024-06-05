@@ -88,6 +88,14 @@ declare namespace Electron {
     _getNavigationEntryAtIndex(index: number): Electron.EntryAtIndex | null;
     _getActiveIndex(): number;
     _historyLength(): number;
+    _canGoBack(): boolean;
+    _canGoForward(): boolean;
+    _canGoToOffset(): boolean;
+    _goBack(): void;
+    _goForward(): void;
+    _goToOffset(index: number): void;
+    _goToIndex(index: number): void;
+    _clearHistory():void
     canGoToIndex(index: number): boolean;
     destroy(): void;
     // <webview>
