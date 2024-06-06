@@ -260,9 +260,9 @@ step-depot-tools-get: &step-depot-tools-get
       index c305c248..e6e0fbdc 100755
       --- a/gclient.py
       +++ b/gclient.py
-      @@ -735,7 +735,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
- 
-                   if dep_type == 'cipd':
+      @@ -783,7 +783,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+                               not condition or "non_git_source" not in condition):
+                           continue
                        cipd_root = self.GetCipdRoot()
       -                for package in dep_value.get('packages', []):
       +                packages = dep_value.get('packages', [])

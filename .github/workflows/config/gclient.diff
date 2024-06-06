@@ -2,9 +2,9 @@ diff --git a/gclient.py b/gclient.py
 index 59e2b4c5197928bdba1ef69bdbe637d7dfe471c1..b4bae5e48c83c84bd867187afaf40eed16e69851 100755
 --- a/gclient.py
 +++ b/gclient.py
-@@ -739,7 +739,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
- 
-             if dep_type == 'cipd':
+@@ -783,7 +783,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+                         not condition or "non_git_source" not in condition):
+                     continue
                  cipd_root = self.GetCipdRoot()
 -                for package in dep_value.get('packages', []):
 +                packages = dep_value.get('packages', [])
