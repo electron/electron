@@ -220,6 +220,12 @@ jobs:
         node-version: 20.11.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
+    - name: Enable SSH Debugging
+      if: runner.debug == 1
+      uses: mxschmitt/action-tmate@v3
+      with:
+        detached: true
+        limit-access-to-actor: true
     - name: Install Dependencies
       run: |
         cd src/electron
