@@ -128,7 +128,7 @@ SMAppService* GetServiceForType(const std::string& type,
     return [SMAppService agentServiceWithPlistName:service_name];
   } else if (type == "daemonService") {
     return [SMAppService daemonServiceWithPlistName:service_name];
-  } else if (type == "loginService") {
+  } else if (type == "loginItemService") {
     return [SMAppService loginItemServiceWithIdentifier:service_name];
   } else {
     LOG(ERROR) << "Unrecognized login item type";
