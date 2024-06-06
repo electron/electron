@@ -1879,6 +1879,8 @@ void WebContents::OnFirstNonEmptyLayout(
   }
 }
 
+namespace {
+
 // This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
@@ -1934,6 +1936,8 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
 };
 
 gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+}  // namespace
 
 gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
     v8::Isolate* isolate,
