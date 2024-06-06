@@ -220,7 +220,7 @@ jobs:
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable SSH Debugging
-      uses: mxschmitt/action-tmate@v3
+      uses: mxschmitt/action-tmate@b3db6e16e597d92037c8647e54acc5d2b1b48dee
       with:
         detached: true
         limit-access-to-actor: true
