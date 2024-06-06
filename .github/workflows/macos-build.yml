@@ -524,6 +524,18 @@ jobs:
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
+    # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
+    - name: Publish Electron Dist
+      run: |
+        rm -rf src/out/Default/obj
+        cd src/electron
+        if [ ${{ inputs.UPLOAD_TO_STORAGE }} == "1" ]; then
+          echo 'Uploading Electron release distribution to Azure'
+          script/release/uploaders/upload.py --verbose --upload_to_storage
+        else
+          echo 'Uploading Electron release distribution to GitHub releases'
+          script/release/uploaders/upload.py --verbose
+        fi
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder
@@ -645,76 +657,64 @@ jobs:
       #     src/out/Default/obj/buildtools/third_party
       #     src/v8/tools/builtins-pgo
       #   key: ${{ runner.os }}-build-artifacts-mas-${{ env.TARGET_ARCH }}-${{ github.sha }}
-  upload:
-    runs-on: macos-14-xlarge
-    if: ${{ inputs.IS_RELEASE == true }}
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        # build-type: [darwin, mas]
-        # arch: [x64, arm64]
-        build-type: [darwin]
-        arch: [x64, arm64]
-    steps:
-    - name: Checkout Electron
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
-      with:
-        path: src/electron
-        fetch-depth: 0
-    - name: Setup Node.js/npm
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
-      with:
-        node-version: 20.11.x
-        cache: yarn
-        cache-dependency-path: src/electron/yarn.lock
-    - name: Load Target Arch
-      run: echo "TARGET_ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
-    - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install
-    - name: Download Generated Artifacts
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e 
-      with:
-        name: generated_artifacts_${{ matrix.build-type }}_${{ matrix.arch }}
-        path: ./generated_artifacts_${{ matrix.build-type }}_${{ matrix.arch }}
-    - name: Restore Persisted Build Artifacts
-      uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
-      with:
-        path: |
-          src/out/Default/gen/node_headers
-          src/out/Default/overlapped-checker
-          src/out/Default/ffmpeg
-          src/out/Default/hunspell_dictionaries
-          src/electron
-          src/third_party/electron_node
-          src/third_party/nan
-          src/cross-arch-snapshots
-          src/third_party/llvm-build
-          src/build/linux
-          src/buildtools/mac
-          src/buildtools/third_party/libc++
-          src/buildtools/third_party/libc++abi
-          src/third_party/libc++
-          src/third_party/libc++abi
-          src/out/Default/obj/buildtools/third_party
-          src/v8/tools/builtins-pgo
-        key: macOS-build-artifacts-${{ matrix.build-type }}-${{ matrix.arch }}-${{ github.sha }}
-    - name: Restore Generated Artifacts
-      run: ./src/electron/script/actions/restore-artifacts.sh
-    # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
-    - name: Publish Electron Dist
-      run: |
-        rm -rf src/out/Default/obj
-        cd src/electron
-        if [ ${{ inputs.UPLOAD_TO_STORAGE }} == "1" ]; then
-          echo 'Uploading Electron release distribution to Azure'
-          script/release/uploaders/upload.py --verbose --upload_to_storage
-        else
-          echo 'Uploading Electron release distribution to GitHub releases'
-          script/release/uploaders/upload.py --verbose
-        fi
+  # upload:
+  #   runs-on: macos-14-xlarge
+  #   if: ${{ inputs.IS_RELEASE == true }}
+  #   needs: build
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       # build-type: [darwin, mas]
+  #       # arch: [x64, arm64]
+  #       build-type: [darwin]
+  #       arch: [x64, arm64]
+  #   steps:
+  #   - name: Checkout Electron
+  #     uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+  #     with:
+  #       path: src/electron
+  #       fetch-depth: 0
+  #   - name: Setup Node.js/npm
+  #     uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+  #     with:
+  #       node-version: 20.11.x
+  #       cache: yarn
+  #       cache-dependency-path: src/electron/yarn.lock
+  #   - name: Load Target Arch
+  #     run: echo "TARGET_ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+  #   - name: Install Dependencies
+  #     run: |
+  #       cd src/electron
+  #       node script/yarn install
+  #   - name: Download Generated Artifacts
+  #     uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e 
+  #     with:
+  #       name: generated_artifacts_${{ matrix.build-type }}_${{ matrix.arch }}
+  #       path: ./generated_artifacts_${{ matrix.build-type }}_${{ matrix.arch }}
+  #   - name: Restore Persisted Build Artifacts
+  #     uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+  #     with:
+  #       path: |
+  #         src/out/Default/gen/node_headers
+  #         src/out/Default/overlapped-checker
+  #         src/out/Default/ffmpeg
+  #         src/out/Default/hunspell_dictionaries
+  #         src/electron
+  #         src/third_party/electron_node
+  #         src/third_party/nan
+  #         src/cross-arch-snapshots
+  #         src/third_party/llvm-build
+  #         src/build/linux
+  #         src/buildtools/mac
+  #         src/buildtools/third_party/libc++
+  #         src/buildtools/third_party/libc++abi
+  #         src/third_party/libc++
+  #         src/third_party/libc++abi
+  #         src/out/Default/obj/buildtools/third_party
+  #         src/v8/tools/builtins-pgo
+  #       key: macOS-build-artifacts-${{ matrix.build-type }}-${{ matrix.arch }}-${{ github.sha }}
+  #   - name: Restore Generated Artifacts
+  #     run: ./src/electron/script/actions/restore-artifacts.sh
   test:
     if: ${{ inputs.IS_RELEASE == false }}
     runs-on: macos-14-xlarge
