@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 575149b2f3246c1bcc88b046fb1ae2dbeaa3b2a2..704ff05b8ec8475ad215bbde4ee6ab587a61c818 100644
+index 4c7130084a91f3bec8b0b2099e1b4fa5c0f94eb8..9fa0c44104e4dc6467d0a3ff369139686c1d2e83 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1068,6 +1068,7 @@ component("base") {
+@@ -1069,6 +1069,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0923667091b6560f2daf6ec7346119de0aae4e06..cc5ba99891adf02b3c9b1567dc468e08dd83bef3 100644
+index edb6d0e73c803f29ca73c1f6fdd552f8ac278da4..445b17e7228904da2bb10930db4053c16b6a9957 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -496,6 +496,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index 0923667091b6560f2daf6ec7346119de0aae4e06..cc5ba99891adf02b3c9b1567dc468e08
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1718,6 +1720,7 @@ test("content_browsertests") {
+@@ -1719,6 +1721,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 0923667091b6560f2daf6ec7346119de0aae4e06..cc5ba99891adf02b3c9b1567dc468e08
  
    public_deps = [
      ":test_interfaces",
-@@ -2958,6 +2961,7 @@ test("content_unittests") {
+@@ -2959,6 +2962,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
