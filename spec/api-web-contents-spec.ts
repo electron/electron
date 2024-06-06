@@ -567,6 +567,84 @@ describe('webContents module', () => {
       w = new BrowserWindow({ show: false });
     });
     afterEach(closeAllWindows);
+    describe('navigationHistory.canGoBack and navigationHistory.goBack API', () => {
+      it('should not be able to go back if history is empty', async () => {
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.false();
+      });
+
+      it('should be able to go back if history is not empty', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+        w.webContents.navigationHistory.goBack();
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+    });
+
+    describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
+      it('should not be able to go forward if history is empty', async () => {
+        expect(w.webContents.navigationHistory.canGoForward()).to.be.false();
+      });
+
+      it('should not be able to go forward if current index is same as history length', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        expect(w.webContents.navigationHistory.canGoForward()).to.be.false();
+      });
+
+      it('should be able to go forward if history is not empty and active index is less than history length', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        w.webContents.navigationHistory.goBack();
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+        expect(w.webContents.navigationHistory.canGoForward()).to.be.true();
+        w.webContents.navigationHistory.goForward();
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
+      });
+    });
+
+    describe('navigationHistory.canGoToOffset(index) and navigationHistory.goToOffset(index) API', () => {
+      it('should not be able to go to invalid offset', async () => {
+        expect(w.webContents.navigationHistory.canGoToOffset(-1)).to.be.false();
+        expect(w.webContents.navigationHistory.canGoToOffset(10)).to.be.false();
+      });
+
+      it('should be able to go to valid negative offset', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+        expect(w.webContents.navigationHistory.canGoToOffset(-2)).to.be.true();
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+        w.webContents.navigationHistory.goToOffset(-2);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+
+      it('should be able to go to valid positive offset', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        w.webContents.navigationHistory.goBack();
+        expect(w.webContents.navigationHistory.canGoToOffset(1)).to.be.true();
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
+        w.webContents.navigationHistory.goToOffset(1);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+      });
+    });
+
+    describe('navigationHistory.clear API', () => {
+      it('should be able clear history', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+        w.webContents.navigationHistory.clear();
+        expect(w.webContents.navigationHistory.length()).to.equal(1);
+      });
+    });
+
     describe('navigationHistory.getEntryAtIndex(index) API ', () => {
       it('should fetch default navigation entry when no urls are loaded', async () => {
         const result = w.webContents.navigationHistory.getEntryAtIndex(0);

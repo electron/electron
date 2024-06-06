@@ -49,7 +49,7 @@ jobs:
     runs-on: LargeLinuxRunner
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
         fetch-depth: 0
@@ -206,7 +206,7 @@ jobs:
         e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }} --import ${{ inputs.GN_BUILD_TYPE }} --target-cpu ${{ matrix.build-arch}}
         e use ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
         fetch-depth: 0
@@ -290,7 +290,7 @@ jobs:
         echo "Wiping Electron Directory"
         rm -rf src/electron
     - name: Checkout Electron
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
     - name: Run Electron Only Hooks
@@ -686,7 +686,7 @@ jobs:
         npm i -g @electron/build-tools
         e init --root=$(pwd) --out=Default ${{ inputs.GN_BUILD_TYPE }}
     - name: Checkout Electron
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
         fetch-depth: 0

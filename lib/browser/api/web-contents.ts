@@ -510,6 +510,54 @@ const environment = process._linkedBinding('electron_common_environment');
 const loggingEnabled = () => {
   return environment.hasVar('ELECTRON_ENABLE_LOGGING') || commandLine.hasSwitch('enable-logging');
 };
+// Deprecation warnings for navigation related APIs.
+const canGoBackDeprecated = deprecate.warnOnce('webContents.canGoBack', 'webContents.navigationHistory.canGoBack');
+WebContents.prototype.canGoBack = function () {
+  canGoBackDeprecated();
+  return this._canGoBack();
+};
+
+const canGoForwardDeprecated = deprecate.warnOnce('webContents.canGoForward', 'webContents.navigationHistory.canGoForward');
+WebContents.prototype.canGoForward = function () {
+  canGoForwardDeprecated();
+  return this._canGoForward();
+};
+
+const canGoToOffsetDeprecated = deprecate.warnOnce('webContents.canGoToOffset', 'webContents.navigationHistory.canGoToOffset');
+WebContents.prototype.canGoToOffset = function () {
+  canGoToOffsetDeprecated();
+  return this._canGoToOffset();
+};
+
+const clearHistoryDeprecated = deprecate.warnOnce('webContents.clearHistory', 'webContents.navigationHistory.clear');
+WebContents.prototype.clearHistory = function () {
+  clearHistoryDeprecated();
+  return this._clearHistory();
+};
+
+const goBackDeprecated = deprecate.warnOnce('webContents.goBack', 'webContents.navigationHistory.goBack');
+WebContents.prototype.goBack = function () {
+  goBackDeprecated();
+  return this._goBack();
+};
+
+const goForwardDeprecated = deprecate.warnOnce('webContents.goForward', 'webContents.navigationHistory.goForward');
+WebContents.prototype.goForward = function () {
+  goForwardDeprecated();
+  return this._goForward();
+};
+
+const goToIndexDeprecated = deprecate.warnOnce('webContents.goToIndex', 'webContents.navigationHistory.goToIndex');
+WebContents.prototype.goToIndex = function (index: number) {
+  goToIndexDeprecated();
+  return this._goToIndex(index);
+};
+
+const goToOffsetDeprecated = deprecate.warnOnce('webContents.goToOffset', 'webContents.navigationHistory.goToOffset');
+WebContents.prototype.goToOffset = function (index: number) {
+  goToOffsetDeprecated();
+  return this._goToOffset(index);
+};
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
@@ -537,6 +585,14 @@ WebContents.prototype._init = function () {
   // maintaining a list of navigation entries for backward and forward navigation.
   Object.defineProperty(this, 'navigationHistory', {
     value: {
+      canGoBack: this._canGoBack.bind(this),
+      canGoForward: this._canGoForward.bind(this),
+      canGoToOffset: this._canGoToOffset.bind(this),
+      clear: this._clearHistory.bind(this),
+      goBack: this._goBack.bind(this),
+      goForward: this._goForward.bind(this),
+      goToIndex: this._goToIndex.bind(this),
+      goToOffset: this._goToOffset.bind(this),
       getActiveIndex: this._getActiveIndex.bind(this),
       length: this._historyLength.bind(this),
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this)

@@ -327,8 +327,6 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 };
 
-}  // namespace
-
 class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
                          private content::RenderFrameObserver {
  public:
@@ -902,6 +900,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return render_frame->GetRoutingID();
   }
 };
+}  // namespace
 
 gin::WrapperInfo WebFrameRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
 
