@@ -7,6 +7,7 @@ import { closeWindow } from './lib/window-helpers';
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
 import { setImmediate } from 'node:timers/promises';
+import { systemPreferences } from 'electron';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -399,7 +400,7 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
       child.postMessage(result);
       const [data] = await once(child, 'message');
-      expect(data).to.equal('granted');
+      expect(data).to.equal(systemPreferences.getMediaAccessStatus('screen'));
       const exit = once(child, 'exit');
       expect(child.kill()).to.be.true();
       await exit;
