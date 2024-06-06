@@ -210,6 +210,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        fetch-tags: true
     - name: Install Azure CLI
       run: |
         brew update && brew install azure-cli
@@ -293,6 +294,8 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
+        fetch-depth: 0
+        fetch-tags: true
     - name: Run Electron Only Hooks
       run: |
         echo "Running Electron Only Hooks"
