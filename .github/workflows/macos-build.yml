@@ -221,7 +221,6 @@ jobs:
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Enable SSH Debugging
-      if: runner.debug == 1
       uses: mxschmitt/action-tmate@v3
       with:
         detached: true
