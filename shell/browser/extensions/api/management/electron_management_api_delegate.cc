@@ -203,12 +203,12 @@ void ElectronManagementAPIDelegate::SetLaunchType(
 GURL ElectronManagementAPIDelegate::GetIconURL(
     const extensions::Extension* extension,
     int icon_size,
-    ExtensionIconSet::MatchType match,
+    ExtensionIconSet::Match match,
     bool grayscale) const {
-  GURL icon_url(base::StringPrintf("%s%s/%d/%d%s",
-                                   chrome::kChromeUIExtensionIconURL,
-                                   extension->id().c_str(), icon_size, match,
-                                   grayscale ? "?grayscale=true" : ""));
+  GURL icon_url(base::StringPrintf(
+      "%s%s/%d/%d%s", chrome::kChromeUIExtensionIconURL,
+      extension->id().c_str(), icon_size, static_cast<int>(match),
+      grayscale ? "?grayscale=true" : ""));
   CHECK(icon_url.is_valid());
   return icon_url;
 }

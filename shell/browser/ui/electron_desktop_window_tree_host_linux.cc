@@ -119,6 +119,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     case ui::PlatformWindowState::kSnappedPrimary:
     case ui::PlatformWindowState::kSnappedSecondary:
     case ui::PlatformWindowState::kFloated:
+    case ui::PlatformWindowState::kPip:
     case ui::PlatformWindowState::kPinnedFullscreen:
     case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
@@ -138,6 +139,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     case ui::PlatformWindowState::kSnappedPrimary:
     case ui::PlatformWindowState::kSnappedSecondary:
     case ui::PlatformWindowState::kFloated:
+    case ui::PlatformWindowState::kPip:
     case ui::PlatformWindowState::kPinnedFullscreen:
     case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;

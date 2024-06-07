@@ -849,10 +849,11 @@ describe('<webview> tag', function () {
       return new Promise<void>((resolve, reject) => {
         session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
           if (webContents.id === webContentsId) {
-            // requestMIDIAccess with sysex requests both midi and midiSysex so
-            // grant the first midi one and then reject the midiSysex one
-            if (requestedPermission === 'midiSysex' && permission === 'midi') {
-              return callback(true);
+            // All midi permission requests are blocked or allowed as midiSysex permissions
+            // since https://chromium-review.googlesource.com/c/chromium/src/+/5154368
+            if (permission === 'midiSysex') {
+              const allowed = requestedPermission === 'midi' || requestedPermission === 'midiSysex';
+              return callback(!allowed);
             }
 
             try {

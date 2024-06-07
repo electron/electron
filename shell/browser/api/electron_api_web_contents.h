@@ -568,15 +568,13 @@ class WebContents : public ExclusiveAccessContext,
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
   void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
-  bool HandleKeyboardEvent(
-      content::WebContents* source,
-      const content::NativeWebKeyboardEvent& event) override;
-  bool PlatformHandleKeyboardEvent(
-      content::WebContents* source,
-      const content::NativeWebKeyboardEvent& event);
+  bool HandleKeyboardEvent(content::WebContents* source,
+                           const input::NativeWebKeyboardEvent& event) override;
+  bool PlatformHandleKeyboardEvent(content::WebContents* source,
+                                   const input::NativeWebKeyboardEvent& event);
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
-      const content::NativeWebKeyboardEvent& event) override;
+      const input::NativeWebKeyboardEvent& event) override;
   void ContentsZoomChange(bool zoom_in) override;
   void EnterFullscreenModeForTab(
       content::RenderFrameHost* requesting_frame,
@@ -738,7 +736,8 @@ class WebContents : public ExclusiveAccessContext,
   // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
                           const std::string& content,
-                          bool save_as) override;
+                          bool save_as,
+                          bool is_base64) override;
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
   void DevToolsRequestFileSystems() override;

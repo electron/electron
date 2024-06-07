@@ -103,7 +103,8 @@ class InspectableWebContents
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
-                  bool save_as) override;
+                  bool save_as,
+                  bool is_base64) override;
   void AppendToFile(const std::string& url,
                     const std::string& content) override;
   void RequestFileSystems() override;
@@ -154,6 +155,7 @@ class InspectableWebContents
   void RemovePreference(const std::string& name) override;
   void ClearPreferences() override;
   void GetSyncInformation(DispatchCallback callback) override;
+  void GetHostConfig(DispatchCallback callback) override;
   void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
@@ -203,7 +205,7 @@ class InspectableWebContents
 
   // content::WebContentsDelegate:
   bool HandleKeyboardEvent(content::WebContents*,
-                           const content::NativeWebKeyboardEvent&) override;
+                           const input::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       scoped_refptr<content::FileSelectListener> listener,

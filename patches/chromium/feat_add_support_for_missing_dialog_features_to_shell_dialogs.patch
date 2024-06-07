@@ -11,7 +11,7 @@ This CL adds support for the following features to //shell_dialogs:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index ce5fbf687698f453053e7e8accd66a9da7b206b1..fb2f3ce9ff3582ae7ee48e0fae80467bbbd981a9 100644
+index 129979e844581e68fdecde87bd52f3344f88022a..5e02a36e5e9eb4db84700dd9a0b8765dec18c236 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
 @@ -243,6 +243,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(

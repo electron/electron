@@ -621,7 +621,7 @@ describe('chromium features', () => {
     });
 
     it('should lock the keyboard', async () => {
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
       // Test that without lock, with ESC:
@@ -646,11 +646,16 @@ describe('chromium features', () => {
       // - the dialog is closed
       const enterFS2 = once(w, 'enter-full-screen');
       await w.webContents.executeJavaScript(`
-        navigator.keyboard.lock(['Escape']);
         document.body.requestFullscreen();
       `, true);
 
       await enterFS2;
+
+      // Request keyboard lock after window has gone fullscreen
+      // otherwise it will result in blink::kKeyboardLockRequestFailedErrorMsg.
+      await w.webContents.executeJavaScript(`
+        navigator.keyboard.lock(['Escape']);
+      `, true);
 
       await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
       const open2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');

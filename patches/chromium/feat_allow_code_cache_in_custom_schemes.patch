@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 8fc176cfd3a0411521c0f5e4f60b70ca333f60c8..e43f09d80bc9472a027bb11325803aab42b051a2 100644
+index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3a878723a 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -7,6 +7,7 @@
@@ -407,11 +407,11 @@ index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756db
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 16538750e1d151bbe3fd739303a4927416297221..412177467d1b3ce53ab5981c4ae7e590fd5a1f67 100644
+index 301824a7f83e9e7057279723eccd6c9c9ad44618..25e7e087e2ddf0e8fab1cd6f20a56790f7e406b2 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -115,6 +115,9 @@ struct SchemeRegistry {
-       kAboutScheme,
+@@ -133,6 +133,9 @@ struct SchemeRegistry {
+       kMaterializedViewScheme,
    };
  
 +  // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
@@ -420,7 +420,7 @@ index 16538750e1d151bbe3fd739303a4927416297221..412177467d1b3ce53ab5981c4ae7e590
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -682,6 +685,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -714,6 +717,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  

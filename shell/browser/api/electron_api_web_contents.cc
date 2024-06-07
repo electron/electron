@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/base64.h"
 #include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
@@ -30,6 +31,7 @@
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
+#include "components/input/native_web_keyboard_event.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
@@ -58,7 +60,6 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/input/native_web_keyboard_event.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -600,12 +601,25 @@ base::Value::Dict CreateFileSystemValue(const FileSystem& file_system) {
   return value;
 }
 
-void WriteToFile(const base::FilePath& path, const std::string& content) {
+void WriteToFile(const base::FilePath& path,
+                 const std::string& content,
+                 bool is_base64) {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
-  base::WriteFile(path, content.data(), content.size());
+  if (!is_base64) {
+    base::WriteFile(path, content);
+    return;
+  }
+
+  const std::optional<std::vector<uint8_t>> decoded_content =
+      base::Base64Decode(content);
+  if (decoded_content) {
+    base::WriteFile(path, decoded_content.value());
+  } else {
+    LOG(ERROR) << "Invalid base64. Not writing " << path;
+  }
 }
 
 void AppendToFile(const base::FilePath& path, const std::string& content) {
@@ -1244,7 +1258,7 @@ void WebContents::UpdateTargetURL(content::WebContents* source,
 
 bool WebContents::HandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   if (type_ == Type::kWebView && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
     return embedder_->HandleKeyboardEvent(source, event);
@@ -1259,7 +1273,7 @@ bool WebContents::HandleKeyboardEvent(
 // code.
 bool WebContents::PlatformHandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
   if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
@@ -1277,7 +1291,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   if (exclusive_access_manager_.HandleUserKeyEvent(event))
     return content::KeyboardEventProcessingResult::HANDLED;
 
@@ -1285,7 +1299,7 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
       event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
     // For backwards compatibility, pretend that `kRawKeyDown` events are
     // actually `kKeyDown`.
-    content::NativeWebKeyboardEvent tweaked_event(event);
+    input::NativeWebKeyboardEvent tweaked_event(event);
     if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
       tweaked_event.SetType(blink::WebInputEvent::Type::kKeyDown);
     bool prevent_default = Emit("before-input-event", tweaked_event);
@@ -3330,7 +3344,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       return;
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event(
+    input::NativeWebKeyboardEvent keyboard_event(
         blink::WebKeyboardEvent::Type::kRawKeyDown,
         blink::WebInputEvent::Modifiers::kNoModifiers, ui::EventTimeForNow());
     if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {
@@ -3919,7 +3933,8 @@ void WebContents::ExitPictureInPicture() {
 
 void WebContents::DevToolsSaveToFile(const std::string& url,
                                      const std::string& content,
-                                     bool save_as) {
+                                     bool save_as,
+                                     bool is_base64) {
   base::FilePath path;
   auto it = saved_files_.find(url);
   if (it != saved_files_.end() && !save_as) {
@@ -3942,8 +3957,8 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "savedURL", base::Value(url),
       base::Value(path.AsUTF8Unsafe()));
-  file_task_runner_->PostTask(FROM_HERE,
-                              base::BindOnce(&WriteToFile, path, content));
+  file_task_runner_->PostTask(
+      FROM_HERE, base::BindOnce(&WriteToFile, path, content, is_base64));
 }
 
 void WebContents::DevToolsAppendToFile(const std::string& url,

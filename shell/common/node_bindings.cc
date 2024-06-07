@@ -255,7 +255,6 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
     // enabled.
     if (!electron::IsRendererProcess()) {
       NOTREACHED();
-      return {false, {}};
     }
     return blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
         context, source, is_code_like);

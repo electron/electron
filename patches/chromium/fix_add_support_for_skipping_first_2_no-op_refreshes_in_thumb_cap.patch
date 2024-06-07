@@ -27,7 +27,7 @@ index 7a879b2f5332f98927c5e3858dd31c5de169e5ce..75191362088d2d875330fb2044a4682b
  
  #endif  // CHROME_BROWSER_MEDIA_WEBRTC_DESKTOP_MEDIA_LIST_H_
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 780927301744ea7312f230cec76a24a33d71f767..d19b1cc9dedf839f12f4113db64293e5c8150f51 100644
+index d9943ec17ccec0220d4601ea8242ec3a9d8ba5be..5d9029538c690c3d904bd6b39949387931997fdc 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -230,7 +230,11 @@ uint32_t DesktopMediaListBase::GetImageHash(const gfx::Image& image) {

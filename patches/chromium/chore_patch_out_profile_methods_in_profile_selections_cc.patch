@@ -8,7 +8,7 @@ is therefore not a method that will compile given we don't include
 relevant files.
 
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 1b5ad6fe48acf214920c018bb7acb5fc86d61455..923fe321a8cd085723a904e3b701a46e8308c2e7 100644
+index 6e2d839eb0e7ec1aa260f41904f78b1b2a2cbf73..6e2802e96da51eb0d5130c4847a07b1fddc1231d 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -13,6 +13,7 @@

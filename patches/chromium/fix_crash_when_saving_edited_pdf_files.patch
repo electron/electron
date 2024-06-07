@@ -13,10 +13,10 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index be4c3c82787ac575320c0f3363027a1b8fb32a0e..8e2862e25f748254b006746be4fb93b9b89c5f50 100644
+index 3272e287117dbf4762b1a607954b5d03cbec73fd..062b7dc05e3b1e0edb8c1ba6dc7eafa24eb22466 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -964,7 +964,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1011,7 +1011,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -32,15 +32,15 @@ index be4c3c82787ac575320c0f3363027a1b8fb32a0e..8e2862e25f748254b006746be4fb93b9
      const fileName = this.attachments_[index].name;
      chrome.fileSystem.chooseEntry(
          {type: 'saveFile', suggestedName: fileName},
-@@ -988,6 +996,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
-             }
+@@ -1033,6 +1041,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+             // </if>
            });
          });
 +    // </if>
    }
  
    /**
-@@ -1095,8 +1104,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1140,8 +1149,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        fileName = fileName + '.pdf';
      }
  
@@ -57,8 +57,8 @@ index be4c3c82787ac575320c0f3363027a1b8fb32a0e..8e2862e25f748254b006746be4fb93b9
      chrome.fileSystem.chooseEntry(
          {
            type: 'saveFile',
-@@ -1123,6 +1139,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
-             }
+@@ -1166,6 +1182,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+             // </if>
            });
          });
 +    // </if>

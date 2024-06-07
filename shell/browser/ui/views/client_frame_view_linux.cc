@@ -58,7 +58,6 @@ ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
     case views::Button::STATE_COUNT:
     default:
       NOTREACHED();
-      return ui::NavButtonProvider::ButtonState::kNormal;
   }
 }
 
@@ -258,8 +257,10 @@ void ClientFrameViewLinux::SizeConstraintsChanged() {
   InvalidateLayout();
 }
 
-gfx::Size ClientFrameViewLinux::CalculatePreferredSize() const {
-  return SizeWithDecorations(FramelessView::CalculatePreferredSize());
+gfx::Size ClientFrameViewLinux::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
+  return SizeWithDecorations(
+      FramelessView::CalculatePreferredSize(available_size));
 }
 
 gfx::Size ClientFrameViewLinux::GetMinimumSize() const {

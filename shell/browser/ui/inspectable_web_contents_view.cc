@@ -170,8 +170,8 @@ void InspectableWebContentsView::SetIsDocked(bool docked, bool activate) {
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this, devtools_window_web_view_, devtools_window_.get());
 
-    views::Widget::InitParams params;
-    params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+    views::Widget::InitParams params{
+        views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET};
     params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->dev_tools_bounds();
 

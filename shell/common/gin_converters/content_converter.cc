@@ -8,9 +8,9 @@
 #include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
+#include "components/input/native_web_keyboard_event.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/input/native_web_keyboard_event.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -304,10 +304,10 @@ bool Converter<content::Referrer>::FromV8(v8::Isolate* isolate,
 }
 
 // static
-bool Converter<content::NativeWebKeyboardEvent>::FromV8(
+bool Converter<input::NativeWebKeyboardEvent>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    content::NativeWebKeyboardEvent* out) {
+    input::NativeWebKeyboardEvent* out) {
   gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -318,9 +318,9 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
+v8::Local<v8::Value> Converter<input::NativeWebKeyboardEvent>::ToV8(
     v8::Isolate* isolate,
-    const content::NativeWebKeyboardEvent& in) {
+    const input::NativeWebKeyboardEvent& in) {
   return ConvertToV8(isolate, static_cast<blink::WebKeyboardEvent>(in));
 }
 

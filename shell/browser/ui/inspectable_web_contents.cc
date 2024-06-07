@@ -732,9 +732,10 @@ void InspectableWebContents::ShowItemInFolder(
 
 void InspectableWebContents::SaveToFile(const std::string& url,
                                         const std::string& content,
-                                        bool save_as) {
+                                        bool save_as,
+                                        bool is_base64) {
   if (delegate_)
-    delegate_->DevToolsSaveToFile(url, content, save_as);
+    delegate_->DevToolsSaveToFile(url, content, save_as, is_base64);
 }
 
 void InspectableWebContents::AppendToFile(const std::string& url,
@@ -887,6 +888,12 @@ void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
   std::move(callback).Run(&result);
 }
 
+void InspectableWebContents::GetHostConfig(DispatchCallback callback) {
+  base::Value::Dict response_dict;
+  base::Value response = base::Value(std::move(response_dict));
+  std::move(callback).Run(&response);
+}
+
 void InspectableWebContents::ConnectionReady() {}
 
 void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
@@ -977,7 +984,7 @@ void InspectableWebContents::WebContentsDestroyed() {
 
 bool InspectableWebContents::HandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
+    const input::NativeWebKeyboardEvent& event) {
   auto* delegate = web_contents_->GetDelegate();
   return !delegate || delegate->HandleKeyboardEvent(source, event);
 }
