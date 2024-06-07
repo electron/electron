@@ -59,11 +59,29 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(0);
     });
 
+    ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      await once(child, 'spawn');
+      const exit = once(child, 'exit');
+      process.kill(child.pid!);
+      const [code] = await exit;
+      expect(code).to.not.equal(0);
+    });
+
+    ifit(!isWindows32Bit)('emits the correct error code when child process is killed', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      await once(child, 'spawn');
+      const exit = once(child, 'exit');
+      process.kill(child.pid!);
+      const [code] = await exit;
+      expect(code).to.not.equal(0);
+    });
+
     ifit(!isWindows32Bit)('emits \'exit\' when child process crashes', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      // Do not check for exit code in this case,
-      // SIGSEGV code can be 139 or 11 across our different CI pipeline.
-      await once(child, 'exit');
+      // SIGSEGV code can differ across pipelines but should never be 0.
+      const [code] = await once(child, 'exit');
+      expect(code).to.not.equal(0);
     });
 
     ifit(!isWindows32Bit)('emits \'exit\' corresponding to the child process', async () => {
