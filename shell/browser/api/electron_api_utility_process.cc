@@ -179,6 +179,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                              weak_factory_.GetWeakPtr()))
           .Pass());
 
+  node_service_remote_.set_disconnect_with_reason_handler(
+      base::BindOnce(&UtilityProcessWrapper::OnServiceProcessDisconnected,
+                     weak_factory_.GetWeakPtr()));
+
   // We use a separate message pipe to support postMessage API
   // instead of the existing receiver interface so that we can
   // support queuing of messages without having to block other
@@ -212,8 +216,6 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   params->host_resolver = std::move(host_resolver);
 
   node_service_remote_->Initialize(std::move(params));
-  node_service_remote_->SetTermination(base::BindOnce(
-      &UtilityProcessWrapper::HandleTermination, weak_factory_.GetWeakPtr()));
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -242,6 +244,13 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
     EmitWithoutEvent("exit", exit_code);
 
   Unpin();
+}
+
+void UtilityProcessWrapper::OnServiceProcessDisconnected(
+    uint32_t exit_code,
+    const std::string& description) {
+  if (description == "process_exit_termination")
+    HandleTermination(exit_code);
 }
 
 void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(

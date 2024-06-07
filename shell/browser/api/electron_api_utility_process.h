@@ -83,6 +83,9 @@ class UtilityProcessWrapper
   void OnServiceProcessCrashed(
       const content::ServiceProcessInfo& info) override;
 
+  void OnServiceProcessDisconnected(uint32_t exit_code,
+                                    const std::string& description);
+
   base::ProcessId pid_ = base::kNullProcessId;
 #if BUILDFLAG(IS_WIN)
   // Non-owning handles, these will be closed when the
