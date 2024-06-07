@@ -58,8 +58,6 @@ class UtilityProcessWrapper
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-  void HandleTermination(uint64_t exit_code);
-
  private:
   UtilityProcessWrapper(node::mojom::NodeServiceParamsPtr params,
                         std::u16string display_name,
@@ -69,6 +67,8 @@ class UtilityProcessWrapper
                         bool use_plugin_helper);
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
+
+  void HandleTermination(uint64_t exit_code);
 
   void PostMessage(gin::Arguments* args);
   bool Kill() const;

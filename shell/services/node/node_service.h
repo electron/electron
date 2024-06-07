@@ -67,8 +67,6 @@ class NodeService : public node::mojom::NodeService {
   // will be propagated to the exit handler.
   mojo::Receiver<node::mojom::NodeService> receiver_{this};
 
-  base::OnceCallback<void(uint64_t exit_code)> termination_callback_;
-
   bool node_env_stopped_ = false;
 
   const std::unique_ptr<NodeBindings> node_bindings_;
