@@ -126,24 +126,34 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
     });
 
-    it('yields an error when setting a cookie with missing required fields', async () => {
+    it('rejects when setting a cookie with missing required fields', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
 
       await expect(
         cookies.set({ url: '', name, value })
-      ).to.eventually.be.rejectedWith('Failed to set cookie with an invalid domain attribute');
+      ).to.eventually.be.rejectedWith('Failed to set cookie - The cookie was set with an invalid Domain attribute.');
     });
 
-    it('yields an error when setting a cookie with an invalid URL', async () => {
+    it('rejects when setting a cookie with an invalid URL', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
 
       await expect(
         cookies.set({ url: 'asdf', name, value })
-      ).to.eventually.be.rejectedWith('Failed to set cookie with an invalid domain attribute');
+      ).to.eventually.be.rejectedWith('Failed to set cookie - The cookie was set with an invalid Domain attribute.');
+    });
+
+    it('rejects when setting a cookie with an invalid ASCII control character', async () => {
+      const { cookies } = session.defaultSession;
+      const name = 'BadCookie';
+      const value = 'test;test';
+
+      await expect(
+        cookies.set({ url, name, value })
+      ).to.eventually.be.rejectedWith('Failed to set cookie - The cookie contains ASCII control characters');
     });
 
     it('should overwrite previous cookies', async () => {
