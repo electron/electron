@@ -21,10 +21,10 @@ index 39e18820db0d0c1b57f4375e01d269e53c839e4e..ea4da67a9b7798822d1d5dd90d09597a
        properties->supports_global_application_menus = true;
        properties->app_modal_dialogs_use_event_blocker = true;
 diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
-index 9d6534449f04baa7ebfc8604286b7d5f230e259a..cf23a05ee0a49f397b3605fb1e4510a86b40885d 100644
+index bc3dce09be325a1a1754da3311f15681f74ce88d..b02e0295ecd35844d3e40b03c73955f8a64cdd9c 100644
 --- a/ui/ozone/public/ozone_platform.h
 +++ b/ui/ozone/public/ozone_platform.h
-@@ -122,6 +122,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
+@@ -121,6 +121,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
      // Linux only: determines if Skia can fall back to the X11 output device.
      bool skia_can_fall_back_to_x11 = false;
  

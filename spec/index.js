@@ -32,6 +32,7 @@ app.commandLine.appendSwitch('host-resolver-rules', [
   'MAP ipv6.localhost2 [::1]',
   'MAP notfound.localhost2 ~NOTFOUND'
 ].join(', '));
+app.commandLine.appendSwitch('disable-features', 'BlockMidiByDefault');
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';

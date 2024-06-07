@@ -15,7 +15,7 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 202b9f4154198b357d7fa816f7d163ffb22c1ea5..e9382614aebaab604956664b3e21ae5bbea3eb50 100644
+index 61d35042fcd0aa7b632c34253bce42a00c8d732d..db074920753e6a7aec4ffad82f8f4296f6ab854b 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -75,7 +75,8 @@ IsolateHolder::IsolateHolder(

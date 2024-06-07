@@ -46,7 +46,8 @@ std::unique_ptr<WinIconPainter> WinCaptionButton::CreateIconPainter() {
   return std::make_unique<WinIconPainter>();
 }
 
-gfx::Size WinCaptionButton::CalculatePreferredSize() const {
+gfx::Size WinCaptionButton::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
   // TODO(bsep): The sizes in this function are for 1x device scale and don't
   // match Windows button sizes at hidpi.
 

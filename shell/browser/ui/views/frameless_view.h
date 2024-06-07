@@ -54,7 +54,8 @@ class FramelessView : public views::NonClientFrameView {
   views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
 
   // views::View:
-  gfx::Size CalculatePreferredSize() const override;
+  gfx::Size CalculatePreferredSize(
+      const views::SizeBounds& available_size) const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
 

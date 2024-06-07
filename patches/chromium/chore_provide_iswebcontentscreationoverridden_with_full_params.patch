@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 1f27054a9fafcb9cbebe146889f67d6d879ec9e8..bfa74b9ac80e4d914ff773390e376cd58aca424c 100644
+index f6302e83d3b00676b6ea3476f7d0750a346640f2..d7dd722c0d612594f64662f835c403784cd7d420 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1923,12 +1923,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1982,12 +1982,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,7 +99,7 @@ index 1f27054a9fafcb9cbebe146889f67d6d879ec9e8..bfa74b9ac80e4d914ff773390e376cd5
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 360fbe3221df6ff9e3982b9a5f3825c83eb90083..bee87c20f380b2ce8912931bfdb98b79c53f9f95 100644
+index a8581389a1a44e071a402e0dc925483aa5484ab3..46d196c1546891926b271634e36a0e9a54092b47 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -962,8 +962,7 @@ class Browser : public TabStripModelObserver,
@@ -141,10 +141,10 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 8d7b1b4e5bc85f5ffc7af5ee3464a85a03dd87de..2318e34306ff69d66169adb6aa5e7eafb9ab1079 100644
+index e4c31867e264c4f9aa2a451a934eda705826a1a3..f6325a210aec33aa63257bdf3bc542d845f3708e 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -81,8 +81,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -75,8 +75,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -190,7 +190,7 @@ index 730da226f1928c87eac66d54551d6fa4223c5fe4..3ab029f9b7c10d6c26877ebbd09b9c0c
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index d362823b92be29432b56c7576ea329be87bd6513..9b746a2811d278384267cc9dafe871b499414452 100644
+index 292e69378d6e2e4a22e8a10c7d8eea25850a27d4..770c6bf3d792b4c3914ae9ef975739abf6e03136 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
 @@ -85,8 +85,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 330d6900e5e43a22ce554f7ceaa61d986a3c001e..610db0508667be62a13bb7f8453044cfe8fac028 100644
+index 6a8f38e50a21989234ee193e6f631187c2107374..e9a9a2499ae33bd8128c8c018a26cce2115fc89d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4519,8 +4519,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4574,8 +4574,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -260,10 +260,10 @@ index a093cac4660c1a3c38fc0baccee40780e0ee47cf..31b59d35aa1ff0ef3aaa48e16484b799
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index 1f0f61f33c28bee49d51acefad76da8f66f75b7c..e2e53c9f16a45fe24b50d897407adba57e744644 100644
+index 6e8ad1dea8eb06e569064cd0dcbb4ab2e4c75b58..3e7019d9a3a8778449eb7ac777214a6aacbd0a63 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-@@ -221,8 +221,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
+@@ -218,8 +218,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -288,10 +288,10 @@ index 8389455426d35b2d356c897f0f069ef1b1cba9e4..fede03e3f7df8ff45b8b3b2937a41ad7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index d4391f44d75627ec7229184b84ba127ed4136d8e..db25aafc5e19ac0de7873141dd8a5451c97e6743 100644
+index 8a77da73784c8700fdb4b7b15200614ffed31cb3..ad66c59dd011287e932b9bda86d88807ba79db4c 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -392,8 +392,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -389,8 +389,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -344,10 +344,10 @@ index ab81b9e60cd6334b8342a83bbffc588d256b54c7..eca73c0305617e98cc10568de036c7e7
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index c9ba0256487325454f9cfd7d4905d3ac73e24189..4cf06fbf5cbc4db60ed343ac8caada391e6d992f 100644
+index 0ed0d3a22c0fcb15c70fab4dc740c27a18c37da4..24608ddccafe0783c71788593b678aa06e17fd67 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -188,8 +188,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -190,8 +190,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -358,7 +358,7 @@ index c9ba0256487325454f9cfd7d4905d3ac73e24189..4cf06fbf5cbc4db60ed343ac8caada39
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 435002e18997ca7d6b660d617b7da0cf9450e653..91ef1006be0bd714f0c3078bce0d60fb86130d5f 100644
+index 1a2c66e329b6f42db3dc0bea7f18df53960fa088..0d879e3bcfc736d8dd7193204ab0fae9e26779a5 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -442,8 +442,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
@@ -372,7 +372,7 @@ index 435002e18997ca7d6b660d617b7da0cf9450e653..91ef1006be0bd714f0c3078bce0d60fb
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 4803ab17d0808c80fe4e5f85fcbe3db5a8d7990b..1b2434cb920abeb5d7909db6006cee2e092572a9 100644
+index d7915d549e6dda928aad23be7f067386d519f499..da1723c3e83d42867a1bdd63183b244c67521212 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -166,8 +166,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,

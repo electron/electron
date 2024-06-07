@@ -593,7 +593,7 @@ void OffScreenRenderWidgetHostView::DidNavigate() {
 
 bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
     const gfx::PointF& point,
-    RenderWidgetHostViewBase* target_view,
+    RenderWidgetHostViewInput* target_view,
     gfx::PointF* transformed_point) {
   if (target_view == this) {
     *transformed_point = point;

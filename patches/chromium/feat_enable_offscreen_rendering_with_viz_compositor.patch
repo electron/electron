@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6354ce53aab6ba907606e578a1df0b8df9c84f58..5713c742a947e5a6687370b4da99f0bc9deb80de 100644
+index 782622e04634f76317e8b772035eff185b5369a1..1fb07cf31b82a32b32e9c744e6ef652b6c2cbc55 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -167,6 +167,8 @@ viz_component("service") {
@@ -520,7 +520,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 03baf79ada93d25ee225c0caba9bf787ca03a744..0376f4627967686425c2e6b18268dbed91a6b88f 100644
+index 77e2c89d55746f16d81b013085c2937d643f4821..59f68d1d36eb3826b7f829ad825a4f7bd3205fb8 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -618,7 +618,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 234c0f68328a87b6b80222bdf64065ca55b246c8..48690a48e26e7acb13d2a44cf7454da9e80596df 100644
+index adb90506e6df9b934b824169cd7d9ea3f00328ce..7d529e1af98d8392a98a7dbf9f3faff90f02c8bd 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ namespace mojom {

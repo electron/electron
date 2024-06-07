@@ -58,6 +58,7 @@
 #include "electron/fuses.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/common/extension_id.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
@@ -282,11 +283,10 @@ RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
 
 RenderProcessHostPrivilege GetProcessPrivilege(
     content::RenderProcessHost* process_host,
-    extensions::ProcessMap* process_map,
-    extensions::ExtensionRegistry* registry) {
-  std::set<std::string> extension_ids =
-      process_map->GetExtensionsInProcess(process_host->GetID());
-  if (extension_ids.empty())
+    extensions::ProcessMap* process_map) {
+  std::optional<extensions::ExtensionId> extension_id =
+      process_map->GetExtensionIdForProcess(process_host->GetID());
+  if (!extension_id.has_value())
     return RenderProcessHostPrivilege::kNormal;
 
   return RenderProcessHostPrivilege::kExtension;
@@ -740,8 +740,7 @@ bool ElectronBrowserClient::IsSuitableHost(
   // required by the site.
   RenderProcessHostPrivilege privilege_required =
       GetPrivilegeRequiredByUrl(site_url, registry);
-  return GetProcessPrivilege(process_host, process_map, registry) ==
-         privilege_required;
+  return GetProcessPrivilege(process_host, process_map) == privilege_required;
 #else
   return content::ContentBrowserClient::IsSuitableHost(process_host, site_url);
 #endif

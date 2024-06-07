@@ -72,4 +72,4 @@ clang_unsafe_buffers_paths = ""
 
 # Disable snapshotting a page when printing for its content to be analyzed for
 # sensitive content by enterprise users.
-enterprise_content_analysis = false
+enterprise_cloud_content_analysis = false
