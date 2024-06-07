@@ -76,7 +76,7 @@ index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e35512315
  void ServiceProcessHost::RemoveObserver(Observer* observer) {
    GetServiceProcessTracker().RemoveObserver(observer);
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index c564b64f25c3c2bf87ed5a93b0ce601d73aab177..f2474e89f27564a2e02ba4574dd22632f03ca2e0 100644
+index fc77cd17db0acc7ca20e7cf06fb708d196fa15e3..7f48ce424300aa704b0cfa25b7b714a6a468a7af 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -511,7 +511,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
