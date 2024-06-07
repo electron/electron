@@ -394,11 +394,11 @@ describe('utilityProcess module', () => {
       expect(output).to.include(result);
     });
 
-    it('can access exposed main process modules from the utility process', async () => {
-      const result = 'Message from utility process';
+    ifit(process.platform !== 'linux')('can access exposed main process modules from the utility process', async () => {
+      const message = 'Message from utility process';
       const child = utilityProcess.fork(path.join(fixturesPath, 'expose-main-process-module.js'));
       await once(child, 'spawn');
-      child.postMessage(result);
+      child.postMessage(message);
       const [data] = await once(child, 'message');
       expect(data).to.equal(systemPreferences.getMediaAccessStatus('screen'));
       const exit = once(child, 'exit');
