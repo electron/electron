@@ -22,4 +22,5 @@ struct NodeServiceParams {
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
 interface NodeService {
   Initialize(NodeServiceParams params);
+  SetTermination() => (uint64 exit_code);
 };
