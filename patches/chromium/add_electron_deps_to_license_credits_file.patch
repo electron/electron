@@ -7,7 +7,7 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index f3a8ba3756a19beb286a3f7bba52399705bf59bf..7cf72db56d3bc71cf6fb2b3f88a80e7866db1598 100755
+index 7390ac2a6667abface68318c742043f185e3ed2e..9d9f746387c62d4f846c31ec1887a1777a10ee1a 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
 @@ -336,6 +336,31 @@ SPECIAL_CASES = {
