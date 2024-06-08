@@ -3,6 +3,7 @@ name: Build MacOS
 # TODO: change to 'pull_request' and 'push' 
 # when we are ready to enable this for PRs.
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       IS_RELEASE:
@@ -37,6 +38,7 @@ env:
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+  ELECTRON_UPTERM_SERVER: ${{ secrets.ELECTRON_UPTERM_SERVER }}
   GN_CONFIG: ${{ inputs.GN_CONFIG }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
@@ -49,6 +51,13 @@ jobs:
   checkout:
     runs-on: LargeLinuxRunner
     steps:
+    - name: Setup upterm session
+      uses: owenthereal/action-upterm@5501233b996152ba43e22e8c73c39640f9ae2b3c
+      # if: ${{ runner.debug == '1' || failure()}}
+      with:
+        upterm-server: wss://${{ env.ELECTRON_UPTERM_SERVER }}
+        wait-timeout-minutes: 5
+        limit-access-to-users: jkleinsc,VerteDinde,MarshallOfSound,codebytere
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
@@ -198,6 +207,13 @@ jobs:
     runs-on: macos-14-xlarge
     needs: checkout
     steps:
+    - name: Setup upterm session
+      uses: owenthereal/action-upterm@5501233b996152ba43e22e8c73c39640f9ae2b3c
+      # if: ${{ runner.debug == '1' || failure()}}
+      with:
+        upterm-server: wss://${{ env.ELECTRON_UPTERM_SERVER }}
+        wait-timeout-minutes: 5
+        limit-access-to-users: jkleinsc,VerteDinde,MarshallOfSound,codebytere
     - name: Load Build Tools
       run: |
         export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
@@ -677,6 +693,13 @@ jobs:
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
     steps:
+    - name: Setup upterm session
+      uses: owenthereal/action-upterm@5501233b996152ba43e22e8c73c39640f9ae2b3c
+      # if: ${{ runner.debug == '1' || failure()}}
+      with:
+        upterm-server: wss://${{ env.ELECTRON_UPTERM_SERVER }}
+        wait-timeout-minutes: 5
+        limit-access-to-users: jkleinsc,VerteDinde,MarshallOfSound,codebytere
     - name: Load Build Tools
       run: |
         export BUILD_TOOLS_SHA=2bb63e2e7877491b52f972532b52adc979a6ec2f
