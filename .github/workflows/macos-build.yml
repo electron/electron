@@ -3,6 +3,7 @@ name: Build MacOS
 # TODO: change to 'pull_request' and 'push' 
 # when we are ready to enable this for PRs.
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       IS_RELEASE:
@@ -16,7 +17,7 @@ on:
       GN_BUILD_TYPE:
         required: false
         type: string
-        default: release
+        default: testing
       GENERATE_SYMBOLS: 
         required: false
         type: boolean
