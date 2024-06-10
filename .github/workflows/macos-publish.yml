@@ -5,7 +5,7 @@ on:
     inputs:
       upload-to-storage:
         description: 'Uploads to Azure storage'
-        required: false 
+        required: false
         default: '1'
         type: string
       run-macos-publish:
@@ -16,11 +16,11 @@ on:
 jobs:
   publish:
   # TODO(vertedinde): Change this to main before merge
-    uses: electron/electron/.github/workflows/macos-build.yml@gh-actions-mac-publish
+    uses: electron/electron/.github/workflows/macos-pipeline.yml@main
     with:
-      IS_RELEASE: true
-      GN_CONFIG: //electron/build/args/release.gn
-      GN_BUILD_TYPE: release
-      GENERATE_SYMBOLS: true
-      UPLOAD_TO_STORAGE: ${{ inputs.upload-to-storage }}
+      is-release: true
+      gn-config: //electron/build/args/release.gn
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
