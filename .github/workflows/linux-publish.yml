@@ -1,4 +1,4 @@
-name: Publish MacOS
+name: Publish Linux
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
 
 jobs:
   publish:
-    uses: electron/electron/.github/workflows/macos-pipeline.yml@main
+    uses: electron/electron/.github/workflows/linux-pipeline.yml@main
     with:
       is-release: true
       gn-config: //electron/build/args/release.gn

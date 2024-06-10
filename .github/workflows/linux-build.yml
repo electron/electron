@@ -1,13 +1,13 @@
-name: Build MacOS
+name: Build Linux
 
 on:
   workflow_dispatch:
-  # push
+  # push:
   # pull_request:
 
 jobs:
   build:
-    uses: electron/electron/.github/workflows/macos-pipeline.yml@main
+    uses: electron/electron/.github/workflows/linux-pipeline.yml@main
     with:
       is-release: false
       gn-config: //electron/build/args/testing.gn

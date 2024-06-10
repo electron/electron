@@ -110,8 +110,6 @@ jobs:
           echo "Cache Does Not Exist for $DEPSHASH"
         fi
     - name: Gclient Sync
-      # If there is no existing src cache, we need to do a full gclient sync.
-      # TODO(codebytere): Add stale patch handling for non-release builds.
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         gclient config \
