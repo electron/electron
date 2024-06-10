@@ -192,7 +192,7 @@ def get_buildtools_executable(name):
     'cygwin': 'win',
   }[sys.platform]
   if name == 'clang-format':
-    path = os.path.join(buildtools, chromium_platform, 'format', name)  
+    path = os.path.join(buildtools, f"{chromium_platform}-format", name)  
   else:
     path = os.path.join(buildtools, chromium_platform, name)
   if sys.platform == 'win32':
