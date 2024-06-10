@@ -38,8 +38,6 @@ namespace pdfViewerPrivate {
 
   callback GetStreamInfoCallback = void(StreamInfo streamInfo);
   callback IsAllowedLocalFileAccessCallback = void(boolean result);
-  callback IsPdfOcrAlwaysActiveCallback = void(boolean result);
-  callback OnPdfOcrPrefSetCallback = void(boolean result);
   callback VoidCallback = void();
 
   interface Functions {
@@ -54,22 +52,10 @@ namespace pdfViewerPrivate {
         DOMString url,
         IsAllowedLocalFileAccessCallback callback);
 
-    // Determines if the preference for PDF OCR is set to run PDF OCR always.
-    // |callback|: Called with true if PDF OCR is set to be always active;
-    // false otherwise.
-    static void isPdfOcrAlwaysActive(
-        IsPdfOcrAlwaysActiveCallback callback);
-
     // Sets the current tab title to `title` for a full-page PDF.
     static void setPdfDocumentTitle(
         DOMString title,
         optional VoidCallback callback);
-
-    // Sets a pref value for PDF OCR.
-    // |value|: The new value of the pref.
-    // |callback|: The callback for whether the pref was set or not.
-    static void setPdfOcrPref(
-        boolean value, OnPdfOcrPrefSetCallback callback);
 
     // Sets PDF plugin attributes in the stream for this context if there is
     // one.
@@ -79,10 +65,6 @@ namespace pdfViewerPrivate {
   };
 
   interface Events {
-    // Fired when a pref value for PDF OCR has changed.
-    // |value| The pref value that changed.
-    static void onPdfOcrPrefChanged(boolean value);
-
     // Fired when the browser wants the listener to perform a save.
     // `streamUrl`: Unique ID for the instance that should perform the save.
     static void onSave(DOMString streamUrl);
