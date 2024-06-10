@@ -2,13 +2,13 @@ name: Build Linux
 
 on:
   workflow_dispatch:
-  # push
+  push:
   # pull_request:
 
 jobs:
   build:
   # TODO(vertedinde): Change this to main before merge
-    uses: electron/electron/.github/workflows/macos-pipeline.yml@gh-actions-build-linux
+    uses: electron/electron/.github/workflows/linux-pipeline.yml@gh-actions-build-linux
     with:
       is-release: false
       gn-config: //electron/build/args/testing.gn
