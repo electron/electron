@@ -250,6 +250,8 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+namespace {
+
 class ChunkedDataPipeReadableStream
     : public gin::Wrappable<ChunkedDataPipeReadableStream> {
  public:
@@ -489,8 +491,11 @@ class ChunkedDataPipeReadableStream
   v8::Global<v8::ArrayBufferView> buf_;
   gin_helper::Promise<int> promise_;
 };
+
 gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
     gin::kEmbedderNativeGin};
+
+}  // namespace
 
 // static
 v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(

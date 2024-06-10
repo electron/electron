@@ -25,6 +25,8 @@
 
 namespace electron {
 
+namespace {
+
 const char kXdgSettings[] = "xdg-settings";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
 
@@ -83,6 +85,8 @@ bool SetDefaultWebClient(const std::string& protocol) {
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
   return ran_ok && exit_code == EXIT_SUCCESS;
 }
+
+}  // namespace
 
 void Browser::AddRecentDocument(const base::FilePath& path) {}
 
