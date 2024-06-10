@@ -48,7 +48,7 @@ def main():
   if args.verbose:
     enable_verbose_mode()
   if args.upload_to_storage:
-    utcnow = datetime.datetime.utcnow()
+    utcnow = datetime.datetime.now(datetime.UTC)
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
 
   build_version = get_electron_build_version()
