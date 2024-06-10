@@ -433,10 +433,10 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..0cdb0def975e457651771b43fd543261
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index ea7957d89c1c44ce7cae2f0d4548fb67b60543ca..04f78e4f395df7ad3be39ff4a373e0d72811f587 100644
+index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe2b74eda9 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -2063,15 +2063,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2068,15 +2068,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -608,10 +608,10 @@ index 4cfc7dd8fedd289dbbbcf34ed552c307da005328..1950b34d864c5c86ed408d91019895b4
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index c2d9006640e76ada8fb4751925e140f51584dffc..f64254aeed6c203830a2a864a321c86bcb5d0d27 100644
+index 4c05c03b390262dfccc34c58310a3077ff2bebab..faeac6eacc0d92224ce2a5ee59847226c34f284d 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -251,6 +251,7 @@ source_set("common") {
+@@ -234,6 +234,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -620,7 +620,7 @@ index c2d9006640e76ada8fb4751925e140f51584dffc..f64254aeed6c203830a2a864a321c86b
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 4acb73f39de91b9dfd9b1e6d25c911983c91dc93..22513b5aa30d0fa549d06d5d58312b0a2aa07b27 100644
+index b19f9ebb80563a6798983f372967824ab96dc590..54d0c71648027a6242be9768c79b0ac590e4a02d 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -226,6 +226,7 @@ target(link_target_type, "renderer") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8b587af65ca45c9d70bfd48c3bd5fcee3825542b..7cf700dfd765283b88291a9dc5c19ec46a1a6a04 100644
+index b477623aaa45514e0c8bab35ec63f32d80ac7197..63b8503375d287c1c27f54beec20c520eb4753eb 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 8b587af65ca45c9d70bfd48c3bd5fcee3825542b..7cf700dfd765283b88291a9dc5c19ec4
  
    public_deps = [
      ":test_interfaces",
-@@ -2973,6 +2976,7 @@ test("content_unittests") {
+@@ -2968,6 +2971,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -761,7 +761,7 @@ index 05cce11f233e04e22bf9166ee107661900686bea..70268a1ff7c59a03903072fafe8b62ac
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index cda4f747099492c306db22c6dba98249e443cd74..f63dbbe7149010efa06c9cbb215399eb9e882cb9 100644
+index 9d7b9d0b3a10a9b2cb87b892f6d1c952928669f5..b962993c83431af9d064a891d0f3d865dac70428 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -39,6 +39,7 @@
@@ -778,9 +778,9 @@ index cda4f747099492c306db22c6dba98249e443cd74..f63dbbe7149010efa06c9cbb215399eb
  }
 +#endif
  
- namespace {
- 
-@@ -103,8 +105,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+ // A simple helper class that forwards any Bluetooth device connect notification
+ // to its wrapped |_adapter|.
+@@ -150,8 +152,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -791,7 +791,7 @@ index cda4f747099492c306db22c6dba98249e443cd74..f63dbbe7149010efa06c9cbb215399eb
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -252,8 +256,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -310,8 +314,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

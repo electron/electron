@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 2c0ecf25f6922282180bc68432a04cefd63b0474..14b035d8e404f37611ac1a5c7af2c3b7bf0d6cb0 100644
+index cd1403cf253cc1f545be1d0aaa7edfab8eca30be..1bae27e3ed6669ecf9cabfea4f3e4b94fb0a5d84 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -978,7 +978,6 @@ if (is_win) {
+@@ -979,7 +979,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 2c0ecf25f6922282180bc68432a04cefd63b0474..14b035d8e404f37611ac1a5c7af2c3b7
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -987,6 +986,10 @@ if (is_win) {
+@@ -988,6 +987,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
