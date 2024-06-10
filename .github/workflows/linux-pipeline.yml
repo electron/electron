@@ -52,9 +52,6 @@ jobs:
   checkout:
     runs-on: LargeLinuxRunner
     steps:
-  checkout:
-    runs-on: LargeLinuxRunner
-    steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
