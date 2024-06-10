@@ -23,7 +23,7 @@ v8::Global<v8::FunctionTemplate>* GetIsDestroyedFunc() {
 }
 
 void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  v8::Local<v8::Object> holder = info.Holder();
+  v8::Local<v8::Object> holder = info.This();
   if (Destroyable::IsDestroyed(holder))
     return;
 
@@ -35,7 +35,7 @@ void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 void IsDestroyedFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(gin::ConvertToV8(
-      info.GetIsolate(), Destroyable::IsDestroyed(info.Holder())));
+      info.GetIsolate(), Destroyable::IsDestroyed(info.This())));
 }
 
 }  // namespace
