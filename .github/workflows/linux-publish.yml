@@ -15,8 +15,7 @@ on:
 
 jobs:
   publish:
-  # TODO(vertedinde): Change this to main before merge
-    uses: electron/electron/.github/workflows/linux-pipeline.yml@gh-actions-build-linux
+    uses: electron/electron/.github/workflows/linux-pipeline.yml@main
     with:
       is-release: true
       gn-config: //electron/build/args/release.gn
