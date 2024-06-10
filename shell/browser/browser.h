@@ -236,6 +236,10 @@ class Browser : private WindowListObserver {
   // Set docks' icon.
   void DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
 
+  void SetLaunchedAtLogin(bool launched_at_login) {
+    was_launched_at_login_ = launched_at_login;
+  }
+
 #endif  // BUILDFLAG(IS_MAC)
 
   void ShowAboutPanel();
@@ -370,6 +374,7 @@ class Browser : private WindowListObserver {
 #if BUILDFLAG(IS_MAC)
   std::unique_ptr<ui::ScopedPasswordInputEnabler> password_input_enabler_;
   base::Time last_dock_show_;
+  bool was_launched_at_login_;
 #endif
 
   base::Value::Dict about_panel_options_;
