@@ -1,0 +1,59 @@
+name: Pipeline Linux
+
+on:
+  workflow_call:
+    inputs:
+      is-release:
+        description: 'Whether this build job is a release job'
+        required: true
+        type: boolean
+        default: false
+      gn-config:
+        description: 'The gn arg configuration to use'
+        required: true
+        type: string
+        default: //electron/build/args/testing.gn
+      gn-build-type:
+        description: 'The gn build type - testing or release'
+        required: true
+        type: string
+        default: testing
+      generate-symbols: 
+        description: 'Whether or not to generate symbols'
+        required: true
+        type: boolean
+        default: false
+      upload-to-storage: 
+        description: 'Whether or not to upload build artifacts to external storage'
+        required: true
+        type: string
+        default: '0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+  ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+  GN_CONFIG: ${{ inputs.gn-config }}
+  # Disable pre-compiled headers to reduce out size - only useful for rebuilds
+  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+  CHECK_DIST_MANIFEST: '1'
+  IS_GHA_RELEASE: true
+  ELECTRON_OUT_DIR: Default
+
+jobs:
+  checkout:
+    runs-on: LargeLinuxRunner
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
