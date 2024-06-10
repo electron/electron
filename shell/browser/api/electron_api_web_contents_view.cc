@@ -138,6 +138,7 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 // static
 gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
   gin_helper::Dictionary web_preferences;
+  v8::Local<v8::Value> existing_web_contents_value;
   {
     v8::Local<v8::Value> options_value;
     if (args->GetNext(&options_value)) {
@@ -154,12 +155,33 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
           return nullptr;
         }
       }
+
+      if (options.Get("webContents", &existing_web_contents_value)) {
+        gin::Handle<WebContents> existing_web_contents;
+        if (!gin::ConvertFromV8(args->isolate(), existing_web_contents_value,
+                                &existing_web_contents)) {
+          args->ThrowError("options.webContents must be a WebContents");
+          return nullptr;
+        }
+
+        if (existing_web_contents->owner_window() != nullptr) {
+          args->ThrowError(
+              "options.webContents is already attached to a window");
+          return nullptr;
+        }
+      }
     }
   }
+
   if (web_preferences.IsEmpty())
     web_preferences = gin_helper::Dictionary::CreateEmpty(args->isolate());
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, false);
+
+  if (!existing_web_contents_value.IsEmpty()) {
+    web_preferences.SetHidden("webContents", existing_web_contents_value);
+  }
+
   auto web_contents =
       WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 
