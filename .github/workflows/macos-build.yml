@@ -8,7 +8,7 @@ on:
 jobs:
   build:
   # TODO(vertedinde): Change this to main before merge
-    uses: electron/electron/.github/workflows/macos-pipeline.yml@ensure-build-working
+    uses: electron/electron/.github/workflows/macos-pipeline.yml@main
     with:
       is-release: false
       gn-config: //electron/build/args/testing.gn

@@ -527,6 +527,7 @@ jobs:
         node script/yarn create-typescript-definitions
     # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
     - name: Publish Electron Dist
+      if: ${{ inputs.is-release }}
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
@@ -631,6 +632,7 @@ jobs:
         fi
     # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
     - name: Publish Electron Dist
+      if: ${{ inputs.is-release }}
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
