@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    uses: electron/electron/.github/workflows/linux-pipeline.yml@main
+    uses: electron/electron/.github/workflows/linux-pipeline.yml@linux-gha-build
     with:
       is-release: false
       gn-config: //electron/build/args/testing.gn

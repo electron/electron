@@ -43,7 +43,6 @@ env:
   GN_CONFIG: ${{ inputs.gn-config }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
-  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
   CHECK_DIST_MANIFEST: '1'
   IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
@@ -56,6 +55,7 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
+        fetch-depth: 0
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
@@ -73,15 +73,11 @@ jobs:
       timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        if [ "`uname`" == "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          cd depot_tools
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
+
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -186,5 +182,175 @@ jobs:
           --account-key $AZURE_STORAGE_KEY \
           --container-name $AZURE_STORAGE_CONTAINER_NAME \
           --file $DEPSHASH.tar \
-          --name $DEPSHASH \
-          --debug
+          --name $DEPSHASH
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        build-arch: [ arm64 ] # x64, arm 
+    runs-on: LargeLinuxRunner
+    needs: checkout
+    steps:
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ matrix.build-arch }}
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Setup Node.js/npm
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+      with:
+        node-version: 20.11.x
+        cache: yarn
+        cache-dependency-path: src/electron/yarn.lock
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Set GN_EXTRA_ARGS
+      run: |
+        if [ ${{ matrix.build-arch == 'arm' }} ]; then
+          echo "GN_EXTRA_ARGS='target_cpu=\"arm\" build_tflite_with_xnnpack=false'" >> $GITHUB_ENV
+        elif [ ${{ matrix.build-arch == 'arm64' }} ]; then
+          echo "GN_EXTRA_ARGS='target_cpu=\"arm64\" fatal_linker_warnings=false enable_linux_installer=false'" >> $GITHUB_ENV
+        fi
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Download Src Cache
+      # The cache will always exist here as a result of the checkout job
+      # Either it was uploaded to Azure in the checkout job for this commit
+      # or it was uploaded in the checkout job for a previous commit.
+      uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+      with:
+        timeout_minutes: 20
+        max_attempts: 3
+        retry_on: error
+        command: |
+          az storage blob download \
+            --account-name $AZURE_STORAGE_ACCOUNT \
+            --account-key $AZURE_STORAGE_KEY \
+            --container-name $AZURE_STORAGE_CONTAINER_NAME \
+            --name $DEPSHASH \
+            --file $DEPSHASH.tar
+    - name: Unzip and Ensure Src Cache
+      run: |
+        echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+        mkdir temp-cache
+        tar -xvf $DEPSHASH.tar -C temp-cache
+        echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
+
+        if [ -d "temp-cache/src" ]; then
+          echo "Relocating Cache"
+          rm -rf src
+          mv temp-cache/src src
+
+          echo "Deleting zip file"
+          rm -rf $DEPSHASH.tar
+        fi
+
+        if [ ! -d "src/third_party/blink" ]; then
+          echo "Cache was not correctly restored - exiting"
+          exit 1
+        fi
+
+        echo "Wiping Electron Directory"
+        rm -rf src/electron
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Run Electron Only Hooks
+      run: |
+        echo "Running Electron Only Hooks"
+        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    - name: Regenerate DEPS Hash
+      run: |
+        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Fix Known Hosts on Linux
+      run: src/electron/.circleci/fix-known-hosts.sh
+    - name: Install build-tools & Setup RBE
+      run: |
+        echo "NUMBER_OF_NINJA_PROCESSES=200" >> $GITHUB_ENV
+        cd ~/.electron_build_tools
+        npx yarn --ignore-engines
+        # Pull down credential helper and print status
+        node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
+        HELPER=$(node -p "require('./src/utils/reclient.js').helperPath({})")
+        $HELPER login
+        echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
+        echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath({}))"` >> $GITHUB_ENV
+        echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
+    - name: Build Electron
+      run: |
+        cd src/electron
+        # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
+        git pack-refs
+        cd ..
+        ulimit -n 10000
+        sudo launchctl limit maxfiles 65536 200000
+
+        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
+        cp out/Default/.ninja_log out/electron_ninja_log
+        node electron/script/check-symlinks.js
+    - name: Build Electron dist.zip
+      run: |
+        cd src
+        e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
+        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ env.TARGET_ARCH }}.manifest
+        fi
+    - name: Build Mksnapshot
+      run: |
+        cd src
+        e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        # Remove unused args from mksnapshot_args
+        SEDOPTION="-i ''"
+        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/The gn arg use_goma=true .*/d' out/Default/mksnapshot_args
+        e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+    - name: Build Chromedriver
+      run: |
+        cd src
+        e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+        e build electron:electron_chromedriver_zip
+    - name: Generate & Zip Symbols
+      run: |
+        # Generate breakpad symbols on release builds
+        if [ ${{ inputs.generate-symbols }} ]; then
+          e build electron:electron_symbols
+        fi
+        cd src
+        export BUILD_PATH="$(pwd)/out/Default"
+        e build electron:licenses
+        e build electron:electron_version_file
+        if [ ${{ inputs.is-release }} ]; then
+          DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
+        else
+          electron/script/zip-symbols.py -b $BUILD_PATH
+        fi
