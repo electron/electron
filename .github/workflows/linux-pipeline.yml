@@ -56,8 +56,6 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
-    - name: Install Azure CLI
-      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
@@ -111,8 +109,6 @@ jobs:
           echo "Cache Does Not Exist for $DEPSHASH"
         fi
     - name: Gclient Sync
-      # If there is no existing src cache, we need to do a full gclient sync.
-      # TODO(codebytere): Add stale patch handling for non-release builds.
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         gclient config \
@@ -122,7 +118,7 @@ jobs:
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
-        if [ ${{ inputs.IS_RELEASE }} != "true" ]; then
+        if [ ${{ inputs.is-release != true }} ]; then
           # Re-export all the patches to check if there were changes.
           python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
