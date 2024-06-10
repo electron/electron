@@ -19,7 +19,8 @@
         "Tabs",
         "TabItem"
       ]
-    }
+    },
+    "no-newline-in-links": true
   },
   "customRules": [
     "@electron/lint-roller/markdownlint-rules/"
