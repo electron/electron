@@ -1270,10 +1270,17 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto pid_dict = gin_helper::Dictionary::CreateEmpty(isolate);
     auto cpu_dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
-    double usage =
-        process_metric.second->metrics->GetPlatformIndependentCPUUsage()
-            .value_or(0);
-    cpu_dict.Set("percentCPUUsage", usage / processor_count);
+    // Default usage percentage to 0 for compatibility
+    double usagePercent = 0;
+    if (auto usage = process_metric.second->metrics->GetCumulativeCPUUsage();
+        usage.has_value()) {
+      cpu_dict.Set("cumulativeCPUUsage", usage->InSecondsF());
+      usagePercent =
+          process_metric.second->metrics->GetPlatformIndependentCPUUsage(
+              *usage);
+    }
+
+    cpu_dict.Set("percentCPUUsage", usagePercent / processor_count);
 
 #if !BUILDFLAG(IS_WIN)
     cpu_dict.Set("idleWakeupsPerSecond",
