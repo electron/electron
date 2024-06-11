@@ -352,3 +352,58 @@ jobs:
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
+    - name: Generate FFMpeg
+      if: ${{ inputs.is-release }}
+      run: |
+        cd src
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
+        autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Generate Hunspell Dictionaries
+      if: ${{ inputs.is-release }}
+      run: |
+        cd src
+        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Generate TypeScript Definitions
+      if: ${{ inputs.is-release }}
+      run: |
+        cd src/electron
+        node script/yarn create-typescript-definitions
+    - name: Publish Electron Dist
+      if: ${{ inputs.is-release }}
+      run: |
+        rm -rf src/out/Default/obj
+        cd src/electron
+        if [ ${{ inputs.upload-to-storage == '1' }} ]; then
+          echo 'Uploading Electron release distribution to Azure'
+          script/release/uploaders/upload.py --verbose --upload_to_storage
+        else
+          echo 'Uploading Electron release distribution to GitHub releases'
+          script/release/uploaders/upload.py --verbose
+        fi
+    - name: Move all Generated Artifacts to Upload Folder
+      run: ./src/electron/script/actions/move-artifacts.sh
+    - name: Upload Generated Artifacts
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      with:
+        name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
+    - name: Persist Build Artifacts
+      uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+      with:
+        path: |
+          src/out/Default/gen/node_headers
+          src/out/Default/overlapped-checker
+          src/electron
+          src/third_party/electron_node
+          src/third_party/nan
+          src/cross-arch-snapshots
+          src/third_party/llvm-build
+          src/build/linux
+          src/buildtools/mac
+          src/buildtools/third_party/libc++
+          src/buildtools/third_party/libc++abi
+          src/third_party/libc++
+          src/third_party/libc++abi
+          src/out/Default/obj/buildtools/third_party
+          src/v8/tools/builtins-pgo
+        key: ${{ runner.os }}-build-artifacts-linux-${{ env.TARGET_ARCH }}-${{ github.sha }}
