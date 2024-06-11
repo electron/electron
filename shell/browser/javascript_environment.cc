@@ -124,13 +124,11 @@ JavascriptEnvironment::~JavascriptEnvironment() {
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
                                                bool setup_wasm_streaming) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
-
   // --js-flags.
-  std::string js_flags =
-      cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags);
-  js_flags.append(" --no-freeze-flags-after-init");
-  if (!js_flags.empty())
-    v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
+  std::string js_flags = "--no-freeze-flags-after-init";
+  js_flags.append(" " +
+                  cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags));
+  v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
