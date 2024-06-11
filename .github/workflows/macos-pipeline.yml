@@ -37,6 +37,8 @@ env:
   AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  AZURE_AKS_CACHE_STORAGE_KEY: ${{ secrets.AZURE_AKS_CACHE_STORAGE_KEY }}
+  AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING }}
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
   AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
@@ -52,7 +54,7 @@ env:
 
 jobs:
   checkout:
-    runs-on: aks-linux-large-16
+    runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
@@ -95,23 +97,23 @@ jobs:
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-    # - name: Check If Cache Exists
-    #   id: check-cache
-    #   run: |
-    #     exists_json=$(az storage blob exists \
-    #       --account-name $AZURE_STORAGE_ACCOUNT \
-    #       --account-key $AZURE_STORAGE_KEY \
-    #       --container-name $AZURE_STORAGE_CONTAINER_NAME \
-    #       --name $DEPSHASH)
+    - name: Check If Cache Exists
+      id: check-cache
+      run: |
+        exists_json=$(az storage file exists \
+          --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \
+          --account-key $AZURE_AKS_CACHE_STORAGE_KEY \
+          --share-name $AZURE_AKS_CACHE_SHARE_NAME \
+          --path $DEPSHASH.tar)
 
-    #     cache_exists=$(echo $exists_json | jq -r '.exists')
-    #     echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
+        cache_exists=$(echo $exists_json | jq -r '.exists')
+        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
 
-    #     if (test "$cache_exists" = "true"); then
-    #       echo "Cache Exists for $DEPSHASH"
-    #     else
-    #       echo "Cache Does Not Exist for $DEPSHASH"
-    #     fi
+        if (test "$cache_exists" = "true"); then
+          echo "Cache Exists for $DEPSHASH"
+        else
+          echo "Cache Does Not Exist for $DEPSHASH"
+        fi
     - name: Gclient Sync
       # if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
@@ -176,26 +178,28 @@ jobs:
         rm -rf src/third_party/swift-toolchain
         rm -rf src/third_party/swiftshader/tests/regres/testlists
         rm -rf src/electron
-    # - name: Compress Src Directory
-    #   if: steps.check-cache.outputs.cache_exists == 'false'
-    #   run: |
-    #     echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-    #     tar -cvf $DEPSHASH.tar src
-    #     echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
+    - name: Compress Src Directory
+      # if: steps.check-cache.outputs.cache_exists == 'false'
+      run: |
+        echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
+        tar -cvf $DEPSHASH.tar src
+        echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
     - name: Move src folder to cross-OS portal
       run: |
+        cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
         sudo mkdir -p /var/portal
         sudo chown -R $(id -u):$(id -g) /var/portal
         mv ./src /var/portal
     - name: Persist Src Cache
       run: |
-        cache_key=v2-git-cache-$DEPSHASH
+        # cache_key=v2-git-cache-$DEPSHASH
+        cache_key=$DEPSHASH
         cache_path=/var/portal
         final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
         echo "Using cache key: $cache_key"
         echo "Checking path: $final_cache_path"
         if [ ! -f "$final_cache_path" ]; then
-          echo "Cache key not founding, storing tarball"
+          echo "Cache key not found, storing tarball"
           tmp_container=/mnt/cross-instance-cache/tmp/${{ github.sha }}
           tmp_cache_path=$tmp_container/${cache_key}.tar
           mkdir -p $tmp_container
