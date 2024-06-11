@@ -49,7 +49,9 @@ env:
 
 jobs:
   checkout:
-    runs-on: LargeLinuxRunner
+    runs-on: aks-linux-large-16
+    container:
+      image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -188,7 +190,10 @@ jobs:
       fail-fast: false
       matrix:
         build-arch: [ arm64 ] # x64, arm 
-    runs-on: LargeLinuxRunner
+    runs-on: aks-linux-large-16
+    container:
+      image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
+      options: --user root
     needs: checkout
     steps:
     - name: Load Build Tools
