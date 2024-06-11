@@ -52,7 +52,7 @@ jobs:
   checkout:
     runs-on: aks-linux-large-16
     container:
-      image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
+      image: ghcr.io/electron/build:latest
       options: --user root
     steps:
     - name: Checkout Electron
