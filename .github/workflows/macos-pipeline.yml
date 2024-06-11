@@ -507,7 +507,7 @@ jobs:
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
-    - name: Generate FFMpeg
+    - name: Generate FFMpeg (darwin)
       if: ${{ inputs.is-release }}
       run: |
         cd src
@@ -628,6 +628,12 @@ jobs:
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
+    - name: Generate FFMpeg (mas)
+      if: ${{ inputs.is-release }}
+      run: |
+        cd src
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
+        autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
     # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
     - name: Publish Electron Dist
       if: ${{ inputs.is-release }}
