@@ -110,19 +110,25 @@ void ElectronRendererClient::DidCreateScriptContext(
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
-  v8::Local<v8::Object> global = renderer_context->Global();
-  v8::MaybeLocal<v8::Value> fetch =
-      global->Get(renderer_context, gin::StringToV8(env->isolate(), "fetch"));
-
   // We need to use the Blink implementation of fetch in the renderer process
   // Node.js deletes the global fetch function when their fetch implementation
   // is disabled, so we need to save and re-add it after the Node.js environment
   // is loaded. See corresponding change in node/init.ts.
-  if (!fetch.IsEmpty()) {
-    global
-        ->Set(renderer_context, gin::StringToV8(env->isolate(), "blinkFetch"),
-              fetch.ToLocalChecked())
-        .Check();
+  v8::Isolate* isolate = env->isolate();
+  v8::Local<v8::Object> global = renderer_context->Global();
+
+  std::vector<std::string> keys = {"fetch", "Response", "FormData", "Request",
+                                   "Headers"};
+  for (const auto& key : keys) {
+    v8::MaybeLocal<v8::Value> value =
+        global->Get(renderer_context, gin::StringToV8(isolate, key.c_str()));
+    if (!value.IsEmpty()) {
+      std::string blink_key = "blink" + key;
+      global
+          ->Set(renderer_context, gin::StringToV8(isolate, blink_key.c_str()),
+                value.ToLocalChecked())
+          .Check();
+    }
   }
 
   // If we have disabled the site instance overrides we should prevent loading
