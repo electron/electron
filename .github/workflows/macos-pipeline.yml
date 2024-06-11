@@ -91,23 +91,23 @@ jobs:
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-    - name: Check If Cache Exists
-      id: check-cache
-      run: |
-        exists_json=$(az storage blob exists \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $DEPSHASH)
+    # - name: Check If Cache Exists
+    #   id: check-cache
+    #   run: |
+    #     exists_json=$(az storage blob exists \
+    #       --account-name $AZURE_STORAGE_ACCOUNT \
+    #       --account-key $AZURE_STORAGE_KEY \
+    #       --container-name $AZURE_STORAGE_CONTAINER_NAME \
+    #       --name $DEPSHASH)
 
-        cache_exists=$(echo $exists_json | jq -r '.exists')
-        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
+    #     cache_exists=$(echo $exists_json | jq -r '.exists')
+    #     echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
 
-        if (test "$cache_exists" = "true"); then
-          echo "Cache Exists for $DEPSHASH"
-        else
-          echo "Cache Does Not Exist for $DEPSHASH"
-        fi
+    #     if (test "$cache_exists" = "true"); then
+    #       echo "Cache Exists for $DEPSHASH"
+    #     else
+    #       echo "Cache Does Not Exist for $DEPSHASH"
+    #     fi
     - name: Gclient Sync
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
