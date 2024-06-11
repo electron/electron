@@ -37,6 +37,8 @@ env:
   AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
+  AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
@@ -275,8 +277,8 @@ jobs:
         retry_on: error
         command: |
           az storage file download \
+            --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \
             --share-name $AZURE_AKS_CACHE_SHARE_NAME \
-            --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \"
             --path ".DS_Store"
     - name: Unzip and Ensure Src Cache
       run: |
