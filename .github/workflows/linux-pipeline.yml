@@ -309,8 +309,6 @@ jobs:
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
         cd ..
-        ulimit -n 10000
-        sudo launchctl limit maxfiles 65536 200000
 
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
