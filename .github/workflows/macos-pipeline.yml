@@ -44,7 +44,8 @@ env:
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-  CHECK_DIST_MANIFEST: '1'
+  # Only disable this in the Asan build
+  CHECK_DIST_MANIFEST: true
   IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
 
@@ -74,15 +75,12 @@ jobs:
       timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        if [ "`uname`" == "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          cd depot_tools
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
+
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -114,7 +112,7 @@ jobs:
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
-        if [ ${{ inputs.is-release != true }}]; then
+        if [ "${{ inputs.is-release }}" != "true" ]; then
           # Re-export all the patches to check if there were changes.
           python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
@@ -172,7 +170,7 @@ jobs:
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-        tar -cvf $DEPSHASH.tar src
+        tar -cf $DEPSHASH.tar src
         echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
     - name: Move src folder to cross-OS portal
       if: steps.check-cache.outputs.cache_exists == 'false'
@@ -246,15 +244,10 @@ jobs:
       timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        if [ "`uname`" == "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          cd depot_tools
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
+
+        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -282,7 +275,7 @@ jobs:
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
         mkdir temp-cache
-        tar -xvf $DEPSHASH.tar -C temp-cache
+        tar -xf $DEPSHASH.tar -C temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
         if [ -d "temp-cache/src" ]; then
@@ -308,7 +301,6 @@ jobs:
         fetch-depth: 0
     - name: Run Electron Only Hooks
       run: |
-        echo "Running Electron Only Hooks"
         gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
     - name: Regenerate DEPS Hash
       run: |
@@ -484,7 +476,7 @@ jobs:
       run: |
         cd src
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
-        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+        if [ "${{ env.CHECK_DIST_MANIFEST }}" == "true" ]; then
           target_os=mac
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ env.TARGET_ARCH }}.manifest
         fi
@@ -509,14 +501,14 @@ jobs:
     - name: Generate & Zip Symbols (darwin)
       run: |
         # Generate breakpad symbols on release builds
-        if [ ${{ inputs.generate-symbols }} ]; then
+        if [ "${{ inputs.generate-symbols }}" == "true" ]; then
           e build electron:electron_symbols
         fi
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
         e build electron:licenses
         e build electron:electron_version_file
-        if [ ${{ inputs.is-release }} ]; then
+        if [ "${{ inputs.is-release }}" == "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
@@ -543,7 +535,7 @@ jobs:
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
-        if [ ${{ inputs.upload-to-storage == '1' }} ]; then
+        if [ "${{ inputs.upload-to-storage }}" == "1" ]; then
           echo 'Uploading Electron release distribution to Azure'
           script/release/uploaders/upload.py --verbose --upload_to_storage
         else
@@ -603,7 +595,7 @@ jobs:
       run: |
         cd src
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
-        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+        if [ "${{ env.CHECK_DIST_MANIFEST }}" == "true" ]; then
           target_os=mac_mas
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ env.TARGET_ARCH }}.manifest
         fi
@@ -630,14 +622,14 @@ jobs:
         e build electron:node_headers
     - name: Generate & Zip Symbols (mas)
       run: |
-        if [ ${{ inputs.generate-symbols }} ]; then
+        if [ "${{ inputs.generate-symbols }}" == "true" ]; then
           e build electron:electron_symbols
         fi
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
         e build electron:licenses
         e build electron:electron_version_file
-        if [ ${{ inputs.is-release }}]; then
+        if [ "${{ inputs.is-release }}" == "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
@@ -654,7 +646,7 @@ jobs:
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
-        if [ ${{ inputs.upload-to-storage == '1' }} ]; then
+        if [ "${{ inputs.upload-to-storage }}" == "1" ]; then
           echo 'Uploading Electron release distribution to Azure'
           script/release/uploaders/upload.py --verbose --upload_to_storage
         else
