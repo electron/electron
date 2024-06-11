@@ -757,7 +757,8 @@ jobs:
           src/third_party/libc++abi
           src/out/Default/obj/buildtools/third_party
           src/v8/tools/builtins-pgo
-        key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ github.sha }}
+        key: ${{ runner.os }}-build-artifacts-${{ matrix.build-type }}-${{ matrix.target-arch }}-${{ github.sha }}
+        fail-on-cache-miss: true
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist, Mksnapshot & Chromedriver
