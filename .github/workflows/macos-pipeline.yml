@@ -172,23 +172,34 @@ jobs:
         rm -rf src/third_party/swift-toolchain
         rm -rf src/third_party/swiftshader/tests/regres/testlists
         rm -rf src/electron
-    - name: Compress Src Directory
-      if: steps.check-cache.outputs.cache_exists == 'false'
+    # - name: Compress Src Directory
+    #   if: steps.check-cache.outputs.cache_exists == 'false'
+    #   run: |
+    #     echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
+    #     tar -cvf $DEPSHASH.tar src
+    #     echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
+    - name: Move src folder to cross-OS portal
       run: |
-        echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-        tar -cvf $DEPSHASH.tar src
-        echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
+        sudo mkdir -p /var/portal
+        sudo chown -R $(id -u):$(id -g) /var/portal
+        mv ./src /var/portal
     - name: Persist Src Cache
       run: |
         cache_key=v2-git-cache-$DEPSHASH
+        cache_path=/var/portal
         final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
         echo "Using cache key: $cache_key"
         echo "Checking path: $final_cache_path"
         if [ ! -f "$final_cache_path" ]; then
           echo "Cache key not founding, storing tarball"
-          tmp_container=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID
+          tmp_container=/mnt/cross-instance-cache/tmp/${{ github.sha }}
           tmp_cache_path=$tmp_container/${cache_key}.tar
           mkdir -p $tmp_container
+          if [ -f "$cache_path" ]; then
+            tar -cf $tmp_cache_path -C $(dirname $cache_path) ./$(basename $cache_path)
+          else
+            tar -cf $tmp_cache_path -C $cache_path/ ./
+          fi
           mv -vn $tmp_cache_path $final_cache_path
           rm -rf $tmp_container
         else
