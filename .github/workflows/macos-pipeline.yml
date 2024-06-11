@@ -113,7 +113,7 @@ jobs:
     #       echo "Cache Does Not Exist for $DEPSHASH"
     #     fi
     - name: Gclient Sync
-      if: steps.check-cache.outputs.cache_exists == 'false'
+      # if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         gclient config \
           --name "src/electron" \
@@ -160,12 +160,12 @@ jobs:
     # https://dawn-review.googlesource.com/c/dawn/+/83901
     # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
     - name: Delete .git directories under src to free space
-      if: steps.check-cache.outputs.cache_exists == 'false'
+      # if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         cd src
         ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
     - name: Minimize Cache Size for Upload
-      if: steps.check-cache.outputs.cache_exists == 'false'
+      # if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         rm -rf src/android_webview
         rm -rf src/ios/chrome
