@@ -690,6 +690,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [ darwin, mas ]
+        target-arch: [ x64, arm64 ]
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
     steps:
@@ -735,8 +736,8 @@ jobs:
     - name: Download Generated Artifacts
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
       with:
-        name: generated_artifacts_${{ matrix.build-type }}
-        path: ./generated_artifacts_${{ matrix.build-type }}
+        name: generated_artifacts_${{ matrix.build-type }}_${{ matrix.target-arch }}
+        path: ./generated_artifacts_${{ matrix.build-type }}_${{ matrix.target-arch }}
     - name: Restore Persisted Build Artifacts
       uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
       with:
