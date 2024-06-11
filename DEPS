@@ -48,6 +48,9 @@ vars = {
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
 
+  # Can be used to disable the sysroot hooks.
+  'install_sysroot': True,
+
   'use_rts': False,
 
   'mac_xcode_version': 'default',
@@ -164,7 +167,7 @@ hooks = [
   {
     'name': 'sysroot_arm',
     'pattern': '.',
-    'condition': 'checkout_linux and checkout_arm',
+    'condition': 'install_sysroot and checkout_linux and checkout_arm',
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=arm'],
@@ -172,7 +175,7 @@ hooks = [
   {
     'name': 'sysroot_arm64',
     'pattern': '.',
-    'condition': 'checkout_linux and checkout_arm64',
+    'condition': 'install_sysroot and checkout_linux and checkout_arm64',
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=arm64'],
@@ -180,7 +183,7 @@ hooks = [
   {
     'name': 'sysroot_x86',
     'pattern': '.',
-    'condition': 'checkout_linux and (checkout_x86 or checkout_x64)',
+    'condition': 'install_sysroot and checkout_linux and (checkout_x86 or checkout_x64)',
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=x86'],
@@ -188,7 +191,7 @@ hooks = [
   {
     'name': 'sysroot_mips',
     'pattern': '.',
-    'condition': 'checkout_linux and checkout_mips',
+    'condition': 'install_sysroot and checkout_linux and checkout_mips',
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=mips'],
@@ -196,7 +199,7 @@ hooks = [
   {
     'name': 'sysroot_mips64',
     'pattern': '.',
-    'condition': 'checkout_linux and checkout_mips64',
+    'condition': 'install_sysroot and checkout_linux and checkout_mips64',
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=mips64el'],
@@ -204,7 +207,7 @@ hooks = [
   {
     'name': 'sysroot_x64',
     'pattern': '.',
-    'condition': 'checkout_linux and checkout_x64',
+    'condition': 'install_sysroot and checkout_linux and checkout_x64',
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=x64'],
