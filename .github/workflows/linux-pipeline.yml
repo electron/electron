@@ -51,7 +51,7 @@ jobs:
   checkout:
     runs-on: aks-linux-large-16
     container:
-      image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
+      image: ghcr.io/electron/build:latest
       options: --user root
     steps:
     - name: Checkout Electron
@@ -59,8 +59,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-    - name: Install Azure CLI
-      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
@@ -189,7 +187,7 @@ jobs:
         build-arch: [ arm64 ] # x64, arm 
     runs-on: aks-linux-large-16
     container:
-      image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
+      image: ghcr.io/electron/build:latest
       options: --user root
     needs: checkout
     steps:
@@ -204,8 +202,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-    - name: Install Azure CLI
-      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Install Dependencies
       run: |
         cd src/electron
@@ -279,8 +275,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-    - name: Install Azure CLI
-      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Run Electron Only Hooks
       run: |
         echo "Running Electron Only Hooks"
