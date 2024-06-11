@@ -43,6 +43,7 @@ env:
   GN_CONFIG: ${{ inputs.gn-config }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
   CHECK_DIST_MANIFEST: true
   IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
