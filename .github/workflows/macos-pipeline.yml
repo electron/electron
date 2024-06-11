@@ -50,7 +50,10 @@ env:
 
 jobs:
   checkout:
-    runs-on: LargeLinuxRunner
+    runs-on: aks-linux-large-16
+    container:
+      image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
+      options: --user root
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -60,12 +63,8 @@ jobs:
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
-    - name: Setup Node.js/npm
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
-      with:
-        node-version: 20.11.x
-        cache: yarn
-        cache-dependency-path: src/electron/yarn.lock
+    - name: Install Azure CLI
+      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Install Dependencies
       run: |
         cd src/electron
