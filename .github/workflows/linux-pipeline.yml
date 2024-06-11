@@ -43,7 +43,7 @@ env:
   GN_CONFIG: ${{ inputs.gn-config }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
-  CHECK_DIST_MANIFEST: '1'
+  CHECK_DIST_MANIFEST: true
   IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
 
@@ -257,7 +257,7 @@ jobs:
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
         mkdir temp-cache
-        tar -xvf $DEPSHASH.tar -C temp-cache
+        tar -xf $DEPSHASH.tar -C temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
         if [ -d "temp-cache/src" ]; then
@@ -293,13 +293,15 @@ jobs:
       run: src/electron/.circleci/fix-known-hosts.sh
     - name: Install build-tools & Setup RBE
       run: |
-        echo "NUMBER_OF_NINJA_PROCESSES=200" >> $GITHUB_ENV
+        echo "NUMBER_OF_NINJA_PROCESSES=300" >> $GITHUB_ENV
         cd ~/.electron_build_tools
         npx yarn --ignore-engines
+
         # Pull down credential helper and print status
         node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
         HELPER=$(node -p "require('./src/utils/reclient.js').helperPath({})")
         $HELPER login
+
         echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
         echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath({}))"` >> $GITHUB_ENV
         echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
@@ -317,7 +319,9 @@ jobs:
       run: |
         cd src
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
-        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+        if [ ${{ env.CHECK_DIST_MANIFEST }} ]; then
+          target_os=linux
+          target_cpu=${{ matrix.build-arch }}
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ env.TARGET_ARCH }}.manifest
         fi
     - name: Build Mksnapshot
@@ -325,6 +329,7 @@ jobs:
         cd src
         e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i ''"
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
