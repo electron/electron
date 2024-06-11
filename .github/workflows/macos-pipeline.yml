@@ -56,6 +56,8 @@ jobs:
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
