@@ -211,6 +211,8 @@ jobs:
     # More runner information: https://github.com/actions/runner-images/blob/main/README.md#available-images
     runs-on: macos-14-xlarge
     needs: checkout
+    env:
+      TARGET_ARCH: ${{ matrix.build-arch }}
     steps:
     - name: Load Build Tools
       run: |
@@ -237,7 +239,6 @@ jobs:
         brew install azcopy
     - name: Load Target Arch & CPU
       run: |
-        echo "TARGET_ARCH=${{ matrix.build-arch }}" >> $GITHUB_ENV
         echo "target_cpu=${{ matrix.build-arch }}" >> $GITHUB_ENV
         echo "host_cpu=${{ matrix.build-arch }}" >> $GITHUB_ENV
     - name: Get Depot Tools
@@ -270,7 +271,7 @@ jobs:
         retry_on: error
         command: |
           azcopy copy \
-            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH}}?${AZURE_AKS_CACHE_SAS_TOKEN}" $DEPSHASH.tar
+            "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?${{ env.AZURE_AKS_CACHE_SAS_TOKEN }}" ${{ env. DEPSHASH }}.tar
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
@@ -651,6 +652,7 @@ jobs:
         target-arch: [ x64, arm64 ]
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
+      TARGET_ARCH: ${{ matrix.target-arch }}
     steps:
     - name: Load Build Tools
       run: |
