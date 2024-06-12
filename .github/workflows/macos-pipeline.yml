@@ -104,12 +104,12 @@ jobs:
       run: |
         curl \
           --unix-socket /var/run/sas/sas.sock \
-          http://foo/$DEPSHASH > /var/sas-token
+          http://foo/$DEPSHASH > sas-token
     - name: Save SAS Key
       uses: actions/cache/save@v4
       with:
         path: |
-          /var/sas-token
+          sas-token
         key: sas-key-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
     - name: Check If Cache Exists
       id: check-cache
@@ -289,7 +289,7 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: |
-          /var/sas-token
+          sas-token
         key: sas-key-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
     - name: Download Src Cache from AKS
       # The cache will always exist here as a result of the checkout job
@@ -301,7 +301,8 @@ jobs:
         max_attempts: 3
         retry_on: error
         command: |
-          sas_token=$(cat /var/sas-token)
+          sas_token=$(cat sas-token)
+          rm sas-token
           azcopy copy \
             "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH}}?${sas_token}" $DEPSHASH.tar
     - name: Unzip and Ensure Src Cache
