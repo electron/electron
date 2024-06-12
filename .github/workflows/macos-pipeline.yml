@@ -36,7 +36,6 @@ concurrency:
 env:
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
   AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
-  AZURE_AKS_CACHE_SAS_TOKEN: ${{ secrets.AZURE_AKS_CACHE_SAS_TOKEN }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
@@ -90,6 +89,15 @@ jobs:
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+    - name: Generate SAS Key
+      run: |
+        curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$DEPSHASH.tar" > sas-token
+    - name: Save SAS Key
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          sas-token
+        key: sas-key-${{ github.run_number }}-${{ github.run_attempt }}
     - name: Check If Cache Exists
       id: check-cache
       run: |
@@ -260,6 +268,12 @@ jobs:
         DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Obtain SAS Key
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          sas-token
+        key: sas-key-${{ github.run_number }}-${{ github.run_attempt }}
     - name: Download Src Cache from AKS
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
@@ -270,8 +284,11 @@ jobs:
         max_attempts: 3
         retry_on: error
         command: |
+          sas_token=$(cat sas-token)
           azcopy copy \
-            "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?${{ env.AZURE_AKS_CACHE_SAS_TOKEN }}" ${{ env. DEPSHASH }}.tar
+            "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+    - name: Clean SAS Key
+      run: rm -f sas-token
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
