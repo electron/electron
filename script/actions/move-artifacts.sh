@@ -78,4 +78,3 @@ cp_if_exist src/out/electron_ninja_log
 cp_if_exist src/out/Default/.ninja_log
 
 tar_src_dirs_if_exist
-
