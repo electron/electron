@@ -102,9 +102,8 @@ jobs:
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Generate SAS Key
       run: |
-        curl \
-          --unix-socket /var/run/sas/sas.sock \
-          http://foo/$DEPSHASH > sas-token
+        echo curl --unix-socket /var/run/sas/sas.sock "http://foo/$DEPSHASH"
+        curl --unix-socket /var/run/sas/sas.sock "http://foo/$DEPSHASH" > sas-token
     - name: Save SAS Key
       uses: actions/cache/save@v4
       with:
