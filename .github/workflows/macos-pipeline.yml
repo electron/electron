@@ -34,14 +34,16 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Old Azure Storage Variables
   AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
+  ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+  # New Azure Storage Variables
   AZURE_AKS_CACHE_STORAGE_KEY: ${{ secrets.AZURE_AKS_CACHE_STORAGE_KEY }}
   AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING }}
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
   AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
-  ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GN_CONFIG: ${{ inputs.gn-config }}
@@ -192,9 +194,9 @@ jobs:
         mv ./src /var/portal
     - name: Persist Src Cache
       run: |
-        # cache_key=v2-git-cache-$DEPSHASH
+        # cache_key=v2-src-cache-$DEPSHASH
         cache_key=$DEPSHASH
-        cache_path=/var/portal
+        backup_cache_path=/var/portal
         final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
         echo "Using cache key: $cache_key"
         echo "Checking path: $final_cache_path"
@@ -203,10 +205,10 @@ jobs:
           tmp_container=/mnt/cross-instance-cache/tmp/${{ github.sha }}
           tmp_cache_path=$tmp_container/${cache_key}.tar
           mkdir -p $tmp_container
-          if [ -f "$cache_path" ]; then
-            tar -cf $tmp_cache_path -C $(dirname $cache_path) ./$(basename $cache_path)
+          if [ -f "$backup_cache_path" ]; then
+            tar -cf $tmp_cache_path -C $(dirname $backup_cache_path) ./$(basename $backup_cache_path)
           else
-            tar -cf $tmp_cache_path -C $cache_path/ ./
+            tar -cf $tmp_cache_path -C $backup_cache_path/ ./
           fi
           mv -vn $tmp_cache_path $final_cache_path
           rm -rf $tmp_container
@@ -282,10 +284,16 @@ jobs:
         max_attempts: 3
         retry_on: error
         command: |
+          # cache-key=v2-src-cache-$DEPSHASH
+          cache-key=$DEPSHASH
+          cache-path=/mnt/cross-instance-cache/${cache-key}.tar
+          echo "Pulling mounted data from: $cache-path"
+
           az storage file download \
             --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \
+            --account-key $AZURE_AKS_CACHE_STORAGE_KEY \
             --share-name $AZURE_AKS_CACHE_SHARE_NAME \
-            --path ".DS_Store"
+            --path $cache-path
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
