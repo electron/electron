@@ -595,7 +595,10 @@ WebContents.prototype._init = function () {
       goToOffset: this._goToOffset.bind(this),
       getActiveIndex: this._getActiveIndex.bind(this),
       length: this._historyLength.bind(this),
-      getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this)
+      getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this),
+      deleteEntryAtIndex: this._deleteNavigationEntryAtIndex.bind(this),
+      getHistory: this._getHistory.bind(this),
+      replaceHistory: this._replaceHistory.bind(this)
     },
     writable: false,
     enumerable: true

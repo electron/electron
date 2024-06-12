@@ -87,7 +87,7 @@ declare namespace Electron {
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
-    _getNavigationEntryAtIndex(index: number): Electron.EntryAtIndex | null;
+    _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
     _historyLength(): number;
     _canGoBack(): boolean;
@@ -97,6 +97,9 @@ declare namespace Electron {
     _goForward(): void;
     _goToOffset(index: number): void;
     _goToIndex(index: number): void;
+    _deleteNavigationEntryAtIndex(index: number): boolean;
+    _getHistory(): Electron.NavigationEntry[];
+    _replaceHistory(newHistory: Electron.NavigationEntry[], index: number): boolean;
     _clearHistory():void
     canGoToIndex(index: number): boolean;
     destroy(): void;

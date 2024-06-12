@@ -35,10 +35,7 @@ Returns `Integer` - The index of the current page, from which we would go back/f
 
 * `index` Integer
 
-Returns `Object`:
-
-* `url` string - The URL of the navigation entry at the given index.
-* `title` string - The page title of the navigation entry at the given index.
+Returns [`NavigationEntry`](structures/navigation-entry.md) - Navigation entry at the given index.
 
 If index is out of bounds (greater than history length or less than 0), null will be returned.
 
@@ -65,3 +62,24 @@ Navigates to the specified offset from the current entry.
 #### `navigationHistory.length()`
 
 Returns `Integer` - History length.
+
+#### `navigationHistory.deleteEntryAtIndex(index)`
+
+* `index` Integer
+
+Deletes the navigation entry at the given index. Can't delete entry at the "current active index".
+
+Returns `boolean` - Whether the navigation entry was removed from the webContents history.
+
+#### `navigationHistory.getHistory()`
+
+Returns [`NavigationEntry[]`](structures/navigation-entry.md) - WebContents complete history.
+
+#### `navigationHistory.replaceHistory(newHistory, index)`
+
+* `newHistory` [`NavigationEntry[]`](structures/navigation-entry.md)
+* `index` Integer
+
+Replaces current history with `newHistory` and sets the active index to `index`. Can't replace history item at the "current active index".
+
+Returns `boolean` - Whether the history was replaced.

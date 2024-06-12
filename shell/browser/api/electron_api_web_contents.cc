@@ -2496,6 +2496,58 @@ content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
   return web_contents()->GetController().GetEntryAtIndex(index);
 }
 
+bool WebContents::DeleteNavigationEntryAtIndex(int index) {
+  if (index < 0 || index >= GetHistoryLength())
+    return false;
+
+  return web_contents()->GetController().RemoveEntryAtIndex(index);
+}
+
+std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
+  const int history_length = GetHistoryLength();
+  auto& controller = web_contents()->GetController();
+
+  // If the history is empty, it contains only one entry and that is
+  // "InitialEntry"
+  if (history_length == 1 && controller.GetEntryAtIndex(0)->IsInitialEntry())
+    return std::vector<content::NavigationEntry*>();
+
+  std::vector<content::NavigationEntry*> history;
+  history.reserve(history_length);
+
+  for (int i = 0; i < history_length; i++)
+    history.push_back(controller.GetEntryAtIndex(i));
+
+  return history;
+}
+
+bool WebContents::ReplaceHistory(
+    const std::vector<gin_helper::Dictionary>& new_history,
+    int index) {
+  std::vector<std::unique_ptr<content::NavigationEntry>> history;
+  history.reserve(new_history.size());
+
+  for (const gin_helper::Dictionary& history_item : new_history) {
+    auto entry = content::NavigationEntry::Create();
+    entry->SetIsOverridingUserAgent(true);
+    std::u16string url, title;
+    if (history_item.Get("url", &url))
+      entry->SetURL(GURL(url));
+    if (history_item.Get("title", &title))
+      entry->SetTitle(title);
+
+    history.push_back(std::move(entry));
+  }
+
+  auto& controller = web_contents()->GetController();
+  if (!controller.CanPruneAllButLastCommitted())
+    return false;
+
+  controller.PruneAllButLastCommitted();
+  controller.Restore(index, content::RestoreType::kRestored, &history);
+  return true;
+}
+
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4295,6 +4347,10 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_getNavigationEntryAtIndex",
                  &WebContents::GetNavigationEntryAtIndex)
       .SetMethod("_historyLength", &WebContents::GetHistoryLength)
+      .SetMethod("_deleteNavigationEntryAtIndex",
+                 &WebContents::DeleteNavigationEntryAtIndex)
+      .SetMethod("_getHistory", &WebContents::GetHistory)
+      .SetMethod("_replaceHistory", &WebContents::ReplaceHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
