@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    uses: electron/electron/.github/workflows/macos-pipeline.yml@macos-pipeline-cleanup
+    uses: electron/electron/.github/workflows/macos-pipeline.yml@main
     with:
       is-release: false
       gn-config: //electron/build/args/testing.gn

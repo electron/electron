@@ -665,12 +665,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-    - name: Setup Node.js/npm
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
-      with:
-        node-version: 20.11.x
-        cache: yarn
-        cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
       run: |
         cd src/electron
