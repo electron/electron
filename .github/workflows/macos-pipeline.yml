@@ -194,7 +194,6 @@ jobs:
         mv ./src /var/portal
     - name: Persist Src Cache
       run: |
-        # cache_key=v2-src-cache-$DEPSHASH
         cache_key=$DEPSHASH
         backup_cache_path=/var/portal
         final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
@@ -283,8 +282,7 @@ jobs:
         timeout_minutes: 20
         max_attempts: 3
         retry_on: error
-        command: |
-          # cache-key=v2-src-cache-$DEPSHASH
+        run: |
           cache-key=$DEPSHASH
           cache-path=/mnt/cross-instance-cache/${cache-key}.tar
           echo "Pulling mounted data from: $cache-path"
