@@ -79,7 +79,6 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install
-        brew install azcopy
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -246,6 +245,7 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install
+        brew install azcopy
     - name: Load Target Arch & CPU
       run: |
         echo "TARGET_ARCH=${{ matrix.build-arch }}" >> $GITHUB_ENV
