@@ -87,9 +87,8 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        cache_key=$DEPSHASH
-        cache_path=/mnt/cross-instance-cache/${cache_key}.tar
-        echo "Using cache key: $cache_key"
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
         echo "Checking for cache in: $cache_path"
         if [ ! -f "$cache_path" ]; then
           echo "cache_exists=false" >> $GITHUB_OUTPUT
@@ -108,7 +107,7 @@ jobs:
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
-        if [ ${{ inputs.is-release != true }}]; then
+        if [ "${{ inputs.is-release }}" != "true" ]; then
           # Re-export all the patches to check if there were changes.
           python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
@@ -179,15 +178,14 @@ jobs:
     - name: Persist Src Cache
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
-        cache_key=$DEPSHASH
         backup_cache_path=/var/portal
-        final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
-        echo "Using cache key: $cache_key"
+        final_cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
         echo "Checking path: $final_cache_path"
         if [ ! -f "$final_cache_path" ]; then
           echo "Cache key not found, storing tarball"
           tmp_container=/mnt/cross-instance-cache/tmp/${{ github.sha }}
-          tmp_cache_path=$tmp_container/${cache_key}.tar
+          tmp_cache_path=$tmp_container/$DEPSHASH.tar
           mkdir -p $tmp_container
           if [ -f "$backup_cache_path" ]; then
             tar -cf $tmp_cache_path -C $(dirname $backup_cache_path) ./$(basename $backup_cache_path)
