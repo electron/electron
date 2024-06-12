@@ -1,6 +1,4 @@
-#!/bin/sh
-
-set -eo pipefail
+#!/bin/bash
 
 if [ "`uname`" == "Darwin" ]; then
   if [ -z "$MAS_BUILD" ]; then
@@ -62,9 +60,9 @@ tar_src_dirs_if_exist() {
     fi      
   done
 
-  tar -czf build_artifacts.tar.gz build_artifacts
+  tar -cf build_artifacts.tarbuild_artifacts
 
-  mv_if_exist build_artifacts.tar.gz
+  mv_if_exist build_artifacts.tar
 }
 
 # Generated Artifacts
