@@ -20,7 +20,7 @@ You also have to register an Apple Developer account and join the
 
 Electron apps can be distributed through Mac App Store or outside it. Each way
 requires different ways of signing and testing. This guide focuses on
-distribution via Mac App Store, but will also mention other methods.
+distribution via Mac App Store.
 
 The following steps describe how to get the certificates from Apple, how to sign
 Electron apps, and how to test them.
@@ -118,7 +118,8 @@ entitlements, you must ensure App Sandbox capacity is added:
 </plist>
 ```
 
-#### Extra steps without `electron-osx-sign`
+<details>
+<summary>Extra steps without `electron-osx-sign`</summary>
 
 If you are signing your app without using `@electron/osx-sign`, you must ensure
 the app bundle's entitlements have at least following keys:
@@ -174,6 +175,7 @@ When using `@electron/osx-sign` the `ElectronTeamID` key will be added
 automatically by extracting the Team ID from the certificate's name. You may
 need to manually add this key if `@electron/osx-sign` could not find the correct
 Team ID.
+</details>
 
 ### Sign apps for development
 
@@ -181,8 +183,14 @@ To sign an app that can run on your development machine, you must sign it with
 the "Apple Development" certificate and pass the provisioning profile to
 `@electron/osx-sign`.
 
-```bash
-electron-osx-sign YourApp.app --identity='Apple Development' --provisioning-profile=/path/to/yourapp.provisionprofile
+```js @ts-nocheck
+const { signAsync } = require('@electron/osx-sign')
+
+signAsync({
+  app: '/path/to/your.app',
+  identity: 'Apple Development',
+  provisioningProfile: '/path/to/your.provisionprofile'
+})
 ```
 
 If you are signing without `@electron/osx-sign`, you must place the provisioning
@@ -198,30 +206,16 @@ To sign an app that will be submitted to Mac App Store, you must sign it with
 the "Apple Distribution" certificate. Note that apps signed with this
 certificate will not run anywhere, unless it is downloaded from Mac App Store.
 
-```bash
-electron-osx-sign YourApp.app --identity='Apple Distribution'
+```js @ts-nocheck
+const { signAsync } = require('@electron/osx-sign')
+
+signAsync({
+  app: 'path/to/your.app',
+  identity: 'Apple Distribution'
+})
 ```
 
-### Sign apps for distribution outside the Mac App Store
-
-If you don't plan to submit the app to Mac App Store, you can sign it the
-"Developer ID Application" certificate. In this way there is no requirement on
-App Sandbox, and you should use the normal darwin build of Electron if you don't
-use App Sandbox.
-
-```bash
-electron-osx-sign YourApp.app --identity='Developer ID Application' --no-gatekeeper-assess
-```
-
-By passing `--no-gatekeeper-assess`, `@electron/osx-sign` will skip the macOS
-GateKeeper check as your app usually has not been notarized yet by this step.
-
-<!-- TODO(zcbenz): Add a chapter about App Notarization -->
-This guide does not cover [App Notarization][app-notarization], but you might
-want to do it otherwise Apple may prevent users from using your app outside Mac
-App Store.
-
-## Submit Apps to the Mac App Store
+## Submit apps to the Mac App Store
 
 After signing the app with the "Apple Distribution" certificate, you can
 continue to submit it to Mac App Store.
@@ -342,12 +336,11 @@ Electron uses following cryptographic algorithms:
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [@electron/osx-sign]: https://github.com/electron/osx-sign
-[app-sandboxing]: https://developer.apple.com/app-sandboxing/
-[app-notarization]: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution
-[submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
-[create-record]: https://help.apple.com/app-store-connect/#/dev2cd126805
+[app-sandboxing]: https://developer.apple.com/documentation/security/app_sandbox
+[submitting-your-app]: https://help.apple.com/xcode/mac/current/#/dev067853c94
+[create-record]: https://developer.apple.com/help/app-store-connect/create-an-app-record/add-a-new-app
 [apple-transporter]: https://help.apple.com/itc/transporteruserguide/en.lproj/static.html
-[submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
+[submit-for-review]: https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-for-review
 [export-compliance]: https://help.apple.com/app-store-connect/#/devc3f64248f
 [user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6
 [network-access]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW9
