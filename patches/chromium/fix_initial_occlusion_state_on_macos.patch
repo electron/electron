@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 12 Jun 2024 17:42:07 +0900
+Subject: fix: initial occlusion state on macOS
+
+With the new occlusion detection enabled via
+https://chromium-review.googlesource.com/c/chromium/src/+/5605407
+starting the window as hidden previously resulted in
+Visibility::kOccluded (via viewDidMoveToWindow) -> Visibility::kHidden (via viewDidHide)
+but it now starts with Visibility::kVisible -> Visibility::kHidden
+which throws off the initial document.visibilityState checks.
+
+diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+index 58272aa6a046377c3eecbdeaa8b3901762443a85..eee76695006337d95ca6918411452bf1ca7f3f38 100644
+--- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+@@ -482,6 +482,10 @@ - (void)updateWebContentsVisibility {
+     visibility = Visibility::kHidden;
+   else if ([[self window] isOccluded])
+     visibility = Visibility::kOccluded;
++  else if ([[self window] occlusionState] & NSWindowOcclusionStateVisible)
++    visibility = Visibility::kVisible;
++  else
++    visibility = Visibility::kOccluded;
+ 
+   [self updateWebContentsVisibility:visibility];
+ }
