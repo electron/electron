@@ -209,11 +209,12 @@ jobs:
         node script/yarn install
     - name: Set GN_EXTRA_ARGS
       run: |
-        if [ "${{ matrix.build-arch  }}" == "arm" ]; then
-          echo "GN_EXTRA_ARGS='target_cpu=\\"arm\\" build_tflite_with_xnnpack=false'" >> $GITHUB_ENV
-        elif [ "${{ matrix.build-arch }}" == "arm64" ]; then
-          echo "GN_EXTRA_ARGS='target_cpu=\\"arm64\\" fatal_linker_warnings=false enable_linux_installer=false'" >> $GITHUB_ENV
+        if [ "${{ matrix.build-arch  }}" = "arm" ]; then
+          GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false'
+        elif [ "${{ matrix.build-arch }}" = "arm64" ]; then
+          GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
         fi
+        echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -389,23 +390,3 @@ jobs:
       with:
         name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
-    - name: Persist Build Artifacts
-      uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
-      with:
-        path: |
-          src/out/Default/gen/node_headers
-          src/out/Default/overlapped-checker
-          src/electron
-          src/third_party/electron_node
-          src/third_party/nan
-          src/cross-arch-snapshots
-          src/third_party/llvm-build
-          src/build/linux
-          src/buildtools/mac
-          src/buildtools/third_party/libc++
-          src/buildtools/third_party/libc++abi
-          src/third_party/libc++
-          src/third_party/libc++abi
-          src/out/Default/obj/buildtools/third_party
-          src/v8/tools/builtins-pgo
-        key: ${{ runner.os }}-build-artifacts-linux-${{ env.TARGET_ARCH }}-${{ github.sha }}
