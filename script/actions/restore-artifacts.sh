@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ "`uname`" == "Darwin" ]; then
+  if [ -z "$MAS_BUILD" ]; then
+    BUILD_TYPE="darwin"
+  else
+    BUILD_TYPE="mas"
+  fi
+elif [ "`uname`" == "Linux" ]; then
+  BUILD_TYPE="linux"
+fi
+
 mv_if_exist() {
   if [ -f "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ] || [ -d "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ]; then
     echo Restoring $1 to $2
