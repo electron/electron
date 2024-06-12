@@ -110,7 +110,7 @@ jobs:
       with:
         path: |
           sas-token
-        key: sas-key-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
+        key: sas-key-${{ github.run_number }}-${{ github.run_attempt }}
     - name: Check If Cache Exists
       id: check-cache
       run: |
@@ -290,7 +290,7 @@ jobs:
       with:
         path: |
           sas-token
-        key: sas-key-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
+        key: sas-key-${{ github.run_number }}-${{ github.run_attempt }}
     - name: Download Src Cache from AKS
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
