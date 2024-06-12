@@ -50,7 +50,7 @@ env:
 
 jobs:
   checkout:
-    runs-on: aks-linux-large-16
+    runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
@@ -186,7 +186,7 @@ jobs:
       fail-fast: false
       matrix:
         build-arch: [ arm64 ] # x64, arm 
-    runs-on: aks-linux-large-16
+    runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
