@@ -163,7 +163,6 @@ jobs:
         rm -rf src/third_party/swiftshader/tests/regres/testlists
         rm -rf src/electron
         rm -rf src/third_party/electron_node/deps/openssl
-        rm -rf src/third_party/electron_node/deps/v8
     - name: Compress Src Directory
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
@@ -269,7 +268,7 @@ jobs:
           echo "Found Cache for $DEPSHASH at $cache_path"
         fi
 
-        echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+        echo "Persisted cache is $(du -sh $cache_path | cut -f1)"
         mkdir temp-cache
         tar -xf $cache_path -C temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
