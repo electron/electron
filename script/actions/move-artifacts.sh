@@ -60,7 +60,7 @@ tar_src_dirs_if_exist() {
     fi      
   done
 
-  tar -cf build_artifacts.tarbuild_artifacts
+  tar -cf build_artifacts.tar build_artifacts
 
   mv_if_exist build_artifacts.tar
 }
