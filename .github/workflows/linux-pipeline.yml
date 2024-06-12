@@ -92,8 +92,10 @@ jobs:
         echo "Using cache key: $cache_key"
         echo "Checking for cache in: $cache_path"
         if [ ! -f "$cache_path" ]; then
+          echo "cache_exists=false" >> $GITHUB_OUTPUT
           echo "Cache Does Not Exist for $DEPSHASH"
         else
+          echo "cache_exists=true" >> $GITHUB_OUTPUT
           echo "Cache Already Exists for $DEPSHASH, Skipping.."
         fi
     - name: Gclient Sync
