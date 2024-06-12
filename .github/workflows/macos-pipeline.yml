@@ -285,9 +285,9 @@ jobs:
         command: |
           echo "Pulling mounted data from: ${{ env.CACHE_PATH }}"
           az storage file download \
-            --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \
-            --account-key $AZURE_AKS_CACHE_STORAGE_KEY \
-            --share-name $AZURE_AKS_CACHE_SHARE_NAME \
+            --account-name "$AZURE_AKS_CACHE_STORAGE_ACCOUNT" \
+            --account-key "$AZURE_AKS_CACHE_STORAGE_KEY" \
+            --share-name "$AZURE_AKS_CACHE_SHARE_NAME" \
             --path ${{ env.CACHE_PATH }}
     - name: Unzip and Ensure Src Cache
       run: |
