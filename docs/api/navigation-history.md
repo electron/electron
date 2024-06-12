@@ -71,11 +71,11 @@ Deletes the navigation entry at the given index. Can't delete entry at the "curr
 
 Returns `boolean` - Whether the navigation entry was removed from the webContents history.
 
-#### `navigationHistory.getHistory()`
+#### `navigationHistory.getAllEntries()`
 
 Returns [`NavigationEntry[]`](structures/navigation-entry.md) - WebContents complete history.
 
-#### `navigationHistory.replaceHistory(newHistory, index)`
+#### `navigationHistory.replace(newHistory, index)`
 
 * `newHistory` [`NavigationEntry[]`](structures/navigation-entry.md)
 * `index` Integer
