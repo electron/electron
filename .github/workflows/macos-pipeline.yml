@@ -272,7 +272,7 @@ jobs:
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
-        echo "CACHE_PATH=/mnt/cross-instance-cache/$DEPSHASH.tar" >> $GITHUB_ENV
+        echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Download Src Cache from AKS
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
@@ -285,9 +285,8 @@ jobs:
         command: |
           echo "Pulling mounted data from: ${{ env.CACHE_PATH }}"
           az storage file download \
-            --account-name "$AZURE_AKS_CACHE_STORAGE_ACCOUNT" \
             --connection-string "$AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING" \
-            --share-name "$AZURE_AKS_CACHE_SHARE_NAME" \
+            --share-name $AZURE_AKS_CACHE_SHARE_NAME \
             --path ${{ env.CACHE_PATH }}
     - name: Unzip and Ensure Src Cache
       run: |
