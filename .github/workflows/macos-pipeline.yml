@@ -62,6 +62,7 @@ jobs:
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -102,22 +103,17 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        exists_json=$(az storage file exists \
-          --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \
-          --account-key $AZURE_AKS_CACHE_STORAGE_KEY \
-          --share-name $AZURE_AKS_CACHE_SHARE_NAME \
-          --path $DEPSHASH.tar)
-
-        cache_exists=$(echo $exists_json | jq -r '.exists')
-        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
-
-        if (test "$cache_exists" = "true"); then
-          echo "Cache Exists for $DEPSHASH"
-        else
+        cache_key=$DEPSHASH
+        cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+        echo "Using cache key: $cache_key"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
           echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
         fi
     - name: Gclient Sync
-      # if: steps.check-cache.outputs.cache_exists == 'false'
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         gclient config \
           --name "src/electron" \
@@ -164,12 +160,12 @@ jobs:
     # https://dawn-review.googlesource.com/c/dawn/+/83901
     # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
     - name: Delete .git directories under src to free space
-      # if: steps.check-cache.outputs.cache_exists == 'false'
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         cd src
         ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
     - name: Minimize Cache Size for Upload
-      # if: steps.check-cache.outputs.cache_exists == 'false'
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         rm -rf src/android_webview
         rm -rf src/ios/chrome
@@ -181,18 +177,20 @@ jobs:
         rm -rf src/third_party/swiftshader/tests/regres/testlists
         rm -rf src/electron
     - name: Compress Src Directory
-      # if: steps.check-cache.outputs.cache_exists == 'false'
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
         tar -cvf $DEPSHASH.tar src
         echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
     - name: Move src folder to cross-OS portal
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
         sudo mkdir -p /var/portal
         sudo chown -R $(id -u):$(id -g) /var/portal
         mv ./src /var/portal
     - name: Persist Src Cache
+      if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         cache_key=$DEPSHASH
         backup_cache_path=/var/portal
@@ -272,7 +270,9 @@ jobs:
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+        DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+        echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+        echo "CACHE_PATH=/mnt/cross-instance-cache/$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Download Src Cache from AKS
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
@@ -282,16 +282,13 @@ jobs:
         timeout_minutes: 20
         max_attempts: 3
         retry_on: error
-        run: |
-          cache-key=$DEPSHASH
-          cache-path=/mnt/cross-instance-cache/${cache-key}.tar
-          echo "Pulling mounted data from: $cache-path"
-
+        command: |
+          echo "Pulling mounted data from: ${{ env.CACHE_PATH }}"
           az storage file download \
             --account-name $AZURE_AKS_CACHE_STORAGE_ACCOUNT \
             --account-key $AZURE_AKS_CACHE_STORAGE_KEY \
             --share-name $AZURE_AKS_CACHE_SHARE_NAME \
-            --path $cache-path
+            --path ${{ env.CACHE_PATH }}
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
