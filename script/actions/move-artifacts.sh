@@ -1,5 +1,6 @@
 #!/bin/bash
 
+<<<<<<< HEAD
 if [ "`uname`" == "Darwin" ]; then
   if [ -z "$MAS_BUILD" ]; then
     BUILD_TYPE="darwin"
@@ -8,6 +9,25 @@ if [ "`uname`" == "Darwin" ]; then
   fi
 elif [ "`uname`" == "Linux" ]; then
   BUILD_TYPE="linux"
+||||||| parent of fb220e6617 (Use artifacts for build artifact persisting)
+set -eo pipefail
+
+if [ -z "$MAS_BUILD" ]; then
+  BUILD_TYPE="darwin"
+else
+  BUILD_TYPE="mas"
+=======
+set -eo pipefail
+
+if [ "`uname`" == "Darwin" ]; then
+  if [ -z "$MAS_BUILD" ]; then
+    BUILD_TYPE="darwin"
+  else
+    BUILD_TYPE="mas"
+  fi
+elif [ "`uname`" == "Linux" ]; then
+  BUILD_TYPE="linux"
+>>>>>>> fb220e6617 (Use artifacts for build artifact persisting)
 fi
 
 echo Creating generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}...
@@ -78,4 +98,3 @@ cp_if_exist src/out/electron_ninja_log
 cp_if_exist src/out/Default/.ninja_log
 
 tar_src_dirs_if_exist
-
