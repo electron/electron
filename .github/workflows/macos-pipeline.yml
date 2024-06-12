@@ -34,10 +34,17 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Old Azure Storage Variables
   AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
   AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
   AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+  # New Azure Storage Variables
+  AZURE_AKS_CACHE_STORAGE_KEY: ${{ secrets.AZURE_AKS_CACHE_STORAGE_KEY }}
+  AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING }}
+  AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
+  AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
+  AZURE_AKS_CACHE_SAS_TOKEN: ${{ secrets.AZURE_AKS_CACHE_SAS_TOKEN }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GN_CONFIG: ${{ inputs.gn-config }}
@@ -50,7 +57,13 @@ env:
 
 jobs:
   checkout:
-    runs-on: LargeLinuxRunner
+    runs-on: aks-linux-large
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -60,12 +73,8 @@ jobs:
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
-    - name: Setup Node.js/npm
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
-      with:
-        node-version: 20.11.x
-        cache: yarn
-        cache-dependency-path: src/electron/yarn.lock
+    - name: Install Azure CLI
+      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Install Dependencies
       run: |
         cd src/electron
@@ -95,19 +104,14 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        exists_json=$(az storage blob exists \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $DEPSHASH)
-
-        cache_exists=$(echo $exists_json | jq -r '.exists')
-        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
-
-        if (test "$cache_exists" = "true"); then
-          echo "Cache Exists for $DEPSHASH"
-        else
+        cache_key=$DEPSHASH
+        cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+        echo "Using cache key: $cache_key"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
           echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
         fi
     - name: Gclient Sync
       if: steps.check-cache.outputs.cache_exists == 'false'
@@ -179,16 +183,36 @@ jobs:
         echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
         tar -cvf $DEPSHASH.tar src
         echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
-    - name: Upload Compressed Src Cache to Azure
+    - name: Move src folder to cross-OS portal
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
-        az storage blob upload \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $DEPSHASH.tar \
-          --name $DEPSHASH \
-          --debug
+        cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
+        sudo mkdir -p /var/portal
+        sudo chown -R $(id -u):$(id -g) /var/portal
+        mv ./src /var/portal
+    - name: Persist Src Cache
+      if: steps.check-cache.outputs.cache_exists == 'false'
+      run: |
+        cache_key=$DEPSHASH
+        backup_cache_path=/var/portal
+        final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+        echo "Using cache key: $cache_key"
+        echo "Checking path: $final_cache_path"
+        if [ ! -f "$final_cache_path" ]; then
+          echo "Cache key not found, storing tarball"
+          tmp_container=/mnt/cross-instance-cache/tmp/${{ github.sha }}
+          tmp_cache_path=$tmp_container/${cache_key}.tar
+          mkdir -p $tmp_container
+          if [ -f "$backup_cache_path" ]; then
+            tar -cf $tmp_cache_path -C $(dirname $backup_cache_path) ./$(basename $backup_cache_path)
+          else
+            tar -cf $tmp_cache_path -C $backup_cache_path/ ./
+          fi
+          mv -vn $tmp_cache_path $final_cache_path
+          rm -rf $tmp_container
+        else
+          echo "Cache key already exists, skipping.."
+        fi
   build:
     strategy:
       fail-fast: false
@@ -221,6 +245,7 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install
+        brew install azcopy
     - name: Load Target Arch & CPU
       run: |
         echo "TARGET_ARCH=${{ matrix.build-arch }}" >> $GITHUB_ENV
@@ -247,8 +272,10 @@ jobs:
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-    - name: Download Src Cache
+        DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+        echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+        echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Download Src Cache from AKS
       # The cache will always exist here as a result of the checkout job
       # Either it was uploaded to Azure in the checkout job for this commit
       # or it was uploaded in the checkout job for a previous commit.
@@ -258,12 +285,8 @@ jobs:
         max_attempts: 3
         retry_on: error
         command: |
-          az storage blob download \
-            --account-name $AZURE_STORAGE_ACCOUNT \
-            --account-key $AZURE_STORAGE_KEY \
-            --container-name $AZURE_STORAGE_CONTAINER_NAME \
-            --name $DEPSHASH \
-            --file $DEPSHASH.tar \
+          azcopy copy \
+            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH}}?${AZURE_AKS_CACHE_SAS_TOKEN}" $DEPSHASH.tar
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
