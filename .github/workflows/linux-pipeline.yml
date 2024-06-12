@@ -54,6 +54,9 @@ jobs:
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -71,11 +74,9 @@ jobs:
       timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
         cd depot_tools
         git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -88,19 +89,14 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        exists_json=$(az storage blob exists \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $DEPSHASH)
-
-        cache_exists=$(echo $exists_json | jq -r '.exists')
-        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
-
-        if (test "$cache_exists" = "true"); then
-          echo "Cache Exists for $DEPSHASH"
-        else
+        cache_key=$DEPSHASH
+        cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+        echo "Using cache key: $cache_key"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
           echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
         fi
     - name: Gclient Sync
       if: steps.check-cache.outputs.cache_exists == 'false'
@@ -112,7 +108,7 @@ jobs:
           "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
-        if [ "${{ inputs.is-release }}" != "true" ]; then
+        if [ ${{ inputs.is-release != true }}]; then
           # Re-export all the patches to check if there were changes.
           python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
@@ -174,15 +170,36 @@ jobs:
         echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
         tar -cvf $DEPSHASH.tar src
         echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
-    - name: Upload Compressed Src Cache to Azure
+    - name: Move src folder to cross-OS portal
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
-        az storage blob upload \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $DEPSHASH.tar \
-          --name $DEPSHASH
+        cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
+        sudo mkdir -p /var/portal
+        sudo chown -R $(id -u):$(id -g) /var/portal
+        mv ./src /var/portal
+    - name: Persist Src Cache
+      if: steps.check-cache.outputs.cache_exists == 'false'
+      run: |
+        cache_key=$DEPSHASH
+        backup_cache_path=/var/portal
+        final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+        echo "Using cache key: $cache_key"
+        echo "Checking path: $final_cache_path"
+        if [ ! -f "$final_cache_path" ]; then
+          echo "Cache key not found, storing tarball"
+          tmp_container=/mnt/cross-instance-cache/tmp/${{ github.sha }}
+          tmp_cache_path=$tmp_container/${cache_key}.tar
+          mkdir -p $tmp_container
+          if [ -f "$backup_cache_path" ]; then
+            tar -cf $tmp_cache_path -C $(dirname $backup_cache_path) ./$(basename $backup_cache_path)
+          else
+            tar -cf $tmp_cache_path -C $backup_cache_path/ ./
+          fi
+          mv -vn $tmp_cache_path $final_cache_path
+          rm -rf $tmp_container
+        else
+          echo "Cache key already exists, skipping.."
+        fi
   build:
     strategy:
       fail-fast: false
@@ -194,6 +211,9 @@ jobs:
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
     needs: checkout
     steps:
     - name: Load Build Tools
@@ -237,24 +257,18 @@ jobs:
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-    - name: Download Src Cache
-      # The cache will always exist here as a result of the checkout job
-      # Either it was uploaded to Azure in the checkout job for this commit
-      # or it was uploaded in the checkout job for a previous commit.
-      uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
-      with:
-        timeout_minutes: 20
-        max_attempts: 3
-        retry_on: error
-        command: |
-          az storage blob download \
-            --account-name $AZURE_STORAGE_ACCOUNT \
-            --account-key $AZURE_STORAGE_KEY \
-            --container-name $AZURE_STORAGE_CONTAINER_NAME \
-            --name $DEPSHASH \
-            --file $DEPSHASH.tar
-    - name: Unzip and Ensure Src Cache
+    - name: Restore and Ensure Src Cache
       run: |
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
+          echo "Cache Does Not Exist for $DEPSHASH - exiting"
+          exit 1
+        else
+          echo "Found Cache for $DEPSHASH at $cache_path"
+        fi
+
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
         mkdir temp-cache
         tar -xf $DEPSHASH.tar -C temp-cache
