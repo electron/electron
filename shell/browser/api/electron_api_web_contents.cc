@@ -2508,7 +2508,7 @@ content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
 }
 
 bool WebContents::DeleteNavigationEntryAtIndex(int index) {
-  if (index < 0 || index >= GetHistoryLength())
+  if (!CanGoToIndex(index))
     return false;
 
   return web_contents()->GetController().RemoveEntryAtIndex(index);
