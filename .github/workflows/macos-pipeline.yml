@@ -41,7 +41,7 @@ env:
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GN_CONFIG: ${{ inputs.gn-config }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
-  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers=false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
   # Only disable this in the Asan build
   CHECK_DIST_MANIFEST: true
@@ -212,7 +212,6 @@ jobs:
         npm i -g @electron/build-tools
         e auto-update disable
         e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ matrix.build-arch }}
-        e use ${{ inputs.gn-build-type }}
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
@@ -553,11 +552,11 @@ jobs:
       with:
         name: generated_artifacts_darwin_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_darwin_${{ env.TARGET_ARCH }}
-    - name: Create MAS Config
+    - name: Set GN_EXTRA_ARGS for MAS Build
       run: |
-        mv src/electron/.github/workflows/config/${{ inputs.gn-build-type }}/${{ matrix.build-arch }}/evm.mas.json $HOME/.electron_build_tools/configs/evm.mas.json
         echo "MAS_BUILD=true" >> $GITHUB_ENV
-        e use mas
+        GN_EXTRA_ARGS='is_mas_build=true'
+        echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Build Electron (mas)
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
@@ -660,7 +659,7 @@ jobs:
         export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
         npm i -g @electron/build-tools
         e auto-update disable
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ matrix.target-arch }}
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
