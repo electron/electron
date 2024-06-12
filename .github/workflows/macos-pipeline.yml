@@ -304,7 +304,7 @@ jobs:
           sas_token=$(cat sas-token)
           rm sas-token
           azcopy copy \
-            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH}}?${sas_token}" $DEPSHASH.tar
+            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
