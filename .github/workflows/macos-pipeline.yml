@@ -300,11 +300,10 @@ jobs:
         retry_on: error
         command: |
           sas_token=$(cat sas-token)
-          rm sas-token
-          echo azcopy copy \
-            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
           azcopy copy \
             "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+    - name: Clean SAS Key
+      run: rm -f sas-token
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
