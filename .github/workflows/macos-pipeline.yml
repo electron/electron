@@ -34,17 +34,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Old Azure Storage Variables
-  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
-  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
-  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
-  ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
-  # New Azure Storage Variables
-  AZURE_AKS_CACHE_STORAGE_KEY: ${{ secrets.AZURE_AKS_CACHE_STORAGE_KEY }}
-  AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING }}
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
   AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
   AZURE_AKS_CACHE_SAS_TOKEN: ${{ secrets.AZURE_AKS_CACHE_SAS_TOKEN }}
+  ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GN_CONFIG: ${{ inputs.gn-config }}
@@ -73,8 +66,6 @@ jobs:
     - name: Set GIT_CACHE_PATH to make gclient to use the cache
       run: |
         echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
-    - name: Install Azure CLI
-      run: sudo bash ./src/electron/script/azure_cli_deb_install.sh
     - name: Install Dependencies
       run: |
         cd src/electron
