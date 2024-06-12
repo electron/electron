@@ -102,7 +102,7 @@ jobs:
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Generate SAS Key
       run: |
-        curl --unix-socket /var/run/sas/sas.sock "http://foo/$DEPSHASH" > sas-token
+        curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$DEPSHASH.tar" > sas-token
     - name: Save SAS Key
       uses: actions/cache/save@v4
       with:
@@ -300,10 +300,11 @@ jobs:
         retry_on: error
         command: |
           sas_token=$(cat sas-token)
+          rm sas-token
+          echo azcopy copy \
+            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
           azcopy copy \
             "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
-    - name: Clean up SAS
-      run: rm -f sas-token
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
