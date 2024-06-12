@@ -34,9 +34,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
-  AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
-  AZURE_STORAGE_CONTAINER_NAME: ${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
@@ -44,6 +41,7 @@ env:
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+  # Only disable this in the Asan build
   CHECK_DIST_MANIFEST: true
   IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
@@ -54,6 +52,8 @@ jobs:
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -71,11 +71,9 @@ jobs:
       timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
         cd depot_tools
         git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -88,19 +86,15 @@ jobs:
     - name: Check If Cache Exists
       id: check-cache
       run: |
-        exists_json=$(az storage blob exists \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --name $DEPSHASH)
-
-        cache_exists=$(echo $exists_json | jq -r '.exists')
-        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
-
-        if (test "$cache_exists" = "true"); then
-          echo "Cache Exists for $DEPSHASH"
-        else
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
+          echo "cache_exists=false" >> $GITHUB_OUTPUT
           echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "cache_exists=true" >> $GITHUB_OUTPUT
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
         fi
     - name: Gclient Sync
       if: steps.check-cache.outputs.cache_exists == 'false'
@@ -166,23 +160,25 @@ jobs:
         rm -rf src/third_party/swift-toolchain
         rm -rf src/third_party/swiftshader/tests/regres/testlists
         rm -rf src/electron
-        rm -rf src/third_party/electron_node/deps/openssl
-        rm -rf src/third_party/electron_node/deps/v8
     - name: Compress Src Directory
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
         echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-        tar -cvf $DEPSHASH.tar src
+        tar -cf $DEPSHASH.tar src
         echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
-    - name: Upload Compressed Src Cache to Azure
+        cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
+    - name: Persist Src Cache
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
-        az storage blob upload \
-          --account-name $AZURE_STORAGE_ACCOUNT \
-          --account-key $AZURE_STORAGE_KEY \
-          --container-name $AZURE_STORAGE_CONTAINER_NAME \
-          --file $DEPSHASH.tar \
-          --name $DEPSHASH
+        final_cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking path: $final_cache_path"
+        if [ ! -f "$final_cache_path" ]; then
+          echo "Cache key not found"
+          exit 1
+        else
+          echo "Cache key persisted in $final_cache_path"
+        fi
   build:
     strategy:
       fail-fast: false
@@ -194,6 +190,8 @@ jobs:
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     needs: checkout
     steps:
     - name: Load Build Tools
@@ -237,36 +235,27 @@ jobs:
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
-    - name: Download Src Cache
-      # The cache will always exist here as a result of the checkout job
-      # Either it was uploaded to Azure in the checkout job for this commit
-      # or it was uploaded in the checkout job for a previous commit.
-      uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
-      with:
-        timeout_minutes: 20
-        max_attempts: 3
-        retry_on: error
-        command: |
-          az storage blob download \
-            --account-name $AZURE_STORAGE_ACCOUNT \
-            --account-key $AZURE_STORAGE_KEY \
-            --container-name $AZURE_STORAGE_CONTAINER_NAME \
-            --name $DEPSHASH \
-            --file $DEPSHASH.tar
-    - name: Unzip and Ensure Src Cache
+    - name: Restore and Ensure Src Cache
       run: |
-        echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
+          echo "Cache Does Not Exist for $DEPSHASH - exiting"
+          exit 1
+        else
+          echo "Found Cache for $DEPSHASH at $cache_path"
+        fi
+
+        echo "Persisted cache is $(du -sh $cache_path | cut -f1)"
         mkdir temp-cache
-        tar -xf $DEPSHASH.tar -C temp-cache
+        tar -xf $cache_path -C temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
         if [ -d "temp-cache/src" ]; then
           echo "Relocating Cache"
           rm -rf src
           mv temp-cache/src src
-
-          echo "Deleting zip file"
-          rm -rf $DEPSHASH.tar
         fi
 
         if [ ! -d "src/third_party/blink" ]; then
