@@ -271,16 +271,13 @@ jobs:
 
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
         mkdir temp-cache
-        tar -xf $DEPSHASH.tar -C temp-cache
+        tar -xf $cache_path -C temp-cache
         echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
         if [ -d "temp-cache/src" ]; then
           echo "Relocating Cache"
           rm -rf src
           mv temp-cache/src src
-
-          echo "Deleting zip file"
-          rm -rf $DEPSHASH.tar
         fi
 
         if [ ! -d "src/third_party/blink" ]; then
