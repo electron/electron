@@ -160,7 +160,6 @@ jobs:
         rm -rf src/third_party/swift-toolchain
         rm -rf src/third_party/swiftshader/tests/regres/testlists
         rm -rf src/electron
-        rm -rf src/third_party/electron_node/deps/openssl
     - name: Compress Src Directory
       if: steps.check-cache.outputs.cache_exists == 'false'
       run: |
