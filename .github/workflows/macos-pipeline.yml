@@ -44,6 +44,7 @@ env:
   AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING }}
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
   AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
+  AZURE_AKS_CACHE_SAS_TOKEN: ${{ secrets.AZURE_AKS_CACHE_SAS_TOKEN }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GN_CONFIG: ${{ inputs.gn-config }}
@@ -78,6 +79,7 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install
+        brew install azcopy
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -283,11 +285,8 @@ jobs:
         max_attempts: 3
         retry_on: error
         command: |
-          echo "Pulling mounted data from: ${{ env.CACHE_PATH }}"
-          az storage file download \
-            --connection-string "$AZURE_AKS_CACHE_STORAGE_CONNECTION_STRING" \
-            --share-name $AZURE_AKS_CACHE_SHARE_NAME \
-            --path ${{ env.CACHE_PATH }}
+          azcopy copy \
+            "https://${AZURE_AKS_CACHE_STORAGE_ACCOUNT}.file.core.windows.net/${AZURE_AKS_CACHE_SHARE_NAME}/${{ env.CACHE_PATH}}?${AZURE_AKS_CACHE_SAS_TOKEN}" $DEPSHASH.tar
     - name: Unzip and Ensure Src Cache
       run: |
         echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
