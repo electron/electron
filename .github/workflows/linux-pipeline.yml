@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-arch: [ arm64 ] # x64, arm 
+        build-arch: [ x64 ] # arm64, arm 
     env: 
       TARGET_ARCH: ${{ matrix.build-arch }}
     runs-on: aks-linux-large
