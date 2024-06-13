@@ -255,12 +255,12 @@ jobs:
         unzip -:o dist.zip
         unzip -:o chromedriver.zip
         unzip -:o mksnapshot.zip
-    - name: Import & Trust Self-Signed Codesigning Cert on MacOS
-      if: ${{ inputs.target-platform == 'macos' }}
-      run: |
-        sudo security authorizationdb write com.apple.trust-settings.admin allow
-        cd src/electron
-        ./script/codesign/generate-identity.sh
+    # - name: Import & Trust Self-Signed Codesigning Cert on MacOS
+    #   if: ${{ inputs.target-platform == 'macos' }}
+    #   run: |
+    #     sudo security authorizationdb write com.apple.trust-settings.admin allow
+    #     cd src/electron
+    #     ./script/codesign/generate-identity.sh
     - name: Setup for headless testing
       if: ${{ inputs.target-platform == 'linux' }}
       run: sh -e /etc/init.d/xvfb start
@@ -281,3 +281,11 @@ jobs:
         do
           sleep 60
         done
+  node-nan-linux-x64:
+    uses: ./.github/workflows/node-nan-test-pipeline.yml
+    if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'linux' && inputs.is-release == false }}
+    needs: build
+    with:
+      target-arch: x64
+      gn-build-type: testing
+    secrets: inherit

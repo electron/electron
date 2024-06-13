@@ -93,9 +93,9 @@ runs:
       run: |
         cd src
         if [ "${{ inputs.target-arch }}" = "arm" ]; then
-          export MKSNAPSHOT_PATH="clang_x86_v8_arm"
+          MKSNAPSHOT_PATH="clang_x86_v8_arm"
         elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          export MKSNAPSHOT_PATH="clang_x64_v8_arm64"
+          MKSNAPSHOT_PATH="clang_x64_v8_arm64"
         fi
 
         cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default

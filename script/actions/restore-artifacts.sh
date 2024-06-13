@@ -8,6 +8,9 @@ if [ "`uname`" == "Darwin" ]; then
   fi
 elif [ "`uname`" == "Linux" ]; then
   BUILD_TYPE="linux"
+else
+  echo "Unsupported platform"
+  exit 1
 fi
 
 GENERATED_ARTIFACTS="generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}"

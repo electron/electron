@@ -1,0 +1,145 @@
+name: Node/Nan Test Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      target-arch:
+        type: string
+        description: 'Arch to test for, can be x64, arm64 or arm'
+        required: true
+      gn-build-type:
+        description: 'The gn build type - testing or release'
+        required: true
+        type: string
+        default: testing
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ELECTRON_OUT_DIR: Default
+
+jobs:
+  node-tests:
+    name: Run Node.js Tests
+    runs-on: aks-linux-medium
+    timeout-minutes: 20
+    env: 
+      TARGET_ARCH: ${{ inputs.target-arch }}
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+    steps:
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+    - name: Setup Linux for Headless Testing
+      run: sh -e /etc/init.d/xvfb start
+    - name: Run Node.js Tests
+      run: |
+        cd src
+        node electron/script/node-spec-runner.js --default --jUnitDir=junit
+    - name: Wait for active SSH sessions
+      if: always() && !cancelled()
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done
+  nan-tests:
+    name: Run Nan Tests
+    runs-on: aks-linux-medium
+    timeout-minutes: 20
+    env: 
+      TARGET_ARCH: ${{ inputs.target-arch }}
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+    steps:
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+    - name: Setup Linux for Headless Testing
+      run: sh -e /etc/init.d/xvfb start
+    - name: Run Node.js Tests
+      run: |
+        cd src
+        node electron/script/nan-spec-runner.js
+    - name: Wait for active SSH sessions
+      if: always() && !cancelled()
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done
