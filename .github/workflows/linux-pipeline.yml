@@ -268,6 +268,11 @@ jobs:
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Generate Hunspell Dictionaries
+      if: ${{ inputs.is-release }}
+      run: |
+        cd src
+        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Maybe Generate Libcxx
       if: ${{ inputs.is-release }}
       run: |
