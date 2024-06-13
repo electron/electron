@@ -44,6 +44,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
+      environment: production-release
       build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: x64
@@ -57,6 +58,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
+      environment: production-release
       build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: arm64

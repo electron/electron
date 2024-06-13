@@ -41,6 +41,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-linux
     with:
+      environment: production-release
       build-runs-on: aks-linux-large
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
@@ -55,6 +56,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-linux
     with:
+      environment: production-release
       build-runs-on: aks-linux-large
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
@@ -69,6 +71,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-linux
     with:
+      environment: production-release
       build-runs-on: aks-linux-large
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux

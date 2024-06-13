@@ -3,6 +3,10 @@ name: Pipeline Segment - Electron Build
 on:
   workflow_call:
     inputs:
+      environment:
+        description: using the production or testing environment
+        required: false
+        type: string
       target-platform:
         type: string
         description: 'Platform to run on, can be macos or linux'
@@ -64,6 +68,7 @@ jobs:
   build:
     runs-on: ${{ inputs.build-runs-on }}
     container: ${{ fromJSON(inputs.build-container) }}
+    environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
