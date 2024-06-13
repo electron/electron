@@ -1,4 +1,4 @@
-name: 'Fix Sync macOS'
+name: 'Free Space macOS'
 description: 'Checks out Electron and stores it in the AKS Cache'
 runs:
   using: "composite"

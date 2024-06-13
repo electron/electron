@@ -7,6 +7,9 @@ inputs:
   target-platform:
     description: 'Target platform'
     required: true
+  artifact-platform:
+    description: 'Artifact platform, should be linux, darwin or mas'
+    required: true
   step-suffix:
     description: 'Suffix for build steps'
     required: false
@@ -80,7 +83,7 @@ runs:
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ (inputs.target-arch == 'arm' && inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
+      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
       run: |
         cd src
         if [ "${{ inputs.target-arch }}" = "arm" ]; then
@@ -169,5 +172,5 @@ runs:
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
-        name: generated_artifacts_darwin_${{ env.TARGET_ARCH }}
-        path: ./generated_artifacts_darwin_${{ env.TARGET_ARCH }}
+        name: generated_artifacts_${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}_${{ env.TARGET_ARCH }}
