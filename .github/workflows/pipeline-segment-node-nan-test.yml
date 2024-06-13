@@ -41,9 +41,7 @@ jobs:
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
-    container:
-      image: ghcr.io/electron/build:latest
-      options: --user root
+    container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Load Build Tools
       run: |
@@ -105,9 +103,7 @@ jobs:
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
-    container:
-      image: ghcr.io/electron/build:latest
-      options: --user root
+    container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Load Build Tools
       run: |

@@ -3,6 +3,10 @@ name: Publish Linux
 on:
   workflow_dispatch:
     inputs:
+      build-image-sha:
+        type: string
+        description: 'SHA for electron/build image'
+        default: 'cf814a4d2501e8e843caea071a6b70a48e78b855'
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
@@ -17,7 +21,7 @@ jobs:
   checkout-linux:
     runs-on: aks-linux-large
     container:
-      image: ghcr.io/electron/build:latest
+      image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -40,7 +44,7 @@ jobs:
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
-      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
       is-release: true
@@ -54,7 +58,7 @@ jobs:
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
-      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm
       is-release: true
@@ -68,7 +72,7 @@ jobs:
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
-      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64
       is-release: true
