@@ -92,9 +92,9 @@ jobs:
       if: ${{ inputs.target-platform == 'linux' }}
       run: |
         if [ "${{ inputs.target-arch  }}" = "arm" ]; then
-          GN_EXTRA_ARGS='build_tflite_with_xnnpack=false'
+          GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false'
         elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          GN_EXTRA_ARGS='fatal_linker_warnings=false enable_linux_installer=false'
+          GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Get Depot Tools
