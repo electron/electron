@@ -510,6 +510,7 @@ jobs:
         name: generated_artifacts_mas_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_mas_${{ env.TARGET_ARCH }}
   test:
+    name: Run Electron Tests
     if: ${{ inputs.is-release == false }}
     runs-on: macos-14-xlarge
     needs: build
@@ -583,3 +584,11 @@ jobs:
       run: |
         cd src/electron
         node script/yarn test --runners=main --trace-uncaught --enable-logging
+    - name: Verify mksnapshot
+      run: |
+        cd src
+        python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+    - name: Verify ChromeDriver
+      run: |
+        cd src
+        python3 electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
