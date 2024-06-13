@@ -64,8 +64,6 @@ tar_src_dirs_if_exist() {
 
   tar -C build_artifacts -cf build_artifacts.tar ./
 
-  tar -tvf build_artifacts.tar | grep node_headers
-
   mv_if_exist build_artifacts.tar
 }
 
