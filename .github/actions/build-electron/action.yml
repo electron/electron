@@ -40,6 +40,7 @@ runs:
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
+      shell: bash
       run: |
         cd src
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
@@ -48,6 +49,7 @@ runs:
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
+      shell: bash
       run: |
         cd src
         e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
@@ -77,6 +79,7 @@ runs:
         e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
+      shell: bash
       if: ${{ (inputs.target-arch == 'arm' && inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
       run: |
         cd src
@@ -96,11 +99,13 @@ runs:
         # Clean up so that ninja does not get confused
         rm -f out/Default/libffmpeg.so
     - name: Build Chromedriver ${{ inputs.step-suffix }}
+      shell: bash
       run: |
         cd src
         e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build electron:electron_chromedriver_zip
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
+      shell: bash
       run: |
         # Generate breakpad symbols on release builds
         if [ "${{ inputs.generate-symbols }}" = "true" ]; then
@@ -116,17 +121,20 @@ runs:
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
+      shell: bash
       if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
+      shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
         cd src
         autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Libcxx ${{ inputs.step-suffix }}
+      shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
         cd src
@@ -135,12 +143,14 @@ runs:
         autoninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
+      shell: bash
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
     # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
+      shell: bash
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
@@ -154,6 +164,7 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+      shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
