@@ -36,7 +36,7 @@ jobs:
         gclient-extra-args: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
 
   publish-x64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
@@ -50,7 +50,7 @@ jobs:
     secrets: inherit
 
   publish-arm:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
@@ -64,7 +64,7 @@ jobs:
     secrets: inherit
 
   publish-arm64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large

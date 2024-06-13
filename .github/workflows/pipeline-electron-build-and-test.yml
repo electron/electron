@@ -64,6 +64,7 @@ jobs:
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    if: ${{ inputs.target-platform == 'macos' || inputs.target-arch == 'x64' }}
     needs: build
     with:
       target-arch: ${{ inputs.target-arch }}

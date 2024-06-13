@@ -32,6 +32,7 @@ concurrency:
 
 env:
   ELECTRON_OUT_DIR: Default
+  ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
 jobs:
   test:

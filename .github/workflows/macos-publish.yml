@@ -37,7 +37,7 @@ jobs:
         gclient-extra-args: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
 
   publish-x64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
@@ -50,7 +50,7 @@ jobs:
     secrets: inherit
 
   publish-arm64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
