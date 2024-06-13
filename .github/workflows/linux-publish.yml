@@ -8,7 +8,7 @@ on:
         required: false
         default: '1'
         type: string
-      run-macos-publish:
+      run-linux-publish:
         description: 'Run the publish jobs vs just the build jobs'
         type: boolean
         default: false
