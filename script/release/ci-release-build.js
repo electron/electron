@@ -82,7 +82,7 @@ async function githubActionsCall (targetBranch, workflowName, options) {
     }
 
     await octokit.request(`POST ${GH_ACTIONS_API_URL}/workflows/${workflowName}.yml/dispatches`, {
-      ref: buildRequest.branch,
+      ref: `refs/tags/${options.newVersion}`,
       inputs: {
         ...buildRequest.parameters
       },
