@@ -64,7 +64,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
     - id: checkout
-      uses: ./.github/actions/checkout.yml
+      uses: ./.github/actions/checkout
       with:
         generate-sas-token: true
   build:
