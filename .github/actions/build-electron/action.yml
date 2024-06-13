@@ -49,6 +49,9 @@ runs:
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ env.CHECK_DIST_MANIFEST }}" = "true" ]; then
           target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
+          if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
+            target_os="${target_os}_mas"
+          fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
@@ -172,5 +175,5 @@ runs:
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
-        name: generated_artifacts_${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}_${{ env.TARGET_ARCH }}
-        path: ./generated_artifacts_${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}_${{ env.TARGET_ARCH }}
+        name: generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
