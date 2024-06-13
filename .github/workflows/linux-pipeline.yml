@@ -376,6 +376,8 @@ jobs:
     if: ${{ inputs.is-release == false }}
     runs-on: aks-linux-medium
     needs: build
+    env: 
+      TARGET_ARCH: x64
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
@@ -427,6 +429,8 @@ jobs:
     if: ${{ inputs.is-release == false }}
     runs-on: aks-linux-medium
     needs: build
+    env: 
+      TARGET_ARCH: x64
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
