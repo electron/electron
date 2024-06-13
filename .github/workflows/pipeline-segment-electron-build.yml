@@ -41,6 +41,7 @@ on:
         type: string
         default: '0'
 
+
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: true
@@ -66,12 +67,8 @@ jobs:
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
-    - name: Load Build Tools
-      run: |
-        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
-        npm i -g @electron/build-tools
-        e auto-update disable
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+    - name: Create src dir
+      run: mkdir src
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
@@ -135,6 +132,12 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=5e75f554ba5b919b4ed67caa2ba8042d8e3be947
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
     - name: Run Electron Only Hooks
       run: |
         gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
