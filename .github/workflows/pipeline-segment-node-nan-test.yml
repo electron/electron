@@ -11,7 +11,7 @@ on:
         type: string
         description: 'Arch to build for, can be x64, arm64 or arm'
         required: true
-      test-run-on:
+      test-runs-on:
         type: string
         description: 'What host to run the tests on'
         required: true

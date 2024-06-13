@@ -68,7 +68,7 @@ jobs:
     with:
       target-arch: ${{ inputs.target-arch }}
       target-platform: ${{ inputs.target-platform }}
-      test-run-on: ${{ inputs.test-runs-on }}
+      test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.build-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
     secrets: inherit

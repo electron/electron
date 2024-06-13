@@ -15,7 +15,7 @@ on:
         type: string
         description: 'What host to run the build'
         required: true
-      test-run-on:
+      test-runs-on:
         type: string
         description: 'What host to run the tests on'
         required: true
