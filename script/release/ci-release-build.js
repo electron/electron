@@ -33,6 +33,7 @@ const circleCIPublishIndividualArches = {
 };
 
 const ghActionsPublishWorkflows = [
+  'linux-publish',
   'macos-publish'
 ];
 
