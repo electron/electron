@@ -10,7 +10,6 @@ jobs:
     uses: ./.github/workflows/linux-pipeline.yml
     with:
       is-release: false
-      gn-config: //electron/build/args/testing.gn
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'

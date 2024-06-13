@@ -15,10 +15,9 @@ on:
 
 jobs:
   publish:
-    uses: ./.github/workflows/macos-pipeline.yml
+    uses: ./.github/workflows/build-pipeline.yml
     with:
       is-release: true
-      gn-config: //electron/build/args/release.gn
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
