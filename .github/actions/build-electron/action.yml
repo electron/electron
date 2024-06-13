@@ -29,6 +29,9 @@ runs:
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
+        rm -rf "src/out/Default/Electron Framework.framework"
+        rm -rf src/out/Default/Electron*.app
+
         cd src/electron
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
         git pack-refs
