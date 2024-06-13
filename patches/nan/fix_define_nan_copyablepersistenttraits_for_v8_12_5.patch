@@ -7,7 +7,7 @@ Refs https://chromium-review.googlesource.com/c/v8/v8/+/5403708
 Should be upstreamed.
 
 diff --git a/nan.h b/nan.h
-index 2be1b4f573948024f5777fc6801126b3e799ef11..64f857c93818712ea3557f53ab4f3cad6813c43c 100644
+index 6c4fe9e46f69234100e7e634826b38c9e3e17e37..a2c84afb9be624fb1a974563cd8335a87f98f2cd 100644
 --- a/nan.h
 +++ b/nan.h
 @@ -204,9 +204,11 @@ typedef v8::String::ExternalOneByteStringResource

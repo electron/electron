@@ -8,7 +8,7 @@ See https://chromium-review.googlesource.com/c/v8/v8/+/5539852
 Also https://github.com/nodejs/nan/issues/953#issuecomment-1791163429
 
 diff --git a/nan.h b/nan.h
-index 64f857c93818712ea3557f53ab4f3cad6813c43c..6a405a6fb6f89dcb2140de48dac4ce743e9f10fa 100644
+index a2c84afb9be624fb1a974563cd8335a87f98f2cd..f4865a77e60d5105ed2426037984ddcbfa58bbca 100644
 --- a/nan.h
 +++ b/nan.h
 @@ -685,7 +685,13 @@ inline uv_loop_t* GetCurrentEventLoop() {
