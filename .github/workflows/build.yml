@@ -12,6 +12,13 @@ on:
   # pull_request:
 
 jobs:
+  # Lint Jobs
+  lint:
+    uses: ./.github/workflows/pipeline-electron-lint.yml
+    with:
+      container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root"}'
+    secrets: inherit
+
   # Checkout Jobs
   checkout-macos:
     runs-on: aks-linux-large
@@ -52,6 +59,7 @@ jobs:
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
+  # Build Jobs - These cascade into testing jobs
   macos-x64:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
