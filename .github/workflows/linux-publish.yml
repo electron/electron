@@ -15,7 +15,7 @@ on:
 
 jobs:
   publish:
-    uses: electron/electron/.github/workflows/linux-pipeline.yml@main
+    uses: ./.github/workflows/linux-pipeline.yml
     with:
       is-release: true
       gn-config: //electron/build/args/release.gn
