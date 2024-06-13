@@ -270,6 +270,11 @@ jobs:
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Generate Hunspell Dictionaries
+      if: ${{ inputs.is-release }}
+      run: |
+        cd src
+        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Libcxx
       if: ${{ inputs.is-release }}
       run: |
@@ -376,6 +381,7 @@ jobs:
     if: ${{ inputs.is-release == false }}
     runs-on: aks-linux-medium
     needs: build
+    timeout-minutes: 20
     env: 
       TARGET_ARCH: x64
     container:
@@ -412,8 +418,8 @@ jobs:
     - name: Download Generated Artifacts
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
       with:
-        name: generated_artifacts_linux_x64
-        path: ./generated_artifacts_linux_x64
+        name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist
@@ -438,6 +444,7 @@ jobs:
     if: ${{ inputs.is-release == false }}
     runs-on: aks-linux-medium
     needs: build
+    timeout-minutes: 20
     env: 
       TARGET_ARCH: x64
     container:
@@ -474,8 +481,8 @@ jobs:
     - name: Download Generated Artifacts
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
       with:
-        name: generated_artifacts_linux_x64
-        path: ./generated_artifacts_linux_x64
+        name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist
@@ -495,29 +502,4 @@ jobs:
         do
           sleep 60
         done
-  # gn-check:
-  #   name: Check GN Config
-  #   runs-on: aks-linux-medium
-  #   strategy:
-  #     matrix:
-  #       build-arch: [ x64, arm64 ]
-  #   container:
-  #     image: ghcr.io/electron/build:latest
-  #     options: --user root
-  #   steps:
-  #   - name: Checkout Electron
-  #     uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
-  #   - name: Default GN gen
-  #     run: |
-  #       cd src
-  #       gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-  #   - name: GN check
-  #     run: |
-  #       cd src
-  #       gn check out/Default //electron:electron_lib
-  #       gn check out/Default //electron:electron_app
-  #       gn check out/Default //electron/shell/common/api:mojo
-  #       # Check the hunspell filenames
-  #       node electron/script/gen-hunspell-filenames.js --check
-  #       node electron/script/gen-libc++-filenames.js --check
->>>>>>> 446c028778 (Add nan tests step)
+
