@@ -15,7 +15,7 @@ on:
 
 jobs:
   publish:
-    uses: electron/electron/.github/workflows/macos-pipeline.yml@main
+    uses: ./.github/workflows/macos-pipeline.yml
     with:
       is-release: true
       gn-config: //electron/build/args/release.gn
