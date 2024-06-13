@@ -183,6 +183,13 @@ jobs:
     - name: Build Electron (MAS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/build-electron
+      with:
+        target-arch: ${{ inputs.target-arch }}
+        target-platform: ${{ inputs.target-platform }}
+        is-release: '${{ inputs.is-release }}'
+        generate-symbols: '${{ inputs.generate-symbols }}'
+        upload-to-storage: '${{ inputs.upload-to-storage }}'
+        step-suffix: '(mas)'
   test:
     if: ${{ inputs.is-release == false && inputs.target-platform == 'mac' }}
     runs-on: macos-14-xlarge
