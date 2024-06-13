@@ -121,3 +121,11 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
+
+  node-nan-linux-x64:
+    uses: ./.github/workflows/node-nan-test-pipeline.yml
+    needs: linux-x64
+    with:
+      target-arch: x64
+      gn-build-type: testing
+    secrets: inherit

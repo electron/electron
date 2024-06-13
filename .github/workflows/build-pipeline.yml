@@ -281,11 +281,3 @@ jobs:
         do
           sleep 60
         done
-  node-nan-linux-x64:
-    uses: ./.github/workflows/node-nan-test-pipeline.yml
-    if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'linux' && inputs.is-release == false }}
-    needs: build
-    with:
-      target-arch: x64
-      gn-build-type: testing
-    secrets: inherit
