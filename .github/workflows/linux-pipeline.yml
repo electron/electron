@@ -218,7 +218,7 @@ jobs:
           electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
           electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
         fi
-      
+
         e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
     - name: Generate Cross-Arch Snapshot (arm/arm64)
@@ -393,6 +393,10 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -444,6 +448,10 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
