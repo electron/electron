@@ -61,7 +61,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
     - id: checkout
-      uses: ./.github/actions/checkout
+      uses: ./src/electron/.github/actions/checkout
   build:
     strategy:
       fail-fast: false
