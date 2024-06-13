@@ -63,7 +63,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-    - id: checkout
+    - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
