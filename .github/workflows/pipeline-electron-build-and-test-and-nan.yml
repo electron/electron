@@ -24,6 +24,11 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+      test-container:
+        type: string
+        description: 'JSON container information for testing'
+        required: false
+        default: '{"image":null}'
       is-release:
         description: 'Whether this build job is a release job'
         required: true
@@ -69,7 +74,7 @@ jobs:
       target-arch: ${{ inputs.target-arch }}
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
-      test-container: ${{ inputs.build-container }}
+      test-container: ${{ inputs.test-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
     secrets: inherit
   nn-test:
@@ -79,6 +84,6 @@ jobs:
       target-arch: ${{ inputs.target-arch }}
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
-      test-container: ${{ inputs.build-container }}
+      test-container: ${{ inputs.test-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
     secrets: inherit
