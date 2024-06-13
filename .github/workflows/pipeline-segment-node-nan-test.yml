@@ -34,15 +34,6 @@ env:
   ELECTRON_OUT_DIR: Default
 
 jobs:
-  electron-tests:
-    uses: ./.github/workflows/electron-test-pipeline.yml
-    with:
-      target-arch: ${{ inputs.target-arch }}
-      target-platform: ${{ inputs.target-platform }}
-      test-run-on: ${{ inputs.test-run-on }}
-      test-container: ${{ inputs.test-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
-    secrets: inherit
   node-tests:
     name: Run Node.js Tests
     runs-on: aks-linux-medium
