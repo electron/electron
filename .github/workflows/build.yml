@@ -50,7 +50,7 @@ jobs:
         gclient-extra-args: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
 
   macos-x64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
@@ -64,7 +64,7 @@ jobs:
     secrets: inherit
   
   macos-arm64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
@@ -78,7 +78,7 @@ jobs:
     secrets: inherit
 
   linux-x64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
@@ -93,7 +93,7 @@ jobs:
     secrets: inherit
   
   linux-arm:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
@@ -108,7 +108,7 @@ jobs:
     secrets: inherit
   
   linux-arm64:
-    uses: ./.github/workflows/build-pipeline.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
@@ -120,12 +120,4 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
-
-  node-nan-linux-x64:
-    uses: ./.github/workflows/node-nan-test-pipeline.yml
-    needs: linux-x64
-    with:
-      target-arch: x64
-      gn-build-type: testing
     secrets: inherit

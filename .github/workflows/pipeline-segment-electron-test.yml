@@ -1,0 +1,119 @@
+name: Pipeline Segment - Electron Test
+
+on:
+  workflow_call:
+    inputs:
+      target-platform:
+        type: string
+        description: 'Platform to run on, can be macos or linux'
+        required: true
+      target-arch:
+        type: string
+        description: 'Arch to build for, can be x64, arm64 or arm'
+        required: true
+      test-run-on:
+        type: string
+        description: 'What host to run the tests on'
+        required: true
+      test-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+      gn-build-type:
+        description: 'The gn build type - testing or release'
+        required: true
+        type: string
+        default: testing
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ELECTRON_OUT_DIR: Default
+
+jobs:
+  test:
+    runs-on: ${{ inputs.test-run-on }}
+    container: ${{ fromJSON(inputs.test-container) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || fromJSON('["linux"]') }}
+    env:
+      BUILD_TYPE: ${{ matrix.build-type }}
+      TARGET_ARCH: ${{ inputs.target-arch }}
+    steps:
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        if [ "`uname`" = "Darwin" ]; then
+          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        else
+          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+          cd depot_tools
+          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        fi
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+        path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist, Mksnapshot & Chromedriver
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+        unzip -:o chromedriver.zip
+        unzip -:o mksnapshot.zip
+    # - name: Import & Trust Self-Signed Codesigning Cert on MacOS
+    #   if: ${{ inputs.target-platform == 'macos' }}
+    #   run: |
+    #     sudo security authorizationdb write com.apple.trust-settings.admin allow
+    #     cd src/electron
+    #     ./script/codesign/generate-identity.sh
+    - name: Setup for headless testing
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: sh -e /etc/init.d/xvfb start
+    - name: Run Electron Tests
+      env:
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+      run: |
+        cd src/electron
+        node script/yarn test --runners=main --trace-uncaught --enable-logging
+    - name: Wait for active SSH sessions
+      if: always() && !cancelled()
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done
