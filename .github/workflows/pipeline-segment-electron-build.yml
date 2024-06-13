@@ -15,10 +15,6 @@ on:
         type: string
         description: 'What host to run the build'
         required: true
-      test-runs-on:
-        type: string
-        description: 'What host to run the tests on'
-        required: true
       build-container:
         type: string
         description: 'JSON container information for aks runs-on'
