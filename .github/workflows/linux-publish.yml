@@ -36,8 +36,6 @@ jobs:
         fetch-depth: 0
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
-      with:
-        gclient-extra-args: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
 
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml

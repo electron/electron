@@ -39,7 +39,6 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
-        gclient-extra-args: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
 
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
