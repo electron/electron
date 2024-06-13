@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-arch: [ arm64 ] # x64, arm 
+        build-arch: [ x64 ] # arm64, arm 
     env: 
       TARGET_ARCH: ${{ matrix.build-arch }}
     runs-on: aks-linux-large
@@ -163,8 +163,6 @@ jobs:
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
-    - name: Fix Known Hosts on Linux
-      run: src/electron/.circleci/fix-known-hosts.sh
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=300" >> $GITHUB_ENV
@@ -247,6 +245,10 @@ jobs:
         cd src
         e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build electron:electron_chromedriver_zip
+    - name: Build Node.js headers
+      run: |
+        cd src
+        e build electron:node_headers
     - name: Generate & Zip Symbols
       run: |
         # Generate breakpad symbols on release builds
@@ -299,3 +301,78 @@ jobs:
       with:
         name: generated_artifacts_linux_${{ matrix.build-arch }}
         path: ./generated_artifacts_linux_${{ matrix.build-arch }}
+  test:
+    if: ${{ inputs.is-release == false }}
+    runs-on: aks-linux-medium
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        build-arch: [ arm64 ] # x64, arm 
+    env:
+      TARGET_ARCH: ${{ matrix.build-arch }}
+    steps:
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: generated_artifacts_linux_${{ matrix.build-arch }}
+        path: ./generated_artifacts_linux_${{ matrix.build-arch }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist, Mksnapshot & Chromedriver
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+        unzip -:o chromedriver.zip
+        unzip -:o mksnapshot.zip
+    - name: Setup for headless testing
+      run: sh -e /etc/init.d/xvfb start
+    - name: Run Electron Tests
+      env:
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+      run: |
+        cd src/electron
+        node script/yarn test --runners=main --trace-uncaught --enable-logging
+    - name: Wait for active SSH sessions
+      if: always() && !cancelled()
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done
