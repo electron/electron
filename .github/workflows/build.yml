@@ -1,0 +1,120 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  # push
+  # pull_request:
+
+jobs:
+  # Checkout Jobs
+  checkout-macos:
+    runs-on: aks-linux-large
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+  checkout-linux:
+    runs-on: aks-linux-large
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+
+  macos-x64:
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-macos
+    with:
+      build-runs-on: macos-14-xlarge
+      test-runs-on: macos-14-xlarge
+      target-platform: macos
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+  
+  macos-arm64:
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-macos
+    with:
+      build-runs-on: macos-14-xlarge
+      test-runs-on: macos-14-xlarge
+      target-platform: macos
+      target-arch: arm64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  linux-x64:
+    uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: aks-linux-large
+      test-runs-on: aks-linux-medium
+      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+  
+  linux-arm:
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: aks-linux-large
+      test-runs-on: aks-linux-medium
+      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: arm
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+  
+  linux-arm64:
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: aks-linux-large
+      test-runs-on: aks-linux-medium
+      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: arm64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
