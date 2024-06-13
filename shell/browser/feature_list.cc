@@ -20,7 +20,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "content/common/features.h"  // nogncheck
-#include "device/base/features.h"  // nogncheck
+#include "device/base/features.h"     // nogncheck
 #endif
 
 namespace electron {
