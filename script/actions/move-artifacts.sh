@@ -19,6 +19,12 @@ echo Creating $GENERATED_ARTIFACTS...
 rm -rf $GENERATED_ARTIFACTS
 mkdir $GENERATED_ARTIFACTS
 
+SRC_ARTIFACTS="src_artifacts_${BUILD_TYPE}_${TARGET_ARCH}"
+
+echo Creating $SRC_ARTIFACTS...
+rm -rf $SRC_ARTIFACTS
+mkdir $SRC_ARTIFACTS
+
 mv_if_exist() {
   if [ -f "$1" ] || [ -d "$1" ]; then
     echo Storing $1
@@ -37,8 +43,8 @@ cp_if_exist() {
   fi
 }
 
-tar_src_dirs_if_exist() {
-  mkdir build_artifacts
+move_src_dirs_if_exist() {
+  mkdir src_artifacts
 
   for dir in \
     src/out/Default/gen/node_headers \
@@ -60,14 +66,15 @@ tar_src_dirs_if_exist() {
     src/v8/tools/builtins-pgo
   do
     if [ -d "$dir" ]; then
-      mkdir -p build_artifacts/$(dirname $dir)
-      cp -r $dir/ build_artifacts/$dir
+      mkdir -p src_artifacts/$(dirname $dir)
+      cp -r $dir/ src_artifacts/$dir
     fi      
   done
 
-  tar -C build_artifacts -cf build_artifacts.tar ./
+  tar -C src_artifacts -cf src_artifacts.tar ./
 
-  mv_if_exist build_artifacts.tar
+  echo Storing src_artifacts.tar
+  mv src_artifacts.tar $SRC_ARTIFACTS
 }
 
 # Generated Artifacts
@@ -82,4 +89,4 @@ mv_if_exist src/cross-arch-snapshots
 cp_if_exist src/out/electron_ninja_log
 cp_if_exist src/out/Default/.ninja_log
 
-tar_src_dirs_if_exist
+move_src_dirs_if_exist

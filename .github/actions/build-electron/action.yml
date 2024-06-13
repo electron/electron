@@ -185,3 +185,8 @@ runs:
       with:
         name: generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+    - name: Upload Src Artifacts ${{ inputs.step-suffix }}
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      with:
+        name: src_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
