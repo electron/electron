@@ -57,7 +57,7 @@ tar_src_dirs_if_exist() {
     src/v8/tools/builtins-pgo
   do
     if [ -d "$dir" ]; then
-      mkdir -p build_artifacts/$dir
+      mkdir -p build_artifacts/$(dirname $dir)
       cp -r $dir/ build_artifacts/$dir
     fi      
   done
