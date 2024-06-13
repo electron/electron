@@ -27,7 +27,7 @@ on:
         default: testing
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

@@ -27,7 +27,7 @@ on:
         default: testing
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

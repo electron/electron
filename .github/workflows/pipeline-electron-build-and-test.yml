@@ -46,7 +46,7 @@ on:
         default: '0'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
+  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
