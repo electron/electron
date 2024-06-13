@@ -418,8 +418,6 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
-    - name: Fix Known Hosts on Linux
-      run: src/electron/.circleci/fix-known-hosts.sh
     - name: Run Node.js Tests
       run: |
         cd src
@@ -471,8 +469,6 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
-    - name: Fix Known Hosts on Linux
-      run: src/electron/.circleci/fix-known-hosts.sh
     - name: Run Node.js Tests
       run: |
         cd src
