@@ -58,7 +58,7 @@ tar_src_dirs_if_exist() {
   do
     if [ -d "$dir" ]; then
       mkdir -p build_artifacts/$dir
-      cp -r $dir build_artifacts/$dir
+      cp -r $dir/ build_artifacts/$dir
     fi      
   done
 
