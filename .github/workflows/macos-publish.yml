@@ -1,4 +1,4 @@
-name: Publish Linux
+name: Publish MacOS
 
 on:
   workflow_dispatch:
@@ -8,13 +8,13 @@ on:
         required: false
         default: '1'
         type: string
-      run-linux-publish:
+      run-macos-publish:
         description: 'Run the publish jobs vs just the build jobs'
         type: boolean
         default: false
 
 jobs:
-  checkout-linux:
+  checkout-macos:
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:latest
@@ -33,30 +33,16 @@ jobs:
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
-        gclient-extra-args: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+        generate-sas-token: 'true'
+        gclient-extra-args: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
 
   publish-x64:
     uses: ./.github/workflows/build-pipeline.yml
-    needs: checkout-linux
+    needs: checkout-macos
     with:
-      build-runs-on: aks-linux-large
-      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
+      build-runs-on: macos-14-xlarge
+      target-platform: macos
       target-arch: x64
-      is-release: true
-      gn-build-type: release
-      generate-symbols: true
-      upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
-
-  publish-arm:
-    uses: ./.github/workflows/build-pipeline.yml
-    needs: checkout-linux
-    with:
-      build-runs-on: aks-linux-large
-      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
-      target-arch: arm
       is-release: true
       gn-build-type: release
       generate-symbols: true
@@ -65,11 +51,10 @@ jobs:
 
   publish-arm64:
     uses: ./.github/workflows/build-pipeline.yml
-    needs: checkout-linux
+    needs: checkout-macos
     with:
-      build-runs-on: aks-linux-large
-      build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
+      build-runs-on: macos-14-xlarge
+      target-platform: macos
       target-arch: arm64
       is-release: true
       gn-build-type: release
