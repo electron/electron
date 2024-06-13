@@ -4,19 +4,21 @@ inputs:
   generate-sas-token:
     description: 'Whether to generate and persist a SAS token for the item in the cache'
     required: false
-    default: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
   - name: Set GIT_CACHE_PATH to make gclient to use the cache
+    shell: bash
     run: |
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Install Dependencies
+    shell: bash
     run: |
       cd src/electron
       node script/yarn install
   - name: Get Depot Tools
-    timeout-minutes: 5
+    shell: bash
     run: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
@@ -29,17 +31,20 @@ runs:
       test -d depot_tools && cd depot_tools
       touch .disable_auto_update
   - name: Add Depot Tools to PATH
+    shell: bash
     run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
   - name: Generate DEPS Hash
+    shell: bash
     run: |
       node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
       echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
   - name: Generate SAS Key
-    if: ${{ inputs.generate-sas-token }}
+    if: ${{ inputs.generate-sas-token }} == 'true'
+    shell: bash
     run: |
       curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$DEPSHASH.tar" > sas-token
   - name: Save SAS Key
-    if: ${{ inputs.generate-sas-token }}
+    if: ${{ inputs.generate-sas-token }} == 'true'
     uses: actions/cache/save@v4
     with:
       path: |
@@ -47,6 +52,7 @@ runs:
       key: sas-key-${{ github.run_number }}-${{ github.run_attempt }}
   - name: Check If Cache Exists
     id: check-cache
+    shell: bash
     run: |
       cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
       echo "Using cache key: $DEPSHASH"
@@ -60,6 +66,7 @@ runs:
       fi
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
     run: |
       gclient config \
         --name "src/electron" \
@@ -107,11 +114,13 @@ runs:
   # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
   - name: Delete .git directories under src to free space
     if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
     run: |
       cd src
       ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
   - name: Minimize Cache Size for Upload
     if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
     run: |
       rm -rf src/android_webview
       rm -rf src/ios/chrome
@@ -124,6 +133,7 @@ runs:
       rm -rf src/electron
   - name: Compress Src Directory
     if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
       tar -cf $DEPSHASH.tar src
@@ -131,6 +141,7 @@ runs:
       cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
   - name: Persist Src Cache
     if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
     run: |
       final_cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
       echo "Using cache key: $DEPSHASH"
