@@ -113,6 +113,11 @@ runs:
         cd src
         e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build electron:electron_chromedriver_zip
+    - name: Build Node.js headers ${{ inputs.step-suffix }}
+      shell: bash
+      run: |
+        cd src
+        e build electron:node_headers
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
