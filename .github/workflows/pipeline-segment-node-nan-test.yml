@@ -75,6 +75,11 @@ jobs:
       with:
         name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
+    - name: Download Src Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: src_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist
@@ -134,6 +139,11 @@ jobs:
       with:
         name: generated_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_linux_${{ env.TARGET_ARCH }}
+    - name: Download Src Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: src_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist
