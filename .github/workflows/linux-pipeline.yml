@@ -374,10 +374,10 @@ jobs:
   node-tests:
     name: Run Node.js Tests
     runs-on: aks-linux-medium
+    needs: build
     container:
       image: ghcr.io/electron/build:latest
       options: --user root
-    needs: build
     steps:
     - name: Load Build Tools
       run: |
@@ -413,7 +413,56 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-        unzip -:o chromedriver.zip
+    - name: Setup Linux for Headless Testing
+      run: sh -e /etc/init.d/xvfb start
+    - name: Fix Known Hosts on Linux
+      run: src/electron/.circleci/fix-known-hosts.sh
+    - name: Run Node.js Tests
+      run: |
+        cd src
+        node electron/script/node-spec-runner.js --default --jUnitDir=junit
+  nan-tests:
+    name: Run Nan Tests
+    runs-on: aks-linux-medium
+    needs: build
+    container:
+      image: ghcr.io/electron/build:latest
+      options: --user root
+    steps:
+    - name: Load Build Tools
+      run: |
+        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        npm i -g @electron/build-tools
+        e auto-update disable
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      with:
+        name: generated_artifacts_linux_x64
+        path: ./generated_artifacts_linux_x64
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
     - name: Fix Known Hosts on Linux
@@ -422,4 +471,29 @@ jobs:
       run: |
         cd src
         node electron/script/nan-spec-runner.js
-            
+  # gn-check:
+  #   name: Check GN Config
+  #   runs-on: aks-linux-medium
+  #   strategy:
+  #     matrix:
+  #       build-arch: [ x64, arm64 ]
+  #   container:
+  #     image: ghcr.io/electron/build:latest
+  #     options: --user root
+  #   steps:
+  #   - name: Checkout Electron
+  #     uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+  #   - name: Default GN gen
+  #     run: |
+  #       cd src
+  #       gn gen out/Default --args="import(\"$GN_CONFIG\") use_remoteexec=true $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+  #   - name: GN check
+  #     run: |
+  #       cd src
+  #       gn check out/Default //electron:electron_lib
+  #       gn check out/Default //electron:electron_app
+  #       gn check out/Default //electron/shell/common/api:mojo
+  #       # Check the hunspell filenames
+  #       node electron/script/gen-hunspell-filenames.js --check
+  #       node electron/script/gen-libc++-filenames.js --check
+>>>>>>> 446c028778 (Add nan tests step)
