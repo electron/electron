@@ -10,24 +10,28 @@ elif [ "`uname`" == "Linux" ]; then
   BUILD_TYPE="linux"
 fi
 
+GENERATED_ARTIFACTS="generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}"
+
 mv_if_exist() {
-  if [ -f "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ] || [ -d "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ]; then
+  if [ -f "${GENERATED_ARTIFACTS}/$1" ] || [ -d "${GENERATED_ARTIFACTS}/$1" ]; then
     echo Restoring $1 to $2
     mkdir -p $2
-    mv generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1 $2
+    mv $GENERATED_ARTIFACTS/$1 $2
   else
     echo Skipping $1 - It is not present on disk
   fi
 }
 
 untar_if_exist() {
-  if [ -f "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ] || [ -d "generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1" ]; then
-    echo Restoring $1 to $2
-    tar -xf generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}/$1 $2
+  if [ -f "${GENERATED_ARTIFACTS}/$1" ] || [ -d "${GENERATED_ARTIFACTS}/$1" ]; then
+    echo Restoring $1 to current directory
+    tar -xf ${GENERATED_ARTIFACTS}/$1
   else
     echo Skipping $1 - It is not present on disk
   fi
 }
+
+echo Restoring artifacts from $GENERATED_ARTIFACTS
 
 # Restore generated artifacts
 mv_if_exist dist.zip src/out/Default
@@ -40,4 +44,4 @@ mv_if_exist hunspell_dictionaries.zip src/out/Default
 mv_if_exist cross-arch-snapshots src
 
 # Restore build artifacts
-untar_if_exist build_artifacts.tar ./
+untar_if_exist build_artifacts.tar

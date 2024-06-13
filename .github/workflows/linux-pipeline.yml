@@ -358,7 +358,7 @@ jobs:
     - name: Setup for headless testing
       run: sh -e /etc/init.d/xvfb start
     - name: Fix Known Hosts
-      run: /src/electron/.circleci/fix-known-hosts.sh
+      run: ./src/electron/.circleci/fix-known-hosts.sh
     - name: Run Electron Tests
       env:
         MOCHA_REPORTER: mocha-multi-reporters

@@ -10,14 +10,16 @@ elif [ "`uname`" == "Linux" ]; then
   BUILD_TYPE="linux"
 fi
 
-echo Creating generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}...
-rm -rf generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
-mkdir generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
+GENERATED_ARTIFACTS="generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}"
+
+echo Creating $GENERATED_ARTIFACTS...
+rm -rf $GENERATED_ARTIFACTS
+mkdir $GENERATED_ARTIFACTS
 
 mv_if_exist() {
   if [ -f "$1" ] || [ -d "$1" ]; then
     echo Storing $1
-    mv $1 generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
+    mv $1 $GENERATED_ARTIFACTS
   else
     echo Skipping $1 - It is not present on disk
   fi
@@ -26,7 +28,7 @@ mv_if_exist() {
 cp_if_exist() {
   if [ -f "$1" ] || [ -d "$1" ]; then
     echo Storing $1
-    cp $1 generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}
+    cp $1 $GENERATED_ARTIFACTS
   else
     echo Skipping $1 - It is not present on disk
   fi
@@ -60,7 +62,7 @@ tar_src_dirs_if_exist() {
     fi      
   done
 
-  tar -cf build_artifacts.tar build_artifacts
+  tar -C build_artifacts -cf build_artifacts.tar ./
 
   mv_if_exist build_artifacts.tar
 }
