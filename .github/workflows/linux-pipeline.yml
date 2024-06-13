@@ -163,8 +163,6 @@ jobs:
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
-    - name: Fix Known Hosts on Linux
-      run: src/electron/.circleci/fix-known-hosts.sh
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=300" >> $GITHUB_ENV
@@ -357,8 +355,6 @@ jobs:
         unzip -:o mksnapshot.zip
     - name: Setup for headless testing
       run: sh -e /etc/init.d/xvfb start
-    - name: Fix Known Hosts
-      run: ./src/electron/.circleci/fix-known-hosts.sh
     - name: Run Electron Tests
       env:
         MOCHA_REPORTER: mocha-multi-reporters
