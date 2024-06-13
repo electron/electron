@@ -193,7 +193,7 @@ jobs:
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         step-suffix: '(mas)'
   test:
-    if: ${{ inputs.is-release == false && inputs.target-platform == 'mac' }}
+    if: ${{ inputs.is-release == false && inputs.target-platform == 'macos' }}
     runs-on: macos-14-xlarge
     needs: build
     strategy:
