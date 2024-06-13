@@ -54,6 +54,7 @@ jobs:
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
+      test-run-on: macos-14-xlarge
       target-platform: macos
       target-arch: x64
       is-release: false
@@ -67,6 +68,7 @@ jobs:
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
+      test-run-on: macos-14-xlarge
       target-platform: macos
       target-arch: arm64
       is-release: false
@@ -80,6 +82,7 @@ jobs:
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
+      test-run-on: aks-linux-medium
       build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
@@ -94,6 +97,7 @@ jobs:
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
+      test-run-on: aks-linux-medium
       build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm
@@ -108,6 +112,7 @@ jobs:
     needs: checkout-linux
     with:
       build-runs-on: aks-linux-large
+      test-run-on: aks-linux-medium
       build-container: '{"image":"ghcr.io/electron/build:latest","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64
