@@ -29,6 +29,7 @@ jobs:
         cd src/electron
         node script/yarn install
     - name: Run TS/JS compile
+      shell: bash
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
