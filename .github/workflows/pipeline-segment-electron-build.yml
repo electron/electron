@@ -88,6 +88,10 @@ jobs:
     - name: Install AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       run: brew install azcopy
+    - name: Enable windows toolchain
+      if: ${{ inputs.target-platform == 'windows' }}
+      run: |
+        echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for Linux
       if: ${{ inputs.target-platform == 'linux' }}
       run: |
@@ -134,7 +138,7 @@ jobs:
         fetch-depth: 0
     - name: Load Build Tools
       run: |
-        export BUILD_TOOLS_SHA=5e75f554ba5b919b4ed67caa2ba8042d8e3be947
+        export BUILD_TOOLS_SHA=5f9e01d9e541a72e64fabf45e386eef5acdec05b
         npm i -g @electron/build-tools
         e auto-update disable
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
