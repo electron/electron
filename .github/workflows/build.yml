@@ -65,7 +65,7 @@ jobs:
   # Checkout Jobs
   checkout-macos:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' || !inputs.skip-macos}}
+    if: ${{ needs.changes.outputs.src == 'true' && !inputs.skip-macos}}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
@@ -88,7 +88,7 @@ jobs:
 
   checkout-linux:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' || !inputs.skip-linux}}
+    if: ${{ needs.changes.outputs.src == 'true' && !inputs.skip-linux}}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
