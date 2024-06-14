@@ -37,7 +37,7 @@ env:
 jobs:
   node-tests:
     name: Run Node.js Tests
-    runs-on: aks-linux-medium
+    runs-on: aks-linux-medium-plus
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
