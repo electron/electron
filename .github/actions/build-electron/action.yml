@@ -63,7 +63,7 @@ runs:
         cd src
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ env.CHECK_DIST_MANIFEST }}" = "true" ]; then
-          target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
+          target_os=${{ inputs.target-platform == 'linux' && 'linux' || (inputs.target-platform == 'windows' && 'win' || 'mac') }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
