@@ -137,7 +137,7 @@ jobs:
         fetch-depth: 0
     - name: Load Build Tools
       run: |
-        export BUILD_TOOLS_SHA=5e75f554ba5b919b4ed67caa2ba8042d8e3be947
+        export BUILD_TOOLS_SHA=97f6508e27d08c1e41b61b2cdc1250d998b9ff8c
         npm i -g @electron/build-tools
         e auto-update disable
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
