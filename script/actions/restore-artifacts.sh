@@ -1,18 +1,5 @@
 #!/bin/bash
 
-if [ "`uname`" == "Darwin" ]; then
-  if [ -z "$MAS_BUILD" ]; then
-    BUILD_TYPE="darwin"
-  else
-    BUILD_TYPE="mas"
-  fi
-elif [ "`uname`" == "Linux" ]; then
-  BUILD_TYPE="linux"
-else
-  echo "Unsupported platform"
-  exit 1
-fi
-
 GENERATED_ARTIFACTS="generated_artifacts_${BUILD_TYPE}_${TARGET_ARCH}"
 SRC_ARTIFACTS="src_artifacts_${BUILD_TYPE}_${TARGET_ARCH}"
 
