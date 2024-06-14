@@ -178,7 +178,7 @@ jobs:
     needs: checkout-windows
     with:
       build-runs-on: aks-linux-large
-      test-runs-on: aks-linux-medium
+      test-runs-on: windows-2022
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root  --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: windows
       target-arch: x64

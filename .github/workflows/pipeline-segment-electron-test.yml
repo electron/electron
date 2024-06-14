@@ -47,11 +47,13 @@ jobs:
         path: src/electron
         fetch-depth: 0
     - name: Install Dependencies
+      shell: bash
       run: |
         cd src/electron
         node script/yarn install
     - name: Get Depot Tools
       timeout-minutes: 5
+      shell: bash
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         if [ "`uname`" = "Darwin" ]; then
@@ -67,6 +69,7 @@ jobs:
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
+      shell: bash
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Download Generated Artifacts
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
@@ -79,8 +82,10 @@ jobs:
         name: src_artifacts_${{ matrix.build-type }}_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_${{ matrix.build-type }}_${{ env.TARGET_ARCH }}
     - name: Restore Generated Artifacts
+      shell: bash
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist, Mksnapshot & Chromedriver
+      shell: bash
       run: |
         cd src/out/Default
         unzip -:o dist.zip
@@ -93,6 +98,7 @@ jobs:
     #     cd src/electron
     #     ./script/codesign/generate-identity.sh
     - name: Run Electron Tests
+      shell: bash
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_TEST_RESULTS_DIR: junit
@@ -116,7 +122,7 @@ jobs:
           runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         fi
     - name: Wait for active SSH sessions
-      if: always() && !cancelled()
+      if: always() && !cancelled() && ${{ inputs.target-platform == 'linux' }}
       run: |
         while [ -f /var/.ssh-lock ]
         do
