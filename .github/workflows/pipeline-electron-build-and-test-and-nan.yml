@@ -47,7 +47,7 @@ on:
 
 concurrency:
   group: electron-build-and-test-and-nan-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 jobs:
   build:

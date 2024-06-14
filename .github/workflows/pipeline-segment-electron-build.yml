@@ -44,7 +44,7 @@ on:
 
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 env:
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}

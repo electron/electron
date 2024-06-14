@@ -28,7 +28,7 @@ on:
 
 concurrency:
   group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 env:
   ELECTRON_OUT_DIR: Default
