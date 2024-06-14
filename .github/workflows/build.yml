@@ -24,7 +24,7 @@ jobs:
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
-      options: --user root
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     env:
