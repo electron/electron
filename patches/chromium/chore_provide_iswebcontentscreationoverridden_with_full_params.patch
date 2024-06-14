@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 6dc8deaa47046e9ad6c81fb0ab48eb9f374cfaeb..7b60193f537faf9b88e546aa4287b95b9fb3a593 100644
+index 6ca8527a73e53fdb6515360e7cd58310c46402d5..5f0c343e5a5f2b554a672f6d69ce2a7291c93d21 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2064,12 +2064,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2070,12 +2070,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -141,7 +141,7 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index e4c31867e264c4f9aa2a451a934eda705826a1a3..f6325a210aec33aa63257bdf3bc542d845f3708e 100644
+index 1b29ac2afdbbc10ea59649b741e17583abf10536..cef3d60636e39cab514c45a085cc3a1d6587729a 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -75,8 +75,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1f36be39c1f345f84d3ca8666dcd7ac6dbc4ae9b..7e994945a4bd5e3db876496762ab073ac8d76155 100644
+index b21305c697648b577fda1da7d85d41ca72e56e0f..87aa67836b71b2beafc79ca534a1c9d6fca66d3c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4620,8 +4620,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4660,8 +4660,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,7 +316,7 @@ index f0b71aba6dfb4682ce2e5b4c834b2526dcacb75c..d4b1857ca468ff97914d91d0c31298b7
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 41e911c5e383eb85b461a14b3c0543922f6f25ad..32bd05155142aec16279d5ce2e0941583ea526c8 100644
+index 4d829cd24ec34d075c62b622e5e8fa836b7ae5f4..ab282d281e24ca9635c8f7d2753089d5b19649f9 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -574,8 +574,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(

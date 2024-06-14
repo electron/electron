@@ -8,10 +8,10 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index de3bf9edfd25e6defd3245f283bae1fed9151b06..5931d446f1fecd1f6c3fd05224d43ada1306fdd6 100644
+index d672fda980688514e1f31c3f287bc92532cfdad8..ec081f28cd9233e0cbfbe83b7211240482614891 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-@@ -11,8 +11,8 @@
+@@ -12,8 +12,8 @@
  #include "base/numerics/safe_conversions.h"
  #include "base/unguessable_token.h"
  #include "base/uuid.h"

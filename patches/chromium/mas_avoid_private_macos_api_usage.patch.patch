@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ceea1f99cc55f5184e95eab8d978655ab683c321..959dae2a087ee92b238d726e26fd105fc22b0304 100644
+index b1a4ec4e8ccd2d6875c66153660e7d76b4e887b5..924e2242330430b6a9c1d27fb7ab5cf34b2daf9d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -608,10 +608,10 @@ index 2ad8852bf38dbfbdc600a5a21b354385338eb81e..1e17e24f269fb6fc758a90fa11e33fce
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 45490079b1f7b651532bc4758204aa872a52f7dc..409e530483da72db1f127ed8b1ab14bd3fb4b55b 100644
+index 6edbef34112ccae4e7e3e4f96ffacdb430234497..72d3fa4996b2d141bdf2ae703bc1d28fe7dfa7ea 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -236,6 +236,7 @@ source_set("common") {
+@@ -220,6 +220,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -620,10 +620,10 @@ index 45490079b1f7b651532bc4758204aa872a52f7dc..409e530483da72db1f127ed8b1ab14bd
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index b19f9ebb80563a6798983f372967824ab96dc590..54d0c71648027a6242be9768c79b0ac590e4a02d 100644
+index c60a3f782dbadd7acaa658d844a73c96b899dd36..78bfe250a8241e8942f5f6b812ddc36d4511f78d 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -226,6 +226,7 @@ target(link_target_type, "renderer") {
+@@ -230,6 +230,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -700,10 +700,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c69b0bb7c1c0a62a124b86bea02523d469f5e388..5314f8557fef9a66183ecde560a4ee6fcc1bc4d8 100644
+index 0f5d5c69bcab6feb8b2f3de86e3324d95f2efc31..c59fbd5d57055991d2c9a1d16633d1b8546634aa 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -504,6 +504,7 @@ static_library("test_support") {
+@@ -502,6 +502,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -711,7 +711,7 @@ index c69b0bb7c1c0a62a124b86bea02523d469f5e388..5314f8557fef9a66183ecde560a4ee6f
    ]
  
    public_deps = [
-@@ -1103,6 +1104,7 @@ static_library("browsertest_support") {
+@@ -1102,6 +1103,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index c69b0bb7c1c0a62a124b86bea02523d469f5e388..5314f8557fef9a66183ecde560a4ee6f
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1717,6 +1719,7 @@ test("content_browsertests") {
+@@ -1716,6 +1718,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index c69b0bb7c1c0a62a124b86bea02523d469f5e388..5314f8557fef9a66183ecde560a4ee6f
  
    public_deps = [
      ":test_interfaces",
-@@ -2968,6 +2971,7 @@ test("content_unittests") {
+@@ -2965,6 +2968,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1260,7 +1260,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2a9d420eabfee17a39604e525af6f0fa95fafc04..0883cfc964881922f3f5b04426923544c49a2273 100644
+index 6ee0ec12c17501514937f9126338bd402546d28b..9801bfbc7b6e0fe85809b343500cad352f01ff21 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -330,6 +330,7 @@ component("core") {
@@ -1554,7 +1554,7 @@ index cd08cb3b7c95a8fd418524652bb345945291112a..13c6cc142262781450d1075fe85f86ad
    // Query the display's refresh rate.
    {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 060744da5ed7e6d814a94b2b8576ff672c980c85..0cdd00f78c1518e29bc935e4b35399091882de71 100644
+index 5255116a8e8f897607e5c5df2875dbaf275ec919..0a28b2832470f3c9d45f70499be29c2b29cb1b25 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
