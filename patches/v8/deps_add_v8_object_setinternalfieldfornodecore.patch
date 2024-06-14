@@ -46,10 +46,10 @@ index 170429bf163b02963c0d59de4cd2b19bedf2e54a..c131d78dc92a37b92ef4608f8954bff4
    V8_INLINE static void* GetAlignedPointerFromInternalField(
        const BasicTracedReference<Object>& object, int index) {
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 513bcb47e30a72c5818fcad3873b9af6f787596e..e48b8ef2d4ecdabf2a77e2219c5805f14c7a01e1 100644
+index ee8a201844be1435f0003301327d4e39e0c613c7..efe804450daa94760472e90c983537f021f475a5 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -6282,14 +6282,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
+@@ -6279,14 +6279,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
        isolate);
  }
  
@@ -61,7 +61,7 @@ index 513bcb47e30a72c5818fcad3873b9af6f787596e..e48b8ef2d4ecdabf2a77e2219c5805f1
    const char* location = "v8::Object::SetInternalField()";
    if (!InternalFieldOK(obj, index, location)) return;
    auto val = Utils::OpenDirectHandle(*value);
-   i::DirectHandle<i::JSObject>::cast(obj)->SetEmbedderField(index, *val);
+   i::Cast<i::JSObject>(obj)->SetEmbedderField(index, *val);
  }
  
 +void v8::Object::SetInternalField(int index, v8::Local<Data> value) {
