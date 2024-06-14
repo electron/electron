@@ -28,6 +28,10 @@ def apply_config(config):
   for target in config:
     apply_patches(target)
 
+def apply_config_harder(config):
+  for target in config:
+    apply_patches(target)
+
 def parse_args():
   parser = argparse.ArgumentParser(description='Apply Electron patches')
   parser.add_argument('config', nargs='+',
