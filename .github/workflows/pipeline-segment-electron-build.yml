@@ -153,6 +153,7 @@ jobs:
 
         # Fix VS Toolchain
         if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          rm -rf src/third_party/depot_tools/win_toolchain/vs_files
           e d python3 src/build/vs_toolchain.py update --force
         fi
     - name: Regenerate DEPS Hash
