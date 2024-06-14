@@ -29,4 +29,4 @@ for (const specFile of specFiles) {
   if (shard === shardCount) shard = 0;
 }
 
-console.log(buckets[currentShard].join(' '));
+console.log(buckets[currentShard - 1].join(' '));
