@@ -75,7 +75,7 @@ runs:
         ${GCLIENT_EXTRA_ARGS} \
         "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
-      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
+      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vvvvv
       if [ "${{ inputs.is-release }}" != "true" ]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
