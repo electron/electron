@@ -48,7 +48,7 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        export BUILD_TOOLS_SHA=ef894bc3cfa99d84a3b731252da0f83f500e4032
+        export BUILD_TOOLS_SHA=97f6508e27d08c1e41b61b2cdc1250d998b9ff8c
         npm i -g @electron/build-tools
         e auto-update disable
         e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
@@ -116,6 +116,8 @@ jobs:
           node script/yarn test --runners=main --trace-uncaught --enable-logging
         else
           chown -R :builduser .
+          chmod -R g+w .
+          chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- node script/yarn test --runners=main --trace-uncaught --enable-logging
         fi
     - name: Wait for active SSH sessions
