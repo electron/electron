@@ -75,5 +75,4 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
     secrets: inherit
