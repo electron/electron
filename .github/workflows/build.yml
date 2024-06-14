@@ -87,7 +87,7 @@ jobs:
       build-runs-on: aks-linux-large
       test-runs-on: aks-linux-medium
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root --privileged"}'
+      test-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
       target-arch: x64
       is-release: false
@@ -103,7 +103,7 @@ jobs:
       build-runs-on: aks-linux-large
       test-runs-on: aks-linux-arm-medium
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ inputs.build-image-sha }}","options":"--user root --privileged"}'
+      test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ inputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
       target-arch: arm
       is-release: false
@@ -119,7 +119,7 @@ jobs:
       build-runs-on: aks-linux-large
       test-runs-on: aks-linux-arm-medium
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ inputs.build-image-sha }}","options":"--user root --privileged"}'
+      test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ inputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
       target-arch: arm64
       is-release: false

@@ -101,7 +101,7 @@ jobs:
       run: |
         cd src/electron
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 1 || 2 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 1 || 3 }})
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
