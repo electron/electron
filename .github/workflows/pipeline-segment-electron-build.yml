@@ -89,7 +89,7 @@ jobs:
     - name: Install Dependencies
       run: |
         cd src/electron
-        node script/yarn install
+        node script/yarn install --frozen-lockfile
     - name: Install AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       run: brew install azcopy
