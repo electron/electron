@@ -193,7 +193,7 @@ jobs:
       with:
         target-arch: ${{ inputs.target-arch }}
         target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'linux' && 'linux' || (inputs.target-platform == 'windows' && 'windows' || 'darwin') }}
+        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
