@@ -20,7 +20,25 @@ jobs:
     secrets: inherit
 
   # Checkout Jobs
+  checkout-windows:
+    runs-on: aks-linux-large
+    container:
+      image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+    env:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
   checkout-macos:
+    if: false
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
@@ -41,6 +59,7 @@ jobs:
       with:
         generate-sas-token: 'true'
   checkout-linux:
+    if: false
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
@@ -96,6 +115,21 @@ jobs:
       test-runs-on: aks-linux-medium
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  windows-x64:
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-windows
+    with:
+      build-runs-on: aks-linux-large
+      test-runs-on: aks-linux-medium
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: windows
       target-arch: x64
       is-release: false
       gn-build-type: testing

@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, linux or windows'
         required: true
       target-arch:
         type: string
@@ -54,7 +54,7 @@ env:
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   # Disable pre-compiled headers to reduce out size - only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers=false'
-  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
   # Only disable this in the Asan build
   CHECK_DIST_MANIFEST: true
   IS_GHA_RELEASE: true
