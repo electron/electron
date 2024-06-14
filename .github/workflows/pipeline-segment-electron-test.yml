@@ -93,6 +93,7 @@ jobs:
     #     cd src/electron
     #     ./script/codesign/generate-identity.sh
     - name: Run Electron Tests
+      shell: bash
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_TEST_RESULTS_DIR: junit
@@ -107,7 +108,11 @@ jobs:
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
+          echo "About to start tests"
           node script/yarn test --runners=main --trace-uncaught --enable-logging
+          TEST_EXIT=$?
+          echo "Done with tests"
+          exit $TEST_EXIT
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
