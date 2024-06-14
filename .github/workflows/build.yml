@@ -8,12 +8,28 @@ on:
         description: 'SHA for electron/build image'
         default: 'cf814a4d2501e8e843caea071a6b70a48e78b855'
         required: true
-  # push
+      skip-macos:
+        type: boolean
+        description: 'Skip macOS builds'
+        default: false
+        required: false
+      skip-linux:
+        type: boolean
+        description: 'Skip Linux builds'
+        default: false
+        required: false
+      skip-lint:
+        type: boolean
+        description: 'Skip lint check'
+        default: false
+        required: false
+  # push:
   # pull_request:
 
 jobs:
   # Lint Jobs
   lint:
+    if: ${{ !inputs.skip-lint }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
     with:
       container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root"}'
@@ -21,6 +37,7 @@ jobs:
 
   # Checkout Jobs
   checkout-macos:
+    if: ${{ !inputs.skip-macos }}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
@@ -40,7 +57,9 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
+
   checkout-linux:
+    if: ${{ !inputs.skip-linux }}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
