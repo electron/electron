@@ -27,12 +27,22 @@ on:
   # pull_request:
 
 jobs:
-  # Docs Only Jobs
-  docs-only:
-    uses: ./.github/workflows/pipeline-electron-docs-only.yml
-    with:
-      container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root"}'
-    secrets: inherit
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+        docs: ${{ steps.filter.outputs.docs }}
+        src: ${{ steps.filter.outputs.src }}
+    steps:
+    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      id: filter
+      with:
+        filters: |
+          docs:
+            - 'docs/**'
+          src:
+            - ^((?!docs/).)*$
 
   # Lint Jobs
   lint:
@@ -42,9 +52,19 @@ jobs:
       container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root"}'
     secrets: inherit
 
+  # Docs Only Jobs
+  docs-only:
+    needs: changes
+    if: ${{ needs.changes.outputs.docs == 'true' && needs.changes.outputs.src == 'false'}}
+    uses: ./.github/workflows/pipeline-electron-docs-only.yml
+    with:
+      container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root"}'
+    secrets: inherit
+
   # Checkout Jobs
   checkout-macos:
-    if: ${{ !inputs.skip-macos }}
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' || !inputs.skip-macos}}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
@@ -66,7 +86,8 @@ jobs:
         generate-sas-token: 'true'
 
   checkout-linux:
-    if: ${{ !inputs.skip-linux }}
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' || !inputs.skip-linux}}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
