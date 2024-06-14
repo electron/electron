@@ -144,7 +144,16 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
     - name: Run Electron Only Hooks
       run: |
-        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+        echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          echo "target_os=['win']" >> tmpgclient
+        fi
+        gclient runhooks --gclientfile=tmpgclient
+
+        # Fix VS Toolchain
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          e d python3 src/build/vs_toolchain.py update --force
+        fi
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
