@@ -20,11 +20,6 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
-      gn-build-type:
-        description: 'The gn build type - testing or release'
-        required: true
-        type: string
-        default: testing
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
@@ -46,12 +41,6 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
-    - name: Load Build Tools
-      run: |
-        export BUILD_TOOLS_SHA=97f6508e27d08c1e41b61b2cdc1250d998b9ff8c
-        npm i -g @electron/build-tools
-        e auto-update disable
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
@@ -110,7 +99,7 @@ jobs:
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
-        DISPLAY: ':99.0'
+        
       run: |
         cd src/electron
         if [ "`uname`" = "Darwin" ]; then
