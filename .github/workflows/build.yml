@@ -27,6 +27,13 @@ on:
   # pull_request:
 
 jobs:
+  # Docs Only Jobs
+  docs-only:
+    uses: ./.github/workflows/pipeline-electron-docs-only.yml
+    with:
+      container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root"}'
+    secrets: inherit
+
   # Lint Jobs
   lint:
     if: ${{ !inputs.skip-lint }}
