@@ -26,9 +26,6 @@ on:
   # push:
   # pull_request:
 
-env:
-  BUILD_TOOLS_SHA: ff3e40a9a2ebb735c18b6450ecd5ddaa8bb364a9
-
 jobs:
   # Lint Jobs
   lint:

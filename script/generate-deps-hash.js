@@ -38,7 +38,6 @@ const hasher = crypto.createHash('SHA256');
 const addToHashAndLog = (s) => {
   return hasher.update(s);
 };
-
 addToHashAndLog(`HASH_VERSION:${HASH_VERSIONS[process.platform] || FALLBACK_HASH_VERSION}`);
 for (const file of filesToHash) {
   hasher.update(fs.readFileSync(file));
