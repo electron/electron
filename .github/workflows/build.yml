@@ -29,6 +29,7 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     env:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
     steps:
     - name: Checkout Electron
