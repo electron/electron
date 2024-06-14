@@ -91,7 +91,7 @@ jobs:
     #     ./script/codesign/generate-identity.sh
     - name: Setup for headless testing
       if: ${{ inputs.target-platform == 'linux' }}
-      run: sh -e /etc/init.d/xvfb start
+      run: runuser -u builduser -- sh -e /etc/init.d/xvfb start
     - name: Run Electron Tests
       env:
         MOCHA_REPORTER: mocha-multi-reporters
@@ -99,7 +99,7 @@ jobs:
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
-        
+        DISPLAY: ':99.0'
       run: |
         cd src/electron
         if [ "`uname`" = "Darwin" ]; then
