@@ -24,6 +24,11 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+      test-container:
+        type: string
+        description: 'JSON container information for testing'
+        required: false
+        default: '{"image":null}'
       is-release:
         description: 'Whether this build job is a release job'
         required: true
@@ -47,7 +52,7 @@ on:
 
 concurrency:
   group: electron-build-and-test-and-nan-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 jobs:
   build:
@@ -69,8 +74,7 @@ jobs:
       target-arch: ${{ inputs.target-arch }}
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
-      test-container: ${{ inputs.build-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
+      test-container: ${{ inputs.test-container }}
     secrets: inherit
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
@@ -79,6 +83,6 @@ jobs:
       target-arch: ${{ inputs.target-arch }}
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
-      test-container: ${{ inputs.build-container }}
+      test-container: ${{ inputs.test-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
     secrets: inherit

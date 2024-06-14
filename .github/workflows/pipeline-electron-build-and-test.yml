@@ -24,6 +24,11 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+      test-container:
+        type: string
+        description: 'JSON container information for testing'
+        required: false
+        default: '{"image":null}'
       is-release:
         description: 'Whether this build job is a release job'
         required: true
@@ -47,7 +52,7 @@ on:
 
 concurrency:
   group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 jobs:
   build:
@@ -64,12 +69,10 @@ jobs:
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
-    if: ${{ inputs.target-platform == 'macos' || inputs.target-arch == 'x64' }}
     needs: build
     with:
       target-arch: ${{ inputs.target-arch }}
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
-      test-container: ${{ inputs.build-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
+      test-container: ${{ inputs.test-container }}
     secrets: inherit

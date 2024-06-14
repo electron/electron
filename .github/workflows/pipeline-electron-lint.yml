@@ -10,7 +10,7 @@ on:
 
 concurrency:
   group: electron-lint-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 jobs:
   lint:
