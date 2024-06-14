@@ -43,7 +43,7 @@ jobs:
           docs:
             - 'docs/**'
           src:
-            - ^((?!docs/).)*$
+            - '!docs/**'
 
   # Lint Jobs
   lint:
