@@ -17,6 +17,12 @@ runs:
     run: |
       cd src/electron
       node script/yarn install
+  - name: Load Build Tools
+    shell: bash
+    run: |
+      export BUILD_TOOLS_SHA=2f67e10b9b6b5700b1c7940df412b0345257d9ae
+      npm i -g @electron/build-tools
+      e auto-update disable
   - name: Get Depot Tools
     shell: bash
     run: |
@@ -63,7 +69,7 @@ runs:
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
     run: |
-      gclient config \
+      e d gclient config \
         --name "src/electron" \
         --unmanaged \
         ${GCLIENT_EXTRA_ARGS} \
