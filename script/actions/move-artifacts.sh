@@ -51,7 +51,6 @@ move_src_dirs_if_exist() {
     src/out/Default/overlapped-checker \
     src/out/Default/ffmpeg \
     src/out/Default/hunspell_dictionaries \
-    src/electron \
     src/third_party/electron_node \
     src/third_party/nan \
     src/cross-arch-snapshots \
