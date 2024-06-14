@@ -5,6 +5,7 @@
   "parallel/test-child-process-fork-exec-path",
   "parallel/test-code-cache",
   "parallel/test-cluster-primary-error",
+  "parallel/test-cluster-primary-kill",
   "parallel/test-crypto-aes-wrap",
   "parallel/test-crypto-authenticated-stream",
   "parallel/test-crypto-des3-wrap",
