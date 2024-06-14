@@ -36,7 +36,7 @@ runs:
       shell: bash
       if: ${{ inputs.target-platform == 'windows' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_os=\"win\""
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
