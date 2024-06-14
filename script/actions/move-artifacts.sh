@@ -76,7 +76,7 @@ move_src_dirs_if_exist() {
   done
 
   if [ "$BUILD_TYPE" == "windows" ]; then
-    tar -C src_artifacts -cfh src_artifacts.tar ./
+    tar -C src_artifacts -chf src_artifacts.tar ./
   else
     tar -C src_artifacts -cf src_artifacts.tar ./
   fi
