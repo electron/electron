@@ -91,6 +91,11 @@ jobs:
           GN_EXTRA_ARGS='fatal_linker_warnings=false enable_linux_installer=false'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
+    - name: Set GN_EXTRA_ARGS for Win/cross
+      if: ${{ inputs.target-platform == 'windows' }}
+      run: |
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target

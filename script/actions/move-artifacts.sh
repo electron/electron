@@ -71,7 +71,7 @@ move_src_dirs_if_exist() {
     dirs+=('src/build/linux')
   fi
 
-  for dir in $dirs
+  for dir in "${dirs[@]}"
   do
     if [ -d "$dir" ]; then
       mkdir -p src_artifacts/$(dirname $dir)
