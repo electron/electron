@@ -103,6 +103,7 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
+        NPM_CONFIG_MSVS_VERSION: '2022'
       run: |
         cd src/electron
         # Get which tests are on this shard
