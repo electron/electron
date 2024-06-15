@@ -125,7 +125,7 @@ app.whenReady().then(async () => {
   const validTestPaths = argv.files && argv.files.map(file =>
     path.isAbsolute(file)
       ? path.relative(baseElectronDir, file)
-      : file);
+      : path.normalize(file));
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;

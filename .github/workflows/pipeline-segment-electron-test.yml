@@ -120,7 +120,8 @@ jobs:
           runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         fi
     - name: Wait for active SSH sessions
-      if: always() && !cancelled() && ${{ inputs.target-platform == 'linux' }}
+      if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do
