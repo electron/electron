@@ -96,6 +96,10 @@ jobs:
       run: |
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    - name: Enable windows toolchain
+      if: ${{ inputs.target-platform == 'windows' }}
+      run: |
+        echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
@@ -137,9 +141,9 @@ jobs:
     - name: Run GN Check
       run: |
         cd src
-        gn check out/Default //electron:electron_lib
-        gn check out/Default //electron:electron_app
-        gn check out/Default //electron/shell/common/api:mojo
+        e d gn check out/Default //electron:electron_lib
+        e d gn check out/Default //electron:electron_app
+        e d gn check out/Default //electron/shell/common/api:mojo
 
         # Check the hunspell filenames
         node electron/script/gen-hunspell-filenames.js --check
