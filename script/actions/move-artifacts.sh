@@ -54,11 +54,9 @@ move_src_dirs_if_exist() {
     "src/out/Default/overlapped-checker" \
     "src/out/Default/ffmpeg" \
     "src/out/Default/hunspell_dictionaries" \
-    "src/electron" \
     "src/third_party/electron_node" \
     "src/third_party/nan" \
     "src/cross-arch-snapshots" \
-    "src/third_party/llvm-build" \
     "src/buildtools/mac" \
     "src/buildtools/third_party/libc++" \
     "src/buildtools/third_party/libc++abi" \
@@ -69,6 +67,10 @@ move_src_dirs_if_exist() {
 
   if [ "$BUILD_TYPE" == "linux" ]; then
     dirs+=('src/build/linux')
+  fi
+
+  if [ "$BUILD_TYPE" != "windows" ]; then
+    dirs+=('src/third_party/llvm-build')
   fi
 
   for dir in "${dirs[@]}"
