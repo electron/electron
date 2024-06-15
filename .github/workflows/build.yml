@@ -18,6 +18,11 @@ on:
         description: 'Skip Linux builds'
         default: false
         required: false
+      skip-windows:
+        type: boolean
+        description: 'Skip Windows builds'
+        default: false
+        required: false
       skip-lint:
         type: boolean
         description: 'Skip lint check'
@@ -64,6 +69,8 @@ jobs:
 
   # Checkout Jobs
   checkout-windows:
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' && !inputs.skip-windows }}
     runs-on: aks-linux-large
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
