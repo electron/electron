@@ -46,7 +46,7 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        export BUILD_TOOLS_SHA=2f67e10b9b6b5700b1c7940df412b0345257d9ae
+        export BUILD_TOOLS_SHA=ff3e40a9a2ebb735c18b6450ecd5ddaa8bb364a9
         npm i -g @electron/build-tools
         e auto-update disable
         e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
@@ -111,7 +111,7 @@ jobs:
     steps:
     - name: Load Build Tools
       run: |
-        export BUILD_TOOLS_SHA=2f67e10b9b6b5700b1c7940df412b0345257d9ae
+        export BUILD_TOOLS_SHA=ff3e40a9a2ebb735c18b6450ecd5ddaa8bb364a9
         npm i -g @electron/build-tools
         e auto-update disable
         e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
