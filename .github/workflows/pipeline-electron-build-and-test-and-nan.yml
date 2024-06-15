@@ -76,6 +76,15 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
     secrets: inherit
+  gn-check:
+    if: ${{ inputs.target-platform == 'macos' || inputs.target-arch != 'arm' }}
+    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    with:
+      target-platform: ${{ inputs.target-platform }}
+      target-arch: ${{ inputs.target-arch }}
+      check-runs-on: ${{ inputs.build-runs-on }}
+      check-container: ${{ inputs.build-container }}
+      gn-build-type: ${{ inputs.gn-build-type }}
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
     needs: build
