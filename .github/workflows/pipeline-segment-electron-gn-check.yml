@@ -110,7 +110,12 @@ jobs:
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Run Electron Only Hooks
       run: |
-        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+        echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
+          echo "target_os=['win']" >> tmpgclient
+        fi
+        gclient runhooks --gclientfile=tmpgclient
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
