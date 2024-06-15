@@ -50,21 +50,21 @@ cp_if_exist() {
 move_src_dirs_if_exist() {
   mkdir src_artifacts
 
-  dirs=("src/out/Default/gen/node_headers",\
-    "src/out/Default/overlapped-checker",\
-    "src/out/Default/ffmpeg",\
-    "src/out/Default/hunspell_dictionaries",\
-    "src/electron",\
-    "src/third_party/electron_node",\
-    "src/third_party/nan",\
-    "src/cross-arch-snapshots",\
-    "src/third_party/llvm-build",\
-    "src/buildtools/mac",\
-    "src/buildtools/third_party/libc++",\
-    "src/buildtools/third_party/libc++abi",\
-    "src/third_party/libc++",\
-    "src/third_party/libc++abi",\
-    "src/out/Default/obj/buildtools/third_party",\
+  dirs=("src/out/Default/gen/node_headers" \
+    "src/out/Default/overlapped-checker" \
+    "src/out/Default/ffmpeg" \
+    "src/out/Default/hunspell_dictionaries" \
+    "src/electron" \
+    "src/third_party/electron_node" \
+    "src/third_party/nan" \
+    "src/cross-arch-snapshots" \
+    "src/third_party/llvm-build" \
+    "src/buildtools/mac" \
+    "src/buildtools/third_party/libc++" \
+    "src/buildtools/third_party/libc++abi" \
+    "src/third_party/libc++" \
+    "src/third_party/libc++abi" \
+    "src/out/Default/obj/buildtools/third_party" \
     "src/v8/tools/builtins-pgo")
 
   if [ "$BUILD_TYPE" == "linux" ]; then
