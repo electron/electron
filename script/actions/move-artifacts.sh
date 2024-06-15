@@ -82,6 +82,7 @@ move_src_dirs_if_exist() {
   # compatible with the windows test runner
   if [ "$BUILD_TYPE" == "windows" ]; then
     rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/eslint
+    rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/.bin/eslint
     rm -f src/third_party/electron_node/out/tools/bin/python
   fi
 
