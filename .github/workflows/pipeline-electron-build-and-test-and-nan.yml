@@ -85,6 +85,7 @@ jobs:
       check-runs-on: ${{ inputs.build-runs-on }}
       check-container: ${{ inputs.build-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
+    secrets: inherit
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
     needs: build
