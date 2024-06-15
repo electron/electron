@@ -65,12 +65,24 @@ move_src_dirs_if_exist() {
     "src/out/Default/obj/buildtools/third_party" \
     "src/v8/tools/builtins-pgo")
 
+  # Only do this for linux build type, this folder
+  # exists for windows builds on linux hosts but we do
+  # not need it
   if [ "$BUILD_TYPE" == "linux" ]; then
     dirs+=('src/build/linux')
   fi
 
+  # llvm-build is the host toolchain, for windows we need
+  # a different toolchain so no point copying this one
   if [ "$BUILD_TYPE" != "windows" ]; then
     dirs+=('src/third_party/llvm-build')
+  fi
+
+  # On windows we should clean up two symlinks that aren't
+  # compatible with the windows test runner
+  if [ "$BUILD_TYPE" == "windows" ]; then
+    rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/eslint
+    rm -f src/third_party/electron_node/out/tools/bin/python
   fi
 
   for dir in "${dirs[@]}"
