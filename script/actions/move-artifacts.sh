@@ -84,6 +84,10 @@ move_src_dirs_if_exist() {
     rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/eslint
     rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/.bin/eslint
     rm -f src/third_party/electron_node/out/tools/bin/python
+
+    # Also need to copy electron.lib to node.lib for native module testing purposes
+    mkdir -p src/out/Default/gen/node_headers/Release
+    cp src/out/Default/electron.lib src/out/Default/gen/node_headers/Release/node.lib
   fi
 
   for dir in "${dirs[@]}"
