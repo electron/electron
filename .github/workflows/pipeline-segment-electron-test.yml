@@ -41,6 +41,10 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
+    - name: Lock
+      if: ${{ inputs.target-arch == 'arm' }}
+      run: |
+        touch /var/.ssh-lock
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
