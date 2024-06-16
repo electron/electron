@@ -41,7 +41,7 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
-    - name: Lock
+    - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
