@@ -41,6 +41,10 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
+    - name: Fix node20 on arm32 runners
+      if: ${{ inputs.target-arch == 'arm' }}
+      run: |
+        cp $(which node) /mnt/runner-externals/node20/bin/
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
