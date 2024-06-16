@@ -45,6 +45,32 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Add TCC permissions on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        configure_user_tccdb () {
+          local values=$1
+          local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
+          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
+          sqlite3 "$dbPath" "$sqlQuery"
+        }
+
+        configure_sys_tccdb () {
+          local values=$1
+          local dbPath="/Library/Application Support/com.apple.TCC/TCC.db"
+          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
+          sudo sqlite3 "$dbPath" "$sqlQuery"
+        }
+
+        userValuesArray=(
+          "'kTCCServiceBluetoothAlways','/bin/bash',1,2,0,1,NULL,NULL,NULL,'UNUSED',NULL,0,1583997993"
+          "'kTCCServiceMicrophone','/bin/bash',1,2,0,1,NULL,NULL,NULL,'UNUSED',NULL,0,1583997993"
+          "'kTCCServiceCamera','/bin/bash',1,2,0,1,NULL,NULL,NULL,'UNUSED',NULL,0,1583997993"
+        )
+        for values in "${userValuesArray[@]}"; do
+          configure_user_tccdb "$values"
+          configure_sys_tccdb "$values"
+        done
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
