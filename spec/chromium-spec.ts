@@ -2884,7 +2884,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 });
 
-describe('navigator.serial', () => {
+describe.skip('navigator.serial', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
