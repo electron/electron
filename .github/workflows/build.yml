@@ -190,7 +190,7 @@ jobs:
       target-platform: windows
       target-arch: x64
       is-release: false
-      gn-build-type: testing
+      gn-build-type: release
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
