@@ -27,7 +27,7 @@ jobs:
     - name: Install Dependencies
       run: |
         cd src/electron
-        node script/yarn install
+        node script/yarn install --frozen-lockfile
     - name: Setup third_party Depot Tools
       shell: bash
       run: |

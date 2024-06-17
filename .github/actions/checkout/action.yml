@@ -16,7 +16,7 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      node script/yarn install
+      node script/yarn install --frozen-lockfile
   - name: Get Depot Tools
     shell: bash
     run: |
