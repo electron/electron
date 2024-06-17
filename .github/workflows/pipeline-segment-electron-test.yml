@@ -68,8 +68,8 @@ jobs:
           "'kTCCServiceCamera','/bin/bash',1,2,0,1,NULL,NULL,NULL,'UNUSED',NULL,0,1583997993"
         )
         for values in "${userValuesArray[@]}"; do
-          configure_user_tccdb "$values"
-          configure_sys_tccdb "$values"
+          configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
+          configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
         done
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
