@@ -44,17 +44,16 @@ jobs:
       BUILD_TYPE: linux
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
-    - name: Load Build Tools
-      run: |
-        export BUILD_TOOLS_SHA=ff3e40a9a2ebb735c18b6450ecd5ddaa8bb364a9
-        npm i -g @electron/build-tools
-        e auto-update disable
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Init Build Tools
+      run: |
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Install Dependencies
       run: |
         cd src/electron
@@ -109,17 +108,16 @@ jobs:
       BUILD_TYPE: linux
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
-    - name: Load Build Tools
-      run: |
-        export BUILD_TOOLS_SHA=ff3e40a9a2ebb735c18b6450ecd5ddaa8bb364a9
-        npm i -g @electron/build-tools
-        e auto-update disable
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Init Build Tools
+      run: |
+        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Install Dependencies
       run: |
         cd src/electron
