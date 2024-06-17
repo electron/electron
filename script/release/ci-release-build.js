@@ -385,6 +385,7 @@ function buildCircleCI (targetBranch, options) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function buildGHActions (targetBranch, options) {
   if (options.job) {
     assert(ghActionsPublishWorkflows.includes(options.job), `Unknown GitHub Actions workflow name: ${options.job}. Valid values are: ${ghActionsPublishWorkflows}.`);
@@ -405,10 +406,10 @@ function runRelease (targetBranch, options) {
         buildCircleCI(targetBranch, options);
         break;
       }
-      case 'GitHubActions': {
-        buildGHActions(targetBranch, options);
-        break;
-      }
+      // case 'GitHubActions': {
+      //   buildGHActions(targetBranch, options);
+      //   break;
+      // }
       case 'AppVeyor': {
         buildAppVeyor(targetBranch, options);
         break;
@@ -421,7 +422,7 @@ function runRelease (targetBranch, options) {
   } else {
     buildCircleCI(targetBranch, options);
     buildAppVeyor(targetBranch, options);
-    buildGHActions(targetBranch, options);
+    // buildGHActions(targetBranch, options);
   }
   console.log(`${jobRequestedCount} jobs were requested.`);
 }
