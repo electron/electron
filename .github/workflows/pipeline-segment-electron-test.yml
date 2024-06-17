@@ -45,6 +45,13 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
+      with:
+        ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+        limit-access-to-actor: true
+        ## Use the Heroku deployed Uptermd server via Websocket
+        upterm-server: wss://electron-upterm-5a8dedcc6c26.herokuapp.com
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
