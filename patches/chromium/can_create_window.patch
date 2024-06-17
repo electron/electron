@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index a8c72f80f6914bfb5a21349de8e0b4b31e18c91c..a1fa193c9b4817892c97fb1b2fbf3167054374f1 100644
+index 5e2ef22438892612dcce14d37964f79aaf120b20..53102b1017ce0f65c5c2431fa19d21901d778851 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8546,6 +8546,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8555,6 +8555,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,10 +66,10 @@ index 6df9186bcee6a56da11da8e365c7cf5b4375e366..0fdda1a6e0ac98a8c8619b4d4fab5977
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index fe3f35005221168ba892ad392b616a363eaad949..1c0259b5c79a52c41b024a022f5a45d890042642 100644
+index e5240583f8f409b524978206c9f239a80887bb87..349037d41c387e914d4207433fb3d27d37b8aca4 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -733,6 +733,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -741,6 +741,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index fe3f35005221168ba892ad392b616a363eaad949..1c0259b5c79a52c41b024a022f5a45d8
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6a7963e71a066f41202856f961de0d75d0ee0acc..e902ac85a653a826f70db4c9a10776e4e32198f5 100644
+index 45bacd6590db81d46fb40344ee18f67c9789a330..d1506bc5ef109d04f07dc261c404d63068eddc7f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -188,6 +188,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index 6a7963e71a066f41202856f961de0d75d0ee0acc..e902ac85a653a826f70db4c9a10776e4
  }  // namespace network
  
  namespace sandbox {
-@@ -1245,6 +1246,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1255,6 +1256,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

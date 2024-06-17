@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index b1a4ec4e8ccd2d6875c66153660e7d76b4e887b5..924e2242330430b6a9c1d27fb7ab5cf34b2daf9d 100644
+index 7bccc6ce4874e8ac3caf594148756fbbdb5d57b3..8cba823f480c1b175631cd45c3d5b0e68b2b1c0c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -1385,10 +1385,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..6ffffe8b3946e0427aead8be19878c53
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 3e295499c9ddf8fbb4376e711c57855c8df5e451..c90568d1f5f67ca3e1510aafb524b99c098c455e 100644
+index b7f86265ef2c79ce7a0c3eda2443a01a0242af89..96b8b4976ada0fcb2fd322e2ea42429a3c0757db 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -254,6 +254,7 @@ component("platform") {
+@@ -255,6 +255,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
