@@ -45,6 +45,11 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Setup tmate session
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
