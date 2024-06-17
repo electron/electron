@@ -25,10 +25,15 @@ concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
 env:
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+  ELECTRON_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   test:
