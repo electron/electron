@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || fromJSON('["linux"]') }}
-        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1]') || fromJSON('[1, 2, 3]') }}
+        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -134,7 +134,7 @@ jobs:
       run: |
         cd src/electron
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 1 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
