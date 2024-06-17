@@ -44,12 +44,7 @@ jobs:
     # TODO(codebytere): Change this to medium VM
     runs-on: ${{ inputs.check-runs-on }}
     container: ${{ fromJSON(inputs.check-container) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || fromJSON('["linux"]') }}
     env:
-      BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     - name: Checkout Electron
