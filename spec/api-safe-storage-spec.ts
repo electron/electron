@@ -34,7 +34,7 @@ describe('safeStorage module', () => {
   after(async () => {
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (await fs.existsSync(pathToEncryptedString)) {
-      await fs.rmSync(pathToEncryptedString, { recursive: true });
+      await fs.rmSync(pathToEncryptedString, { force: true, recursive: true });
     }
   });
 

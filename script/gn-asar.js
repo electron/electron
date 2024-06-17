@@ -41,7 +41,7 @@ try {
   // Copy all files to a tmp dir to avoid including scrap files in the ASAR
   for (const file of files) {
     const newLocation = path.resolve(tmpPath, path.relative(base[0], file));
-    fs.mkdirSync(path.dirname(newLocation), { recursive: true });
+    fs.mkdirSync(path.dirname(newLocation), { force: true, recursive: true });
     fs.writeFileSync(newLocation, fs.readFileSync(file));
   }
 
@@ -51,5 +51,5 @@ try {
   console.error('Unexpected error while generating ASAR', err);
   process.exitCode = 1;
 } finally {
-  fs.rmSync(tmpPath, { recursive: true });
+  fs.rmSync(tmpPath, { force: true, recursive: true });
 }

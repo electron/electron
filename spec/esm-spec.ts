@@ -72,7 +72,7 @@ describe('esm', () => {
       if (w) w.close();
       w = null;
       while (tempDirs.length) {
-        await fs.promises.rm(tempDirs.pop()!, { recursive: true });
+        await fs.promises.rm(tempDirs.pop()!, { force: true, recursive: true });
       }
     });
 

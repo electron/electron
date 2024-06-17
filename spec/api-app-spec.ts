@@ -1139,8 +1139,8 @@ describe('app module', () => {
       };
 
       beforeEach(() => {
-        fs.rmSync(userDataPath, { recursive: true });
-        fs.rmSync(tempBrowserDataPath, { recursive: true });
+        fs.rmSync(userDataPath, { force: true, recursive: true });
+        fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
       });
 
       it('writes to userData by default', () => {

@@ -669,7 +669,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           mutationKey: 'modify-shipit',
           mutate: async (appPath) => {
             const shipItPath = path.resolve(appPath, 'Contents', 'Frameworks', 'Squirrel.framework', 'Resources', 'ShipIt');
-            await fs.rmSync(shipItPath, { recursive: true });
+            await fs.rmSync(shipItPath, { force: true, recursive: true });
             await fs.symlinkSync('/tmp/ShipIt', shipItPath, 'file');
           }
         }

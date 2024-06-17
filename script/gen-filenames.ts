@@ -89,7 +89,7 @@ const main = async () => {
         // Make the generated list easier to read
         .sort()
     };
-    await fs.promises.rm(tmpDir, { recursive: true });
+    await fs.promises.rm(tmpDir, { force: true, recursive: true });
     return webpackTargetWithDeps;
   }));
 

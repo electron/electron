@@ -34,7 +34,7 @@ describe('contextBridge', () => {
 
   afterEach(async () => {
     await closeWindow(w);
-    if (dir) fs.rmSync(dir, { recursive: true });
+    if (dir) fs.rmSync(dir, { force: true, recursive: true });
   });
 
   it('should not be accessible when contextIsolation is disabled', async () => {
