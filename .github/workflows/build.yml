@@ -109,6 +109,10 @@ jobs:
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
@@ -123,6 +127,10 @@ jobs:
     secrets: inherit
   
   macos-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
@@ -137,6 +145,10 @@ jobs:
     secrets: inherit
 
   linux-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
     with:
@@ -153,6 +165,10 @@ jobs:
     secrets: inherit
   
   linux-arm:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
@@ -169,6 +185,10 @@ jobs:
     secrets: inherit
   
   linux-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:

@@ -54,6 +54,11 @@ concurrency:
   group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read  
+
 jobs:
   build:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
