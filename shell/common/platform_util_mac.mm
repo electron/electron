@@ -111,7 +111,7 @@ std::string GetLaunchStringForError(NSError* error) {
         return "The specified path doesn't exist or the helper tool at the "
                "specified path isn't valid";
       default:
-        return "Failed to register the login item";
+        return base::SysNSStringToUTF8([error localizedDescription]);
     }
   }
 

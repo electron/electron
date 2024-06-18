@@ -35,7 +35,7 @@ jobs:
         docs: ${{ steps.filter.outputs.docs }}
         src: ${{ steps.filter.outputs.src }}
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 #v4.0.2
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.0.2
     - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
       id: filter
       with:
@@ -77,7 +77,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       with:
         path: src/electron
         fetch-depth: 0
@@ -100,7 +100,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       with:
         path: src/electron
         fetch-depth: 0
@@ -109,11 +109,15 @@ jobs:
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
-      test-runs-on: macos-14-xlarge
+      test-runs-on: macos-13
       target-platform: macos
       target-arch: x64
       is-release: false
@@ -123,11 +127,15 @@ jobs:
     secrets: inherit
   
   macos-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
-      test-runs-on: macos-14-xlarge
+      test-runs-on: macos-14
       target-platform: macos
       target-arch: arm64
       is-release: false
@@ -137,6 +145,10 @@ jobs:
     secrets: inherit
 
   linux-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
     with:
@@ -153,6 +165,10 @@ jobs:
     secrets: inherit
   
   linux-arm:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
@@ -169,6 +185,10 @@ jobs:
     secrets: inherit
   
   linux-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:

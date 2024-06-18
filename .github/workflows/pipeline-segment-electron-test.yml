@@ -24,9 +24,16 @@ on:
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
 env:
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  ELECTRON_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   test:
@@ -36,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || fromJSON('["linux"]') }}
-        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1]') || fromJSON('[1, 2, 3]') }}
+        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -45,15 +52,48 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Add TCC permissions on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        configure_user_tccdb () {
+          local values=$1
+          local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
+          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
+          sqlite3 "$dbPath" "$sqlQuery"
+        }
+
+        configure_sys_tccdb () {
+          local values=$1
+          local dbPath="/Library/Application Support/com.apple.TCC/TCC.db"
+          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
+          sudo sqlite3 "$dbPath" "$sqlQuery"
+        }
+
+        userValuesArray=(
+            "'kTCCServiceMicrophone','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceCamera','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceBluetoothAlways','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+        )
+        for values in "${userValuesArray[@]}"; do
+          # Sonoma and higher have a few extra values
+          # Ref: https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/configure-tccdb-macos.sh
+          if [ "$OSTYPE" = "darwin23" ]; then
+            configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
+            configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
+          else
+            configure_user_tccdb "$values"
+            configure_sys_tccdb "$values"
+          fi
+        done
     - name: Checkout Electron
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       with:
         path: src/electron
         fetch-depth: 0
     - name: Install Dependencies
       run: |
         cd src/electron
-        node script/yarn install
+        node script/yarn install --frozen-lockfile
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -97,6 +137,7 @@ jobs:
     #     cd src/electron
     #     ./script/codesign/generate-identity.sh
     - name: Run Electron Tests
+      shell: bash
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_TEST_RESULTS_DIR: junit
@@ -107,11 +148,12 @@ jobs:
       run: |
         cd src/electron
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 1 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
-          node script/yarn test --runners=main --trace-uncaught --enable-logging
+          echo "About to start tests"
+          node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
