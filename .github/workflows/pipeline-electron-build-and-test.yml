@@ -90,3 +90,9 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
     secrets: inherit
+  clean:
+    uses: ./.github/workflows/pipeline-segment-electron-clean.yml
+    needs: test
+    with:
+      target-arch: ${{ inputs.target-arch }}
+      target-platform: ${{ inputs.target-platform }}
