@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b3e994ed5c39854b88a1b6c1b5bc964cdd0f4248..2b3eddc12848ee3da33b0cda32bb9e8ecaf67a57 100644
+index b51b58a0fa23daa7b7a15c24934d8787ca9b9bfb..846c4451161da289119f906dc280d7efc91c4fd3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1052,6 +1052,7 @@ component("base") {
@@ -749,10 +749,10 @@ index c28458b5ddc8ef74e82125a983344b1daf65dda6..48e6d48962a2228d26444dbdbcfa1637
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 05cce11f233e04e22bf9166ee107661900686bea..70268a1ff7c59a03903072fafe8b62acc3454287 100644
+index cfb175b6985ed81021b236fc2ce14064e23beba7..81116f63eb9443165721064c26bacc710c454684 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -248,6 +248,7 @@ component("bluetooth") {
+@@ -249,6 +249,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
