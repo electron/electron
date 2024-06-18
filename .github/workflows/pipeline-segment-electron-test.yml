@@ -165,7 +165,7 @@ jobs:
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
-          if [ "$IS_ASAN" == "true" ]; then
+          if [ "${{ inputs.is-asan }}" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
             export ASAN_OPTIONS="symbolize=0 handle_abort=1"
@@ -184,7 +184,7 @@ jobs:
     - name: Verify mksnapshot
       shell: bash
       run: |
-        if [ "$IS_ASAN" != "true" ]; then
+        if [ "${{ inputs.is-asan }}" == "true" ]; then
           cd src
           if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
             python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
@@ -195,7 +195,7 @@ jobs:
     - name: Verify ChromeDriver
       shell: bash
       run: |
-        if [ "$IS_ASAN" != "true" ]; then
+        if [ "${{ inputs.is-asan }}" == "true" ]; then
           cd src
           python3 electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
         fi
