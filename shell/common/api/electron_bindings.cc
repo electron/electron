@@ -274,8 +274,15 @@ v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
     v8::Isolate* isolate) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   int processor_count = base::SysInfo::NumberOfProcessors();
-  double usage = metrics->GetPlatformIndependentCPUUsage().value_or(0);
-  dict.Set("percentCPUUsage", usage / processor_count);
+
+  // Default usage percentage to 0 for compatibility
+  double usagePercent = 0;
+  if (auto usage = metrics->GetCumulativeCPUUsage(); usage.has_value()) {
+    dict.Set("cumulativeCPUUsage", usage->InSecondsF());
+    usagePercent = metrics->GetPlatformIndependentCPUUsage(*usage);
+  }
+
+  dict.Set("percentCPUUsage", usagePercent / processor_count);
 
   // NB: This will throw NOTIMPLEMENTED() on Windows
   // For backwards compatibility, we'll return 0

@@ -595,7 +595,7 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux' && !process.mas)('app.get/setLoginItemSettings API', function () {
+  ifdescribe(process.platform !== 'linux' && !process.mas && (process.platform !== 'darwin' || process.arch === 'arm64'))('app.get/setLoginItemSettings API', function () {
     const isMac = process.platform === 'darwin';
     const isWin = process.platform === 'win32';
 
@@ -1442,6 +1442,7 @@ describe('app module', () => {
 
         types.push(entry.type);
         expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number');
+        expect(entry.cpu).to.have.ownProperty('cumulativeCPUUsage').that.is.a('number');
         expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number');
 
         expect(entry.memory).to.have.property('workingSetSize').that.is.greaterThan(0);

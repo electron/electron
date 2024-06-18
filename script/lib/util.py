@@ -4,6 +4,7 @@ import contextlib
 import errno
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -158,7 +159,7 @@ def azput(prefix, key_prefix, files):
   print(output)
 
 def get_out_dir():
-  out_dir = 'Debug'
+  out_dir = 'Default'
   override = os.environ.get('ELECTRON_OUT_DIR')
   if override is not None:
     out_dir = override
@@ -184,13 +185,16 @@ def get_electron_exec():
 
 def get_buildtools_executable(name):
   buildtools = os.path.realpath(os.path.join(ELECTRON_DIR, '..', 'buildtools'))
-  chromium_platform = {
-    'darwin': 'mac',
-    'linux': 'linux64',
-    'linux2': 'linux64',
-    'win32': 'win',
-    'cygwin': 'win',
-  }[sys.platform]
+
+  if sys.platform == 'darwin':
+    chromium_platform = 'mac_arm64' if platform.machine() == 'arm64' else 'mac'
+  elif sys.platform in ['win32', 'cygwin']:
+    chromium_platform = 'win'
+  elif sys.platform in ['linux', 'linux2']:
+    chromium_platform = 'linux64'
+  else:
+    raise Exception(f"Unsupported platform: {sys.platform}")
+
   if name == 'clang-format':
     path = os.path.join(buildtools, f"{chromium_platform}-format", name)  
   else:

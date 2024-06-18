@@ -26,6 +26,7 @@ describe('process module', () => {
       it('returns a cpu usage object', async () => {
         const cpuUsage = await w.webContents.executeJavaScript('process.getCPUUsage()');
         expect(cpuUsage.percentCPUUsage).to.be.a('number');
+        expect(cpuUsage.cumulativeCPUUsage).to.be.a('number');
         expect(cpuUsage.idleWakeupsPerSecond).to.be.a('number');
       });
     });
@@ -124,6 +125,7 @@ describe('process module', () => {
       it('returns a cpu usage object', () => {
         const cpuUsage = process.getCPUUsage();
         expect(cpuUsage.percentCPUUsage).to.be.a('number');
+        expect(cpuUsage.cumulativeCPUUsage).to.be.a('number');
         expect(cpuUsage.idleWakeupsPerSecond).to.be.a('number');
       });
     });
