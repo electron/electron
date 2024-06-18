@@ -34,7 +34,7 @@ describe('contextBridge', () => {
 
   afterEach(async () => {
     await closeWindow(w);
-    if (dir) fs.rmSync(dir, { force: true, recursive: true });
+    if (dir) await fs.promises.rm(dir, { force: true, recursive: true });
   });
 
   it('should not be accessible when contextIsolation is disabled', async () => {
@@ -85,9 +85,9 @@ describe('contextBridge', () => {
         });`}
         (${bindingCreator.toString()})();`;
 
-        const tmpDir = fs.mkdtempSync(path.resolve(os.tmpdir(), 'electron-spec-preload-'));
+        const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-preload-'));
         dir = tmpDir;
-        fs.writeFileSync(path.resolve(tmpDir, 'preload.js'), worldId === 0 ? preloadContentForMainWorld : preloadContentForIsolatedWorld);
+        await fs.promises.writeFile(path.resolve(tmpDir, 'preload.js'), worldId === 0 ? preloadContentForMainWorld : preloadContentForIsolatedWorld);
         w = new BrowserWindow({
           show: false,
           webPreferences: {

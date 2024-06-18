@@ -41,15 +41,23 @@ try {
   // Copy all files to a tmp dir to avoid including scrap files in the ASAR
   for (const file of files) {
     const newLocation = path.resolve(tmpPath, path.relative(base[0], file));
-    fs.mkdirSync(path.dirname(newLocation), { force: true, recursive: true });
+    fs.mkdirSync(path.dirname(newLocation), { recursive: true });
     fs.writeFileSync(newLocation, fs.readFileSync(file));
   }
-
-  // Create the ASAR archive
-  asar.createPackageWithOptions(tmpPath, out[0], {});
 } catch (err) {
   console.error('Unexpected error while generating ASAR', err);
-  process.exitCode = 1;
-} finally {
-  fs.rmSync(tmpPath, { force: true, recursive: true });
+  fs.promises.rm(tmpPath, { force: true, recursive: true })
+    .then(() => process.exit(1))
+    .catch(() => process.exit(1));
+  return;
 }
+
+// Create the ASAR archive
+asar.createPackageWithOptions(tmpPath, out[0], {})
+  .catch(err => {
+    const exit = () => {
+      console.error('Unexpected error while generating ASAR', err);
+      process.exit(1);
+    };
+    fs.promises.rm(tmpPath, { force: true, recursive: true }).then(exit).catch(exit);
+  }).then(() => fs.promises.rm(tmpPath, { force: true, recursive: true }));

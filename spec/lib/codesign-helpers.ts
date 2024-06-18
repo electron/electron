@@ -37,13 +37,13 @@ export async function copyMacOSFixtureApp (newDir: string, fixture: string | nul
   cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
   if (fixture) {
     const appDir = path.resolve(newPath, 'Contents/Resources/app');
-    fs.mkdirSync(appDir, { recursive: true });
-    fs.cpSync(path.resolve(fixturesPath, 'auto-update', fixture), appDir, { recursive: true });
+    await fs.promises.mkdir(appDir, { recursive: true });
+    await fs.promises.cp(path.resolve(fixturesPath, 'auto-update', fixture), appDir, { recursive: true });
   }
   const plistPath = path.resolve(newPath, 'Contents', 'Info.plist');
-  fs.writeFileSync(
+  await fs.promises.writeFile(
     plistPath,
-    fs.readFileSync(plistPath, 'utf8').replace('<key>BuildMachineOSBuild</key>', `<key>NSAppTransportSecurity</key>
+    (await fs.promises.readFile(plistPath, 'utf8')).replace('<key>BuildMachineOSBuild</key>', `<key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>

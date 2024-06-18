@@ -19,7 +19,7 @@ export async function copyApp (targetDir: string): Promise<string> {
   const filesToCopy = (fs.readFileSync(zipManifestPath, 'utf-8')).split('\n').filter(f => f !== 'LICENSE' && f !== 'LICENSES.chromium.html' && f !== 'version' && f.trim());
   await Promise.all(
     filesToCopy.map(async rel => {
-      fs.mkdirSync(path.dirname(path.resolve(targetDir, rel)), { recursive: true });
+      await fs.promises.mkdir(path.dirname(path.resolve(targetDir, rel)), { recursive: true });
       fs.copyFileSync(path.resolve(baseDir, rel), path.resolve(targetDir, rel));
     })
   );
@@ -28,7 +28,7 @@ export async function copyApp (targetDir: string): Promise<string> {
 }
 
 export async function withTempDirectory (fn: (dir: string) => Promise<void>, autoCleanUp = true) {
-  const dir = fs.mkdtempSync(path.resolve(os.tmpdir(), 'electron-update-spec-'));
+  const dir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
   try {
     await fn(dir);
   } finally {

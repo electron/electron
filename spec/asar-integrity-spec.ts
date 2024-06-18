@@ -82,7 +82,7 @@ describe('fuses', function () {
   };
 
   beforeEach(async () => {
-    tmpDir = fs.mkdtempSync(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
+    tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
     appPath = await copyApp(tmpDir);
   });
 
@@ -91,7 +91,7 @@ describe('fuses', function () {
       // Somtimes windows holds on to a DLL during the crash for a little bit, so we try a few times to delete it
       if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
       try {
-        await originalFs.promises.rm(tmpDir, { force: true, recursive: true });
+        await originalFs.promises.rm(tmpDir, { recursive: true });
         break;
       } catch {}
     }

@@ -68,14 +68,14 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       await withTempDirectory(async (dir) => {
         const secondAppPath = await copyMacOSFixtureApp(dir, fixture);
         const appPJPath = path.resolve(secondAppPath, 'Contents', 'Resources', 'app', 'package.json');
-        fs.writeFileSync(
+        await fs.promises.writeFile(
           appPJPath,
-          fs.readFileSync(appPJPath, 'utf8').replace('1.0.0', version)
+          (await fs.promises.readFile(appPJPath, 'utf8')).replace('1.0.0', version)
         );
         const infoPath = path.resolve(secondAppPath, 'Contents', 'Info.plist');
-        fs.writeFileSync(
+        await fs.promises.writeFile(
           infoPath,
-          fs.readFileSync(infoPath, 'utf8').replace(/(<key>CFBundleShortVersionString<\/key>\s+<string>)[^<]+/g, `$1${version}`)
+          (await fs.promises.readFile(infoPath, 'utf8')).replace(/(<key>CFBundleShortVersionString<\/key>\s+<string>)[^<]+/g, `$1${version}`)
         );
         await mutateAppPreSign?.mutate(secondAppPath);
         await signApp(secondAppPath, identity);
@@ -221,9 +221,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
         const appPath = await copyMacOSFixtureApp(dir, opts.startFixture);
         await opts.mutateAppPreSign?.mutate(appPath);
         const infoPath = path.resolve(appPath, 'Contents', 'Info.plist');
-        fs.writeFileSync(
+        await fs.promises.writeFile(
           infoPath,
-          fs.readFileSync(infoPath, 'utf8').replace(/(<key>CFBundleShortVersionString<\/key>\s+<string>)[^<]+/g, '$11.0.0')
+          (await fs.promises.readFile(infoPath, 'utf8')).replace(/(<key>CFBundleShortVersionString<\/key>\s+<string>)[^<]+/g, '$11.0.0')
         );
         await signApp(appPath, identity);
 
@@ -378,9 +378,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
             mutationKey: 'prevent-downgrades',
             mutate: async (appPath) => {
               const infoPath = path.resolve(appPath, 'Contents', 'Info.plist');
-              fs.writeFileSync(
+              await fs.promises.writeFile(
                 infoPath,
-                fs.readFileSync(infoPath, 'utf8').replace('<key>NSSupportsAutomaticGraphicsSwitching</key>', '<key>ElectronSquirrelPreventDowngrades</key><true/><key>NSSupportsAutomaticGraphicsSwitching</key>')
+                (await fs.promises.readFile(infoPath, 'utf8')).replace('<key>NSSupportsAutomaticGraphicsSwitching</key>', '<key>ElectronSquirrelPreventDowngrades</key><true/><key>NSSupportsAutomaticGraphicsSwitching</key>')
               );
             }
           }
@@ -418,9 +418,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
             mutationKey: 'prevent-downgrades',
             mutate: async (appPath) => {
               const infoPath = path.resolve(appPath, 'Contents', 'Info.plist');
-              fs.writeFileSync(
+              await fs.promises.writeFile(
                 infoPath,
-                fs.readFileSync(infoPath, 'utf8').replace('<key>NSSupportsAutomaticGraphicsSwitching</key>', '<key>ElectronSquirrelPreventDowngrades</key><true/><key>NSSupportsAutomaticGraphicsSwitching</key>')
+                (await fs.promises.readFile(infoPath, 'utf8')).replace('<key>NSSupportsAutomaticGraphicsSwitching</key>', '<key>ElectronSquirrelPreventDowngrades</key><true/><key>NSSupportsAutomaticGraphicsSwitching</key>')
               );
             }
           }
@@ -558,7 +558,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
         await shipItFlipFlopPromise;
         expect(requests).to.have.lengthOf(2, 'should not have relaunched the updated app');
-        expect(JSON.parse(fs.readFileSync(path.resolve(appPath, 'Contents/Resources/app/package.json'), 'utf8')).version).to.equal('1.0.0', 'should still be the old version on disk');
+        expect(JSON.parse(await fs.promises.readFile(path.resolve(appPath, 'Contents/Resources/app/package.json'), 'utf8')).version).to.equal('1.0.0', 'should still be the old version on disk');
 
         retainerHandle.kill('SIGINT');
       });
@@ -631,7 +631,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           mutationKey: 'add-resource',
           mutate: async (appPath) => {
             const resourcesPath = path.resolve(appPath, 'Contents', 'Resources', 'app', 'injected.txt');
-            fs.writeFileSync(resourcesPath, 'demo');
+            await fs.promises.writeFile(resourcesPath, 'demo');
           }
         }
       }, async (appPath, updateZipPath) => {
@@ -669,8 +669,8 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           mutationKey: 'modify-shipit',
           mutate: async (appPath) => {
             const shipItPath = path.resolve(appPath, 'Contents', 'Frameworks', 'Squirrel.framework', 'Resources', 'ShipIt');
-            await fs.rmSync(shipItPath, { force: true, recursive: true });
-            await fs.symlinkSync('/tmp/ShipIt', shipItPath, 'file');
+            await fs.promises.rm(shipItPath, { force: true, recursive: true });
+            await fs.promises.symlink('/tmp/ShipIt', shipItPath, 'file');
           }
         }
       }, async (appPath, updateZipPath) => {
@@ -708,7 +708,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           mutationKey: 'modify-eframework',
           mutate: async (appPath) => {
             const shipItPath = path.resolve(appPath, 'Contents', 'Frameworks', 'Electron Framework.framework', 'Electron Framework');
-            fs.appendFileSync(shipItPath, Buffer.from('123'));
+            await fs.promises.appendFile(shipItPath, Buffer.from('123'));
           }
         }
       }, async (appPath, updateZipPath) => {

@@ -216,7 +216,7 @@ async function installSpecModules (dir) {
     env.npm_config_nodedir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   }
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
-    fs.rmSync(path.resolve(dir, 'node_modules'), { force: true, recursive: true });
+    await fs.promises.rm(path.resolve(dir, 'node_modules'), { force: true, recursive: true });
   }
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
