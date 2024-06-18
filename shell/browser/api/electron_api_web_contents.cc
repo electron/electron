@@ -3595,13 +3595,13 @@ void WebContents::SetZoomFactor(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  auto level = blink::PageZoomFactorToZoomLevel(factor);
+  auto level = blink::ZoomFactorToZoomLevel(factor);
   SetZoomLevel(level);
 }
 
 double WebContents::GetZoomFactor() const {
   auto level = GetZoomLevel();
-  return blink::PageZoomLevelToZoomFactor(level);
+  return blink::ZoomLevelToZoomFactor(level);
 }
 
 void WebContents::SetTemporaryZoomLevel(double level) {

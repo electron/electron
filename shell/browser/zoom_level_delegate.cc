@@ -53,7 +53,7 @@ ZoomLevelDelegate::ZoomLevelDelegate(PrefService* pref_service,
 ZoomLevelDelegate::~ZoomLevelDelegate() = default;
 
 void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
-  if (blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
+  if (blink::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
     return;
 
   ScopedDictPrefUpdate update(pref_service_, kPartitionDefaultZoomLevel);
@@ -79,7 +79,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   base::Value::Dict& host_zoom_dictionaries = update.Get();
 
   bool modification_is_removal =
-      blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
+      blink::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
 
   base::Value::Dict* host_zoom_dictionary =
       host_zoom_dictionaries.FindDict(partition_key_);
@@ -109,8 +109,8 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     // will ignore type B values, thus, to have consistency with HostZoomMap's
     // internal state, these values must also be removed from Prefs.
     if (host.empty() || !zoom_level.has_value() ||
-        blink::PageZoomValuesEqual(zoom_level.value(),
-                                   host_zoom_map_->GetDefaultZoomLevel())) {
+        blink::ZoomValuesEqual(zoom_level.value(),
+                               host_zoom_map_->GetDefaultZoomLevel())) {
       keys_to_remove.push_back(host);
       continue;
     }

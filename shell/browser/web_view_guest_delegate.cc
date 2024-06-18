@@ -76,13 +76,13 @@ void WebViewGuestDelegate::OnZoomChanged(
     if (data.temporary) {
       zoom_controller->SetTemporaryZoomLevel(data.new_zoom_level);
     } else {
-      if (blink::PageZoomValuesEqual(data.new_zoom_level,
-                                     zoom_controller->GetZoomLevel()))
+      if (blink::ZoomValuesEqual(data.new_zoom_level,
+                                 zoom_controller->GetZoomLevel()))
         return;
       zoom_controller->SetZoomLevel(data.new_zoom_level);
     }
     // Change the default zoom factor to match the embedders' new zoom level.
-    double zoom_factor = blink::PageZoomLevelToZoomFactor(data.new_zoom_level);
+    double zoom_factor = blink::ZoomLevelToZoomFactor(data.new_zoom_level);
     zoom_controller->SetDefaultZoomFactor(zoom_factor);
   }
 }

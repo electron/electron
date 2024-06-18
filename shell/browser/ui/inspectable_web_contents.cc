@@ -127,15 +127,15 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  double factor = blink::PageZoomLevelToZoomFactor(level);
+  double factor = blink::ZoomLevelToZoomFactor(level);
   size_t size = std::size(kPresetZoomFactors);
   for (size_t i = 0; i < size; ++i) {
-    if (!blink::PageZoomValuesEqual(kPresetZoomFactors[i], factor))
+    if (!blink::ZoomValuesEqual(kPresetZoomFactors[i], factor))
       continue;
     if (out && i > 0)
-      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
+      return blink::ZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
     if (!out && i != size - 1)
-      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
+      return blink::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
   }
   return level;
 }
