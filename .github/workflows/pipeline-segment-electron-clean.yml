@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 jobs:
-  test:
+  clean:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
