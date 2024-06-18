@@ -19,18 +19,18 @@ Commit-Queue: Scott Violet <sky@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1315980}
 
 diff --git a/ui/base/x/x11_display_util.cc b/ui/base/x/x11_display_util.cc
-index ffaea4fef9931050f1c1888674bf2f7498c578da..faf59929eb7e291502c449631e54f3841582bd9e 100644
+index 373be9bfad6766b8ba50140418263fa14c295689..bf3077d80fc0ce31f381d5ff1defef16cfdbee0a 100644
 --- a/ui/base/x/x11_display_util.cc
 +++ b/ui/base/x/x11_display_util.cc
-@@ -299,6 +299,7 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
-     const display::DisplayConfig& display_config,
+@@ -294,6 +294,7 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
+     const DisplayConfig& display_config,
      size_t* primary_display_index_out) {
    DCHECK(primary_display_index_out);
 +  auto* command_line = base::CommandLine::ForCurrentProcess();
    const float primary_scale = display_config.primary_scale;
  
    auto* connection = x11::Connection::Get();
-@@ -348,7 +349,7 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
+@@ -343,7 +344,7 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
    connection->Flush();
  
    std::vector<x11::Future<x11::GetPropertyReply>> icc_futures{n_iccs};
@@ -39,7 +39,7 @@ index ffaea4fef9931050f1c1888674bf2f7498c578da..faf59929eb7e291502c449631e54f384
      for (size_t monitor = 0; monitor < n_iccs; ++monitor) {
        icc_futures[monitor] = GetIccProfileFuture(connection, monitor);
      }
-@@ -446,11 +447,18 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
+@@ -441,11 +442,18 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
      }
  
      const std::string name(output_info->name.begin(), output_info->name.end());
