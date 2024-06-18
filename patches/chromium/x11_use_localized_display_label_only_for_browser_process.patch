@@ -19,7 +19,7 @@ Commit-Queue: Scott Violet <sky@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1315980}
 
 diff --git a/ui/base/x/x11_display_util.cc b/ui/base/x/x11_display_util.cc
-index ffaea4fef9931050f1c1888674bf2f7498c578da..faf59929eb7e291502c449631e54f3841582bd9e 100644
+index 2f1c8f1b40c3aacc2815b4683eb24c8a9f1a0ecb..686eba52aab8f69f2d41fceb136d10c1ac750bd8 100644
 --- a/ui/base/x/x11_display_util.cc
 +++ b/ui/base/x/x11_display_util.cc
 @@ -299,6 +299,7 @@ std::vector<display::Display> BuildDisplaysFromXRandRInfo(
