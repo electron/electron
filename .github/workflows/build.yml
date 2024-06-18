@@ -165,6 +165,10 @@ jobs:
     secrets: inherit
 
   linux-x64-asan:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
