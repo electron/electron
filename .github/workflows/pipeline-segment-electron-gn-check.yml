@@ -34,7 +34,6 @@ env:
   AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
   AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers=false'
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
   TARGET_ARCH: ${{ inputs.target-arch }}
