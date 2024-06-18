@@ -163,6 +163,23 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
+
+  linux-x64-asan:
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: aks-linux-large
+      test-runs-on: aks-linux-medium
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      test-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root --privileged --init"}'
+      target-platform: linux
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+      is-asan: true
+    secrets: inherit
   
   linux-arm:
     permissions:

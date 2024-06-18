@@ -20,6 +20,11 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+      is-asan: 
+        description: 'Building the Address Sanitizer (ASan) Linux build'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
@@ -34,6 +39,7 @@ env:
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  IS_ASAN: ${{ inputs.is-asan }}
 
 jobs:
   test:
@@ -159,7 +165,21 @@ jobs:
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
-          runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
+          if [ "$IS_ASAN" == "true" ]; then
+            cd ..
+            ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
+            export ASAN_OPTIONS="symbolize=0 handle_abort=1"
+            export G_SLICE=always-malloc
+            export NSS_DISABLE_ARENA_FREE_LIST=1
+            export NSS_DISABLE_UNLOAD=1
+            export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
+            export MOCHA_TIMEOUT=180000
+            echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
+            cd electron
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+          else
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
+          fi
         fi
     - name: Wait for active SSH sessions
       if: always() && !cancelled()

@@ -49,6 +49,11 @@ on:
         required: true
         type: string
         default: '0'
+      is-asan: 
+        description: 'Building the Address Sanitizer (ASan) Linux build'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
@@ -71,6 +76,7 @@ jobs:
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
+      is-asan: ${{ inputs.is-asan}}
     secrets: inherit
   gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
@@ -89,4 +95,5 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
+      is-asan: ${{ inputs.is-asan}}
     secrets: inherit
