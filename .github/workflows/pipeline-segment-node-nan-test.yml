@@ -53,7 +53,7 @@ jobs:
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Install Dependencies
       run: |
         cd src/electron
@@ -117,7 +117,7 @@ jobs:
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
-        e init --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Install Dependencies
       run: |
         cd src/electron
