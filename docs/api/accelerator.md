@@ -11,39 +11,9 @@ Examples:
 * `CommandOrControl+A`
 * `CommandOrControl+Shift+Z`
 
-```
-{
-  label: "menu text",
-  accelerator: "CommandOrControl+Z",
-}
-```
-
-```
-{
-  role: "undo",
-  accelerator: "CommandOrControl",
-  click: () => { do-something; }
-}
-```
-
-# Global Accelerator
-
-Accelerators [Shortcuts] that are registered with the [`globalShortcut`](global-shortcut.md) module
+Shortcuts can be registered with the [`globalShortcut`](global-shortcut.md) module
 using the [`register`](global-shortcut.md#globalshortcutregisteraccelerator-callback)
-method, are very powerful.
-
-Global Accelerators capture menu shortcuts from ALL ELECTRON APPS - Not just your Electron App.
-
-```js
-const { app, globalShortcut } = require('electron')
-
-app.whenReady().then(() => {
-  // Register a 'CommandOrControl+Y' shortcut listener.
-  globalShortcut.register('CommandOrControl+Y', () => {
-    // Do stuff when Y and either Command/Control is pressed.
-  })
-})
-```
+method
 
 ## Platform notice
 
