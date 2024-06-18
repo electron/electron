@@ -98,6 +98,10 @@ jobs:
       run: |
         if [ "${{ inputs.target-arch  }}" = "arm" ]; then
           GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false'
+          if [ "${{ inputs.is-release  }}" = true ]; then
+            GN_BUILDFLAG_ARGS='enable_precompiled_headers=false symbol_level=1'
+            echo "GN_BUILDFLAG_ARGS=$GN_BUILDFLAG_ARGS" >> $GITHUB_ENV
+          fi
         elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
           GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
         fi
