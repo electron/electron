@@ -185,6 +185,7 @@ class NativeWindowClientView : public views::ClientView {
   NativeWindowClientView(const NativeWindowClientView&) = delete;
   NativeWindowClientView& operator=(const NativeWindowClientView&) = delete;
 
+  // views::ClientView
   views::CloseRequestResult OnWindowCloseRequested() override {
     window_->NotifyWindowCloseButtonClicked();
     return views::CloseRequestResult::kCannotClose;
