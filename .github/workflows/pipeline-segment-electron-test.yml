@@ -181,6 +181,24 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
+    - name: Verify mksnapshot
+      shell: bash
+      run: |
+        if [ "$IS_ASAN" != "true" ]; then
+          cd src
+          if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
+            python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+          else
+            python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+          fi
+        fi
+    - name: Verify ChromeDriver
+      shell: bash
+      run: |
+        if [ "$IS_ASAN" != "true" ]; then
+          cd src
+          python3 electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+        fi
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       run: |
