@@ -23,7 +23,7 @@ index 8a921c9310b2540b4b4d7d7383406698993d40d7..348e0de3e5193e6f97a4c83f43476497
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 590024e4883a9397855374108f9b8cd1f90819f5..37cf232b23f5909b42e68735953945c3a518247e 100644
+index e3955cead61e4a51013253a75ab0c9e6fd027a68..8c40afa0153ef9974ef59373ac74bb67c5914662 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -730,6 +730,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -51,7 +51,7 @@ index 779e90581cdfb2d1bdd904da038f7537d0477f5a..c85620ac2f30998d1b67f159e50ee722
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index deaa2c34322f764f3ae8e854b98a205ef6a7e834..8974181a9c33d790e8bee5fe38883af59f487a78 100644
+index 1bed3962a7ac89b815cb6c5827de39c3bfa2449b..6c18d7fd13f447641490c375e0d3a5789b7f8c20 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -570,8 +570,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
