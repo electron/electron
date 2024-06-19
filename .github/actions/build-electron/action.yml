@@ -184,6 +184,15 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate Artifact Key
+      shell: bash
+      run: |
+        if [ "${{ inputs.is-asan }}" = "true" ]; then 
+          ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_${{ inputs.is-asan }}
+        else
+          ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}
+        fi
+        echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
@@ -192,8 +201,8 @@ runs:
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
-        name: generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
-        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        name: generated_artifacts_${{ env.$ARTIFACT_KEY }}
+        path: ./generated_artifacts_${{ env.$ARTIFACT_KEY }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
