@@ -188,7 +188,7 @@ runs:
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}_${{ inputs.is-asan }}
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}_asan
         else
           ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
         fi
@@ -202,9 +202,9 @@ runs:
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./generated_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./src_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
