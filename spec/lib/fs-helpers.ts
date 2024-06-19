@@ -1,6 +1,5 @@
 import * as cp from 'node:child_process';
 import * as fs from 'original-fs';
-import * as fsExtra from 'fs-extra';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -20,7 +19,7 @@ export async function copyApp (targetDir: string): Promise<string> {
   const filesToCopy = (fs.readFileSync(zipManifestPath, 'utf-8')).split('\n').filter(f => f !== 'LICENSE' && f !== 'LICENSES.chromium.html' && f !== 'version' && f.trim());
   await Promise.all(
     filesToCopy.map(async rel => {
-      await fsExtra.mkdirp(path.dirname(path.resolve(targetDir, rel)));
+      await fs.promises.mkdir(path.dirname(path.resolve(targetDir, rel)), { recursive: true });
       fs.copyFileSync(path.resolve(baseDir, rel), path.resolve(targetDir, rel));
     })
   );
@@ -29,7 +28,7 @@ export async function copyApp (targetDir: string): Promise<string> {
 }
 
 export async function withTempDirectory (fn: (dir: string) => Promise<void>, autoCleanUp = true) {
-  const dir = await fsExtra.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
+  const dir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
   try {
     await fn(dir);
   } finally {
