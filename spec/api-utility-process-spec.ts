@@ -297,6 +297,17 @@ describe('utilityProcess module', () => {
       expect(child.kill()).to.be.true();
       await exit;
     });
+
+    it('handles the parent port trying to send an non-clonable object', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'non-cloneable.js'));
+      await once(child, 'spawn');
+      child.postMessage('non-cloneable');
+      const [data] = await once(child, 'message');
+      expect(data).to.equal('caught-non-cloneable');
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
   });
 
   describe('behavior', () => {
