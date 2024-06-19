@@ -23,8 +23,8 @@ on:
         description: 'Skip lint check'
         default: false
         required: false
-  # push:
-  # pull_request:
+  push:
+  pull_request:
 
 jobs:
   changes:
