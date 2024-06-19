@@ -131,8 +131,8 @@ jobs:
     - name: Download Src Artifacts
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
       with:
-        name: src_artifacts_${{ matrix.build-type }}_${{ env.TARGET_ARCH }}
-        path: ./src_artifacts_${{ matrix.build-type }}_${{ env.TARGET_ARCH }}
+        name: src_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src_artifacts_${{ env.ARTIFACT_KEY }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist, Mksnapshot & Chromedriver

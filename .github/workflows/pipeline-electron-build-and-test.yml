@@ -86,6 +86,7 @@ jobs:
       check-runs-on: ${{ inputs.build-runs-on }}
       check-container: ${{ inputs.build-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
+      is-asan: ${{ inputs.is-asan }}
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
