@@ -146,3 +146,5 @@ cherry-pick-03609e39be8c.patch
 x11_use_localized_display_label_only_for_browser_process.patch
 cherry-pick-b922fcb61e3b.patch
 cherry-pick-0d9598145069.patch
+cherry-pick-24329fe5c4d0.patch
+m120-lts_mediasession_use_a_mediasessionimpl_weakptr_in.patch

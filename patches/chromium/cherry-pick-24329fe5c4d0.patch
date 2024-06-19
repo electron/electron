@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nidhi Jaju <nidhijaju@chromium.org>
+Date: Fri, 24 May 2024 01:26:02 +0000
+Subject: Streams: Check if buffer is detached when filling pull-into
+ descriptor
+
+The pull-into descriptor can become out-of-sync with the array buffer
+when the buffer is detached. This CL adds a check to see if the buffer
+is detached before trying to fill it.
+
+(cherry picked from commit cd405492789ec4bc6ecd598754154c527ff60e95)
+
+Bug: 339877167
+Change-Id: Ibf46a75e36dc739910db07f2e88ff9998c21e8a8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5553232
+Reviewed-by: Domenic Denicola <domenic@chromium.org>
+Commit-Queue: Nidhi Jaju <nidhijaju@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1303628}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5553411
+Cr-Commit-Position: refs/branch-heads/6367@{#1228}
+Cr-Branched-From: d158c6dc6e3604e6f899041972edf26087a49740-refs/heads/main@{#1274542}
+
+diff --git a/third_party/blink/renderer/core/streams/readable_byte_stream_controller.cc b/third_party/blink/renderer/core/streams/readable_byte_stream_controller.cc
+index 85e2214ca95790f547819e2a14628d342f7913bb..a844d84d20e68172e285cefe3301c49f3edfbd3a 100644
+--- a/third_party/blink/renderer/core/streams/readable_byte_stream_controller.cc
++++ b/third_party/blink/renderer/core/streams/readable_byte_stream_controller.cc
+@@ -494,7 +494,8 @@ void ReadableByteStreamController::ProcessPullIntoDescriptorsUsingQueue(
+         controller->pending_pull_intos_[0];
+     //   c. If ! ReadableByteStreamControllerFillPullIntoDescriptorFromQueue(
+     //   controller, pullIntoDescriptor) is true,
+-    if (FillPullIntoDescriptorFromQueue(controller, pull_into_descriptor)) {
++    if (FillPullIntoDescriptorFromQueue(controller, pull_into_descriptor,
++                                        exception_state)) {
+       //     i. Perform !
+       //     ReadableByteStreamControllerShiftPendingPullInto(controller).
+       ShiftPendingPullInto(controller);
+@@ -505,6 +506,15 @@ void ReadableByteStreamController::ProcessPullIntoDescriptorsUsingQueue(
+                                pull_into_descriptor, exception_state);
+       DCHECK(!exception_state.HadException());
+     }
++    if (exception_state.HadException()) {
++      // Instead of returning a rejection, which is inconvenient here,
++      // call ControllerError(). The only difference this makes is that it
++      // happens synchronously, but that should not be observable.
++      ReadableByteStreamController::Error(script_state, controller,
++                                          exception_state.GetException());
++      exception_state.ClearException();
++      return;
++    }
+   }
+ }
+ 
+@@ -989,7 +999,12 @@ void ReadableByteStreamController::FillHeadPullIntoDescriptor(
+ 
+ bool ReadableByteStreamController::FillPullIntoDescriptorFromQueue(
+     ReadableByteStreamController* controller,
+-    PullIntoDescriptor* pull_into_descriptor) {
++    PullIntoDescriptor* pull_into_descriptor,
++    ExceptionState& exception_state) {
++  if (pull_into_descriptor->buffer->IsDetached()) {
++    exception_state.ThrowTypeError("buffer is detached");
++    return false;
++  }
+   // https://streams.spec.whatwg.org/#readable-byte-stream-controller-fill-pull-into-descriptor-from-queue
+   // 1. Let elementSize be pullIntoDescriptor.[[elementSize]].
+   const size_t element_size = pull_into_descriptor->element_size;
+@@ -1240,7 +1255,8 @@ void ReadableByteStreamController::PullInto(
+     //   a. If !
+     //   ReadableByteStreamControllerFillPullIntoDescriptorFromQueue(controller,
+     //   pullIntoDescriptor) is true,
+-    if (FillPullIntoDescriptorFromQueue(controller, pull_into_descriptor)) {
++    if (FillPullIntoDescriptorFromQueue(controller, pull_into_descriptor,
++                                        exception_state)) {
+       //     i. Let filledView be !
+       //     ReadableByteStreamControllerConvertPullIntoDescriptor(pullIntoDescriptor).
+       DOMArrayBufferView* filled_view = ConvertPullIntoDescriptor(
+@@ -1254,6 +1270,15 @@ void ReadableByteStreamController::PullInto(
+       //     iv. Return.
+       return;
+     }
++    if (exception_state.HadException()) {
++      // Instead of returning a rejection, which is inconvenient here,
++      // call ControllerError(). The only difference this makes is that it
++      // happens synchronously, but that should not be observable.
++      ReadableByteStreamController::Error(script_state, controller,
++                                          exception_state.GetException());
++      exception_state.ClearException();
++      return;
++    }
+     //   b. If controller.[[closeRequested]] is true,
+     if (controller->close_requested_) {
+       //     i. Let e be a TypeError exception.
+diff --git a/third_party/blink/renderer/core/streams/readable_byte_stream_controller.h b/third_party/blink/renderer/core/streams/readable_byte_stream_controller.h
+index aff7d589cef5a32f43e1dc0b06aa0d2921e39169..f31f660fddbc01d95dff904ad9ac5b1cf3ee8d86 100644
+--- a/third_party/blink/renderer/core/streams/readable_byte_stream_controller.h
++++ b/third_party/blink/renderer/core/streams/readable_byte_stream_controller.h
+@@ -218,7 +218,8 @@ class CORE_EXPORT ReadableByteStreamController
+ 
+   // https://streams.spec.whatwg.org/#readable-byte-stream-controller-fill-pull-into-descriptor-from-queue
+   static bool FillPullIntoDescriptorFromQueue(ReadableByteStreamController*,
+-                                              PullIntoDescriptor*);
++                                              PullIntoDescriptor*,
++                                              ExceptionState&);
+ 
+   // https://streams.spec.whatwg.org/#abstract-opdef-readablebytestreamcontrollerfillreadrequestfromqueue
+   static void FillReadRequestFromQueue(ScriptState*,
