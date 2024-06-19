@@ -11,9 +11,7 @@ Examples:
 * `CommandOrControl+A`
 * `CommandOrControl+Shift+Z`
 
-Shortcuts can be registered with the [`globalShortcut`](global-shortcut.md) module
-using the [`register`](global-shortcut.md#globalshortcutregisteraccelerator-callback)
-method
+For responding to keyboard shortcuts, [see this documentation](https://www.electronjs.org/docs/latest/tutorial/keyboard-shortcuts#local-shortcuts)
 
 ## Platform notice
 
