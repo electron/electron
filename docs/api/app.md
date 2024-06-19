@@ -348,6 +348,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `authenticationResponseDetails` Object
   * `url` URL
+  * `pid` number
 * `authInfo` Object
   * `isProxy` boolean
   * `scheme` string
@@ -358,7 +359,7 @@ Returns:
   * `username` string (optional)
   * `password` string (optional)
 
-Emitted when `webContents` wants to do basic auth.
+Emitted when `webContents` or [Utility process](../glossary.md#utility-process) wants to do basic auth.
 
 The default behavior is to cancel all authentications. To override this you
 should prevent the default behavior with `event.preventDefault()` and call
