@@ -8,7 +8,7 @@ const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 
 export const shouldRunCodesignTests =
     process.platform === 'darwin' &&
-    !process.env.CI &&
+    !(process.env.CI && process.arch === 'arm64') &&
     !process.mas &&
     !features.isComponentBuild();
 
