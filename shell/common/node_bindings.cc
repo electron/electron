@@ -100,9 +100,10 @@
   V(electron_renderer_ipc)            \
   V(electron_renderer_web_frame)
 
-#define ELECTRON_UTILITY_BINDINGS(V) \
-  V(electron_browser_event_emitter)  \
-  V(electron_common_net)             \
+#define ELECTRON_UTILITY_BINDINGS(V)     \
+  V(electron_browser_event_emitter)      \
+  V(electron_browser_system_preferences) \
+  V(electron_common_net)                 \
   V(electron_utility_parent_port)
 
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
