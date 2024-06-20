@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 2 May 2024 11:17:33 -0400
+Subject: M124: Vulkan: Turn SPIR-V limitations to crash instead of security
+ bug
+
+The input shader can be made complex in a number of different ways,
+resulting in instructions with a length higher than what can fit in
+SPIR-V (i.e. 16 bits).  Ideally, the translator would catch such complex
+usage early on and gracefully fail compilation.  However, as a safety
+net, this change makes sure such a case is detected when the SPIR-V
+instruction is being generated and turned into a crash.  This makes sure
+such bugs are no longer security bugs.
+
+Bug: chromium:335613092
+Change-Id: Iab16b49ed80929fc343b4c7bffce306919de2e96
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5547611
+Reviewed-by: Roman Lavrov <romanl@google.com>
+
+diff --git a/scripts/code_generation_hashes/SPIR-V_helpers.json b/scripts/code_generation_hashes/SPIR-V_helpers.json
+index cb1b596b6d02f35e2817cac53ace42d64e33bffd..944cf1a2cbd34a0e28e7cfad4b874344f662512b 100644
+--- a/scripts/code_generation_hashes/SPIR-V_helpers.json
++++ b/scripts/code_generation_hashes/SPIR-V_helpers.json
+@@ -1,8 +1,8 @@
+ {
+   "src/common/spirv/gen_spirv_builder_and_parser.py":
+-    "e95670a30a4eda80a146b61c986fb03c",
++    "868a697edbc38c95e36be54cf5c71435",
+   "src/common/spirv/spirv_instruction_builder_autogen.cpp":
+-    "1b5f60a24d459e7a30c29cf7acfa2106",
++    "c149de371bcd571bd31cc8eb1e517910",
+   "src/common/spirv/spirv_instruction_builder_autogen.h":
+     "56b1309d8afabb2b64d7e16f0c4a4898",
+   "src/common/spirv/spirv_instruction_parser_autogen.cpp":
+diff --git a/src/common/spirv/gen_spirv_builder_and_parser.py b/src/common/spirv/gen_spirv_builder_and_parser.py
+index 5e8e9bc4e8914cf2173a8fa720446f6647dd065e..c7e1f401b380f3b4fe0bd6b9178b42ee5ac41250 100755
+--- a/src/common/spirv/gen_spirv_builder_and_parser.py
++++ b/src/common/spirv/gen_spirv_builder_and_parser.py
+@@ -93,6 +93,15 @@ uint32_t MakeLengthOp(size_t length, spv::Op op)
+     ASSERT(length <= 0xFFFFu);
+     ASSERT(op <= 0xFFFFu);
+ 
++    // It's easy for a complex shader to be crafted to hit the length limit,
++    // turn that into a crash instead of a security bug.  Ideally, the compiler
++    // would gracefully fail compilation, so this is more of a safety net.
++    if (ANGLE_UNLIKELY(length > 0xFFFFu))
++    {
++        ERR() << "Complex shader not representible in SPIR-V";
++        ANGLE_CRASH();
++    }
++
+     return static_cast<uint32_t>(length) << 16 | op;
+ }
+ }  // anonymous namespace
+diff --git a/src/common/spirv/spirv_instruction_builder_autogen.cpp b/src/common/spirv/spirv_instruction_builder_autogen.cpp
+index 3c73c58e3c0141f3e00a61eab784d3e3b96dff8e..6e6ad6f510cb76588f61dacee8dbcac5a544d8d1 100644
+--- a/src/common/spirv/spirv_instruction_builder_autogen.cpp
++++ b/src/common/spirv/spirv_instruction_builder_autogen.cpp
+@@ -25,6 +25,15 @@ uint32_t MakeLengthOp(size_t length, spv::Op op)
+     ASSERT(length <= 0xFFFFu);
+     ASSERT(op <= 0xFFFFu);
+ 
++    // It's easy for a complex shader to be crafted to hit the length limit,
++    // turn that into a crash instead of a security bug.  Ideally, the compiler
++    // would gracefully fail compilation, so this is more of a safety net.
++    if (ANGLE_UNLIKELY(length > 0xFFFFu))
++    {
++        ERR() << "Complex shader not representible in SPIR-V";
++        ANGLE_CRASH();
++    }
++
+     return static_cast<uint32_t>(length) << 16 | op;
+ }
+ }  // anonymous namespace

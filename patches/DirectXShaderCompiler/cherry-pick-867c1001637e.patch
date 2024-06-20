@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Thu, 16 May 2024 14:24:27 -0400
+Subject: Fix invalid module bitcode when indexing a swizzled bool vector
+ (#6582)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When indexing a swizzled bool vector, some HLSL-specific code in
+EmitCXXMemberOrOperatorMemberCallExpr kicks in to handle the
+HLSLVecType. In this case, we’re dealing with an ExtVectorElt because of
+the swizzle, so this function creates a GEP, Load, and Store on the
+vector. However, boolean scalars are returned as type i11 while the
+store is storing to a bool, which is an i32, so we need to insert a cast
+before the store.
+
+Bug: chromium:338161969
+Change-Id: I45f8ec383be49210a10f725d8266b66fd30c34be
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5545820
+Reviewed-by: James Price <jrprice@google.com>
+Reviewed-by: dan sinclair <dsinclair@google.com>
+
+diff --git a/tools/clang/lib/CodeGen/CGExpr.cpp b/tools/clang/lib/CodeGen/CGExpr.cpp
+index cc46d067e617f1032bd7bc3ea6f65276984df130..efef0593b334103e511d43e3986fed3c304d28a3 100644
+--- a/tools/clang/lib/CodeGen/CGExpr.cpp
++++ b/tools/clang/lib/CodeGen/CGExpr.cpp
+@@ -1137,6 +1137,12 @@ llvm::MDNode *CodeGenFunction::getRangeForLoadFromType(QualType Ty) {
+   return MDHelper.createRange(Min, End);
+ }
+ 
++static bool ShouldEmitRangeMD(llvm::Value *Value, QualType Ty) {
++  if (hasBooleanRepresentation(Ty))
++    return cast<llvm::IntegerType>(Value->getType())->getBitWidth() != 1;
++  return true;
++}
++
+ llvm::Value *CodeGenFunction::EmitLoadOfScalar(llvm::Value *Addr, bool Volatile,
+                                                unsigned Alignment, QualType Ty,
+                                                SourceLocation Loc,
+@@ -1236,7 +1242,8 @@ llvm::Value *CodeGenFunction::EmitLoadOfScalar(llvm::Value *Addr, bool Volatile,
+       EmitCheck(std::make_pair(Check, Kind), "load_invalid_value", StaticArgs,
+                 EmitCheckValue(Load));
+     }
+-  } else if (CGM.getCodeGenOpts().OptimizationLevel > 0)
++  } else if (CGM.getCodeGenOpts().OptimizationLevel > 0 &&
++             ShouldEmitRangeMD(Load, Ty))
+     if (llvm::MDNode *RangeInfo = getRangeForLoadFromType(Ty))
+       Load->setMetadata(llvm::LLVMContext::MD_range, RangeInfo);
+ 
+diff --git a/tools/clang/lib/CodeGen/CGExprCXX.cpp b/tools/clang/lib/CodeGen/CGExprCXX.cpp
+index 2efde7c30f7f25fed5b36fe7de062b31e6cd74a2..924a0f806e7a8acf310005a212bb3c50a3c519b9 100644
+--- a/tools/clang/lib/CodeGen/CGExprCXX.cpp
++++ b/tools/clang/lib/CodeGen/CGExprCXX.cpp
+@@ -235,12 +235,17 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
+ 
+           llvm::Constant *zero = Builder.getInt32(0);
+           llvm::Value *TmpThis = CreateTempAlloca(Ty);
++          QualType ElTy = hlsl::GetElementTypeOrType(Base->getType());
++          bool IsBool = ElTy->isSpecificBuiltinType(BuiltinType::Bool);
+           for (unsigned i = 0; i < Ty->getVectorNumElements(); i++) {
+             llvm::Value *EltIdx = Elts->getAggregateElement(i);
+             llvm::Value *EltGEP = Builder.CreateGEP(This, {zero, EltIdx});
+             llvm::Value *TmpEltGEP =
+                 Builder.CreateGEP(TmpThis, {zero, Builder.getInt32(i)});
+             llvm::Value *Elt = Builder.CreateLoad(EltGEP);
++            if (IsBool)
++              Elt = Builder.CreateTrunc(
++                  Elt, llvm::Type::getInt1Ty(getLLVMContext()));
+             Builder.CreateStore(Elt, TmpEltGEP);
+           }
+           This = TmpThis;
+diff --git a/tools/clang/test/CodeGenDXIL/operators/swizzle/indexSwizzledBoolVec.hlsl b/tools/clang/test/CodeGenDXIL/operators/swizzle/indexSwizzledBoolVec.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..a47482d204547d01b8f237bdde0765e61e6b7ab0
+--- /dev/null
++++ b/tools/clang/test/CodeGenDXIL/operators/swizzle/indexSwizzledBoolVec.hlsl
+@@ -0,0 +1,30 @@
++// Test indexing a swizzled bool vector
++// RUN: %dxc -fcgl -T cs_6_0 %s | FileCheck %s
++
++// This was asserting in Instructions.cpp with:
++// void llvm::StoreInst::AssertOK(): Assertion `getOperand(0)->getType() == cast<PointerType>(getOperand(1)->getType())->getElementType() && "Ptr must be a pointer to Val type!"' failed.
++
++// Make sure load of i32 gets truncated to i1 when indexing bool vectors
++// CHECK:       [[TMP:%[a-z0-9\.]+]] = alloca <2 x i1>
++// CHECK:       [[VA0:%[a-z0-9\.]+]] = getelementptr <2 x i1>, <2 x i1>* [[TMP]], i32 0, i32 0,
++// CHECK-NEXT:  [[VA1:%[a-z0-9\.]+]] = load i32, i32* getelementptr inbounds (<4 x i32>, <4 x i32>* @"\01?v_bool4@?1??main@@YAXXZ@3V?$vector@_N$03@@B", i32 0, i32 2),
++// CHECK-NEXT:  [[VA2:%[a-z0-9\.]+]] = trunc i32 [[VA1]] to i1,
++// CHECK-NEXT:  store i1 [[VA2]], i1* [[VA0]],
++// CHECK-NEXT:  [[VB0:%[a-z0-9\.]+]] = getelementptr <2 x i1>, <2 x i1>* [[TMP]], i32 0, i32 1,
++// CHECK-NEXT:  [[VB1:%[a-z0-9\.]+]] = load i32, i32* getelementptr inbounds (<4 x i32>, <4 x i32>* @"\01?v_bool4@?1??main@@YAXXZ@3V?$vector@_N$03@@B", i32 0, i32 3),
++// CHECK-NEXT:  [[VB2:%[a-z0-9\.]+]] = trunc i32 [[VB1]] to i1,
++// CHECK-NEXT:  store i1 [[VB2]], i1* [[VB0]],
++
++
++cbuffer cbuffer_tint_symbol_3 : register(b0) {
++    uint4 global_uint4[1];
++};
++
++[numthreads(1, 1, 1)]
++void main() {
++    const bool4 v_bool4 = bool4(true, true, true, true);
++    const uint gx = global_uint4[0].x;
++    if (v_bool4.zw[gx] == 0) {
++        GroupMemoryBarrierWithGroupSync();
++    }
++}

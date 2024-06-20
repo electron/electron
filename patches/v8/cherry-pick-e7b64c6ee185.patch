@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthias Liedtke <mliedtke@chromium.org>
+Date: Fri, 10 May 2024 10:38:29 +0200
+Subject: Merged: [builtins] HasOnlySimpleElements is false for non-JSObjects
+
+Bug: 338908243
+(cherry picked from commit cc05792346fb017eaa961ee7d35cf1f9bb53bb0a)
+
+Change-Id: I9b5c2333924a54169ea3fa48e67e7db2ec67f6b9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5545380
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Auto-Submit: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.4@{#34}
+Cr-Branched-From: 309640da62fae0485c7e4f64829627c92d53b35d-refs/heads/12.4.254@{#1}
+Cr-Branched-From: 5dc24701432278556a9829d27c532f974643e6df-refs/heads/main@{#92862}
+
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index 60dc19367aa38997721ed85df6210f9de3a44313..dc82b658df09e5850ef2688fae1d748cb9873917 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -51,7 +51,7 @@ inline bool HasOnlySimpleElements(Isolate* isolate,
+   DisallowGarbageCollection no_gc;
+   PrototypeIterator iter(isolate, receiver, kStartAtReceiver);
+   for (; !iter.IsAtEnd(); iter.Advance()) {
+-    if (IsJSProxy(iter.GetCurrent())) return false;
++    if (!IsJSObject(iter.GetCurrent())) return false;
+     Tagged<JSObject> current = iter.GetCurrent<JSObject>();
+     if (!HasSimpleElements(current)) return false;
+   }

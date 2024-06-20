@@ -144,3 +144,5 @@ cherry-pick-b2cc7b7ac538.patch
 feat_add_support_for_missing_dialog_features_to_shell_dialogs.patch
 cherry-pick-03609e39be8c.patch
 x11_use_localized_display_label_only_for_browser_process.patch
+cherry-pick-b922fcb61e3b.patch
+cherry-pick-0d9598145069.patch
