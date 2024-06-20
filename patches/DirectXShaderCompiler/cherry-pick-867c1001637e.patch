@@ -1,7 +1,11 @@
-From 867c1001637e9156f13e852e80ce2038fe5c7ca2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Thu, 16 May 2024 14:24:27 -0400
-Subject: [PATCH] Fix invalid module bitcode when indexing a swizzled bool vector (#6582)
+Subject: Fix invalid module bitcode when indexing a swizzled bool vector
+ (#6582)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 When indexing a swizzled bool vector, some HLSL-specific code in
 EmitCXXMemberOrOperatorMemberCallExpr kicks in to handle the
@@ -16,13 +20,12 @@ Change-Id: I45f8ec383be49210a10f725d8266b66fd30c34be
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5545820
 Reviewed-by: James Price <jrprice@google.com>
 Reviewed-by: dan sinclair <dsinclair@google.com>
----
 
 diff --git a/tools/clang/lib/CodeGen/CGExpr.cpp b/tools/clang/lib/CodeGen/CGExpr.cpp
-index cc46d06..efef059 100644
+index cc46d067e617f1032bd7bc3ea6f65276984df130..efef0593b334103e511d43e3986fed3c304d28a3 100644
 --- a/tools/clang/lib/CodeGen/CGExpr.cpp
 +++ b/tools/clang/lib/CodeGen/CGExpr.cpp
-@@ -1137,6 +1137,12 @@
+@@ -1137,6 +1137,12 @@ llvm::MDNode *CodeGenFunction::getRangeForLoadFromType(QualType Ty) {
    return MDHelper.createRange(Min, End);
  }
  
@@ -35,7 +38,7 @@ index cc46d06..efef059 100644
  llvm::Value *CodeGenFunction::EmitLoadOfScalar(llvm::Value *Addr, bool Volatile,
                                                 unsigned Alignment, QualType Ty,
                                                 SourceLocation Loc,
-@@ -1236,7 +1242,8 @@
+@@ -1236,7 +1242,8 @@ llvm::Value *CodeGenFunction::EmitLoadOfScalar(llvm::Value *Addr, bool Volatile,
        EmitCheck(std::make_pair(Check, Kind), "load_invalid_value", StaticArgs,
                  EmitCheckValue(Load));
      }
@@ -46,10 +49,10 @@ index cc46d06..efef059 100644
        Load->setMetadata(llvm::LLVMContext::MD_range, RangeInfo);
  
 diff --git a/tools/clang/lib/CodeGen/CGExprCXX.cpp b/tools/clang/lib/CodeGen/CGExprCXX.cpp
-index 2efde7c..924a0f8 100644
+index 2efde7c30f7f25fed5b36fe7de062b31e6cd74a2..924a0f806e7a8acf310005a212bb3c50a3c519b9 100644
 --- a/tools/clang/lib/CodeGen/CGExprCXX.cpp
 +++ b/tools/clang/lib/CodeGen/CGExprCXX.cpp
-@@ -235,12 +235,17 @@
+@@ -235,12 +235,17 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
  
            llvm::Constant *zero = Builder.getInt32(0);
            llvm::Value *TmpThis = CreateTempAlloca(Ty);
@@ -69,7 +72,7 @@ index 2efde7c..924a0f8 100644
            This = TmpThis;
 diff --git a/tools/clang/test/CodeGenDXIL/operators/swizzle/indexSwizzledBoolVec.hlsl b/tools/clang/test/CodeGenDXIL/operators/swizzle/indexSwizzledBoolVec.hlsl
 new file mode 100644
-index 0000000..a47482d
+index 0000000000000000000000000000000000000000..a47482d204547d01b8f237bdde0765e61e6b7ab0
 --- /dev/null
 +++ b/tools/clang/test/CodeGenDXIL/operators/swizzle/indexSwizzledBoolVec.hlsl
 @@ -0,0 +1,30 @@

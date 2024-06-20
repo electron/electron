@@ -1,7 +1,8 @@
-From bda89e1f7c7195a9d03d037039c2dd5057563a59 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
-Date: Thu, 02 May 2024 11:17:33 -0400
-Subject: [PATCH] M124: Vulkan: Turn SPIR-V limitations to crash instead of security bug
+Date: Thu, 2 May 2024 11:17:33 -0400
+Subject: M124: Vulkan: Turn SPIR-V limitations to crash instead of security
+ bug
 
 The input shader can be made complex in a number of different ways,
 resulting in instructions with a length higher than what can fit in
@@ -15,10 +16,9 @@ Bug: chromium:335613092
 Change-Id: Iab16b49ed80929fc343b4c7bffce306919de2e96
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5547611
 Reviewed-by: Roman Lavrov <romanl@google.com>
----
 
 diff --git a/scripts/code_generation_hashes/SPIR-V_helpers.json b/scripts/code_generation_hashes/SPIR-V_helpers.json
-index cb1b596..944cf1a 100644
+index cb1b596b6d02f35e2817cac53ace42d64e33bffd..944cf1a2cbd34a0e28e7cfad4b874344f662512b 100644
 --- a/scripts/code_generation_hashes/SPIR-V_helpers.json
 +++ b/scripts/code_generation_hashes/SPIR-V_helpers.json
 @@ -1,8 +1,8 @@
@@ -33,10 +33,10 @@ index cb1b596..944cf1a 100644
      "56b1309d8afabb2b64d7e16f0c4a4898",
    "src/common/spirv/spirv_instruction_parser_autogen.cpp":
 diff --git a/src/common/spirv/gen_spirv_builder_and_parser.py b/src/common/spirv/gen_spirv_builder_and_parser.py
-index 5e8e9bc..c7e1f40 100755
+index 5e8e9bc4e8914cf2173a8fa720446f6647dd065e..c7e1f401b380f3b4fe0bd6b9178b42ee5ac41250 100755
 --- a/src/common/spirv/gen_spirv_builder_and_parser.py
 +++ b/src/common/spirv/gen_spirv_builder_and_parser.py
-@@ -93,6 +93,15 @@
+@@ -93,6 +93,15 @@ uint32_t MakeLengthOp(size_t length, spv::Op op)
      ASSERT(length <= 0xFFFFu);
      ASSERT(op <= 0xFFFFu);
  
@@ -53,10 +53,10 @@ index 5e8e9bc..c7e1f40 100755
  }
  }  // anonymous namespace
 diff --git a/src/common/spirv/spirv_instruction_builder_autogen.cpp b/src/common/spirv/spirv_instruction_builder_autogen.cpp
-index 3c73c58..6e6ad6f 100644
+index 3c73c58e3c0141f3e00a61eab784d3e3b96dff8e..6e6ad6f510cb76588f61dacee8dbcac5a544d8d1 100644
 --- a/src/common/spirv/spirv_instruction_builder_autogen.cpp
 +++ b/src/common/spirv/spirv_instruction_builder_autogen.cpp
-@@ -25,6 +25,15 @@
+@@ -25,6 +25,15 @@ uint32_t MakeLengthOp(size_t length, spv::Op op)
      ASSERT(length <= 0xFFFFu);
      ASSERT(op <= 0xFFFFu);
  
