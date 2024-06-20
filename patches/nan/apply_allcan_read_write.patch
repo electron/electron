@@ -1,10 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Samuel Attard <marshallofsound@electronjs.org>
-Date: Tue, 18 Jun 2024 15:59:42 -0700
-Subject: Remove AllCan Read/Write
-
-Refs https://chromium-review.googlesource.com/c/v8/v8/+/5006387
-Should be upstreamed.
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Thu, 20 Jun 2024 14:20:53 -0700
+Subject: Refs https://chromium-review.googlesource.com/c/v8/v8/+/5006387
+ Should be upstreamed.
 
 Module version checks are made against 119 since that is the current assigned version
 for Electron 28 in https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json.
@@ -17,7 +15,7 @@ Steps for upstreaming this patch:
 - Upstream patch to nodejs/nan before Electron 29 is branched
 
 diff --git a/nan.h b/nan.h
-index 2a68349448c163fa29af327a03b11678e61f5789..6c4fe9e46f69234100e7e634826b38c9e3e17e37 100644
+index 9a9112afe0cc94ce58ed3cce9763ace7c160a932..f4865a77e60d5105ed2426037984ddcbfa58bbca 100644
 --- a/nan.h
 +++ b/nan.h
 @@ -47,6 +47,7 @@
@@ -28,7 +26,7 @@ index 2a68349448c163fa29af327a03b11678e61f5789..6c4fe9e46f69234100e7e634826b38c9
  
  #ifdef _MSC_VER
  # define NAN_HAS_CPLUSPLUS_11 (_MSC_VER >= 1800)
-@@ -2517,7 +2518,9 @@ NAN_DEPRECATED inline void SetAccessor(
+@@ -2525,7 +2526,9 @@ NAN_DEPRECATED inline void SetAccessor(
    , GetterCallback getter
    , SetterCallback setter
    , v8::Local<v8::Value> data
@@ -38,7 +36,7 @@ index 2a68349448c163fa29af327a03b11678e61f5789..6c4fe9e46f69234100e7e634826b38c9
    , v8::PropertyAttribute attribute
    , imp::Sig signature) {
    HandleScope scope;
-@@ -2545,17 +2548,28 @@ NAN_DEPRECATED inline void SetAccessor(
+@@ -2553,17 +2556,28 @@ NAN_DEPRECATED inline void SetAccessor(
      obj->SetInternalField(imp::kDataIndex, data);
    }
  
@@ -67,7 +65,7 @@ index 2a68349448c163fa29af327a03b11678e61f5789..6c4fe9e46f69234100e7e634826b38c9
  }
  
  inline void SetAccessor(
-@@ -2564,7 +2578,9 @@ inline void SetAccessor(
+@@ -2572,7 +2586,9 @@ inline void SetAccessor(
    , GetterCallback getter
    , SetterCallback setter = 0
    , v8::Local<v8::Value> data = v8::Local<v8::Value>()
@@ -77,7 +75,7 @@ index 2a68349448c163fa29af327a03b11678e61f5789..6c4fe9e46f69234100e7e634826b38c9
    , v8::PropertyAttribute attribute = v8::None) {
    HandleScope scope;
  
-@@ -2591,14 +2607,25 @@ inline void SetAccessor(
+@@ -2599,14 +2615,25 @@ inline void SetAccessor(
      obj->SetInternalField(imp::kDataIndex, data);
    }
  
@@ -103,7 +101,7 @@ index 2a68349448c163fa29af327a03b11678e61f5789..6c4fe9e46f69234100e7e634826b38c9
  }
  
  inline bool SetAccessor(
-@@ -2634,7 +2661,15 @@ inline bool SetAccessor(
+@@ -2642,7 +2669,15 @@ inline bool SetAccessor(
        , New<v8::External>(reinterpret_cast<void *>(setter)));
    }
  
