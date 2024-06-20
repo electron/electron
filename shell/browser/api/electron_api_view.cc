@@ -155,6 +155,7 @@ class JSLayoutManager : public views::LayoutManagerBase {
       : layout_callback_(std::move(layout_callback)) {}
   ~JSLayoutManager() override {}
 
+  // views::LayoutManagerBase
   views::ProposedLayout CalculateProposedLayout(
       const views::SizeBounds& size_bounds) const override {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

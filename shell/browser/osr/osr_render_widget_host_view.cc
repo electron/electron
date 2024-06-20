@@ -135,6 +135,7 @@ class ElectronDelegatedFrameHostClient
   ElectronDelegatedFrameHostClient& operator=(
       const ElectronDelegatedFrameHostClient&) = delete;
 
+  // content::DelegatedFrameHostClient
   ui::Layer* DelegatedFrameHostGetLayer() const override {
     return view_->root_layer();
   }

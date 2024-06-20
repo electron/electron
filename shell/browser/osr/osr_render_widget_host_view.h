@@ -121,7 +121,6 @@ class OffScreenRenderWidgetHostView
 #endif  // BUILDFLAG(IS_MAC)
 
   // content::RenderWidgetHostViewBase:
-
   void UpdateFrameSinkIdRegistration() override;
   void InvalidateLocalSurfaceIdAndAllocationGroup() override;
   void ResetFallbackToFirstNavigationSurface() override;

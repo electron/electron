@@ -49,6 +49,7 @@ class DeleteFileProgressSink : public IFileOperationProgressSink {
   virtual ~DeleteFileProgressSink() = default;
 
  private:
+  // IFileOperationProgressSink
   ULONG STDMETHODCALLTYPE AddRef(void) override;
   ULONG STDMETHODCALLTYPE Release(void) override;
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid,
