@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Zern <jzern@google.com>
+Date: Thu, 16 May 2024 13:44:52 -0700
+Subject: encode_api_test: add repro for chromium 339877165
+
+BUG=chromium:339877165
+
+Change-Id: I69dcc2cda098ec96a34e1e5f7ef557ee8caf5521
+(cherry picked from commit 01467cdbd524900eed283660836179fd1b2cd536)
+
+diff --git a/test/encode_api_test.cc b/test/encode_api_test.cc
+index a7d5b3aa3c7dbcfce8e726fca1f1670ed878e53c..27bcbc14c14c4218d45e59e509fbe5fdbdc005bb 100644
+--- a/test/encode_api_test.cc
++++ b/test/encode_api_test.cc
+@@ -635,6 +635,147 @@ TEST(EncodeAPI, PtsOrDurationTooBig) {
+   aom_codec_destroy(&enc);
+ }
+ 
++// Reproduces https://crbug.com/339877165.
++TEST(EncodeAPI, Buganizer339877165) {
++  // Initialize libaom encoder.
++  aom_codec_iface_t *const iface = aom_codec_av1_cx();
++  aom_codec_ctx_t enc;
++  aom_codec_enc_cfg_t cfg;
++
++  ASSERT_EQ(aom_codec_enc_config_default(iface, &cfg, AOM_USAGE_REALTIME),
++            AOM_CODEC_OK);
++
++  cfg.g_w = 2560;
++  cfg.g_h = 1600;
++  cfg.rc_target_bitrate = 231;
++  cfg.rc_end_usage = AOM_CBR;
++  cfg.g_threads = 8;
++
++  ASSERT_EQ(aom_codec_enc_init(&enc, iface, &cfg, 0), AOM_CODEC_OK);
++
++  // From libaom_av1_encoder.cc in WebRTC.
++  ASSERT_EQ(aom_codec_control(&enc, AOME_SET_CPUUSED, 11), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_CDEF, 1), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_TPL_MODEL, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_DELTAQ_MODE, 0), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_ORDER_HINT, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_AQ_MODE, 3), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AOME_SET_MAX_INTRA_BITRATE_PCT, 300),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_COEFF_COST_UPD_FREQ, 3),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_MODE_COST_UPD_FREQ, 3),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_MV_COST_UPD_FREQ, 3),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_TUNE_CONTENT, AOM_CONTENT_SCREEN),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_PALETTE, 1), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_TILE_ROWS, 1), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_TILE_COLUMNS, 2), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_OBMC, 0), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_NOISE_SENSITIVITY, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_WARPED_MOTION, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_GLOBAL_MOTION, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_REF_FRAME_MVS, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_SUPERBLOCK_SIZE,
++                              AOM_SUPERBLOCK_SIZE_DYNAMIC),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_CFL_INTRA, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_SMOOTH_INTRA, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_ANGLE_DELTA, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_FILTER_INTRA, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_INTRA_DEFAULT_TX_ONLY, 1),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_DISABLE_TRELLIS_QUANT, 1),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_DIST_WTD_COMP, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_DIFF_WTD_COMP, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_DUAL_FILTER, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_INTERINTRA_COMP, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_INTERINTRA_WEDGE, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_INTRA_EDGE_FILTER, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_INTRABC, 0), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_MASKED_COMP, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_PAETH_INTRA, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_QM, 0), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_RECT_PARTITIONS, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_RESTORATION, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_SMOOTH_INTERINTRA, 0),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_ENABLE_TX64, 0), AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_MAX_REFERENCE_FRAMES, 3),
++            AOM_CODEC_OK);
++  ASSERT_EQ(aom_codec_enc_config_set(&enc, &cfg), AOM_CODEC_OK);
++
++  aom_svc_params_t svc_params = {};
++  svc_params.number_spatial_layers = 2;
++  svc_params.number_temporal_layers = 1;
++  svc_params.max_quantizers[0] = svc_params.max_quantizers[1] = 56;
++  svc_params.min_quantizers[0] = svc_params.min_quantizers[1] = 10;
++  svc_params.scaling_factor_num[0] = svc_params.scaling_factor_num[1] = 1;
++  svc_params.scaling_factor_den[0] = 2;
++  svc_params.scaling_factor_den[1] = 1;
++  svc_params.layer_target_bitrate[0] = cfg.rc_target_bitrate;
++  svc_params.framerate_factor[0] = 1;
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_SVC_PARAMS, &svc_params),
++            AOM_CODEC_OK);
++
++  aom_svc_layer_id_t layer_id = {};
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_SVC_LAYER_ID, &layer_id),
++            AOM_CODEC_OK);
++
++  aom_svc_ref_frame_config_t ref_frame_config = {};
++  ref_frame_config.refresh[0] = 1;
++  ASSERT_EQ(
++      aom_codec_control(&enc, AV1E_SET_SVC_REF_FRAME_CONFIG, &ref_frame_config),
++      AOM_CODEC_OK);
++
++  // Create input image.
++  aom_image_t *const image =
++      CreateGrayImage(AOM_IMG_FMT_I420, cfg.g_w, cfg.g_h);
++  ASSERT_NE(image, nullptr);
++
++  // Encode layer 0.
++  ASSERT_EQ(aom_codec_encode(&enc, image, 0, 1, 0), AOM_CODEC_OK);
++
++  layer_id.spatial_layer_id = 1;
++  ASSERT_EQ(aom_codec_control(&enc, AV1E_SET_SVC_LAYER_ID, &layer_id),
++            AOM_CODEC_OK);
++
++  ref_frame_config.refresh[0] = 0;
++  ASSERT_EQ(
++      aom_codec_control(&enc, AV1E_SET_SVC_REF_FRAME_CONFIG, &ref_frame_config),
++      AOM_CODEC_OK);
++
++  // Encode layer 1.
++  ASSERT_EQ(aom_codec_encode(&enc, image, 0, 1, 0), AOM_CODEC_OK);
++
++  // Free resources.
++  aom_img_free(image);
++  aom_codec_destroy(&enc);
++}
++
+ class EncodeAPIParameterized
+     : public testing::TestWithParam<std::tuple<
+           /*usage=*/unsigned int, /*speed=*/int, /*aq_mode=*/unsigned int>> {};
