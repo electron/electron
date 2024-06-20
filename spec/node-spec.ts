@@ -159,6 +159,38 @@ describe('node feature', () => {
     });
   });
 
+  describe('fetch', () => {
+    itremote('works correctly when nodeIntegration is enabled in the renderer', async (fixtures: string) => {
+      const file = require('node:path').join(fixtures, 'hello.txt');
+      expect(() => {
+        fetch('file://' + file);
+      }).to.not.throw();
+
+      expect(() => {
+        const formData = new FormData();
+        formData.append('username', 'Groucho');
+      }).not.to.throw();
+
+      expect(() => {
+        const request = new Request('https://example.com', {
+          method: 'POST',
+          body: JSON.stringify({ foo: 'bar' })
+        });
+        expect(request.method).to.equal('POST');
+      }).not.to.throw();
+
+      expect(() => {
+        const response = new Response('Hello, world!');
+        expect(response.status).to.equal(200);
+      }).not.to.throw();
+
+      expect(() => {
+        const headers = new Headers();
+        headers.append('Content-Type', 'text/xml');
+      }).not.to.throw();
+    }, [fixtures]);
+  });
+
   it('does not hang when using the fs module in the renderer process', async () => {
     const appPath = path.join(mainFixturesPath, 'apps', 'libuv-hang', 'main.js');
     const appProcess = childProcess.spawn(process.execPath, [appPath], {
