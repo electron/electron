@@ -26,9 +26,6 @@ on:
   push:
   pull_request:
 
-env:
-  BUILD_IMAGE_SHA: ${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}
-
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -53,7 +50,7 @@ jobs:
     if: ${{ !inputs.skip-lint }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
     with:
-      container: '{"image":"ghcr.io/electron/build:$BUILD_IMAGE_SHA","options":"--user root"}'
+      container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root"}'
     secrets: inherit
 
   # Docs Only Jobs
@@ -62,7 +59,7 @@ jobs:
     if: ${{ needs.changes.outputs.docs == 'true' && needs.changes.outputs.src == 'false'}}
     uses: ./.github/workflows/pipeline-electron-docs-only.yml
     with:
-      container: '{"image":"ghcr.io/electron/build:$BUILD_IMAGE_SHA","options":"--user root"}'
+      container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root"}'
     secrets: inherit
 
   # Checkout Jobs
@@ -71,7 +68,7 @@ jobs:
     if: ${{ needs.changes.outputs.src == 'true' && !inputs.skip-macos}}
     runs-on: aks-linux-large
     container:
-      image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
+      image: ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -94,7 +91,7 @@ jobs:
     if: ${{ needs.changes.outputs.src == 'true' && !inputs.skip-linux}}
     runs-on: aks-linux-large
     container:
-      image: ghcr.io/electron/build:$BUILD_IMAGE_SHA
+      image: ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -157,8 +154,8 @@ jobs:
     with:
       build-runs-on: aks-linux-large
       test-runs-on: aks-linux-medium
-      build-container: '{"image":"ghcr.io/electron/build:$BUILD_IMAGE_SHA","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/build:$BUILD_IMAGE_SHA","options":"--user root --privileged --init"}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      test-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root --privileged --init"}'
       target-platform: linux
       target-arch: x64
       is-release: false
@@ -198,8 +195,8 @@ jobs:
     with:
       build-runs-on: aks-linux-large
       test-runs-on: aks-linux-arm-medium
-      build-container: '{"image":"ghcr.io/electron/build:$BUILD_IMAGE_SHA","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/test:arm32v7-$BUILD_IMAGE_SHA","options":"--user root --privileged --init","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root --privileged --init","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
       target-platform: linux
       target-arch: arm
       is-release: false
@@ -218,8 +215,8 @@ jobs:
     with:
       build-runs-on: aks-linux-large
       test-runs-on: aks-linux-arm-medium
-      build-container: '{"image":"ghcr.io/electron/build:$BUILD_IMAGE_SHA","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/test:arm64v8-:$BUILD_IMAGE_SHA","options":"--user root --privileged --init"}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      test-container: '{"image":"ghcr.io/electron/test:arm64v8-:${{ inputs.build-image-sha && inputs.build-image-sha || 'cf814a4d2501e8e843caea071a6b70a48e78b855' }}","options":"--user root --privileged --init"}'
       target-platform: linux
       target-arch: arm64
       is-release: false
