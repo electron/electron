@@ -153,7 +153,7 @@ Returns:
   * `isDirectory` boolean - Whether or not the path is a directory.
   * `path` string - The blocked path attempting to be accessed.
 * `callback` Function
-  * `shouldBlock` boolean - `true` to abort the file system access attempt, and `false` to try again with a non-restricted location.
+  * `action` string - Can be one of `block`, `tryAgain`, or `allow`.
 
 ```js
 const { app, dialog, BrowserWindow, session } = require('electron')
