@@ -1,0 +1,22 @@
+html {
+    height: 100%;
+}
+body {
+    display: grid;
+    grid: 1fr / auto 1fr auto;
+    margin: 0;
+    height: 100%;
+}
+#left-sidebar {
+    width: 0;
+    background-color: lightcoral;
+    overflow: hidden;
+}
+.sidebar-content {
+    width: 200px;
+}
+#right-sidebar {
+    width: 0;
+    background-color: lightgreen;
+    overflow: hidden;
+}
