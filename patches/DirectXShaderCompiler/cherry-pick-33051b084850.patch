@@ -1,7 +1,8 @@
-From 33051b084850a9b6b52f195651fab8f61843a4e2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Mon, 10 Jun 2024 10:52:30 -0400
-Subject: [PATCH] Loop exit restructurizer: don't iterate over uses while mutating them (#6644)
+Subject: Loop exit restructurizer: don't iterate over uses while mutating them
+ (#6644)
 
 The SkipBlockWithBranch function does the following:
 - Splits the block into three blocks with an if-then-endif structure.
@@ -22,13 +23,12 @@ Change-Id: Ia34fd7a2fe84de635289f7499772d11866a28e24
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5615350
 Reviewed-by: James Price <jrprice@google.com>
 Reviewed-by: dan sinclair <dsinclair@google.com>
----
 
 diff --git a/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp b/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp
-index ef6718f..70e6ccd 100644
+index ef6718f0f22ee33e3f16f9801a64c1a6fb6c653a..70e6ccd8ddbaeabdb469710ad8529933f0286abd 100644
 --- a/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp
 +++ b/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp
-@@ -322,24 +322,26 @@
+@@ -322,24 +322,26 @@ static void SkipBlockWithBranch(BasicBlock *bb, Value *cond, Loop *L,
    BranchInst::Create(end, body, cond, bb);
  
    for (Instruction &inst : *body) {
@@ -69,7 +69,7 @@ index ef6718f..70e6ccd 100644
    L->addBasicBlockToLoop(end, *LI);
 diff --git a/tools/clang/test/DXC/Passes/DxilRemoveUnstructuredLoopExits/struct_exit_wrap_value_iteration_bug.ll b/tools/clang/test/DXC/Passes/DxilRemoveUnstructuredLoopExits/struct_exit_wrap_value_iteration_bug.ll
 new file mode 100644
-index 0000000..ee912c9
+index 0000000000000000000000000000000000000000..ee912c929bdc0424959a29d16c3d5c64f885f809
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/DxilRemoveUnstructuredLoopExits/struct_exit_wrap_value_iteration_bug.ll
 @@ -0,0 +1,257 @@

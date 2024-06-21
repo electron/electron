@@ -1,7 +1,8 @@
-From b845fed991110a834225be67aeb89e0e205689dd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Natalie Chouinard <chouinard@google.com>
 Date: Mon, 10 Jun 2024 18:21:40 +0000
-Subject: [PATCH] Fix LoopDeletion incorrectly updating PHI with multiple duplicate inputs (#6643)
+Subject: Fix LoopDeletion incorrectly updating PHI with multiple duplicate
+ inputs (#6643)
 
 LoopDeletion was incorrectly updating PHI nodes in the target block when
 it had duplicate input edges. This happens, for example, when deleting a
@@ -15,13 +16,12 @@ Change-Id: I98b150bb9a164466eb84dd3d46f720d5d92ef909
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5616791
 Reviewed-by: Antonio Maiorano <amaiorano@google.com>
 Reviewed-by: dan sinclair <dsinclair@chromium.org>
----
 
 diff --git a/lib/Transforms/Scalar/LoopDeletion.cpp b/lib/Transforms/Scalar/LoopDeletion.cpp
-index 6c2c1d6..6cd1fba 100644
+index 6c2c1d60548f5a8a7939fee70728e8a34572b648..6cd1fba7c085b6d61dcb23b073358fc4c798e099 100644
 --- a/lib/Transforms/Scalar/LoopDeletion.cpp
 +++ b/lib/Transforms/Scalar/LoopDeletion.cpp
-@@ -195,15 +195,29 @@
+@@ -195,15 +195,29 @@ bool LoopDeletion::runOnLoop(Loop *L, LPPassManager &LPM) {
  
    // Rewrite phis in the exit block to get their inputs from
    // the preheader instead of the exiting block.
@@ -59,7 +59,7 @@ index 6c2c1d6..6cd1fba 100644
    // Update the dominator tree and remove the instructions and blocks that will
 diff --git a/tools/clang/test/DXC/Passes/DxilLoopDeletion/dxil-loop-deletion-phi-with-duplicate-preds.ll b/tools/clang/test/DXC/Passes/DxilLoopDeletion/dxil-loop-deletion-phi-with-duplicate-preds.ll
 new file mode 100644
-index 0000000..18f1319
+index 0000000000000000000000000000000000000000..62736bf2934a5db67ee75386431498f49e101f49
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/DxilLoopDeletion/dxil-loop-deletion-phi-with-duplicate-preds.ll
 @@ -0,0 +1,229 @@
