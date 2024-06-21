@@ -24,7 +24,6 @@ on:
         default: false
         required: false
   push:
-  pull_request:
 
 jobs:
   setup:
