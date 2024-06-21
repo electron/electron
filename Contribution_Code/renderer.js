@@ -1,48 +1,48 @@
-/**
- * This file is loaded via the <script> tag in the index.html file and will
- * be executed in the renderer process for that window. No Node.js APIs are
- * available in this process because `nodeIntegration` is turned off and
- * `contextIsolation` is turned on. Use the contextBridge API in `preload.js`
- * to expose Node.js functionality from the main process.
- */
-const body = document.body;
-const leftSidebar = document.getElementById('left-sidebar');
-const leftSidebarButton = document.getElementById("toggle-left-sidebr-button");
-const rightSidebar = document.getElementById('right-sidebar');
-const rightSidebarButton = document.getElementById("toggle-right-sidebr-button");
+const { ipcRenderer } = require('electron');
 
-const content = document.getElementById("content");
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('renderer.js loaded');
 
-let leftOpen = false;
-let rightOpen = false;
+  const leftSidebar = document.getElementById('left-sidebar');
+  const rightSidebar = document.getElementById('right-sidebar');
+  const content = document.getElementById('content');
 
-leftSidebarButton.addEventListener('click', () => {
-    // Fix content size while animation is happening
-    content.style.width = `${content.clientWidth}px`;
-    body.style.grid = '1fr / 1fr auto auto';
-    leftSidebar.style.width = 'auto';
-    setTimeout(() => {
-        content.style.width = 'auto';
-        body.style.grid = '1fr / auto 1fr auto';
-        leftSidebar.style.width = leftOpen ? '200px': '0';
-    }, 500);
+  document.getElementById('toggle-left-sidebar-button').addEventListener('click', () => {
+    console.log('Left sidebar toggle button clicked');
+    if (leftSidebar.style.transform === 'translateX(0%)') {
+      leftSidebar.style.transform = 'translateX(-100%)';
+      content.style.marginLeft = '0';
+      ipcRenderer.send('resize-window', { side: 'left', action: 'close' });
+    } else {
+      leftSidebar.style.transform = 'translateX(0%)';
+      content.style.marginLeft = '250px';
+      ipcRenderer.send('resize-window', { side: 'left', action: 'open' });
+    }
+  });
 
+  document.getElementById('toggle-right-sidebar-button').addEventListener('click', () => {
+    console.log('Right sidebar toggle button clicked');
+    if (rightSidebar.style.transform === 'translateX(0%)') {
+      rightSidebar.style.transform = 'translateX(100%)';
+      content.style.marginRight = '0';
+      ipcRenderer.send('resize-window', { side: 'right', action: 'close' });
+    } else {
+      rightSidebar.style.transform = 'translateX(0%)';
+      content.style.marginRight = '250px';
+      ipcRenderer.send('resize-window', { side: 'right', action: 'open' });
+    }
+  });
 
-    window.electronAPI.toggleLeftSidebar();
-    leftOpen = !leftOpen;
+  // Event listeners for right sidebar option buttons
+  document.querySelectorAll('.option-button').forEach(button => {
+    button.addEventListener('click', (event) => {
+      console.log(`${event.target.parentElement.querySelector('.option-text').innerText} button clicked`);
+      // Handle the specific action for each button here
+      // For example, open a new window, show a list, etc.
+    });
+  });
 });
 
-rightSidebarButton.addEventListener('click', () => {
-    // Fix content size while animation is happening
-    content.style.width = `${content.clientWidth}px`;
-    body.style.grid = '1fr / auto auto 1fr';
-    rightSidebar.style.width = 'auto';
-    setTimeout(() => {
-        content.style.width = 'auto';
-        body.style.grid = '1fr / auto 1fr auto';
-        rightSidebar.style.width = rightOpen ? '200px': '0';
-
-    }, 500);
 
     window.electronAPI.toggleRightSidebar();
     rightOpen = !rightOpen;
