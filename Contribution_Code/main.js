@@ -1,67 +1,54 @@
-// Modules to control application life and create native browser window
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('node:path')
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
 
-function createWindow () {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
+let mainWindow;
+const sidebarWidth = 250;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'src', 'preload.js'),
+      contextIsolation: false,
+      nodeIntegration: true
     }
-  })
+  });
 
-  // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
-
-  let leftOpen = false;
-  let rightOpen = false;
-
-  ipcMain.on('toggleLeftSidebar', () => {
-    const bounds = mainWindow.getBounds();
-
-    if (leftOpen) {
-      mainWindow.setBounds({ x: bounds.x + 200, width: bounds.width - 200}, true);
-    } else {
-      mainWindow.setBounds({ x: bounds.x - 200, width: bounds.width + 200}, true);
-    }
-
-    leftOpen = !leftOpen;
-  })
-
-  ipcMain.on('toggleRightSidebar', () => {
-    const bounds = mainWindow.getBounds();
-
-    if (rightOpen) {
-      mainWindow.setBounds({ width: bounds.width - 200}, true);
-    } else {
-      mainWindow.setBounds({ width: bounds.width + 200}, true);
-    }
-
-    rightOpen = !rightOpen;
-  })
+  mainWindow.loadFile('src/index.html');
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  createWindow()
+app.on('ready', createWindow);
 
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+});
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+ipcMain.on('resize-window', (event, { side, action }) => {
+  try {
+    const [currentWidth, currentHeight] = mainWindow.getSize();
+    let targetWidth = action === 'open' ? currentWidth + sidebarWidth : currentWidth - sidebarWidth;
+
+    function resize() {
+      const [width, height] = mainWindow.getSize();
+      if ((action === 'open' && width < targetWidth) || (action === 'close' && width > targetWidth)) {
+        mainWindow.setSize(width + (action === 'open' ? 10 : -10), height);
+        requestAnimationFrame(resize);
+      } else {
+        mainWindow.setSize(targetWidth, height);
+      }
+    }
+
+    resize();
+  } catch (error) {
+    console.error('Error resizing window:', error);
+  }
+});
