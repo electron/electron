@@ -1,0 +1,207 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zakhar Voit <voit@google.com>
+Date: Fri, 7 Jun 2024 11:26:03 +0000
+Subject: MediaSession: Use a MediaSessionImpl WeakPtr in
+ MediaSessionServiceImpl
+
+Currently, every time MediaSessionServiceImpl wants to talk to its
+associated MediaSessionImpl, it recalculates it from its
+RenderFrameHostId. This can lead to issues where a
+MediaSessionServiceImpl of a disconnected RenderFrameHost can no longer
+access the MediaSessionImpl to tell it that it is being deleted,
+leaving MediaSessionImpl with a dangling raw_ptr.
+
+(cherry picked from commit 1f0de3303671c6c041930c7f4f8a9ad017a7f211)
+
+(cherry picked from commit 11c5f7911caab6930812a515eac27e35776ba35c)
+
+Bug: 338929744
+Change-Id: I092d217d4a975b67a84280687ed5461a14ead98a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5577944
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/6367@{#1245}
+Cr-Original-Branched-From: d158c6dc6e3604e6f899041972edf26087a49740-refs/heads/main@{#1274542}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5583452
+Owners-Override: Michael Ershov <miersh@google.com>
+Commit-Queue: Michael Ershov <miersh@google.com>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Michael Ershov <miersh@google.com>
+Cr-Commit-Position: refs/branch-heads/6099@{#2035}
+Cr-Branched-From: e6ee4500f7d6549a9ac1354f8d056da49ef406be-refs/heads/main@{#1217362}
+
+diff --git a/content/browser/media/session/media_session_impl.cc b/content/browser/media/session/media_session_impl.cc
+index 5ccef5240eef2e3b5c82bc50b97331e1b2fb9f31..710aeb26aee5bcfd95fef96fc7b8be7aa27173ad 100644
+--- a/content/browser/media/session/media_session_impl.cc
++++ b/content/browser/media/session/media_session_impl.cc
+@@ -1669,6 +1669,10 @@ const base::UnguessableToken& MediaSessionImpl::GetRequestId() const {
+   return delegate_->request_id();
+ }
+ 
++base::WeakPtr<MediaSessionImpl> MediaSessionImpl::GetWeakPtr() {
++  return weak_factory_.GetWeakPtr();
++}
++
+ void MediaSessionImpl::RebuildAndNotifyActionsChanged() {
+   std::set<media_session::mojom::MediaSessionAction> actions =
+       routed_service_ ? routed_service_->actions()
+diff --git a/content/browser/media/session/media_session_impl.h b/content/browser/media/session/media_session_impl.h
+index 1f30f99fdd94617e3ddb8fb701c01201fbebf9df..af0f967b45e52778837ea716bc8290c6c0e20a6a 100644
+--- a/content/browser/media/session/media_session_impl.h
++++ b/content/browser/media/session/media_session_impl.h
+@@ -17,6 +17,7 @@
+ #include "base/containers/id_map.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/raw_ptr_exclusion.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/timer/timer.h"
+ #include "build/build_config.h"
+ #include "content/browser/media/session/audio_focus_delegate.h"
+@@ -346,6 +347,9 @@ class MediaSessionImpl : public MediaSession,
+   // Returns the Audio Focus request ID associated with this media session.
+   const base::UnguessableToken& GetRequestId() const;
+ 
++  // Returns a WeakPtr to `this`.
++  base::WeakPtr<MediaSessionImpl> GetWeakPtr();
++
+   CONTENT_EXPORT bool HasImageCacheForTest(const GURL& image_url) const;
+ 
+   // Make sure that all observers have received any pending callbacks from us,
+@@ -641,6 +645,8 @@ class MediaSessionImpl : public MediaSession,
+ 
+   media_session::mojom::RemotePlaybackMetadataPtr remote_playback_metadata_;
+ 
++  base::WeakPtrFactory<MediaSessionImpl> weak_factory_{this};
++
+   WEB_CONTENTS_USER_DATA_KEY_DECL();
+ };
+ 
+diff --git a/content/browser/media/session/media_session_service_impl.cc b/content/browser/media/session/media_session_service_impl.cc
+index 532d1161b5321fbe37552f1caca2d20782356f36..a3ca009421a22d51a9d85f4665dd769319d26c22 100644
+--- a/content/browser/media/session/media_session_service_impl.cc
++++ b/content/browser/media/session/media_session_service_impl.cc
+@@ -22,14 +22,16 @@ MediaSessionServiceImpl::MediaSessionServiceImpl(
+     : render_frame_host_id_(render_frame_host->GetGlobalId()),
+       playback_state_(blink::mojom::MediaSessionPlaybackState::NONE) {
+   MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnServiceCreated(this);
++  if (session) {
++    media_session_ = session->GetWeakPtr();
++    media_session_->OnServiceCreated(this);
++  }
+ }
+ 
+ MediaSessionServiceImpl::~MediaSessionServiceImpl() {
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnServiceDestroyed(this);
++  if (media_session_) {
++    media_session_->OnServiceDestroyed(this);
++  }
+ }
+ 
+ // static
+@@ -70,17 +72,17 @@ void MediaSessionServiceImpl::SetClient(
+ void MediaSessionServiceImpl::SetPlaybackState(
+     blink::mojom::MediaSessionPlaybackState state) {
+   playback_state_ = state;
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionPlaybackStateChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionPlaybackStateChanged(this);
++  }
+ }
+ 
+ void MediaSessionServiceImpl::SetPositionState(
+     const std::optional<media_session::MediaPosition>& position) {
+   position_ = position;
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->RebuildAndNotifyMediaPositionChanged();
++  if (media_session_) {
++    media_session_->RebuildAndNotifyMediaPositionChanged();
++  }
+ }
+ 
+ void MediaSessionServiceImpl::SetMetadata(
+@@ -102,48 +104,48 @@ void MediaSessionServiceImpl::SetMetadata(
+     metadata_ = std::move(metadata);
+   }
+ 
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionMetadataChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionMetadataChanged(this);
++  }
+ }
+ 
+ void MediaSessionServiceImpl::SetMicrophoneState(
+     media_session::mojom::MicrophoneState microphone_state) {
+   microphone_state_ = microphone_state;
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionInfoChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionInfoChanged(this);
++  }
+ }
+ 
+ void MediaSessionServiceImpl::SetCameraState(
+     media_session::mojom::CameraState camera_state) {
+   camera_state_ = camera_state;
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionInfoChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionInfoChanged(this);
++  }
+ }
+ 
+ void MediaSessionServiceImpl::EnableAction(
+     media_session::mojom::MediaSessionAction action) {
+   actions_.insert(action);
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionActionsChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionActionsChanged(this);
++  }
+ }
+ 
+ void MediaSessionServiceImpl::DisableAction(
+     media_session::mojom::MediaSessionAction action) {
+   actions_.erase(action);
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionActionsChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionActionsChanged(this);
++  }
+ }
+ 
+ void MediaSessionServiceImpl::ClearActions() {
+   actions_.clear();
+-  MediaSessionImpl* session = GetMediaSession();
+-  if (session)
+-    session->OnMediaSessionActionsChanged(this);
++  if (media_session_) {
++    media_session_->OnMediaSessionActionsChanged(this);
++  }
+ }
+ 
+ MediaSessionImpl* MediaSessionServiceImpl::GetMediaSession() {
+diff --git a/content/browser/media/session/media_session_service_impl.h b/content/browser/media/session/media_session_service_impl.h
+index 4eeffe2a8bbc532d15e5deb7bc77eebea41326cf..514c043648e70b3c29a57ddc5faabaf85e103491 100644
+--- a/content/browser/media/session/media_session_service_impl.h
++++ b/content/browser/media/session/media_session_service_impl.h
+@@ -85,6 +85,8 @@ class CONTENT_EXPORT MediaSessionServiceImpl
+ 
+   const GlobalRenderFrameHostId render_frame_host_id_;
+ 
++  base::WeakPtr<MediaSessionImpl> media_session_;
++
+   mojo::Remote<blink::mojom::MediaSessionClient> client_;
+   blink::mojom::MediaSessionPlaybackState playback_state_;
+   blink::mojom::SpecMediaMetadataPtr metadata_;
