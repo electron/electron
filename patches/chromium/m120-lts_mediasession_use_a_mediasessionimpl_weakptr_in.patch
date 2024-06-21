@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Zakhar Voit <voit@google.com>
 Date: Fri, 7 Jun 2024 11:26:03 +0000
-Subject: [M120-LTS] MediaSession: Use a MediaSessionImpl WeakPtr in
+Subject: MediaSession: Use a MediaSessionImpl WeakPtr in
  MediaSessionServiceImpl
 
 Currently, every time MediaSessionServiceImpl wants to talk to its

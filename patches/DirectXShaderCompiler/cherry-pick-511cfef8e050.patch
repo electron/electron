@@ -1,7 +1,7 @@
-From 511cfef8e0509d172fbfa156be8a97ed2b42590b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Mon, 27 May 2024 15:41:40 -0400
-Subject: [PATCH] Fix use-after-free in SimplifyCFG (#6628)
+Subject: Fix use-after-free in SimplifyCFG (#6628)
 
 When SimplifySwitchOnSelect calls SimplifyTerminatorOnSelect, it holds
 onto the select's condition value to use for the conditional branch it
@@ -19,13 +19,12 @@ Change-Id: Iff5d5f2e3ecf38a3fb22bbc65e7c33ad0de659fb
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5570018
 Reviewed-by: James Price <jrprice@google.com>
 Reviewed-by: Natalie Chouinard <chouinard@chromium.org>
----
 
 diff --git a/lib/Transforms/Utils/SimplifyCFG.cpp b/lib/Transforms/Utils/SimplifyCFG.cpp
-index b45caa2..0d3ba1e 100644
+index b45caa2929a5cc3aa064fdbd9c06c20ad9e1e155..0d3ba1e00719060c1e71fa238726f0c63bd5b32f 100644
 --- a/lib/Transforms/Utils/SimplifyCFG.cpp
 +++ b/lib/Transforms/Utils/SimplifyCFG.cpp
-@@ -2619,7 +2619,10 @@
+@@ -2619,7 +2619,10 @@ static bool SimplifyTerminatorOnSelect(TerminatorInst *OldTerm, Value *Cond,
      else if (Succ == KeepEdge2)
        KeepEdge2 = nullptr;
      else
@@ -39,7 +38,7 @@ index b45caa2..0d3ba1e 100644
    IRBuilder<> Builder(OldTerm);
 diff --git a/tools/clang/test/DXC/Passes/SimplifyCFG/simplifycfg-uaf-select-condition.ll b/tools/clang/test/DXC/Passes/SimplifyCFG/simplifycfg-uaf-select-condition.ll
 new file mode 100644
-index 0000000..01795aa
+index 0000000000000000000000000000000000000000..149906c11285ed99a19c0fe1743801a795827792
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/SimplifyCFG/simplifycfg-uaf-select-condition.ll
 @@ -0,0 +1,199 @@

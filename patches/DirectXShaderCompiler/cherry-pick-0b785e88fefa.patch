@@ -1,7 +1,8 @@
-From 0b785e88fefa6d58508e937970fc288f223eda4e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Fri, 24 May 2024 15:51:26 -0400
-Subject: [PATCH] Fix dxil-remove-dead-blocks removing switch with multiple same successor (#6610)
+Subject: Fix dxil-remove-dead-blocks removing switch with multiple same
+ successor (#6610)
 
 Given a switch with a constant condition and all cases the same
 (branching to the same successor), dxil-remove-dead-blocks would
@@ -14,10 +15,9 @@ Change-Id: Iaa2c42642f3e370afd19d88c96c81056c16349b6
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5570270
 Reviewed-by: Ben Clayton <bclayton@chromium.org>
 Reviewed-by: James Price <jrprice@google.com>
----
 
 diff --git a/lib/Transforms/Scalar/DxilRemoveDeadBlocks.cpp b/lib/Transforms/Scalar/DxilRemoveDeadBlocks.cpp
-index 54308ee..9a87f4e 100644
+index 54308eed2e018903e518be4a5ff809e080be78c0..9a87f4e6740c8da0522c6bf00f2a365f838cb3c0 100644
 --- a/lib/Transforms/Scalar/DxilRemoveDeadBlocks.cpp
 +++ b/lib/Transforms/Scalar/DxilRemoveDeadBlocks.cpp
 @@ -35,6 +35,7 @@
@@ -28,7 +28,7 @@ index 54308ee..9a87f4e 100644
  static void RemoveIncomingValueFrom(BasicBlock *SuccBB, BasicBlock *BB) {
    for (auto inst_it = SuccBB->begin(); inst_it != SuccBB->end();) {
      Instruction *I = &*(inst_it++);
-@@ -105,6 +106,8 @@
+@@ -105,6 +106,8 @@ bool DeadBlockDeleter::Run(Function &F, DxilValueCache *DVC) {
      } else if (SwitchInst *Switch = dyn_cast<SwitchInst>(BB->getTerminator())) {
        Value *Cond = Switch->getCondition();
        BasicBlock *Succ = nullptr;
@@ -37,7 +37,7 @@ index 54308ee..9a87f4e 100644
        if (ConstantInt *ConstCond = DVC->GetConstInt(Cond)) {
          Succ = hlsl::dxilutil::GetSwitchSuccessorForCond(Switch, ConstCond);
        }
-@@ -112,16 +115,32 @@
+@@ -112,16 +115,32 @@ bool DeadBlockDeleter::Run(Function &F, DxilValueCache *DVC) {
        if (Succ) {
          Add(Succ);
  
@@ -57,16 +57,16 @@ index 54308ee..9a87f4e 100644
 -          }
 +          else
 +            ++numSucc;
-         }
- 
++        }
++
 +        // We're replacing Switch with a single unconditional branch. If Switch
 +        // has N cases with the same Succ, we need to remove N-1 incoming values
 +        // of BB from the PHI nodes in Succ. This ensures that the preds of Succ
 +        // match the ones in its PHIs.
 +        for (unsigned i = 1; i < numSucc; i++) {
 +          RemoveIncomingValueFrom(Succ, BB);
-+        }
-+
+         }
+ 
 +        // Finally, erase Switch, which will remove BB as pred from all
 +        // successors.
          Switch->eraseFromParent();
@@ -74,7 +74,7 @@ index 54308ee..9a87f4e 100644
          Changed = true;
 diff --git a/tools/clang/test/DXC/Passes/DxilRemoveDeadBlocks/switch-with-multiple-same-successor.hlsl b/tools/clang/test/DXC/Passes/DxilRemoveDeadBlocks/switch-with-multiple-same-successor.hlsl
 new file mode 100644
-index 0000000..082786c
+index 0000000000000000000000000000000000000000..43c3510b2ce18b15ff74a0db4697898da807f49f
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/DxilRemoveDeadBlocks/switch-with-multiple-same-successor.hlsl
 @@ -0,0 +1,68 @@
@@ -148,7 +148,7 @@ index 0000000..082786c
 +}
 diff --git a/tools/clang/test/DXC/Passes/DxilRemoveDeadBlocks/switch-with-multiple-same-successor.ll b/tools/clang/test/DXC/Passes/DxilRemoveDeadBlocks/switch-with-multiple-same-successor.ll
 new file mode 100644
-index 0000000..704f419
+index 0000000000000000000000000000000000000000..d3e7e2f1e40c816c4ed28bfc45a1569e130f472c
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/DxilRemoveDeadBlocks/switch-with-multiple-same-successor.ll
 @@ -0,0 +1,369 @@
