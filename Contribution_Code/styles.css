@@ -1,22 +1,123 @@
-html {
-    height: 100%;
-}
 body {
-    display: grid;
-    grid: 1fr / auto 1fr auto;
+    font-family: Arial, sans-serif;
     margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  #left-sidebar, #right-sidebar {
+    width: 250px;
     height: 100%;
-}
-#left-sidebar {
-    width: 0;
-    background-color: lightcoral;
-    overflow: hidden;
-}
-.sidebar-content {
-    width: 200px;
-}
-#right-sidebar {
-    width: 0;
-    background-color: lightgreen;
-    overflow: hidden;
-}
+    position: fixed;
+    top: 0;
+    background: rgba(200, 200, 200, 0.8); /* Lighter gray and slightly transparent */
+    color: white;
+    transition: transform 0.3s ease, width 0.3s ease;
+  }
+  
+  #left-sidebar {
+    left: 0;
+    transform: translateX(-100%);
+  }
+  
+  #right-sidebar {
+    right: 0;
+    transform: translateX(100%);
+  }
+  
+  #content {
+    padding: 20px;
+    transition: margin-left 0.3s ease, margin-right 0.3s ease;
+  }
+  
+  .sidebar-content {
+    padding: 20px;
+  }
+  
+  button {
+    background-color: grey; /* Changed to grey */
+    border: none;
+    color: white;
+    width: 15px; /* Square shape */
+    height: 15px; /* Square shape */
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 5px; /* Margin to ensure buttons are not too close to the edges */
+    cursor: pointer;
+    border-radius: 3px; /* Slightly rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  button:hover {
+    background-color: #666; /* Slightly darker grey on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+  }
+  
+  button#toggle-left-sidebar-button {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1000; /* Ensure the button is always on top */
+  }
+  
+  button#toggle-right-sidebar-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000; /* Ensure the button is always on top */
+  }
+  
+  button i {
+    font-size: 16px; /* Font size for the icon */
+  }
+  
+  /* Styles for the search bar */
+  #search-bar {
+    width: calc(100% - 40px); /* Adjust to fit inside the sidebar with padding */
+    padding: 10px;
+    margin: 20px 10px;
+    border: none;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+  }
+  
+  /* Styles for option buttons in the right sidebar */
+  .option-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .option-text {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: black;
+  }
+  
+  .option-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .option-button i {
+    font-size: 24px;
+  }
+  
+  .option-button:hover {
+    transform: scale(1.1);
+  }
+  
