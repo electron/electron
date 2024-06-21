@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Mon, 17 Jun 2024 18:33:47 +0000
+Subject: dawn/dxc: disable DXC pass 'structurize-loop-exits-for-unroll'
+
+Multiple security bugs have been reported related to this optimization pass, and after careful consideration, we have decided to disable it.
+
+Bug: chromium:333508731
+Bug: chromium:339171223
+Bug: chromium:339169163
+Bug: chromium:346595893
+Change-Id: I5c9d7180ed09e7417c120595937bcb1013b6ce66
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/184422
+Commit-Queue: Antonio Maiorano <amaiorano@google.com>
+Reviewed-by: Natalie Chouinard <chouinard@google.com>
+Reviewed-by: Austin Eng <enga@chromium.org>
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/194160
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+
+diff --git a/src/dawn/native/d3d/ShaderUtils.cpp b/src/dawn/native/d3d/ShaderUtils.cpp
+index e1937ca2d5f9b84f3590c5cc3285850a06db5a5d..2d2d5dc49b971dc52ed39c29bb443e127e6d5166 100644
+--- a/src/dawn/native/d3d/ShaderUtils.cpp
++++ b/src/dawn/native/d3d/ShaderUtils.cpp
+@@ -58,6 +58,10 @@ std::vector<const wchar_t*> GetDXCArguments(std::wstring_view entryPointNameW,
+     arguments.push_back(L"-E");
+     arguments.push_back(entryPointNameW.data());
+ 
++    // TODO(chromium:346595893): Disable buggy DXC pass
++    arguments.push_back(L"-opt-disable");
++    arguments.push_back(L"structurize-loop-exits-for-unroll");
++
+     uint32_t compileFlags = r.compileFlags;
+     if (compileFlags & D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY) {
+         arguments.push_back(L"/Gec");
