@@ -1,76 +1,136 @@
----
-title: 'Introduction'
-description: 'Welcome to the Electron documentation! If this is your first time developing an Electron app, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
-slug: /latest/
-hide_title: false
----
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Area Calculator</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url("C:/Users/nitro/Desktop/anime_girl.png"); /* Путь к вашему изображению */
+    background-size: cover; /* Масштабирование изображения */
+    background-repeat: no-repeat; /* Запрет повторения изображения */
+}
+    </style>
 
-# What is Electron?
+</head>
 
-Electron is a framework for building desktop applications using JavaScript,
-HTML, and CSS. By embedding [Chromium][chromium] and [Node.js][node] into its
-binary, Electron allows you to maintain one JavaScript codebase and create
-cross-platform apps that work on Windows, macOS, and Linux — no native development
-experience required.
+<body>
+    <h2>Здраствуйте,Спасибо что используете мой сайт для подсчета площади!</h2>
 
-## Getting started
+    <!DOCTYPE html>
+<html>
+<head>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Area Calculator</title>
+    <style>
 
-We recommend you to start with the [tutorial][], which guides you through the
-process of developing an Electron app and distributing it to users.
-The [examples][] and [API documentation][] are also good places to browse around
-and discover new things.
 
-## Running examples with Electron Fiddle
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            color: #333;
+        }
+        h3 {
+            color: #666;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #0078d4;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005a9e;
+        }
+        input[type="text"] {
+            width: 100px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
 
-[Electron Fiddle][fiddle] is a sandbox app written with Electron and supported by
-Electron's maintainers. We highly recommend installing it as a learning tool to
-experiment with Electron's APIs or to prototype features during development.
+    <!-- Your existing HTML code here -->
+</body>
 
-Fiddle also integrates nicely with our documentation. When browsing through examples
-in our tutorials, you'll frequently see an "Open in Electron Fiddle" button underneath
-a code block. If you have Fiddle installed, this button will open a
-`fiddle.electronjs.org` link that will automatically load the example into Fiddle,
-no copy-pasting required.
+</html>
 
-```fiddle docs/fiddles/quick-start
-```
+<title>Area Calculator</title>
+<script>
+function calculateCircleArea() {
+    var radius = document.getElementById('circle-radius').value;
+    var area = Math.PI * radius * radius;
+    document.getElementById('circle-area').value = area.toFixed(2);
+}
 
-## What is in the docs?
+function calculateTriangleArea() {
+    var base = document.getElementById('triangle-base').value;
+    var height = document.getElementById('triangle-height').value;
+    var area = 0.5 * base * height;
+    document.getElementById('triangle-area').value = area.toFixed(2);
+}
 
-All the official documentation is available from the sidebar. These
-are the different categories and what you can expect on each one:
+function calculateSquareArea() {
+    var side = document.getElementById('square-side').value;
+    var area = side * side;
+    document.getElementById('square-area').value = area.toFixed(2);
+}
+</script>
+</head>
 
-- **Tutorial**: An end-to-end guide on how to create and publish your first Electron
-  application.
-- **Processes in Electron**: In-depth reference on Electron processes and how to work with them.
-- **Best Practices**: Important checklists to keep in mind when developing an Electron app.
-- **Examples**: Quick references to add features to your Electron app.
-- **Development**: Miscellaneous development guides.
-- **Distribution**: Learn how to distribute your app to end users.
-- **Testing And Debugging**: How to debug JavaScript, write tests, and other tools used
-  to create quality Electron applications.
-- **References**: Useful links to better understand how the Electron project works
-  and is organized.
-- **Contributing**: Compiling Electron and making contributions can be daunting.
-  We try to make it easier in this section.
+<body>
 
-## Getting help
+<h2>Area Calculator</h2>
 
-Are you getting stuck anywhere? Here are a few links to places to look:
+<h3>Circle</h3>
+<label for="circle-radius">Radius:</label>
+<input type="number" id="circle-radius" name="circle-radius" placeholder="Enter radius" required>
+<button onclick="calculateCircleArea()">Calculate Area</button>
+<label for="circle-area">Area:</label>
+<input type="text" id="circle-area" name="circle-area" placeholder="Area will be shown here" readonly>
 
-- If you need help with developing your app, our [community Discord server][discord]
-  is a great place to get advice from other Electron app developers.
-- If you suspect you're running into a bug with the `electron` package, please check
-  the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
-  problem. If not, feel free to fill out our bug report template and submit a new issue.
+<h3>Triangle</h3>
+<label for="triangle-base">Base:</label>
+<input type="number" id="triangle-base" name="triangle-base" placeholder="Enter base" required>
+<label for="triangle-height">Height:</label>
+<input type="number" id="triangle-height" name="triangle-height" placeholder="Enter height" required>
+<button onclick="calculateTriangleArea()">Calculate Area</button>
+<label for="triangle-area">Area:</label>
+<input type="text" id="triangle-area" name="triangle-area" placeholder="Area will be shown here" readonly>
 
-<!-- Links -->
+<h3>Square</h3>
+<label for="square-side">Side:</label>
+<input type="number" id="square-side" name="square-side" placeholder="Enter side length" required>
+<button onclick="calculateSquareArea()">Calculate Area</button>
+<label for="square-area">Area:</label>
+<input type="text" id="square-area" name="square-area" placeholder="Area will be shown here" readonly>
 
-[tutorial]: tutorial-1-prerequisites.md
-[api documentation]: ../api/app.md
-[chromium]: https://www.chromium.org/
-[discord]: https://discord.gg/electronjs
-[examples]: examples.md
-[fiddle]: https://www.electronjs.org/fiddle
-[issue-tracker]: https://github.com/electron/electron/issues
-[node]: https://nodejs.org/
+</body>
+
+</html>
+</body>
+</html>
+
