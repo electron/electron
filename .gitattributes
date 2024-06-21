@@ -2,6 +2,8 @@
 # files to be checked out with LF endings even if core.autocrlf is true.
 *.patch text eol=lf
 patches/**/.patches merge=union
+# Target file for patch has CRLF line endings
+patches/nan/apply_allcan_read_write_test.patch eol=crlf
 
 # Source code and markdown files should always use LF as line ending.
 *.c text eol=lf
