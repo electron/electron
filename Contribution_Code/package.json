@@ -1,16 +1,14 @@
 {
-  "name": "Documents",
-  "productName": "Documents",
-  "description": "My Electron application description",
-  "keywords": [],
-  "main": "./main.js",
-  "version": "1.0.0",
-  "author": "matt",
-  "scripts": {
-    "start": "electron ."
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "electron": "30.0.2"
+    "name": "open-source",
+    "version": "1.0.0",
+    "description": "Open-Source Contribution for application sidebar issue",
+    "main": "main.js",
+    "author": "Juan",
+    "scripts": {
+      "start": "electron ."
+    },
+    "devDependencies": {
+        "electron": "30.0.2"
+    }
   }
-}
+  
