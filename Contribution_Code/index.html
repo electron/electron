@@ -1,32 +1,48 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div id="left-sidebar">
-      <div class="sidebar-content">Left Sidebar</div>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <title>Enhanced Sidebar Example</title>
+  <!-- Add Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="left-sidebar">
+    <div class="sidebar-content">
+      <input type="text" id="search-bar" placeholder="Search...">
     </div>
-    <div id="content">
-      <button id="toggle-left-sidebr-button">Open Left Sidebar</button>
-      <button id="toggle-right-sidebr-button">Open Right Sidebar</button>
-      <h1>Hello World!</h1>
-      <p>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-      </p>
-      <p>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-      </p>
+  </div>
+  <div id="content">
+    <button id="toggle-left-sidebar-button"><i class="fas fa-arrow-right"></i></button>
+    <button id="toggle-right-sidebar-button"><i class="fas fa-arrow-left"></i></button>
+    <h1>Hello World!</h1>
+    <p>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </p>
+    <p>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </p>
+  </div>
+  <div id="right-sidebar">
+    <div class="sidebar-content">
+      <div class="option-container">
+        <span class="option-text">My List</span>
+        <button class="option-button" style="background-color: #4CAF50;"><i class="fas fa-list"></i></button>
+      </div>
+      <div class="option-container">
+        <span class="option-text">Favorites</span>
+        <button class="option-button" style="background-color: #FF5722;"><i class="fas fa-heart"></i></button>
+      </div>
+      <div class="option-container">
+        <span class="option-text">Settings</span>
+        <button class="option-button" style="background-color: #2196F3;"><i class="fas fa-cog"></i></button>
+      </div>
     </div>
-    <div id="right-sidebar">
-      <div class="sidebar-content">Right Sidebar</div>
-    </div>
-
-    <!-- You can also require other files to run in this process -->
-    <script src="./renderer.js"></script>
-  </body>
+  </div>
+  <script src="./renderer.js"></script>
+</body>
 </html>
+
+
