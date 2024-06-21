@@ -50,13 +50,11 @@ jobs:
       id: set-output
       run: |
         if [ -z "${{ inputs.build-image-sha }}" ]; then
-          echo "build-image-sha=${{ inputs.build-image-sha }}" << $GITHUB_OUTPUT
+          echo "build-image-sha=cf814a4d2501e8e843caea071a6b70a48e78b855" >> "$GITHUB_OUTPUT"
         else
-          echo "build-image-sha='cf814a4d2501e8e843caea071a6b70a48e78b855'" << $GITHUB_OUTPUT
+          echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
         fi
-        if [ "${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" ]; then
-          echo "docs-only=true" << $GITHUB_OUTPUT
-        fi
+        echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
   lint:
