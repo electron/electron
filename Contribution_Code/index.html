@@ -2,21 +2,22 @@
 <html>
 <head>
   <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
   <title>Enhanced Sidebar Example</title>
-  <!-- Add Font Awesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div id="left-sidebar">
     <div class="sidebar-content">
+      <!-- Adding this to provide to provide a search functionality -->
       <input type="text" id="search-bar" placeholder="Search...">
     </div>
   </div>
   <div id="content">
-    <button id="toggle-left-sidebar-button"><i class="fas fa-arrow-right"></i></button>
-    <button id="toggle-right-sidebar-button"><i class="fas fa-arrow-left"></i></button>
+    <!--Adjusted toggle buttons and improved visual clarity and user experience-->
+    <button id="toggle-left-sidebar-button"></button>
+    <button id="toggle-right-sidebar-button"></button>
     <h1>Hello World!</h1>
     <p>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
@@ -27,6 +28,7 @@
   </div>
   <div id="right-sidebar">
     <div class="sidebar-content">
+      <!--Add functionality options to the right side bar-->
       <div class="option-container">
         <span class="option-text">My List</span>
         <button class="option-button" style="background-color: #4CAF50;"><i class="fas fa-list"></i></button>
@@ -44,5 +46,6 @@
   <script src="./renderer.js"></script>
 </body>
 </html>
+
 
 
