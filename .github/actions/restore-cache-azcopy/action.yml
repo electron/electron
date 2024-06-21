@@ -5,14 +5,14 @@ runs:
   steps:
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@v4
+    uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
     with:
       path: |
         sas-token
       key: sas-key-${{ github.run_number }}-1
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@v4
+    uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
     with:
       path: |
         sas-token
@@ -30,7 +30,7 @@ runs:
         sas_token=$(cat sas-token)
         if [ -z $sas-token ]; then
           echo "SAS Token not found; exiting src cache download early..."
-          exit code 1
+          exit 1
         fi
         azcopy copy \
           "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
