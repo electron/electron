@@ -1,7 +1,7 @@
-From 93c3cf1c787f45336d074da3ad8984116f979c32 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Natalie Chouinard <chouinard@google.com>
 Date: Fri, 14 Jun 2024 13:29:19 +0000
-Subject: [PATCH] Fix another UAF in SimplifyCFG (#6680)
+Subject: Fix another UAF in SimplifyCFG (#6680)
 
 In certain cases of unreachable code, SimplifyCFG could try to replace a
 phi node with a select where the phi node itself was the select's
@@ -21,13 +21,12 @@ Change-Id: I743e96fb172de867c89cad51805edf96387c04ec
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5631796
 Reviewed-by: Antonio Maiorano <amaiorano@google.com>
 Reviewed-by: James Price <jrprice@google.com>
----
 
 diff --git a/lib/Transforms/Utils/SimplifyCFG.cpp b/lib/Transforms/Utils/SimplifyCFG.cpp
-index 0d3ba1e..5b36485 100644
+index 0d3ba1e00719060c1e71fa238726f0c63bd5b32f..5b364856928af6aab007e958b24f1daea32cd733 100644
 --- a/lib/Transforms/Utils/SimplifyCFG.cpp
 +++ b/lib/Transforms/Utils/SimplifyCFG.cpp
-@@ -1830,6 +1830,14 @@
+@@ -1830,6 +1830,14 @@ static bool FoldTwoEntryPHINode(PHINode *PN, const TargetTransformInfo &TTI,
        isa<ConstantInt>(IfCond))
      return false;
  
@@ -44,7 +43,7 @@ index 0d3ba1e..5b36485 100644
    // At some point this becomes non-profitable (particularly if the target
 diff --git a/tools/clang/test/DXC/Passes/SimplifyCFG/simplifycfg-uaf-phi-condition.ll b/tools/clang/test/DXC/Passes/SimplifyCFG/simplifycfg-uaf-phi-condition.ll
 new file mode 100644
-index 0000000..7e1ee87
+index 0000000000000000000000000000000000000000..573745a819fd1b51e3163d644088738d5128d30c
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/SimplifyCFG/simplifycfg-uaf-phi-condition.ll
 @@ -0,0 +1,263 @@
