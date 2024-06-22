@@ -24,7 +24,7 @@ index de78ee035a47f8929b9bf357cdb571964791d4ce..16ed90ca643a4d2f81e17e34c02fa3d9
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 3da1345bb79d162ace0aa6ae73adc0db8bcc5a41..966a1b9e34ac9462f70957209746cfe2bf7321bc 100644
+index abb2812168104f912f1e30132ed188083f62c34e..3d2d66d60db936e5b25ccb51d2a1dab21a3e3060 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -27,9 +27,11 @@
@@ -51,8 +51,8 @@ index 3da1345bb79d162ace0aa6ae73adc0db8bcc5a41..966a1b9e34ac9462f70957209746cfe2
 +class WebContentsView;
  class WebContentsAccessibility;
  class DelegatedFrameHost;
- 
-@@ -226,6 +230,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+ class SyntheticGestureTarget;
+@@ -232,6 +236,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  
@@ -62,7 +62,7 @@ index 3da1345bb79d162ace0aa6ae73adc0db8bcc5a41..966a1b9e34ac9462f70957209746cfe2
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -276,6 +283,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -282,6 +289,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    // non-embeddable derived views.
    virtual RenderWidgetHostViewBase* GetRootView();
  
