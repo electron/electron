@@ -160,5 +160,6 @@
   "sequential/test-single-executable-application-snapshot-and-code-cache",
   "sequential/test-single-executable-application-use-code-cache",
   "sequential/test-tls-connect",
-  "wpt/test-webcrypto"
+  "wpt/test-webcrypto",
+  "wasm-allocation/test-wasm-allocation"
 ]
