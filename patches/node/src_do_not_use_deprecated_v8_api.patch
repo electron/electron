@@ -104,10 +104,10 @@ index 3f82db324d406e342abee23ab0d7f7c9807ff652..91ee97c0d1308e650730b9977facb924
  
    SetMethod(isolate, target, "getCacheUsage", BuiltinLoader::GetCacheUsage);
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index 17c0b2d7e1a440b5280a090ad043858faf99f009..24f0c6771720d8a6cdb684a0d562d01564d433f7 100644
+index a3317d25ad6a963751073287dba71cc766ada2a2..9238f2d4d7376b22e264dbc9359b480937d29676 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
-@@ -63,8 +63,6 @@ class ExternalReferenceRegistry {
+@@ -57,8 +57,6 @@ class ExternalReferenceRegistry {
    V(CFunctionWithBool)                                                         \
    V(const v8::CFunctionInfo*)                                                  \
    V(v8::FunctionCallback)                                                      \

@@ -22,10 +22,10 @@ index 1fad20645d059ad5f3efaa9279f582f99cb1006b..4fbb33550e8a044b92997a42eb6603f1
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
 diff --git a/configure.py b/configure.py
-index c30052f02f97df78e0d9294784cb3efb3fd2d1a7..5fb89e56fde52d01b3806ec4e8549cbeb5ffca66 100755
+index 2c24db93618f88f5f07e95a3edf63fb7942ac009..4e6dc7378e4435b90246eb072379cea1bfdad09c 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1515,6 +1515,7 @@ def configure_v8(o):
+@@ -1573,6 +1573,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_maglev'] = 1 if options.v8_enable_maglev else 0
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
