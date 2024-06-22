@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Thu, 6 Jun 2024 16:44:37 +0200
+Subject: Merged: [wasm] Enforce maximum number of canonicalized types
+
+Storing canonical indices in ValueTypes doesn't work well if the
+canonical index is too large.
+
+Fixed: 344608204
+(cherry picked from commit 422cdc5eddcadb53b8eafb099722fb211a35739e)
+
+Change-Id: Id281d6a38e8f2c64c42352f2d3dd3df54e289525
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5625825
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.6@{#30}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/wasm/canonical-types.cc b/src/wasm/canonical-types.cc
+index ea6e0d6c6a49c281f715a005bcd40e1fb25ee802..a048c8bddb841f4d08234374e8e4e50d0a3f2c3c 100644
+--- a/src/wasm/canonical-types.cc
++++ b/src/wasm/canonical-types.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "src/wasm/canonical-types.h"
+ 
++#include "src/init/v8.h"
+ #include "src/wasm/std-object-sizes.h"
+ #include "src/wasm/wasm-engine.h"
+ 
+@@ -20,6 +21,19 @@ TypeCanonicalizer::TypeCanonicalizer() {
+   AddPredefinedArrayType(kPredefinedArrayI16Index, kWasmI16);
+ }
+ 
++// We currently store canonical indices in {ValueType} instances, so they
++// must fit into the range of valid module-relative (non-canonical) type
++// indices.
++// TODO(jkummerow): Raise this limit, to make long-lived WasmEngines scale
++// better. Plan: stop constructing ValueTypes from canonical type indices.
++static constexpr size_t kMaxCanonicalTypes = kV8MaxWasmTypes;
++
++void TypeCanonicalizer::CheckMaxCanonicalIndex() const {
++  if (canonical_supertypes_.size() > kMaxCanonicalTypes) {
++    V8::FatalProcessOutOfMemory(nullptr, "too many canonicalized types");
++  }
++}
++
+ void TypeCanonicalizer::AddRecursiveGroup(WasmModule* module, uint32_t size) {
+   AddRecursiveGroup(module, size,
+                     static_cast<uint32_t>(module->types.size() - size));
+@@ -60,6 +74,7 @@ void TypeCanonicalizer::AddRecursiveGroup(WasmModule* module, uint32_t size,
+   uint32_t first_canonical_index =
+       static_cast<uint32_t>(canonical_supertypes_.size());
+   canonical_supertypes_.resize(first_canonical_index + size);
++  CheckMaxCanonicalIndex();
+   for (uint32_t i = 0; i < size; i++) {
+     CanonicalType& canonical_type = group.types[i];
+     // Compute the canonical index of the supertype: If it is relative, we
+@@ -106,6 +121,7 @@ void TypeCanonicalizer::AddRecursiveSingletonGroup(WasmModule* module,
+   uint32_t first_canonical_index =
+       static_cast<uint32_t>(canonical_supertypes_.size());
+   canonical_supertypes_.resize(first_canonical_index + 1);
++  CheckMaxCanonicalIndex();
+   CanonicalType& canonical_type = group.type;
+   // Compute the canonical index of the supertype: If it is relative, we
+   // need to add {first_canonical_index}.
+@@ -149,6 +165,7 @@ uint32_t TypeCanonicalizer::AddRecursiveGroup(const FunctionSig* sig) {
+   group.type.is_relative_supertype = false;
+   canonical_singleton_groups_.emplace(group, canonical_index);
+   canonical_supertypes_.emplace_back(kNoSuperType);
++  CheckMaxCanonicalIndex();
+   return canonical_index;
+ }
+ 
+@@ -164,6 +181,7 @@ void TypeCanonicalizer::AddPredefinedArrayType(uint32_t index,
+   group.type.is_relative_supertype = false;
+   canonical_singleton_groups_.emplace(group, index);
+   canonical_supertypes_.emplace_back(kNoSuperType);
++  DCHECK_LE(canonical_supertypes_.size(), kMaxCanonicalTypes);
+ }
+ 
+ ValueType TypeCanonicalizer::CanonicalizeValueType(
+diff --git a/src/wasm/canonical-types.h b/src/wasm/canonical-types.h
+index 7a882acaa00c5e826b7e8adc0a27817f28450c3c..c35d350626f6cbbd8b8f8197940a0127b674c15c 100644
+--- a/src/wasm/canonical-types.h
++++ b/src/wasm/canonical-types.h
+@@ -161,6 +161,8 @@ class TypeCanonicalizer {
+   ValueType CanonicalizeValueType(const WasmModule* module, ValueType type,
+                                   uint32_t recursive_group_start) const;
+ 
++  void CheckMaxCanonicalIndex() const;
++
+   std::vector<uint32_t> canonical_supertypes_;
+   // Maps groups of size >=2 to the canonical id of the first type.
+   std::unordered_map<CanonicalGroup, uint32_t, base::hash<CanonicalGroup>>
