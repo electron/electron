@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index aae7deac75e0157725d827d54204c451e0c2691e..e1686e6818d1354bb40001f92c425407dcb6711a 100644
+index ba2ec653757232519c442e9fa5f88441470c61a0..432e139370208f93e2af655dd2d5491ba4d15904 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -45,6 +45,7 @@
@@ -18,9 +18,9 @@ index aae7deac75e0157725d827d54204c451e0c2691e..e1686e6818d1354bb40001f92c425407
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/string_util.h"
  #include "base/task/single_thread_task_runner.h"
-@@ -267,8 +268,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
- 
- #endif
+@@ -281,8 +282,13 @@ void AsanProcessInfoCB(const char*, bool*) {
+ }
+ #endif  // defined(ADDRESS_SANITIZER)
  
 -void LoadV8SnapshotFile(const base::CommandLine& command_line) {
 +void LoadV8SnapshotFile(const raw_ptr<ContentMainDelegate> delegate, const base::CommandLine& command_line) {
@@ -33,7 +33,7 @@ index aae7deac75e0157725d827d54204c451e0c2691e..e1686e6818d1354bb40001f92c425407
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -297,11 +303,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -311,11 +317,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -48,7 +48,7 @@ index aae7deac75e0157725d827d54204c451e0c2691e..e1686e6818d1354bb40001f92c425407
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -977,7 +984,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -991,7 +998,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
