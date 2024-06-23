@@ -623,6 +623,36 @@ describe('net module', () => {
         }, { dest });
       }
 
+      for (const [priorityName, urgency] of Object.entries({
+        throttled: 'u=5',
+        idle: 'u=4',
+        lowest: '',
+        low: 'u=2',
+        medium: 'u=1',
+        highest: 'u=0'
+      })) {
+        for (const priorityIncremental of [true, false]) {
+          test(`should set priority to ${priorityName}/${priorityIncremental} if requested`, async () => {
+            const urlRequest = net.request({
+              url: 'https://httpbin.org/get',
+              priority: priorityName as any,
+              priorityIncremental: priorityIncremental
+            });
+            const response = await getResponse(urlRequest);
+            const data = JSON.parse(await collectStreamBody(response));
+            let expectedPriority = urgency;
+            if (priorityIncremental) {
+              expectedPriority = expectedPriority ? expectedPriority + ', i' : 'i';
+            }
+            if (expectedPriority === '') {
+              expect(data.headers.Priority).to.be.undefined();
+            } else {
+              expect(data.headers.Priority).to.be.a('string').and.equal(expectedPriority);
+            }
+          }, { priorityName, urgency, priorityIncremental });
+        }
+      }
+
       test('should be able to abort an HTTP request before first write', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
           response.end();
