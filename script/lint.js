@@ -252,8 +252,10 @@ const LINTERS = [{
 
     const allOk = filenames.length > 0 && filenames.map(f => {
       const patchText = fs.readFileSync(f, 'utf8');
-      const subjectAndDescription = /Subject: (.*?)\n\n([\s\S]*?)\s*(?=diff)/ms.exec(patchText);
-      if (!subjectAndDescription[2]) {
+
+      const regex = /Subject: (.*?)\n\n([\s\S]*?)\s*(?=diff)/ms;
+      const subjectAndDescription = regex.exec(patchText);
+      if (!subjectAndDescription?.[2]) {
         console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`);
         return false;
       }
