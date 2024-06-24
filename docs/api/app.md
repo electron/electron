@@ -1491,9 +1491,9 @@ Returns `Promise<string>` - Resolves with the proxy information for `url` that w
 
 ### `app.setClientCertRequestPasswordHandler(handler)`  _Linux_
 
-* `handler` Function<Promise<string>>
+* `handler` Function\<Promise\<string\>\>
   * `clientCertRequestParams` Object
-    * `hostName` string - the hostname of the site requiring a client certificate
+    * `hostname` string - the hostname of the site requiring a client certificate
     * `tokenName` string - the token (or slot) name of the cryptographic device
     * `isRetry` boolean - whether there have been failed attempt at prompting the password
 
@@ -1514,8 +1514,8 @@ async function passwordPromptUI (text) {
   })
 }
 
-app.setClientCertRequestPasswordHandler(async ({ hostName, tokenName, isRetry }) => {
-  const text = `Please sign in to ${tokenName} to authenticate to ${hostName} with your certificate`
+app.setClientCertRequestPasswordHandler(async ({ hostname, tokenName, isRetry }) => {
+  const text = `Please sign in to ${tokenName} to authenticate to ${hostname} with your certificate`
   const password = await passwordPromptUI(text)
   return password
 })

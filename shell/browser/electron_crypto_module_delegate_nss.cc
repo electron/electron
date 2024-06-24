@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/crypto_module_delegate_nss.h"
+#include "shell/browser/electron_crypto_module_delegate_nss.h"
 
 #include "crypto/nss_crypto_module_delegate.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -11,15 +11,15 @@
 #include "shell/common/gin_helper/callback.h"
 #include "shell/common/v8_value_serializer.h"
 
-ChromeNSSCryptoModuleDelegate::ChromeNSSCryptoModuleDelegate(
+ElectronNSSCryptoModuleDelegate::ElectronNSSCryptoModuleDelegate(
     const net::HostPortPair& server)
     : server_(server),
       event_(base::WaitableEvent::ResetPolicy::AUTOMATIC,
              base::WaitableEvent::InitialState::NOT_SIGNALED) {}
 
-ChromeNSSCryptoModuleDelegate::~ChromeNSSCryptoModuleDelegate() = default;
+ElectronNSSCryptoModuleDelegate::~ElectronNSSCryptoModuleDelegate() = default;
 
-std::string ChromeNSSCryptoModuleDelegate::RequestPassword(
+std::string ElectronNSSCryptoModuleDelegate::RequestPassword(
     const std::string& token_name,
     bool retry,
     bool* cancelled) {
@@ -29,16 +29,16 @@ std::string ChromeNSSCryptoModuleDelegate::RequestPassword(
   if (content::GetUIThreadTaskRunner({})->PostTask(
           FROM_HERE,
           base::BindOnce(
-              &ChromeNSSCryptoModuleDelegate::RequestPasswordOnUIThread, this,
+              &ElectronNSSCryptoModuleDelegate::RequestPasswordOnUIThread, this,
               token_name, retry))) {
-    base::ScopedAllowBaseSyncPrimitives allow_wait;
+    base::ScopedAllowBaseSyncPrimitivesForTesting allow_wait;
     event_.Wait();
   }
   *cancelled = cancelled_;
   return password_;
 }
 
-void ChromeNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
+void ElectronNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
     const std::string& token_name,
     bool retry) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -50,13 +50,13 @@ void ChromeNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
   gin_helper::Dictionary dict(isolate, event_object);
-  dict.Set("hostName", server_.host());
+  dict.Set("hostname", server_.host());
   dict.Set("tokenName", token_name);
   dict.Set("isRetry", retry);
 
   electron::api::App::Get()->EmitWithoutEvent(
       "-client-certificate-request-password", event_object,
-      base::BindOnce(&ChromeNSSCryptoModuleDelegate::OnPassword, this));
+      base::BindOnce(&ElectronNSSCryptoModuleDelegate::OnPassword, this));
 
   if (!event->GetDefaultPrevented()) {
     password_ = "";
@@ -65,7 +65,7 @@ void ChromeNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
   }
 }
 
-void ChromeNSSCryptoModuleDelegate::OnPassword(gin::Arguments* args) {
+void ElectronNSSCryptoModuleDelegate::OnPassword(gin::Arguments* args) {
   args->GetNext(&password_);
   cancelled_ = password_.empty();
   event_.Signal();

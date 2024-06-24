@@ -128,7 +128,7 @@
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
-#include "shell/browser/crypto_module_delegate_nss.h"
+#include "shell/browser/electron_crypto_module_delegate_nss.h"
 #elif BUILDFLAG(IS_WIN)
 #include "net/ssl/client_cert_store_win.h"
 #elif BUILDFLAG(IS_MAC)
@@ -785,7 +785,7 @@ ElectronBrowserClient::CreateClientCertStore(
   return std::make_unique<net::ClientCertStoreNSS>(
       base::BindRepeating([](const net::HostPortPair& server) {
         crypto::CryptoModuleBlockingPasswordDelegate* delegate =
-            new ChromeNSSCryptoModuleDelegate(server);
+            new ElectronNSSCryptoModuleDelegate(server);
         return delegate;
       }));
 #elif BUILDFLAG(IS_WIN)

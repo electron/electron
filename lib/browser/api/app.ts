@@ -119,11 +119,11 @@ app.setClientCertRequestPasswordHandler = function (handler: (params: Electron.C
 
 app.on('-client-certificate-request-password', async (event: Electron.Event<Electron.ClientCertRequestParams>, callback: (password: string) => void) => {
   event.preventDefault();
-  const { hostName, tokenName, isRetry } = event;
+  const { hostname, tokenName, isRetry } = event;
   if (!app._clientCertRequestPasswordHandler) {
     callback('');
     return;
   }
-  const password = await app._clientCertRequestPasswordHandler({ hostName, tokenName, isRetry });
+  const password = await app._clientCertRequestPasswordHandler({ hostname, tokenName, isRetry });
   callback(password);
 });

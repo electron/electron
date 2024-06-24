@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_CRYPTO_MODULE_DELEGATE_NSS_H_
 
 #include "base/synchronization/waitable_event.h"
+#include "base/threading/thread_restrictions.h"
 #include "crypto/nss_crypto_module_delegate.h"
 #include "net/base/host_port_pair.h"
 
@@ -13,26 +14,22 @@ namespace gin {
 class Arguments;
 }
 
-// RequestPassword need acces access to base sync primitives.
-// ScopedAllowBaseSyncPrimitives is a friend of ChromeNSSCryptoModuleDelegate,
-// the chrome implementation of CryptoModuleBlockingPasswordDelegate. By naming
-// our class CryptoModuleBlockingPasswordDelegate in the global namespace, we
-// avoid the need to modify base::ScopedAllowBaseSyncPrimitives
-class ChromeNSSCryptoModuleDelegate
+class ElectronNSSCryptoModuleDelegate
     : public crypto::CryptoModuleBlockingPasswordDelegate {
  public:
-  explicit ChromeNSSCryptoModuleDelegate(const net::HostPortPair& server);
-  ChromeNSSCryptoModuleDelegate(const ChromeNSSCryptoModuleDelegate&) = delete;
-  ChromeNSSCryptoModuleDelegate& operator=(
-      const ChromeNSSCryptoModuleDelegate&) = delete;
+  explicit ElectronNSSCryptoModuleDelegate(const net::HostPortPair& server);
+  ElectronNSSCryptoModuleDelegate(const ElectronNSSCryptoModuleDelegate&) =
+      delete;
+  ElectronNSSCryptoModuleDelegate& operator=(
+      const ElectronNSSCryptoModuleDelegate&) = delete;
 
   std::string RequestPassword(const std::string& token_name,
                               bool retry,
                               bool* cancelled) override;
 
  private:
-  friend class base::RefCountedThreadSafe<ChromeNSSCryptoModuleDelegate>;
-  ~ChromeNSSCryptoModuleDelegate() override;
+  friend class base::RefCountedThreadSafe<ElectronNSSCryptoModuleDelegate>;
+  ~ElectronNSSCryptoModuleDelegate() override;
 
   void RequestPasswordOnUIThread(const std::string& token_name, bool retry);
   void OnPassword(gin::Arguments* args);
