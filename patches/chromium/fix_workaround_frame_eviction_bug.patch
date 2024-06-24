@@ -10,7 +10,7 @@ This is due to a bug in `disable_hidden.patch`- a detailed writeup can be found 
 https://github.com/electron/electron/issues/42378
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 2db3239303d59677384cfb6eeb5cdd101c7d6d5c..0e140d570222b53adb108dd6a1a1743edc61ac06 100644
+index 2db3239303d59677384cfb6eeb5cdd101c7d6d5c..75d278e4c440c584ddf18581ae1843c2d0e1f944 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -570,7 +570,7 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
@@ -18,7 +18,7 @@ index 2db3239303d59677384cfb6eeb5cdd101c7d6d5c..0e140d570222b53adb108dd6a1a1743e
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
 -  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE)
-+  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE || visibility_ == Visibility::VISIBLE)
++  if (host_->is_hidden() || host()->disable_hidden_ || visibility_ == Visibility::VISIBLE)
      OnShowWithPageVisibility(page_visibility);
  }
  
