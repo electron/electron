@@ -185,23 +185,6 @@ void FillDetails(gin_helper::Dictionary* details, Arg arg, Args... args) {
   FillDetails(details, args...);
 }
 
-// Fill the native types with the result from the response object.
-void ReadFromResponse(v8::Isolate* isolate,
-                      gin::Dictionary* response,
-                      GURL* new_location) {
-  response->Get("redirectURL", new_location);
-}
-
-void ReadFromResponse(v8::Isolate* isolate,
-                      gin::Dictionary* response,
-                      net::HttpRequestHeaders* headers) {
-  v8::Local<v8::Value> value;
-  if (response->Get("requestHeaders", &value) && value->IsObject()) {
-    headers->Clear();
-    gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value, headers);
-  }
-}
-
 void ReadFromResponse(v8::Isolate* isolate,
                       gin::Dictionary* response,
                       const std::pair<scoped_refptr<net::HttpResponseHeaders>*,
@@ -216,6 +199,42 @@ void ReadFromResponse(v8::Isolate* isolate,
     gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
                                                       (*headers.first).get());
   }
+}
+
+std::pair<std::set<std::string>, std::set<std::string>>
+CalculateOnBeforeSendHeadersDelta(net::HttpRequestHeaders* old_headers,
+                                  net::HttpRequestHeaders* new_headers) {
+  // Newly introduced or overridden request headers.
+  std::set<std::string> modified_request_headers;
+  // Keys of request headers to be deleted.
+  std::set<std::string> deleted_request_headers;
+
+  // The event listener might not have passed any new headers if it
+  // just wanted to cancel the request.
+  if (new_headers) {
+    // Find deleted headers.
+    {
+      net::HttpRequestHeaders::Iterator i(*old_headers);
+      while (i.GetNext()) {
+        if (!new_headers->HasHeader(i.name())) {
+          deleted_request_headers.insert(i.name());
+        }
+      }
+    }
+
+    // Find modified headers.
+    {
+      net::HttpRequestHeaders::Iterator i(*new_headers);
+      while (i.GetNext()) {
+        std::string value;
+        if (!old_headers->GetHeader(i.name(), &value) || i.value() != value) {
+          modified_request_headers.insert(i.name());
+        }
+      }
+    }
+  }
+
+  return std::make_pair(modified_request_headers, deleted_request_headers);
 }
 
 }  // namespace
@@ -259,6 +278,17 @@ bool WebRequest::RequestFilter::MatchesRequest(
     extensions::WebRequestInfo* info) const {
   return MatchesURL(info->url) && MatchesType(info->web_request_type);
 }
+
+// Contains info about requests that are blocked waiting for a response from
+// an extension.
+struct WebRequest::BlockedRequest {
+  BlockedRequest() = default;
+  raw_ptr<const extensions::WebRequestInfo> request = nullptr;
+  net::CompletionOnceCallback callback;
+  BeforeSendHeadersCallback before_send_headers_callback;
+  raw_ptr<net::HttpRequestHeaders> request_headers = nullptr;
+  raw_ptr<GURL> new_url = nullptr;
+};
 
 WebRequest::SimpleListenerInfo::SimpleListenerInfo(RequestFilter filter_,
                                                    SimpleListener listener_)
@@ -320,19 +350,152 @@ int WebRequest::OnBeforeRequest(extensions::WebRequestInfo* info,
                                 const network::ResourceRequest& request,
                                 net::CompletionOnceCallback callback,
                                 GURL* new_url) {
-  return HandleResponseEvent(ResponseEvent::kOnBeforeRequest, info,
-                             std::move(callback), new_url, request);
+  return HandleOnBeforeRequestResponseEvent(info, request, std::move(callback),
+                                            new_url);
+}
+
+int WebRequest::HandleOnBeforeRequestResponseEvent(
+    extensions::WebRequestInfo* request_info,
+    const network::ResourceRequest& request,
+    net::CompletionOnceCallback callback,
+    GURL* new_url) {
+  const auto iter = response_listeners_.find(ResponseEvent::kOnBeforeRequest);
+  if (iter == std::end(response_listeners_))
+    return net::OK;
+
+  const auto& info = iter->second;
+  if (!info.filter.MatchesRequest(request_info))
+    return net::OK;
+
+  BlockedRequest blocked_request;
+  blocked_request.callback = std::move(callback);
+  blocked_request.new_url = new_url;
+  blocked_requests_[request_info->id] = std::move(blocked_request);
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, request, *new_url);
+
+  ResponseCallback response =
+      base::BindOnce(&WebRequest::OnBeforeRequestListenerResult,
+                     base::Unretained(this), request_info->id);
+  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  return net::ERR_IO_PENDING;
+}
+
+void WebRequest::OnBeforeRequestListenerResult(uint64_t id,
+                                               v8::Local<v8::Value> response) {
+  const auto iter = blocked_requests_.find(id);
+  if (iter == std::end(blocked_requests_))
+    return;
+
+  auto& request = iter->second;
+
+  int result = net::OK;
+  if (response->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin::Dictionary dict(isolate, response.As<v8::Object>());
+
+    bool cancel = false;
+    dict.Get("cancel", &cancel);
+    if (cancel) {
+      result = net::ERR_BLOCKED_BY_CLIENT;
+    } else {
+      dict.Get("redirectURL", request.new_url.get());
+    }
+  }
+
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(request.callback), result));
+  blocked_requests_.erase(iter);
 }
 
 int WebRequest::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
                                     const network::ResourceRequest& request,
                                     BeforeSendHeadersCallback callback,
                                     net::HttpRequestHeaders* headers) {
-  return HandleResponseEvent(
-      ResponseEvent::kOnBeforeSendHeaders, info,
-      base::BindOnce(std::move(callback), std::set<std::string>(),
-                     std::set<std::string>()),
-      headers, request, *headers);
+  return HandleOnBeforeSendHeadersResponseEvent(info, request,
+                                                std::move(callback), headers);
+}
+
+int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
+    extensions::WebRequestInfo* request_info,
+    const network::ResourceRequest& request,
+    BeforeSendHeadersCallback callback,
+    net::HttpRequestHeaders* headers) {
+  const auto iter =
+      response_listeners_.find(ResponseEvent::kOnBeforeSendHeaders);
+  if (iter == std::end(response_listeners_))
+    return net::OK;
+
+  const auto& info = iter->second;
+  if (!info.filter.MatchesRequest(request_info))
+    return net::OK;
+
+  BlockedRequest blocked_request;
+  blocked_request.before_send_headers_callback = std::move(callback);
+  blocked_request.request_headers = headers;
+  blocked_requests_[request_info->id] = std::move(blocked_request);
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, request, *headers);
+
+  ResponseCallback response =
+      base::BindOnce(&WebRequest::OnBeforeSendHeadersListenerResult,
+                     base::Unretained(this), request_info->id);
+  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  return net::ERR_IO_PENDING;
+}
+
+void WebRequest::OnBeforeSendHeadersListenerResult(
+    uint64_t id,
+    v8::Local<v8::Value> response) {
+  const auto iter = blocked_requests_.find(id);
+  if (iter == std::end(blocked_requests_))
+    return;
+
+  auto& request = iter->second;
+
+  net::HttpRequestHeaders* old_headers = request.request_headers;
+  net::HttpRequestHeaders new_headers;
+
+  int result = net::OK;
+  bool user_modified_headers = false;
+  if (response->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin::Dictionary dict(isolate, response.As<v8::Object>());
+
+    bool cancel = false;
+    dict.Get("cancel", &cancel);
+    if (cancel) {
+      result = net::ERR_BLOCKED_BY_CLIENT;
+    } else {
+      v8::Local<v8::Value> value;
+      if (dict.Get("requestHeaders", &value) && value->IsObject()) {
+        user_modified_headers = true;
+        gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value,
+                                                        &new_headers);
+      }
+    }
+  }
+
+  std::pair<std::set<std::string>, std::set<std::string>> updated_headers =
+      CalculateOnBeforeSendHeadersDelta(old_headers, &new_headers);
+
+  // Leave |request.request_headers| unchanged if the user didn't modify it.
+  if (user_modified_headers)
+    request.request_headers->Swap(&new_headers);
+
+  // The ProxyingURLLoaderFactory expects the callback to be executed
+  // asynchronously, because it used to work on IO thread before NetworkService.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(std::move(request.before_send_headers_callback),
+                     updated_headers.first, updated_headers.second, result));
+  blocked_requests_.erase(iter);
 }
 
 int WebRequest::OnHeadersReceived(
@@ -371,7 +534,7 @@ void WebRequest::OnResponseStarted(extensions::WebRequestInfo* info,
 void WebRequest::OnErrorOccurred(extensions::WebRequestInfo* info,
                                  const network::ResourceRequest& request,
                                  int net_error) {
-  callbacks_.erase(info->id);
+  blocked_requests_.erase(info->id);
 
   HandleSimpleEvent(SimpleEvent::kOnErrorOccurred, info, request, net_error);
 }
@@ -379,13 +542,13 @@ void WebRequest::OnErrorOccurred(extensions::WebRequestInfo* info,
 void WebRequest::OnCompleted(extensions::WebRequestInfo* info,
                              const network::ResourceRequest& request,
                              int net_error) {
-  callbacks_.erase(info->id);
+  blocked_requests_.erase(info->id);
 
   HandleSimpleEvent(SimpleEvent::kOnCompleted, info, request, net_error);
 }
 
 void WebRequest::OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) {
-  callbacks_.erase(info->id);
+  blocked_requests_.erase(info->id);
 }
 
 template <WebRequest::SimpleEvent event>
@@ -493,7 +656,9 @@ int WebRequest::HandleResponseEvent(ResponseEvent event,
   if (!info.filter.MatchesRequest(request_info))
     return net::OK;
 
-  callbacks_[request_info->id] = std::move(callback);
+  BlockedRequest request;
+  request.callback = std::move(callback);
+  blocked_requests_[request_info->id] = std::move(request);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -511,8 +676,8 @@ template <typename T>
 void WebRequest::OnListenerResult(uint64_t id,
                                   T out,
                                   v8::Local<v8::Value> response) {
-  const auto iter = callbacks_.find(id);
-  if (iter == std::end(callbacks_))
+  const auto iter = blocked_requests_.find(id);
+  if (iter == std::end(blocked_requests_))
     return;
 
   int result = net::OK;
@@ -531,8 +696,9 @@ void WebRequest::OnListenerResult(uint64_t id,
   // The ProxyingURLLoaderFactory expects the callback to be executed
   // asynchronously, because it used to work on IO thread before NetworkService.
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
-  callbacks_.erase(iter);
+      FROM_HERE,
+      base::BindOnce(std::move(blocked_requests_[id].callback), result));
+  blocked_requests_.erase(iter);
 }
 
 // static
