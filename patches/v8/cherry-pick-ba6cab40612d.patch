@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Thu, 13 Jun 2024 12:26:46 +0200
+Subject: Merged: [wasm][liftoff][arm64] Fix DropExceptionValueAtOffset
+
+We cannot exit the iteration early, we must update all entries
+in the cache state.
+
+Fixed: 343748812
+(cherry picked from commit 910cb91733dc47b8f4a3dc9f1ca640b728f97aad)
+
+Change-Id: Ib342467f35360baaa14cd098b258bd1acf4189a7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5626023
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.6@{#32}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
+index 821b6b80495849129c2c499302ac393278f72e92..e1ca7bebdc8408e21715dd0fc9861a474b989bcc 100644
+--- a/src/wasm/baseline/liftoff-assembler.cc
++++ b/src/wasm/baseline/liftoff-assembler.cc
+@@ -430,12 +430,13 @@ void LiftoffAssembler::DropExceptionValueAtOffset(int offset) {
+        slot != end; ++slot) {
+     *slot = *(slot + 1);
+     stack_offset = NextSpillOffset(slot->kind(), stack_offset);
+-    // Padding could allow us to exit early.
+-    if (slot->offset() == stack_offset) break;
+-    if (slot->is_stack()) {
+-      MoveStackValue(stack_offset, slot->offset(), slot->kind());
++    // Padding could cause some spill offsets to remain the same.
++    if (slot->offset() != stack_offset) {
++      if (slot->is_stack()) {
++        MoveStackValue(stack_offset, slot->offset(), slot->kind());
++      }
++      slot->set_offset(stack_offset);
+     }
+-    slot->set_offset(stack_offset);
+   }
+   cache_state_.stack_state.pop_back();
+ }
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index f797279ecaf7645061418ee86839df50c4e881a2..1b4e980e90e158fd3a078650ef9b02244cc550fe 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -1708,6 +1708,7 @@
+   'regress/wasm/regress-326156493': [SKIP],
+   'regress/wasm/regress-326894018': [SKIP],
+   'regress/wasm/regress-329032153': [SKIP],
++  'regress/wasm/regress-343748812': [SKIP],
+   'regress/wasm/regress-crbug-1338980': [SKIP],
+   'regress/wasm/regress-crbug-1355070': [SKIP],
+   'regress/wasm/regress-crbug-1356718': [SKIP],
+diff --git a/test/mjsunit/regress/wasm/regress-343748812.js b/test/mjsunit/regress/wasm/regress-343748812.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8dc456c413665e97c5f8e48f95a65370cf051753
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-343748812.js
+@@ -0,0 +1,30 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++let $sig0 = builder.addType(kSig_v_v);
++let $sig7 = builder.addType(
++    makeSig([], [ kWasmExternRef, kWasmS128, kWasmExternRef ]));
++let $func0 = builder.addImport('imports', 'func0', $sig0);
++builder.addFunction("main", $sig0).exportFunc()
++  .addLocals(kWasmExternRef, 3)
++  .addBody([
++    kExprTry, $sig7,
++      kExprCallFunction, $func0,
++      kExprUnreachable,
++    kExprCatchAll,
++      kExprRefNull, kExternRefCode,
++      ...wasmS128Const([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
++      kExprRefNull, kExternRefCode,
++    kExprEnd,
++    kExprDrop,
++    kExprDrop,
++    kExprDrop,
++  ]);
++
++var instance = builder.instantiate({'imports': { 'func0': () => {} }});
++
++assertThrows(instance.exports.main, WebAssembly.RuntimeError, /unreachable/);
