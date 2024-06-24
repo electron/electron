@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: George Xu <george.xu@slack-corp.com>
+Date: Mon, 24 Jun 2024 15:07:24 -0700
+Subject: fix: workaround frame eviction bug
+
+Electron window contents are disappearing after several minutes when using the background throttling feature on Windows.
+
+This is due to a bug in `disable_hidden.patch`- a detailed writeup can be found in the linked issue.
+
+https://github.com/electron/electron/issues/42378
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 2db3239303d59677384cfb6eeb5cdd101c7d6d5c..0e140d570222b53adb108dd6a1a1743edc61ac06 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -570,7 +570,7 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+   // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
+   // which updates `visibility_`, unless the host is hidden. Make sure no update
+   // is needed.
+-  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE)
++  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE || visibility_ == Visibility::VISIBLE)
+     OnShowWithPageVisibility(page_visibility);
+ }
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
+index ad42e2d94ab498dd30968e62aebd62e14f8161ab..66623189c7ad951646d49d7619b63bbb2a35036d 100644
+--- a/content/browser/renderer_host/render_widget_host_view_base.cc
++++ b/content/browser/renderer_host/render_widget_host_view_base.cc
+@@ -1132,7 +1132,7 @@ void RenderWidgetHostViewBase::OnShowWithPageVisibility(
+   const bool web_contents_is_visible =
+       page_visibility == PageVisibilityState::kVisible;
+ 
+-  if (host_->is_hidden()) {
++  if (host_->is_hidden() || host()->disable_hidden_) {
+     // If the WebContents is becoming visible, ask the compositor to report the
+     // visibility time for metrics. Otherwise the widget is being rendered even
+     // though the WebContents is hidden or occluded, for example due to being
