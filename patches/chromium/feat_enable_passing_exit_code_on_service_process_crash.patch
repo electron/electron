@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 28 May 2024 10:44:06 +0200
+Subject: feat: enable passing exit code on service process crash
+
+This patch enables plumbing the exit code of the service process to the
+browser process when the service process crashes. The process can perform cleanup
+after the message pipe disconnection, which previously led to racy and incorrect
+exit codes in some crashing scenarios. To mitigate this, we can rely on
+ServiceProcessHost::Observer functions, but we need to pass the exit code to
+the observer.
+
+diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
+index 75d7bc00759226859af635d66cdfbc3dd565b4a2..6f952e56348f3bf4cd0ddbae2d4bf74dd680ed8a 100644
+--- a/content/browser/service_process_host_impl.cc
++++ b/content/browser/service_process_host_impl.cc
+@@ -77,12 +77,15 @@ class ServiceProcessTracker {
+     processes_.erase(iter);
+   }
+ 
+-  void NotifyCrashed(ServiceProcessId id) {
++  void NotifyCrashed(ServiceProcessId id, int exit_code) {
+     DCHECK_CURRENTLY_ON(BrowserThread::UI);
+     auto iter = processes_.find(id);
+     DCHECK(iter != processes_.end());
+-    for (auto& observer : observers_)
+-      observer.OnServiceProcessCrashed(iter->second.Duplicate());
++    for (auto& observer : observers_) {
++      auto params = iter->second.Duplicate();
++      params.set_exit_code(exit_code);
++      observer.OnServiceProcessCrashed(params);
++    }
+     processes_.erase(iter);
+   }
+ 
+@@ -91,6 +94,11 @@ class ServiceProcessTracker {
+     observers_.AddObserver(observer);
+   }
+ 
++  bool HasObserver(ServiceProcessHost::Observer* observer) {
++    DCHECK_CURRENTLY_ON(BrowserThread::UI);
++    return observers_.HasObserver(observer);
++  }
++
+   void RemoveObserver(ServiceProcessHost::Observer* observer) {
+     // NOTE: Some tests may remove observers after BrowserThreads are shut down.
+     DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
+@@ -158,7 +166,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
+         process_info_->service_process_id());
+   }
+ 
+-  void OnProcessCrashed() override {
++  void OnProcessCrashed(int exit_code) override {
+     // TODO(https://crbug.com/1016027): It is unclear how we can observe
+     // |OnProcessCrashed()| without observing |OnProcessLaunched()| first, but
+     // it can happen on Android. Ignore the notification in this case.
+@@ -166,7 +174,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
+       return;
+ 
+     GetServiceProcessTracker().NotifyCrashed(
+-        process_info_->service_process_id());
++        process_info_->service_process_id(), exit_code);
+   }
+ 
+  private:
+@@ -233,6 +241,11 @@ void ServiceProcessHost::AddObserver(Observer* observer) {
+   GetServiceProcessTracker().AddObserver(observer);
+ }
+ 
++// static
++bool ServiceProcessHost::HasObserver(Observer* observer) {
++  return GetServiceProcessTracker().HasObserver(observer);
++}
++
+ // static
+ void ServiceProcessHost::RemoveObserver(Observer* observer) {
+   GetServiceProcessTracker().RemoveObserver(observer);
+diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
+index e7f30e95727137fc54f8493dfa8eb36b74fbdcb4..51d60ffdabb72f0448d67667813d6fe006a1b3e0 100644
+--- a/content/browser/utility_process_host.cc
++++ b/content/browser/utility_process_host.cc
+@@ -549,7 +549,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
+   // Take ownership of |client_| so the destructor doesn't notify it of
+   // termination.
+   auto client = std::move(client_);
+-  client->OnProcessCrashed();
++  client->OnProcessCrashed(exit_code);
+ }
+ 
+ std::optional<std::string> UtilityProcessHost::GetServiceName() {
+diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
+index 9bfc30138a01520d59760a49d15dd4819feb0556..1107ad8691869d37196ea9d8dd29ef53e0a7ae10 100644
+--- a/content/browser/utility_process_host.h
++++ b/content/browser/utility_process_host.h
+@@ -84,7 +84,7 @@ class CONTENT_EXPORT UtilityProcessHost
+ 
+     virtual void OnProcessLaunched(const base::Process& process) {}
+     virtual void OnProcessTerminatedNormally() {}
+-    virtual void OnProcessCrashed() {}
++    virtual void OnProcessCrashed(int exit_code) {}
+   };
+ 
+   // This class is self-owned. It must be instantiated using new, and shouldn't
+diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
+index 8efbbd030729276114c40b33ee72822b02444a84..bf9325406c7358a3dce4f56d0f66acc0871190cc 100644
+--- a/content/public/browser/service_process_host.h
++++ b/content/public/browser/service_process_host.h
+@@ -231,6 +231,10 @@ class CONTENT_EXPORT ServiceProcessHost {
+   // removed before destruction. Must be called from the UI thread only.
+   static void AddObserver(Observer* observer);
+ 
++  // Returns true if the given observer is currently registered.
++  // Must be called from the UI thread only.
++  static bool HasObserver(Observer* observer);
++
+   // Removes a registered observer. This must be called some time before
+   // |*observer| is destroyed and must be called from the UI thread only.
+   static void RemoveObserver(Observer* observer);
+diff --git a/content/public/browser/service_process_info.h b/content/public/browser/service_process_info.h
+index 1a8656aef341cd3b23af588fb00569b79d6cd100..f904af7ee6bbacf4474e0939855ecf9f2c9a5eaa 100644
+--- a/content/public/browser/service_process_info.h
++++ b/content/public/browser/service_process_info.h
+@@ -64,7 +64,13 @@ class CONTENT_EXPORT ServiceProcessInfo {
+   const std::optional<GURL>& site() const { return site_; }
+   const base::Process& GetProcess() const { return process_; }
+ 
++  void set_exit_code(int exit_code) { exit_code_ = exit_code; }
++  int exit_code() const { return exit_code_; }
++
+  private:
++  // The exit code of the process, if it has exited.
++  int exit_code_;
++
+   // The name of the service interface for which the process was launched.
+   std::string service_interface_name_;
+ 
