@@ -11,24 +11,108 @@ because the file itself has CRLF line endings and need to be patched
 seperately. When this patch is removed, also remove the eol=crlf
 exception in .gitattributes.
 
+diff --git a/.gitattributes b/.gitattributes
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb6894e64b34ab7d09bcd5b43e5c3da26b8b0d20
+--- /dev/null
++++ b/.gitattributes
+@@ -0,0 +1,17 @@
++# `git apply` and friends don't understand CRLF, even on windows. Force those
++# files to be checked out with LF endings even if core.autocrlf is true.
++*.patch text eol=lf
++patches/**/.patches merge=union
++
++# Source code and markdown files should always use LF as line ending.
++*.c text eol=lf
++*.cc text eol=lf
++*.cpp text eol=lf
++*.h text eol=lf
++*.html   text eol=lf
++*.js   text eol=lf
++*.json   text eol=lf
++*.md text eol=lf
++*.py text eol=lf
++*.sh text eol=lf
++*.txt   text eol=lf
+\ No newline at end of file
 diff --git a/test/js/methodswithdata-test.js b/test/js/methodswithdata-test.js
-index 9f4fc5246f1ca3d8faadc9a72d49e14a6a190e32..795538510431fb3b633be37f916d4ce1955c808a 100644
+index 9f4fc5246f1ca3d8faadc9a72d49e14a6a190e32..312c03331a9b90dbb96626b1826203bdac14597e 100644
 --- a/test/js/methodswithdata-test.js
 +++ b/test/js/methodswithdata-test.js
-@@ -16,7 +16,7 @@ test('SetMethod with data', function (t) {
- });
- 
- test('accessors with data', function (t) {
+@@ -1,38 +1,36 @@
+-/*********************************************************************
+- * NAN - Native Abstractions for Node.js
+- *
+- * Copyright (c) 2019 NAN contributors
+- *
+- * MIT License <https://github.com/nodejs/nan/blob/master/LICENSE.md>
+- ********************************************************************/
+-
+-const test     = require('tap').test
+-    , testRoot = require('path').resolve(__dirname, '..')
+-    , bindings = require('bindings')({ module_root: testRoot, bindings: 'methodswithdata' })
+-
+-test('SetMethod with data', function (t) {
+-    t.plan(1);
+-    t.ok(bindings.testWithData());
+-});
+-
+-test('accessors with data', function (t) {
 -    t.plan(7)
-+    t.plan(6)
-     var settergetter = bindings.create()
-     t.equal(settergetter.prop1, 'this is property 1')
-     t.ok(settergetter.prop2 === '')
-@@ -33,6 +33,5 @@ test('accessors with data', function (t) {
-     t.equal(derived.prop1, 'this is property 1')
-     derived.prop2 = 'setting a new value'
-     t.equal(derived.prop2, 'setting a new value')
+-    var settergetter = bindings.create()
+-    t.equal(settergetter.prop1, 'this is property 1')
+-    t.ok(settergetter.prop2 === '')
+-    settergetter.prop2 = 'setting a value'
+-    t.equal(settergetter.prop2, 'setting a value')
+-    t.equal(settergetter.log(),
+-      'New()\n' +
+-      'Prop1:GETTER(this is property 1)\n' +
+-      'Prop2:GETTER()\n' +
+-      'Prop2:SETTER(setting a value)\n' +
+-      'Prop2:GETTER(setting a value)\n'
+-    )
+-    var derived = Object.create(settergetter)
+-    t.equal(derived.prop1, 'this is property 1')
+-    derived.prop2 = 'setting a new value'
+-    t.equal(derived.prop2, 'setting a new value')
 -    t.equal(settergetter.prop2, 'setting a new value')
-   })
-   
+-  })
+-  
+\ No newline at end of file
++/*********************************************************************
++ * NAN - Native Abstractions for Node.js
++ *
++ * Copyright (c) 2019 NAN contributors
++ *
++ * MIT License <https://github.com/nodejs/nan/blob/master/LICENSE.md>
++ ********************************************************************/
++
++const test     = require('tap').test
++    , testRoot = require('path').resolve(__dirname, '..')
++    , bindings = require('bindings')({ module_root: testRoot, bindings: 'methodswithdata' })
++
++test('SetMethod with data', function (t) {
++    t.plan(1);
++    t.ok(bindings.testWithData());
++});
++
++test('accessors with data', function (t) {
++    t.plan(6)
++    var settergetter = bindings.create()
++    t.equal(settergetter.prop1, 'this is property 1')
++    t.ok(settergetter.prop2 === '')
++    settergetter.prop2 = 'setting a value'
++    t.equal(settergetter.prop2, 'setting a value')
++    t.equal(settergetter.log(),
++      'New()\n' +
++      'Prop1:GETTER(this is property 1)\n' +
++      'Prop2:GETTER()\n' +
++      'Prop2:SETTER(setting a value)\n' +
++      'Prop2:GETTER(setting a value)\n'
++    )
++    var derived = Object.create(settergetter)
++    t.equal(derived.prop1, 'this is property 1')
++    derived.prop2 = 'setting a new value'
++    t.equal(derived.prop2, 'setting a new value')
++  })
 \ No newline at end of file
