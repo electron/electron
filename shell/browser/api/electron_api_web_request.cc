@@ -185,22 +185,6 @@ void FillDetails(gin_helper::Dictionary* details, Arg arg, Args... args) {
   FillDetails(details, args...);
 }
 
-void ReadFromResponse(v8::Isolate* isolate,
-                      gin::Dictionary* response,
-                      const std::pair<scoped_refptr<net::HttpResponseHeaders>*,
-                                      const std::string>& headers) {
-  std::string status_line;
-  if (!response->Get("statusLine", &status_line))
-    status_line = headers.second;
-  v8::Local<v8::Value> value;
-  if (response->Get("responseHeaders", &value) && value->IsObject()) {
-    *headers.first = new net::HttpResponseHeaders("");
-    (*headers.first)->ReplaceStatusLine(status_line);
-    gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
-                                                      (*headers.first).get());
-  }
-}
-
 std::pair<std::set<std::string>, std::set<std::string>>
 CalculateOnBeforeSendHeadersDelta(net::HttpRequestHeaders* old_headers,
                                   net::HttpRequestHeaders* new_headers) {
@@ -279,14 +263,21 @@ bool WebRequest::RequestFilter::MatchesRequest(
   return MatchesURL(info->url) && MatchesType(info->web_request_type);
 }
 
-// Contains info about requests that are blocked waiting for a response from
-// an extension.
 struct WebRequest::BlockedRequest {
   BlockedRequest() = default;
   raw_ptr<const extensions::WebRequestInfo> request = nullptr;
   net::CompletionOnceCallback callback;
+  // Only used for onBeforeSendHeaders.
   BeforeSendHeadersCallback before_send_headers_callback;
+  // Only used for onBeforeSendHeaders.
   raw_ptr<net::HttpRequestHeaders> request_headers = nullptr;
+  // Only used for onHeadersReceived.
+  scoped_refptr<const net::HttpResponseHeaders> original_response_headers;
+  // Only used for onHeadersReceived.
+  raw_ptr<scoped_refptr<net::HttpResponseHeaders>> override_response_headers =
+      nullptr;
+  std::string status_line;
+  // Only used for onBeforeRequest.
   raw_ptr<GURL> new_url = nullptr;
 };
 
@@ -489,8 +480,6 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
   if (user_modified_headers)
     request.request_headers->Swap(&new_headers);
 
-  // The ProxyingURLLoaderFactory expects the callback to be executed
-  // asynchronously, because it used to work on IO thread before NetworkService.
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
       base::BindOnce(std::move(request.before_send_headers_callback),
@@ -505,12 +494,86 @@ int WebRequest::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  const std::string& status_line =
-      original_response_headers ? original_response_headers->GetStatusLine()
-                                : std::string();
-  return HandleResponseEvent(
-      ResponseEvent::kOnHeadersReceived, info, std::move(callback),
-      std::make_pair(override_response_headers, status_line), request);
+  return HandleOnHeadersReceivedResponseEvent(
+      info, request, std::move(callback), original_response_headers,
+      override_response_headers);
+}
+
+int WebRequest::HandleOnHeadersReceivedResponseEvent(
+    extensions::WebRequestInfo* request_info,
+    const network::ResourceRequest& request,
+    net::CompletionOnceCallback callback,
+    const net::HttpResponseHeaders* original_response_headers,
+    scoped_refptr<net::HttpResponseHeaders>* override_response_headers) {
+  const auto iter = response_listeners_.find(ResponseEvent::kOnHeadersReceived);
+  if (iter == std::end(response_listeners_))
+    return net::OK;
+
+  const auto& info = iter->second;
+  if (!info.filter.MatchesRequest(request_info))
+    return net::OK;
+
+  BlockedRequest blocked_request;
+  blocked_request.callback = std::move(callback);
+  blocked_request.override_response_headers = override_response_headers;
+  blocked_request.status_line = original_response_headers
+                                    ? original_response_headers->GetStatusLine()
+                                    : std::string();
+  blocked_requests_[request_info->id] = std::move(blocked_request);
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, request);
+
+  ResponseCallback response =
+      base::BindOnce(&WebRequest::OnHeadersReceivedListenerResult,
+                     base::Unretained(this), request_info->id);
+  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  return net::ERR_IO_PENDING;
+}
+
+void WebRequest::OnHeadersReceivedListenerResult(
+    uint64_t id,
+    v8::Local<v8::Value> response) {
+  const auto iter = blocked_requests_.find(id);
+  if (iter == std::end(blocked_requests_))
+    return;
+
+  auto& request = iter->second;
+
+  int result = net::OK;
+  bool user_modified_headers = false;
+  scoped_refptr<net::HttpResponseHeaders> override_headers(
+      new net::HttpResponseHeaders(""));
+  if (response->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin::Dictionary dict(isolate, response.As<v8::Object>());
+
+    bool cancel = false;
+    dict.Get("cancel", &cancel);
+    if (cancel) {
+      result = net::ERR_BLOCKED_BY_CLIENT;
+    } else {
+      std::string status_line;
+      if (!dict.Get("statusLine", &status_line))
+        status_line = request.status_line;
+      v8::Local<v8::Value> value;
+      if (dict.Get("responseHeaders", &value) && value->IsObject()) {
+        user_modified_headers = true;
+        override_headers->ReplaceStatusLine(status_line);
+        gin::Converter<net::HttpResponseHeaders*>::FromV8(
+            isolate, value, override_headers.get());
+      }
+    }
+  }
+
+  if (user_modified_headers)
+    request.override_response_headers->swap(override_headers);
+
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(request.callback), result));
+  blocked_requests_.erase(iter);
 }
 
 void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,
@@ -640,65 +703,6 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
   info.listener.Run(gin::ConvertToV8(isolate, details));
-}
-
-template <typename Out, typename... Args>
-int WebRequest::HandleResponseEvent(ResponseEvent event,
-                                    extensions::WebRequestInfo* request_info,
-                                    net::CompletionOnceCallback callback,
-                                    Out out,
-                                    Args... args) {
-  const auto iter = response_listeners_.find(event);
-  if (iter == std::end(response_listeners_))
-    return net::OK;
-
-  const auto& info = iter->second;
-  if (!info.filter.MatchesRequest(request_info))
-    return net::OK;
-
-  BlockedRequest request;
-  request.callback = std::move(callback);
-  blocked_requests_[request_info->id] = std::move(request);
-
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
-  FillDetails(&details, request_info, args...);
-
-  ResponseCallback response =
-      base::BindOnce(&WebRequest::OnListenerResult<Out>, base::Unretained(this),
-                     request_info->id, out);
-  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
-  return net::ERR_IO_PENDING;
-}
-
-template <typename T>
-void WebRequest::OnListenerResult(uint64_t id,
-                                  T out,
-                                  v8::Local<v8::Value> response) {
-  const auto iter = blocked_requests_.find(id);
-  if (iter == std::end(blocked_requests_))
-    return;
-
-  int result = net::OK;
-  if (response->IsObject()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    gin::Dictionary dict(isolate, response.As<v8::Object>());
-
-    bool cancel = false;
-    dict.Get("cancel", &cancel);
-    if (cancel)
-      result = net::ERR_BLOCKED_BY_CLIENT;
-    else
-      ReadFromResponse(isolate, &dict, out);
-  }
-
-  // The ProxyingURLLoaderFactory expects the callback to be executed
-  // asynchronously, because it used to work on IO thread before NetworkService.
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(std::move(blocked_requests_[id].callback), result));
-  blocked_requests_.erase(iter);
 }
 
 // static
