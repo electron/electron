@@ -33,7 +33,6 @@ const octokit = new Octokit({
 });
 
 function getRepo () {
-  if (process.env.IS_GHA_RELEASE) return 'test-releases';
   return pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
 }
 
