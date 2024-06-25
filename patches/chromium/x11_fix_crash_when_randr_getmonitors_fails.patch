@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 27 Feb 2024 00:35:14 +0000
+Subject: Fix crash when RandR::GetMonitors fails
+
+R=sky
+
+Change-Id: Id3c01221cec6edb4b782a273653758c1375c0acb
+Fixed: 326328413
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5324886
+Commit-Queue: Scott Violet <sky@chromium.org>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1265556}
+
+diff --git a/ui/base/x/x11_display_util.cc b/ui/base/x/x11_display_util.cc
+index bf3077d80fc0ce31f381d5ff1defef16cfdbee0a..fda1c3cb239210ac7efbf0aa2311548d0142c413 100644
+--- a/ui/base/x/x11_display_util.cc
++++ b/ui/base/x/x11_display_util.cc
+@@ -44,6 +44,9 @@ constexpr const char kRandrEdidProperty[] = "EDID";
+ std::map<x11::RandR::Output, size_t> GetMonitors(
+     const x11::Response<x11::RandR::GetMonitorsReply>& reply) {
+   std::map<x11::RandR::Output, size_t> output_to_monitor;
++  if (!reply) {
++    return output_to_monitor;
++  }
+   for (size_t monitor = 0; monitor < reply->monitors.size(); monitor++) {
+     for (x11::RandR::Output output : reply->monitors[monitor].outputs) {
+       output_to_monitor[output] = monitor;
