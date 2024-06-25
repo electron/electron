@@ -31,6 +31,7 @@ class GPUInfoManager : private content::GpuDataManagerObserver {
   void FetchBasicInfo(gin_helper::Promise<base::Value> promise);
 
  private:
+  // content::GpuDataManagerObserver
   void OnGpuInfoUpdate() override;
 
   base::Value::Dict EnumerateGPUInfo(gpu::GPUInfo gpu_info) const;

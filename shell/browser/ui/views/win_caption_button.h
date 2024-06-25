@@ -35,7 +35,7 @@ class WinCaptionButton : public views::Button {
   WinCaptionButton(const WinCaptionButton&) = delete;
   WinCaptionButton& operator=(const WinCaptionButton&) = delete;
 
-  // // views::Button:
+  // views::Button:
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
   void OnPaintBackground(gfx::Canvas* canvas) override;

@@ -75,6 +75,8 @@ class CallbackHolderBase {
     DisposeObserver(gin::PerIsolateData* per_isolate_data,
                     CallbackHolderBase* holder);
     ~DisposeObserver() override;
+
+    // gin::PerIsolateData::DisposeObserver
     void OnBeforeDispose(v8::Isolate* isolate) override;
     void OnDisposed() override;
 

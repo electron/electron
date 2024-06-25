@@ -49,6 +49,11 @@ on:
         required: true
         type: string
         default: '0'
+      is-asan: 
+        description: 'Building the Address Sanitizer (ASan) Linux build'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: electron-build-and-test-and-nan-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
@@ -75,6 +80,7 @@ jobs:
       check-runs-on: ${{ inputs.build-runs-on }}
       check-container: ${{ inputs.build-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
+      is-asan: ${{ inputs.is-asan }}
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml

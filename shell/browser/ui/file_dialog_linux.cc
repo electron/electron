@@ -137,6 +137,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     RunOpenDialogImpl(settings);
   }
 
+  // ui::SelectFileDialog::Listener
   void FileSelected(const ui::SelectedFileInfo& file,
                     int index,
                     void* params) override {
