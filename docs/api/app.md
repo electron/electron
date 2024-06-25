@@ -1500,7 +1500,7 @@ Returns `Promise<string>` - Resolves with the proxy information for `url` that w
   Returns `Promise<string>` - Resolves with the password
 
 The handler is called when a password is needed to unlock a client certificate for
-`hostName`.
+`hostname`.
 
 ```js
 const { app } = require('electron')
