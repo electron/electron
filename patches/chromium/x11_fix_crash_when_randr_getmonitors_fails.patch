@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Anderson <thomasanderson@chromium.org>
 Date: Tue, 27 Feb 2024 00:35:14 +0000
-Subject: [X11] Fix crash when RandR::GetMonitors fails
+Subject: Fix crash when RandR::GetMonitors fails
 
 R=sky
 
