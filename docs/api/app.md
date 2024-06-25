@@ -1495,7 +1495,7 @@ Returns `Promise<string>` - Resolves with the proxy information for `url` that w
   * `clientCertRequestParams` Object
     * `hostname` string - the hostname of the site requiring a client certificate
     * `tokenName` string - the token (or slot) name of the cryptographic device
-    * `isRetry` boolean - whether there have been failed attempt at prompting the password
+    * `isRetry` boolean - whether there have been previous failed attempts at prompting the password
 
   Returns `Promise<string>` - Resolves with the password
 
