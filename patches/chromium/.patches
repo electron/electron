@@ -148,3 +148,4 @@ cherry-pick-b922fcb61e3b.patch
 cherry-pick-0d9598145069.patch
 cherry-pick-24329fe5c4d0.patch
 m120-lts_mediasession_use_a_mediasessionimpl_weakptr_in.patch
+x11_fix_crash_when_randr_getmonitors_fails.patch
