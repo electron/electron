@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index de78ee035a47f8929b9bf357cdb571964791d4ce..16ed90ca643a4d2f81e17e34c02fa3d9d5ee2367 100644
+index 8e2256ef3bbc0c5bf830be07baa412bc28f07126..d42641218241cfd38a5a8f65b7898fbc896c29b3 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -777,6 +777,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
+@@ -778,6 +778,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
    return false;
  }
  
@@ -24,26 +24,24 @@ index de78ee035a47f8929b9bf357cdb571964791d4ce..16ed90ca643a4d2f81e17e34c02fa3d9
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index abb2812168104f912f1e30132ed188083f62c34e..3d2d66d60db936e5b25ccb51d2a1dab21a3e3060 100644
+index e366a394f934772f7e33d67ae755e512ade723e1..25a5a113b80bcc244d6d07349c815b8feeee2c8f 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -27,9 +27,11 @@
- #include "components/viz/common/surfaces/scoped_surface_id_allocator.h"
+@@ -30,7 +30,10 @@
  #include "components/viz/common/surfaces/surface_id.h"
  #include "content/browser/renderer_host/display_feature.h"
--#include "content/common/content_export.h"
+ #include "content/common/content_export.h"
 +#include "content/browser/renderer_host/visible_time_request_trigger.h"
 +#include "content/browser/web_contents/web_contents_view.h"
- #include "content/common/input/render_widget_host_view_input.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
 +#include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -73,9 +75,11 @@ class DevicePosturePlatformProvider;
+@@ -77,9 +80,11 @@ namespace content {
+ class DevicePosturePlatformProvider;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
- class RenderWidgetHostViewInputObserver;
 +class RenderWidgetHostViewGuest;
  class ScopedViewTransitionResources;
  class TextInputManager;
@@ -52,7 +50,7 @@ index abb2812168104f912f1e30132ed188083f62c34e..3d2d66d60db936e5b25ccb51d2a1dab2
  class WebContentsAccessibility;
  class DelegatedFrameHost;
  class SyntheticGestureTarget;
-@@ -232,6 +236,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -238,6 +243,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  
@@ -62,7 +60,7 @@ index abb2812168104f912f1e30132ed188083f62c34e..3d2d66d60db936e5b25ccb51d2a1dab2
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -282,6 +289,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -288,6 +296,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    // non-embeddable derived views.
    virtual RenderWidgetHostViewBase* GetRootView();
  
