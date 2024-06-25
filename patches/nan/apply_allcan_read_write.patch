@@ -1,7 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Keeley Hammond <khammond@slack-corp.com>
 Date: Thu, 20 Jun 2024 14:42:08 -0700
-Subject: Check for NODE_21_0_MODULE_VERSION
+Subject: Remove Allcan Read Write
+
+Check for NODE_21_0_MODULE_VERSION
 
 Refs https://chromium-review.googlesource.com/c/v8/v8/+/5006387
 Should be upstreamed.
@@ -15,6 +17,7 @@ Steps for upstreaming this patch:
 - Get a new module version assigned for Electron 29 in nodejs/node
 - Update NODE_21_0_MODULE_VERSION to the new version number
 - Upstream patch to nodejs/nan before Electron 29 is branched
+- Ensure that methodswithdata-test.js uses LF line endings
 
 diff --git a/nan.h b/nan.h
 index 9a9112afe0cc94ce58ed3cce9763ace7c160a932..f4865a77e60d5105ed2426037984ddcbfa58bbca 100644
@@ -139,3 +142,47 @@ index e6ad45737e2ac18da3fa936b1de618e7389933bc..025f5b66774c2f5fe0ccb98c91fc714d
    t.equal(derived.prop2, 'setting a new value')
 -  t.equal(settergetter.prop2, 'setting a new value')
  })
+diff --git a/test/js/methodswithdatalf-test.js b/test/js/methodswithdatalf-test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5db3fae7e075b3428810948bdcfee5b8b97c343c
+--- /dev/null
++++ b/test/js/methodswithdatalf-test.js
+@@ -0,0 +1,37 @@
++/*********************************************************************
++ * NAN - Native Abstractions for Node.js
++ *
++ * Copyright (c) 2019 NAN contributors
++ *
++ * MIT License <https://github.com/nodejs/nan/blob/master/LICENSE.md>
++ ********************************************************************/
++
++const test     = require('tap').test
++    , testRoot = require('path').resolve(__dirname, '..')
++    , bindings = require('bindings')({ module_root: testRoot, bindings: 'methodswithdata' })
++
++test('SetMethod with data', function (t) {
++    t.plan(1);
++    t.ok(bindings.testWithData());
++});
++
++test('accessors with data', function (t) {
++    t.plan(7)
++    var settergetter = bindings.create()
++    t.equal(settergetter.prop1, 'this is property 1')
++    t.ok(settergetter.prop2 === '')
++    settergetter.prop2 = 'setting a value'
++    t.equal(settergetter.prop2, 'setting a value')
++    t.equal(settergetter.log(),
++      'New()\n' +
++      'Prop1:GETTER(this is property 1)\n' +
++      'Prop2:GETTER()\n' +
++      'Prop2:SETTER(setting a value)\n' +
++      'Prop2:GETTER(setting a value)\n'
++    )
++    var derived = Object.create(settergetter)
++    t.equal(derived.prop1, 'this is property 1')
++    derived.prop2 = 'setting a new value'
++    t.equal(derived.prop2, 'setting a new value')
++    t.equal(settergetter.prop2, 'setting a new value')
++  })
+\ No newline at end of file
