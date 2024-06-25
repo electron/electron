@@ -62,9 +62,6 @@ env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
-  # Only disable this in the Asan build
-  CHECK_DIST_MANIFEST: true
-  IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
 
 jobs:
