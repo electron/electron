@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b51b58a0fa23daa7b7a15c24934d8787ca9b9bfb..846c4451161da289119f906dc280d7efc91c4fd3 100644
+index d780484254502269a816ee26b197c48e45463f1c..63b7b121ea62f921751f1104b6d2030d254dff74 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1052,6 +1052,7 @@ component("base") {
@@ -370,7 +370,7 @@ index b3c087eda0561d94d205ef0cbbb341a7e2a34638..035202378209e32e6f7c630140367cda
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f28503c3bd02b51da148624b3545c7feeccad511..aeb4e82629b7d4828a6717708112f28eb9f35079 100644
+index dbc67fb38b69dd5d8e256d190727c02cbabef622..d493a07acf63ceec42f9b65b99f62650a7439d79 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -362,6 +362,7 @@ viz_component("service") {
@@ -381,7 +381,7 @@ index f28503c3bd02b51da148624b3545c7feeccad511..aeb4e82629b7d4828a6717708112f28e
    }
  
    if (is_android || use_ozone) {
-@@ -633,6 +634,7 @@ viz_source_set("unit_tests") {
+@@ -632,6 +633,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ae5a89f2f9070bf79d0e7ea7984050db5e4545b1..ed9d01d7b2914140d33443ee10f707c765c38fdd 100644
+index e38f5672c11cca02fcedd187514300d0137b3ae0..0124c867a5d9e7aab16c7e1ba7d5cf2c7bb7c949 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -517,10 +517,10 @@ index b1dd00ab48e22e1e248728e0400b00e92553e8fd..253670f014c4fc13ad99d674e8dcbf14
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index fe37e5d17d217ad2a7861ac9dba2e61de5a063aa..ab8c04e648f320412de16ce31c134b28c11eb01e 100644
+index 940adeedcd38062b44afdeda1b41c89394e5e420..0809615a9818da6c6b5fd8363b168336a8f2e1ed 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
-@@ -49,7 +49,9 @@ class ScopedPasswordInputEnabler;
+@@ -53,7 +53,9 @@ class CursorManager;
  
  @protocol RenderWidgetHostViewMacDelegate;
  
@@ -530,7 +530,7 @@ index fe37e5d17d217ad2a7861ac9dba2e61de5a063aa..ab8c04e648f320412de16ce31c134b28
  @class RenderWidgetHostViewCocoa;
  @class CursorAccessibilityScaleFactorObserver;
  
-@@ -682,9 +684,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -685,9 +687,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -543,7 +543,7 @@ index fe37e5d17d217ad2a7861ac9dba2e61de5a063aa..ab8c04e648f320412de16ce31c134b28
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 2ad8852bf38dbfbdc600a5a21b354385338eb81e..1e17e24f269fb6fc758a90fa11e33fcea7ce779e 100644
+index 71fec36cef95fcb24960fde3fa7216a345aeb4d7..b1630ac4289f23c5dd36a6bf6e57c911d8cede2a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -608,10 +608,10 @@ index 2ad8852bf38dbfbdc600a5a21b354385338eb81e..1e17e24f269fb6fc758a90fa11e33fce
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index aa5bf488affb055f9eef527783f4319d5cb3ce01..eaf62d995e54803372728b17f1a7ab24d40f4504 100644
+index 0738636a7462fd973c12d0e26e298c3b767f0c53..977e90c5dc3d8ff48ba9674c1c7d5eb6b6bab662 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -217,6 +217,7 @@ source_set("common") {
+@@ -200,6 +200,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]

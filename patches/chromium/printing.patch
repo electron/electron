@@ -11,18 +11,18 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index eaae83bc500d0011bf5fac160c82cdf4c865d7d6..438f7b020b28f39f68a85d2970d3ff7010a0c5ca 100644
+index c7a135b5bc489a5bb462d83904556ac2bcbfd6f5..e6bc49a042a13dc0f5dfdc954bce540a5da177f7 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -976,7 +976,6 @@ if (is_win) {
+@@ -983,7 +983,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
 -      "//printing:printing_unittests",
        "//sql:sql_unittests",
-       "//third_party/breakpad:symupload($host_toolchain)",
+       "//third_party/breakpad:symupload",
        "//ui/base:ui_base_unittests",
-@@ -985,6 +984,10 @@ if (is_win) {
+@@ -992,6 +991,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -861,7 +861,7 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ed9d01d7b2914140d33443ee10f707c765c38fdd..57708df678f9f7b0a8c9bbb672363a9144bb7b56 100644
+index 0124c867a5d9e7aab16c7e1ba7d5cf2c7bb7c949..6e967dc114350e25a48503c14c88009d55fc5d0c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2974,8 +2974,9 @@ source_set("browser") {
