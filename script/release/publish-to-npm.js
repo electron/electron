@@ -48,7 +48,6 @@ const isNightlyElectronVersion = currentElectronVersion.includes('nightly');
 const targetRepo = getRepo();
 
 function getRepo () {
-  if (process.env.IS_GHA_RELEASE) return 'test-releases';
   return isNightlyElectronVersion ? 'nightlies' : 'electron';
 }
 

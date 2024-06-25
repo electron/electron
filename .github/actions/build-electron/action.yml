@@ -170,7 +170,6 @@ runs:
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
-    # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
