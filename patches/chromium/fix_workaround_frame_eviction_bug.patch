@@ -10,19 +10,27 @@ This is due to a bug in `disable_hidden.patch`- a detailed writeup can be found 
 https://github.com/electron/electron/issues/42378
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 2db3239303d59677384cfb6eeb5cdd101c7d6d5c..0e7269e419017637a1ff9011cc91098d02402aa6 100644
+index 2db3239303d59677384cfb6eeb5cdd101c7d6d5c..f82ddb44196a70d79af933cb6ad826b8323cd5ce 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -570,7 +570,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -570,7 +570,7 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
 -  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE)
-+  CHECK(host_->is_hidden() || host()->disable_hidden_);
 +  if (host_->is_hidden() || host()->disable_hidden_ || visibility_ == Visibility::VISIBLE)
      OnShowWithPageVisibility(page_visibility);
  }
  
+@@ -588,7 +588,7 @@ void RenderWidgetHostViewAura::EnsurePlatformVisibility(
+ void RenderWidgetHostViewAura::NotifyHostAndDelegateOnWasShown(
+     blink::mojom::RecordContentToVisibleTimeRequestPtr tab_switch_start_state) {
+   CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
+-  CHECK(host_->is_hidden());
++  CHECK(host_->is_hidden() || host()->disable_hidden_);
+   CHECK_NE(visibility_, Visibility::VISIBLE);
+ 
+   visibility_ = Visibility::VISIBLE;
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
 index ad42e2d94ab498dd30968e62aebd62e14f8161ab..66623189c7ad951646d49d7619b63bbb2a35036d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
