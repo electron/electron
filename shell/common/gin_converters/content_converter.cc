@@ -150,6 +150,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
   switch (val) {
     case blink::PermissionType::ACCESSIBILITY_EVENTS:
       return StringToV8(isolate, "accessibility-events");
+    case blink::PermissionType::AUTOMATIC_FULLSCREEN:
+      return StringToV8(isolate, "automatic-fullscreen");
     case blink::PermissionType::AR:
       return StringToV8(isolate, "ar");
     case blink::PermissionType::BACKGROUND_FETCH:
