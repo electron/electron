@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 This module adds extra protection to data being stored on disk by using OS-provided cryptography systems. Current
 security semantics for each platform are outlined below.
 
-* **macOS**: Encryption keys are stored for your app in Keychain Access in a way that prevents
+* **macOS**: Encryption keys are stored for your app in [Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) in a way that prevents
 other applications from loading them without user override. Therefore, content is protected from other users and other apps running in the same userspace.
 * **Windows**: Encryption keys are generated via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata).
 As per the Windows documentation: "Typically, only a user with the same logon credential as the user who encrypted the data can typically 
