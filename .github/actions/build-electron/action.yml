@@ -17,6 +17,9 @@ inputs:
   is-release:
     description: 'Is release build'
     required: true
+  strip-binaries:
+    description: 'Strip binaries (Linux only)'
+    required: false
   generate-symbols:
     description: 'Generate symbols'
     required: true
@@ -54,6 +57,19 @@ runs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
+    - name: Strip Electron Binaries ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.strip-binaries == 'true' && inputs.target-platform == 'linux' }}
+      run: |
+        if [ x"$TARGET_ARCH" == x ]; then
+          target_cpu=x64
+        else
+          target_cpu="$TARGET_ARCH"
+        fi
+        cd src
+        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
+        electron/script/strip-binaries.py --target-cpu="$target_cpu"
+        electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
