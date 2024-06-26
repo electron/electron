@@ -49,13 +49,6 @@ like Atom, Visual Studio Code, or Slack.
 
 You can find more information and documentation in [the repository](https://github.com/electron-userland/electron-builder).
 
-## electron-react-boilerplate
-
-If you don't want any tools but only a solid boilerplate to build from,
-CT Lin's [`electron-react-boilerplate`](https://github.com/electron-react-boilerplate/electron-react-boilerplate) might be worth
-a look. It's quite popular in the community and uses `electron-builder`
-internally.
-
 ## Other Tools and Boilerplates
 
 The ["Awesome Electron" list](https://github.com/sindresorhus/awesome-electron#boilerplates) contains more tools and boilerplates
