@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e38f5672c11cca02fcedd187514300d0137b3ae0..0124c867a5d9e7aab16c7e1ba7d5cf2c7bb7c949 100644
+index 0fb3882a9073be3bb41d90217af28925e35e4654..06752e1f3dd92761379f582e9c0a85ab6e85e7d0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f010f10b32702c78a4e1cb931434e1a5393e11d3..baf0252f0ab6648a829c4453db17bc9466c53c45 100644
+index 965c8ae5c819711401b32ddb66dc6bbec7f31d41..0be0f6ec180f894dcb68ae9198df71259fdabf9e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index f010f10b32702c78a4e1cb931434e1a5393e11d3..baf0252f0ab6648a829c4453db17bc94
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1716,6 +1718,7 @@ test("content_browsertests") {
+@@ -1715,6 +1717,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index f010f10b32702c78a4e1cb931434e1a5393e11d3..baf0252f0ab6648a829c4453db17bc94
  
    public_deps = [
      ":test_interfaces",
-@@ -2968,6 +2971,7 @@ test("content_unittests") {
+@@ -2967,6 +2970,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
