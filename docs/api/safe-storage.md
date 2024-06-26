@@ -4,7 +4,20 @@
 
 Process: [Main](../glossary.md#main-process)
 
-This module protects data stored on disk from being accessed by other applications or users with full disk access.
+This module adds extra protection to data being stored on disk by using OS provided cryptography systems. Current
+security semantics for each platform are outlined below.
+
+* **macOS**: Encryption keys are stored for your app in Keychain Access in a way that without user override prevents
+other applications from loading them. Thus protecting content from other users and other apps running in the same userspace.
+* **Windows**: Encryption keys are generated via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata),
+per Windows documentation typically only a user with the same logon credential as the user who encrypted the data can
+decrypt the data. Therefore content is protected from other users on the same machine, but not from other apps running in the
+same userspace.
+* **Linux**: Encryption keys are generated and stored in a window manager specific secret store, this can vary depending on
+your linux setup. Options include (but aren't limited to) `kwallet`, `kwallet5`, `kwallet6` and `gnome-libsecret`. As such the
+security semantics of content protected via `safeStorage` varies between window managers and secret stores.
+  * Note that not all linux setups have an available secret store, when this is true the secrets are not protected at all
+as they are encrypted via a plaintext stored password. You can detect when this happens via `safeStorage.getSelectedStorageBackend()`.
 
 Note that on Mac, access to the system Keychain is required and
 these calls can block the current thread to collect user input.
