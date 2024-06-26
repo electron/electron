@@ -1,4 +1,4 @@
-{
+gh repo clone electron/electron
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "buildtools",
 	"onCreateCommand": ".devcontainer/on-create-command.sh",
