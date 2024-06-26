@@ -10,7 +10,7 @@ security semantics for each platform are outlined below.
 * **macOS**: Encryption keys are stored for your app in [Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) in a way that prevents
 other applications from loading them without user override. Therefore, content is protected from other users and other apps running in the same userspace.
 * **Windows**: Encryption keys are generated via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata).
-As per the Windows documentation: "Typically, only a user with the same logon credential as the user who encrypted the data can typically 
+As per the Windows documentation: "Typically, only a user with the same logon credential as the user who encrypted the data can typically
 decrypt the data". Therefore, content is protected from other users on the same machine, but not from other apps running in the
 same userspace.
 * **Linux**: Encryption keys are generated and stored in a secret store that varies depending on your window manager and system setup. Options currently supported are `kwallet`, `kwallet5`, `kwallet6` and `gnome-libsecret`, but more may be available in future versions of Electron. As such, the
