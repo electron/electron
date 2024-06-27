@@ -54,6 +54,11 @@ on:
         required: false
         type: boolean
         default: false
+      step-suffix: 
+        description: 'Darwin or MAS publish'
+        required: false
+        type: string
+        default: ''
 
 
 concurrency:
@@ -184,6 +189,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
     - name: Build Electron
+      if: ${{ inputs.target-platform != 'macos' && inputs.is_release != 'true' && inputs.step-suffix != 'mas' }}
       uses: ./src/electron/.github/actions/build-electron
       with:
         target-arch: ${{ inputs.target-arch }}
@@ -201,7 +207,7 @@ jobs:
         GN_EXTRA_ARGS='is_mas_build=true'
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Build Electron (MAS)
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform == 'macos' && inputs.is_release == 'true' && inputs.step-suffix == 'mas' }}
       uses: ./src/electron/.github/actions/build-electron
       with:
         target-arch: ${{ inputs.target-arch }}
