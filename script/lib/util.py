@@ -203,6 +203,15 @@ def get_buildtools_executable(name):
     path += '.exe'
   return path
 
+def get_depot_tools_executable(name):
+  buildtools = os.path.realpath(
+    os.path.join(ELECTRON_DIR, '..', 'third_party', 'depot_tools'))
+
+  path = os.path.join(buildtools, name)
+  if sys.platform == 'win32':
+    path += '.bat'
+  return path
+
 def get_linux_binaries():
   return [
     'chrome-sandbox',
