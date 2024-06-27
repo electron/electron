@@ -39,6 +39,8 @@ class FramelessView : public views::NonClientFrameView {
   int ResizingBorderHitTestImpl(const gfx::Point& point,
                                 const gfx::Insets& resize_border);
 
+  bool ShouldCustomDrawSystemTitlebar() const;
+
   // views::NonClientFrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
@@ -58,6 +60,9 @@ class FramelessView : public views::NonClientFrameView {
       const views::SizeBounds& available_size) const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
+
+  NativeWindowViews* window() const { return window_; }
+  views::Widget* frame() const { return frame_; }
 
   // Not owned.
   raw_ptr<NativeWindowViews> window_ = nullptr;
