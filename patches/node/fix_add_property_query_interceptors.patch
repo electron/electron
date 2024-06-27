@@ -541,10 +541,10 @@ index bce7ae07214ddf970a530db29ed6970e14b7a5ed..85f82180d48d6cfd7738cd7b1e504f23
  }
  
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index 24f0c6771720d8a6cdb684a0d562d01564d433f7..a1ad176c45f1900fb248650eb8533df4690bcf29 100644
+index 9238f2d4d7376b22e264dbc9359b480937d29676..b5c1df6941616642075babdad81be00ce63ffd56 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
-@@ -65,16 +65,17 @@ class ExternalReferenceRegistry {
+@@ -59,16 +59,17 @@ class ExternalReferenceRegistry {
    V(v8::FunctionCallback)                                                      \
    V(v8::AccessorNameGetterCallback)                                            \
    V(v8::AccessorNameSetterCallback)                                            \
