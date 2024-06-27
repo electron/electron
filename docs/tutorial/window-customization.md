@@ -91,7 +91,7 @@ win.setWindowButtonVisibility(false)
 > combining `frame: false` with `win.setWindowButtonVisibility(true)` will yield the same
 > layout outcome as setting `titleBarStyle: 'hidden'`.
 
-## Window Controls Overlay _macOS_ _Windows_
+## Window Controls Overlay
 
 The [Window Controls Overlay API][] is a web standard that gives web apps the ability to
 customize their title bar region when installed on desktop. Electron exposes this API
@@ -115,12 +115,11 @@ const win = new BrowserWindow({
 })
 ```
 
-On either platform `titleBarOverlay` can also be an object. On both macOS and Windows, the height of the overlay can be specified with the `height` property. On Windows, the color of the overlay and its symbols can be specified using the `color` and `symbolColor` properties respectively. `rgba()`, `hsla()`, and `#RRGGBBAA` color formats are supported to apply transparency.
+On either platform `titleBarOverlay` can also be an object. The height of the overlay can be specified with the `height` property. On Windows and Linux, the color of the overlay can be specified using the `color` property. On Windows, the `symbolColor` property allows the symbol color to be specified as well; on Linux it is calculated automatically to contrast appropriately with `color` if specified. The `rgba()`, `hsla()`, and `#RRGGBBAA` color formats are supported to apply transparency.
 
 If a color option is not specified, the color will default to its system color for the window control buttons. Similarly, if the height option is not specified it will default to the default height:
 
 ```js title='main.js'
-// on Windows
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
