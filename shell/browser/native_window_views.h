@@ -167,9 +167,9 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
+  void UpdateThickFrame();
 #endif
 
-#if BUILDFLAG(IS_WIN)
   bool IsWindowControlsOverlayEnabled() const {
     return (title_bar_style_ == NativeWindowViews::TitleBarStyle::kHidden) &&
            titlebar_overlay_;
@@ -182,9 +182,6 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
-
-  void UpdateThickFrame();
-#endif
 
  private:
   // views::WidgetObserver:
@@ -264,6 +261,11 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
 
+  // The color to use as the theme and symbol colors respectively for Window
+  // Controls Overlay if enabled on Windows.
+  SkColor overlay_button_color_ = SkColor();
+  SkColor overlay_symbol_color_ = SkColor();
+
 #if BUILDFLAG(IS_WIN)
 
   ui::WindowShowState last_window_state_;
@@ -306,11 +308,6 @@ class NativeWindowViews : public NativeWindow,
   bool is_moving_ = false;
 
   std::optional<gfx::Rect> pending_bounds_change_;
-
-  // The color to use as the theme and symbol colors respectively for Window
-  // Controls Overlay if enabled on Windows.
-  SkColor overlay_button_color_;
-  SkColor overlay_symbol_color_;
 
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our thumbar buttons.
