@@ -1,7 +1,7 @@
-From cc85a772668047855512f418ecdacda3eb2607ca Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Josip Sokcevic <sokcevic@chromium.org>
-Date: Tue, 04 Jun 2024 23:07:34 +0000
-Subject: [PATCH] [DEPS] Update clang-format location
+Date: Tue, 4 Jun 2024 23:07:34 +0000
+Subject: Update clang-format location
 
 The previous location clang-format GCS location was placing
 content into CIPD package location (e.g. buildtools/linux64 for
@@ -15,13 +15,12 @@ Reviewed-by: Joanna Wang <jojwang@chromium.org>
 Reviewed-by: Junji Watanabe <jwata@google.com>
 Commit-Queue: Josip Sokcevic <sokcevic@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1310289}
----
 
 diff --git a/DEPS b/DEPS
-index 417de51..6ebc714 100644
+index 33eca22041b65c8d548b2b4c738d907dd0c652b6..e7c549e2b8a26d460f520eff1735d64e8b0ce52d 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -648,7 +648,7 @@
+@@ -648,7 +648,7 @@ deps = {
        },
      ],
    },
@@ -30,7 +29,7 @@ index 417de51..6ebc714 100644
      'bucket': 'chromium-clang-format',
      'condition': 'host_os == "win" and non_git_source',
      'dep_type': 'gcs',
-@@ -662,7 +662,7 @@
+@@ -662,7 +662,7 @@ deps = {
        },
      ],
    },
@@ -39,7 +38,7 @@ index 417de51..6ebc714 100644
      'bucket': 'chromium-clang-format',
      'condition': 'host_os == "mac" and host_cpu == "x64" and non_git_source',
      'dep_type': 'gcs',
-@@ -676,7 +676,7 @@
+@@ -676,7 +676,7 @@ deps = {
        },
      ],
    },
@@ -48,7 +47,7 @@ index 417de51..6ebc714 100644
      'bucket': 'chromium-clang-format',
      'condition': 'host_os == "mac" and host_cpu == "arm64" and non_git_source',
      'dep_type': 'gcs',
-@@ -690,7 +690,7 @@
+@@ -690,7 +690,7 @@ deps = {
        },
      ],
    },
@@ -58,7 +57,7 @@ index 417de51..6ebc714 100644
      'condition': 'host_os == "linux" and non_git_source',
      'dep_type': 'gcs',
 diff --git a/buildtools/.gitignore b/buildtools/.gitignore
-index 449448e..caa2bd8 100644
+index 449448ef5b822539e154d6f139058c567d0c2dec..caa2bd8ca4278415e707b39af7e731be24f4973c 100644
 --- a/buildtools/.gitignore
 +++ b/buildtools/.gitignore
 @@ -3,16 +3,20 @@
@@ -85,7 +84,7 @@ index 449448e..caa2bd8 100644
 +/win/gn.exe
 \ No newline at end of file
 diff --git a/buildtools/DEPS b/buildtools/DEPS
-index bc62395d..f32fc914 100644
+index bc62395d0cdce163285bc5252397fea2f5d8b5fa..f32fc9148704879b0718936c5503e7834c7701ac 100644
 --- a/buildtools/DEPS
 +++ b/buildtools/DEPS
 @@ -1,7 +1,13 @@
@@ -103,7 +102,7 @@ index bc62395d..f32fc914 100644
      'bucket': 'chromium-clang-format',
      'condition': 'host_os == "win"',
      'dep_type': 'gcs',
-@@ -15,7 +21,7 @@
+@@ -15,7 +21,7 @@ deps = {
        },
      ],
    },
@@ -112,7 +111,7 @@ index bc62395d..f32fc914 100644
      'bucket': 'chromium-clang-format',
      'condition': 'host_os == "mac" and host_cpu == "x64"',
      'dep_type': 'gcs',
-@@ -29,7 +35,7 @@
+@@ -29,7 +35,7 @@ deps = {
        },
      ],
    },
@@ -121,7 +120,7 @@ index bc62395d..f32fc914 100644
      'bucket': 'chromium-clang-format',
      'condition': 'host_os == "mac" and host_cpu == "arm64"',
      'dep_type': 'gcs',
-@@ -43,7 +49,7 @@
+@@ -43,7 +49,7 @@ deps = {
        },
      ],
    },
@@ -131,10 +130,10 @@ index bc62395d..f32fc914 100644
      'condition': 'host_os == "linux"',
      'dep_type': 'gcs',
 diff --git a/docs/updating_clang_format_binaries.md b/docs/updating_clang_format_binaries.md
-index e5cb28b5..0369542 100644
+index e5cb28b5a037a68e48f53b9327f3f52f4b219a4c..03695427fe20a8e7042d83d31f506059e94296af 100644
 --- a/docs/updating_clang_format_binaries.md
 +++ b/docs/updating_clang_format_binaries.md
-@@ -77,10 +77,10 @@
+@@ -77,10 +77,10 @@ function upload_and_set {
  	set_deps $2 $object_info
  }
  
@@ -149,7 +148,7 @@ index e5cb28b5..0369542 100644
  
  # Clean up
  rm /tmp/clang-format-$CLANG_REV.tgz
-@@ -100,7 +100,7 @@
+@@ -100,7 +100,7 @@ clang-format differences by choosing patchset 1 as the base for the gerrit diff.
  ```shell
  ## New gerrit CL with results of old clang-format.
  # use old clang-format
