@@ -549,7 +549,7 @@ index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a5
    });
  
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index ecda345989789d0745b631385e7411305c1c6375..542a0a16f3f2eba4efd31e807a3bc34b6752d798 100644
+index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..73bb53b0405b20f51b13326cc70e52755c674366 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -28,12 +28,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -577,10 +577,10 @@ index ecda345989789d0745b631385e7411305c1c6375..542a0a16f3f2eba4efd31e807a3bc34b
 -  if (padding === constants.RSA_PKCS1_PADDING) {
 +  // BoringSSL does not support RSA_PKCS1_PADDING.
 +  if (false) {
-     // TODO(richardlau): see if it's possible to determine implicit rejection
-     // support when dynamically linked against OpenSSL.
      if (!process.config.variables.node_shared_openssl) {
-@@ -419,7 +419,7 @@ assert.throws(() => {
+       assert.throws(() => {
+         crypto.privateDecrypt({
+@@ -466,7 +466,7 @@ assert.throws(() => {
    assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
  }
  
@@ -589,7 +589,7 @@ index ecda345989789d0745b631385e7411305c1c6375..542a0a16f3f2eba4efd31e807a3bc34b
  //
  // Test DSA signing and verification
  //
-@@ -494,3 +494,4 @@ const input = 'I AM THE WALRUS';
+@@ -541,3 +541,4 @@ const input = 'I AM THE WALRUS';
  
    assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
  }
