@@ -261,8 +261,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
 
-  // The color to use as the theme and symbol colors respectively for Window
-  // Controls Overlay if enabled on Windows.
+  // The color to use as the theme and symbol colors respectively for WCO.
   SkColor overlay_button_color_ = SkColor();
   SkColor overlay_symbol_color_ = SkColor();
 
