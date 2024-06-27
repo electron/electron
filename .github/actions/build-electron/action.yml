@@ -59,17 +59,12 @@ runs:
         node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.strip-binaries == 'true' && inputs.target-platform == 'linux' }}
+      if: ${{ inputs.strip-binaries == 'true' }}
       run: |
-        if [ x"$TARGET_ARCH" == x ]; then
-          target_cpu=x64
-        else
-          target_cpu="$TARGET_ARCH"
-        fi
         cd src
-        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="$target_cpu"
-        electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
+        electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
+        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}"
+        electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -203,9 +198,9 @@ runs:
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}_asan
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
         else
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
         fi
         echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
@@ -217,9 +212,9 @@ runs:
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
