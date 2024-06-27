@@ -60,7 +60,7 @@ OpaqueFrameView::~OpaqueFrameView() = default;
 void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   FramelessView::Init(window, frame);
 
-  if (!ShouldCustomDrawSystemTitlebar())
+  if (!window->IsWindowControlsOverlayEnabled())
     return;
 
   caption_button_placeholder_container_ =
@@ -194,7 +194,7 @@ int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {
 }
 
 gfx::Rect OpaqueFrameView::GetBoundsForClientView() const {
-  if (ShouldCustomDrawSystemTitlebar()) {
+  if (window()->IsWindowControlsOverlayEnabled()) {
     auto border_thickness = FrameBorderInsets(false);
     int top_height = border_thickness.top();
     return gfx::Rect(
@@ -208,7 +208,7 @@ gfx::Rect OpaqueFrameView::GetBoundsForClientView() const {
 
 gfx::Rect OpaqueFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
-  if (ShouldCustomDrawSystemTitlebar()) {
+  if (window()->IsWindowControlsOverlayEnabled()) {
     int top_height = NonClientTopHeight(false);
     auto border_insets = FrameBorderInsets(false);
     return gfx::Rect(
@@ -222,7 +222,7 @@ gfx::Rect OpaqueFrameView::GetWindowBoundsForClientBounds(
 }
 
 int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
-  if (ShouldCustomDrawSystemTitlebar()) {
+  if (window()->IsWindowControlsOverlayEnabled()) {
     if (HitTestCaptionButton(close_button_, point))
       return HTCLOSE;
     if (HitTestCaptionButton(restore_button_, point))
@@ -238,14 +238,16 @@ int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
     }
   }
 
-  // Use the parent class's hittest last.
   return FramelessView::NonClientHitTest(point);
 }
 
 // views::View:
 void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
+  if (!window()->IsWindowControlsOverlayEnabled())
+    return;
+
   if (frame()->IsFullscreen())
-    return;  // Nothing is visible, so don't bother to paint.
+    return;
 
   const bool active = ShouldPaintAsActive();
   const SkColor symbol_color = window()->overlay_button_color();
@@ -283,27 +285,28 @@ views::View* OpaqueFrameView::TargetForRect(views::View* root,
 void OpaqueFrameView::Layout(PassKey) {
   LayoutSuperclass<FramelessView>(this);
 
-  if (ShouldCustomDrawSystemTitlebar()) {
-    // Reset all our data so that everything is invisible.
-    TopAreaPadding top_area_padding = GetTopAreaPadding();
-    available_space_leading_x_ = top_area_padding.leading;
-    available_space_trailing_x_ = width() - top_area_padding.trailing;
-    minimum_size_for_buttons_ =
-        available_space_leading_x_ + width() - available_space_trailing_x_;
-    placed_leading_button_ = false;
-    placed_trailing_button_ = false;
+  if (!window()->IsWindowControlsOverlayEnabled())
+    return;
 
-    LayoutWindowControls();
+  // Reset all our data so that everything is invisible.
+  TopAreaPadding top_area_padding = GetTopAreaPadding();
+  available_space_leading_x_ = top_area_padding.leading;
+  available_space_trailing_x_ = width() - top_area_padding.trailing;
+  minimum_size_for_buttons_ =
+      available_space_leading_x_ + width() - available_space_trailing_x_;
+  placed_leading_button_ = false;
+  placed_trailing_button_ = false;
 
-    int height = NonClientTopHeight(false);
-    auto insets = FrameBorderInsets(false);
-    int container_x = placed_trailing_button_ ? available_space_trailing_x_ : 0;
-    caption_button_placeholder_container_->SetBounds(
-        container_x, insets.top(), minimum_size_for_buttons_ - insets.width(),
-        height - insets.top());
+  LayoutWindowControls();
 
-    LayoutWindowControlsOverlay();
-  }
+  int height = NonClientTopHeight(false);
+  auto insets = FrameBorderInsets(false);
+  int container_x = placed_trailing_button_ ? available_space_trailing_x_ : 0;
+  caption_button_placeholder_container_->SetBounds(
+      container_x, insets.top(), minimum_size_for_buttons_ - insets.width(),
+      height - insets.top());
+
+  LayoutWindowControlsOverlay();
 }
 
 OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding() const {
@@ -336,16 +339,14 @@ void OpaqueFrameView::LayoutWindowControls() {
   buttons_not_shown.push_back(views::FrameButton::kMinimize);
   buttons_not_shown.push_back(views::FrameButton::kClose);
 
-  if (ShouldCustomDrawSystemTitlebar()) {
-    for (const auto& button : leading_buttons_) {
-      ConfigureButton(button, ALIGN_LEADING);
-      std::erase(buttons_not_shown, button);
-    }
+  for (const auto& button : leading_buttons_) {
+    ConfigureButton(button, ALIGN_LEADING);
+    std::erase(buttons_not_shown, button);
+  }
 
-    for (const auto& button : base::Reversed(trailing_buttons_)) {
-      ConfigureButton(button, ALIGN_TRAILING);
-      std::erase(buttons_not_shown, button);
-    }
+  for (const auto& button : base::Reversed(trailing_buttons_)) {
+    ConfigureButton(button, ALIGN_TRAILING);
+    std::erase(buttons_not_shown, button);
   }
 
   for (const auto& button_id : buttons_not_shown)

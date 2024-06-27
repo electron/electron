@@ -1044,7 +1044,7 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
+void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
                                        gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
   if (!window_->titlebar_overlay_enabled()) {
@@ -1099,13 +1099,11 @@ void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
 #if BUILDFLAG(IS_WIN)
   auto* frame_view = static_cast<WinFrameView*>(
       window->widget()->non_client_view()->frame_view());
-  frame_view->InvalidateCaptionButtons();
 #else
   auto* frame_view = static_cast<OpaqueFrameView*>(
       window->widget()->non_client_view()->frame_view());
-  frame_view->UpdateCaptionButtonPlaceholderContainerBackground();
-  frame_view->LayoutWindowControlsOverlay();
 #endif
+  frame_view->InvalidateCaptionButtons();
 }
 #endif
 
