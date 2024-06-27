@@ -8,6 +8,9 @@ This CL adds support for the following features to //shell_dialogs:
 * showHiddenFiles - Show hidden files in dialog.
 * showOverwriteConfirmation - Whether the user will be presented a confirmation dialog if the user types a file name that already exists.
 
+It also:
+* Changes XDG Portal implementation behavior to set default path regardless of dialog type.
+
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
@@ -269,7 +272,7 @@ index 796e98cd42a5c6087da6cdf1d7bff4248113aeab..bcf43ab96bcb426fde6362dd0da44217
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent, params));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index decba61300c21f7f5d070b24c23ff2e08b06d161..ae6e76186b6db9d0d32d51baaaeafa6106225c0f 100644
+index decba61300c21f7f5d070b24c23ff2e08b06d161..26ba2c573ca83433de82496e6f20f71c194babc0 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -218,6 +218,10 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
@@ -360,7 +363,7 @@ index decba61300c21f7f5d070b24c23ff2e08b06d161..ae6e76186b6db9d0d32d51baaaeafa61
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
  
-@@ -562,6 +571,7 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -562,12 +571,12 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);
@@ -368,6 +371,13 @@ index decba61300c21f7f5d070b24c23ff2e08b06d161..ae6e76186b6db9d0d32d51baaaeafa61
    } else if (type == SelectFileDialog::Type::SELECT_OPEN_MULTI_FILE) {
      AppendBoolOption(&options_writer, kFileChooserOptionMultiple, true);
    }
+ 
+-  if (type == SelectFileDialog::Type::SELECT_SAVEAS_FILE &&
+-      !default_path.empty()) {
++  if (!default_path.empty()) {
+     if (default_path_exists) {
+       // If this is an existing directory, navigate to that directory, with no
+       // filename.
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
 index c487f7da19e2d05696a8eb72f2fa3e12972149f3..02a40c571570974dcc61e1b1f7ed95fbfc2bedf2 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
