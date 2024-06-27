@@ -1,0 +1,160 @@
+From cc85a772668047855512f418ecdacda3eb2607ca Mon Sep 17 00:00:00 2001
+From: Josip Sokcevic <sokcevic@chromium.org>
+Date: Tue, 04 Jun 2024 23:07:34 +0000
+Subject: [PATCH] [DEPS] Update clang-format location
+
+The previous location clang-format GCS location was placing
+content into CIPD package location (e.g. buildtools/linux64 for
+buildtools/linux64/format). The new location removes that conflict (e.g.
+places formatter into buildtools/linux64-format/ directory).
+
+Bug: 336843583
+Change-Id: Ia4228941fee2fde38df8f4c4f1cccfc41f366bf4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5581721
+Reviewed-by: Joanna Wang <jojwang@chromium.org>
+Reviewed-by: Junji Watanabe <jwata@google.com>
+Commit-Queue: Josip Sokcevic <sokcevic@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1310289}
+---
+
+diff --git a/DEPS b/DEPS
+index 417de51..6ebc714 100644
+--- a/DEPS
++++ b/DEPS
+@@ -648,7 +648,7 @@
+       },
+     ],
+   },
+-  'src/buildtools/win/format': {
++  'src/buildtools/win-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "win" and non_git_source',
+     'dep_type': 'gcs',
+@@ -662,7 +662,7 @@
+       },
+     ],
+   },
+-  'src/buildtools/mac/format': {
++  'src/buildtools/mac-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "mac" and host_cpu == "x64" and non_git_source',
+     'dep_type': 'gcs',
+@@ -676,7 +676,7 @@
+       },
+     ],
+   },
+-  'src/buildtools/mac_arm64/format': {
++  'src/buildtools/mac_arm64-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "mac" and host_cpu == "arm64" and non_git_source',
+     'dep_type': 'gcs',
+@@ -690,7 +690,7 @@
+       },
+     ],
+   },
+-  'src/buildtools/linux64/format': {
++  'src/buildtools/linux64-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "linux" and non_git_source',
+     'dep_type': 'gcs',
+diff --git a/buildtools/.gitignore b/buildtools/.gitignore
+index 449448e..caa2bd8 100644
+--- a/buildtools/.gitignore
++++ b/buildtools/.gitignore
+@@ -3,16 +3,20 @@
+ /android/doclava.tar.gz
+ /android/doclava/
+ /clang_format/script/
++/linux-format/
+ /linux64/.versions/
+ /linux64/clang-format
+ /linux64/gn
++/mac-format/
+ /mac/.versions/
+ /mac/clang-format
+ /mac/gn
++/mac_arm64-format/
+ /reclient/
+ /third_party/libc++/trunk
+ /third_party/libc++abi/trunk
+ /third_party/libunwind/trunk
++/win-format/
+ /win/.versions
+ /win/clang-format.exe
+-/win/gn.exe
++/win/gn.exe
+\ No newline at end of file
+diff --git a/buildtools/DEPS b/buildtools/DEPS
+index bc62395d..f32fc914 100644
+--- a/buildtools/DEPS
++++ b/buildtools/DEPS
+@@ -1,7 +1,13 @@
+ use_relative_paths = True
+ 
++# Only these hosts are allowed for dependencies in this DEPS file.
++# If you need to add a new host, contact chrome infrastracture team.
++allowed_hosts = [
++  'chromium-clang-format',
++]
++
+ deps = {
+-  'win/format': {
++  'win-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "win"',
+     'dep_type': 'gcs',
+@@ -15,7 +21,7 @@
+       },
+     ],
+   },
+-  'mac/format': {
++  'mac-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "mac" and host_cpu == "x64"',
+     'dep_type': 'gcs',
+@@ -29,7 +35,7 @@
+       },
+     ],
+   },
+-  'mac_arm64/format': {
++  'mac_arm64-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "mac" and host_cpu == "arm64"',
+     'dep_type': 'gcs',
+@@ -43,7 +49,7 @@
+       },
+     ],
+   },
+-  'linux64/format': {
++  'linux64-format': {
+     'bucket': 'chromium-clang-format',
+     'condition': 'host_os == "linux"',
+     'dep_type': 'gcs',
+diff --git a/docs/updating_clang_format_binaries.md b/docs/updating_clang_format_binaries.md
+index e5cb28b5..0369542 100644
+--- a/docs/updating_clang_format_binaries.md
++++ b/docs/updating_clang_format_binaries.md
+@@ -77,10 +77,10 @@
+ 	set_deps $2 $object_info
+ }
+ 
+-upload_and_set buildtools/linux64/clang-format linux64/format
+-upload_and_set buildtools/win/clang-format.exe win/format
+-upload_and_set buildtools/mac/clang-format.x64 mac/format
+-upload_and_set buildtools/mac/clang-format.arm64 mac_arm64/format
++upload_and_set buildtools/linux64/clang-format linux64-format
++upload_and_set buildtools/win/clang-format.exe win-format
++upload_and_set buildtools/mac/clang-format.x64 mac-format
++upload_and_set buildtools/mac/clang-format.arm64 mac_arm64-format
+ 
+ # Clean up
+ rm /tmp/clang-format-$CLANG_REV.tgz
+@@ -100,7 +100,7 @@
+ ```shell
+ ## New gerrit CL with results of old clang-format.
+ # use old clang-format
+-find base -name '*.cc' -o -name '*.c' -o -name '*.h' -o -name '*.mm' | xargs ./buildtools/linux64/format/clang-format -i
++find base -name '*.cc' -o -name '*.c' -o -name '*.h' -o -name '*.mm' | xargs ./buildtools/linux64-format/clang-format -i
+ git commit -a
+ git cl upload --bypass-hooks
+ ## New patchset on gerrit CL with results of new clang-format.
