@@ -15,6 +15,7 @@
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
+#include "ui/compositor/layer.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
