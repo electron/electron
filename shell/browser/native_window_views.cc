@@ -246,7 +246,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     }
   }
 
-  if (title_bar_style_ != TitleBarStyle::kNormal)
+  // |hidden| is the only non-default titleBarStyle valid on Windows and Linux.
+  if (title_bar_style_ == TitleBarStyle::kHidden)
     set_has_frame(false);
 
 #if BUILDFLAG(IS_WIN)

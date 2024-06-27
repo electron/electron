@@ -80,24 +80,23 @@ views::View* WinFrameView::TargetForRect(views::View* root,
     // Custom system titlebar returns non HTCLIENT value, however event should
     // be handled by the view, not by the system, because there are no system
     // buttons underneath.
-    if (!ShouldCustomDrawSystemTitlebar()) {
+    if (!window()->IsWindowControlsOverlayEnabled())
       return this;
-    }
+
     auto local_point = rect.origin();
     ConvertPointToTarget(parent(), caption_button_container_, &local_point);
-    if (!caption_button_container_->HitTestPoint(local_point)) {
+    if (!caption_button_container_->HitTestPoint(local_point))
       return this;
-    }
   }
 
   return NonClientFrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
-  if (window_->has_frame())
+  if (window()->has_frame())
     return frame_->client_view()->NonClientHitTest(point);
 
-  if (ShouldCustomDrawSystemTitlebar()) {
+  if (window()->IsWindowControlsOverlayEnabled()) {
     // See if the point is within any of the window controls.
     if (caption_button_container_) {
       gfx::Point local_point = point;
@@ -191,7 +190,7 @@ int WinFrameView::FrameTopBorderThicknessPx(bool restored) const {
 
   // See comments in BrowserDesktopWindowTreeHostWin::GetClientAreaInsets().
   const bool needs_no_border =
-      (ShouldCustomDrawSystemTitlebar() && frame()->IsMaximized()) ||
+      (window()->IsWindowControlsOverlayEnabled() && frame()->IsMaximized()) ||
       frame()->IsFullscreen();
   if (needs_no_border && !restored)
     return 0;
@@ -239,7 +238,7 @@ void WinFrameView::LayoutCaptionButtons() {
     return;
 
   // Non-custom system titlebar already contains caption buttons.
-  if (!ShouldCustomDrawSystemTitlebar()) {
+  if (!window()->IsWindowControlsOverlayEnabled()) {
     caption_button_container_->SetVisible(false);
     return;
   }
