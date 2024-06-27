@@ -223,10 +223,6 @@ gfx::Rect OpaqueFrameView::GetWindowBoundsForClientBounds(
 
 int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
   if (ShouldCustomDrawSystemTitlebar()) {
-    LOG(INFO) << "OpaqueFrameView::NonClientHitTest() - "
-                 "ShouldCustomDrawSystemTitlebar()";
-    LOG(INFO) << "close_button_->GetMirroredBounds(): "
-              << close_button_->GetVisible();
     if (HitTestCaptionButton(close_button_, point))
       return HTCLOSE;
     if (HitTestCaptionButton(restore_button_, point))
