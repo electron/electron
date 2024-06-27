@@ -37,8 +37,6 @@ void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
-  } else {
-    caption_button_container_ = nullptr;
   }
 }
 
@@ -166,10 +164,6 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
 
 bool WinFrameView::IsMaximized() const {
   return frame()->IsMaximized();
-}
-
-bool WinFrameView::ShouldCustomDrawSystemTitlebar() const {
-  return window()->IsWindowControlsOverlayEnabled();
 }
 
 void WinFrameView::Layout(PassKey) {

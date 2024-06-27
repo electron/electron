@@ -26,6 +26,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -59,6 +60,7 @@
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/native_frame_view.h"
+#include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
@@ -76,7 +78,6 @@
 #elif BUILDFLAG(IS_WIN)
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
-#include "content/public/common/color_parser.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
@@ -219,6 +220,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+#endif
 
   v8::Local<v8::Value> titlebar_overlay;
   if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
@@ -247,6 +249,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
 
+#if BUILDFLAG(IS_WIN)
   // If the taskbar is re-created after we start up, we have to rebuild all of
   // our buttons.
   taskbar_created_message_ = RegisterWindowMessage(TEXT("TaskbarCreated"));
@@ -1703,11 +1706,15 @@ NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
   if (has_frame() && !has_client_frame()) {
     return std::make_unique<NativeFrameView>(this, widget);
   } else {
-    auto frame_view = has_frame() && has_client_frame()
-                          ? std::make_unique<ClientFrameViewLinux>()
-                          : std::make_unique<FramelessView>();
-    frame_view->Init(this, widget);
-    return frame_view;
+    if (has_frame() && has_client_frame()) {
+      auto frame_view = std::make_unique<ClientFrameViewLinux>();
+      frame_view->Init(this, widget);
+      return frame_view;
+    } else {
+      auto frame_view = std::make_unique<OpaqueFrameView>();
+      frame_view->Init(this, widget);
+      return frame_view;
+    }
   }
 #endif
 }
