@@ -196,7 +196,8 @@ def get_buildtools_executable(name):
     raise Exception(f"Unsupported platform: {sys.platform}")
 
   if name == 'clang-format':
-    path = os.path.join(buildtools, chromium_platform, 'format', name)  
+    chromium_platform_path = chromium_platform + '-format'
+    path = os.path.join(buildtools, chromium_platform_path, name) 
   else:
     path = os.path.join(buildtools, chromium_platform, name)
   if sys.platform == 'win32':
