@@ -48,7 +48,7 @@ index 67cd4f2adf15e7d8511f561c54163b1842e971af..7e0e1a62289289b8362870ba4869c974
  
    const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 3517c39ad0b71a4d3efefeee2a3d55b70494bc1d..7164e539880e6d33ee1ea1fb77bae8adf4095708 100644
+index ee1c7931a5c83eec00fe05807ddb97572fe70cc9..8e297e57fdbc9fd42beb6e4a33cc91b9dd7316b8 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -158,7 +158,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -77,7 +77,7 @@ index 3517c39ad0b71a4d3efefeee2a3d55b70494bc1d..7164e539880e6d33ee1ea1fb77bae8ad
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -199,15 +201,20 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -199,6 +201,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -86,22 +86,18 @@ index 3517c39ad0b71a4d3efefeee2a3d55b70494bc1d..7164e539880e6d33ee1ea1fb77bae8ad
  }
  
  const char* GetServerName(SSL* ssl) {
-   return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+@@ -206,7 +210,10 @@ const char* GetServerName(SSL* ssl) {
  }
  
--bool SetGroups(SecureContext* sc, const char* groups) {
--  return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
--}
-+ bool SetGroups(SecureContext* sc, const char* groups) {
+ bool SetGroups(SecureContext* sc, const char* groups) {
 +#ifndef OPENSSL_IS_BORINGSSL
-+   return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
+   return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
 +#endif
 +  return SSL_CTX_set1_curves_list(sc->ctx().get(), groups) == 1;
-+ }
+ }
  
- const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-   const char* code = "UNSPECIFIED";
-@@ -1042,14 +1049,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+ // When adding or removing errors below, please also update the list in the API
+@@ -1044,14 +1051,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -373,7 +369,7 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 904dda4caf9695acec72bd95ba235b92b07eabe2..c0c99456471788d40218152291a32db5fbdf1101 100644
+index 3b3724d6c7156b87555be31470e75b1cf28b5e3f..910c69b6d1d17ef25201dbb39d3d074f4f3f011f 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -49,7 +49,7 @@
@@ -385,7 +381,7 @@ index 904dda4caf9695acec72bd95ba235b92b07eabe2..c0c99456471788d40218152291a32db5
  #include <openssl/evp.h>
  #endif
  
-@@ -1035,7 +1035,7 @@ class Environment : public MemoryRetainer {
+@@ -1036,7 +1036,7 @@ class Environment : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -421,7 +417,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 937ce44696175dc80edabcd9fc2709a6716d1a66..dae3237abc95362db81a1f529becfac43454d709 100644
+index 7110b4d984b72fa8c9bef2cbe6e37b1871e14d08..753311e15f161547be4277016efe11cc57d351db 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -434,7 +430,7 @@ index 937ce44696175dc80edabcd9fc2709a6716d1a66..dae3237abc95362db81a1f529becfac4
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 0a2f5512f689f87b73aa582782c484f73a4ebc43..e1985f2188eec6869521aecd39d2d74d5cc1616a 100644
+index 3c67c3680b045786dafb8435f5b311c3f386a943..546c3979e2c8d7498aa92df4c89ee867c6485080 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
