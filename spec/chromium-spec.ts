@@ -1019,10 +1019,33 @@ describe('chromium features', () => {
     });
 
     it('Worker has node integration with nodeIntegrationInWorker', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false } });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+
       w.loadURL(`file://${fixturesPath}/pages/worker.html`);
       const [, data] = await once(ipcMain, 'worker-result');
       expect(data).to.equal('object function object function');
+    });
+
+    it('Worker has access to fetch-dependent interfaces with nodeIntegrationInWorker', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+
+      w.loadURL(`file://${fixturesPath}/pages/worker-fetch.html`);
+      const [, data] = await once(ipcMain, 'worker-fetch-result');
+      expect(data).to.equal('function function function function function');
     });
 
     describe('SharedWorker', () => {

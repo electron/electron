@@ -1,5 +1,5 @@
 import * as cp from 'node:child_process';
-import * as fs from 'fs-extra';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { expect } from 'chai';
 
@@ -8,7 +8,7 @@ const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 
 export const shouldRunCodesignTests =
     process.platform === 'darwin' &&
-    !process.env.CI &&
+    !(process.env.CI && process.arch === 'arm64') &&
     !process.mas &&
     !features.isComponentBuild();
 
@@ -37,13 +37,13 @@ export async function copyMacOSFixtureApp (newDir: string, fixture: string | nul
   cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
   if (fixture) {
     const appDir = path.resolve(newPath, 'Contents/Resources/app');
-    await fs.mkdirp(appDir);
-    await fs.copy(path.resolve(fixturesPath, 'auto-update', fixture), appDir);
+    await fs.promises.mkdir(appDir, { recursive: true });
+    await fs.promises.cp(path.resolve(fixturesPath, 'auto-update', fixture), appDir, { recursive: true });
   }
   const plistPath = path.resolve(newPath, 'Contents', 'Info.plist');
-  await fs.writeFile(
+  await fs.promises.writeFile(
     plistPath,
-    (await fs.readFile(plistPath, 'utf8')).replace('<key>BuildMachineOSBuild</key>', `<key>NSAppTransportSecurity</key>
+    (await fs.promises.readFile(plistPath, 'utf8')).replace('<key>BuildMachineOSBuild</key>', `<key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>

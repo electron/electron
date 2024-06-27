@@ -170,7 +170,9 @@ class WebContents : public ExclusiveAccessContext,
   void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
+  // BackgroundThrottlingSource
   bool GetBackgroundThrottling() const override;
+
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
@@ -345,6 +347,7 @@ class WebContents : public ExclusiveAccessContext,
                                           const base::FilePath& file_path);
   v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
 
+  // content::WebContentsDelegate:
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override;
 

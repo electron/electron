@@ -44,10 +44,20 @@ on:
         required: true
         type: string
         default: '0'
+      strip-binaries: 
+        description: 'Strip the binaries before release (Linux only)'
+        required: false
+        type: boolean
+        default: false
+      is-asan: 
+        description: 'Building the Address Sanitizer (ASan) Linux build'
+        required: false
+        type: boolean
+        default: false
 
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 env:
@@ -57,9 +67,6 @@ env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
-  # Only disable this in the Asan build
-  CHECK_DIST_MANIFEST: true
-  IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
 
 jobs:
@@ -102,6 +109,8 @@ jobs:
           fi
         elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
           GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
+        elif [ "${{ inputs.is-asan }}" = true ]; then
+          GN_EXTRA_ARGS='is_asan=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Get Depot Tools
@@ -182,7 +191,9 @@ jobs:
         artifact-platform: ${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
+        strip-binaries: '${{ inputs.strip-binaries }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
+        is-asan: '${{ inputs.is-asan }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
       if: ${{ inputs.target-platform == 'macos' }}
       run: |

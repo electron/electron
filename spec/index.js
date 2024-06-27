@@ -148,7 +148,7 @@ app.whenReady().then(async () => {
   };
 
   const { getFiles } = require('./get-files');
-  const testFiles = await getFiles(__dirname, { filter });
+  const testFiles = await getFiles(__dirname, filter);
   for (const file of testFiles.sort()) {
     mocha.addFile(file);
   }

@@ -46,11 +46,12 @@ class FrameSubscriber : private content::WebContentsObserver,
   void AttachToHost(content::RenderWidgetHost* host);
   void DetachFromHost();
 
+  // content::WebContentsObserver
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void PrimaryPageChanged(content::Page& page) override;
   void RenderViewDeleted(content::RenderViewHost* host) override;
 
-  // viz::mojom::FrameSinkVideoConsumer implementation.
+  // viz::mojom::FrameSinkVideoConsumer
   void OnFrameCaptured(
       ::media::mojom::VideoBufferHandlePtr data,
       ::media::mojom::VideoFrameInfoPtr info,

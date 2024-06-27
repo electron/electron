@@ -14,8 +14,7 @@ const version = process.argv[2];
 const targetRepo = findRepo();
 
 function findRepo () {
-  if (process.env.IS_GHA_RELEASE) return 'test-releases';
-  else return version.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+  return version.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
 }
 
 async function findRelease () {

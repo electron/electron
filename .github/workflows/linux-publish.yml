@@ -27,7 +27,7 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -49,6 +49,7 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -64,6 +65,7 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -79,5 +81,6 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit

@@ -36,7 +36,7 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
   AutoUpdater();
   ~AutoUpdater() override;
 
-  // Delegate implementations.
+  // auto_updater::Delegate:
   void OnError(const std::string& message) override;
   void OnError(const std::string& message,
                const int code,

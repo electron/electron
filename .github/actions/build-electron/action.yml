@@ -17,12 +17,18 @@ inputs:
   is-release:
     description: 'Is release build'
     required: true
+  strip-binaries:
+    description: 'Strip binaries (Linux only)'
+    required: false
   generate-symbols:
     description: 'Generate symbols'
     required: true
   upload-to-storage:
     description: 'Upload to storage'
     required: true
+  is-asan:
+    description: 'The ASan Linux build'
+    required: false
 runs:
   using: "composite"
   steps:
@@ -51,12 +57,20 @@ runs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
+    - name: Strip Electron Binaries ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.strip-binaries == 'true' }}
+      run: |
+        cd src
+        electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
+        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}"
+        electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
         e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
-        if [ "${{ env.CHECK_DIST_MANIFEST }}" = "true" ]; then
+        if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
@@ -167,7 +181,6 @@ runs:
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
-    # TODO(vertedinde): These uploads currently point to a different Azure bucket & GitHub Repo
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
@@ -181,6 +194,15 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate Artifact Key
+      shell: bash
+      run: |
+        if [ "${{ inputs.is-asan }}" = "true" ]; then 
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
+        else
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+        fi
+        echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
@@ -189,10 +211,10 @@ runs:
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
-        name: generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
-        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        name: generated_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
-        name: src_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
-        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ env.TARGET_ARCH }}
+        name: src_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}

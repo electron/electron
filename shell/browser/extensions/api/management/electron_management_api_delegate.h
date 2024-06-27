@@ -17,7 +17,7 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
   ElectronManagementAPIDelegate();
   ~ElectronManagementAPIDelegate() override;
 
-  // ManagementAPIDelegate.
+  // extensions::ManagementAPIDelegate
   bool LaunchAppFunctionDelegate(
       const extensions::Extension* extension,
       content::BrowserContext* context) const override;

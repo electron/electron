@@ -242,6 +242,7 @@ class InspectableWebContents::NetworkResourceLoader
     response_headers_ = response_head.headers;
   }
 
+  // network::SimpleURLLoaderStreamConsumer
   void OnDataReceived(base::StringPiece chunk,
                       base::OnceClosure resume) override {
     bool encoded = !base::IsStringUTF8(chunk);

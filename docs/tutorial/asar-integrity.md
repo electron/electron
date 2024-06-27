@@ -125,7 +125,7 @@ in the form included below:
 ]
 ```
 
-::: info
+:::info
 
 For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
 in the Electron Packager code.

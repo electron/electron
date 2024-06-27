@@ -7,7 +7,7 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 54de053b4046b283fd4bb5b74531723dfa52dfce..762c15fa661314095a1352eeac07bef544883585 100644
+index 8840bd004ba87aa4a310b381310bb9612b96d861..892980bb90e433b16756f33c554b299ecc185eb4 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -5,6 +5,16 @@ prefix parallel

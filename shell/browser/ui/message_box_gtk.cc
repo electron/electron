@@ -182,6 +182,7 @@ class GtkMessageBox : private NativeWindowObserver {
     Show();
   }
 
+  // NativeWindowObserver
   void OnWindowClosed() override {
     parent_->RemoveObserver(this);
     parent_ = nullptr;
