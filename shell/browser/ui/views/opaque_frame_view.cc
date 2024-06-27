@@ -101,6 +101,7 @@ int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
 
 void OpaqueFrameView::InvalidateCaptionButtons() {
   UpdateCaptionButtonPlaceholderContainerBackground();
+  UpdateFrameCaptionButtons();
   LayoutWindowControlsOverlay();
   InvalidateLayout();
 }
@@ -204,10 +205,23 @@ void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
   if (frame()->IsFullscreen())
     return;
 
+  UpdateFrameCaptionButtons();
+}
+
+void OpaqueFrameView::PaintAsActiveChanged() {
+  if (!window()->IsWindowControlsOverlayEnabled())
+    return;
+
+  UpdateCaptionButtonPlaceholderContainerBackground();
+  UpdateFrameCaptionButtons();
+}
+
+void OpaqueFrameView::UpdateFrameCaptionButtons() {
   const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color = window()->overlay_button_color();
+  const SkColor symbol_color = window()->overlay_symbol_color();
+  const SkColor background_color = window()->overlay_button_color();
   SkColor frame_color =
-      symbol_color == SkColor() ? GetFrameColor() : symbol_color;
+      background_color == SkColor() ? GetFrameColor() : background_color;
 
   for (views::Button* button :
        {minimize_button_, maximize_button_, restore_button_, close_button_}) {
@@ -216,12 +230,9 @@ void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
     views::FrameCaptionButton* frame_caption_button =
         static_cast<views::FrameCaptionButton*>(button);
     frame_caption_button->SetPaintAsActive(active);
+    frame_caption_button->SetButtonColor(symbol_color);
     frame_caption_button->SetBackgroundColor(frame_color);
   }
-}
-
-void OpaqueFrameView::PaintAsActiveChanged() {
-  UpdateCaptionButtonPlaceholderContainerBackground();
 }
 
 void OpaqueFrameView::UpdateCaptionButtonPlaceholderContainerBackground() {
