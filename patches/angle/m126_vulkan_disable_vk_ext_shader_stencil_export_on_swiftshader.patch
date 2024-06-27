@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 13 Jun 2024 16:54:03 -0400
+Subject: M126: Vulkan: Disable VK_EXT_shader_stencil_export on SwiftShader
+
+Bug: chromium:40942995
+Change-Id: I5035d9b11997a1c7c839d7d62544fecca9fd1f73
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/5634418
+Reviewed-by: Yuly Novikov <ynovikov@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/RendererVk.cpp b/src/libANGLE/renderer/vulkan/RendererVk.cpp
+index 25beb6a346798f117b8fe15de9858adcc32881cd..4827c61a166633d191e1f9b03a3dc47066ce9522 100644
+--- a/src/libANGLE/renderer/vulkan/RendererVk.cpp
++++ b/src/libANGLE/renderer/vulkan/RendererVk.cpp
+@@ -4175,9 +4175,11 @@ void RendererVk::initFeatures(DisplayVk *displayVk,
+     }
+ #endif  // defined(ANGLE_PLATFORM_ANDROID) || defined(ANGLE_PLATFORM_LINUX)
+ 
++    // Disabled on SwiftShader due to http://crbug.com/40942995
+     ANGLE_FEATURE_CONDITION(
+         &mFeatures, supportsShaderStencilExport,
+-        ExtensionFound(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME, deviceExtensionNames));
++        ExtensionFound(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME, deviceExtensionNames) &&
++            !isSwiftShader);
+ 
+     ANGLE_FEATURE_CONDITION(
+         &mFeatures, supportsRenderPassLoadStoreOpNone,
