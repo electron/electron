@@ -33,6 +33,9 @@ class FramelessView : public views::NonClientFrameView {
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
 
+  NativeWindowViews* window() const { return window_; }
+  views::Widget* frame() const { return frame_; }
+
  protected:
   // Helper function for subclasses to implement ResizingBorderHitTest with a
   // custom resize inset.
@@ -59,9 +62,6 @@ class FramelessView : public views::NonClientFrameView {
   gfx::Size CalculatePreferredSize() const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
-
-  NativeWindowViews* window() const { return window_; }
-  views::Widget* frame() const { return frame_; }
 
   // Not owned.
   raw_ptr<NativeWindowViews> window_ = nullptr;
