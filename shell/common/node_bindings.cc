@@ -531,10 +531,15 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
 
   // Parse and set Node.js cli flags.
   std::vector<std::string> args = ParseNodeCliFlags();
+
+  // V8::EnableWebAssemblyTrapHandler can be called only once or it will
+  // hard crash. We need to prevent Node.js calling it in the event it has
+  // already been called.
+  node::per_process::cli_options->disable_wasm_trap_handler = true;
+
   uint64_t process_flags =
       node::ProcessInitializationFlags::kNoInitializeV8 |
-      node::ProcessInitializationFlags::kNoInitializeNodeV8Platform |
-      node::ProcessInitializationFlags::kNoEnableWasmTrapHandler;
+      node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
   // We do not want the child processes spawned from the utility process
   // to inherit the custom stdio handles created for the parent.
