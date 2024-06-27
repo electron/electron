@@ -87,7 +87,7 @@
   * `hiddenInset` _macOS_ - Results in a hidden title bar
     with an alternative look where the traffic light buttons are slightly
     more inset from the window edge.
-  * `customButtonsOnHover` _macOS_ -Results in a hidden
+  * `customButtonsOnHover` _macOS_ - Results in a hidden
     title bar and a full size content window, the traffic light buttons will
     display when being hovered over in the top left of the window.
     **Note:** This option is currently experimental.
