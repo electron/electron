@@ -29,8 +29,7 @@ steps:
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
 
         mkdir -p src/buildtools
-        # TODO: Temporarily hardcode to 128.0.6558.0 to get the correct clang-format location
-        curl -sL "https://chromium.googlesource.com/chromium/src/+/128.0.6558.0/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS
+        curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS
 
         gclient runhooks --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
   - run:
