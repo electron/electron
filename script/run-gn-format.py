@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-from lib.util import get_buildtools_executable
+from lib.util import get_depot_tools_executable
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
 
@@ -15,7 +15,7 @@ def main():
     os.path.join(SOURCE_ROOT, '..', 'buildtools')
   )
 
-  gn_path = get_buildtools_executable('gn')
+  gn_path = get_depot_tools_executable('gn')
   for gn_file in sys.argv[1:]:
     subprocess.check_call(
       [gn_path, 'format', gn_file],
