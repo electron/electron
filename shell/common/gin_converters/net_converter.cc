@@ -368,7 +368,7 @@ class ChunkedDataPipeReadableStream
         MOJO_READ_DATA_FLAG_NONE,
         base::span(static_cast<uint8_t*>(buf->Buffer()->Data()),
                    buf->ByteLength())
-            .subspan(buf->ByteOffset()),
+            .subspan(buf->ByteOffset(), num_bytes),
         num_bytes);
     if (rv == MOJO_RESULT_OK) {
       bytes_read_ += num_bytes;

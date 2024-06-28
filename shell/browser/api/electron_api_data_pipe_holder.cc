@@ -86,7 +86,8 @@ class DataPipeReader {
     size_t length = remaining_size_;
     result = data_pipe_->ReadData(
         MOJO_READ_DATA_FLAG_NONE,
-        base::as_writable_byte_span(buffer_).subspan(head_offset_), length);
+        base::as_writable_byte_span(buffer_).subspan(head_offset_, length),
+        length);
     if (result == MOJO_RESULT_OK) {  // success
       remaining_size_ -= length;
       head_offset_ += length;
