@@ -31,6 +31,7 @@ guide for an end-to-end example.
 
 <details>
 <summary>Manual publishing</summary>
+
 On macOS, Squirrel.Mac can receive updates by reading a `releases.json` file with the
 following JSON format:
 
@@ -257,6 +258,10 @@ server-communication aspect of the process by loading your update from a local d
 [Here's an example of how this could work](https://github.com/electron/electron/issues/5020#issuecomment-477636990).
 
 :::
+
+## Update server specification
+
+A Squirrel-compatible update server has different
 
 [vercel]: https://vercel.com
 [hazel]: https://github.com/vercel/hazel
