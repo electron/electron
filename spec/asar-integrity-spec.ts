@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
 import * as originalFs from 'node:original-fs';
-import * as fs from 'fs-extra';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { ifdescribe } from './lib/spec-helpers';
@@ -82,7 +82,7 @@ describe('fuses', function () {
   };
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
+    tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
     appPath = await copyApp(tmpDir);
   });
 
