@@ -1,7 +1,8 @@
-From 8f07d39227f6181d42fa8d42bc9c247c048bbd49 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Thu, 20 Jun 2024 14:49:58 -0400
-Subject: [PATCH] Fix crash in scalarrepl-param-hlsl when dynamically indexing a GEP of a constant indexed GEP (#6670)
+Subject: Fix crash in scalarrepl-param-hlsl when dynamically indexing a GEP of
+ a constant indexed GEP (#6670)
 
 When processing global values to determine when to flatten vectors, this
 pass was only checking the immdiate users of the value for non-dynamic
@@ -15,13 +16,12 @@ Change-Id: Ibf2ae3a6528cfc9b50634058385c5a45aa1d3b75
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5645927
 Reviewed-by: James Price <jrprice@google.com>
 Reviewed-by: dan sinclair <dsinclair@chromium.org>
----
 
 diff --git a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
-index b8bee1c..c9748bd 100644
+index 9b843ef0e49e554001b827e30eb6256853d90f5b..b1b38c0ee038dedb2064f5726663992a5bec736b 100644
 --- a/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
 +++ b/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp
-@@ -1645,6 +1645,10 @@
+@@ -1645,6 +1645,10 @@ bool hasDynamicVectorIndexing(Value *V) {
          }
        }
      }
@@ -34,7 +34,7 @@ index b8bee1c..c9748bd 100644
  }
 diff --git a/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-dyn-idx-gep-of-const-idx-gep.ll b/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-dyn-idx-gep-of-const-idx-gep.ll
 new file mode 100644
-index 0000000..84aa114
+index 0000000000000000000000000000000000000000..04fdea1500e75266a59705a1c2da98a4aef7391c
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/ScalarReplHLSL/scalarrepl-param-hlsl-dyn-idx-gep-of-const-idx-gep.ll
 @@ -0,0 +1,111 @@

@@ -1,7 +1,7 @@
-From b3c64851765c411b7147ac0269df2a2ce23d6f89 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Thu, 20 Jun 2024 15:39:00 -0400
-Subject: [PATCH] Fix instcombine overflow check inserting inst at wrong place (#6679)
+Subject: Fix instcombine overflow check inserting inst at wrong place (#6679)
 
 When optimizing an overflow check of an add followed by a compare, the
 new instruction was being inserted at the compare, and the add removed.
@@ -18,13 +18,12 @@ Change-Id: Iecf758e4465b32371266bbe9879790328f363322
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5644335
 Reviewed-by: dan sinclair <dsinclair@google.com>
 Reviewed-by: Ryan Harrison <rharrison@chromium.org>
----
 
 diff --git a/lib/Transforms/InstCombine/InstCombineCompares.cpp b/lib/Transforms/InstCombine/InstCombineCompares.cpp
-index 7274304..82e7e49 100644
+index 7274304b3de7b110a4fa3a5123ea7215d99935ef..82e7e49003e65846c84e3df2801453fb463aa23e 100644
 --- a/lib/Transforms/InstCombine/InstCombineCompares.cpp
 +++ b/lib/Transforms/InstCombine/InstCombineCompares.cpp
-@@ -2145,6 +2145,12 @@
+@@ -2145,6 +2145,12 @@ bool InstCombiner::OptimizeOverflowCheck(OverflowCheckFlavor OCF, Value *LHS,
      return true;
    };
  
@@ -39,7 +38,7 @@ index 7274304..82e7e49 100644
      llvm_unreachable("bad overflow check kind!");
 diff --git a/tools/clang/test/DXC/Passes/InstructionCombining/instcombine-opt-overflow-check-inserts-at-add.ll b/tools/clang/test/DXC/Passes/InstructionCombining/instcombine-opt-overflow-check-inserts-at-add.ll
 new file mode 100644
-index 0000000..2566706
+index 0000000000000000000000000000000000000000..70efa00c91c6523867980de0fb9f69c7fcfb318c
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/InstructionCombining/instcombine-opt-overflow-check-inserts-at-add.ll
 @@ -0,0 +1,187 @@
