@@ -96,6 +96,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include "shell/browser/win/select_file_dialog_factory.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -485,6 +486,9 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->PreMainMessageLoopRun();
 
   fake_browser_process_->PreMainMessageLoopRun();
+
+  ui::SelectFileDialog::SetFactory(
+      std::make_unique<ElectronSelectFileDialogFactory>());
 
   return GetExitCode();
 }
