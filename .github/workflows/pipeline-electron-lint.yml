@@ -51,9 +51,10 @@ jobs:
     - name: Download clang-format Binary
       shell: bash
       run: |
+        e shell
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
 
-        mkdir -p src/buildtools/linux64-format
+        mkdir -p src/buildtools
         curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS
 
         gclient runhooks --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
