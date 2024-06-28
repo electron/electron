@@ -1,7 +1,7 @@
-From 771e74ab497dcaa82b67c60bee605fe44a318de0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Maiorano <amaiorano@google.com>
 Date: Thu, 20 Jun 2024 14:02:42 -0400
-Subject: [PATCH] indvars: don't replace a phi when that breaks LCSSA (#6695)
+Subject: indvars: don't replace a phi when that breaks LCSSA (#6695)
 
 Induction variable simplification (indvars) tries to rewrite exit
 values; these appear as phi nodes in loop exit blocks. If the
@@ -15,10 +15,9 @@ Change-Id: Ib2330afa3c6f47373cb4336cfd00e851044fea3a
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5645925
 Reviewed-by: dan sinclair <dsinclair@chromium.org>
 Reviewed-by: James Price <jrprice@google.com>
----
 
 diff --git a/lib/Transforms/Scalar/IndVarSimplify.cpp b/lib/Transforms/Scalar/IndVarSimplify.cpp
-index f5b1455..e6ff7b3 100644
+index f5b1455d5932b63dfef699991c5eeab38e447a7d..e6ff7b3ab4d81bbb782f0bd0a7b5185a30fd1285 100644
 --- a/lib/Transforms/Scalar/IndVarSimplify.cpp
 +++ b/lib/Transforms/Scalar/IndVarSimplify.cpp
 @@ -24,7 +24,6 @@
@@ -43,7 +42,7 @@ index f5b1455..e6ff7b3 100644
  #include "llvm/Transforms/Utils/BasicBlockUtils.h"
  #include "llvm/Transforms/Utils/Local.h"
  #include "llvm/Transforms/Utils/SimplifyIndVar.h"
-@@ -698,6 +699,16 @@
+@@ -698,6 +699,16 @@ void IndVarSimplify::RewriteLoopExitValues(Loop *L, SCEVExpander &Rewriter) {
            continue;
          }
  
@@ -62,7 +61,7 @@ index f5b1455..e6ff7b3 100644
              RewritePhi(PN, i, ExitVal, HighCost, LCSSASafePhiForRAUW));
 diff --git a/test/HLSL/passes/indvars/preserve-phi-when-replacement-is-in-loop.ll b/test/HLSL/passes/indvars/preserve-phi-when-replacement-is-in-loop.ll
 new file mode 100644
-index 0000000..b550ce9
+index 0000000000000000000000000000000000000000..b550ce993837814229f8223a47b2af328cc7c87c
 --- /dev/null
 +++ b/test/HLSL/passes/indvars/preserve-phi-when-replacement-is-in-loop.ll
 @@ -0,0 +1,49 @@
