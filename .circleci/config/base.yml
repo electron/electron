@@ -33,7 +33,7 @@ parameters:
   macos-publish-arch-limit:
     type: enum
     default: all
-    enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+    enum: ["all", "osx-arm64", "mas-arm64"]
 
   medium-linux-executor:
     type: enum
@@ -64,7 +64,7 @@ executors:
       size:
         description: "macOS executor size"
         type: enum
-        enum: ["macos.x86.medium.gen2", "macos.m1.large.gen1", "macos.m1.medium.gen1"]
+        enum: ["macos.m1.large.gen1", "macos.m1.medium.gen1"]
       version:
         description: "xcode version"
         type: enum
@@ -2029,76 +2029,6 @@ jobs:
                 checkout: true
                 build-type: 'Linux ARM64'
 
-  osx-testing-x64:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-mac-large
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: false
-          checkout-and-assume-cache: true
-          attach: true
-          artifact-key: 'darwin-x64'
-          build-type: 'Darwin'
-          after-build-and-save:
-            - run:
-                name: Configuring MAS build
-                command: |
-                  echo 'export GN_EXTRA_ARGS="is_mas_build = true $GN_EXTRA_ARGS"' >> $BASH_ENV
-                  echo 'export MAS_BUILD="true"' >> $BASH_ENV
-                  rm -rf "src/out/Default/Electron Framework.framework"
-                  rm -rf src/out/Default/Electron*.app
-            - build_and_save_artifacts:
-                artifact-key: 'mas-x64'
-                build-type: 'MAS'
-          after-persist:
-            - persist_to_workspace:
-                root: .
-                paths:
-                  - generated_artifacts_mas-x64
-          could-be-aks: false
-
-  osx-testing-x64-gn-check:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-machine-mac
-      <<: *env-testing-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - run-gn-check:
-          could-be-aks: false
-
-  osx-publish-x64:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-release-build
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
-              - equal: ["osx-x64", << pipeline.parameters.macos-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: true
-                checkout: false
-                build-type: 'Darwin'
-
   osx-publish-arm64:
     executor:
       name: macos
@@ -2308,20 +2238,6 @@ jobs:
       - electron-tests:
           artifact-key: darwin-arm64
 
-  mas-testing-x64-tests:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-      version: 14.0.0
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-    parallelism: 2
-    steps:
-      - run: nvm install lts/iron && nvm alias default lts/iron
-      - electron-tests:
-          artifact-key: mas-x64
-
   mas-testing-arm64-tests:
     executor:
       name: macos
@@ -2354,27 +2270,6 @@ workflows:
     - linux-arm-publish:
         context: release-env
     - linux-arm64-publish:
-        context: release-env
-
-  publish-macos:
-    when: << pipeline.parameters.run-macos-publish >>
-    jobs:
-    - mac-checkout
-    - osx-publish-x64:
-        requires:
-          - mac-checkout
-        context: release-env
-    - mas-publish-x64:
-        requires:
-          - mac-checkout
-        context: release-env
-    - osx-publish-arm64:
-        requires:
-          - mac-checkout
-        context: release-env
-    - mas-publish-arm64:
-        requires:
-          - mac-checkout
         context: release-env
 
   build-linux:
@@ -2437,17 +2332,7 @@ workflows:
         - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-build-mac >>]
     jobs:
-      - mac-make-src-cache-x64
       - mac-make-src-cache-arm64
-      - osx-testing-x64:
-          requires:
-            - mac-make-src-cache-x64
-      - osx-testing-x64-gn-check:
-          requires:
-            - mac-make-src-cache-x64
-      - darwin-testing-x64-tests:
-          requires:
-            - osx-testing-x64
       - osx-testing-arm64:
           requires:
             - mac-make-src-cache-arm64
@@ -2458,9 +2343,6 @@ workflows:
               ignore: /pull\/[0-9]+/
           requires:
             - osx-testing-arm64
-      - mas-testing-x64-tests:
-          requires:
-            - osx-testing-x64
       - mas-testing-arm64-tests:
           filters:
             branches:
