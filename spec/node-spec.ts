@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
-import * as fs from 'fs-extra';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
@@ -738,7 +738,7 @@ describe('node feature', () => {
           return;
         }
         const alienBinary = path.join(appPath, 'Contents/MacOS/node');
-        await fs.copy(path.join(nodePath, 'node'), alienBinary);
+        await fs.promises.cp(path.join(nodePath, 'node'), alienBinary, { recursive: true });
         // Try to execute electron app from the alien node in app bundle.
         const { code, out } = await spawn(alienBinary, [script, path.join(appPath, 'Contents/MacOS/Electron')]);
         expect(code).to.equal(0);
