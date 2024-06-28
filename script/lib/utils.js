@@ -129,10 +129,13 @@ function chunkFilenames (filenames, offset = 0) {
  * @returns {Promise<string[]>}
 */
 async function findMatchingFiles (top, test) {
-  return fs.readdirSync(top, { encoding: 'utf8', recursive: true })
-    .filter((filename) => path.basename(filename) !== '.bin')
-    .filter((filename) => test(filename))
-    .map((filename) => path.join(top, filename));
+  return fs.promises.readdir(top, { encoding: 'utf8', recursive: true })
+    .then(files => {
+      return files
+        .filter(name => path.basename(name) !== '.bin')
+        .filter(name => test(name))
+        .map(name => path.join(top, name));
+    });
 }
 
 module.exports = {
