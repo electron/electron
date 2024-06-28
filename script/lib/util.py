@@ -195,13 +195,18 @@ def get_buildtools_executable(name):
   else:
     raise Exception(f"Unsupported platform: {sys.platform}")
 
-  if name == 'clang-format':
-    chromium_platform_path = chromium_platform + '-format'
-    path = os.path.join(buildtools, chromium_platform_path, name) 
-  else:
-    path = os.path.join(buildtools, chromium_platform, name)
+  path = os.path.join(buildtools, chromium_platform, name)
   if sys.platform == 'win32':
     path += '.exe'
+  return path
+
+def get_depot_tools_executable(name):
+  buildtools = os.path.realpath(
+    os.path.join(ELECTRON_DIR, '..', 'third_party', 'depot_tools'))
+
+  path = os.path.join(buildtools, name)
+  if sys.platform == 'win32':
+    path += '.bat'
   return path
 
 def get_linux_binaries():
