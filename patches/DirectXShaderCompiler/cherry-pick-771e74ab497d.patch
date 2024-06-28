@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Thu, 20 Jun 2024 14:02:42 -0400
+Subject: indvars: don't replace a phi when that breaks LCSSA (#6695)
+
+Induction variable simplification (indvars) tries to rewrite exit
+values; these appear as phi nodes in loop exit blocks. If the
+replacement for the phi is still in the loop, then that would break the
+LCSSA property. Don't do that.
+
+Add a test for this.
+
+Bug: chromium:345993680
+Change-Id: Ib2330afa3c6f47373cb4336cfd00e851044fea3a
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5645925
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Reviewed-by: James Price <jrprice@google.com>
+
+diff --git a/lib/Transforms/Scalar/IndVarSimplify.cpp b/lib/Transforms/Scalar/IndVarSimplify.cpp
+index f5b1455d5932b63dfef699991c5eeab38e447a7d..e6ff7b3ab4d81bbb782f0bd0a7b5185a30fd1285 100644
+--- a/lib/Transforms/Scalar/IndVarSimplify.cpp
++++ b/lib/Transforms/Scalar/IndVarSimplify.cpp
+@@ -24,7 +24,6 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-#include "llvm/Transforms/Scalar.h"
+ #include "llvm/ADT/DenseMap.h"
+ #include "llvm/ADT/SmallVector.h"
+ #include "llvm/ADT/Statistic.h"
+@@ -41,11 +40,13 @@
+ #include "llvm/IR/Instructions.h"
+ #include "llvm/IR/IntrinsicInst.h"
+ #include "llvm/IR/LLVMContext.h"
++#include "llvm/IR/Module.h"
+ #include "llvm/IR/PatternMatch.h"
+ #include "llvm/IR/Type.h"
+ #include "llvm/Support/CommandLine.h"
+ #include "llvm/Support/Debug.h"
+ #include "llvm/Support/raw_ostream.h"
++#include "llvm/Transforms/Scalar.h"
+ #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+ #include "llvm/Transforms/Utils/Local.h"
+ #include "llvm/Transforms/Utils/SimplifyIndVar.h"
+@@ -698,6 +699,16 @@ void IndVarSimplify::RewriteLoopExitValues(Loop *L, SCEVExpander &Rewriter) {
+           continue;
+         }
+ 
++        // HLSL Change Begin
++        // Avoid breaking LCSSA: Don't replace the PHI if its replacement
++        // is defined inside the loop.
++        if (auto *ExitValInst = dyn_cast<Instruction>(ExitVal)) {
++          if (L->contains(ExitValInst)) {
++            continue;
++          }
++        }
++        // HLSL Change End
++
+         // Collect all the candidate PHINodes to be rewritten.
+         RewritePhiSet.push_back(
+             RewritePhi(PN, i, ExitVal, HighCost, LCSSASafePhiForRAUW));
+diff --git a/test/HLSL/passes/indvars/preserve-phi-when-replacement-is-in-loop.ll b/test/HLSL/passes/indvars/preserve-phi-when-replacement-is-in-loop.ll
+new file mode 100644
+index 0000000000000000000000000000000000000000..b550ce993837814229f8223a47b2af328cc7c87c
+--- /dev/null
++++ b/test/HLSL/passes/indvars/preserve-phi-when-replacement-is-in-loop.ll
+@@ -0,0 +1,49 @@
++; RUN: opt < %s -indvars -S | FileCheck %s
++
++; The inner loop (%header1) has a fixed trip count.
++; The indvars pass is tempted to delete the phi instruction %hexit,
++; and replace its uses with %add3.
++; But %hexit is used in %latch0, which is outside the inner loop and
++; its exit block. Deleting the phi %hexit would break LCSSA form.
++
++; CHECK: @main
++; CHECK: exit1:
++; CHECK-NEXT: %hexit = phi i32 [ %hnext, %header1 ]
++; CHECK-NEXT: br label %latch0
++
++; CHECK: latch0:
++
++target triple = "dxil-ms-dx"
++
++define void @main(i32 %arg) {
++entry:
++  br label %header0
++
++header0:
++  %isgt0 = icmp sgt i32 %arg, 0
++  %smax = select i1 %isgt0, i32 %arg, i32 0
++  %h0 = add i32 %smax, 1
++  %j0 = add i32 %smax, 2
++  %doinner = icmp slt i32 %j0, 1
++  br i1 %doinner, label %header1.pre, label %latch0
++
++header1.pre:
++  br label %header1
++
++header1:
++  %hi = phi i32 [ %hnext, %header1 ], [ %h0, %header1.pre ]
++  %ji = phi i32 [ %jnext, %header1 ], [ %j0, %header1.pre ]
++  %add3 = add i32 %smax, 3
++  %hnext = add i32 %hi, 1
++  %jnext = add nsw i32 %ji, 1 ; the nsw here is essential
++  %do1again = icmp slt i32 %ji, %add3
++  br i1 %do1again, label %header1, label %exit1
++
++exit1:
++  %hexit = phi i32 [ %hnext, %header1 ]
++  br label %latch0
++
++latch0:
++  %useh = phi i32 [ %h0, %header0 ], [ %hexit, %exit1 ]
++  br label %header0
++}

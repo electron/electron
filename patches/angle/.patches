@@ -3,3 +3,4 @@ cherry-pick-f6672dbbe223.patch
 cherry-pick-ba3b4e239620.patch
 cherry-pick-c67f290ef0f0.patch
 cherry-pick-bda89e1f7c71.patch
+m126_vulkan_disable_vk_ext_shader_stencil_export_on_swiftshader.patch
