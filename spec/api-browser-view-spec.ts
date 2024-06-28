@@ -370,6 +370,19 @@ describe('BrowserView module', () => {
       const view = w.getBrowserView();
       expect(view).to.be.null('view');
     });
+
+    it('throws if multiple BrowserViews are attached', () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+      const view2 = new BrowserView();
+      defer(() => view2.webContents.destroy());
+      w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
+
+      expect(() => {
+        w.getBrowserView();
+      }).to.throw(/has multiple BrowserViews/);
+    });
   });
 
   describe('BrowserWindow.addBrowserView()', () => {
@@ -391,14 +404,6 @@ describe('BrowserView module', () => {
       w.addBrowserView(view);
     });
 
-    it('does not crash if the BrowserView webContents are destroyed prior to window addition', () => {
-      expect(() => {
-        const view1 = new BrowserView();
-        view1.webContents.destroy();
-        w.addBrowserView(view1);
-      }).to.not.throw();
-    });
-
     it('does not crash if the webContents is destroyed after a URL is loaded', () => {
       view = new BrowserView();
       expect(async () => {
@@ -411,12 +416,18 @@ describe('BrowserView module', () => {
     it('can handle BrowserView reparenting', async () => {
       view = new BrowserView();
 
+      expect(view.ownerWindow).to.be.null('ownerWindow');
+
       w.addBrowserView(view);
       view.webContents.loadURL('about:blank');
       await once(view.webContents, 'did-finish-load');
 
+      expect(view.ownerWindow).to.equal(w);
+
       const w2 = new BrowserWindow({ show: false });
       w2.addBrowserView(view);
+
+      expect(view.ownerWindow).to.equal(w2);
 
       w.close();
 
@@ -429,14 +440,30 @@ describe('BrowserView module', () => {
       w2.destroy();
     });
 
-    it('does not cause a crash when used for view with destroyed web contents', async () => {
+    it('allows attaching a BrowserView with a previously-closed webContents', async () => {
       const w2 = new BrowserWindow({ show: false });
       const view = new BrowserView();
+
+      expect(view.ownerWindow).to.be.null('ownerWindow');
       view.webContents.close();
       w2.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w2);
+
       w2.webContents.loadURL('about:blank');
       await once(w2.webContents, 'did-finish-load');
       w2.close();
+    });
+
+    it('allows attaching a BrowserView with a previously-destroyed webContents', async () => {
+      const view = new BrowserView();
+
+      expect(view.ownerWindow).to.be.null('ownerWindow');
+      view.webContents.destroy();
+      w.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w);
+
+      w.webContents.loadURL('about:blank');
+      await once(w.webContents, 'did-finish-load');
     });
   });
 
@@ -522,16 +549,47 @@ describe('BrowserView module', () => {
     });
   });
 
-  describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
+  describe('BrowserView owning window', () => {
     it('points to owning window', () => {
       view = new BrowserView();
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
+      expect(view.ownerWindow).to.be.null('ownerWindow');
 
       w.setBrowserView(view);
       expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
+      expect(view.ownerWindow).to.equal(w);
 
       w.setBrowserView(null);
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
+      expect(view.ownerWindow).to.be.null('ownerWindow');
+    });
+
+    it('works correctly when the webContents is destroyed', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+
+      expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
+      expect(view.ownerWindow).to.equal(w);
+
+      const destroyed = once(view.webContents, 'destroyed');
+      view.webContents.close();
+      await destroyed;
+
+      expect(view.ownerWindow).to.equal(w);
+    });
+
+    it('works correctly when owner window is closed', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+
+      expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
+      expect(view.ownerWindow).to.equal(w);
+
+      const destroyed = once(w, 'closed');
+      w.close();
+      await destroyed;
+
+      expect(view.ownerWindow).to.equal(null);
     });
   });
 
