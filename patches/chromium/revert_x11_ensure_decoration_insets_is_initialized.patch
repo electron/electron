@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Fri, 28 Jun 2024 20:02:22 -0700
+Subject: Revert "[X11] Ensure decoration insets is initialized"
+
+This reverts commit 7e7d3ad898e66d7a07cc8d7c0c2b6ebcf9b7a335.
+
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index b11e5604f0d5d3767260006e05f86ce0ef6bb958..11b0e45e54a722ddc5683c770c70730811e8ba84 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -1932,8 +1932,6 @@ void X11Window::Map(bool inactive) {
+ 
+   UpdateMinAndMaxSize();
+ 
+-  UpdateDecorationInsets();
+-
+   if (window_properties_.empty()) {
+     connection_->DeleteProperty(xwindow_, x11::GetAtom("_NET_WM_STATE"));
+   } else {
