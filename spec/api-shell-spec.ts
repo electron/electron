@@ -3,7 +3,7 @@ import { shell } from 'electron/common';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen } from './lib/spec-helpers';
 import * as http from 'node:http';
-import * as fs from 'fs-extra';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { expect } from 'chai';
@@ -79,9 +79,9 @@ describe('shell module', () => {
     afterEach(closeAllWindows);
 
     it('moves an item to the trash', async () => {
-      const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
+      const dir = await fs.promises.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
       const filename = path.join(dir, 'temp-to-be-deleted');
-      await fs.writeFile(filename, 'dummy-contents');
+      await fs.promises.writeFile(filename, 'dummy-contents');
       await shell.trashItem(filename);
       expect(fs.existsSync(filename)).to.be.false();
     });
