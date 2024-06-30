@@ -97,7 +97,7 @@ declare namespace Electron {
     _goForward(): void;
     _goToOffset(index: number): void;
     _goToIndex(index: number): void;
-    _deleteNavigationEntryAtIndex(index: number): boolean;
+    _removeNavigationEntryAtIndex(index: number): boolean;
     _getHistory(): Electron.NavigationEntry[];
     _replaceHistory(newHistory: Electron.NavigationEntry[], index: number): boolean;
     _clearHistory():void

@@ -2496,7 +2496,7 @@ content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
   return web_contents()->GetController().GetEntryAtIndex(index);
 }
 
-bool WebContents::DeleteNavigationEntryAtIndex(int index) {
+bool WebContents::RemoveNavigationEntryAtIndex(int index) {
   if (!CanGoToIndex(index))
     return false;
 
@@ -4347,8 +4347,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_getNavigationEntryAtIndex",
                  &WebContents::GetNavigationEntryAtIndex)
       .SetMethod("_historyLength", &WebContents::GetHistoryLength)
-      .SetMethod("_deleteNavigationEntryAtIndex",
-                 &WebContents::DeleteNavigationEntryAtIndex)
+      .SetMethod("_removeNavigationEntryAtIndex",
+                 &WebContents::RemoveNavigationEntryAtIndex)
       .SetMethod("_getHistory", &WebContents::GetHistory)
       .SetMethod("_replaceHistory", &WebContents::ReplaceHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)

@@ -204,7 +204,7 @@ class WebContents : public ExclusiveAccessContext,
   void GoToIndex(int index);
   int GetActiveIndex() const;
   content::NavigationEntry* GetNavigationEntryAtIndex(int index) const;
-  bool DeleteNavigationEntryAtIndex(int index);
+  bool RemoveNavigationEntryAtIndex(int index);
   std::vector<content::NavigationEntry*> GetHistory() const;
   bool ReplaceHistory(const std::vector<gin_helper::Dictionary>& new_history,
                       int index);
