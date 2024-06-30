@@ -10,6 +10,10 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
+#include "dbus/bus.h"
+#include "dbus/message.h"
+#include "dbus/object_proxy.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
@@ -25,10 +29,18 @@
 
 namespace electron {
 
+const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
+const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
+const char kFreedesktopPortalBackground[] = "org.freedesktop.portal.Background";
+
 namespace {
 
 const char kXdgSettings[] = "xdg-settings";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
+
+scoped_refptr<dbus::Bus> bus_;
+raw_ptr<dbus::ObjectProxy> dbus_proxy_ = nullptr;
+raw_ptr<dbus::ObjectProxy> object_proxy_ = nullptr;
 
 // The use of the ForTesting flavors is a hack workaround to avoid having to
 // patch these as friends into the associated guard classes.
@@ -139,7 +151,35 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   }
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  dbus::Bus::Options options;
+  auto bus = base::MakeRefCounted<dbus::Bus>(options);
+
+  dbus::ObjectProxy* object_proxy = bus->GetObjectProxy(
+      kFreedesktopPortalName, dbus::ObjectPath(kFreedesktopPortalPath));
+  dbus::MethodCall method_call(kFreedesktopPortalBackground,
+                               "RequestBackground");
+
+  dbus::MessageWriter writer(&method_call);
+  writer.AppendString("");
+
+  dbus::MessageWriter options_writer(nullptr);
+  writer.OpenArray("{sv}", &options_writer);
+
+  dbus::MessageWriter autostart_writer(nullptr);
+  options_writer.OpenDictEntry(&autostart_writer);
+  autostart_writer.AppendString("autostart");
+  autostart_writer.AppendVariantOfBool(settings.open_at_login);
+  options_writer.CloseContainer(&autostart_writer);
+
+  writer.CloseContainer(&options_writer);
+
+  std::unique_ptr<dbus::Response> response =
+      object_proxy
+          ->CallMethodAndBlock(&method_call,
+                               dbus::ObjectProxy::TIMEOUT_USE_DEFAULT)
+          .value_or(nullptr);
+}
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
