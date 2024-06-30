@@ -74,12 +74,3 @@ Returns `boolean` - Whether the navigation entry was removed from the webContent
 #### `navigationHistory.getAllEntries()`
 
 Returns [`NavigationEntry[]`](structures/navigation-entry.md) - WebContents complete history.
-
-#### `navigationHistory.replace(newHistory, index)`
-
-* `newHistory` [`NavigationEntry[]`](structures/navigation-entry.md)
-* `index` Integer
-
-Replaces current history with `newHistory` and sets the active index to `index`. Can't replace history item at the "current active index".
-
-Returns `boolean` - Whether the history was replaced.

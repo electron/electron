@@ -2521,33 +2521,6 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   return history;
 }
 
-bool WebContents::ReplaceHistory(
-    const std::vector<gin_helper::Dictionary>& new_history,
-    int index) {
-  std::vector<std::unique_ptr<content::NavigationEntry>> history;
-  history.reserve(new_history.size());
-
-  for (const gin_helper::Dictionary& history_item : new_history) {
-    auto entry = content::NavigationEntry::Create();
-    entry->SetIsOverridingUserAgent(true);
-    std::u16string url, title;
-    if (history_item.Get("url", &url))
-      entry->SetURL(GURL(url));
-    if (history_item.Get("title", &title))
-      entry->SetTitle(title);
-
-    history.push_back(std::move(entry));
-  }
-
-  auto& controller = web_contents()->GetController();
-  if (!controller.CanPruneAllButLastCommitted())
-    return false;
-
-  controller.PruneAllButLastCommitted();
-  controller.Restore(index, content::RestoreType::kRestored, &history);
-  return true;
-}
-
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4350,7 +4323,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_removeNavigationEntryAtIndex",
                  &WebContents::RemoveNavigationEntryAtIndex)
       .SetMethod("_getHistory", &WebContents::GetHistory)
-      .SetMethod("_replaceHistory", &WebContents::ReplaceHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",

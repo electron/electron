@@ -99,7 +99,6 @@ declare namespace Electron {
     _goToIndex(index: number): void;
     _removeNavigationEntryAtIndex(index: number): boolean;
     _getHistory(): Electron.NavigationEntry[];
-    _replaceHistory(newHistory: Electron.NavigationEntry[], index: number): boolean;
     _clearHistory():void
     canGoToIndex(index: number): boolean;
     destroy(): void;
