@@ -63,11 +63,11 @@ Navigates to the specified offset from the current entry.
 
 Returns `Integer` - History length.
 
-#### `navigationHistory.deleteEntryAtIndex(index)`
+#### `navigationHistory.removeEntryAtIndex(index)`
 
 * `index` Integer
 
-Deletes the navigation entry at the given index. Can't delete entry at the "current active index".
+Removes the navigation entry at the given index. Can't remove entry at the "current active index".
 
 Returns `boolean` - Whether the navigation entry was removed from the webContents history.
 

@@ -596,7 +596,7 @@ WebContents.prototype._init = function () {
       getActiveIndex: this._getActiveIndex.bind(this),
       length: this._historyLength.bind(this),
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this),
-      deleteEntryAtIndex: this._deleteNavigationEntryAtIndex.bind(this),
+      removeEntryAtIndex: this._removeNavigationEntryAtIndex.bind(this),
       getAllEntries: this._getHistory.bind(this),
       replace: this._replaceHistory.bind(this)
     },
