@@ -520,6 +520,19 @@ describe('BrowserView module', () => {
       win2.close();
       win2.destroy();
     });
+
+    it('should reorder the BrowserView to the top if it is already in the window', () => {
+      view = new BrowserView();
+      const view2 = new BrowserView();
+      defer(() => view2.webContents.destroy());
+      w.addBrowserView(view);
+      w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
+
+      w.setTopBrowserView(view);
+      const views = w.getBrowserViews();
+      expect(views.indexOf(view)).to.equal(views.length - 1);
+    });
   });
 
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
