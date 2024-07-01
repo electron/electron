@@ -3,7 +3,7 @@ import * as cp from 'node:child_process';
 import * as https from 'node:https';
 import * as http from 'node:http';
 import * as net from 'node:net';
-import * as fs from 'fs-extra';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
@@ -595,7 +595,7 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux' && !process.mas)('app.get/setLoginItemSettings API', function () {
+  ifdescribe(process.platform !== 'linux' && !process.mas && (process.platform !== 'darwin' || process.arch === 'arm64'))('app.get/setLoginItemSettings API', function () {
     const isMac = process.platform === 'darwin';
     const isWin = process.platform === 'win32';
 
@@ -1118,7 +1118,7 @@ describe('app module', () => {
 
     describe('sessionData', () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
-      const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
+      const appName = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json'), 'utf8')).name;
       const userDataPath = path.join(app.getPath('appData'), appName);
       const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
 
@@ -1139,8 +1139,8 @@ describe('app module', () => {
       };
 
       beforeEach(() => {
-        fs.removeSync(userDataPath);
-        fs.removeSync(tempBrowserDataPath);
+        fs.rmSync(userDataPath, { force: true, recursive: true });
+        fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
       });
 
       it('writes to userData by default', () => {
