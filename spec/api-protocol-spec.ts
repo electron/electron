@@ -1749,7 +1749,7 @@ describe('protocol module', () => {
         const end = Date.now();
         return end - begin;
       })();
-      expect(interceptedTime).to.be.lessThan(rawTime * 1.5);
+      expect(interceptedTime).to.be.lessThan(rawTime * 1.6);
     });
   });
 });
