@@ -209,7 +209,12 @@ BrowserWindow.prototype.getBrowserViews = function () {
 
 BrowserWindow.prototype.setTopBrowserView = function (browserView: BrowserView) {
   if (browserView.ownerWindow !== this) { throw new Error('Given BrowserView is not attached to the window'); }
-  this.contentView.addChildView(browserView.webContentsView);
+  const idx = this._browserViews.indexOf(browserView);
+  if (idx >= 0) {
+    this.contentView.addChildView(browserView.webContentsView);
+    this._browserViews.splice(idx, 1);
+    this._browserViews.push(browserView);
+  }
 };
 
 module.exports = BrowserWindow;
