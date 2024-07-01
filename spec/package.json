@@ -35,7 +35,7 @@
     "uuid": "^3.3.3",
     "walkdir": "^0.3.2",
     "winreg": "1.2.4",
-    "ws": "^7.4.6",
+    "ws": "^7.5.10",
     "yargs": "^16.0.3"
   },
   "optionalDependencies": {
