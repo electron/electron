@@ -2,3 +2,4 @@ chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 cherry-pick-8b400f9b7d66.patch
 cherry-pick-ba6cab40612d.patch
+merged_wasm_add_missing_type_canonicalization_for_exceptions_js.patch

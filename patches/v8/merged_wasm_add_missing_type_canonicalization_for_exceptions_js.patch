@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Tue, 18 Jun 2024 11:34:17 +0200
+Subject: Merged: [wasm] Add missing type canonicalization for exceptions JS
+ API
+
+When we encode a JS value in a wasm exception, canonicalize the type
+stored in the tag's signature first. Canonicalize it using the tag's
+original module by storing the instance on the tag object.
+
+R=jkummerow@chromium.org
+
+Bug: 346197738
+(cherry picked from commit 89dc6eab605cde2ffaa92dd9acf461caa63478de)
+
+Change-Id: I9a0b42702b1e5f7ef25091ed99c9bb00849bbc10
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5633661
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.6@{#36}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/wasm/module-instantiate.cc b/src/wasm/module-instantiate.cc
+index c74dc117ee21b999125a59549fa1f56a69313560..51b9d1e7492444a9bf96e7ea78b61f64fdc01ac9 100644
+--- a/src/wasm/module-instantiate.cc
++++ b/src/wasm/module-instantiate.cc
+@@ -2655,8 +2655,10 @@ void InstanceBuilder::ProcessExports(
+               isolate_);
+           uint32_t canonical_sig_index =
+               module_->isorecursive_canonical_type_ids[tag.sig_index];
++          Handle<WasmInstanceObject> instance =
++              handle(trusted_instance_data->instance_object(), isolate_);
+           wrapper = WasmTagObject::New(isolate_, tag.sig, canonical_sig_index,
+-                                       tag_object);
++                                       tag_object, instance);
+           tags_wrappers_[exp.index] = wrapper;
+         }
+         value = wrapper;
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index c6d20d790c850437330b8718f32c916ae9412ff6..dc5cf36c26326c5787fe99b17651bc2af5d157ea 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -1852,7 +1852,8 @@ void WebAssemblyTagImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+       i::wasm::GetWasmEngine()->type_canonicalizer()->AddRecursiveGroup(&sig);
+ 
+   i::Handle<i::JSObject> tag_object =
+-      i::WasmTagObject::New(i_isolate, &sig, canonical_type_index, tag);
++      i::WasmTagObject::New(i_isolate, &sig, canonical_type_index, tag,
++                            i_isolate->factory()->undefined_value());
+   info.GetReturnValue().Set(Utils::ToLocal(tag_object));
+ }
+ 
+@@ -1898,6 +1899,7 @@ uint32_t GetEncodedSize(i::Handle<i::WasmTagObject> tag_object) {
+ 
+ void EncodeExceptionValues(v8::Isolate* isolate,
+                            i::Handle<i::PodArray<i::wasm::ValueType>> signature,
++                           i::Handle<i::WasmTagObject> tag_object,
+                            const Local<Value>& arg, ErrorThrower* thrower,
+                            i::Handle<i::FixedArray> values_out) {
+   Local<Context> context = isolate->GetCurrentContext();
+@@ -1955,6 +1957,19 @@ void EncodeExceptionValues(v8::Isolate* isolate,
+       case i::wasm::kRefNull: {
+         const char* error_message;
+         i::Handle<i::Object> value_handle = Utils::OpenHandle(*value);
++
++        if (type.has_index()) {
++          // Canonicalize the type using the tag's original module.
++          i::Tagged<i::HeapObject> maybe_instance = tag_object->instance();
++          CHECK(!i::IsUndefined(maybe_instance));
++          auto instance = i::WasmInstanceObject::cast(maybe_instance);
++          const i::wasm::WasmModule* module = instance->module();
++          uint32_t canonical_index =
++              module->isorecursive_canonical_type_ids[type.ref_index()];
++          type = i::wasm::ValueType::RefMaybeNull(canonical_index,
++                                                  type.nullability());
++        }
++
+         if (!internal::wasm::JSToWasmObject(i_isolate, value_handle, type,
+                                             &error_message)
+                  .ToHandle(&value_handle)) {
+@@ -2010,7 +2025,8 @@ void WebAssemblyExceptionImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+                                                   runtime_exception));
+   i::Handle<i::PodArray<i::wasm::ValueType>> signature(
+       tag_object->serialized_signature(), i_isolate);
+-  EncodeExceptionValues(isolate, signature, info[1], &thrower, values);
++  EncodeExceptionValues(isolate, signature, tag_object, info[1], &thrower,
++                        values);
+   if (thrower.error()) return;
+ 
+   // Third argument: optional ExceptionOption ({traceStack: <bool>}).
+@@ -3224,9 +3240,9 @@ void WasmJs::PrepareForSnapshot(Isolate* isolate) {
+     // Note the canonical_type_index is reset in WasmJs::Install s.t.
+     // type_canonicalizer bookkeeping remains valid.
+     static constexpr uint32_t kInitialCanonicalTypeIndex = 0;
+-    Handle<JSObject> js_tag_object =
+-        WasmTagObject::New(isolate, &kWasmExceptionTagSignature,
+-                           kInitialCanonicalTypeIndex, js_tag);
++    Handle<JSObject> js_tag_object = WasmTagObject::New(
++        isolate, &kWasmExceptionTagSignature, kInitialCanonicalTypeIndex,
++        js_tag, isolate->factory()->undefined_value());
+     native_context->set_wasm_js_tag(*js_tag_object);
+     JSObject::AddProperty(isolate, webassembly, "JSTag", js_tag_object,
+                           ro_attributes);
+diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
+index ab1e4841a9f156601a544161ab4c6626f8e9d06e..c0c340d253370d8c443323577e9695975c899d28 100644
+--- a/src/wasm/wasm-objects.cc
++++ b/src/wasm/wasm-objects.cc
+@@ -1785,7 +1785,8 @@ void WasmArray::SetTaggedElement(uint32_t index, Handle<Object> value,
+ Handle<WasmTagObject> WasmTagObject::New(Isolate* isolate,
+                                          const wasm::FunctionSig* sig,
+                                          uint32_t canonical_type_index,
+-                                         Handle<HeapObject> tag) {
++                                         Handle<HeapObject> tag,
++                                         Handle<HeapObject> instance) {
+   Handle<JSFunction> tag_cons(isolate->native_context()->wasm_tag_constructor(),
+                               isolate);
+ 
+@@ -1806,6 +1807,7 @@ Handle<WasmTagObject> WasmTagObject::New(Isolate* isolate,
+   tag_wrapper->set_serialized_signature(*serialized_sig);
+   tag_wrapper->set_canonical_type_index(canonical_type_index);
+   tag_wrapper->set_tag(*tag);
++  tag_wrapper->set_instance(*instance);
+ 
+   return tag_wrapper;
+ }
+diff --git a/src/wasm/wasm-objects.h b/src/wasm/wasm-objects.h
+index 341e97040b69f9998e0441094a12434aede4f99d..a7495d3cbb394e143dc69c121361f1b17b26abc7 100644
+--- a/src/wasm/wasm-objects.h
++++ b/src/wasm/wasm-objects.h
+@@ -605,7 +605,8 @@ class WasmTagObject
+   static Handle<WasmTagObject> New(Isolate* isolate,
+                                    const wasm::FunctionSig* sig,
+                                    uint32_t canonical_type_index,
+-                                   Handle<HeapObject> tag);
++                                   Handle<HeapObject> tag,
++                                   Handle<HeapObject> instance);
+ 
+   TQ_OBJECT_CONSTRUCTORS(WasmTagObject)
+ };
+diff --git a/src/wasm/wasm-objects.tq b/src/wasm/wasm-objects.tq
+index dadb0342d08a948aaddf880a7b3d98df488ab627..7d937ec308f734b0ed168ddd455286d4d261d79f 100644
+--- a/src/wasm/wasm-objects.tq
++++ b/src/wasm/wasm-objects.tq
+@@ -211,6 +211,7 @@ extern class WasmGlobalObject extends JSObject {
+ extern class WasmTagObject extends JSObject {
+   serialized_signature: PodArrayOfWasmValueType;
+   tag: HeapObject;
++  instance: WasmInstanceObject|Undefined;
+   canonical_type_index: Smi;
+ }
+ 
