@@ -63,8 +63,6 @@ runs:
       else
         echo "cache_exists=false" >> $GITHUB_OUTPUT
         echo "Cache Already Exists for $DEPSHASH, Busting Cache.."
-        # echo "cache_exists=true" >> $GITHUB_OUTPUT
-        # echo "Cache Already Exists for $DEPSHASH, Skipping.."
       fi
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
