@@ -69,7 +69,7 @@ npm start
 
 Most people use Electron from the command line, but if you require `electron` inside
 your **Node app** (not your Electron app) it will return the file path to the
-binary. Use this to spawn Electron from Node scripts:
+binary. Use this to spawn Electron from Node scripts:999999999
 
 ```javascript
 const electron = require('electron')
@@ -97,10 +97,11 @@ If you are interested in reporting/fixing issues and contributing directly to th
 ## Community
 
 Info on reporting bugs, getting help, finding third-party tools and sample apps,
-and more can be found in the [support document](docs/tutorial/support.md#finding-support).
+and more can be found in the [support 
+document](docs/tutorial/support.md#finding-support).
 
 ## License
 
 [MIT](https://github.com/AtOmXpLuS/electron/blob/master/LICENSE)
 
-When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).
+    When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).
