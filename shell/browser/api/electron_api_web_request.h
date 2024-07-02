@@ -84,6 +84,8 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
   ~WebRequest() override;
 
+  // Contains info about requests that are blocked waiting for a response from
+  // the user.
   struct BlockedRequest;
 
   enum class SimpleEvent {
@@ -116,15 +118,6 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   void HandleSimpleEvent(SimpleEvent event,
                          extensions::WebRequestInfo* info,
                          Args... args);
-  template <typename Out, typename... Args>
-  int HandleResponseEvent(ResponseEvent event,
-                          extensions::WebRequestInfo* info,
-                          net::CompletionOnceCallback callback,
-                          Out out,
-                          Args... args);
-
-  template <typename T>
-  void OnListenerResult(uint64_t id, T out, v8::Local<v8::Value> response);
 
   int HandleOnBeforeRequestResponseEvent(
       extensions::WebRequestInfo* info,
@@ -136,11 +129,19 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
       const network::ResourceRequest& request,
       BeforeSendHeadersCallback callback,
       net::HttpRequestHeaders* headers);
+  int HandleOnHeadersReceivedResponseEvent(
+      extensions::WebRequestInfo* info,
+      const network::ResourceRequest& request,
+      net::CompletionOnceCallback callback,
+      const net::HttpResponseHeaders* original_response_headers,
+      scoped_refptr<net::HttpResponseHeaders>* override_response_headers);
 
   void OnBeforeRequestListenerResult(uint64_t id,
                                      v8::Local<v8::Value> response);
   void OnBeforeSendHeadersListenerResult(uint64_t id,
                                          v8::Local<v8::Value> response);
+  void OnHeadersReceivedListenerResult(uint64_t id,
+                                       v8::Local<v8::Value> response);
 
   class RequestFilter {
    public:
