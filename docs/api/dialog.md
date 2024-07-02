@@ -52,6 +52,8 @@ The `browserWindow` argument allows the dialog to attach itself to a parent wind
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
 
+<!-- eslint-skip -->
+
 ```js
 {
   filters: [
@@ -118,6 +120,8 @@ The `browserWindow` argument allows the dialog to attach itself to a parent wind
 
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
+
+<!-- eslint-skip -->
 
 ```js
 {
