@@ -77,7 +77,6 @@ structure that is aware of your app's platform and architecture.
 For example:
 
 ```plaintext
-
 my-app-updates/
 ├─ darwin/
 │  ├─ x64/
@@ -96,6 +95,7 @@ my-app-updates/
 │  │  ├─ my-app-1.1.0-win32-x64.nupkg
 │  │  ├─ RELEASES
 ```
+
 </details>
 
 ### Reading release metadata
