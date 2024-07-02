@@ -544,7 +544,8 @@ gin::WrapperInfo Session::kWrapperInfo = {gin::kEmbedderNativeGin};
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
-      browser_context_(browser_context) {
+      browser_context_{
+          raw_ref<ElectronBrowserContext>::from_ptr(browser_context)} {
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
@@ -556,9 +557,8 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
                                std::make_unique<UserDataLink>(this));
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_);
-  if (service) {
+  if (auto* service =
+          SpellcheckServiceFactory::GetForContext(browser_context)) {
     service->SetHunspellObserver(this);
   }
 #endif
@@ -572,9 +572,8 @@ Session::~Session() {
   browser_context()->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_);
-  if (service) {
+  if (auto* service =
+          SpellcheckServiceFactory::GetForContext(browser_context())) {
     service->SetHunspellObserver(nullptr);
   }
 #endif
@@ -639,7 +638,7 @@ v8::Local<v8::Promise> Session::ResolveHost(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto fn = base::MakeRefCounted<ResolveHostFunction>(
-      browser_context_, std::move(host),
+      browser_context(), std::move(host),
       params ? std::move(params.value()) : nullptr,
       base::BindOnce(
           [](gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -1242,7 +1241,7 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   DCHECK_GT(num_sockets_to_preconnect, 0);
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
-      base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context_),
+      base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context()),
                      url, num_sockets_to_preconnect));
 }
 
@@ -1434,7 +1433,7 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   SpellcheckService* spellcheck =
-      SpellcheckServiceFactory::GetForContext(browser_context_);
+      SpellcheckServiceFactory::GetForContext(browser_context());
 
   if (!spellcheck) {
     promise.RejectWithErrorMessage(
@@ -1462,7 +1461,7 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
     return false;
 
   SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_);
+      SpellcheckServiceFactory::GetForContext(browser_context());
   if (!service)
     return false;
 
@@ -1483,7 +1482,7 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
     return false;
 
   SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_);
+      SpellcheckServiceFactory::GetForContext(browser_context());
   if (!service)
     return false;
 
