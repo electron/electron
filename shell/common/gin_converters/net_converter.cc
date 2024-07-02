@@ -365,9 +365,11 @@ class ChunkedDataPipeReadableStream
     if (size_ && num_bytes > *size_ - bytes_read_)
       num_bytes = *size_ - bytes_read_;
     MojoResult rv = data_pipe_->ReadData(
-        static_cast<void*>(static_cast<char*>(buf->Buffer()->Data()) +
-                           buf->ByteOffset()),
-        &num_bytes, MOJO_READ_DATA_FLAG_NONE);
+        MOJO_READ_DATA_FLAG_NONE,
+        base::span(static_cast<uint8_t*>(buf->Buffer()->Data()),
+                   buf->ByteLength())
+            .subspan(buf->ByteOffset(), num_bytes),
+        num_bytes);
     if (rv == MOJO_RESULT_OK) {
       bytes_read_ += num_bytes;
       // Not needed for correctness, but this allows the consumer to send the

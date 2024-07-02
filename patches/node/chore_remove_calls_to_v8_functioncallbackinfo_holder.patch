@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 10 Jun 2024 11:18:56 -0500
+Subject: chore: remove calls to v8::FunctionCallbackInfo::Holder()
+
+Use This() instead.
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5604487
+https://issues.chromium.org/issues/333672197
+
+This patch can be removed once Node addresses this change.
+
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 6b4ec38bd092358a9433a1179dbe1e71f56aa387..0a9eaba5c71f711c58799d77a9de6072304deb9a 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -67,7 +67,7 @@ template <typename T, int (*F)(const typename T::HandleType*, sockaddr*, int*)>
+ void GetSockOrPeerName(const v8::FunctionCallbackInfo<v8::Value>& args) {
+   T* wrap;
+   ASSIGN_OR_RETURN_UNWRAP(&wrap,
+-                          args.Holder(),
++                          args.This(),
+                           args.GetReturnValue().Set(UV_EBADF));
+   CHECK(args[0]->IsObject());
+   sockaddr_storage storage;

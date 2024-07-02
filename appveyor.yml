@@ -273,8 +273,8 @@ for:
                 Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/$artifact_name" -OutFile $outfile
               }
               # Uncomment the following lines to download the pdb.zip to show real stacktraces when crashes happen during testing
-              # Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/pdb.zip" -OutFile pdb.zip
-              # 7z x -y -osrc pdb.zip
+              Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/pdb.zip" -OutFile pdb.zip
+              7z x -y -osrc pdb.zip
             }
           }
       - ps: |

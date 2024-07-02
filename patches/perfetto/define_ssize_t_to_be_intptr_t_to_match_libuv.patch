@@ -8,7 +8,7 @@ This definition conflicts with libuv's: https://github.com/libuv/libuv/blob/bb0b
 Breaks the build on 32-bit windows.
 
 diff --git a/include/perfetto/ext/base/sys_types.h b/include/perfetto/ext/base/sys_types.h
-index bcb6433a23d160d69b52095280c024ff71e984cc..e5f575ee694153e87168bfc4d563d9fd35ecaaa4 100644
+index 33ef5e7d652807f2607466287eadd053c9c0ab67..dc1197ba0d6e30e22ddab55c4a57de30193fb1f5 100644
 --- a/include/perfetto/ext/base/sys_types.h
 +++ b/include/perfetto/ext/base/sys_types.h
 @@ -33,11 +33,7 @@ using uid_t = int;
