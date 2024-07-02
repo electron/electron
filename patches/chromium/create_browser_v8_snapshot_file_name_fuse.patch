@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index ba2ec653757232519c442e9fa5f88441470c61a0..432e139370208f93e2af655dd2d5491ba4d15904 100644
+index f143dbf39d011153c83a4d4c0b9afc54bb839ab9..2563c7c0abc4c5eae2ec27bb0bbde398fc977d42 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -45,6 +45,7 @@
@@ -48,7 +48,7 @@ index ba2ec653757232519c442e9fa5f88441470c61a0..432e139370208f93e2af655dd2d5491b
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -991,7 +998,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -994,7 +1001,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  

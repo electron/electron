@@ -6,7 +6,7 @@ Subject: scroll_bounce_flag.patch
 Patch to make scrollBounce option work.
 
 diff --git a/content/renderer/render_thread_impl.cc b/content/renderer/render_thread_impl.cc
-index 144b00419efeb83b0c2d24d79f466c31e11335bf..b077d20d6a410dcd8a00287878a6c70268fb2215 100644
+index 03b41a2bc98521eff65f84732f1f0cb3ef922ae5..b598d0f3351c51619ee0803eba2d2a0e7d033f36 100644
 --- a/content/renderer/render_thread_impl.cc
 +++ b/content/renderer/render_thread_impl.cc
 @@ -1273,7 +1273,7 @@ bool RenderThreadImpl::IsLcdTextEnabled() {

@@ -43,8 +43,8 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
                           const std::string& channel);
 
   bool has_delayed_node_initialization_ = false;
-  content::RenderFrame* render_frame_;
-  RendererClientBase* renderer_client_;
+  raw_ptr<content::RenderFrame> render_frame_;
+  raw_ptr<RendererClientBase> renderer_client_;
 };
 
 }  // namespace electron

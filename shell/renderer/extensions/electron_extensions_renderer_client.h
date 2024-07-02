@@ -36,9 +36,6 @@ class ElectronExtensionsRendererClient
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
   extensions::Dispatcher* GetDispatcher() override;
-  bool ExtensionAPIEnabledForServiceWorkerScript(
-      const GURL& scope,
-      const GURL& script_url) const override;
 
   bool AllowPopup();
 

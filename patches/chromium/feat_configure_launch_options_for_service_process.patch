@@ -18,7 +18,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index e3bc6f02cffcdbc0954173e4033a43437e3d5c37..7a7d8931759479021c14b9e014622a742bdbbe21 100644
+index 804532e89f46d4cccd295e0c78977405af53b485..178eaeff8159e7f28e4e17cc44e9fb7bfc9a007e 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -32,6 +32,7 @@
@@ -29,7 +29,7 @@ index e3bc6f02cffcdbc0954173e4033a43437e3d5c37..7a7d8931759479021c14b9e014622a74
  #endif
  
  #if BUILDFLAG(IS_POSIX)
-@@ -169,7 +170,10 @@ struct ChildProcessLauncherFileData {
+@@ -170,7 +171,10 @@ struct ChildProcessLauncherFileData {
        delete;
    ~ChildProcessLauncherFileData();
  
@@ -41,7 +41,7 @@ index e3bc6f02cffcdbc0954173e4033a43437e3d5c37..7a7d8931759479021c14b9e014622a74
    // Files opened by the browser and passed as corresponding file descriptors
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
-@@ -184,6 +188,15 @@ struct ChildProcessLauncherFileData {
+@@ -185,6 +189,15 @@ struct ChildProcessLauncherFileData {
    std::map<std::string, absl::variant<base::FilePath, base::ScopedFD>>
        files_to_preload;
  #endif
@@ -184,7 +184,7 @@ index be6402b33d7e0e2aab7cbb2844ba4600a166e7a9..642f8b6da39615d1c68584ff18fc57ce
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 7e82cd311a6286475d149310ecd492f6114e2ba8..38bd3928ecfca0cdd47b6f91735e85a4bfbdc661 100644
+index 82f42c80eaa698aaa5da1d52c8e6486be1fb9bb6..1a8dd3c6950c1654c054d036acfdc83bd8b61c0b 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -178,11 +178,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -228,7 +228,7 @@ index 7e82cd311a6286475d149310ecd492f6114e2ba8..38bd3928ecfca0cdd47b6f91735e85a4
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -437,9 +457,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -436,9 +456,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -628,7 +628,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index d4b49018d54b5a9038db60c72940e3af8dae6135..c2348ce0a7eebff5707126d4f40e1ce2f29a79cd 100644
+index dc919f8220bb8c1cde8740399184a38a0ac7fc34..8847ba3e5e650dc341eb29aea51ae0442a24d51c 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -699,11 +699,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

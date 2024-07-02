@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d780484254502269a816ee26b197c48e45463f1c..63b7b121ea62f921751f1104b6d2030d254dff74 100644
+index fb4093873eb91eca1c0139f56a77ad9eb3674679..05f3f34d135bf24c648d51339a803fbbfe3bca03 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1052,6 +1052,7 @@ component("base") {
@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0fb3882a9073be3bb41d90217af28925e35e4654..06752e1f3dd92761379f582e9c0a85ab6e85e7d0 100644
+index 6ba9d79342f44c8d942ccf8ed39bcc2af51cfacf..c2b6ffbafe1cac3f81efb4a125ce8bf5bada5272 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -620,7 +620,7 @@ index 0738636a7462fd973c12d0e26e298c3b767f0c53..977e90c5dc3d8ff48ba9674c1c7d5eb6
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index c60a3f782dbadd7acaa658d844a73c96b899dd36..78bfe250a8241e8942f5f6b812ddc36d4511f78d 100644
+index 0208430b12c02be61bebee51a81f5a103d1f8e96..e1123d00068e6c007f869a6eb90d55fa66a84bdf 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -230,6 +230,7 @@ target(link_target_type, "renderer") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 965c8ae5c819711401b32ddb66dc6bbec7f31d41..0be0f6ec180f894dcb68ae9198df71259fdabf9e 100644
+index 3638b51c713c360f1d0e51f5942725c24f194e10..9dfc657684299843862d0b4c55425304401b16d1 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -711,7 +711,7 @@ index 965c8ae5c819711401b32ddb66dc6bbec7f31d41..0be0f6ec180f894dcb68ae9198df7125
    ]
  
    public_deps = [
-@@ -1102,6 +1103,7 @@ static_library("browsertest_support") {
+@@ -1103,6 +1104,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -719,7 +719,7 @@ index 965c8ae5c819711401b32ddb66dc6bbec7f31d41..0be0f6ec180f894dcb68ae9198df7125
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1715,6 +1717,7 @@ test("content_browsertests") {
+@@ -1716,6 +1718,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1517,7 +1517,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index d8e29c85add32bc13989aae412f953d5b2e5a7d3..03bea16fc3c62717c3a4072327af681a38c571ca 100644
+index cb0c8581489dfaf09e62182ca5069a4ab9cf3e31..7317b3b313b407cfd76c769f729599610eff61de 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -71,6 +71,10 @@ component("display") {

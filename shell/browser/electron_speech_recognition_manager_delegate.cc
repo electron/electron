@@ -54,11 +54,6 @@ ElectronSpeechRecognitionManagerDelegate::GetEventListener() {
   return this;
 }
 
-bool ElectronSpeechRecognitionManagerDelegate::FilterProfanities(
-    int render_process_id) {
-  return false;
-}
-
 void ElectronSpeechRecognitionManagerDelegate::BindSpeechRecognitionContext(
     mojo::PendingReceiver<media::mojom::SpeechRecognitionContext> receiver) {}
 
