@@ -17,6 +17,9 @@ inputs:
   is-release:
     description: 'Is release build'
     required: true
+  strip-binaries:
+    description: 'Strip binaries (Linux only)'
+    required: false
   generate-symbols:
     description: 'Generate symbols'
     required: true
