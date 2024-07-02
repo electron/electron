@@ -32,7 +32,7 @@ at [https://update.electronjs.org](https://update.electronjs.org). Its requireme
 - Your app runs on macOS or Windows
 - Your app has a public GitHub repository
 - Builds are published to [GitHub releases][]
-- Builds are [code signed][code-signed]
+- Builds are [code signed][code-signed] **(macOS only)**
 
 At this point, we'll assume that you have already pushed all your
 code to a public GitHub repository.
