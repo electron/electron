@@ -469,12 +469,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return;
     }
 
-    SetZoomLevel(thrower.isolate(), blink::PageZoomFactorToZoomLevel(factor));
+    SetZoomLevel(thrower.isolate(), blink::ZoomFactorToZoomLevel(factor));
   }
 
   double GetZoomFactor(v8::Isolate* isolate) {
     double zoom_level = GetZoomLevel(isolate);
-    return blink::PageZoomLevelToZoomFactor(zoom_level);
+    return blink::ZoomLevelToZoomFactor(zoom_level);
   }
 
   v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,

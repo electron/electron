@@ -69,7 +69,7 @@ class DataPipeReader {
       return;
     }
     buffer_.resize(size);
-    head_ = &buffer_.front();
+    head_offset_ = 0;
     remaining_size_ = size;
     handle_watcher_.ArmOrNotify();
   }
@@ -84,10 +84,13 @@ class DataPipeReader {
 
     // Read.
     size_t length = remaining_size_;
-    result = data_pipe_->ReadData(head_, &length, MOJO_READ_DATA_FLAG_NONE);
+    result = data_pipe_->ReadData(
+        MOJO_READ_DATA_FLAG_NONE,
+        base::as_writable_byte_span(buffer_).subspan(head_offset_, length),
+        length);
     if (result == MOJO_RESULT_OK) {  // success
       remaining_size_ -= length;
-      head_ += length;
+      head_offset_ += length;
       if (remaining_size_ == 0) {
         OnSuccess();
       } else {
@@ -130,7 +133,7 @@ class DataPipeReader {
   std::vector<char> buffer_;
 
   // The head of buffer.
-  raw_ptr<char, AllowPtrArithmetic> head_ = nullptr;
+  size_t head_offset_ = 0;
 
   // Remaining data to read.
   uint64_t remaining_size_ = 0;

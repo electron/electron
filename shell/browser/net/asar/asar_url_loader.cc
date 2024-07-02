@@ -221,13 +221,15 @@ class AsarURLLoader : public network::mojom::URLLoader {
       // Write any data we read for MIME sniffing, constraining by range where
       // applicable. This will always fit in the pipe (see assertion near
       // |kDefaultFileUrlPipeSize| definition).
-      size_t write_size = std::min(
+      const size_t write_size = std::min(
           (read_result.bytes_read - first_byte_to_send), total_bytes_to_send);
-      const size_t expected_write_size = write_size;
-      MojoResult result =
-          producer_handle->WriteData(&initial_read_buffer[first_byte_to_send],
-                                     &write_size, MOJO_WRITE_DATA_FLAG_NONE);
-      if (result != MOJO_RESULT_OK || write_size != expected_write_size) {
+      base::span<const uint8_t> bytes =
+          base::as_byte_span(initial_read_buffer)
+              .subspan(first_byte_to_send, write_size);
+      size_t bytes_written = 0;
+      MojoResult result = producer_handle->WriteData(
+          bytes, MOJO_WRITE_DATA_FLAG_NONE, bytes_written);
+      if (result != MOJO_RESULT_OK || write_size != bytes_written) {
         OnFileWritten(result);
         return;
       }
