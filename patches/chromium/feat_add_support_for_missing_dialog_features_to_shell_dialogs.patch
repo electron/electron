@@ -14,7 +14,7 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index 129979e844581e68fdecde87bd52f3344f88022a..5e02a36e5e9eb4db84700dd9a0b8765dec18c236 100644
+index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc671dca9d4 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
 @@ -243,6 +243,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
@@ -189,10 +189,10 @@ index 129979e844581e68fdecde87bd52f3344f88022a..5e02a36e5e9eb4db84700dd9a0b8765d
  }
  
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..ee19c3f399a1d060d5e9bd0dc5f1b3828381e8df 100644
+index 1c5f12fb39c648cff21da551372239167e4d8ff4..21c84810d0bdfa007ea17ffcdad9682b04e15bf4 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
-@@ -90,19 +90,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -91,19 +91,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    GtkWidget* CreateSelectFolderDialog(Type type,
                                        const std::string& title,
                                        const base::FilePath& default_path,
@@ -220,7 +220,7 @@ index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..ee19c3f399a1d060d5e9bd0dc5f1b382
  
    // Removes and returns the |params| associated with |dialog| from
    // |params_map_|.
-@@ -121,7 +125,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -122,7 +126,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
    GtkWidget* CreateFileOpenHelper(const std::string& title,
                                    const base::FilePath& default_path,
