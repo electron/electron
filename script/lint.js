@@ -217,7 +217,7 @@ const LINTERS = [{
       }
 
       // Read the patch list
-      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split(/\r?\n/);
+      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split(os.EOL);
       const patchFileSet = new Set(patchFileList);
       patchFileList.reduce((seen, file) => {
         if (seen.has(file)) {
