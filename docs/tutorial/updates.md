@@ -19,7 +19,7 @@ for Electron apps that meet the following criteria:
 - App runs on macOS or Windows
 - App has a public GitHub repository
 - Builds are published to [GitHub Releases][gh-releases]
-- Builds are [code-signed](./code-signing.md)
+- Builds are [code-signed](./code-signing.md) **(macOS only)**
 
 The easiest way to use this service is by installing [update-electron-app][],
 a Node.js module preconfigured for use with update.electronjs.org.
