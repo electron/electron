@@ -248,8 +248,8 @@ class ScriptExecutionCallback {
 
 class FrameSetSpellChecker : public content::RenderFrameVisitor {
  public:
-  FrameSetSpellChecker(SpellCheckClient* spell_check_client,
-                       content::RenderFrame* main_frame)
+  FrameSetSpellChecker(raw_ptr<SpellCheckClient> spell_check_client,
+                       raw_ptr<content::RenderFrame> main_frame)
       : spell_check_client_(spell_check_client), main_frame_(main_frame) {
     content::RenderFrame::ForEach(this);
     main_frame->GetWebFrame()->SetSpellCheckPanelHostClient(spell_check_client);
@@ -268,8 +268,8 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   }
 
  private:
-  SpellCheckClient* spell_check_client_;
-  content::RenderFrame* main_frame_;
+  raw_ptr<SpellCheckClient> spell_check_client_;
+  raw_ptr<content::RenderFrame> main_frame_;
 };
 
 class SpellCheckerHolder final : private content::RenderFrameObserver {
