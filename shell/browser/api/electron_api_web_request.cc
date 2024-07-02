@@ -185,9 +185,10 @@ void FillDetails(gin_helper::Dictionary* details, Arg arg, Args... args) {
   FillDetails(details, args...);
 }
 
+// Modified from extensions/browser/api/web_request/web_request_api_helpers.cc.
 std::pair<std::set<std::string>, std::set<std::string>>
-CalculateOnBeforeSendHeadersDelta(net::HttpRequestHeaders* old_headers,
-                                  net::HttpRequestHeaders* new_headers) {
+CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
+                                  const net::HttpRequestHeaders* new_headers) {
   // Newly introduced or overridden request headers.
   std::set<std::string> modified_request_headers;
   // Keys of request headers to be deleted.
@@ -473,8 +474,10 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
     }
   }
 
-  std::pair<std::set<std::string>, std::set<std::string>> updated_headers =
-      CalculateOnBeforeSendHeadersDelta(old_headers, &new_headers);
+  // If the user passes |cancel|, |new_headers| should be nullptr.
+  const auto updated_headers = CalculateOnBeforeSendHeadersDelta(
+      old_headers,
+      result == net::ERR_BLOCKED_BY_CLIENT ? nullptr : &new_headers);
 
   // Leave |request.request_headers| unchanged if the user didn't modify it.
   if (user_modified_headers)
