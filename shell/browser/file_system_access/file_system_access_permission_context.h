@@ -18,6 +18,10 @@
 
 class GURL;
 
+namespace gin {
+class Arguments;
+}  // namespace gin
+
 namespace base {
 class FilePath;
 }  // namespace base
@@ -124,14 +128,16 @@ class FileSystemAccessPermissionContext
                                  const base::FilePath& path,
                                  HandleType handle_type,
                                  base::OnceCallback<void(bool)> callback);
-  void DidCheckPathAgainstBlocklist(
-      const url::Origin& origin,
-      const base::FilePath& path,
-      HandleType handle_type,
-      UserAction user_action,
-      content::GlobalRenderFrameHostId frame_id,
-      base::OnceCallback<void(SensitiveEntryResult)> callback,
-      bool should_block);
+  void DidCheckPathAgainstBlocklist(const url::Origin& origin,
+                                    const base::FilePath& path,
+                                    HandleType handle_type,
+                                    UserAction user_action,
+                                    content::GlobalRenderFrameHostId frame_id,
+                                    bool should_block);
+
+  void RunRestrictedPathCallback(SensitiveEntryResult result);
+
+  void OnRestrictedPathResult(gin::Arguments* args);
 
   void CleanupPermissions(const url::Origin& origin);
 
@@ -145,6 +151,8 @@ class FileSystemAccessPermissionContext
 
   struct OriginState;
   std::map<url::Origin, OriginState> active_permissions_map_;
+
+  base::OnceCallback<void(SensitiveEntryResult)> callback_;
 
   base::WeakPtrFactory<FileSystemAccessPermissionContext> weak_factory_{this};
 };
