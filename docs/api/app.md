@@ -1489,6 +1489,38 @@ This method can only be called after app is ready.
 
 Returns `Promise<string>` - Resolves with the proxy information for `url` that will be used when attempting to make requests using [Net](net.md) in the [utility process](../glossary.md#utility-process).
 
+### `app.setClientCertRequestPasswordHandler(handler)`  _Linux_
+
+* `handler` Function\<Promise\<string\>\>
+  * `clientCertRequestParams` Object
+    * `hostname` string - the hostname of the site requiring a client certificate
+    * `tokenName` string - the token (or slot) name of the cryptographic device
+    * `isRetry` boolean - whether there have been previous failed attempts at prompting the password
+
+  Returns `Promise<string>` - Resolves with the password
+
+The handler is called when a password is needed to unlock a client certificate for
+`hostname`.
+
+```js
+const { app } = require('electron')
+
+async function passwordPromptUI (text) {
+  return new Promise((resolve, reject) => {
+    // display UI to prompt user for password
+    // ...
+    // ...
+    resolve('the password')
+  })
+}
+
+app.setClientCertRequestPasswordHandler(async ({ hostname, tokenName, isRetry }) => {
+  const text = `Please sign in to ${tokenName} to authenticate to ${hostname} with your certificate`
+  const password = await passwordPromptUI(text)
+  return password
+})
+```
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_

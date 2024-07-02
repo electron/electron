@@ -111,3 +111,19 @@ for (const name of events) {
     webContents.emit(name, event, ...args);
   });
 }
+
+app._clientCertRequestPasswordHandler = null;
+app.setClientCertRequestPasswordHandler = function (handler: (params: Electron.ClientCertRequestParams) => Promise<string>) {
+  app._clientCertRequestPasswordHandler = handler;
+};
+
+app.on('-client-certificate-request-password', async (event: Electron.Event<Electron.ClientCertRequestParams>, callback: (password: string) => void) => {
+  event.preventDefault();
+  const { hostname, tokenName, isRetry } = event;
+  if (!app._clientCertRequestPasswordHandler) {
+    callback('');
+    return;
+  }
+  const password = await app._clientCertRequestPasswordHandler({ hostname, tokenName, isRetry });
+  callback(password);
+});

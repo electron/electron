@@ -17,6 +17,8 @@ declare namespace Electron {
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
+    _clientCertRequestPasswordHandler: ((params: ClientCertRequestParams) => Promise<string>) | null;
+    on(event: '-client-certificate-request-password', listener: (event: Event<ClientCertRequestParams>, callback: (password: string) => void) => Promise<void>): this;
   }
 
   interface AutoUpdater {
