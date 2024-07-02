@@ -187,9 +187,9 @@ template("electron_paks") {
       "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
       "${root_gen_dir}/extensions/strings/extensions_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
-      "${root_gen_dir}/third_party/blink/public/strings/blink_accessibility_strings_",
       "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
+      "${root_gen_dir}/ui/strings/auto_image_annotation_strings_",
       "${root_gen_dir}/ui/strings/ax_strings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
     ]
@@ -204,8 +204,8 @@ template("electron_paks") {
       "//extensions/strings",
       "//services/strings",
       "//third_party/blink/public/strings",
-      "//third_party/blink/public/strings:accessibility_strings",
       "//ui/strings:app_locale_settings",
+      "//ui/strings:auto_image_annotation_strings",
       "//ui/strings:ax_strings",
       "//ui/strings:ui_strings",
     ]
