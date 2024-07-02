@@ -9,10 +9,10 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3a878723a 100644
+index 7982c87feb19cf80aa05025996b50b1d9be5f54c..8434fdab9d0e66f54381ed96142b138a5149c9ce 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
-@@ -7,6 +7,7 @@
+@@ -12,6 +12,7 @@
  #include <iostream>
  #include <string_view>
  
@@ -20,7 +20,7 @@ index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -27,6 +28,7 @@
+@@ -32,6 +33,7 @@
  #include "net/http/http_cache.h"
  #include "third_party/blink/public/common/scheme_registry.h"
  #include "url/gurl.h"
@@ -28,7 +28,7 @@ index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3
  
  using storage::BigIOBuffer;
  
-@@ -39,7 +41,7 @@ constexpr char kSeparator[] = " \n";
+@@ -44,7 +46,7 @@ constexpr char kSeparator[] = " \n";
  
  // We always expect to receive valid URLs that can be used as keys to the code
  // cache. The relevant checks (for ex: resource_url is valid, origin_lock is
@@ -37,7 +37,7 @@ index a9e025b1d611c3becb983a77d20fc03da2418293..d04e399638116fef5f2b15b6510157d3
  //
  // This function doesn't enforce anything in the production code. It is here
  // to make the assumptions explicit and to catch any errors when DCHECKs are
-@@ -49,33 +51,55 @@ void CheckValidKeys(const GURL& resource_url,
+@@ -54,33 +56,55 @@ void CheckValidKeys(const GURL& resource_url,
                      GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
