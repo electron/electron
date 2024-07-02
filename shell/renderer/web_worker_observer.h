@@ -10,6 +10,10 @@
 #include "base/containers/flat_set.h"
 #include "v8/include/v8.h"
 
+namespace base {
+class FilePath;
+}
+
 namespace node {
 
 class Environment;
@@ -36,7 +40,9 @@ class WebWorkerObserver {
   WebWorkerObserver(const WebWorkerObserver&) = delete;
   WebWorkerObserver& operator=(const WebWorkerObserver&) = delete;
 
-  void WorkerScriptReadyForEvaluation(v8::Local<v8::Context> context);
+  void WorkerScriptReadyForEvaluation(
+      v8::Local<v8::Context> context,
+      std::optional<base::FilePath> node_preload);
   void ContextWillDestroy(v8::Local<v8::Context> context);
 
  private:
