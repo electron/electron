@@ -122,10 +122,6 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       int height;
       if (titlebar_overlay_dict.Get(options::kOverlayHeight, &height))
         titlebar_overlay_height_ = height;
-
-#if !(BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC))
-      DCHECK(false);
-#endif
     }
   }
 

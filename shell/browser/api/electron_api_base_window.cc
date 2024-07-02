@@ -40,6 +40,8 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
+#elif BUILDFLAG(IS_LINUX)
+#include "shell/browser/ui/views/opaque_frame_view.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -1046,11 +1048,13 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
                                   relaunch_command, relaunch_display_name,
                                   window_->GetAcceleratedWidget());
 }
+#endif
 
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
                                     gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
-  if (!window_->titlebar_overlay_enabled()) {
+  if (!window_->IsWindowControlsOverlayEnabled()) {
     args->ThrowError("Titlebar overlay is not enabled");
     return;
   }
@@ -1095,13 +1099,18 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
     updated = true;
   }
 
-  // If anything was updated, invalidate the layout and schedule a paint of the
-  // window's frame view
-  if (updated) {
-    auto* frame_view = static_cast<WinFrameView*>(
-        window->widget()->non_client_view()->frame_view());
-    frame_view->InvalidateCaptionButtons();
-  }
+  if (!updated)
+    return;
+
+    // If anything was updated, ensure the overlay is repainted.
+#if BUILDFLAG(IS_WIN)
+  auto* frame_view = static_cast<WinFrameView*>(
+      window->widget()->non_client_view()->frame_view());
+#else
+  auto* frame_view = static_cast<OpaqueFrameView*>(
+      window->widget()->non_client_view()->frame_view());
+#endif
+  frame_view->InvalidateCaptionButtons();
 }
 #endif
 
@@ -1291,6 +1300,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setThumbnailClip", &BaseWindow::SetThumbnailClip)
       .SetMethod("setThumbnailToolTip", &BaseWindow::SetThumbnailToolTip)
       .SetMethod("setAppDetails", &BaseWindow::SetAppDetails)
+#endif
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
       .SetMethod("setTitleBarOverlay", &BaseWindow::SetTitleBarOverlay)
 #endif
       .SetProperty("id", &BaseWindow::GetID);
