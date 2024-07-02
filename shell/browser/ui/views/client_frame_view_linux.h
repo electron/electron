@@ -78,8 +78,10 @@ class ClientFrameViewLinux : public FramelessView,
   void Layout(PassKey) override;
   void OnPaint(gfx::Canvas* canvas) override;
 
-  // Overriden from views::ViewTargeterDelegate
+  // Overridden from views::ViewTargeterDelegate
   views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
+
+  ui::WindowFrameProvider* GetFrameProvider() const;
 
  private:
   static constexpr int kNavButtonCount = 4;
@@ -136,8 +138,6 @@ class ClientFrameViewLinux : public FramelessView,
   std::vector<views::FrameButton> trailing_frame_buttons_;
 
   bool host_supports_client_frame_shadow_ = false;
-
-  raw_ptr<ui::WindowFrameProvider> frame_provider_;
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};

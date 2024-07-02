@@ -8,10 +8,10 @@ See https://chromium-review.googlesource.com/c/v8/v8/+/5539852
 Also https://github.com/nodejs/nan/issues/953#issuecomment-1791163429
 
 diff --git a/nan.h b/nan.h
-index 64f857c93818712ea3557f53ab4f3cad6813c43c..6a405a6fb6f89dcb2140de48dac4ce743e9f10fa 100644
+index 42285328055ddb7c76548258f3c4847d2c278ad6..9a9112afe0cc94ce58ed3cce9763ace7c160a932 100644
 --- a/nan.h
 +++ b/nan.h
-@@ -685,7 +685,13 @@ inline uv_loop_t* GetCurrentEventLoop() {
+@@ -684,7 +684,13 @@ inline uv_loop_t* GetCurrentEventLoop() {
      v8::Isolate::GetCurrent()->SetAddHistogramSampleFunction(cb);
    }
  

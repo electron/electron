@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 9d97c3debed1c679d3c1cf2cec4dc5a26dbfffa9..f30b9ad364adac48904d82afcaa9ff91c9c46ab3 100644
+index 0f1b20873fb9d5b84c60be954f821a2632f82fc5..a724aca590d8e25c792a93b26bff5aa8d72b26bc 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10466,6 +10466,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10550,6 +10550,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
      }
    }
  
@@ -40,10 +40,10 @@ index 9d97c3debed1c679d3c1cf2cec4dc5a26dbfffa9..f30b9ad364adac48904d82afcaa9ff91
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index dd529bc8c76fe77500110a423132617aa34bd85a..9bd2033a4d7e762973f6cb5c92b8a67d366f3195 100644
+index 883dff338d71ec917530f15fbcfe17f2c3a8fe6e..cf45f7358d4f966215ff24ebb6b966dc2663ebc9 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2225,6 +2225,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2232,6 +2232,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index dd529bc8c76fe77500110a423132617aa34bd85a..9bd2033a4d7e762973f6cb5c92b8a67d
    StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2277,6 +2281,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2284,6 +2288,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");

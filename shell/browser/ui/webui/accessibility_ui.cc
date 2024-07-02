@@ -161,7 +161,7 @@ base::Value::Dict BuildTargetDescriptor(views::Widget* widget) {
   widget_data.Set(kTypeField, kWidget);
 
   // Use the Widget's root view ViewAccessibility's unique ID for lookup.
-  int id = widget->GetRootView()->GetViewAccessibility().GetUniqueId().Get();
+  int32_t id = widget->GetRootView()->GetViewAccessibility().GetUniqueId();
   widget_data.Set(kWidgetIdField, id);
   return widget_data;
 }

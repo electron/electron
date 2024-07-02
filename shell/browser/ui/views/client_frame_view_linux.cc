@@ -129,12 +129,6 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
           window->GetAcceleratedWidget()));
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
-  bool tiled = tiled_edges().top || tiled_edges().left ||
-               tiled_edges().bottom || tiled_edges().right;
-  frame_provider_ =
-      ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
-
   UpdateWindowTitle();
 
   for (auto& button : nav_buttons_) {
@@ -150,13 +144,14 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
 }
 
 gfx::Insets ClientFrameViewLinux::GetBorderDecorationInsets() const {
-  const auto insets = frame_provider_->GetFrameThicknessDip();
+  const auto insets = GetFrameProvider()->GetFrameThicknessDip();
+
   // We shouldn't draw frame decorations for the tiled edges.
   // See https://wayland.app/protocols/xdg-shell#xdg_toplevel:enum:state
-  return gfx::Insets::TLBR(tiled_edges().top ? 0 : insets.top(),
-                           tiled_edges().left ? 0 : insets.left(),
-                           tiled_edges().bottom ? 0 : insets.bottom(),
-                           tiled_edges().right ? 0 : insets.right());
+  const auto& edges = tiled_edges();
+  return gfx::Insets::TLBR(
+      edges.top ? 0 : insets.top(), edges.left ? 0 : insets.left(),
+      edges.bottom ? 0 : insets.bottom(), edges.right ? 0 : insets.right());
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
@@ -244,6 +239,13 @@ int ClientFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
   return FramelessView::NonClientHitTest(point);
 }
 
+ui::WindowFrameProvider* ClientFrameViewLinux::GetFrameProvider() const {
+  const bool tiled = tiled_edges().top || tiled_edges().left ||
+                     tiled_edges().bottom || tiled_edges().right;
+  return ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
+      !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
+}
+
 void ClientFrameViewLinux::GetWindowMask(const gfx::Size& size,
                                          SkPath* window_mask) {
   // Nothing to do here, as transparency is used for decorations, not masks.
@@ -284,12 +286,6 @@ void ClientFrameViewLinux::Layout(PassKey) {
     return;
   }
 
-  bool tiled = tiled_edges().top || tiled_edges().left ||
-               tiled_edges().bottom || tiled_edges().right;
-  frame_provider_ =
-      ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-          !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
-
   UpdateButtonImages();
   LayoutButtons();
 
@@ -303,9 +299,9 @@ void ClientFrameViewLinux::Layout(PassKey) {
 
 void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
   if (!frame_->IsFullscreen()) {
-    frame_provider_->PaintWindowFrame(canvas, GetLocalBounds(),
-                                      GetTitlebarBounds().bottom(),
-                                      ShouldPaintAsActive(), GetInputInsets());
+    GetFrameProvider()->PaintWindowFrame(
+        canvas, GetLocalBounds(), GetTitlebarBounds().bottom(),
+        ShouldPaintAsActive(), GetInputInsets());
   }
 }
 
@@ -336,7 +332,8 @@ void ClientFrameViewLinux::UpdateThemeValues() {
     gtk_style_context_set_state(button_context, GTK_STATE_FLAG_BACKDROP);
   }
 
-  theme_values_.window_border_radius = frame_provider_->GetTopCornerRadiusDip();
+  theme_values_.window_border_radius =
+      GetFrameProvider()->GetTopCornerRadiusDip();
 
   gtk::GtkStyleContextGet(headerbar_context, "min-height",
                           &theme_values_.titlebar_min_height, nullptr);

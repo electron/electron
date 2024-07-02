@@ -44,7 +44,7 @@
 #include "ui/gfx/win/window_impl.h"
 #endif
 
-namespace content {
+namespace input {
 class CursorManager;
 }
 
@@ -136,7 +136,7 @@ class OffScreenRenderWidgetHostView
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
   void Destroy(void) override;
   void UpdateTooltipUnderCursor(const std::u16string&) override;
-  content::CursorManager* GetCursorManager() override;
+  input::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
@@ -304,7 +304,7 @@ class OffScreenRenderWidgetHostView
   // depends-on: delegated_frame_host_client_
   const std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
 
-  std::unique_ptr<content::CursorManager> cursor_manager_;
+  std::unique_ptr<input::CursorManager> cursor_manager_;
 
   raw_ptr<OffScreenHostDisplayClient> host_display_client_;
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;

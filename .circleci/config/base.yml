@@ -544,7 +544,7 @@ step-fix-sync: &step-fix-sync
       fi
 
       # Make sure we are using the right ninja
-      echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
+      echo 'infra/3pp/build_support/ninja-1_11_1/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/build_support/ninja-1_11_1/${platform}'` > ninja_ensure_file
       sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
       cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
 

@@ -84,7 +84,7 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
   // Do not actually rescale the page in manual mode.
   if (zoom_mode_ == ZOOM_MODE_MANUAL) {
     // If the zoom level hasn't changed, early out to avoid sending an event.
-    if (blink::PageZoomValuesEqual(zoom_level_, level))
+    if (blink::ZoomValuesEqual(zoom_level_, level))
       return true;
 
     double old_zoom_level = zoom_level_;
@@ -333,7 +333,7 @@ void WebContentsZoomController::RenderFrameHostChanged(
 void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
     const GURL& url) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (blink::PageZoomValuesEqual(default_zoom_factor(), kPageZoomEpsilon))
+  if (blink::ZoomValuesEqual(default_zoom_factor(), kPageZoomEpsilon))
     return;
 
   content::GlobalRenderFrameHostId old_rfh_id_ =
@@ -357,11 +357,11 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   std::string host = net::GetHostOrSpecFromURL(url);
   std::string scheme = url.scheme();
   double zoom_factor = default_zoom_factor();
-  double zoom_level = blink::PageZoomFactorToZoomLevel(zoom_factor);
+  double zoom_level = blink::ZoomFactorToZoomLevel(zoom_factor);
   if (host_zoom_map_->HasZoomLevel(scheme, host)) {
     zoom_level = host_zoom_map_->GetZoomLevelForHostAndScheme(scheme, host);
   }
-  if (blink::PageZoomValuesEqual(zoom_level, GetZoomLevel()))
+  if (blink::ZoomValuesEqual(zoom_level, GetZoomLevel()))
     return;
 
   SetZoomLevel(zoom_level);

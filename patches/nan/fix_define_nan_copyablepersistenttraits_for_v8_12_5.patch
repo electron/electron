@@ -7,10 +7,10 @@ Refs https://chromium-review.googlesource.com/c/v8/v8/+/5403708
 Should be upstreamed.
 
 diff --git a/nan.h b/nan.h
-index 2be1b4f573948024f5777fc6801126b3e799ef11..64f857c93818712ea3557f53ab4f3cad6813c43c 100644
+index 2a68349448c163fa29af327a03b11678e61f5789..42285328055ddb7c76548258f3c4847d2c278ad6 100644
 --- a/nan.h
 +++ b/nan.h
-@@ -204,9 +204,11 @@ typedef v8::String::ExternalOneByteStringResource
+@@ -203,9 +203,11 @@ typedef v8::String::ExternalOneByteStringResource
  template<typename T>
  class NonCopyablePersistentTraits :
      public v8::NonCopyablePersistentTraits<T> {};

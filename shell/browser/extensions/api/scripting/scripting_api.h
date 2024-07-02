@@ -12,9 +12,9 @@
 #include <vector>
 
 #include "chrome/common/extensions/api/scripting.h"
-#include "extensions/browser/api/scripting/scripting_utils.h"
 #include "extensions/browser/extension_function.h"
 #include "extensions/browser/script_executor.h"
+#include "extensions/browser/scripting_utils.h"
 #include "extensions/common/mojom/code_injection.mojom.h"
 #include "extensions/common/user_script.h"
 

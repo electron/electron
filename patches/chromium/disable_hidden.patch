@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 14df0bd5469f099b328639d0849c21c1403bb5ce..3452aa6a281f2a97c2708d66fd4aa7e2bce1e1f9 100644
+index 2e2f3c6ce6af4b3294c0fe31b087b27a4e12401d..072a42c3cf23aa97e4b29351b25cd5d7c24a6e10 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -775,6 +775,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -777,6 +777,9 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -20,20 +20,21 @@ index 14df0bd5469f099b328639d0849c21c1403bb5ce..3452aa6a281f2a97c2708d66fd4aa7e2
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 1d9eab0ed2ef26754f7bc07cdefed76a81b15d9b..ed2c41fdd25210398ebb948e7d83bad44a4bcb76 100644
+index 75109ddf50aabb86a32ef965f9ef158b77cdc00c..6eab9bbb1ebb7c6dfefe0204e7a82597a0ecab56 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -923,6 +923,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
-   void UpdateBrowserControlsState(cc::BrowserControlsState constraints,
-                                   cc::BrowserControlsState current,
-                                   bool animate);
+@@ -997,6 +997,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+   // Requests a commit and forced redraw in the renderer compositor.
+   void ForceRedrawForTesting();
+ 
 +  // Electron: Prevents the widget from getting hidden.
 +  bool disable_hidden_ = false;
- 
-   void StartDragging(blink::mojom::DragDataPtr drag_data,
-                      const url::Origin& source_origin,
++
+  protected:
+   // |routing_id| must not be MSG_ROUTING_NONE.
+   // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 1d00ea327805ddb5a5df506125d1e4fa19229a1a..deaa2c34322f764f3ae8e854b98a205ef6a7e834 100644
+index 914c66b67cbf83df86f2bd071ee5a9acf47f404b..d16ed08f06d03b98fd83218def35b6754ffb016a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -634,7 +634,7 @@ void RenderWidgetHostViewAura::HideImpl() {

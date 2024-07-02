@@ -12,6 +12,7 @@
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/thread_restrictions.h"
 
 namespace electron {
 
@@ -63,6 +64,11 @@ void GPUInfoManager::FetchCompleteInfo(
 // This fetches the info synchronously, so no need to post to the task queue.
 // There cannot be multiple promises as they are resolved synchronously.
 void GPUInfoManager::FetchBasicInfo(gin_helper::Promise<base::Value> promise) {
+#if BUILDFLAG(IS_WIN)
+  // Needed for CollectNPUInformation in gpu/config/gpu_info_collector_win.cc
+  // which calls blocking function base::LoadSystemLibrary.
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+#endif
   gpu::GPUInfo gpu_info;
   CollectBasicGraphicsInfo(&gpu_info);
   promise.Resolve(base::Value(EnumerateGPUInfo(gpu_info)));
