@@ -91,7 +91,9 @@ class Session : public gin::Wrappable<Session>,
       const base::FilePath& path,
       base::Value::Dict options = {});
 
-  ElectronBrowserContext* browser_context() const { return browser_context_; }
+  ElectronBrowserContext* browser_context() const {
+    return &browser_context_.get();
+  }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -215,7 +217,7 @@ class Session : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  const raw_ref<ElectronBrowserContext> browser_context_;
 };
 
 }  // namespace api
