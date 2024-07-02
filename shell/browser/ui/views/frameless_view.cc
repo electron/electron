@@ -95,6 +95,8 @@ void FramelessView::ResetWindowControls() {}
 
 void FramelessView::UpdateWindowIcon() {}
 
+void FramelessView::InvalidateCaptionButtons() {}
+
 void FramelessView::UpdateWindowTitle() {}
 
 void FramelessView::SizeConstraintsChanged() {}
