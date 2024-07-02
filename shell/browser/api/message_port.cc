@@ -19,6 +19,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/common/messaging/transferable_message.h"
@@ -26,25 +27,6 @@
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 
 namespace electron {
-
-namespace {
-
-bool IsValidWrappable(const v8::Local<v8::Value>& obj) {
-  v8::Local<v8::Object> port = v8::Local<v8::Object>::Cast(obj);
-
-  if (!port->IsObject())
-    return false;
-
-  if (port->InternalFieldCount() != gin::kNumberOfInternalFields)
-    return false;
-
-  const auto* info = static_cast<gin::WrapperInfo*>(
-      port->GetAlignedPointerFromInternalField(gin::kWrapperInfoIndex));
-
-  return info && info->embedder == gin::kEmbedderNativeGin;
-}
-
-}  // namespace
 
 gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -65,21 +47,20 @@ gin::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
 void MessagePort::PostMessage(gin::Arguments* args) {
   if (!IsEntangled())
     return;
+
   DCHECK(!IsNeutered());
 
   blink::TransferableMessage transferable_message;
   gin_helper::ErrorThrower thrower(args->isolate());
 
+  // |message| is any value that can be serialized to StructuredClone.
   v8::Local<v8::Value> message_value;
-  if (!args->GetNext(&message_value)) {
-    thrower.ThrowTypeError("Expected at least one argument to postMessage");
-    return;
-  }
-
-  if (!electron::SerializeV8Value(args->isolate(), message_value,
-                                  &transferable_message)) {
-    // SerializeV8Value sets an exception.
-    return;
+  if (args->GetNext(&message_value)) {
+    if (!electron::SerializeV8Value(args->isolate(), message_value,
+                                    &transferable_message)) {
+      // SerializeV8Value sets an exception.
+      return;
+    }
   }
 
   v8::Local<v8::Value> transferables;
@@ -93,7 +74,7 @@ void MessagePort::PostMessage(gin::Arguments* args) {
     }
 
     for (unsigned i = 0; i < wrapped_port_values.size(); ++i) {
-      if (!IsValidWrappable(wrapped_port_values[i])) {
+      if (!gin_helper::IsValidWrappable(wrapped_port_values[i])) {
         thrower.ThrowTypeError("Port at index " + base::NumberToString(i) +
                                " is not a valid port");
         return;
