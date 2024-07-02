@@ -107,7 +107,7 @@ a native dialog.
 For static storage updates, point the `updateSource.baseUrl` parameter to
 the directory containing your release metadata files.
 
-```javascript title="main.js" @ts-nocheck
+```js title="main.js" @ts-nocheck
 const { updateElectronApp, UpdateSourceType } = require('update-electron-app')
 
 updateElectronApp({
@@ -140,7 +140,7 @@ npm install update-electron-app
 
 Then, invoke the updater from your app's main process file:
 
-```javascript title="main.js" @ts-nocheck
+```js title="main.js" @ts-nocheck
 require('update-electron-app')()
 ```
 
@@ -189,14 +189,14 @@ You can use the [app.isPackaged](../api/app.md#appispackaged-readonly) API to ch
 
 :::
 
-```javascript title='main.js'
+```js title='main.js'
 const { app, autoUpdater, dialog } = require('electron')
 ```
 
 Next, construct the URL of the update server feed and tell
 [autoUpdater](../api/auto-updater.md) about it:
 
-```javascript title='main.js'
+```js title='main.js'
 const server = 'https://your-deployment-url.com'
 const url = `${server}/update/${process.platform}/${app.getVersion()}`
 
@@ -205,7 +205,7 @@ autoUpdater.setFeedURL({ url })
 
 As the final step, check for updates. The example below will check every minute:
 
-```javascript title='main.js'
+```js title='main.js'
 setInterval(() => {
   autoUpdater.checkForUpdates()
 }, 60000)
@@ -221,7 +221,7 @@ Now that you've configured the basic update mechanism for your application, you
 need to ensure that the user will get notified when there's an update. This
 can be achieved using the [autoUpdater API events](../api/auto-updater.md#events):
 
-```javascript title="main.js" @ts-expect-error=[11]
+```js title="main.js" @ts-expect-error=[11]
 autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
   const dialogOpts = {
     type: 'info',
@@ -242,7 +242,7 @@ Also make sure that errors are
 [being handled](../api/auto-updater.md#event-error). Here's an example
 for logging them to `stderr`:
 
-```javascript title="main.js"
+```js title="main.js"
 autoUpdater.on('error', (message) => {
   console.error('There was a problem updating the application')
   console.error(message)
