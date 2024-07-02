@@ -9,7 +9,7 @@ import * as http from 'node:http';
 import * as auth from 'basic-auth';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
-import { HexColors, ScreenCapture } from './lib/screen-helpers';
+import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -796,41 +796,32 @@ describe('<webview> tag', function () {
     });
     after(() => w.close());
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('is transparent by default', async () => {
+    ifit(hasCapturableScreen())('is transparent by default', async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo'
       });
 
-      await setTimeout(1000);
-
-      const screenCapture = await ScreenCapture.create();
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('remains transparent when set', async () => {
+    ifit(hasCapturableScreen())('remains transparent when set', async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo',
         webpreferences: 'transparent=yes'
       });
 
-      await setTimeout(1000);
-
-      const screenCapture = await ScreenCapture.create();
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('can disable transparency', async () => {
+    ifit(hasCapturableScreen())('can disable transparency', async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo',
         webpreferences: 'transparent=no'
       });
 
-      await setTimeout(1000);
-
-      const screenCapture = await ScreenCapture.create();
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });

@@ -1,10 +1,10 @@
-import { closeAllWindows } from './lib/window-helpers';
 import { expect } from 'chai';
-
-import { BaseWindow, View, WebContentsView, webContents } from 'electron/main';
+import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 import { once } from 'node:events';
-import { defer } from './lib/spec-helpers';
-import { BrowserWindow } from 'electron';
+
+import { closeAllWindows } from './lib/window-helpers';
+import { defer, ifdescribe } from './lib/spec-helpers';
+import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
@@ -222,6 +222,94 @@ describe('WebContentsView', () => {
         visibilityState = await v.webContents.executeJavaScript('new Promise(resolve => document.visibilityState === "visible" ? resolve("visible") : document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
       }
       expect(visibilityState).to.equal('visible');
+    });
+  });
+
+  describe('setBorderRadius', () => {
+    ifdescribe(hasCapturableScreen())('capture', () => {
+      let w: Electron.BaseWindow;
+      let v: Electron.WebContentsView;
+      let display: Electron.Display;
+      let corners: Electron.Point[];
+
+      const backgroundUrl = `data:text/html,<style>html{background:${encodeURIComponent(HexColors.GREEN)}}</style>`;
+
+      beforeEach(async () => {
+        display = screen.getPrimaryDisplay();
+
+        w = new BaseWindow({
+          ...display.workArea,
+          show: true,
+          frame: false,
+          hasShadow: false,
+          backgroundColor: HexColors.BLUE,
+          roundedCorners: false
+        });
+
+        v = new WebContentsView();
+        w.setContentView(v);
+        v.setBorderRadius(100);
+
+        const readyForCapture = once(v.webContents, 'ready-to-show');
+        v.webContents.loadURL(backgroundUrl);
+
+        const inset = 10;
+        corners = [
+          { x: display.workArea.x + inset, y: display.workArea.y + inset }, // top-left
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset }, // top-right
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
+          { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
+        ];
+
+        await readyForCapture;
+      });
+
+      afterEach(() => {
+        w.destroy();
+        w = v = null!;
+      });
+
+      it('should render with cutout corners', async () => {
+        const screenCapture = new ScreenCapture(display);
+
+        for (const corner of corners) {
+          await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
+        }
+
+        // Center should be WebContents page background color
+        await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
+      });
+
+      it('should allow resetting corners', async () => {
+        const corner = corners[0];
+        v.setBorderRadius(0);
+
+        await nextFrameTime();
+        const screenCapture = new ScreenCapture(display);
+        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, () => corner);
+        await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
+      });
+
+      it('should render when set before attached', async () => {
+        v = new WebContentsView();
+        v.setBorderRadius(100); // must set before
+
+        w.setContentView(v);
+
+        const readyForCapture = once(v.webContents, 'ready-to-show');
+        v.webContents.loadURL(backgroundUrl);
+        await readyForCapture;
+
+        const corner = corners[0];
+        const screenCapture = new ScreenCapture(display);
+        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
+        await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
+      });
+    });
+
+    it('should allow setting when not attached', async () => {
+      const v = new WebContentsView();
+      v.setBorderRadius(100);
     });
   });
 });

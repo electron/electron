@@ -39,6 +39,7 @@ class WebContentsView : public View,
   // Public APIs.
   gin::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
+  void SetBorderRadius(int radius);
 
   int NonClientHitTest(const gfx::Point& point) override;
 
@@ -56,6 +57,8 @@ class WebContentsView : public View,
 
  private:
   static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+
+  void ApplyBorderRadius();
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;

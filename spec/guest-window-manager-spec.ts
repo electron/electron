@@ -1,10 +1,9 @@
 import { BrowserWindow, screen } from 'electron';
 import { expect, assert } from 'chai';
-import { HexColors, ScreenCapture } from './lib/screen-helpers';
+import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { once } from 'node:events';
-import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 import * as http from 'node:http';
 
 describe('webContents.setWindowOpenHandler', () => {
@@ -201,8 +200,7 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make child window background transparent', async () => {
+    ifit(hasCapturableScreen())('should not make child window background transparent', async () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
       const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
       browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
@@ -210,8 +208,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const display = screen.getPrimaryDisplay();
       childWindow.setBounds(display.bounds);
       await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
-      await setTimeoutAsync(1000);
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       // color-scheme is set to dark so background should not be white
       await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
     });

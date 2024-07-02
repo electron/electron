@@ -20,6 +20,8 @@
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
+#include "ui/gfx/geometry/rounded_corners_f.h"
+#include "ui/views/controls/webview/webview.h"
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
@@ -65,6 +67,25 @@ void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   }
 }
 
+void WebContentsView::SetBorderRadius(int radius) {
+  View::SetBorderRadius(radius);
+  ApplyBorderRadius();
+}
+
+void WebContentsView::ApplyBorderRadius() {
+  if (border_radius().has_value() && api_web_contents_ && view()->GetWidget()) {
+    auto* web_view = api_web_contents_->inspectable_web_contents()
+                         ->GetView()
+                         ->contents_web_view();
+
+    // WebView won't exist for offscreen rendering.
+    if (web_view) {
+      web_view->holder()->SetCornerRadii(
+          gfx::RoundedCornersF(border_radius().value()));
+    }
+  }
+}
+
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   if (api_web_contents_) {
     gfx::Point local_point(point);
@@ -93,6 +114,7 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   // because that's handled in the WebContents dtor called prior.
   api_web_contents_->SetOwnerWindow(native_window);
   native_window->AddDraggableRegionProvider(this);
+  ApplyBorderRadius();
 }
 
 void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
@@ -198,6 +220,7 @@ void WebContentsView::BuildPrototype(
   prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setBackgroundColor", &WebContentsView::SetBackgroundColor)
+      .SetMethod("setBorderRadius", &WebContentsView::SetBorderRadius)
       .SetProperty("webContents", &WebContentsView::GetWebContents);
 }
 
