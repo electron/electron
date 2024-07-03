@@ -104,10 +104,6 @@ content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }
 
-void OffScreenWebContentsView::TransferDragSecurityInfo(WebContentsView* view) {
-  NOTREACHED();
-}
-
 gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
   return GetView() ? GetView()->GetViewBounds() : gfx::Rect();
 }

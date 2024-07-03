@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 3 Jul 2024 08:43:17 +0000
+Subject: fix: correct usages of v8::ReturnValue<void>::Set[NonEmpty] for new
+ API
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/5647894
+
+The Nan tests were  returning the property's value that
+was intended to be set or defined, but V8 was interpreting
+this value as a boolean result indicating whether the operation
+succeeded or not which was incorrect.
+
+This should be upstreamed.
+
+diff --git a/test/cpp/indexedinterceptors.cpp b/test/cpp/indexedinterceptors.cpp
+index f2cd97ac9c40070c127bf9d682401c33955d6d6a..38f1298c2b44130eca73d9d005d2d7ab5f234926 100644
+--- a/test/cpp/indexedinterceptors.cpp
++++ b/test/cpp/indexedinterceptors.cpp
+@@ -90,9 +90,9 @@ NAN_INDEX_SETTER(IndexedInterceptor::PropertySetter) {
+         interceptor->buf
+       , *Nan::Utf8String(value)
+       , sizeof (interceptor->buf));
+-    info.GetReturnValue().Set(info.This());
++    info.GetReturnValue().Set(True());
+   } else {
+-    info.GetReturnValue().Set(info.This());
++    info.GetReturnValue().Set(True());
+   }
+ }
+ 
+diff --git a/test/cpp/namedinterceptors.cpp b/test/cpp/namedinterceptors.cpp
+index 8ab5f47db4b9830dd18c36d1a7cb0fced5925355..ae67f2391906fa0e9a60bc406bde86550965dab9 100644
+--- a/test/cpp/namedinterceptors.cpp
++++ b/test/cpp/namedinterceptors.cpp
+@@ -90,10 +90,8 @@ NAN_PROPERTY_SETTER(NamedInterceptor::PropertySetter) {
+         interceptor->buf
+       , *Nan::Utf8String(value)
+       , sizeof (interceptor->buf));
+-    info.GetReturnValue().Set(info.This());
+-  } else {
+-    info.GetReturnValue().Set(info.This());
+   }
++  info.GetReturnValue().Set(True());
+ }
+ 
+ NAN_PROPERTY_ENUMERATOR(NamedInterceptor::PropertyEnumerator) {

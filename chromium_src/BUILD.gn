@@ -240,7 +240,10 @@ static_library("chrome") {
       "//chrome/services/util_win:lib",
       "//components/webapps/common:mojo_bindings",
     ]
-    deps += [ "//components/segmentation_platform/public/proto" ]
+    deps += [
+      "//components/compose/core/browser:mojo_bindings",
+      "//components/segmentation_platform/public/proto",
+    ]
   }
 
   if (is_mac) {

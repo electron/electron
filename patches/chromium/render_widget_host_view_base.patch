@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 8e2256ef3bbc0c5bf830be07baa412bc28f07126..d42641218241cfd38a5a8f65b7898fbc896c29b3 100644
+index ae1a7849dab02ef96209a426b49f0d4c5759371e..29647b61c9c12cbc54840e94e42c945c2cc88af6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -778,6 +778,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
@@ -24,21 +24,22 @@ index 8e2256ef3bbc0c5bf830be07baa412bc28f07126..d42641218241cfd38a5a8f65b7898fbc
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index e366a394f934772f7e33d67ae755e512ade723e1..25a5a113b80bcc244d6d07349c815b8feeee2c8f 100644
+index 41308c925e5e3142ec05b84aa99e90e096d7b2d3..f77e038309ffa5207ecec957fdd7035530b4ee58 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -30,7 +30,10 @@
+@@ -29,8 +29,11 @@
+ #include "components/viz/common/surfaces/scoped_surface_id_allocator.h"
  #include "components/viz/common/surfaces/surface_id.h"
  #include "content/browser/renderer_host/display_feature.h"
- #include "content/common/content_export.h"
 +#include "content/browser/renderer_host/visible_time_request_trigger.h"
 +#include "content/browser/web_contents/web_contents_view.h"
+ #include "content/common/content_export.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
 +#include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -77,9 +80,11 @@ namespace content {
+@@ -76,9 +79,11 @@ namespace content {
  class DevicePosturePlatformProvider;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
@@ -50,7 +51,18 @@ index e366a394f934772f7e33d67ae755e512ade723e1..25a5a113b80bcc244d6d07349c815b8f
  class WebContentsAccessibility;
  class DelegatedFrameHost;
  class SyntheticGestureTarget;
-@@ -238,6 +243,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -155,6 +160,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+   void DidOverscroll(const ui::DidOverscrollParams& params) override {}
+   void DidStopFlinging() override {}
+   RenderWidgetHostViewBase* GetRootView() override;
++  virtual RenderWidgetHostViewBase* CreateViewForWidget(
++      RenderWidgetHost* render_widget_host,
++      RenderWidgetHost* embedder_render_widget_host,
++      WebContentsView* web_contents_view);
+   viz::FrameSinkId GetRootFrameSinkId() override;
+   void NotifyHitTestRegionUpdated(
+       const viz::AggregatedHitTestRegion& region) override {}
+@@ -234,6 +243,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  
@@ -60,15 +72,3 @@ index e366a394f934772f7e33d67ae755e512ade723e1..25a5a113b80bcc244d6d07349c815b8f
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -288,6 +296,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
-   // non-embeddable derived views.
-   virtual RenderWidgetHostViewBase* GetRootView();
- 
-+  virtual RenderWidgetHostViewBase* CreateViewForWidget(
-+      RenderWidgetHost* render_widget_host,
-+      RenderWidgetHost* embedder_render_widget_host,
-+      WebContentsView* web_contents_view);
-+
-   // Notifies the View that the renderer text selection has changed.
-   virtual void SelectionChanged(const std::u16string& text,
-                                 size_t offset,
