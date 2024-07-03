@@ -111,7 +111,7 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
   RendererClientBase* client = RendererClientBase::Get();
 
   mojo::Remote<spellcheck::mojom::SpellCheckHost> spellcheck_host;
-  render_frame->GetBrowserInterfaceBroker()->GetInterface(
+  render_frame->GetBrowserInterfaceBroker().GetInterface(
       spellcheck_host.BindNewPipeAndPassReceiver());
   if (!spellcheck_host.is_bound())
     return false;
