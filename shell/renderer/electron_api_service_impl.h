@@ -63,7 +63,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
   mojo::Receiver<mojom::ElectronRenderer> receiver_{this};
 
-  RendererClientBase* renderer_client_;
+  raw_ptr<RendererClientBase> renderer_client_;
   base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_{this};
 };
 
