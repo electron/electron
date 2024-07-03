@@ -74,6 +74,8 @@ struct Converter<char16_t> {
   CASE_TYPE(kKeyDown, "keyDown")                             \
   CASE_TYPE(kKeyUp, "keyUp")                                 \
   CASE_TYPE(kChar, "char")                                   \
+  CASE_TYPE(kGestureBegin, "gestureBegin")                   \
+  CASE_TYPE(kGestureEnd, "gestureEnd")                       \
   CASE_TYPE(kGestureScrollBegin, "gestureScrollBegin")       \
   CASE_TYPE(kGestureScrollEnd, "gestureScrollEnd")           \
   CASE_TYPE(kGestureScrollUpdate, "gestureScrollUpdate")     \
