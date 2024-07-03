@@ -61,6 +61,7 @@ choco install -y python2 git yarn
 choco install python --version 3.7.9
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH%
+npm install npm -g
 
 REM Setup Depot Tools
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools
