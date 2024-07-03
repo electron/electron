@@ -245,6 +245,7 @@ static_library("chrome") {
       "//components/webapps/common:mojo_bindings",
     ]
     deps += [
+      "//chrome/services/util_win/public/mojom",
       "//components/compose/core/browser:mojo_bindings",
       "//components/segmentation_platform/public/proto",
     ]
