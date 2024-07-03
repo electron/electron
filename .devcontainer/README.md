@@ -33,8 +33,7 @@ If you are a maintainer [with Reclient access](../docs/development/reclient.md) 
 Authentication Status: Authenticated
 Since:     2024-05-28 10:29:33 +0200 CEST
 Expires:   2024-08-26 10:29:33 +0200 CEST
-Cluster:   rbe.notgoma.com
-Principal: github/codebytere
+...
 Access:    Cache & Execute
 ```
 
