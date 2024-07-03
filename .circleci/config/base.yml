@@ -13,28 +13,6 @@ parameters:
     type: boolean
     default: false
 
-  run-build-mac:
-    type: boolean
-    default: false
-
-  run-linux-publish:
-    type: boolean
-    default: false
-
-  linux-publish-arch-limit:
-    type: enum
-    default: all
-    enum: ["all", "arm", "arm64", "x64"]
-
-  run-macos-publish:
-    type: boolean
-    default: false
-
-  macos-publish-arch-limit:
-    type: enum
-    default: all
-    enum: ["all", "osx-arm64", "mas-arm64"]
-
   medium-linux-executor:
     type: enum
     default: electronjs/aks-linux-medium
@@ -59,21 +37,6 @@ executors:
       - image: ghcr.io/electron/build:9a43c14f5c19be0359843299f79e736521373adc
     resource_class: << parameters.size >>
 
-  macos:
-    parameters:
-      size:
-        description: "macOS executor size"
-        type: enum
-        enum: ["macos.m1.large.gen1", "macos.m1.medium.gen1"]
-      version:
-        description: "xcode version"
-        type: enum
-        enum: ["15.0.0", "14.0.0"]
-        default: 15.0.0
-    macos:
-      xcode: << parameters.version >>
-    resource_class: << parameters.size >>
-
   # Electron Runners
   linux-arm:
     resource_class: electronjs/aks-linux-arm-test
@@ -87,9 +50,6 @@ executors:
 
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
-#
-# The publishing scripts expect access tokens to be defined as env vars,
-# but those are not covered here.
 #
 # CircleCI docs on variables:
 # https://circleci.com/docs/2.0/env-vars/
@@ -170,28 +130,12 @@ env-linux-2xlarge-release: &env-linux-2xlarge-release
   <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 16
 
-env-machine-mac: &env-machine-mac
-  <<: *env-global
-  NUMBER_OF_NINJA_PROCESSES: 6
-
-env-mac-large: &env-mac-large
-  <<: *env-global
-  NUMBER_OF_NINJA_PROCESSES: 18
-
-env-mac-large-release: &env-mac-large-release
-  <<: *env-global
-  NUMBER_OF_NINJA_PROCESSES: 8
-
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
 
 env-32bit-release: &env-32bit-release
   # Set symbol level to 1 for 32 bit releases because of https://crbug.com/648948
   GN_BUILDFLAG_ARGS: 'symbol_level = 1'
-
-env-macos-build: &env-macos-build
-  # Disable pre-compiled headers to reduce out size, only useful for rebuilds
-  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
 
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
@@ -216,29 +160,6 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
       fi
     when: on_success
 
-step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
-  run:
-    name: Cleanup after testing
-    command: |
-      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
-        killall Electron || echo "No Electron processes left running"
-        killall Safari || echo "No Safari processes left running"
-        rm -rf ~/Library/Application\ Support/Electron*
-        rm -rf ~/Library/Application\ Support/electron*
-        security delete-generic-password -l "Chromium Safe Storage" || echo "✓ Keychain does not contain password from tests"
-        security delete-generic-password -l "Electron Test Main Safe Storage" || echo "✓ Keychain does not contain password from tests"
-        security delete-generic-password -a "electron-test-safe-storage" || echo "✓ Keychain does not contain password from tests"
-        security delete-generic-password -l "electron-test-safe-storage Safe Storage" || echo "✓ Keychain does not contain password from tests"
-      elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-        XVFB=/usr/bin/Xvfb
-        /sbin/start-stop-daemon --stop --exec $XVFB || echo "Xvfb not running"
-        pkill electron || echo "electron not running"
-        rm -rf ~/.config/Electron*
-        rm -rf ~/.config/electron*
-      fi
-
-    when: always
-
 step-checkout-electron: &step-checkout-electron
   checkout:
     path: src/electron
@@ -248,14 +169,10 @@ step-depot-tools-get: &step-depot-tools-get
     name: Get depot tools
     command: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-      if [ "`uname`" == "Darwin" ]; then
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-      else
-        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-        cd depot_tools
-        cat > gclient.diff \<< 'EOF'
+      sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+      # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+      cd depot_tools
+      cat > gclient.diff \<< 'EOF'
       diff --git a/gclient.py b/gclient.py
       index c305c248..e6e0fbdc 100755
       --- a/gclient.py
@@ -371,215 +288,12 @@ step-save-brew-cache: &step-save-brew-cache
     key: v6-brew-cache-{{ arch }}
     name: Persisting brew cache
 
-step-get-more-space-on-mac: &step-get-more-space-on-mac
-  run:
-    name: Free up space on MacOS
-    command: |
-      if [ "`uname`" == "Darwin" ]; then
-        sudo mkdir -p $TMPDIR/del-target
-
-        tmpify() {
-          if [ -d "$1" ]; then
-            sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
-          fi
-        }
-
-        strip_universal_deep() {
-          opwd=$(pwd)
-          cd $1
-          f=$(find . -perm +111 -type f)
-          for fp in $f
-          do
-            if [[ $(file "$fp") == *"universal binary"* ]]; then
-              if [ "`arch`" == "arm64" ]; then
-                if [[ $(file "$fp") == *"x86_64"* ]]; then
-                  sudo lipo -remove x86_64 "$fp" -o "$fp" || true
-                fi
-              else
-                if [[ $(file "$fp") == *"arm64e)"* ]]; then
-                  sudo lipo -remove arm64e "$fp" -o "$fp" || true
-                fi
-                if [[ $(file "$fp") == *"arm64)"* ]]; then
-                  sudo lipo -remove arm64 "$fp" -o "$fp" || true
-                fi
-              fi
-            fi
-          done
-
-          cd $opwd
-        }
-
-        tmpify /Library/Developer/CoreSimulator
-        tmpify ~/Library/Developer/CoreSimulator
-        tmpify $(xcode-select -p)/Platforms/AppleTVOS.platform
-        tmpify $(xcode-select -p)/Platforms/iPhoneOS.platform
-        tmpify $(xcode-select -p)/Platforms/WatchOS.platform
-        tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
-        tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
-        tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
-        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/metal/ios
-        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift
-        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0
-        tmpify ~/.rubies
-        tmpify ~/Library/Caches/Homebrew
-        tmpify /usr/local/Homebrew
-
-        # the contents of build/linux/strip_binary.gni aren't used, but
-        # https://chromium-review.googlesource.com/c/chromium/src/+/4278307
-        # needs the file to exist.
-        mv ~/project/src/build/linux/strip_binary.gni "${TMPDIR}"/
-        tmpify ~/project/src/build/linux/
-        mkdir -p ~/project/src/build/linux
-        mv "${TMPDIR}/strip_binary.gni" ~/project/src/build/linux/
-
-        sudo rm -rf $TMPDIR/del-target
-
-        # sudo rm -rf "/System/Library/Desktop Pictures"
-        # sudo rm -rf /System/Library/Templates/Data
-        # sudo rm -rf /System/Library/Speech/Voices
-        # sudo rm -rf "/System/Library/Screen Savers"
-        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
-        # sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
-        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
-        # sudo rm -rf /System/Volumes/Data/Library/Java
-        # sudo rm -rf /System/Volumes/Data/Library/Ruby
-        # sudo rm -rf /System/Volumes/Data/Library/Printers
-        # sudo rm -rf /System/iOSSupport
-        # sudo rm -rf /System/Applications/*.app
-        # sudo rm -rf /System/Applications/Utilities/*.app
-        # sudo rm -rf /System/Library/LinguisticData
-        # sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
-        # sudo rm -rf /System/Library/Fonts/*
-        # sudo rm -rf /System/Library/PreferencePanes
-        # sudo rm -rf /System/Library/AssetsV2/*
-        sudo rm -rf /Applications/Safari.app
-        sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
-        sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
-
-        # lipo off some huge binaries arm64 versions to save space
-        strip_universal_deep $(xcode-select -p)/../SharedFrameworks
-        # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-      fi
-    background: true
-
-# On macOS delete all .git directories under src/ except for
-# third_party/angle/ and third_party/dawn/ because of build time generation of files
-# gen/angle/commit.h depends on third_party/angle/.git/HEAD
-# https://chromium-review.googlesource.com/c/angle/angle/+/2074924
-# and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
-# https://dawn-review.googlesource.com/c/dawn/+/83901
-# TODO: maybe better to always leave out */.git/HEAD file for all targets ?
-step-delete-git-directories: &step-delete-git-directories
-  run:
-    name: Delete all .git directories under src on MacOS to free space
-    command: |
-      if [ "`uname`" == "Darwin" ]; then
-        cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
-      fi
-
-# On macOS the yarn install command during gclient sync was run on a linux
-# machine and therefore installed a slightly different set of dependencies
-# Notably "fsevents" is a macOS only dependency, we rerun yarn install once
-# we are on a macOS machine to get the correct state
-step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
-  run:
-    name: Install node_modules on MacOS
-    command: |
-      if [ "`uname`" == "Darwin" ]; then
-        cd src/electron
-        node script/yarn install
-      fi
-
 step-install-npm-deps: &step-install-npm-deps
   run:
     name: Install node_modules
     command: |
       cd src/electron
       node script/yarn install --frozen-lockfile
-
-# This step handles the differences between the linux "gclient sync"
-# and the expected state on macOS
-step-fix-sync: &step-fix-sync
-  run:
-    name: Fix Sync
-    command: |
-      SEDOPTION="-i"
-      if [ "`uname`" == "Darwin" ]; then
-        SEDOPTION="-i ''"
-        # Fix Clang Install (wrong binary)
-        rm -rf src/third_party/llvm-build
-        python3 src/tools/clang/scripts/update.py
-
-        # Fix esbuild (wrong binary)
-        echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
-        # Remove extra output from calling gclient getdep which always calls update_depot_tools
-        sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
-        cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
-
-        # Fix rustc (wrong binary)
-        rm -rf src/third_party/rust-toolchain
-        python3 src/tools/rust/update_rust.py
-        
-        # Fix gn (wrong binary)
-        echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
-        # Remove extra output from calling gclient getdep which always calls update_depot_tools
-        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
-        cipd ensure --root src/buildtools/mac -ensure-file gn_ensure_file
-
-        # Fix reclient (wrong binary)
-        echo 'infra/rbe/client/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/reclient:infra/rbe/client/${platform}'` > gn_ensure_file
-        # Remove extra output from calling gclient getdep which always calls update_depot_tools
-        sed -i '' "s/Updating depot_tools... //g" gn_ensure_file
-        cipd ensure --root src/buildtools/reclient -ensure-file gn_ensure_file
-        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
-
-        # Fix dsymutil (wrong binary)
-        if  [ "$TARGET_ARCH" == "arm64" ]; then
-          export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
-        else
-          export DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
-        fi
-        python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
-      fi
-
-      # Make sure we are using the right ninja
-      echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
-      sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
-      cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
-
-      # Explicitly add ninja to the path
-      echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $BASH_ENV
-
-      cd src/third_party/angle
-      rm .git/objects/info/alternates
-      git remote set-url origin https://chromium.googlesource.com/angle/angle.git
-      cp .git/config .git/config.backup
-      git remote remove origin
-      mv .git/config.backup .git/config
-      git fetch
-
-step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
-  run:
-    name: Import and trust self-signed codesigning cert on MacOS
-    command: |
-      if  [ "$TARGET_ARCH" != "arm64" ] && [ "`uname`" == "Darwin" ]; then
-        sudo security authorizationdb write com.apple.trust-settings.admin allow
-        cd src/electron
-        ./script/codesign/generate-identity.sh
-      fi
-
-step-install-gnutar-on-mac: &step-install-gnutar-on-mac
-  run:
-    name: Install gnu-tar on macos
-    command: |
-      if [ "`uname`" == "Darwin" ]; then
-        if [ ! -d /usr/local/Cellar/gnu-tar/ ]; then
-          brew update
-          brew install gnu-tar
-        fi
-        ln -fs /usr/local/bin/gtar /usr/local/bin/tar
-      fi
 
 step-gn-gen-default: &step-gn-gen-default
   run:
@@ -642,24 +356,6 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     command: |
       cd src
       autoninja -C out/Default electron:node_headers
-
-step-electron-publish: &step-electron-publish
-  run:
-    name: Publish Electron Dist
-    no_output_timeout: 30m
-    command: |
-      if [ "`uname`" == "Darwin" ]; then
-        rm -rf src/out/Default/obj
-      fi
-
-      cd src/electron
-      if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
-        echo 'Uploading Electron release distribution to Azure'
-        script/release/uploaders/upload.py --verbose --upload_to_storage
-      else
-        echo 'Uploading Electron release distribution to GitHub releases'
-        script/release/uploaders/upload.py --verbose
-      fi
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -1315,16 +1011,7 @@ commands:
             if [ "$SKIP_DIST_ZIP" != "1" ]; then
               autoninja -C out/Default electron:electron_dist_zip << parameters.additional-targets >> -j $NUMBER_OF_NINJA_PROCESSES
               if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
-                if [ "`uname`" == "Darwin" ]; then
-                  target_os=mac
-                  target_cpu=x64
-                  if [ x"$MAS_BUILD" == x"true" ]; then
-                    target_os=mac_mas
-                  fi
-                  if [ "$TARGET_ARCH" == "arm64" ]; then
-                    target_cpu=arm64
-                  fi
-                elif [ "`uname`" == "Linux" ]; then
+                if [ "`uname`" == "Linux" ]; then
                   target_os=linux
                   if [ x"$TARGET_ARCH" == x ]; then
                     target_cpu=x64
@@ -1409,7 +1096,6 @@ commands:
                 at: .
             - run: rm -rf src/electron
       - *step-restore-brew-cache
-      - *step-install-gnutar-on-mac
       - *step-save-brew-cache
       - when:
           condition: << parameters.build >>
@@ -1427,7 +1113,6 @@ commands:
             - *step-checkout-electron
             - *step-depot-tools-get
             - *step-depot-tools-add-to-path
-            - *step-get-more-space-on-mac
             - *step-generate-deps-hash
             - *step-touch-sync-done
             - when:
@@ -1496,7 +1181,6 @@ commands:
             # is missing we will restore a useful git cache.
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
-            - *step-delete-git-directories
             - when:
                 condition: << parameters.persist-checkout >>
                 steps:
@@ -1533,9 +1217,6 @@ commands:
           steps:
             - *step-depot-tools-add-to-path
             - *step-setup-env-for-build
-            - *step-get-more-space-on-mac
-            - *step-fix-sync
-            - *step-delete-git-directories
 
       - when:
           condition: << parameters.build >>
@@ -1606,7 +1287,6 @@ commands:
       - *step-setup-linux-for-headless-testing
       - *step-restore-brew-cache
       - *step-fix-known-hosts-linux
-      - *step-install-signing-cert-on-mac
 
       - run:
           name: Run Electron tests
@@ -1646,8 +1326,6 @@ commands:
 
       - *step-maybe-notify-slack-failure
 
-      - *step-maybe-cleanup-arm64-mac
-
   nan-tests:
     parameters:
       artifact-key:
@@ -1684,80 +1362,6 @@ commands:
       - store_test_results:
           path: src/junit
 
-  electron-publish:
-    parameters:
-      attach:
-        type: boolean
-        default: false
-      checkout:
-        type: boolean
-        default: true
-      build-type:
-        type: string
-    steps:
-      - when:
-          condition: << parameters.attach >>
-          steps:
-            - attach_workspace:
-                at: .
-      - when:
-          condition: << parameters.checkout >>
-          steps:
-            - *step-depot-tools-get
-      - *step-depot-tools-add-to-path
-      - *step-restore-brew-cache
-      - *step-get-more-space-on-mac
-      - when:
-          condition: << parameters.checkout >>
-          steps:
-            - *step-checkout-electron
-            - *step-touch-sync-done
-            - *step-maybe-restore-git-cache
-            - *step-set-git-cache-path
-            - *step-gclient-sync
-            - *step-delete-git-directories
-            - *step-minimize-workspace-size-from-checkout
-      - *step-fix-sync
-      - *step-setup-env-for-build
-      - *step-fix-known-hosts-linux
-      - *step-setup-rbe-for-build
-      - *step-gn-gen-default
-
-      # Electron app
-      - ninja_build_electron:
-          build-type: << parameters.build-type >>
-      - *step-maybe-generate-breakpad-symbols
-      - *step-maybe-electron-dist-strip
-      - step-electron-dist-build
-      - *step-maybe-zip-symbols-and-clean
-
-      # mksnapshot
-      - *step-mksnapshot-build
-
-      # chromedriver
-      - *step-electron-chromedriver-build
-
-      # Node.js headers
-      - *step-nodejs-headers-build
-
-      # ffmpeg
-      - *step-ffmpeg-gn-gen
-      - *step-ffmpeg-build
-
-      # hunspell
-      - *step-hunspell-build
-
-      # libcxx
-      - *step-maybe-generate-libcxx
-
-      # typescript defs
-      - *step-maybe-generate-typescript-defs
-
-      # Publish
-      - *step-electron-publish
-      - move_and_store_all_artifacts:
-          artifact-key: 'publish'
-
 # List of all jobs.
 jobs:
   # Layer 0: Docs. Standalone.
@@ -1789,66 +1393,6 @@ jobs:
           artifact-key: 'nil'
           build-type: 'nil'
           could-be-aks: true
-
-  mac-checkout:
-    executor:
-      name: linux-docker
-      size: xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-testing-build
-      <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          persist-checkout: true
-          restore-src-cache: false
-          artifact-key: 'nil'
-          build-type: 'nil'
-          could-be-aks: false
-
-  mac-make-src-cache-x64:
-    executor:
-      name: linux-docker
-      size: xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-testing-build
-      <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          save-git-cache: true
-          checkout-to-create-src-cache: true
-          artifact-key: 'nil'
-          build-type: 'nil'
-          could-be-aks: false
-
-  mac-make-src-cache-arm64:
-    executor:
-      name: linux-docker
-      size: xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-testing-build
-      <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          save-git-cache: true
-          checkout-to-create-src-cache: true
-          artifact-key: 'nil'
-          build-type: 'nil'
-          could-be-aks: false
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -1902,29 +1446,6 @@ jobs:
       - run-gn-check:
           could-be-aks: true
 
-  linux-x64-publish:
-    executor:
-      name: linux-docker
-      size: << pipeline.parameters.large-linux-executor >>
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-release-build
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
-              - equal: ["x64", << pipeline.parameters.linux-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: false
-                checkout: true
-                build-type: 'Linux'
-
-
   linux-arm-testing:
     executor:
       name: linux-docker
@@ -1945,31 +1466,6 @@ jobs:
           artifact-key: 'linux-arm'
           build-type: 'Linux ARM'
           could-be-aks: true
-
-  linux-arm-publish:
-    executor:
-      name: linux-docker
-      size: << pipeline.parameters.large-linux-executor >>
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-arm
-      <<: *env-release-build
-      <<: *env-32bit-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
-              - equal: ["arm", << pipeline.parameters.linux-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: false
-                checkout: true
-                build-type: 'Linux ARM'
 
   linux-arm64-testing:
     executor:
@@ -2004,135 +1500,6 @@ jobs:
     steps:
       - run-gn-check:
           could-be-aks: true
-
-  linux-arm64-publish:
-    executor:
-      name: linux-docker
-      size: << pipeline.parameters.large-linux-executor >>
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-arm64
-      <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
-              - equal: ["arm64", << pipeline.parameters.linux-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: false
-                checkout: true
-                build-type: 'Linux ARM64'
-
-  osx-publish-arm64:
-    executor:
-      name: macos
-      size: macos.m1.large.gen1
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-release-build
-      <<: *env-apple-silicon
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
-              - equal: ["osx-arm64", << pipeline.parameters.macos-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: true
-                checkout: false
-                build-type: 'Darwin ARM64'
-
-  osx-testing-arm64:
-    executor:
-      name: macos
-      size: macos.m1.medium.gen1
-    environment:
-      <<: *env-mac-large
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      <<: *env-macos-build
-      <<: *env-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: false
-          checkout-and-assume-cache: true
-          attach: true
-          artifact-key: 'darwin-arm64'
-          build-type: 'Darwin ARM64'
-          after-build-and-save:
-            - run:
-                name: Configuring MAS build
-                command: |
-                  echo 'export GN_EXTRA_ARGS="is_mas_build = true $GN_EXTRA_ARGS"' >> $BASH_ENV
-                  echo 'export MAS_BUILD="true"' >> $BASH_ENV
-                  rm -rf "src/out/Default/Electron Framework.framework"
-                  rm -rf src/out/Default/Electron*.app
-            - build_and_save_artifacts:
-                artifact-key: 'mas-arm64'
-                build-type: 'MAS ARM64'
-          after-persist:
-            - persist_to_workspace:
-                root: .
-                paths:
-                  - generated_artifacts_mas-arm64
-          could-be-aks: false
-
-  mas-publish-x64:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-mas
-      <<: *env-release-build
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
-              - equal: ["mas-x64", << pipeline.parameters.macos-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: true
-                checkout: false
-                build-type: 'MAS'
-
-  mas-publish-arm64:
-    executor:
-      name: macos
-      size: macos.m1.large.gen1
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-mas-apple-silicon
-      <<: *env-release-build
-      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
-              - equal: ["mas-arm64", << pipeline.parameters.macos-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: true
-                checkout: false
-                build-type: 'MAS ARM64'
 
   # Layer 3: Tests.
   linux-x64-testing-tests:
@@ -2211,72 +1578,18 @@ jobs:
       - electron-tests:
           artifact-key: linux-arm64
 
-  darwin-testing-x64-tests:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-      version: 14.0.0
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-    parallelism: 2
-    steps:
-      - run: nvm install lts/iron && nvm alias default lts/iron
-      - electron-tests:
-          artifact-key: darwin-x64
-
-  darwin-testing-arm64-tests:    
-    executor:
-      name: macos
-      size: macos.m1.medium.gen1
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-      <<: *env-apple-silicon
-      <<: *env-runner
-    steps:
-      - electron-tests:
-          artifact-key: darwin-arm64
-
-  mas-testing-arm64-tests:
-    executor:
-      name: macos
-      size: macos.m1.medium.gen1
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-      <<: *env-apple-silicon
-      <<: *env-runner
-    steps:
-      - electron-tests:
-          artifact-key: mas-arm64
-
 # List all workflows
 workflows:
   docs-only:
     when:
       and:
-        - equal: [false, << pipeline.parameters.run-macos-publish >>]
-        - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-docs-only >>]
     jobs:
       - ts-compile-doc-change
 
-  publish-linux:
-    when: << pipeline.parameters.run-linux-publish >>
-    jobs:
-    - linux-x64-publish:
-        context: release-env
-    - linux-arm-publish:
-        context: release-env
-    - linux-arm64-publish:
-        context: release-env
-
   build-linux:
     when:
       and:
-        - equal: [false, << pipeline.parameters.run-macos-publish >>]
-        - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-build-linux >>]
     jobs:
       - linux-make-src-cache
@@ -2325,31 +1638,6 @@ workflows:
           requires:
             - linux-make-src-cache
 
-  build-mac:
-    when:
-      and:
-        - equal: [false, << pipeline.parameters.run-macos-publish >>]
-        - equal: [false, << pipeline.parameters.run-linux-publish >>]
-        - equal: [true, << pipeline.parameters.run-build-mac >>]
-    jobs:
-      - mac-make-src-cache-arm64
-      - osx-testing-arm64:
-          requires:
-            - mac-make-src-cache-arm64
-      - darwin-testing-arm64-tests:
-          filters:
-            branches:
-              # Do not run this on forked pull requests
-              ignore: /pull\/[0-9]+/
-          requires:
-            - osx-testing-arm64
-      - mas-testing-arm64-tests:
-          filters:
-            branches:
-              # Do not run this on forked pull requests
-              ignore: /pull\/[0-9]+/
-          requires:
-            - osx-testing-arm64
   lint:
     jobs:
       - lint
