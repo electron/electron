@@ -96,7 +96,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "shell/browser/win/select_file_dialog_factory.h"
+#include "chrome/browser/win/chrome_select_file_dialog_factory.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -487,7 +487,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 #if BUILDFLAG(IS_WIN)
   ui::SelectFileDialog::SetFactory(
-      std::make_unique<ElectronSelectFileDialogFactory>());
+      std::make_unique<ChromeSelectFileDialogFactory>());
 #endif
 
   return GetExitCode();

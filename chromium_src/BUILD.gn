@@ -156,9 +156,13 @@ static_library("chrome") {
       "//chrome/browser/ui/frame/window_frame_util.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
+      "//chrome/browser/win/chrome_select_file_dialog_factory.cc",
+      "//chrome/browser/win/chrome_select_file_dialog_factory.h",
       "//chrome/browser/win/titlebar_config.cc",
       "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/titlebar_config.h",
+      "//chrome/browser/win/util_win_service.cc",
+      "//chrome/browser/win/util_win_service.h",
       "//chrome/child/v8_crashpad_support_win.cc",
       "//chrome/child/v8_crashpad_support_win.h",
     ]
