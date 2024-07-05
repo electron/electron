@@ -530,7 +530,7 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 struct UserDataLink : base::SupportsUserData::Data {
-  UserDataLink(base::WeakPtr<Session> session_in)
+  explicit UserDataLink(base::WeakPtr<Session> session_in)
       : session{std::move(session_in)} {}
 
   base::WeakPtr<Session> session;
