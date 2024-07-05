@@ -485,8 +485,10 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
   fake_browser_process_->PreMainMessageLoopRun();
 
+#if BUILDFLAG(IS_WIN)
   ui::SelectFileDialog::SetFactory(
       std::make_unique<ElectronSelectFileDialogFactory>());
+#endif
 
   return GetExitCode();
 }
