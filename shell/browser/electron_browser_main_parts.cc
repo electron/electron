@@ -599,18 +599,18 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
     }
   }
 
+  auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
+  std::unique_ptr<ElectronBrowserContext> default_context = std::move(
+      ElectronBrowserContext::browser_context_map()[default_context_key]);
+  ElectronBrowserContext::browser_context_map().clear();
+  default_context.reset();
+
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_env_->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
   node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   node_env_.reset();
-
-  auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
-  std::unique_ptr<ElectronBrowserContext> default_context = std::move(
-      ElectronBrowserContext::browser_context_map()[default_context_key]);
-  ElectronBrowserContext::browser_context_map().clear();
-  default_context.reset();
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
