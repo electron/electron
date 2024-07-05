@@ -3279,7 +3279,8 @@ uint32_t WebContents::FindInPage(gin::Arguments* args) {
     dict.Get("findNext", &options->new_session);
   }
 
-  web_contents()->Find(request_id, search_text, std::move(options));
+  web_contents()->Find(request_id, search_text, std::move(options),
+                       /*skip_delay=*/false);
   return request_id;
 }
 
@@ -3473,7 +3474,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   }
 
   auto capture_handle = web_contents()->IncrementCapturerCount(
-      rect.size(), stay_hidden, stay_awake);
+      rect.size(), stay_hidden, stay_awake, /*is_activity=*/true);
 
   // Capture full page if user doesn't specify a |rect|.
   const gfx::Size view_size =
