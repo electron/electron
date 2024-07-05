@@ -90,7 +90,6 @@ runs:
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
-        sed $SEDOPTION '/The gn arg use_goma=true .*/d' out/Default/mksnapshot_args
 
         if [ "`uname`" = "Linux" ]; then
           if [ "${{ inputs.target-arch }}" = "arm" ]; then
