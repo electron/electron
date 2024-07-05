@@ -13,10 +13,10 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index 6168e69b59168c471bf349a4fd3b83b1fdb8b17a..7969930eecd6cc9f165681cd73fc62234b9c38d5 100644
+index 18a59486af0fd..5a98cd29eaca8 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -998,7 +998,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1009,7 +1009,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -32,7 +32,7 @@ index 6168e69b59168c471bf349a4fd3b83b1fdb8b17a..7969930eecd6cc9f165681cd73fc6223
      const fileName = this.attachments_[index].name;
      chrome.fileSystem.chooseEntry(
          {type: 'saveFile', suggestedName: fileName},
-@@ -1020,6 +1028,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1031,6 +1039,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
              // </if>
            });
          });
@@ -40,11 +40,10 @@ index 6168e69b59168c471bf349a4fd3b83b1fdb8b17a..7969930eecd6cc9f165681cd73fc6223
    }
  
    /**
-@@ -1127,8 +1136,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
-       fileName = fileName + '.pdf';
+@@ -1152,7 +1161,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
      }
  
--    // Create blob before callback to avoid race condition.
+     // Create blob before callback to avoid race condition.
 +    const a = document.createElement('a');
 +    a.download = fileName;
      const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
@@ -57,11 +56,11 @@ index 6168e69b59168c471bf349a4fd3b83b1fdb8b17a..7969930eecd6cc9f165681cd73fc6223
      chrome.fileSystem.chooseEntry(
          {
            type: 'saveFile',
-@@ -1153,6 +1169,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1177,6 +1194,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
              // </if>
            });
          });
 +    // </if>
  
-     // <if expr="enable_ink">
-     // Saving in Annotation mode is destructive: crbug.com/919364
+     // <if expr="enable_pdf_ink2">
+     // Ink2 doesn't need to exit annotation mode after save.
