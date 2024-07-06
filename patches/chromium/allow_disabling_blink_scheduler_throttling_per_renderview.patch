@@ -104,10 +104,10 @@ index ed73a6fe6d146eac904f0aa0d88facf055df503e..4bbc792068db75739a7ceb8ad01c85f9
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index a1197832494afac5207b682f187929844b0ebfd7..1c2c61d09d505eef575107201302c7be6589f3c8 100644
+index c511bb3afc856e01c5e02412361eed4056142c07..704eab15e312852d54f45c80f0297a843b1ab085 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -364,6 +364,7 @@ class BLINK_EXPORT WebView {
+@@ -363,6 +363,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -116,10 +116,10 @@ index a1197832494afac5207b682f187929844b0ebfd7..1c2c61d09d505eef575107201302c7be
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 567629babc9ff43995f56f62fa4fa7cae01651f3..e2f3e1171327eafb62d824c1241b0a06feb98312 100644
+index cad15054c57ba500998c58d4158031b662e742e9..fbe33e5ba68aa6d2fe0067465b8aefa053675687 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2460,6 +2460,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2457,6 +2457,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index 567629babc9ff43995f56f62fa4fa7cae01651f3..e2f3e1171327eafb62d824c1241b0a06
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3974,10 +3978,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3971,10 +3975,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,10 +155,10 @@ index 567629babc9ff43995f56f62fa4fa7cae01651f3..e2f3e1171327eafb62d824c1241b0a06
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index e36a3b35fd3cbfc9439b15b32cf1bf432b8e1122..b8f0b7830e6d14c40d2371378556000d347e78fb 100644
+index 764d48e8fc89fa0b95e01881c2f5462e385ed8d5..c0e99aec75858ec00a57d4b4484cbc719dbdda88 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -450,6 +450,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -449,6 +449,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -166,7 +166,7 @@ index e36a3b35fd3cbfc9439b15b32cf1bf432b8e1122..b8f0b7830e6d14c40d2371378556000d
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -932,6 +933,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -930,6 +931,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  

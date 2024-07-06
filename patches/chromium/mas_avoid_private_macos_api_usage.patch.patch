@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index fb4093873eb91eca1c0139f56a77ad9eb3674679..05f3f34d135bf24c648d51339a803fbbfe3bca03 100644
+index f08d22a774f7604f09b77bfa0d0a50aca37a17ad..d678d7cfdc1c28118e5e12f2fa8f3d781182ac19 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1052,6 +1052,7 @@ component("base") {
@@ -459,10 +459,10 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6ba9d79342f44c8d942ccf8ed39bcc2af51cfacf..c2b6ffbafe1cac3f81efb4a125ce8bf5bada5272 100644
+index d95e5e842ee7061c757820242cca579635571be2..379db634d63a8e2f3f209188108cb9e99b69b2bd 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -54,6 +54,7 @@ source_set("browser") {
+@@ -70,6 +70,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3638b51c713c360f1d0e51f5942725c24f194e10..9dfc657684299843862d0b4c55425304401b16d1 100644
+index 91d0c6cd3be161b77ed82858ef41ccf31492b943..dbabb1423f32fea0f42f82b00d8bd73faf6313a2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index 3638b51c713c360f1d0e51f5942725c24f194e10..9dfc657684299843862d0b4c55425304
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1716,6 +1718,7 @@ test("content_browsertests") {
+@@ -1717,6 +1719,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 3638b51c713c360f1d0e51f5942725c24f194e10..9dfc657684299843862d0b4c55425304
  
    public_deps = [
      ":test_interfaces",
-@@ -2967,6 +2970,7 @@ test("content_unittests") {
+@@ -2968,6 +2971,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
