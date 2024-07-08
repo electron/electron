@@ -282,10 +282,10 @@ bool WebContentsPermissionHelper::CheckMediaAccessPermission(
   base::Value::Dict details;
   details.Set("securityOrigin", security_origin.GetURL().spec());
   details.Set("mediaType", MediaStreamTypeToString(type));
-  // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
-  // are presented as same type in content_converter.h.
-  return CheckPermission(blink::PermissionType::AUDIO_CAPTURE,
-                         std::move(details));
+  auto blink_type = type == blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE
+                        ? blink::PermissionType::AUDIO_CAPTURE
+                        : blink::PermissionType::VIDEO_CAPTURE;
+  return CheckPermission(blink_type, std::move(details));
 }
 
 bool WebContentsPermissionHelper::CheckSerialAccessPermission(
