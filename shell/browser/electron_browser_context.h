@@ -21,7 +21,6 @@
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/browser/media/media_device_id_salt.h"
-#include "gin/arguments.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -29,6 +28,10 @@
 
 class PrefService;
 class ValueMapPrefStore;
+
+namespace gin {
+class Arguments;
+}
 
 namespace network {
 class SharedURLLoaderFactory;
@@ -44,18 +47,7 @@ class ElectronExtensionSystem;
 }
 #endif
 
-namespace v8 {
-template <typename T>
-class Local;
-class Isolate;
-class Value;
-}  // namespace v8
-
 namespace electron {
-
-using DevicePermissionMap =
-    std::map<blink::PermissionType,
-             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
 
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
@@ -69,10 +61,6 @@ using DisplayMediaResponseCallbackJs =
 using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  DisplayMediaResponseCallbackJs)>;
-using PartitionOrPath =
-    std::variant<std::reference_wrapper<const std::string>,
-                 std::reference_wrapper<const base::FilePath>>;
-
 class ElectronBrowserContext : public content::BrowserContext {
  public:
   // disable copy
@@ -207,6 +195,14 @@ class ElectronBrowserContext : public content::BrowserContext {
                              blink::PermissionType permissionType);
 
  private:
+  using DevicePermissionMap = std::map<
+      blink::PermissionType,
+      std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
+
+  using PartitionOrPath =
+      std::variant<std::reference_wrapper<const std::string>,
+                   std::reference_wrapper<const base::FilePath>>;
+
   ElectronBrowserContext(const PartitionOrPath partition_location,
                          bool in_memory,
                          base::Value::Dict options);
