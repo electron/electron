@@ -21,7 +21,6 @@
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/browser/media/media_device_id_salt.h"
-#include "gin/arguments.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -29,6 +28,10 @@
 
 class PrefService;
 class ValueMapPrefStore;
+
+namespace gin {
+class Arguments;
+}
 
 namespace network {
 class SharedURLLoaderFactory;
