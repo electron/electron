@@ -16,7 +16,7 @@ jobs:
         !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.pull_request.author_association) && 
         github.event.pull_request.user.type != 'Bot' && 
         !github.event.pull_request.draft &&
-        github.event.pull_request.labels.*.name != 'allow-dependency-change'
+        !contains(github.event.pull_request.labels.*.name, 'allow-dependency-change')
       }}
     permissions:
       pull-requests: write
