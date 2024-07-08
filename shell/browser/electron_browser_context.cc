@@ -829,34 +829,21 @@ ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::Value::Dict options) {
-  PartitionKey key(partition, in_memory);
-  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
-  if (browser_context) {
-    return browser_context;
-  }
-
-  auto* new_context = new ElectronBrowserContext(std::cref(partition),
-                                                 in_memory, std::move(options));
-  browser_context_map()[key] =
-      std::unique_ptr<ElectronBrowserContext>(new_context);
-  return new_context;
+  auto& context = browser_context_map()[PartitionKey{partition, in_memory}];
+  if (!context)
+    context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
+                                             std::move(options)});
+  return context.get();
 }
 
 ElectronBrowserContext* ElectronBrowserContext::FromPath(
     const base::FilePath& path,
     base::Value::Dict options) {
-  PartitionKey key(path);
-
-  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
-  if (browser_context) {
-    return browser_context;
-  }
-
-  auto* new_context =
-      new ElectronBrowserContext(std::cref(path), false, std::move(options));
-  browser_context_map()[key] =
-      std::unique_ptr<ElectronBrowserContext>(new_context);
-  return new_context;
+  auto& context = browser_context_map()[PartitionKey{path}];
+  if (!context)
+    context.reset(
+        new ElectronBrowserContext{std::cref(path), false, std::move(options)});
+  return context.get();
 }
 
 }  // namespace electron
