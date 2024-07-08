@@ -20,7 +20,9 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/services/util_win/public/mojom/util_read_icon.mojom.h"
+#include "chrome/services/util_win/public/mojom/util_win.mojom.h"
 #include "chrome/services/util_win/util_read_icon.h"
+#include "chrome/services/util_win/util_win_impl.h"
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -54,6 +56,9 @@ auto RunPrintingService(
 auto RunWindowsIconReader(
     mojo::PendingReceiver<chrome::mojom::UtilReadIcon> receiver) {
   return std::make_unique<UtilReadIcon>(std::move(receiver));
+}
+auto RunWindowsUtility(mojo::PendingReceiver<chrome::mojom::UtilWin> receiver) {
+  return std::make_unique<UtilWinImpl>(std::move(receiver));
 }
 #endif
 
@@ -109,6 +114,7 @@ void ElectronContentUtilityClient::RegisterMainThreadServices(
     mojo::ServiceFactory& services) {
 #if BUILDFLAG(IS_WIN)
   services.Add(RunWindowsIconReader);
+  services.Add(RunWindowsUtility);
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
