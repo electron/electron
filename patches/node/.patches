@@ -56,4 +56,5 @@ fs_fix_wtf-8_decoding_issue.patch
 stream_do_not_defer_construction_by_one_microtick.patch
 deps_disable_io_uring_support_in_libuv_by_default.patch
 src_deps_disable_setuid_etc_if_io_uring_enabled.patch
+build_support_python_3_12.patch
 build_fix_build_with_python_3_12.patch
