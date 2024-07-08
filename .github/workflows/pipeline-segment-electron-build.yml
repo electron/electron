@@ -160,9 +160,11 @@ jobs:
         echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
-    - name: Fix Sync (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
-      uses: ./src/electron/.github/actions/fix-sync-macos
+    - name: Fix Sync
+      uses: ./src/electron/.github/actions/fix-sync
+      with:
+        target-arch: ${{ inputs.target-arch }}
+        target-platform: ${{ inputs.target-platform }}
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform == 'linux' && '300' || '200' }}" >> $GITHUB_ENV
