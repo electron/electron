@@ -6,11 +6,6 @@ if (!process.env.CIRCLE_BRANCH) {
   process.exit(1);
 }
 
-if (process.env.CIRCLE_PR_NUMBER) {
-  console.error('Building for a forked PR, can\'t autopush a patch');
-  process.exit(1);
-}
-
 async function main () {
   const token = await getTokenForRepo(
     {

@@ -1559,9 +1559,8 @@ describe('app module', () => {
   });
 
   ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))('sandbox options', () => {
-    // Our ARM tests are run on VSTS rather than CircleCI, and the Docker
-    // setup on VSTS disallows syscalls that Chrome requires for setting up
-    // sandboxing.
+    // Our ARM tests are run on VSTS, and the Docker setup on VSTS
+    // disallows syscalls that Chrome requires for setting up sandboxing.
     // See:
     // - https://docs.docker.com/engine/security/seccomp/#significant-syscalls-blocked-by-the-default-profile
     // - https://chromium.googlesource.com/chromium/src/+/70.0.3538.124/sandbox/linux/services/credentials.cc#292
