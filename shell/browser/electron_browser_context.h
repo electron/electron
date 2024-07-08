@@ -53,10 +53,6 @@ class Value;
 
 namespace electron {
 
-using DevicePermissionMap =
-    std::map<blink::PermissionType,
-             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
-
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
 class CookieChangeNotifier;
@@ -69,10 +65,6 @@ using DisplayMediaResponseCallbackJs =
 using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  DisplayMediaResponseCallbackJs)>;
-using PartitionOrPath =
-    std::variant<std::reference_wrapper<const std::string>,
-                 std::reference_wrapper<const base::FilePath>>;
-
 class ElectronBrowserContext : public content::BrowserContext {
  public:
   // disable copy
@@ -207,6 +199,14 @@ class ElectronBrowserContext : public content::BrowserContext {
                              blink::PermissionType permissionType);
 
  private:
+  using DevicePermissionMap = std::map<
+      blink::PermissionType,
+      std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
+
+  using PartitionOrPath =
+      std::variant<std::reference_wrapper<const std::string>,
+                   std::reference_wrapper<const base::FilePath>>;
+
   ElectronBrowserContext(const PartitionOrPath partition_location,
                          bool in_memory,
                          base::Value::Dict options);
