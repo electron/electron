@@ -342,13 +342,12 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     return;
   }
 
-  auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
-                                                   args.Clone());
   for (auto const& [key, browser_context] :
        ElectronBrowserContext::browser_context_map()) {
     if (browser_context) {
       extensions::EventRouter::Get(browser_context.get())
-          ->BroadcastEvent(std::move(event));
+          ->BroadcastEvent(std::make_unique<extensions::Event>(
+              histogram_value, event_name, args.Clone()));
     }
   }
 }
