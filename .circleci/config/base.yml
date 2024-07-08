@@ -188,8 +188,7 @@ step-depot-tools-get: &step-depot-tools-get
                                CipdDependency(parent=self,
                                               name=name,
       EOF
-        git apply --3way gclient.diff
-      fi
+      git apply --3way gclient.diff
       # Ensure depot_tools does not update.
       test -d depot_tools && cd depot_tools
       touch .disable_auto_update
