@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
@@ -218,6 +219,8 @@ class Session : public gin::Wrappable<Session>,
   base::UnguessableToken network_emulation_token_;
 
   const raw_ref<ElectronBrowserContext> browser_context_;
+
+  base::WeakPtrFactory<Session> weak_factory_{this};
 };
 
 }  // namespace api
