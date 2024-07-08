@@ -463,7 +463,7 @@ bool ElectronBrowserContext::IsOffTheRecord() {
 }
 
 std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
-  if (!media_device_id_salt_.get())
+  if (!media_device_id_salt_)
     media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
   return media_device_id_salt_->GetSalt();
 }
@@ -479,10 +479,9 @@ ElectronBrowserContext::CreateZoomLevelDelegate(
 
 content::DownloadManagerDelegate*
 ElectronBrowserContext::GetDownloadManagerDelegate() {
-  if (!download_manager_delegate_.get()) {
-    auto* download_manager = this->GetDownloadManager();
+  if (!download_manager_delegate_) {
     download_manager_delegate_ =
-        std::make_unique<ElectronDownloadManagerDelegate>(download_manager);
+        std::make_unique<ElectronDownloadManagerDelegate>(GetDownloadManager());
   }
   return download_manager_delegate_.get();
 }
@@ -500,7 +499,7 @@ ElectronBrowserContext::GetPlatformNotificationService() {
 
 content::PermissionControllerDelegate*
 ElectronBrowserContext::GetPermissionControllerDelegate() {
-  if (!permission_manager_.get())
+  if (!permission_manager_)
     permission_manager_ = std::make_unique<ElectronPermissionManager>();
   return permission_manager_.get();
 }
@@ -515,7 +514,7 @@ std::string ElectronBrowserContext::GetUserAgent() const {
 }
 
 predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
-  if (!preconnect_manager_.get()) {
+  if (!preconnect_manager_) {
     preconnect_manager_ =
         std::make_unique<predictors::PreconnectManager>(nullptr, this);
   }
