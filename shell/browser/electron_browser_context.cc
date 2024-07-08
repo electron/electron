@@ -310,6 +310,10 @@ ElectronBrowserContext::ElectronBrowserContext(
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed();
+
+  // the DestroyBrowserContextServices() call below frees this.
+  extension_system_ = nullptr;
+
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
