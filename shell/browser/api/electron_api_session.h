@@ -216,7 +216,7 @@ class Session : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  const raw_ref<ElectronBrowserContext> browser_context_;
+  const raw_ptr<ElectronBrowserContext> browser_context_;
 
   base::WeakPtrFactory<Session> weak_factory_{this};
 };
