@@ -44,13 +44,6 @@ class ElectronExtensionSystem;
 }
 #endif
 
-namespace v8 {
-template <typename T>
-class Local;
-class Isolate;
-class Value;
-}  // namespace v8
-
 namespace electron {
 
 class ElectronDownloadManagerDelegate;
