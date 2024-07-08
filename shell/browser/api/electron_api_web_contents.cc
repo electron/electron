@@ -3729,14 +3729,17 @@ void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
                                                type_ == Type::kBrowserView
                                            ? SK_ColorTRANSPARENT
                                            : SK_ColorWHITE);
+  bool is_opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
   web_contents()->SetPageBaseBackgroundColor(color);
 
   content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)
     return;
+
   content::RenderWidgetHostView* rwhv = rfh->GetView();
   if (rwhv) {
-    rwhv->SetBackgroundColor(color);
+    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or 255.
+    rwhv->SetBackgroundColor(is_opaque ? color : SK_ColorTRANSPARENT);
     static_cast<content::RenderWidgetHostViewBase*>(rwhv)
         ->SetContentBackgroundColor(color);
   }
