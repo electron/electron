@@ -1186,7 +1186,7 @@ method:
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
-const url = require('url').format({
+const url = require('node:url').format({
   protocol: 'file',
   slashes: true,
   pathname: require('node:path').join(__dirname, 'index.html')

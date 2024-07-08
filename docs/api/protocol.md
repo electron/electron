@@ -38,7 +38,7 @@ to register it to that session explicitly.
 ```js
 const { app, BrowserWindow, net, protocol, session } = require('electron')
 const path = require('node:path')
-const url = require('url')
+const url = require('node:url')
 
 app.whenReady().then(() => {
   const partition = 'persist:example'
@@ -127,7 +127,7 @@ Example:
 ```js
 const { app, net, protocol } = require('electron')
 const path = require('node:path')
-const { pathToFileURL } = require('url')
+const { pathToFileURL } = require('node:url')
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -283,7 +283,7 @@ Example:
 
 ```js
 const { protocol } = require('electron')
-const { PassThrough } = require('stream')
+const { PassThrough } = require('node:stream')
 
 function createStream (text) {
   const rv = new PassThrough() // PassThrough is also a Readable stream

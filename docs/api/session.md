@@ -878,7 +878,7 @@ To clear the handler, call `setPermissionCheckHandler(null)`.
 
 ```js
 const { session } = require('electron')
-const url = require('url')
+const url = require('node:url')
 session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
   if (new URL(requestingOrigin).hostname === 'some-host' && permission === 'notifications') {
     return true // granted
