@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f08d22a774f7604f09b77bfa0d0a50aca37a17ad..d678d7cfdc1c28118e5e12f2fa8f3d781182ac19 100644
+index a9159e6d98b2e127aa65cf554351c27c22ce80ed..9af321891206bb765410f5aea711b0d66edbc0dd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1052,6 +1052,7 @@ component("base") {
+@@ -1051,6 +1051,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d95e5e842ee7061c757820242cca579635571be2..379db634d63a8e2f3f209188108cb9e99b69b2bd 100644
+index 400ca8001ef49ca55c98861eea7cda02c58a528c..aad032aa52be6dc49f3cb3d5313b171729e3850a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 91d0c6cd3be161b77ed82858ef41ccf31492b943..dbabb1423f32fea0f42f82b00d8bd73faf6313a2 100644
+index 36ba94ea415f84668667d0aa7b7bccbaa35ba4aa..7d4d4958c0d69c920c1c2fc0514a1c4ef0b61765 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -719,7 +719,7 @@ index 91d0c6cd3be161b77ed82858ef41ccf31492b943..dbabb1423f32fea0f42f82b00d8bd73f
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1717,6 +1719,7 @@ test("content_browsertests") {
+@@ -1718,6 +1720,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -727,7 +727,7 @@ index 91d0c6cd3be161b77ed82858ef41ccf31492b943..dbabb1423f32fea0f42f82b00d8bd73f
  
    public_deps = [
      ":test_interfaces",
-@@ -2968,6 +2971,7 @@ test("content_unittests") {
+@@ -2970,6 +2973,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -884,7 +884,7 @@ index a5070091785d80a47d1d9d9977803cd1de8b2054..b280a0d58fc03257aa1763cd15791db4
  }
  
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 63414d8db326c0fdd44ed59f99400d5c16cfc93c..d80a104451c66017750d04c776355cfa4691d2a3 100644
+index 5f4ff9ff8172d4ad282cc9c781f85118b8ba7d1a..6a542c8f0d7afad876ab2739a1a2576a64cb6be9 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -187,6 +187,8 @@ source_set("dns") {
