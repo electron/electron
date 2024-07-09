@@ -48,7 +48,7 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbc
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index b56ad6cc833f00f58bf3925e9fd82a8f5b7b9bd7..8c9e8bfb4e828d044b236a11c0890cb4f0161050 100644
+index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf47dce3f98 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -741,6 +741,8 @@ function packageImportsResolve(name, base, conditions) {
