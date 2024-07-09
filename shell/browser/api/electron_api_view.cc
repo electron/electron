@@ -11,9 +11,6 @@
 #include <utility>
 
 #include "ash/style/rounded_rect_cutout_path_builder.h"
-// HACK: The ash dep is not included in builds, but this file has no transitive
-// dependencies. If this ever breaks, we can copy the file into //shell/browser
-#include "ash/style/rounded_rect_cutout_path_builder.cc"
 #include "gin/data_object_builder.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"

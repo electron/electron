@@ -14,6 +14,8 @@ import("//third_party/widevine/cdm/widevine.gni")
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//ash/style/rounded_rect_cutout_path_builder.cc",
+    "//ash/style/rounded_rect_cutout_path_builder.h",
     "//chrome/browser/app_mode/app_mode_utils.cc",
     "//chrome/browser/app_mode/app_mode_utils.h",
     "//chrome/browser/browser_features.cc",
