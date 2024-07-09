@@ -31,8 +31,9 @@ and Linux (Unity) there can be only one progress bar for the application.
 ----
 
 All three cases are covered by the same API - the
-[`setProgressBar()`][setprogressbar] method available on an instance of
-`BrowserWindow`. To indicate your progress, call this method with a number
+[`setProgressBar()`](../api/browser-window.md#winsetprogressbarprogress-options)
+method available on an instance of `BrowserWindow`.
+To indicate your progress, call this method with a number
 between `0` and `1`. For example, if you have a long-running task that is
 currently at 63% towards completion, you would call it as
 `setProgressBar(0.63)`.
@@ -43,7 +44,7 @@ in Windows or clamp to 100% in other operating systems. An indeterminate progres
 remains active but does not show an actual percentage, and is used for situations when
 you do not know how long an operation will take to complete.
 
-See the [API documentation for more options and modes][setprogressbar].
+See the [API documentation for more options and modes](../api/browser-window.md#winsetprogressbarprogress-options).
 
 ## Example
 
@@ -112,5 +113,3 @@ For macOS, the progress bar will also be indicated for your application
 when using [Mission Control](https://support.apple.com/en-us/HT204100):
 
 ![Mission Control Progress Bar](../images/mission-control-progress-bar.png)
-
-[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress-options
