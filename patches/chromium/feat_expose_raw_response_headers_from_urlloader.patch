@@ -90,7 +90,7 @@ index 1d510b64f480ba516009cb1d995fbe9ca29ec164..d6d17abbb058c2e4109ab98a3db1bdf7
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 64ec7b5a4bfb08a2bbd75ce03a602b36e6b0f278..f726e1ccf33dee59a131f881fa000f506a772e65 100644
+index e1d4360ac8d0ee6dacdd36ed5a98e2c954bff31d..9e763a3af2088c8507922932288e5e4c0c050f9d 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -13,6 +13,7 @@ import "services/network/public/mojom/attribution.mojom";
@@ -112,10 +112,10 @@ index 64ec7b5a4bfb08a2bbd75ce03a602b36e6b0f278..f726e1ccf33dee59a131f881fa000f50
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index f5ee349b77610206ef71886555e46cbc22f699d3..9e63ff05c06e44815978289a9767965b8b6ced62 100644
+index ade58305e8b5a1e69b14ececd0a2b14861a38285..d6773107f5ea7992b4be0ed3ffb14af9d0ec5c8d 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -707,6 +707,7 @@ URLLoader::URLLoader(
+@@ -710,6 +710,7 @@ URLLoader::URLLoader(
          request.trusted_params->allow_cookies_from_browser;
      include_request_cookies_with_response_ =
          request.trusted_params->include_request_cookies_with_response;
@@ -123,7 +123,7 @@ index f5ee349b77610206ef71886555e46cbc22f699d3..9e63ff05c06e44815978289a9767965b
    }
  
    // Store any cookies passed from the browser process to later attach them to
-@@ -745,7 +746,7 @@ URLLoader::URLLoader(
+@@ -748,7 +749,7 @@ URLLoader::URLLoader(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +132,7 @@ index f5ee349b77610206ef71886555e46cbc22f699d3..9e63ff05c06e44815978289a9767965b
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1694,6 +1695,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1703,6 +1704,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,10 +153,10 @@ index f5ee349b77610206ef71886555e46cbc22f699d3..9e63ff05c06e44815978289a9767965b
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index d4d72e186dc16d73ee0beabff89a7875bd91da03..068ced0a8d72bf8a4179b88dfab1a5377307fc6c 100644
+index 097f112d8fc560eb483310958a2276edae687381..df52b2339a06df6d4dd127fdb398bea2d2fb042d 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -657,6 +657,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -654,6 +654,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

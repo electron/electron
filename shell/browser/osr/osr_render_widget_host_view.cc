@@ -16,6 +16,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
+#include "components/input/cursor_manager.h"
 #include "components/viz/common/features.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/copy_output_request.h"
@@ -23,7 +24,6 @@
 #include "components/viz/common/quads/compositor_render_pass.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
-#include "content/common/input/cursor_manager.h"
 #include "content/common/input/synthetic_gesture.h"  // nogncheck
 #include "content/common/input/synthetic_gesture_target.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -198,7 +198,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
           AllocateFrameSinkId(),
           delegated_frame_host_client_.get(),
           true /* should_register_frame_sink_id */)},
-      cursor_manager_(std::make_unique<content::CursorManager>(this)),
+      cursor_manager_(std::make_unique<input::CursorManager>(this)),
       mouse_wheel_phase_handler_(this),
       backing_(std::make_unique<SkBitmap>()) {
   DCHECK(render_widget_host_);
@@ -450,7 +450,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
 void OffScreenRenderWidgetHostView::UpdateCursor(const ui::Cursor&) {}
 
-content::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
+input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
   return cursor_manager_.get();
 }
 
