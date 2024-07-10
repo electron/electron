@@ -167,6 +167,16 @@ std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
                          : nullptr;
 }
 
+#if BUILDFLAG(IS_WIN)
+BOOL CALLBACK EnumDisplayMonitorsCallback(HMONITOR monitor,
+                                          HDC hdc,
+                                          LPRECT rect,
+                                          LPARAM data) {
+  reinterpret_cast<std::vector<HMONITOR>*>(data)->push_back(monitor);
+  return TRUE;
+}
+#endif
+
 }  // namespace
 
 namespace gin {
@@ -396,11 +406,22 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         return;
       }
 
-      int device_name_index = 0;
-      for (auto& source : screen_sources) {
-        const auto& device_name = device_names[device_name_index++];
-        const int64_t device_id = base::PersistentHash(device_name);
-        source.display_id = base::NumberToString(device_id);
+      std::vector<HMONITOR> monitors;
+      EnumDisplayMonitors(nullptr, nullptr, EnumDisplayMonitorsCallback,
+                          reinterpret_cast<LPARAM>(&monitors));
+
+      std::vector<std::pair<std::string, MONITORINFOEX>> pairs;
+      for (const auto& device_name : device_names) {
+        std::wstring wide_device_name;
+        base::UTF8ToWide(device_name.c_str(), device_name.size(),
+                         &wide_device_name);
+        for (const auto monitor : monitors) {
+          MONITORINFOEX monitorInfo{{sizeof(MONITORINFOEX)}};
+          if (GetMonitorInfo(monitor, &monitorInfo)) {
+            if (wide_device_name == monitorInfo.szDevice)
+              pairs.push_back(std::make_pair(device_name, monitorInfo));
+          }
+        }
       }
     }
 #elif BUILDFLAG(IS_MAC)
