@@ -90,11 +90,6 @@ jobs:
       run: |
         cd src/electron
         node script/yarn install --frozen-lockfile
-    - name: Install Python Tools (Linux)
-      if: ${{ inputs.target-platform == 'linux' }}
-      run: |
-        apt install python3.12-packaging
-        apt-get install python3.12-venv
     - name: Install Python Tools (Mac)
       if: ${{ inputs.target-platform == 'macos' }}
       run: brew install python-setuptools
