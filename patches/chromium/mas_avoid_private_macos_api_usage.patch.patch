@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index dc3bd4234c9821223e3198a97dca292519b53a53..429d632d054abb53e8fd8e25405317f29ac58fad 100644
+index 4f90bd8f6725a5b4dc8004305594fb8220551ca4..f22cba6c661f3895d6b1e4939069117b6b3a3366 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1045,6 +1045,7 @@ component("base") {
+@@ -1046,6 +1046,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 400ca8001ef49ca55c98861eea7cda02c58a528c..aad032aa52be6dc49f3cb3d5313b171729e3850a 100644
+index 8187193afa6d2870e7f6f56270e1d359822a2fd6..4da1cb1c56b44c59f51c7c60644f9d26d51af581 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 36ba94ea415f84668667d0aa7b7bccbaa35ba4aa..7d4d4958c0d69c920c1c2fc0514a1c4ef0b61765 100644
+index 9cc75b56b503ec6dfa0004fce9d75f98e4a71c01..93540c854579eb3e2c1187ac47cd8f33d3c8b4e0 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 36ba94ea415f84668667d0aa7b7bccbaa35ba4aa..7d4d4958c0d69c920c1c2fc0514a1c4e
  
    public_deps = [
      ":test_interfaces",
-@@ -2970,6 +2973,7 @@ test("content_unittests") {
+@@ -2972,6 +2975,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]

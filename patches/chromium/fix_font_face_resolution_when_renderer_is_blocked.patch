@@ -27,24 +27,16 @@ index 01b075079fd7a75fb8cb5d876f6db927678c60db..436d04c3c739a7273c44130f6ed86486
  
  void FontFaceSetDocument::FireDoneEventIfPossible() {
 -  if (should_fire_loading_event_) {
--    return;
--  }
--  if (!ShouldSignalReady()) {
--    return;
--  }
-   Document* d = GetDocument();
--  if (!d) {
++  Document* d = GetDocument();
 +  if (!d || !d->View()) {
      return;
    }
- 
--  // If the layout was invalidated in between when we thought layout
--  // was updated and when we're ready to fire the event, just wait
--  // until after the next layout before firing events.
--  if (!d->View() || d->View()->NeedsLayout()) {
-+  if (!ShouldSignalReady()) {
-+    return;
-+  }
++
+   if (!ShouldSignalReady()) {
+     return;
+   }
+-  Document* d = GetDocument();
+-  if (!d) {
 +
 +  // FireDoneEventIfPossible gets scheduled via PostTask at the end of a
 +  // successful style+layout update. An invalidation may have occurred in
@@ -54,9 +46,13 @@ index 01b075079fd7a75fb8cb5d876f6db927678c60db..436d04c3c739a7273c44130f6ed86486
 +  // These values can change during style+layout update, so check them
 +  // *after* the call to UpdateStyleAndLayout.
 +  if (should_fire_loading_event_) {
-+    return;
-+  }
-+
+     return;
+   }
+ 
+-  // If the layout was invalidated in between when we thought layout
+-  // was updated and when we're ready to fire the event, just wait
+-  // until after the next layout before firing events.
+-  if (!d->View() || d->View()->NeedsLayout()) {
 +  if (!ShouldSignalReady()) {
      return;
    }
