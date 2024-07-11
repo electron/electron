@@ -1,0 +1,339 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <watfordcalvin@gmail.com>
+Date: Thu, 11 Jul 2024 14:14:28 -0600
+Subject: smooth corner rounding (WIP DEMO)
+
+this is not meant to be committed in its current state. i had to write
+this description to pass pre-commit checks.
+
+diff --git a/third_party/blink/renderer/platform/graphics/graphics_context.cc b/third_party/blink/renderer/platform/graphics/graphics_context.cc
+index a7a4cac473c95d7c16b801809ab3eb9c060ebf1d..fe577b9ff0742c266a9a7d4c8f87669160b69c46 100644
+--- a/third_party/blink/renderer/platform/graphics/graphics_context.cc
++++ b/third_party/blink/renderer/platform/graphics/graphics_context.cc
+@@ -27,8 +27,13 @@
+ #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
+ 
+ #include <memory>
++#include <numbers>
+ #include <optional>
+ 
++#include "base/ranges/functional.h"
++#include "base/ranges/algorithm.h"
++#include "base/types/fixed_array.h"
++#include "base/containers/fixed_flat_map.h"
+ #include "base/logging.h"
+ #include "build/build_config.h"
+ #include "cc/paint/color_filter.h"
+@@ -39,6 +44,7 @@
+ #include "third_party/blink/renderer/platform/geometry/float_rounded_rect.h"
+ #include "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"
+ #include "third_party/blink/renderer/platform/graphics/graphics_context_state_saver.h"
++#include "third_party/blink/renderer/platform/graphics/graphics_types.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/paint_canvas.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/paint_record.h"
+@@ -68,6 +74,216 @@ namespace blink {
+ 
+ namespace {
+ 
++namespace {
++
++float ToRadians(float degrees) {
++  return (degrees * std::numbers::pi) / 180.0f;
++}
++
++struct CornerPathParams {
++  float a;
++  float b;
++  float c;
++  float d;
++  float p;
++  float cornerRadius;
++  float arcSectionLength;
++};
++
++CornerPathParams GetPathParamsForCorner(float cornerRadius, float cornerSmoothing, bool preserveSmoothing, float roundingAndSmoothingBudget) {
++  float p = (1 + cornerSmoothing) * cornerRadius;
++
++  if (!preserveSmoothing) {
++    const float maxCornerSmoothing = roundingAndSmoothingBudget / cornerRadius - 1.0f;
++    cornerSmoothing = std::min(cornerSmoothing, maxCornerSmoothing);
++    p = std::min(p, roundingAndSmoothingBudget);
++  }
++
++  const float arcMeasure = 90.0f * (1.0f - cornerSmoothing);
++  const float arcSectionLength = sin(ToRadians(arcMeasure / 2.0f)) * cornerRadius * sqrt(2.0f);
++
++  const float angleAlpha = (90.0f - arcMeasure) / 2.0f;
++  const float p3ToP4Distance = cornerRadius * tan(ToRadians(angleAlpha / 2.0f));
++
++  const float angleBeta = 45.0f * cornerSmoothing;
++  const float c = p3ToP4Distance * cos(ToRadians(angleBeta));
++  const float d = c * tan(ToRadians(angleBeta));
++
++  float b = (p - arcSectionLength - c - d) / 3.0f;
++  float a = 2.0f * b;
++
++  if (preserveSmoothing && p > roundingAndSmoothingBudget) {
++    const float p1ToP3MaxDistance = roundingAndSmoothingBudget - d - arcSectionLength - c;
++
++    const float minA = p1ToP3MaxDistance / 6.0f;
++    const float maxB = p1ToP3MaxDistance - minA;
++
++    b = std::min(b, maxB);
++    a = p1ToP3MaxDistance - b;
++    p = std::min(p, roundingAndSmoothingBudget);
++  }
++
++  return {
++    .a = a,
++    .b = b,
++    .c = c,
++    .d = d,
++    .p = p,
++    .cornerRadius = cornerRadius,
++    .arcSectionLength = arcSectionLength
++  };
++}
++
++template <typename T>
++struct Corners {
++  T topLeft;
++  T topRight;
++  T bottomLeft;
++  T bottomRight;
++};
++
++template <typename T>
++using Corner = T Corners<T>::*;
++
++Corners<float> MinRadii(const FloatRoundedRect::Radii& radii) {
++  return {
++    .topLeft = std::min(radii.TopLeft().width(), radii.TopLeft().height()),
++    .topRight = std::min(radii.TopRight().width(), radii.TopRight().height()),
++    .bottomLeft = std::min(radii.BottomLeft().width(), radii.BottomLeft().height()),
++    .bottomRight = std::min(radii.BottomRight().width(), radii.BottomRight().height()),
++  };
++}
++
++struct NormalizedCorner {
++  float radius;
++  float roundingAndSmoothingBudget;
++};
++
++float CalculateBudget(const NormalizedCorner& corner, const NormalizedCorner& adjacent, float sideLength) {
++  if (corner.radius == 0.0f && adjacent.radius == 0.0f) {
++    return 0.0f;
++  }
++
++  const float& adjacentCornerBudget = adjacent.roundingAndSmoothingBudget;
++  if (adjacentCornerBudget >= 0) {
++    return sideLength - adjacentCornerBudget;
++  } else {
++    return (corner.radius / (corner.radius + adjacent.radius)) * sideLength;
++  }
++}
++
++Corners<NormalizedCorner> DistributeAndNormalize(const FloatRoundedRect& rrect) {
++  constexpr auto TopLeftCorner = &Corners<NormalizedCorner>::topLeft;
++  constexpr auto TopRightCorner = &Corners<NormalizedCorner>::topRight;
++  constexpr auto BottomLeftCorner = &Corners<NormalizedCorner>::bottomLeft;
++  constexpr auto BottomRightCorner = &Corners<NormalizedCorner>::bottomRight;
++
++  Corners<float> minRadii = MinRadii(rrect.GetRadii());
++  Corners<NormalizedCorner> result = {
++    .topLeft = {
++      .radius = minRadii.topLeft,
++      .roundingAndSmoothingBudget = -1.0f
++    },
++    .topRight = {
++      .radius = minRadii.topRight,
++      .roundingAndSmoothingBudget = -1.0f
++    },
++    .bottomLeft = {
++      .radius = minRadii.bottomLeft,
++      .roundingAndSmoothingBudget = -1.0f
++    },
++    .bottomRight = {
++      .radius = minRadii.bottomRight,
++      .roundingAndSmoothingBudget = -1.0f
++    },
++  };
++
++  base::FixedArray<Corner<NormalizedCorner>, 4> corners({TopLeftCorner, TopRightCorner, BottomLeftCorner, BottomRightCorner});
++  base::ranges::sort(corners, base::ranges::greater(), [&result](NormalizedCorner Corners<NormalizedCorner>::* corner) { return (result.*corner).radius; });
++
++  for (Corner<NormalizedCorner> corner : corners) {
++    const Corner<NormalizedCorner> adjacentCornerX = corner == TopLeftCorner ? TopRightCorner : corner == TopRightCorner ? TopLeftCorner : corner == BottomLeftCorner ? BottomRightCorner : BottomLeftCorner;
++    const Corner<NormalizedCorner> adjacentCornerY = corner == TopLeftCorner ? BottomLeftCorner : corner == TopRightCorner ? BottomRightCorner : corner == BottomLeftCorner ? TopLeftCorner : TopRightCorner;
++
++    const float budget = std::min(
++      CalculateBudget(result.*corner, result.*adjacentCornerX, rrect.Rect().width()),
++      CalculateBudget(result.*corner, result.*adjacentCornerY, rrect.Rect().height())
++    );
++
++    (result.*corner).roundingAndSmoothingBudget = budget;
++    (result.*corner).radius = std::min((result.*corner).radius, budget);
++  }
++
++  return result;
++}
++
++const float kCornerSmoothing = 1.0f;
++
++}
++
++SkPath GetRoundedPath(const FloatRoundedRect& rrect, float cornerSmoothing = kCornerSmoothing, bool preserveSmoothing = false) {
++  const gfx::PointF& origin = rrect.Rect().origin();
++  const gfx::SizeF& size = rrect.Rect().size();
++  const FloatRoundedRect::Radii& radii = rrect.GetRadii();
++
++  CornerPathParams topLeftParams;
++  CornerPathParams topRightParams;
++  CornerPathParams bottomLeftParams;
++  CornerPathParams bottomRightParams;
++
++  if (radii.TopLeft() == radii.TopRight() && radii.TopRight() == radii.BottomRight() && radii.BottomRight() == radii.BottomLeft()) {
++    const float roundingAndSmoothingBudget = std::min(size.width(), size.height()) / 2.0f;
++    CornerPathParams params = GetPathParamsForCorner(std::min(radii.TopLeft().width(), radii.TopRight().height()), cornerSmoothing, preserveSmoothing, roundingAndSmoothingBudget);
++
++    topLeftParams = params;
++    topRightParams = params;
++    bottomLeftParams = params;
++    bottomRightParams = params;
++  } else {
++    Corners<NormalizedCorner> distributedCorners = DistributeAndNormalize(rrect);
++
++    topLeftParams = GetPathParamsForCorner(distributedCorners.topLeft.radius, cornerSmoothing, preserveSmoothing, distributedCorners.topLeft.roundingAndSmoothingBudget);
++    topRightParams = GetPathParamsForCorner(distributedCorners.topRight.radius, cornerSmoothing, preserveSmoothing, distributedCorners.topRight.roundingAndSmoothingBudget);
++    bottomLeftParams = GetPathParamsForCorner(distributedCorners.bottomLeft.radius, cornerSmoothing, preserveSmoothing, distributedCorners.bottomLeft.roundingAndSmoothingBudget);
++    bottomRightParams = GetPathParamsForCorner(distributedCorners.bottomRight.radius, cornerSmoothing, preserveSmoothing, distributedCorners.bottomRight.roundingAndSmoothingBudget);
++  }
++
++  SkPath path;
++
++  // Top right
++  path.moveTo(origin.x() + size.width() - topRightParams.p, origin.y());
++  path.rCubicTo(topRightParams.a, 0.0f, topRightParams.a + topRightParams.b, 0.0f, topRightParams.a + topRightParams.b + topRightParams.c, topRightParams.d);
++  path.rArcTo(topRightParams.cornerRadius, topRightParams.cornerRadius, 0.0f, SkPath::kSmall_ArcSize, SkPathDirection::kCW, topRightParams.arcSectionLength, topRightParams.arcSectionLength);
++  path.rCubicTo(topRightParams.d, topRightParams.c, topRightParams.d, topRightParams.b + topRightParams.c, topRightParams.d, topRightParams.a + topLeftParams.b + topRightParams.c);
++
++  // Bottom right
++  path.lineTo(origin.x() + size.width(), origin.y() + size.height() - bottomRightParams.p);
++  path.rCubicTo(0.0f, bottomRightParams.a, 0.0f, bottomRightParams.a + bottomRightParams.b, -bottomRightParams.d, bottomRightParams.a + bottomRightParams.b + bottomRightParams.c);
++  path.rArcTo(bottomRightParams.cornerRadius, bottomRightParams.cornerRadius, 0.0f, SkPath::kSmall_ArcSize, SkPathDirection::kCW, -bottomRightParams.arcSectionLength, bottomRightParams.arcSectionLength);
++  path.rCubicTo(-bottomRightParams.c, bottomRightParams.d, -(bottomRightParams.b + bottomRightParams.c), bottomRightParams.d, -(bottomRightParams.a + bottomRightParams.b + bottomRightParams.c), bottomRightParams.d);
++
++  // Bottom left
++  path.lineTo(origin.x() + bottomLeftParams.p, origin.y() + size.height());
++  path.rCubicTo(-bottomLeftParams.a, 0.0f, -(bottomLeftParams.a + bottomLeftParams.b), 0.0f, -(bottomLeftParams.a + bottomLeftParams.b + bottomLeftParams.c), -bottomLeftParams.d);
++  path.rArcTo(bottomLeftParams.cornerRadius, bottomLeftParams.cornerRadius, 0.0f,SkPath::kSmall_ArcSize, SkPathDirection::kCW, -bottomLeftParams.arcSectionLength, -bottomLeftParams.arcSectionLength);
++  path.rCubicTo(-bottomLeftParams.d, -bottomLeftParams.c, -bottomLeftParams.d, -(bottomLeftParams.b + bottomLeftParams.c), -bottomLeftParams.d, -(bottomLeftParams.a + bottomLeftParams.b + bottomLeftParams.c));
++
++  // Top left
++  path.lineTo(origin.x(), origin.y() + topLeftParams.p);
++  path.rCubicTo(0.0f, -topLeftParams.a, 0.0f, -(topLeftParams.a + topLeftParams.b), topLeftParams.d, -(topLeftParams.a + topLeftParams.b + topLeftParams.c));
++  path.rArcTo(topLeftParams.cornerRadius, topLeftParams.cornerRadius, 0.0f, SkPath::kSmall_ArcSize, SkPathDirection::kCW, topLeftParams.arcSectionLength, -topLeftParams.arcSectionLength);
++  path.rCubicTo(topLeftParams.c, -topLeftParams.d, topLeftParams.b + topLeftParams.c, -topLeftParams.d, topLeftParams.a + topLeftParams.b + topLeftParams.c, -topLeftParams.d);
++
++  // Close
++  path.close();
++
++  return path;
++}
++
++}
++
++namespace {
++
+ SkColor4f DarkModeColor(GraphicsContext& context,
+                         const SkColor4f& color,
+                         const AutoDarkMode& auto_dark_mode) {
+@@ -668,6 +884,8 @@ void GraphicsContext::DrawImageRRect(
+         image.ApplyShader(image_flags, local_matrix, src_rect, draw_options);
+   }
+ 
++  SkPath path = GetRoundedPath(dest);
++
+   if (use_shader) {
+     // Temporarily set filter-quality for the shader. <reed>
+     // Should be replaced with explicit sampling parameter passed to
+@@ -675,11 +893,13 @@ void GraphicsContext::DrawImageRRect(
+     image_flags.setFilterQuality(
+         ComputeFilterQuality(image, dest.Rect(), src_rect));
+     // Shader-based fast path.
+-    canvas_->drawRRect(SkRRect(dest), image_flags);
++    // canvas_->drawRRect(SkRRect(dest), image_flags);
++    canvas_->drawPath(path, image_flags);
+   } else {
+     // Clip-based fallback.
+     PaintCanvasAutoRestore auto_restore(canvas_, true);
+-    canvas_->clipRRect(SkRRect(dest), image_flags.isAntiAlias());
++    // canvas_->clipRRect(SkRRect(dest), image_flags.isAntiAlias());
++    canvas_->clipPath(path, image_flags.isAntiAlias());
+     image.Draw(canvas_, image_flags, dest.Rect(), src_rect, draw_options);
+   }
+ 
+@@ -775,7 +995,8 @@ void GraphicsContext::DrawRRect(const SkRRect& rrect,
+                                 const cc::PaintFlags& flags,
+                                 const AutoDarkMode& auto_dark_mode) {
+   DCHECK(canvas_);
+-  canvas_->drawRRect(rrect, DarkModeFlags(this, auto_dark_mode, flags));
++  // canvas_->drawRRect(rrect, DarkModeFlags(this, auto_dark_mode, flags));
++  canvas_->drawPath(GetRoundedPath(FloatRoundedRect(rrect)), DarkModeFlags(this, auto_dark_mode, flags));
+ }
+ 
+ void GraphicsContext::FillPath(const Path& path_to_fill,
+@@ -834,17 +1055,21 @@ void GraphicsContext::FillRoundedRect(const FloatRoundedRect& rrect,
+     return;
+   }
+ 
++  const SkPath path = GetRoundedPath(rrect);
++
+   const cc::PaintFlags& fill_flags = ImmutableState()->FillFlags();
+   const SkColor4f sk_color = color.toSkColor4f();
+   if (sk_color == fill_flags.getColor4f()) {
+-    DrawRRect(SkRRect(rrect), fill_flags, auto_dark_mode);
++    // DrawRRect(SkRRect(rrect), fill_flags, auto_dark_mode);
++    DrawPath(path, fill_flags, auto_dark_mode);
+     return;
+   }
+ 
+   cc::PaintFlags flags = fill_flags;
+   flags.setColor(sk_color);
+ 
+-  DrawRRect(SkRRect(rrect), flags, auto_dark_mode);
++  // DrawRRect(SkRRect(rrect), flags, auto_dark_mode);
++  DrawPath(path, flags, auto_dark_mode);
+ }
+ 
+ namespace {
+@@ -896,6 +1121,8 @@ void GraphicsContext::FillDRRect(const FloatRoundedRect& outer,
+                                  const AutoDarkMode& auto_dark_mode) {
+   DCHECK(canvas_);
+ 
++  // TODO: smooth rounded rect
++
+   const cc::PaintFlags& fill_flags = ImmutableState()->FillFlags();
+   const SkColor4f sk_color = color.toSkColor4f();
+   if (!IsSimpleDRRect(outer, inner)) {
+@@ -979,7 +1206,8 @@ void GraphicsContext::ClipRoundedRect(const FloatRoundedRect& rrect,
+     return;
+   }
+ 
+-  ClipRRect(SkRRect(rrect), should_antialias, clip_op);
++  ClipPath(GetRoundedPath(rrect), should_antialias, clip_op);
++  // ClipRRect(SkRRect(rrect), should_antialias, clip_op);
+ }
+ 
+ void GraphicsContext::ClipOut(const Path& path_to_clip) {
+@@ -1013,7 +1241,8 @@ void GraphicsContext::ClipRRect(const SkRRect& rect,
+                                 AntiAliasingMode aa,
+                                 SkClipOp op) {
+   DCHECK(canvas_);
+-  canvas_->clipRRect(rect, op, aa == kAntiAliased);
++  // canvas_->clipRRect(rect, op, aa == kAntiAliased);
++  canvas_->clipPath(GetRoundedPath(FloatRoundedRect(rect)), op, aa == kAntiAliased);
+ }
+ 
+ void GraphicsContext::Rotate(float angle_in_radians) {
