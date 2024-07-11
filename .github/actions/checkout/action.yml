@@ -67,8 +67,6 @@ runs:
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
-    env:
-      PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
     run: |
       gclient config \
         --name "src/electron" \
