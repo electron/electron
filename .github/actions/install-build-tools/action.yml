@@ -7,6 +7,6 @@ runs:
     shell: bash
     run: |
       echo "GH ACTION IS: $GITHUB_ACTIONS; GITHUB_REF_NAME: $GITHUB_REF_NAME"
-      export BUILD_TOOLS_SHA=47d4bb016f47d89938898c794db80b9f98d78ad7
+      export BUILD_TOOLS_SHA=026fdd657e8b2d831d117b43c85802c2f0d9c44f
       npm i -g @electron/build-tools
       e auto-update disable
