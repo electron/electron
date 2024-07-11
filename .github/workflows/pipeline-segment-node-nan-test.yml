@@ -152,7 +152,7 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
-    - name: Run Node.js Tests
+    - name: Run Nan Tests
       run: |
         cd src
         node electron/script/nan-spec-runner.js
