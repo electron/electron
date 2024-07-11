@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 01c10e95f31595d8e9e40d6fdcc75bd66b75efe8..8377944c3253b546dbb743a1053c79b162c05019 100644
+index 860360163180941edec51ff24d8d1a8403144123..2c7d90f6da681639b501b16936c866fe26fdb0a6 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -39,7 +39,6 @@
@@ -143,7 +143,7 @@ index 01c10e95f31595d8e9e40d6fdcc75bd66b75efe8..8377944c3253b546dbb743a1053c79b1
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 62cbdc561d99e87feecc6f204ece7d1b8fcdee59..98d1ce1d2f4c2443cde417911249f10027f6eb0e 100644
+index d48fd46095400bf5eeaa874eaa5d8e6f05b4e7da..7789be00bbc503d8278e38fcb1e7feebac9ff325 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -17,12 +17,13 @@
@@ -171,9 +171,9 @@ index 62cbdc561d99e87feecc6f204ece7d1b8fcdee59..98d1ce1d2f4c2443cde417911249f100
  #include "chrome/browser/enterprise/connectors/analysis/content_analysis_delegate.h"
  #include "components/enterprise/common/files_scan_data.h"
  #endif
-@@ -334,6 +336,119 @@ class ChromeFileSystemAccessPermissionContext
-   // chrome://settings/content/filesystem UI.
-   static constexpr char kPermissionPathKey[] = "path";
+@@ -337,6 +339,119 @@ class ChromeFileSystemAccessPermissionContext
+   // KeyedService:
+   void Shutdown() override;
  
 +  // Sentinel used to indicate that no PathService key is specified for a path in
 +  // the struct below.
@@ -291,7 +291,7 @@ index 62cbdc561d99e87feecc6f204ece7d1b8fcdee59..98d1ce1d2f4c2443cde417911249f100
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -353,7 +468,7 @@ class ChromeFileSystemAccessPermissionContext
+@@ -356,7 +471,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  

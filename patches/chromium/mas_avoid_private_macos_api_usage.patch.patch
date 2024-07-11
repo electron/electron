@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a9159e6d98b2e127aa65cf554351c27c22ce80ed..9af321891206bb765410f5aea711b0d66edbc0dd 100644
+index dc3bd4234c9821223e3198a97dca292519b53a53..429d632d054abb53e8fd8e25405317f29ac58fad 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1051,6 +1051,7 @@ component("base") {
+@@ -1045,6 +1045,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -471,7 +471,7 @@ index 400ca8001ef49ca55c98861eea7cda02c58a528c..aad032aa52be6dc49f3cb3d5313b1717
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index b1dd00ab48e22e1e248728e0400b00e92553e8fd..253670f014c4fc13ad99d674e8dcbf145c17fcc7 100644
+index 9485916338d16e11acbb56ea0b9b34e749db0281..45df87ec3bd98474513cef590b8312f8bd976947 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -20,7 +20,9 @@
@@ -500,7 +500,7 @@ index b1dd00ab48e22e1e248728e0400b00e92553e8fd..253670f014c4fc13ad99d674e8dcbf14
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -647,6 +651,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -646,6 +650,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -508,7 +508,7 @@ index b1dd00ab48e22e1e248728e0400b00e92553e8fd..253670f014c4fc13ad99d674e8dcbf14
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -675,6 +680,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -674,6 +679,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -749,7 +749,7 @@ index c28458b5ddc8ef74e82125a983344b1daf65dda6..48e6d48962a2228d26444dbdbcfa1637
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index cfb175b6985ed81021b236fc2ce14064e23beba7..81116f63eb9443165721064c26bacc710c454684 100644
+index 2e53ca913d9b4380792df82f73dcfdd5177c0214..edb1e1a3283ee1978d64527c29ad207e9f06153a 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -249,6 +249,7 @@ component("bluetooth") {
@@ -1644,7 +1644,7 @@ index e92ca79bebffde146bd0d8778f126651f44e527e..298f06095ea598348eec489b0a4be737
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 8dc2fc9768da17f8635dce99da218450b231cafe..a88e24a51070ba906d3b858f8492ebe39d372c69 100644
+index fb7b64fc07b41c802d9c8c39a1a681c4c95465f8..22eb36e3b689400cb20922cf2b380fd7a69782dc 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -345,7 +345,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -1683,7 +1683,7 @@ index 8dc2fc9768da17f8635dce99da218450b231cafe..a88e24a51070ba906d3b858f8492ebe3
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1459,17 +1469,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1460,17 +1470,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1704,7 +1704,7 @@ index 8dc2fc9768da17f8635dce99da218450b231cafe..a88e24a51070ba906d3b858f8492ebe3
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1482,6 +1495,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1483,6 +1496,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
