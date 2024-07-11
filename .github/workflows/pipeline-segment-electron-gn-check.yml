@@ -60,6 +60,7 @@ jobs:
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
+        echo "GITHUB_ACTIONS IS: $GITHUB_ACTIONS; GITHUB_REF_NAME: $GITHUB_REF_NAME"
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
     - name: Get Depot Tools
       timeout-minutes: 5
