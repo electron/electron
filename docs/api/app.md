@@ -1277,7 +1277,7 @@ Returns `Object`:
   * `scope` string _Windows_ - one of `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
   * `enabled` boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
-### `app.setLoginItemSettings(settings)` _macOS_ _Windows_ _Linux_
+### `app.setLoginItemSettings(settings)`
 
 * `settings` Object
   * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
