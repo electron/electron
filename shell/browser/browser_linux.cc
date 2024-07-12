@@ -196,13 +196,13 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   }
 
   writer.CloseContainer(&options_writer);
-  
+
   std::unique_ptr<dbus::Response> response =
       object_proxy
           ->CallMethodAndBlock(&method_call,
                                dbus::ObjectProxy::TIMEOUT_USE_DEFAULT)
           .value_or(nullptr);
-  
+
   bus->ShutdownAndBlock();
 }
 
