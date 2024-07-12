@@ -6,6 +6,15 @@
 
 #include <fcntl.h>
 #include <stdlib.h>
+#include <iostream>
+#include <fstream> 
+using namespace std;
+
+
+#include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/functional/bind.h"
+#include "base/logging.h"
 
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -29,18 +38,14 @@
 
 namespace electron {
 
+namespace {
+
 const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
 const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
 const char kFreedesktopPortalBackground[] = "org.freedesktop.portal.Background";
 
-namespace {
-
 const char kXdgSettings[] = "xdg-settings";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
-
-scoped_refptr<dbus::Bus> bus_;
-raw_ptr<dbus::ObjectProxy> dbus_proxy_ = nullptr;
-raw_ptr<dbus::ObjectProxy> object_proxy_ = nullptr;
 
 // The use of the ForTesting flavors is a hack workaround to avoid having to
 // patch these as friends into the associated guard classes.
@@ -159,26 +164,46 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
       kFreedesktopPortalName, dbus::ObjectPath(kFreedesktopPortalPath));
   dbus::MethodCall method_call(kFreedesktopPortalBackground,
                                "RequestBackground");
-
   dbus::MessageWriter writer(&method_call);
   writer.AppendString("");
 
   dbus::MessageWriter options_writer(nullptr);
   writer.OpenArray("{sv}", &options_writer);
 
+  // whether to start the app at login, if false this will
+  // remove the app from the autostart list
   dbus::MessageWriter autostart_writer(nullptr);
   options_writer.OpenDictEntry(&autostart_writer);
   autostart_writer.AppendString("autostart");
   autostart_writer.AppendVariantOfBool(settings.open_at_login);
   options_writer.CloseContainer(&autostart_writer);
 
-  writer.CloseContainer(&options_writer);
+  if (!settings.args.empty()) {
+    // the commandline args to start the app with
+    dbus::MessageWriter commandline_writer(nullptr);
+    options_writer.OpenDictEntry(&commandline_writer);
+    commandline_writer.AppendString("commandline");
+    dbus::MessageWriter commandline_variants_writer(nullptr);
+    commandline_writer.OpenVariant("as", &commandline_variants_writer);
+    dbus::MessageWriter commandline_args_writer(nullptr);
+    commandline_variants_writer.OpenArray("s", &commandline_args_writer);
+    for (const auto& arg : settings.args) {
+      commandline_args_writer.AppendString(base::UTF16ToUTF8(arg));
+    }
+    commandline_variants_writer.CloseContainer(&commandline_args_writer);
+    commandline_writer.CloseContainer(&commandline_variants_writer);
+    options_writer.CloseContainer(&commandline_writer);
+  }
 
+  writer.CloseContainer(&options_writer);
+  
   std::unique_ptr<dbus::Response> response =
       object_proxy
           ->CallMethodAndBlock(&method_call,
                                dbus::ObjectProxy::TIMEOUT_USE_DEFAULT)
           .value_or(nullptr);
+  
+  bus->ShutdownAndBlock();
 }
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
