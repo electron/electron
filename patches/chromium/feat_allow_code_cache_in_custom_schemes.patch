@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 3e13750d4c89037f45b6885ee74f862a33f6afec..a1793e9a9e88e6a88ca2566a6cc2e2071599929c 100644
+index 17b580b9405d93f099439c462d89ec2efd596383..a958044faa3d286e0031f47e7941e60c2de7309a 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -12,6 +12,7 @@
@@ -20,7 +20,7 @@ index 3e13750d4c89037f45b6885ee74f862a33f6afec..a1793e9a9e88e6a88ca2566a6cc2e207
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -35,6 +36,7 @@
+@@ -36,6 +37,7 @@
  #include "net/http/http_cache.h"
  #include "third_party/blink/public/common/scheme_registry.h"
  #include "url/gurl.h"
@@ -28,7 +28,7 @@ index 3e13750d4c89037f45b6885ee74f862a33f6afec..a1793e9a9e88e6a88ca2566a6cc2e207
  
  using storage::BigIOBuffer;
  
-@@ -47,7 +49,7 @@ constexpr char kSeparator[] = " \n";
+@@ -48,7 +50,7 @@ constexpr char kSeparator[] = " \n";
  
  // We always expect to receive valid URLs that can be used as keys to the code
  // cache. The relevant checks (for ex: resource_url is valid, origin_lock is
@@ -37,7 +37,7 @@ index 3e13750d4c89037f45b6885ee74f862a33f6afec..a1793e9a9e88e6a88ca2566a6cc2e207
  //
  // This function doesn't enforce anything in the production code. It is here
  // to make the assumptions explicit and to catch any errors when DCHECKs are
-@@ -57,33 +59,55 @@ void CheckValidKeys(const GURL& resource_url,
+@@ -58,33 +60,55 @@ void CheckValidKeys(const GURL& resource_url,
                      GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
@@ -54,13 +54,12 @@ index 3e13750d4c89037f45b6885ee74f862a33f6afec..a1793e9a9e88e6a88ca2566a6cc2e207
 -  DCHECK(resource_url.SchemeIsHTTPOrHTTPS() ||
 -         resource_url_is_chrome_or_chrome_untrusted ||
 -         blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.scheme()));
--
+ 
 -  // |origin_lock| should be either empty or should have
 -  // Http/Https/chrome/chrome-untrusted schemes and it should not be a URL with
 -  // opaque origin. Empty origin_locks are allowed when the renderer is not
 -  // locked to an origin.
 -  bool origin_lock_is_chrome_or_chrome_untrusted =
-+
 +  const bool resource_url_embedder =
 +      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme());
 +  DCHECK(resource_url_http || resource_url_webui || resource_url_embedder);
@@ -81,16 +80,15 @@ index 3e13750d4c89037f45b6885ee74f862a33f6afec..a1793e9a9e88e6a88ca2566a6cc2e207
 -        origin_lock_is_chrome_or_chrome_untrusted ||
 -        blink::CommonSchemeRegistry::IsExtensionScheme(origin_lock.scheme())) &&
 -       !url::Origin::Create(origin_lock).opaque()));
--
++  const bool origin_lock_for_embedder =
++      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
+ 
 -  // The chrome and chrome-untrusted schemes are only used with the WebUI
 -  // code cache type.
 -  DCHECK_EQ(origin_lock_is_chrome_or_chrome_untrusted,
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
 -  DCHECK_EQ(resource_url_is_chrome_or_chrome_untrusted,
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
-+  const bool origin_lock_for_embedder =
-+      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
-+
 +  DCHECK(origin_lock_empty || ((origin_lock_for_http || origin_lock_for_webui ||
 +                                origin_lock_for_embedder) &&
 +                               !url::Origin::Create(origin_lock).opaque()));

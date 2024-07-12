@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4f90bd8f6725a5b4dc8004305594fb8220551ca4..f22cba6c661f3895d6b1e4939069117b6b3a3366 100644
+index 2ed6d8f4bcb96f17aec78867fa5469c6dfe03b17..1674fe4884f20b290db1d4015dcda5fc3b5a5d40 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1046,6 +1046,7 @@ component("base") {
@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8187193afa6d2870e7f6f56270e1d359822a2fd6..4da1cb1c56b44c59f51c7c60644f9d26d51af581 100644
+index b6a9f701ae54266e7037c3be4d1e03d0c12b9204..fa457892ac5554ab72b86295e639bae25b1b31ea 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {

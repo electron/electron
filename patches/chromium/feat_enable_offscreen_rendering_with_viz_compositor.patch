@@ -520,7 +520,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 08d75b0cb6c5af16dfce3da3332f1c1c2a059607..c7bf184fcd4fc9d4affcf0f8d84f2c658c94ceab 100644
+index 5b2125737667959e754068e080478b73507fcf29..c7cc33e4565f74d64172068b2383f12d9c76495e 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -595,7 +595,7 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 3ede19b5c518c87b70333a8c94d958dc9f12b284..3daf805b8720915f6dcc7ef14afa736d643f228a 100644
+index 0462e5b8727577c252048462685132685d308e35..c5a4ffe8ab668d408bc8f3dc1db0371fa363f32e 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -34,6 +34,7 @@ struct RootCompositorFrameSinkParams {
