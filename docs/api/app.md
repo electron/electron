@@ -1324,7 +1324,7 @@ app.setLoginItemSettings({
 
 For more information about setting different services as login items on macOS 13 and up, see [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice?language=objc).
 
-On Linux, this uses the Background XDG desktop portal. For mor information see [`Background Portal`](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Background.html#background)
+On Linux, this uses the Background XDG desktop portal. For more information, see [`Background Portal`](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Background.html#background)
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
