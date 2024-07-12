@@ -44,6 +44,11 @@ on:
         required: true
         type: string
         default: '0'
+      strip-binaries: 
+        description: 'Strip the binaries before release (Linux only)'
+        required: false
+        type: boolean
+        default: false
       is-asan: 
         description: 'Building the Address Sanitizer (ASan) Linux build'
         required: false
@@ -191,6 +196,7 @@ jobs:
         artifact-platform: ${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
+        strip-binaries: '${{ inputs.strip-binaries }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
