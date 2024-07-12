@@ -6,7 +6,6 @@ runs:
   - name: Install Build Tools
     shell: bash
     run: |
-      echo "GH ACTION IS: $GITHUB_ACTIONS; GITHUB_REF_NAME: $GITHUB_REF_NAME"
-      export BUILD_TOOLS_SHA=15a13b8994757b2ada2bc246c22622fbbe94d92d
+      export BUILD_TOOLS_SHA=d5b87591842be19058e8d75d2c5b7f1fabe9f450
       npm i -g @electron/build-tools
       e auto-update disable
