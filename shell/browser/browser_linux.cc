@@ -6,20 +6,10 @@
 
 #include <fcntl.h>
 #include <stdlib.h>
-#include <iostream>
-#include <fstream> 
-using namespace std;
-
-
-#include "base/command_line.h"
-#include "base/files/file_path.h"
-#include "base/functional/bind.h"
-#include "base/logging.h"
 
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
-#include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
