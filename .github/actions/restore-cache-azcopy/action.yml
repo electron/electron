@@ -33,7 +33,7 @@ runs:
           exit 1
         fi
         azcopy copy --log-level=ERROR \
-          "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+          "https://electronsrcgha.file.core.windows.net/source/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
   - name: Clean SAS Key
     shell: bash
     run: rm -f sas-token
