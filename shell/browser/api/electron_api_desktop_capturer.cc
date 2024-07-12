@@ -32,7 +32,6 @@
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
-#include "ui/display/win/screen_win.h"
 #elif BUILDFLAG(IS_OZONE_X11)
 #include "base/logging.h"
 #include "ui/base/x/x11_display_util.h"
