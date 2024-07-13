@@ -19,7 +19,7 @@ on:
 
 jobs:
   checkout-linux:
-    runs-on: aks-linux-large
+    runs-on: electron-arc-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -42,7 +42,7 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: aks-linux-large
+      build-runs-on: electron-arc-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
@@ -57,7 +57,7 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: aks-linux-large
+      build-runs-on: electron-arc-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm
@@ -72,7 +72,7 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: aks-linux-large
+      build-runs-on: electron-arc-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64
