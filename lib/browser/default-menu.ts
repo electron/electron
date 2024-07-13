@@ -1,7 +1,7 @@
 import { app, Menu } from 'electron/main';
 import { shell } from 'electron/common';
 
-console.log('in default-menu.ts');
+// console.log('in default-menu.ts');
 
 const isMac = process.platform === 'darwin';
 
