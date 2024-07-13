@@ -20,7 +20,7 @@ on:
 
 jobs:
   checkout-macos:
-    runs-on: aks-linux-large
+    runs-on: electron-arc-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
