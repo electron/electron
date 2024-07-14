@@ -8,7 +8,6 @@ const fs = require('node:fs');
 const minimist = require('minimist');
 const path = require('node:path');
 const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
-const os = require('node:os');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -222,7 +221,7 @@ const LINTERS = [{
       }
 
       // Read the patch list
-      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split(os.EOL);
+      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
       const patchFileSet = new Set(patchFileList);
       patchFileList.reduce((seen, file) => {
         if (seen.has(file)) {
