@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { Display, screen, desktopCapturer } from 'electron/main';
-import { ifit } from './lib/spec-helpers';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {
@@ -24,14 +23,14 @@ describe('screen module', () => {
       }
     });
 
-    // desktopCapturer.getSources does not work as expected in Windows CI.
-    ifit(process.platform !== 'win32')('returns displays with IDs matching desktopCapturer source display IDs', async () => {
+    it('returns displays with IDs matching desktopCapturer source display IDs', async () => {
       const displayIds = screen.getAllDisplays().map(d => `${d.id}`);
 
       const sources = await desktopCapturer.getSources({ types: ['screen'] });
       const sourceIds = sources.map(s => s.display_id);
 
-      expect(displayIds).to.have.members(sourceIds);
+      expect(displayIds).to.have.length(sources.length);
+      expect(displayIds).to.have.same.members(sourceIds);
     });
   });
 
