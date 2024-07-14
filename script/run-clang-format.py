@@ -134,6 +134,7 @@ def run_clang_format_diff(args, file_name):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               universal_newlines=True,
+                              encoding='utf-8',
                               shell=True) as proc:
             outs = list(proc.stdout.readlines())
             errs = list(proc.stderr.readlines())
@@ -186,10 +187,7 @@ def colorize(diff_lines):
 def print_diff(diff_lines, use_color):
     if use_color:
         diff_lines = colorize(diff_lines)
-    if sys.version_info[0] < 3:
-        sys.stdout.writelines((l.encode('utf-8') for l in diff_lines))
-    else:
-        sys.stdout.writelines(diff_lines)
+    sys.stdout.writelines(diff_lines)
 
 
 def print_trouble(prog, message, use_colors):
