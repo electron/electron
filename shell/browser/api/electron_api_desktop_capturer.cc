@@ -399,28 +399,37 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     if (using_directx_capturer_) {
       std::vector<std::string> device_names;
       // Crucially, this list of device names will be in the same order as
-      // |media_list_sources|.
+      // |screen_sources|.
       if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
               &device_names)) {
         HandleFailure();
         return;
       }
+      DCHECK_EQ(device_names.size(), screen_sources.size());
 
       std::vector<HMONITOR> monitors;
       EnumDisplayMonitors(nullptr, nullptr, EnumDisplayMonitorsCallback,
                           reinterpret_cast<LPARAM>(&monitors));
 
-      std::vector<std::pair<std::string, MONITORINFOEX>> pairs;
-      for (const auto& device_name : device_names) {
-        std::wstring wide_device_name;
-        base::UTF8ToWide(device_name.c_str(), device_name.size(),
-                         &wide_device_name);
-        for (const auto monitor : monitors) {
-          MONITORINFOEX monitorInfo{{sizeof(MONITORINFOEX)}};
-          if (GetMonitorInfo(monitor, &monitorInfo)) {
-            if (wide_device_name == monitorInfo.szDevice)
-              pairs.push_back(std::make_pair(device_name, monitorInfo));
-          }
+      base::flat_map<std::string, int64_t> device_name_to_id;
+      device_name_to_id.reserve(monitors.size());
+      for (auto* monitor : monitors) {
+        MONITORINFOEX monitorInfo{{sizeof(MONITORINFOEX)}};
+        if (!GetMonitorInfo(monitor, &monitorInfo)) {
+          continue;
+        }
+
+        device_name_to_id[base::WideToUTF8(monitorInfo.szDevice)] =
+            display::win::internal::DisplayInfo::DisplayIdFromMonitorInfo(
+                monitorInfo);
+      }
+
+      int device_name_index = 0;
+      for (auto& source : screen_sources) {
+        const auto& device_name = device_names[device_name_index++];
+        if (auto id_iter = device_name_to_id.find(device_name);
+            id_iter != device_name_to_id.end()) {
+          source.display_id = base::NumberToString(id_iter->second);
         }
       }
     }
