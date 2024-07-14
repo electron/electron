@@ -424,6 +424,7 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   renderer_prefs->can_accept_load_drops = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->in_forced_colors = native_theme->InForcedColorsMode();
   prefs->preferred_color_scheme =
       native_theme->ShouldUseDarkColors()
           ? blink::mojom::PreferredColorScheme::kDark

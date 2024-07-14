@@ -15,7 +15,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: aks-linux-medium
+    runs-on: electron-arc-linux-amd64-4core
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:

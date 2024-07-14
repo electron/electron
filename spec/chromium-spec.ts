@@ -1770,12 +1770,46 @@ describe('chromium features', () => {
       expect(labels.some((l: any) => l)).to.be.true();
     });
 
-    it('does not return labels of enumerated devices when permission denied', async () => {
+    it('does not return labels of enumerated devices when all permission denied', async () => {
       session.defaultSession.setPermissionCheckHandler(() => false);
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
       const labels = await w.webContents.executeJavaScript('navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))');
       expect(labels.some((l: any) => l)).to.be.false();
+    });
+
+    it('does not return labels of enumerated audio devices when permission denied', async () => {
+      session.defaultSession.setPermissionCheckHandler((wc, permission, origin, { mediaType }) => {
+        return permission !== 'media' || mediaType !== 'audio';
+      });
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const devices = await w.webContents.executeJavaScript(
+        `navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => {
+          return ({ label: d.label, kind: d.kind })
+        }));
+      `);
+      const audioDevices = devices.filter((d: any) => d.kind === 'audioinput');
+      expect(audioDevices.some((d: any) => d.label)).to.be.false();
+      const videoDevices = devices.filter((d: any) => d.kind === 'videoinput');
+      expect(videoDevices.some((d: any) => d.label)).to.be.true();
+    });
+
+    it('does not return labels of enumerated video devices when permission denied', async () => {
+      session.defaultSession.setPermissionCheckHandler((wc, permission, origin, { mediaType }) => {
+        return permission !== 'media' || mediaType !== 'video';
+      });
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const devices = await w.webContents.executeJavaScript(
+        `navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => {
+          return ({ label: d.label, kind: d.kind })
+        }));
+      `);
+      const audioDevices = devices.filter((d: any) => d.kind === 'audioinput');
+      expect(audioDevices.some((d: any) => d.label)).to.be.true();
+      const videoDevices = devices.filter((d: any) => d.kind === 'videoinput');
+      expect(videoDevices.some((d: any) => d.label)).to.be.false();
     });
 
     it('returns the same device ids across reloads', async () => {

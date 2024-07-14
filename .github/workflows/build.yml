@@ -81,7 +81,7 @@ jobs:
   checkout-macos:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
-    runs-on: aks-linux-large
+    runs-on: electron-arc-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
@@ -106,7 +106,7 @@ jobs:
   checkout-linux:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-linux}}
-    runs-on: aks-linux-large
+    runs-on: electron-arc-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
@@ -171,8 +171,8 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
     with:
-      build-runs-on: aks-linux-large
-      test-runs-on: aks-linux-medium
+      build-runs-on: electron-arc-linux-amd64-32core
+      test-runs-on: electron-arc-linux-amd64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       test-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
@@ -191,8 +191,8 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
-      build-runs-on: aks-linux-large
-      test-runs-on: aks-linux-medium
+      build-runs-on: electron-arc-linux-amd64-32core
+      test-runs-on: electron-arc-linux-amd64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       test-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
@@ -212,8 +212,8 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
-      build-runs-on: aks-linux-large
-      test-runs-on: aks-linux-arm-medium
+      build-runs-on: electron-arc-linux-amd64-32core
+      test-runs-on: electron-arc-linux-arm64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
       target-platform: linux
@@ -232,8 +232,8 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     with:
-      build-runs-on: aks-linux-large
-      test-runs-on: aks-linux-arm-medium
+      build-runs-on: electron-arc-linux-amd64-32core
+      test-runs-on: electron-arc-linux-arm64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux

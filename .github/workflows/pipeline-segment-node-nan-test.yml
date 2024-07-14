@@ -37,7 +37,7 @@ env:
 jobs:
   node-tests:
     name: Run Node.js Tests
-    runs-on: aks-linux-medium-plus
+    runs-on: electron-arc-linux-amd64-8core
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -101,7 +101,7 @@ jobs:
         done
   nan-tests:
     name: Run Nan Tests
-    runs-on: aks-linux-medium
+    runs-on: electron-arc-linux-amd64-4core
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -152,7 +152,7 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
-    - name: Run Node.js Tests
+    - name: Run Nan Tests
       run: |
         cd src
         node electron/script/nan-spec-runner.js
