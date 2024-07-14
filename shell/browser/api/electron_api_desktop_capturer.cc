@@ -420,8 +420,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
           continue;
         }
 
-        std::wstring wide_device_name(monitorInfo.szDevice);
-        device_name_to_id[base::WideToUTF8(wide_device_name)] =
+        device_name_to_id[base::WideToUTF8(monitorInfo.szDevice)] =
             display::win::internal::DisplayInfo::DisplayIdFromMonitorInfo(
                 monitorInfo);
       }
