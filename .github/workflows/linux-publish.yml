@@ -49,6 +49,7 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -64,6 +65,7 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -79,5 +81,6 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
