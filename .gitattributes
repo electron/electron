@@ -22,6 +22,7 @@ patches/**/.patches merge=union
 *.md text eol=lf
 *.mm text eol=lf
 *.mojom text eol=lf
+*.patches text eol=lf
 *.proto text eol=lf
 *.py text eol=lf
 *.ps1 text eol=lf
