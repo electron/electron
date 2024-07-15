@@ -889,13 +889,21 @@ describe('session module', () => {
           }
         });
 
+        const today = Math.floor(Date.now() / 1000);
         const item = await downloadDone;
         expect(item.getState()).to.equal('completed');
         expect(item.getFilename()).to.equal('mock.pdf');
         expect(item.getMimeType()).to.equal('application/pdf');
         expect(item.getReceivedBytes()).to.equal(mockPDF.length);
         expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getPercentComplete()).to.equal(100);
+        expect(item.getCurrentBytesPerSecond()).to.equal(0);
         expect(item.getContentDisposition()).to.equal(contentDisposition);
+
+        const start = item.getStartTime();
+        const end = item.getEndTime();
+        expect(start).to.be.greaterThan(today);
+        expect(end).to.be.greaterThan(start);
       });
 
       it('throws when called with invalid headers', () => {
