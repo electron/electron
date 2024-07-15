@@ -21,10 +21,10 @@ index d5b17db86f43dd1130e533a94b1c35d6d50e2d7b..77df1686a21cac48cd413fe47a5c92a9
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 30dbc20dd9d51c293b4761a69fe59ca890cc29e2..0a8fef32b881a03abdeb5a8e8b04e6526948ee53 100644
+index deaa98a79066eddf81bf3f9bc2833f8b2437768f..ec33f2bbb4a434115fd0fc72ae9b9b8c1ffad3f9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4697,6 +4697,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4683,6 +4683,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 30dbc20dd9d51c293b4761a69fe59ca890cc29e2..0a8fef32b881a03abdeb5a8e8b04e652
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4738,12 +4744,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4724,12 +4730,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -148,10 +148,10 @@ index 138761070b63c16ea440f9eee98fe1139e7c0b09..f7bfa43693cff1a55a1e59950f1ecb06
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index a831454249375984720056f584b38e1697d3838b..19afdb9a3274b6ab830f143686c04ceb828eb15a 100644
+index b54b925f42f1008fdb5f6ee733b44d849c4d2f69..7e3926b15d52542f1dc012941e41de54a72aa33f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6666,6 +6666,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6659,6 +6659,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -210,7 +210,7 @@ index 7c901dcc9f171a936ee6eb41dfd899a095a8a915..71748ad3a28946f816e2001ba78bbcb5
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 538f959a4e3e1e77c87e22545bbd28f10b70708d..59a4ca0629066fd7cb58056a147627c842bb7f1a 100644
+index 9bd924bbbdba90891d1bcfc25995f153c81833e4..27a43b8896f55fa5c14299028f84aa40993bd1e7 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2243,6 +2243,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

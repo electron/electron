@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 90876082a2683bbcf0bea57a5e491c2aee419911..1ea51a48af70552085acf99ef07576978ea02d4a 100644
+index 35e7fdec178193bc38fb4e52830579168cf217ce..e0015540b429dec99e8a0ab9d539095240d57fea 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -1000,7 +1000,6 @@ if (is_win) {
+@@ -1001,7 +1001,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 90876082a2683bbcf0bea57a5e491c2aee419911..1ea51a48af70552085acf99ef0757697
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload",
        "//ui/base:ui_base_unittests",
-@@ -1009,6 +1008,10 @@ if (is_win) {
+@@ -1010,6 +1009,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -654,7 +654,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 4d9e8aea92b8ad2735dde3e2e7efdf359ba97eab..8d013fa8f4801175dc58f6119b9cc7aa29aee5e4 100644
+index f039e0f694e7db6b14d222b917505ba2c02c7106..6b8493163997718d498e217bcfd261e840d79377 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -861,10 +861,10 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fa457892ac5554ab72b86295e639bae25b1b31ea..131962211b97f12218cf3c3eea6b68f46624bb27 100644
+index 1339d0cadf7bdbf913f1a89ba014429e8c92d556..ca1be92c9f8a2288c18db72a6f855cb5aeac1264 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2989,8 +2989,9 @@ source_set("browser") {
+@@ -2982,8 +2982,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

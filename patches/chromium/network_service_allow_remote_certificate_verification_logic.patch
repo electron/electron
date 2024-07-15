@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index cdb2b72e84c15a85424e52d53a71c4e5ff7547f5..198a0e9359a0402abb380f8d701b1e6bb377f14b 100644
+index 7a4a6bc12ec68dfdb341bc71e14e2ea7dd1bd918..2740f35751777f35c6c974badb1fd23eeb4dacc7 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -155,6 +155,11 @@
+@@ -156,6 +156,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index cdb2b72e84c15a85424e52d53a71c4e5ff7547f5..198a0e9359a0402abb380f8d701b1e6b
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -579,6 +584,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
+@@ -580,6 +585,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index cdb2b72e84c15a85424e52d53a71c4e5ff7547f5..198a0e9359a0402abb380f8d701b1e6b
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -942,6 +1040,13 @@ void NetworkContext::SetClient(
+@@ -943,6 +1041,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index cdb2b72e84c15a85424e52d53a71c4e5ff7547f5..198a0e9359a0402abb380f8d701b1e6b
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2440,6 +2545,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2441,6 +2546,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index cdb2b72e84c15a85424e52d53a71c4e5ff7547f5..198a0e9359a0402abb380f8d701b1e6b
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 15941a7edef9204c5e60a3c964a573d4b283a69f..bbba7c7325d0b1fd6fdbc4454b9c0bd4564c4473 100644
+index ce4d8ac09cfb22a2355e536fc246b59acb76e271..544258d9795558e209d5a7a2c5d934f6d254e09f 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -115,6 +115,7 @@ class URLMatcher;

@@ -433,10 +433,10 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..0cdb0def975e457651771b43fd543261
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe2b74eda9 100644
+index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06baa52bb7 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -2068,15 +2068,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2062,15 +2062,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -459,7 +459,7 @@ index 05dbd641ea4af9276be7f89627e4075153e667a9..a50cc9cd1502d7aaebdb7029fc5792fe
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index b6a9f701ae54266e7037c3be4d1e03d0c12b9204..fa457892ac5554ab72b86295e639bae25b1b31ea 100644
+index c7d5c4a47f6150024174628352cdc3b4880e0646..1339d0cadf7bdbf913f1a89ba014429e8c92d556 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -543,7 +543,7 @@ index 940adeedcd38062b44afdeda1b41c89394e5e420..0809615a9818da6c6b5fd8363b168336
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 71fec36cef95fcb24960fde3fa7216a345aeb4d7..b1630ac4289f23c5dd36a6bf6e57c911d8cede2a 100644
+index 078f33c9c4b628b4427bb152912bf2a221e29efb..222a9cd87290efb0e30b503f9b6aaba122019bbe 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -1517,10 +1517,10 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index cb0c8581489dfaf09e62182ca5069a4ab9cf3e31..7317b3b313b407cfd76c769f729599610eff61de 100644
+index 2bb34b94116ad47717e2ec14c328f25dc807eff8..686f92a8cd9f11483bd9afefe048e0e93eadd160 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -71,6 +71,10 @@ component("display") {
+@@ -72,6 +72,10 @@ component("display") {
        "mac/display_link_mac.mm",
        "mac/screen_mac.mm",
      ]
