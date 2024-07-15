@@ -35,9 +35,10 @@ jobs:
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
-      - run: npm install mdast-util-from-markdown@2.0.0 unist-util-select@5.1.0 semver@7.6.0
+      - run: npm install @electron/fiddle-core@1.3.3 mdast-util-from-markdown@2.0.0 unist-util-select@5.1.0 semver@7.6.0
       - name: Add labels
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        id: add-labels
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
         with:
@@ -71,6 +72,15 @@ jobs:
                 } catch {}
 
                 if (labelExists) {
+                  // Check if it's an unsupported major
+                  const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
+                  const versions = await ElectronVersions.create(undefined, { ignoreCache: true });
+
+                  if (!versions.supportedMajors.includes(major)) {
+                    core.setOutput('unsupportedMajor', true);
+                    labels.push('blocked/need-info ❌');
+                  }
+
                   labels.push(versionLabel);
                 }
               }
@@ -89,3 +99,17 @@ jobs:
                 labels,
               });
             }
+      - name: Create unsupported major comment
+        if: ${{ steps.add-labels.outputs.unsupportedMajor }}
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
+        with:
+          actions: 'create-comment'
+          token: ${{ steps.generate-token.outputs.token }}
+          body: |
+            <!-- end-of-life -->
+
+            Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
+            
+            The version of Electron reported in this issue has reached end-of-life and is [no longer supported](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline). If you're still experiencing this issue on a [supported version](https://www.electronjs.org/releases/stable) of Electron, please update this issue to reflect that version of Electron.
+
+            Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-info%20%E2%9D%8C label for this reason. This issue will be closed in 10 days if the above is not addressed.
