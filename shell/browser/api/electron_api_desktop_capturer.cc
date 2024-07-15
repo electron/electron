@@ -167,6 +167,16 @@ std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
                          : nullptr;
 }
 
+#if BUILDFLAG(IS_WIN)
+BOOL CALLBACK EnumDisplayMonitorsCallback(HMONITOR monitor,
+                                          HDC hdc,
+                                          LPRECT rect,
+                                          LPARAM data) {
+  reinterpret_cast<std::vector<HMONITOR>*>(data)->push_back(monitor);
+  return TRUE;
+}
+#endif
+
 }  // namespace
 
 namespace gin {
@@ -389,18 +399,38 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     if (using_directx_capturer_) {
       std::vector<std::string> device_names;
       // Crucially, this list of device names will be in the same order as
-      // |media_list_sources|.
+      // |screen_sources|.
       if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
               &device_names)) {
         HandleFailure();
         return;
       }
+      DCHECK_EQ(device_names.size(), screen_sources.size());
+
+      std::vector<HMONITOR> monitors;
+      EnumDisplayMonitors(nullptr, nullptr, EnumDisplayMonitorsCallback,
+                          reinterpret_cast<LPARAM>(&monitors));
+
+      base::flat_map<std::string, int64_t> device_name_to_id;
+      device_name_to_id.reserve(monitors.size());
+      for (auto* monitor : monitors) {
+        MONITORINFOEX monitorInfo{{sizeof(MONITORINFOEX)}};
+        if (!GetMonitorInfo(monitor, &monitorInfo)) {
+          continue;
+        }
+
+        device_name_to_id[base::WideToUTF8(monitorInfo.szDevice)] =
+            display::win::internal::DisplayInfo::DisplayIdFromMonitorInfo(
+                monitorInfo);
+      }
 
       int device_name_index = 0;
       for (auto& source : screen_sources) {
         const auto& device_name = device_names[device_name_index++];
-        const int64_t device_id = base::PersistentHash(device_name);
-        source.display_id = base::NumberToString(device_id);
+        if (auto id_iter = device_name_to_id.find(device_name);
+            id_iter != device_name_to_id.end()) {
+          source.display_id = base::NumberToString(id_iter->second);
+        }
       }
     }
 #elif BUILDFLAG(IS_MAC)

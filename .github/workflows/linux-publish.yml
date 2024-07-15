@@ -19,7 +19,7 @@ on:
 
 jobs:
   checkout-linux:
-    runs-on: aks-linux-large
+    runs-on: electron-arc-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -42,13 +42,14 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: aks-linux-large
+      build-runs-on: electron-arc-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -57,13 +58,14 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: aks-linux-large
+      build-runs-on: electron-arc-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -72,12 +74,13 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: aks-linux-large
+      build-runs-on: electron-arc-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit

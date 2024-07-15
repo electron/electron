@@ -32,7 +32,7 @@ index 2eb418015552910f6a5bceb117953a563e3b8c07..9974a94a6ae78f36e7baab097e710a79
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index a928196b83671b7f9a6fc27f2a8436c89fe3d3e5..ef5ba7b733bfa67158cb631b5b0bb6b28ba8758d 100644
+index 5bebc1a29c78b5e668b8e7dcf4f19c210e064eb0..5285f9dbb650b98bd8f0c6bd1a2b762453429378 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -43,7 +43,7 @@ index a928196b83671b7f9a6fc27f2a8436c89fe3d3e5..ef5ba7b733bfa67158cb631b5b0bb6b2
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -432,6 +433,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -433,6 +434,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // blocking user's access to the background web content.
    bool modal_context_menu = true;
  

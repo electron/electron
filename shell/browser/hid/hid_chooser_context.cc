@@ -12,6 +12,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/contains.h"
+#include "base/containers/map_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -149,21 +150,18 @@ void HidChooserContext::RevokeEphemeralDevicePermission(
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
   auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end()) {
-    std::set<std::string>& devices = it->second;
-    for (auto guid = devices.begin(); guid != devices.end();) {
-      DCHECK(base::Contains(devices_, *guid));
+  if (it == ephemeral_devices_.end())
+    return;
 
-      if (devices_[*guid]->physical_device_id != device.physical_device_id) {
-        ++guid;
-        continue;
-      }
+  std::set<std::string>& device_guids = it->second;
+  std::erase_if(device_guids, [&](const auto& guid) {
+    auto* device_ptr = base::FindPtrOrNull(devices_, guid);
+    return device_ptr &&
+           device_ptr->physical_device_id == device.physical_device_id;
+  });
 
-      guid = devices.erase(guid);
-      if (devices.empty())
-        ephemeral_devices_.erase(it);
-    }
-  }
+  if (device_guids.empty())
+    ephemeral_devices_.erase(it);
 }
 
 bool HidChooserContext::HasDevicePermission(

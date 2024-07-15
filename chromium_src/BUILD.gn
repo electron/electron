@@ -108,6 +108,7 @@ static_library("chrome") {
     "//chrome/browser/ui/frame/window_frame_util.h",
     "//chrome/browser/ui/ui_features.cc",
     "//chrome/browser/ui/ui_features.h",
+    "//chrome/browser/ui/view_ids.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
@@ -116,6 +117,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/constants.h",
     "//chrome/browser/ui/views/overlay/hang_up_button.cc",
     "//chrome/browser/ui/views/overlay/hang_up_button.h",
+    "//chrome/browser/ui/views/overlay/minimize_button.cc",
+    "//chrome/browser/ui/views/overlay/minimize_button.h",
     "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
     "//chrome/browser/ui/views/overlay/overlay_window_image_button.h",
     "//chrome/browser/ui/views/overlay/playback_image_button.cc",
@@ -151,12 +154,15 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/window_icon_util_win.cc",
       "//chrome/browser/process_singleton_win.cc",
       "//chrome/browser/ui/frame/window_frame_util.h",
-      "//chrome/browser/ui/view_ids.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
+      "//chrome/browser/win/chrome_select_file_dialog_factory.cc",
+      "//chrome/browser/win/chrome_select_file_dialog_factory.h",
       "//chrome/browser/win/titlebar_config.cc",
       "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/titlebar_config.h",
+      "//chrome/browser/win/util_win_service.cc",
+      "//chrome/browser/win/util_win_service.h",
       "//chrome/child/v8_crashpad_support_win.cc",
       "//chrome/child/v8_crashpad_support_win.h",
     ]
@@ -238,7 +244,11 @@ static_library("chrome") {
       "//chrome/services/util_win:lib",
       "//components/webapps/common:mojo_bindings",
     ]
-    deps += [ "//components/segmentation_platform/public/proto" ]
+    deps += [
+      "//chrome/services/util_win/public/mojom",
+      "//components/compose/core/browser:mojo_bindings",
+      "//components/segmentation_platform/public/proto",
+    ]
   }
 
   if (is_mac) {

@@ -1370,15 +1370,16 @@ machine has a touch bar.
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
 
-#### `win.setTitleBarOverlay(options)` _Windows_
+#### `win.setTitleBarOverlay(options)` _Windows_ _Linux_
 
 * `options` Object
-  * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
-  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
-  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+  * `color` String (optional) - The CSS color of the Window Controls Overlay when enabled.
+  * `symbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled.
+  * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels.
 
-On a Window with Window Controls Overlay already enabled, this method updates
-the style of the title bar overlay.
+On a Window with Window Controls Overlay already enabled, this method updates the style of the title bar overlay.
+
+On Linux, the `symbolColor` is automatically calculated to have minimum accessible contrast to the `color` if not explicitly set.
 
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc

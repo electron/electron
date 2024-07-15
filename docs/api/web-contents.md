@@ -1566,7 +1566,7 @@ If you would like the page to stay hidden, you should ensure that `stayHidden` i
 #### `contents.isBeingCaptured()`
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
-is large then 0.
+is greater than 0.
 
 #### `contents.getPrintersAsync()`
 

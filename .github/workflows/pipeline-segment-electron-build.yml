@@ -44,6 +44,11 @@ on:
         required: true
         type: string
         default: '0'
+      strip-binaries: 
+        description: 'Strip the binaries before release (Linux only)'
+        required: false
+        type: boolean
+        default: false
       is-asan: 
         description: 'Building the Address Sanitizer (ASan) Linux build'
         required: false
@@ -56,15 +61,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 env:
-  AZURE_AKS_CACHE_STORAGE_ACCOUNT: ${{ secrets.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}
-  AZURE_AKS_CACHE_SHARE_NAME: ${{ secrets.AZURE_AKS_CACHE_SHARE_NAME }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
-  # Only disable this in the Asan build
-  CHECK_DIST_MANIFEST: true
-  IS_GHA_RELEASE: true
   ELECTRON_OUT_DIR: Default
 
 jobs:
@@ -189,6 +189,7 @@ jobs:
         artifact-platform: ${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
+        strip-binaries: '${{ inputs.strip-binaries }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
     - name: Set GN_EXTRA_ARGS for MAS Build

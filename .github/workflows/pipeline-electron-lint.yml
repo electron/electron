@@ -15,7 +15,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: aks-linux-medium
+    runs-on: electron-arc-linux-amd64-4core
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
@@ -56,7 +56,7 @@ jobs:
         mkdir -p src/buildtools
         curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS
 
-        gclient runhooks --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+        gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
     - name: Run Lint
       shell: bash
       run: |

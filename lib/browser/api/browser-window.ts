@@ -222,7 +222,9 @@ BrowserWindow.prototype.removeBrowserView = function (browserView: BrowserView) 
 };
 
 BrowserWindow.prototype.getBrowserView = function () {
-  if (this._browserViews.length > 1) { throw new Error('This BrowserWindow has multiple BrowserViews, use getBrowserViews() instead'); }
+  if (this._browserViews.length > 1) {
+    throw new Error('This BrowserWindow has multiple BrowserViews - use getBrowserViews() instead');
+  }
   return this._browserViews[0] ?? null;
 };
 
@@ -231,8 +233,15 @@ BrowserWindow.prototype.getBrowserViews = function () {
 };
 
 BrowserWindow.prototype.setTopBrowserView = function (browserView: BrowserView) {
-  if (browserView.ownerWindow !== this) { throw new Error('Given BrowserView is not attached to the window'); }
-  this.addBrowserView(browserView);
+  if (browserView.ownerWindow !== this) {
+    throw new Error('Given BrowserView is not attached to the window');
+  }
+  const idx = this._browserViews.indexOf(browserView);
+  if (idx >= 0) {
+    this.contentView.addChildView(browserView.webContentsView);
+    this._browserViews.splice(idx, 1);
+    this._browserViews.push(browserView);
+  }
 };
 
 module.exports = BrowserWindow;

@@ -4,7 +4,19 @@
 
 Process: [Main](../glossary.md#main-process)
 
-This module protects data stored on disk from being accessed by other applications or users with full disk access.
+This module adds extra protection to data being stored on disk by using OS-provided cryptography systems. Current
+security semantics for each platform are outlined below.
+
+* **macOS**: Encryption keys are stored for your app in [Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) in a way that prevents
+other applications from loading them without user override. Therefore, content is protected from other users and other apps running in the same userspace.
+* **Windows**: Encryption keys are generated via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata).
+As per the Windows documentation: "Typically, only a user with the same logon credential as the user who encrypted the data can typically
+decrypt the data". Therefore, content is protected from other users on the same machine, but not from other apps running in the
+same userspace.
+* **Linux**: Encryption keys are generated and stored in a secret store that varies depending on your window manager and system setup. Options currently supported are `kwallet`, `kwallet5`, `kwallet6` and `gnome-libsecret`, but more may be available in future versions of Electron. As such, the
+security semantics of content protected via the `safeStorage` API vary between window managers and secret stores.
+  * Note that not all Linux setups have an available secret store. If no secret store is available, items stored in using the `safeStorage` API will be unprotected
+as they are encrypted via hardcoded plaintext password. You can detect when this happens when `safeStorage.getSelectedStorageBackend()` returns `basic_text`.
 
 Note that on Mac, access to the system Keychain is required and
 these calls can block the current thread to collect user input.

@@ -8,10 +8,13 @@ This CL adds support for the following features to //shell_dialogs:
 * showHiddenFiles - Show hidden files in dialog.
 * showOverwriteConfirmation - Whether the user will be presented a confirmation dialog if the user types a file name that already exists.
 
+It also:
+* Changes XDG Portal implementation behavior to set default path regardless of dialog type.
+
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index 129979e844581e68fdecde87bd52f3344f88022a..5e02a36e5e9eb4db84700dd9a0b8765dec18c236 100644
+index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc671dca9d4 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
 @@ -243,6 +243,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
@@ -186,10 +189,10 @@ index 129979e844581e68fdecde87bd52f3344f88022a..5e02a36e5e9eb4db84700dd9a0b8765d
  }
  
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..ee19c3f399a1d060d5e9bd0dc5f1b3828381e8df 100644
+index 1c5f12fb39c648cff21da551372239167e4d8ff4..21c84810d0bdfa007ea17ffcdad9682b04e15bf4 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
-@@ -90,19 +90,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -91,19 +91,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    GtkWidget* CreateSelectFolderDialog(Type type,
                                        const std::string& title,
                                        const base::FilePath& default_path,
@@ -217,7 +220,7 @@ index 53ae15f14c45ee72abdae172fc4555c9e4b3ff9a..ee19c3f399a1d060d5e9bd0dc5f1b382
  
    // Removes and returns the |params| associated with |dialog| from
    // |params_map_|.
-@@ -121,7 +125,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -122,7 +126,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
    GtkWidget* CreateFileOpenHelper(const std::string& title,
                                    const base::FilePath& default_path,
@@ -269,7 +272,7 @@ index c79fb47bfba9233da7d2c1438d1e26600684fc78..d7cc7cd70653aaa5b628ef456dcb48a2
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent, params));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 65727489ddecb755eeabbd194ce843ca9eaa59c9..b15bace56639d2f914f8f76edfa1b28e33165b48 100644
+index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f530b79d44 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -219,6 +219,10 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
@@ -360,7 +363,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..b15bace56639d2f914f8f76edfa1b28e
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
  
-@@ -563,6 +572,7 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -563,12 +572,12 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);
@@ -368,6 +371,13 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..b15bace56639d2f914f8f76edfa1b28e
    } else if (type == SelectFileDialog::Type::SELECT_OPEN_MULTI_FILE) {
      AppendBoolOption(&options_writer, kFileChooserOptionMultiple, true);
    }
+ 
+-  if (type == SelectFileDialog::Type::SELECT_SAVEAS_FILE &&
+-      !default_path.empty()) {
++  if (!default_path.empty()) {
+     if (default_path_exists) {
+       // If this is an existing directory, navigate to that directory, with no
+       // filename.
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
 index c487f7da19e2d05696a8eb72f2fa3e12972149f3..02a40c571570974dcc61e1b1f7ed95fbfc2bedf2 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.h

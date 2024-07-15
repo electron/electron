@@ -2,9 +2,6 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 const path = require('node:path');
 
-// TODO(vertedinde): This variable is a test variable in GHA, sending test
-// artifacts to a test account. Change to the real electron artifacts
-// storage account when ready.
 const { ELECTRON_ARTIFACTS_BLOB_STORAGE } = process.env;
 if (!ELECTRON_ARTIFACTS_BLOB_STORAGE) {
   console.error('Missing required ELECTRON_ARTIFACTS_BLOB_STORAGE environment variable.');

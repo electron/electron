@@ -130,7 +130,7 @@ won't be able to connect to remote sites. However, a return value of
 whether a particular connection attempt to a particular remote site
 will be successful.
 
-#### `net.resolveHost(host, [options])`
+### `net.resolveHost(host, [options])`
 
 * `host` string - Hostname to resolve.
 * `options` Object (optional)

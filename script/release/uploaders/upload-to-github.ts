@@ -44,7 +44,6 @@ const getHeaders = (filePath: string, fileName: string) => {
 };
 
 function getRepo () {
-  if (process.env.IS_GHA_RELEASE) return 'test-releases';
   return releaseVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
 }
 

@@ -7,10 +7,10 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index a9b2453b377ec6bc7ed856991ad29d9f38d382d3..f7ef6faa8c66d17a9e7ce268cdfe6fb700fe4d05 100644
+index f143dbf39d011153c83a4d4c0b9afc54bb839ab9..2563c7c0abc4c5eae2ec27bb0bbde398fc977d42 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -40,6 +40,7 @@
+@@ -45,6 +45,7 @@
  #include "base/process/memory.h"
  #include "base/process/process.h"
  #include "base/process/process_handle.h"
@@ -18,9 +18,9 @@ index a9b2453b377ec6bc7ed856991ad29d9f38d382d3..f7ef6faa8c66d17a9e7ce268cdfe6fb7
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/string_util.h"
  #include "base/task/single_thread_task_runner.h"
-@@ -262,8 +263,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
- 
- #endif
+@@ -281,8 +282,13 @@ void AsanProcessInfoCB(const char*, bool*) {
+ }
+ #endif  // defined(ADDRESS_SANITIZER)
  
 -void LoadV8SnapshotFile(const base::CommandLine& command_line) {
 +void LoadV8SnapshotFile(const raw_ptr<ContentMainDelegate> delegate, const base::CommandLine& command_line) {
@@ -33,7 +33,7 @@ index a9b2453b377ec6bc7ed856991ad29d9f38d382d3..f7ef6faa8c66d17a9e7ce268cdfe6fb7
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -292,11 +298,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -311,11 +317,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -48,7 +48,7 @@ index a9b2453b377ec6bc7ed856991ad29d9f38d382d3..f7ef6faa8c66d17a9e7ce268cdfe6fb7
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -972,7 +979,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -994,7 +1001,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -102,10 +102,10 @@ index f482ce44b4339e0cf2a57a6a4f9db4d1be5fa178..d6fd25ccd747a7a0620f103cb0f101d3
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 1202c8e3e86d18212609a63ac94aa41c9318f5ee..c72515482c339758537ce068a8493901f35246aa 100644
+index 1f4ade4905be30789451a117a788782e59f3d4c4..0032741eb6c47323a8beaf8a33f98c95dbc22f8e 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -585,8 +585,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -592,8 +592,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index 1202c8e3e86d18212609a63ac94aa41c9318f5ee..c72515482c339758537ce068a8493901
    if (g_mapped_snapshot) {
      // TODO(crbug.com/40558459): Confirm not loading different type of snapshot
      // files in a process.
-@@ -595,10 +594,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -602,10 +601,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =
