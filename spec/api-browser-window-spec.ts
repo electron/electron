@@ -1660,6 +1660,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({});
         expect(w.getBackgroundColor()).to.equal('#FFFFFF');
       });
+
       it('returns correct value if backgroundColor is set', () => {
         const backgroundColor = '#BBAAFF';
         w.destroy();
@@ -1668,6 +1669,7 @@ describe('BrowserWindow module', () => {
         });
         expect(w.getBackgroundColor()).to.equal(backgroundColor);
       });
+
       it('returns correct value from setBackgroundColor()', () => {
         const backgroundColor = '#AABBFF';
         w.destroy();
@@ -1675,24 +1677,42 @@ describe('BrowserWindow module', () => {
         w.setBackgroundColor(backgroundColor);
         expect(w.getBackgroundColor()).to.equal(backgroundColor);
       });
-      it('returns correct color with multiple passed formats', () => {
+
+      it('returns correct color with multiple passed formats', async () => {
         w.destroy();
         w = new BrowserWindow({});
 
-        w.setBackgroundColor('#AABBFF');
-        expect(w.getBackgroundColor()).to.equal('#AABBFF');
+        await w.loadURL('about:blank');
 
-        w.setBackgroundColor('blueviolet');
-        expect(w.getBackgroundColor()).to.equal('#8A2BE2');
+        const colors = new Map([
+          ['blueviolet', '#8A2BE2'],
+          ['rgb(255, 0, 185)', '#FF00B9'],
+          ['hsl(155, 100%, 50%)', '#00FF95'],
+          ['#355E3B', '#355E3B']
+        ]);
 
-        w.setBackgroundColor('rgb(255, 0, 185)');
-        expect(w.getBackgroundColor()).to.equal('#FF00B9');
+        for (const [color, hex] of colors) {
+          w.setBackgroundColor(color);
+          expect(w.getBackgroundColor()).to.equal(hex);
+        }
+      });
 
-        w.setBackgroundColor('rgba(245, 40, 145, 0.8)');
-        expect(w.getBackgroundColor()).to.equal('#F52891');
+      it('can set the background color with transparency', async () => {
+        w.destroy();
+        w = new BrowserWindow({});
 
-        w.setBackgroundColor('hsl(155, 100%, 50%)');
-        expect(w.getBackgroundColor()).to.equal('#00FF95');
+        await w.loadURL('about:blank');
+
+        const colors = new Map([
+          ['hsl(155, 100%, 50%)', '#00FF95'],
+          ['rgba(245, 40, 145, 0.8)', '#F52891'],
+          ['#1D1F21d9', '#1F21D9']
+        ]);
+
+        for (const [color, hex] of colors) {
+          w.setBackgroundColor(color);
+          expect(w.getBackgroundColor()).to.equal(hex);
+        }
       });
     });
 
