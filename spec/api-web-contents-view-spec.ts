@@ -170,8 +170,13 @@ describe('WebContentsView', () => {
 
     it('becomes hidden when parent window is hidden', async () => {
       if (process.platform === 'linux') {
+        const memInfo = cp.execSync('cat /proc/meminfo');
+        const free = cp.execSync('free');
         const diskFree = cp.execSync('df -ih ').toString();
-        console.log(`Disk free at start of becomes hidden when parent window is hidden: ${diskFree}`);
+        const diskFree2 = cp.execSync('df -h ').toString();
+        console.log(`Disk free at start of becomes hidden when parent window is hidden: ${diskFree} ${diskFree2}`);
+        console.log(`Meminfo at start of becomes hidden when parent window is hidden: ${memInfo}`);
+        console.log(`free at start of becomes hidden when parent window is hidden: ${free}`);
       }
       const w = new BaseWindow();
       const v = new WebContentsView();
@@ -189,7 +194,11 @@ describe('WebContentsView', () => {
       if (process.platform === 'linux') {
         const diskFree = cp.execSync('df -ih ').toString();
         const diskFree2 = cp.execSync('df -h ').toString();
+        const memInfo = cp.execSync('cat /proc/meminfo');
+        const free = cp.execSync('free');
         console.log(`Disk free at end of becomes hidden when parent window is hidden: ${diskFree}  ${diskFree2}`);
+        console.log(`Meminfo at end of becomes hidden when parent window is hidden: ${memInfo}`);
+        console.log(`free at end of becomes hidden when parent window is hidden: ${free}`);
       }
     });
 
@@ -197,8 +206,11 @@ describe('WebContentsView', () => {
       if (process.platform === 'linux') {
         const diskFree = cp.execSync('df -ih ').toString();
         const diskFree2 = cp.execSync('df -h ').toString();
-        console.log(`Disk free at start of becomes visible when parent window is shown: ${diskFree}`);
-        console.log(`Disk free at end of becomes hidden when parent window is hidden: ${diskFree}  ${diskFree2}`);
+        const memInfo = cp.execSync('cat /proc/meminfo');
+        const free = cp.execSync('free');
+        console.log(`Disk free at start of becomes visible when parent window is shown: ${diskFree} ${diskFree2}`);
+        console.log(`meminfo at start of becomes visible when parent window is shown: ${memInfo}`);
+        console.log(`free at start of becomes visible when parent window is shown: ${free}`);
       }
       const w = new BaseWindow({ show: false });
       const v = new WebContentsView();
@@ -215,7 +227,12 @@ describe('WebContentsView', () => {
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
       if (process.platform === 'linux') {
         const diskFree = cp.execSync('df -ih ').toString();
-        console.log(`Disk free at end of becomes visible when parent window is shown: ${diskFree}`);
+        const diskFree2 = cp.execSync('df -h ').toString();
+        const memInfo = cp.execSync('cat /proc/meminfo');
+        const free = cp.execSync('free');
+        console.log(`Disk free at end of becomes visible when parent window is shown: ${diskFree}  ${diskFree2}`);
+        console.log(`meminfo at end of becomes visible when parent window is shown: ${memInfo}`);
+        console.log(`free at end of becomes visible when parent window is shown: ${free}`);
       }
     });
 
