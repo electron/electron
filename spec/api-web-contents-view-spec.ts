@@ -188,14 +188,17 @@ describe('WebContentsView', () => {
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
       if (process.platform === 'linux') {
         const diskFree = cp.execSync('df -ih ').toString();
-        console.log(`Disk free at end of becomes hidden when parent window is hidden: ${diskFree}`);
+        const diskFree2 = cp.execSync('df -h ').toString();
+        console.log(`Disk free at end of becomes hidden when parent window is hidden: ${diskFree}  ${diskFree2}`);
       }
     });
 
     it('becomes visible when parent window is shown', async () => {
       if (process.platform === 'linux') {
         const diskFree = cp.execSync('df -ih ').toString();
+        const diskFree2 = cp.execSync('df -h ').toString();
         console.log(`Disk free at start of becomes visible when parent window is shown: ${diskFree}`);
+        console.log(`Disk free at end of becomes hidden when parent window is hidden: ${diskFree}  ${diskFree2}`);
       }
       const w = new BaseWindow({ show: false });
       const v = new WebContentsView();

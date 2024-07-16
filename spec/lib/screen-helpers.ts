@@ -193,5 +193,9 @@ export class ScreenCapture {
  * - Win32 x64: virtual screen display is 0x0
  */
 export const hasCapturableScreen = () => {
-  return process.env.CI ? process.platform === 'darwin' : true;
+  const hasCap = process.env.CI ? process.platform === 'darwin' : true;
+  if (hasCap) {
+    console.log('WE HAVE CAPTURABLE SCREEN');
+  }
+  return hasCap;
 };
