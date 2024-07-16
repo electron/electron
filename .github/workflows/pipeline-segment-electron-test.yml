@@ -193,6 +193,7 @@ jobs:
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}
         path: src/electron/spec/artifacts
+        if-no-files-found: ignore
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       run: |
