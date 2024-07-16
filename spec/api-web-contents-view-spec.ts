@@ -1,3 +1,4 @@
+import * as cp from 'node:child_process';
 import { expect } from 'chai';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 import { once } from 'node:events';
@@ -168,6 +169,10 @@ describe('WebContentsView', () => {
     });
 
     it('becomes hidden when parent window is hidden', async () => {
+      if (process.platform === 'linux') {
+        const diskFree = cp.execSync('df -ih ').toString();
+        console.log(`Disk free at start of becomes hidden when parent window is hidden: ${diskFree}`);
+      }
       const w = new BaseWindow();
       const v = new WebContentsView();
       w.setContentView(v);
@@ -181,9 +186,17 @@ describe('WebContentsView', () => {
       w.hide();
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
+      if (process.platform === 'linux') {
+        const diskFree = cp.execSync('df -ih ').toString();
+        console.log(`Disk free at end of becomes hidden when parent window is hidden: ${diskFree}`);
+      }
     });
 
     it('becomes visible when parent window is shown', async () => {
+      if (process.platform === 'linux') {
+        const diskFree = cp.execSync('df -ih ').toString();
+        console.log(`Disk free at start of becomes visible when parent window is shown: ${diskFree}`);
+      }
       const w = new BaseWindow({ show: false });
       const v = new WebContentsView();
       w.setContentView(v);
@@ -197,6 +210,10 @@ describe('WebContentsView', () => {
       w.show();
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      if (process.platform === 'linux') {
+        const diskFree = cp.execSync('df -ih ').toString();
+        console.log(`Disk free at end of becomes visible when parent window is shown: ${diskFree}`);
+      }
     });
 
     it('does not change when view is moved between two visible windows', async () => {
