@@ -55,7 +55,7 @@ const CPPLINT_FILTERS = [
 ];
 
 function spawnAndCheckExitCode (cmd, args, opts) {
-  opts = { stdio: 'inherit', ...opts };
+  opts = { stdio: 'inherit', shell: IS_WINDOWS, ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
     // the subprocess failed or timed out
@@ -100,9 +100,12 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
+    const env = {
+      CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
+    };
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     for (const chunk of chunkFilenames(filenames)) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], { env });
       cpplint([`--filter=${CPPLINT_FILTERS.join(',')}`, ...chunk]);
     }
   }
@@ -111,8 +114,11 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
+    const env = {
+      CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
+    };
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
-    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
+    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames], { env });
     const filter = [...CPPLINT_FILTERS, '-readability/braces'];
     cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
   }
@@ -124,7 +130,7 @@ const LINTERS = [{
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc-2.17');
     const args = ['--rcfile=' + rcfile, ...filenames];
     const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
-    spawnAndCheckExitCode('pylint-2.17', args, { env });
+    spawnAndCheckExitCode(IS_WINDOWS ? 'pylint-2.17.bat' : 'pylint-2.17', args, { env });
   }
 }, {
   key: 'javascript',
@@ -170,8 +176,6 @@ const LINTERS = [{
         DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
         ...process.env
       };
-      // Users may not have depot_tools in PATH.
-      env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];
       if (!opts.fix) args.push('--dry-run');
       const result = childProcess.spawnSync('gn', args, { env, stdio: 'inherit', shell: true });
