@@ -87,6 +87,5 @@ mv_if_exist src/out/Default/hunspell_dictionaries.zip
 mv_if_exist src/cross-arch-snapshots
 cp_if_exist src/out/electron_ninja_log
 cp_if_exist src/out/Default/.ninja_log
-mv_if_exist spec/test-artifacts
 
 move_src_dirs_if_exist
