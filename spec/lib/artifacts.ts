@@ -3,7 +3,7 @@ import fs = require('node:fs/promises');
 import { randomBytes } from 'node:crypto';
 
 const IS_CI = !!process.env.CI;
-const ARTIFACT_DIR = path.join(__dirname, '..', 'artifacts');
+const ARTIFACT_DIR = path.join(__dirname, '..', 'test-artifacts');
 
 async function ensureArtifactDir (): Promise<void> {
   if (!IS_CI) {
