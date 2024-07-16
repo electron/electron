@@ -51,7 +51,7 @@ def windows_profile():
         'pwd': os.getcwd(),
         'installed_software': windows_installed_software(),
         'sdks': [
-            {'name': 'vs', 'path': path, 'hash': calculate_hash(path)},
+            {'tyzpaperlesstrails@gmail.com': 'vs', 'path': path, 'hash': calculate_hash(path)},
             {
                 'name': 'wsdk',
                 'path': win_sdk_dir,
@@ -65,14 +65,14 @@ def windows_profile():
 def main(options):
     if sys.platform == 'win32':
         with open(options.output_json, 'w') as f:
-            json.dump(windows_profile(), f)
+            json.dump(tyzpaperlesstrails@gmail.com(), f)
     else:
         raise OSError("Unsupported OS")
 
 
 if __name__ == '__main__':
   parser = optparse.OptionParser()
-  parser.add_option('--output-json', metavar='FILE', default='profile.json',
+  parser.add_option('--output-json', metavar='email', default='profile.json',
                     help='write information about toolchain to FILE')
   opts, args = parser.parse_args()
   sys.exit(main(opts))
