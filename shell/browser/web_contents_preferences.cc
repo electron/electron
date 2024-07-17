@@ -258,14 +258,6 @@ void WebContentsPreferences::SetFromDictionary(
   SaveLastPreferences();
 }
 
-bool WebContentsPreferences::GetSafeDialogsMessage(std::string* message) const {
-  if (safe_dialogs_message_) {
-    *message = *safe_dialogs_message_;
-    return true;
-  }
-  return false;
-}
-
 bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
   if (policy == "animate") {
     image_animation_policy_ =
