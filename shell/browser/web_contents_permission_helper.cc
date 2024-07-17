@@ -7,23 +7,29 @@
 #include <string_view>
 #include <utility>
 
+#include "components/content_settings/core/common/content_settings.h"
+#include "components/webrtc/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_permission_manager.h"
-// #include "shell/browser/media/media_stream_devices_controller.h"
-#include "components/content_settings/core/common/content_settings.h"
-#include "components/webrtc/media_stream_devices_controller.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
+
+#if BUILDFLAG(IS_MAC)
+#include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
+#endif
+
+using blink::mojom::MediaStreamRequestResult;
+using blink::mojom::MediaStreamType;
 
 namespace {
 
 constexpr std::string_view MediaStreamTypeToString(
     blink::mojom::MediaStreamType type) {
   switch (type) {
-    case blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE:
+    case MediaStreamType::DEVICE_AUDIO_CAPTURE:
       return "audio";
-    case blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE:
+    case MediaStreamType::DEVICE_VIDEO_CAPTURE:
       return "video";
     default:
       return "unknown";
@@ -48,53 +54,74 @@ namespace {
                                  -1 /* kFullDesktopScreenId */);
 }
 
+#if BUILDFLAG(IS_MAC)
+bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
+  if (request.audio_type != MediaStreamType::NO_SERVICE) {
+    const auto system_audio_permission =
+        system_media_permissions::CheckSystemAudioCapturePermission();
+    return system_audio_permission ==
+               system_media_permissions::SystemPermission::kRestricted ||
+           system_audio_permission ==
+               system_media_permissions::SystemPermission::kDenied;
+  }
+  if (request.video_type != MediaStreamType::NO_SERVICE) {
+    const auto system_video_permission =
+        system_media_permissions::CheckSystemVideoCapturePermission();
+    return system_video_permission ==
+               system_media_permissions::SystemPermission::kRestricted ||
+           system_video_permission ==
+               system_media_permissions::SystemPermission::kDenied;
+  }
+  return false;
+}
+#endif
+
 // Handles requests for legacy-style `navigator.getUserMedia(...)` calls.
 // This includes desktop capture through the chromeMediaSource /
 // chromeMediaSourceId constraints.
 void HandleUserMediaRequest(const content::MediaStreamRequest& request,
                             content::MediaResponseCallback callback) {
-  blink::mojom::StreamDevicesSetPtr stream_devices_set =
-      blink::mojom::StreamDevicesSet::New();
-  stream_devices_set->stream_devices.emplace_back(
-      blink::mojom::StreamDevices::New());
-  blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
+  auto stream_devices_set = blink::mojom::StreamDevicesSet::New();
+  auto devices = blink::mojom::StreamDevices::New();
+  stream_devices_set->stream_devices.emplace_back(std::move(devices));
+  auto& devices_ref = *stream_devices_set->stream_devices[0];
 
-  if (request.audio_type ==
-      blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
-    devices.audio_device = blink::MediaStreamDevice(
-        blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE, "", "");
-  }
-  if (request.video_type ==
-      blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
-    devices.video_device = blink::MediaStreamDevice(
-        blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE, "", "");
-  }
-  if (request.audio_type ==
-      blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE) {
-    devices.audio_device = blink::MediaStreamDevice(
-        blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE, "loopback",
-        "System Audio");
-  }
-  if (request.video_type ==
-      blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
-    devices.video_device = blink::MediaStreamDevice(
-        blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
-        GetScreenId(request.requested_video_device_ids).ToString(), "Screen");
+  if (request.audio_type == MediaStreamType::GUM_TAB_AUDIO_CAPTURE ||
+      request.audio_type == MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE) {
+    devices_ref.audio_device = blink::MediaStreamDevice(
+        request.audio_type,
+        request.audio_type == MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE
+            ? "loopback"
+            : "",
+        request.audio_type == MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE
+            ? "System Audio"
+            : "");
   }
 
-  bool empty =
-      !devices.audio_device.has_value() && !devices.video_device.has_value();
-  std::move(callback).Run(
-      *stream_devices_set,
-      empty ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
-            : blink::mojom::MediaStreamRequestResult::OK,
-      nullptr);
+  if (request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
+      request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+    devices_ref.video_device = blink::MediaStreamDevice(
+        request.video_type,
+        request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE
+            ? GetScreenId(request.requested_video_device_ids).ToString()
+            : "",
+        request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE
+            ? "Screen"
+            : "");
+  }
+
+  bool empty = !devices_ref.audio_device.has_value() &&
+               !devices_ref.video_device.has_value();
+  std::move(callback).Run(*stream_devices_set,
+                          empty ? MediaStreamRequestResult::NO_HARDWARE
+                                : MediaStreamRequestResult::OK,
+                          nullptr);
 }
 
 void OnMediaStreamRequestResponse(
     content::MediaResponseCallback callback,
     const blink::mojom::StreamDevicesSet& stream_devices_set,
-    blink::mojom::MediaStreamRequestResult result,
+    MediaStreamRequestResult result,
     bool blocked_by_permissions_policy,
     ContentSetting audio_setting,
     ContentSetting video_setting) {
@@ -105,31 +132,34 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
                         content::MediaResponseCallback callback,
                         bool allowed) {
   if (allowed) {
-    if (request.video_type ==
-            blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE ||
-        request.audio_type ==
-            blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE ||
-        request.video_type ==
-            blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
-        request.audio_type ==
-            blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
+#if BUILDFLAG(IS_MAC)
+    // If the request was approved, ask for system permissions if needed.
+    // See
+    // chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc.
+    if (SystemMediaPermissionDenied(request)) {
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              MediaStreamRequestResult::PERMISSION_DENIED,
+                              nullptr);
+      return;
+    }
+#endif
+    if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE ||
+        request.audio_type == MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE ||
+        request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
+        request.audio_type == MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
       HandleUserMediaRequest(request, std::move(callback));
-    } else if (request.video_type ==
-                   blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
-               request.audio_type ==
-                   blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+    } else if (request.video_type == MediaStreamType::DEVICE_VIDEO_CAPTURE ||
+               request.audio_type == MediaStreamType::DEVICE_AUDIO_CAPTURE) {
       webrtc::MediaStreamDevicesController::RequestPermissions(
           request, MediaCaptureDevicesDispatcher::GetInstance(),
           base::BindOnce(&OnMediaStreamRequestResponse, std::move(callback)),
           allowed);
-    } else if (request.video_type ==
-                   blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE ||
-               request.video_type == blink::mojom::MediaStreamType::
-                                         DISPLAY_VIDEO_CAPTURE_THIS_TAB ||
+    } else if (request.video_type == MediaStreamType::DISPLAY_VIDEO_CAPTURE ||
                request.video_type ==
-                   blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET ||
-               request.audio_type ==
-                   blink::mojom::MediaStreamType::DISPLAY_AUDIO_CAPTURE) {
+                   MediaStreamType::DISPLAY_VIDEO_CAPTURE_THIS_TAB ||
+               request.video_type ==
+                   MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET ||
+               request.audio_type == MediaStreamType::DISPLAY_AUDIO_CAPTURE) {
       content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
           request.render_process_id, request.render_frame_id);
       if (!rfh)
@@ -144,16 +174,15 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
         return;
       std::move(split_callback.first)
           .Run(blink::mojom::StreamDevicesSet(),
-               blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+               MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
     } else {
-      std::move(callback).Run(
-          blink::mojom::StreamDevicesSet(),
-          blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
     }
   } else {
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED, nullptr);
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            MediaStreamRequestResult::PERMISSION_DENIED,
+                            nullptr);
   }
 }
 
