@@ -62,8 +62,10 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   void Resume();
   bool CanResume() const;
   void Cancel();
+  int64_t GetCurrentBytesPerSecond() const;
   int64_t GetReceivedBytes() const;
   int64_t GetTotalBytes() const;
+  int GetPercentComplete() const;
   std::string GetMimeType() const;
   bool HasUserGesture() const;
   std::string GetFilename() const;
@@ -76,6 +78,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   std::string GetLastModifiedTime() const;
   std::string GetETag() const;
   double GetStartTime() const;
+  double GetEndTime() const;
 
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
