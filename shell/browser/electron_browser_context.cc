@@ -541,8 +541,7 @@ ElectronBrowserContext::GetFileSystemAccessPermissionContext() {
 
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
-    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(
-        GetDefaultStoragePartition()->GetNetworkContext());
+    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
   }
   return resolve_proxy_helper_.get();
 }
