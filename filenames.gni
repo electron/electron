@@ -362,6 +362,8 @@ filenames = {
     "shell/browser/electron_browser_context.h",
     "shell/browser/electron_browser_main_parts.cc",
     "shell/browser/electron_browser_main_parts.h",
+    "shell/browser/electron_crypto_module_delegate_nss.cc",
+    "shell/browser/electron_crypto_module_delegate_nss.h",
     "shell/browser/electron_download_manager_delegate.cc",
     "shell/browser/electron_download_manager_delegate.h",
     "shell/browser/electron_gpu_client.cc",
