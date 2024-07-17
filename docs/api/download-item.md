@@ -145,6 +145,10 @@ Returns `string` - The file name of the download item.
 disk. If user changes the file name in a prompted download saving dialog, the
 actual name of saved file will be different.
 
+#### `downloadItem.getCurrentBytesPerSecond()`
+
+Returns `Integer` - The current download speed in bytes per second.
+
 #### `downloadItem.getTotalBytes()`
 
 Returns `Integer` - The total size in bytes of the download item.
@@ -154,6 +158,10 @@ If the size is unknown, it returns 0.
 #### `downloadItem.getReceivedBytes()`
 
 Returns `Integer` - The received bytes of the download item.
+
+#### `downloadItem.getPercentComplete()`
+
+Returns `Integer` - The download completion in percent.
 
 #### `downloadItem.getContentDisposition()`
 
@@ -183,6 +191,10 @@ Returns `string` - ETag header value.
 
 Returns `Double` - Number of seconds since the UNIX epoch when the download was
 started.
+
+#### `downloadItem.getEndTime()`
+
+Returns `Double` - Number of seconds since the UNIX epoch when the download ended.
 
 ### Instance Properties
 
