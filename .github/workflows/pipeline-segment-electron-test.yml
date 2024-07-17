@@ -187,6 +187,13 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
+    - name: Upload Test Artifacts
+      if: always() && !cancelled()
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      with:
+        name: test_artifacts_${{ env.ARTIFACT_KEY }}
+        path: src/electron/spec/artifacts
+        if-no-files-found: ignore
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       run: |
