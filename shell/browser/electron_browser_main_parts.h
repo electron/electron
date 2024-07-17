@@ -23,10 +23,6 @@
 class BrowserProcessImpl;
 class IconManager;
 
-namespace base {
-class FieldTrialList;
-}
-
 #if defined(USE_AURA)
 namespace wm {
 class WMState;
@@ -170,7 +166,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<Browser> browser_;
 
   std::unique_ptr<IconManager> icon_manager_;
-  std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<ElectronExtensionsClient> extensions_client_;
