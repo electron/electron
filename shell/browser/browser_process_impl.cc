@@ -93,7 +93,7 @@ BuildState* BrowserProcessImpl::GetBuildState() {
   return nullptr;
 }
 
-GlobalFeatures* BrowserProcessImpl::GetFeatures() {
+GlobalDesktopFeatures* BrowserProcessImpl::GetDesktopFeatures() {
   NOTIMPLEMENTED();
   return nullptr;
 }
