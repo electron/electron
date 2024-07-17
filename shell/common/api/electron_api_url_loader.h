@@ -12,6 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
+#include "base/strings/string_piece.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "net/base/auth.h"

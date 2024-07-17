@@ -10,6 +10,7 @@
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/observer_list.h"
+#include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
