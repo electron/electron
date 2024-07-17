@@ -219,3 +219,9 @@ GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
   // TODO(codebytere): we do not currently support ExtensionManagement.
   return GURL::EmptyGURL();
 }
+
+void ElectronManagementAPIDelegate::ShowMv2DeprecationReEnableDialog(
+    content::BrowserContext* context,
+    content::WebContents* web_contents,
+    const extensions::Extension& extension,
+    base::OnceCallback<void(bool)> done_callback) const {}
