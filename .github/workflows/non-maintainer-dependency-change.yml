@@ -1,0 +1,37 @@
+name: Check for Non-Maintainer Dependency Change
+
+on:
+  pull_request_target:
+    paths:
+      - 'yarn.lock'
+      - 'spec/yarn.lock'
+
+permissions: {}
+
+jobs:
+  check-for-non-maintainer-dependency-change:
+    name: Check for non-maintainer dependency change
+    if: ${{ !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.pull_request.author_association) && github.event.pull_request.user.type != 'Bot' && !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for existing review
+        id: check-for-review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -eo pipefail
+          REVIEW_COUNT=$(gh pr view $PR_URL --json reviews | jq '[ .reviews[] | select(.author.login == "github-actions") | select(.body | startswith("<!-- no-dependency-change -->")) ] | length')
+          if [[ $REVIEW_COUNT -eq 0 ]]; then
+            echo "SHOULD_REVIEW=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Request changes
+        if: ${{ steps.check-for-review.outputs.SHOULD_REVIEW }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          printf "<!-- no-dependency-change -->\n\nHello @${{ github.event.pull_request.user.login }}! It looks like this pull request touches one of our dependency files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs." | gh pr review $PR_URL -r --body-file=-
