@@ -155,10 +155,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Before then, we just exit() without any intermediate steps.
   std::optional<int> exit_code_;
 
-  std::unique_ptr<NodeBindings> node_bindings_;
+  const std::unique_ptr<NodeBindings> node_bindings_;
 
   // depends-on: node_bindings_
-  std::unique_ptr<ElectronBindings> electron_bindings_;
+  const std::unique_ptr<ElectronBindings> electron_bindings_;
 
   // depends-on: node_bindings_
   std::unique_ptr<JavascriptEnvironment> js_env_;
