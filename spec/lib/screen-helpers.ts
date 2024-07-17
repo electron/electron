@@ -167,11 +167,18 @@ export class ScreenCapture {
     } while (Date.now() < expiration);
 
     if (!gotExpectedResult) {
+      // Limit image to 720p to save on storage space
+      if (process.env.CI) {
+        const width = Math.floor(Math.min(frame.getSize().width, 720));
+        frame = frame.resize({ width });
+      }
+
       // Save the image as an artifact for better debugging
       const artifactName = await createArtifactWithRandomId(
         (id) => `color-mismatch-${id}.png`,
         frame.toPNG()
       );
+
       throw new AssertionError(
         `Expected color at (${point.x}, ${point.y}) to ${
           matchIsExpected ? 'match' : '*not* match'
