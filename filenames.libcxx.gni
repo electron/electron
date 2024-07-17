@@ -778,8 +778,6 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__type_traits/is_implicitly_default_constructible.h",
   "//third_party/libc++/src/include/__type_traits/is_integral.h",
   "//third_party/libc++/src/include/__type_traits/is_literal_type.h",
-  "//third_party/libc++/src/include/__type_traits/is_member_function_pointer.h",
-  "//third_party/libc++/src/include/__type_traits/is_member_object_pointer.h",
   "//third_party/libc++/src/include/__type_traits/is_member_pointer.h",
   "//third_party/libc++/src/include/__type_traits/is_nothrow_assignable.h",
   "//third_party/libc++/src/include/__type_traits/is_nothrow_constructible.h",
