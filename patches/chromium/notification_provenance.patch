@@ -133,10 +133,10 @@ index 38c8cf36fdf9366121c7ada96c167a4c9664952e..03b37fb62655a355e104870a088e4222
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6f5e3c65978a6f8c5a9bacdb1fdfd2788dd5c694..77840a700a71703eda5584c48b2f4a7e044de7e2 100644
+index 80b64286f1099c72784488d0a3d12785d998e49f..f862dd0253dfa79668f16806318d3c82a3b4ffe7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1968,7 +1968,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -1969,7 +1969,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index 6f5e3c65978a6f8c5a9bacdb1fdfd2788dd5c694..77840a700a71703eda5584c48b2f4a7e
            creator_type, std::move(receiver));
        break;
      }
-@@ -1976,7 +1976,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -1977,7 +1977,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

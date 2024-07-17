@@ -163,10 +163,10 @@ index 2a01487c8ff837357f6d62dba80115b0ec64c343..8b1ed51630dc4fe77bd0edadb85f04fb
  }
  
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index be6402b33d7e0e2aab7cbb2844ba4600a166e7a9..642f8b6da39615d1c68584ff18fc57ceb95b84b2 100644
+index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..45cf31157c535a0cdc9236a07e2ffffd166ba412 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
-@@ -204,6 +204,16 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+@@ -205,6 +205,16 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
        options.allow_gpu_client.value()) {
      host->SetAllowGpuClient();
    }
@@ -324,10 +324,10 @@ index 9791ae2f761043b9eecd9064a6fd39a6e2339af4..1083f1683a05825f51f5b2d71f8107d9
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 5aec5f3dc619373d8faa44b23c7482bbd19d3f96..826c5d3e7022208d87fc77e8735907aa5884d994 100644
+index ad5ad7b27da8bc1b435bbb91e9e0eaa98aef9612..4f469e32f0e3ae88d11e6a6a1bb577c1302c624d 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
-@@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
+@@ -34,17 +34,19 @@ UtilitySandboxedProcessLauncherDelegate::
      UtilitySandboxedProcessLauncherDelegate(
          sandbox::mojom::Sandbox sandbox_type,
          const base::EnvironmentMap& env,
@@ -341,13 +341,17 @@ index 5aec5f3dc619373d8faa44b23c7482bbd19d3f96..826c5d3e7022208d87fc77e8735907aa
 -#endif
 +      current_directory_(cwd),
        sandbox_type_(sandbox_type),
+ #if BUILDFLAG(IS_WIN)
+       app_container_disabled_(
+           GetContentClient()->browser()->IsAppContainerDisabled(sandbox_type)),
+ #endif
 -      cmd_line_(cmd_line) {
 +      cmd_line_(cmd_line),
 +      inherit_environment_(inherit_environment) {
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -98,11 +100,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -107,11 +109,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -368,10 +372,10 @@ index 5aec5f3dc619373d8faa44b23c7482bbd19d3f96..826c5d3e7022208d87fc77e8735907aa
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index c1e56dc93b80594ffb55e11291e7bd152f029d61..928f3f693eed4252d9d34a64dd392af7e48e4190 100644
+index 368fb567e46a55bdc44820d5b7a2a08ac6cc4ffd..57c0d369e7373f755391da3fafbdaea86358d962 100644
 --- a/content/browser/utility_sandbox_delegate.h
 +++ b/content/browser/utility_sandbox_delegate.h
-@@ -29,7 +29,9 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -30,7 +30,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
   public:
    UtilitySandboxedProcessLauncherDelegate(sandbox::mojom::Sandbox sandbox_type,
                                            const base::EnvironmentMap& env,
@@ -382,7 +386,7 @@ index c1e56dc93b80594ffb55e11291e7bd152f029d61..928f3f693eed4252d9d34a64dd392af7
    ~UtilitySandboxedProcessLauncherDelegate() override;
  
    sandbox::mojom::Sandbox GetSandboxType() override;
-@@ -55,18 +57,16 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -56,18 +58,16 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    ZygoteCommunication* GetZygote() override;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -403,12 +407,16 @@ index c1e56dc93b80594ffb55e11291e7bd152f029d61..928f3f693eed4252d9d34a64dd392af7
  
  #if BUILDFLAG(IS_WIN)
    std::vector<base::FilePath> preload_libraries_;
-@@ -76,8 +76,10 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -77,12 +77,14 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
 +  base::FilePath current_directory_;
-   sandbox::mojom::Sandbox sandbox_type_;
+   const sandbox::mojom::Sandbox sandbox_type_;
+ #if BUILDFLAG(IS_WIN)
+   // If true then App Container will not be used for this utility process.
+   const bool app_container_disabled_;
+ #endif  // BUILDFLAG(IS_WIN)
    base::CommandLine cmd_line_;
 +  bool inherit_environment_;
  };

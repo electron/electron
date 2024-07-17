@@ -14,10 +14,10 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc671dca9d4 100644
+index 57f20891d16030e4d3805691f5beb582933cd0e7..6582af365edd76758d0ddd97de3a2fded106e9a8 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
-@@ -243,6 +243,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+@@ -241,6 +241,10 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
  
    std::string title_string = base::UTF16ToUTF8(title);
  
@@ -28,7 +28,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
    set_file_type_index(file_type_index);
    if (file_types)
      set_file_types(*file_types);
-@@ -261,23 +265,23 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+@@ -259,23 +263,23 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
      case SELECT_UPLOAD_FOLDER:
      case SELECT_EXISTING_FOLDER:
        dialog = CreateSelectFolderDialog(type, title_string, default_path,
@@ -56,7 +56,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
        connect("response",
                &SelectFileDialogLinuxGtk::OnSelectSingleFileDialogResponse);
        break;
-@@ -412,10 +416,14 @@ void SelectFileDialogLinuxGtk::FileNotSelected(GtkWidget* dialog) {
+@@ -408,10 +412,14 @@ void SelectFileDialogLinuxGtk::FileNotSelected(GtkWidget* dialog) {
  GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      const std::string& title,
      const base::FilePath& default_path,
@@ -73,7 +73,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
    SetGtkTransientForAura(dialog, parent);
    AddFilters(GTK_FILE_CHOOSER(dialog));
  
-@@ -431,6 +439,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -427,6 +435,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      GtkFileChooserSetCurrentFolder(GTK_FILE_CHOOSER(dialog),
                                     *last_opened_path());
    }
@@ -82,7 +82,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
    return dialog;
  }
  
-@@ -438,7 +448,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -434,7 +444,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
      Type type,
      const std::string& title,
      const base::FilePath& default_path,
@@ -92,7 +92,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
    std::string title_string = title;
    if (title_string.empty()) {
      title_string =
-@@ -446,11 +457,14 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -442,11 +453,14 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
              ? l10n_util::GetStringUTF8(IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE)
              : l10n_util::GetStringUTF8(IDS_SELECT_FOLDER_DIALOG_TITLE);
    }
@@ -112,7 +112,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -472,19 +486,21 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -468,19 +482,21 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
    gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
    gtk_file_chooser_add_filter(chooser, only_folders);
@@ -137,7 +137,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    return dialog;
  }
-@@ -492,12 +508,14 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenDialog(
+@@ -488,12 +504,14 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenDialog(
  GtkWidget* SelectFileDialogLinuxGtk::CreateMultiFileOpenDialog(
      const std::string& title,
      const base::FilePath& default_path,
@@ -154,7 +154,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), TRUE);
    return dialog;
  }
-@@ -505,14 +523,17 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateMultiFileOpenDialog(
+@@ -501,14 +519,17 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateMultiFileOpenDialog(
  GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
      const std::string& title,
      const base::FilePath& default_path,
@@ -175,7 +175,7 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
        GTK_RESPONSE_ACCEPT);
    SetGtkTransientForAura(dialog, parent);
  
-@@ -538,9 +559,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -534,9 +555,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    // Overwrite confirmation is always enabled in GTK4.
    if (!GtkCheckVersion(4)) {
@@ -189,10 +189,10 @@ index 698b0971130fa58bed102ce447a8335a9c74990b..e1a787744a472afdce04943b5bcb9dc6
  }
  
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index 1c5f12fb39c648cff21da551372239167e4d8ff4..21c84810d0bdfa007ea17ffcdad9682b04e15bf4 100644
+index 68603465c250d1cf3eca8df98be684f0ae608503..fc024839b221f4807f0c34247cd18b7c5729de8b 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
-@@ -91,19 +91,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -85,19 +85,23 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    GtkWidget* CreateSelectFolderDialog(Type type,
                                        const std::string& title,
                                        const base::FilePath& default_path,
@@ -218,9 +218,9 @@ index 1c5f12fb39c648cff21da551372239167e4d8ff4..21c84810d0bdfa007ea17ffcdad9682b
 +                                gfx::NativeWindow parent,
 +                                const ExtraSettings& settings);
  
-   // Removes and returns the |params| associated with |dialog| from
-   // |params_map_|.
-@@ -122,7 +126,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+   // Check whether response_id corresponds to the user cancelling/closing the
+   // dialog. Used as a helper for the below callbacks.
+@@ -112,7 +116,8 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
    GtkWidget* CreateFileOpenHelper(const std::string& title,
                                    const base::FilePath& default_path,
@@ -249,10 +249,10 @@ index 20ad001988831afca73315c577f90c824a36e282..57a8d35ace583eaafb526f70935d21c0
    // NewSelectFileDialogImplKDE will actually work.
    static bool CheckKDEDialogWorksOnUIThread(std::string& kdialog_version);
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_kde.cc b/ui/shell_dialogs/select_file_dialog_linux_kde.cc
-index c79fb47bfba9233da7d2c1438d1e26600684fc78..d7cc7cd70653aaa5b628ef456dcb48a2eef5ec5e 100644
+index 3551c9a8b63d205367defc45e9cf5dda85c92f4e..59bcafc437d485421039a044a508b65915e14702 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_kde.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_kde.cc
-@@ -480,6 +480,9 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
+@@ -465,6 +465,9 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
    int title_message_id = (type == SELECT_UPLOAD_FOLDER)
                               ? IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE
                               : IDS_SELECT_FOLDER_DIALOG_TITLE;
@@ -262,7 +262,7 @@ index c79fb47bfba9233da7d2c1438d1e26600684fc78..d7cc7cd70653aaa5b628ef456dcb48a2
    pipe_task_runner_->PostTaskAndReplyWithResult(
        FROM_HERE,
        base::BindOnce(
-@@ -487,7 +490,7 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
+@@ -472,7 +475,7 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
            KDialogParams(
                "--getexistingdirectory", GetTitle(title, title_message_id),
                default_path.empty() ? *last_opened_path() : default_path, parent,
@@ -270,14 +270,14 @@ index c79fb47bfba9233da7d2c1438d1e26600684fc78..d7cc7cd70653aaa5b628ef456dcb48a2
 +              false, extra_settings.allow_multiple_selection)),
        base::BindOnce(
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
-           parent, params));
+           parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f530b79d44 100644
+index 9d241b50fe0cf7b1737a9e9c42496084f1133dfc..f95fc2676a8d4a65a334b702ca9e1d615b338174 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -219,6 +219,10 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -218,6 +218,10 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+   info_->type = type;
    info_->main_task_runner = base::SequencedTaskRunner::GetCurrentDefault();
-   listener_params_ = params;
  
 +  ExtraSettings extra_settings;
 +  if (params)
@@ -286,7 +286,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
    if (owning_window) {
      if (auto* root = owning_window->GetRootWindow()) {
        if (auto* host = root->GetNativeWindowProperty(
-@@ -246,7 +250,7 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -245,7 +249,7 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
              host_->GetAcceleratedWidget(),
              base::BindOnce(
                  &SelectFileDialogLinuxPortal::SelectFileImplWithParentHandle,
@@ -295,7 +295,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
        // Return early to skip the fallback below.
        return;
      } else {
-@@ -256,7 +260,7 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -255,7 +259,7 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
  
    // No parent, so just use a blank parent handle.
    SelectFileImplWithParentHandle(title, default_path, filter_set,
@@ -304,7 +304,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
  }
  
  bool SelectFileDialogLinuxPortal::HasMultipleFileTypeChoicesImpl() {
-@@ -453,6 +457,7 @@ void SelectFileDialogLinuxPortal::SelectFileImplWithParentHandle(
+@@ -452,6 +456,7 @@ void SelectFileDialogLinuxPortal::SelectFileImplWithParentHandle(
      base::FilePath default_path,
      PortalFilterSet filter_set,
      base::FilePath::StringType default_extension,
@@ -312,7 +312,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
      std::string parent_handle) {
    bool default_path_exists = CallDirectoryExistsOnUIThread(default_path);
    dbus_thread_linux::GetTaskRunner()->PostTask(
-@@ -461,7 +466,7 @@ void SelectFileDialogLinuxPortal::SelectFileImplWithParentHandle(
+@@ -460,7 +465,7 @@ void SelectFileDialogLinuxPortal::SelectFileImplWithParentHandle(
            &SelectFileDialogLinuxPortal::DialogInfo::SelectFileImplOnBusThread,
            info_, std::move(title), std::move(default_path), default_path_exists,
            std::move(filter_set), std::move(default_extension),
@@ -321,7 +321,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
  }
  
  void SelectFileDialogLinuxPortal::DialogInfo::SelectFileImplOnBusThread(
-@@ -470,7 +475,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::SelectFileImplOnBusThread(
+@@ -469,7 +474,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::SelectFileImplOnBusThread(
      const bool default_path_exists,
      PortalFilterSet filter_set,
      base::FilePath::StringType default_extension,
@@ -331,7 +331,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
    DCHECK(dbus_thread_linux::GetTaskRunner()->RunsTasksInCurrentSequence());
    dbus::Bus* bus = AcquireBusOnBusThread();
    if (!bus->Connect())
-@@ -516,7 +522,7 @@ void SelectFileDialogLinuxPortal::DialogInfo::SelectFileImplOnBusThread(
+@@ -515,7 +521,7 @@ void SelectFileDialogLinuxPortal::DialogInfo::SelectFileImplOnBusThread(
        base::StringPrintf("handle_%d", handle_token_counter_++);
  
    AppendOptions(&writer, response_handle_token, default_path,
@@ -340,7 +340,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
  
    // The sender part of the handle object contains the D-Bus connection name
    // without the prefix colon and with all dots replaced with underscores.
-@@ -546,7 +552,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -545,7 +551,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
      const std::string& response_handle_token,
      const base::FilePath& default_path,
      const bool default_path_exists,
@@ -350,7 +350,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
    dbus::MessageWriter options_writer(nullptr);
    writer->OpenArray("{sv}", &options_writer);
  
-@@ -554,8 +561,10 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -553,8 +560,10 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
                       response_handle_token);
  
    if (type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER) {
@@ -363,7 +363,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
  
-@@ -563,12 +572,12 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -562,12 +571,12 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);
@@ -379,7 +379,7 @@ index 65727489ddecb755eeabbd194ce843ca9eaa59c9..38134183309f89b76e7d2a8cda0a11f5
        // If this is an existing directory, navigate to that directory, with no
        // filename.
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
-index c487f7da19e2d05696a8eb72f2fa3e12972149f3..02a40c571570974dcc61e1b1f7ed95fbfc2bedf2 100644
+index 5e35c481d8227692ae8cfcfcb727938360c75294..d24b765441ed38874cdcb806efff811e348ee371 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.h
 @@ -115,7 +115,8 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {

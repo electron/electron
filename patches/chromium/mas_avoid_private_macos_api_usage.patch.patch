@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2ed6d8f4bcb96f17aec78867fa5469c6dfe03b17..1674fe4884f20b290db1d4015dcda5fc3b5a5d40 100644
+index ec7885456d502c4f794753eeb0f8603b6879a450..edb28f65458b4118395261c9796a1de6edbe9786 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1046,6 +1046,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -303,11 +303,11 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 6ebc4754ef986f5ae966ff7a3217ab77df78edf9..91147b8a42f731c645c318776933b4c139ca606d 100644
+index baa5b94234aa92f6d8cccd3235d97ba23383d701..4c00e21e1dfc1cb5bf18cb86a644fc3e1d47ccd3 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -104,7 +104,9 @@ void OrderChildWindow(NSWindow* child_window,
- }  // namespace
+@@ -113,7 +113,9 @@ - (instancetype)initWithFrame:(NSRect)frame
+ @end
  
  @interface NSWindow (Private)
 +#if !IS_MAS_BUILD()
@@ -316,7 +316,7 @@ index 6ebc4754ef986f5ae966ff7a3217ab77df78edf9..91147b8a42f731c645c318776933b4c1
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -143,6 +145,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -152,6 +154,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -325,7 +325,7 @@ index 6ebc4754ef986f5ae966ff7a3217ab77df78edf9..91147b8a42f731c645c318776933b4c1
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -169,6 +173,8 @@ - (BOOL)usesCustomDrawing {
+@@ -210,6 +214,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -334,7 +334,7 @@ index 6ebc4754ef986f5ae966ff7a3217ab77df78edf9..91147b8a42f731c645c318776933b4c1
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -357,6 +363,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -398,6 +404,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -343,7 +343,7 @@ index 6ebc4754ef986f5ae966ff7a3217ab77df78edf9..91147b8a42f731c645c318776933b4c1
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -368,6 +376,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -409,6 +417,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -370,10 +370,10 @@ index b3c087eda0561d94d205ef0cbbb341a7e2a34638..035202378209e32e6f7c630140367cda
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index dbc67fb38b69dd5d8e256d190727c02cbabef622..d493a07acf63ceec42f9b65b99f62650a7439d79 100644
+index 2ce093d0818f52433670e889847fbf00b7d398cc..3c5ab7a6e6608b3f5e35f8b46a59880100b2a627 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -362,6 +362,7 @@ viz_component("service") {
+@@ -364,6 +364,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -381,7 +381,7 @@ index dbc67fb38b69dd5d8e256d190727c02cbabef622..d493a07acf63ceec42f9b65b99f62650
    }
  
    if (is_android || use_ozone) {
-@@ -632,6 +633,7 @@ viz_source_set("unit_tests") {
+@@ -635,6 +636,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -700,7 +700,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9cc75b56b503ec6dfa0004fce9d75f98e4a71c01..93540c854579eb3e2c1187ac47cd8f33d3c8b4e0 100644
+index 3a907ac785f029c0b0faae89ff2e0ce7751a7ad8..c9bd8db4b09eb6565d448a8089c7b804acaefce4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -727,7 +727,7 @@ index 9cc75b56b503ec6dfa0004fce9d75f98e4a71c01..93540c854579eb3e2c1187ac47cd8f33
  
    public_deps = [
      ":test_interfaces",
-@@ -2972,6 +2975,7 @@ test("content_unittests") {
+@@ -2973,6 +2976,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1260,10 +1260,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 6ee0ec12c17501514937f9126338bd402546d28b..9801bfbc7b6e0fe85809b343500cad352f01ff21 100644
+index fb1e7f7238358ca9d505f76a158b88f4412412f7..3340e675bed474cba55d78b249c4658dcf91f990 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -330,6 +330,7 @@ component("core") {
+@@ -332,6 +332,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]

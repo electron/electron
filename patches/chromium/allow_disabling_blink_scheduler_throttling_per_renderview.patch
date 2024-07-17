@@ -116,10 +116,10 @@ index 4220a0aebf4a2ce3d62f76c441b6ec1b5e11ffa1..6ea17602d2b186b81cf7dc69750bd302
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 110c0ff0ef86dae3d6ea374d55f9dd9149f57c5c..420e049be1e850a4f6255d59fd9eff56754018aa 100644
+index ae03be1ecbcb6e01dae0c9f79367dbc62dadfe62..108dcbd70e1921ed25250807ba4620d9b9696d68 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2458,6 +2458,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2459,6 +2459,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
