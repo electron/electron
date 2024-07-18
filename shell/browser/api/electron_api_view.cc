@@ -180,7 +180,7 @@ View::~View() {
     return;
   view_->RemoveObserver(this);
   if (delete_view_)
-    delete view_;
+    view_.ClearAndDelete();
 }
 
 void View::ReorderChildView(gin::Handle<View> child, size_t index) {
