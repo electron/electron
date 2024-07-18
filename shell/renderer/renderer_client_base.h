@@ -12,7 +12,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/key_systems_support_registration.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/common/gin_helper/dictionary.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
@@ -29,6 +28,10 @@ class SpellCheck;
 
 namespace blink {
 class WebLocalFrame;
+}
+
+namespace gin_helper {
+class Dictionary;
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

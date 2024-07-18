@@ -14,7 +14,6 @@
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
-#include "gin/dictionary.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
