@@ -4,9 +4,7 @@
 
 #include "shell/browser/ui/message_box.h"
 
-#include <string>
 #include <utility>
-#include <vector>
 
 #import <Cocoa/Cocoa.h>
 

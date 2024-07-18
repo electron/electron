@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"

@@ -5,7 +5,6 @@
 #include "shell/renderer/electron_render_frame_observer.h"
 
 #include <utility>
-#include <vector>
 
 #include "base/command_line.h"
 #include "base/memory/ref_counted_memory.h"
