@@ -66,11 +66,16 @@ struct OffscreenSharedTextureValue {
   // The pixel format of the shared texture, RGBA or BGRA depends on platform.
   media::VideoPixelFormat pixel_format;
 
-  // The coded size
+  // The full dimensions of the video frame data.
   gfx::Size coded_size;
 
-  // The visible rect
+  // A subsection of [0, 0, coded_size().width(), coded_size.height()].
+  // In OSR case, it is expected to have the full area of the section.
   gfx::Rect visible_rect;
+
+  // The region of the video frame that capturer would like to populate.
+  // In OSR case, it is the same with `dirtyRect` that needs to be painted.
+  gfx::Rect content_rect;
 
   // The capture timestamp, microseconds since capture start
   int64_t timestamp;
