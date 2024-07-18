@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
 namespace content {

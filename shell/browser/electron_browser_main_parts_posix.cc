@@ -14,6 +14,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "base/compiler_specific.h"
 #include "base/debug/leak_annotations.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/threading/platform_thread.h"

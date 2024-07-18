@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
