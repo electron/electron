@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <memory>
 
-#include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"

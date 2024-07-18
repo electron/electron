@@ -8,7 +8,6 @@
 #include "base/compiler_specific.h"
 #include "content/public/utility/content_utility_client.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
-#include "printing/buildflags/buildflags.h"
 
 namespace mojo {
 class ServiceFactory;

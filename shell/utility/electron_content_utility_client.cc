@@ -10,6 +10,7 @@
 #include "base/no_destructor.h"
 #include "content/public/utility/utility_thread.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
+#include "printing/buildflags/buildflags.h"
 #include "sandbox/policy/mojom/sandbox.mojom.h"
 #include "sandbox/policy/sandbox_type.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"

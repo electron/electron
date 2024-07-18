@@ -16,7 +16,6 @@
 #include "base/process/process_handle.h"
 #include "base/process/process_metrics.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"

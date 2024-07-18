@@ -8,7 +8,6 @@
 #include "base/containers/contains.h"
 #include "base/debug/stack_trace.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/buildflags/buildflags.h"
 #include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
