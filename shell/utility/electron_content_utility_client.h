@@ -6,11 +6,11 @@
 #define ELECTRON_SHELL_UTILITY_ELECTRON_CONTENT_UTILITY_CLIENT_H_
 
 #include "content/public/utility/content_utility_client.h"
-#include "mojo/public/cpp/bindings/binder_map.h"
 
 namespace mojo {
+class BinderMap;
 class ServiceFactory;
-}
+}  // namespace mojo
 
 namespace electron {
 
