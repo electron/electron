@@ -9,7 +9,6 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "base/values.h"
 #include "extensions/common/url_pattern.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
