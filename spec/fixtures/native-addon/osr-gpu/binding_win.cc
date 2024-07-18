@@ -66,6 +66,10 @@ napi_value ExtractPixels(napi_env env, napi_callback_info info) {
   // Cache the staging texture if it does not exist or size has changed
   if (!cached_staging_texture || cached_width != desc.Width ||
       cached_height != desc.Height) {
+    if (cached_staging_texture) {
+      cached_staging_texture->Release();
+    }
+
     desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
     desc.Usage = D3D11_USAGE_STAGING;
     desc.BindFlags = 0;
@@ -76,7 +80,7 @@ napi_value ExtractPixels(napi_env env, napi_callback_info info) {
     hr = device->CreateTexture2D(&desc, nullptr, &cached_staging_texture);
     if (FAILED(hr)) {
       napi_throw_error(env, "osr-gpu", "Failed to create staging texture");
-      return nullptr();
+      return nullptr;
     }
 
     cached_width = desc.Width;
@@ -118,11 +122,10 @@ napi_value ExtractPixels(napi_env env, napi_callback_info info) {
 
   // Unmap the staging texture
   context->Unmap(cached_staging_texture.Get(), 0);
-
   return result;
 }
 
-void InitializeDirectX(napi_env env) {
+napi_value InitializeGpu(napi_env env, napi_callback_info info) {
   HRESULT hr;
 
   // Feature levels supported
@@ -141,13 +144,13 @@ void InitializeDirectX(napi_env env) {
   hr = CreateDXGIFactory(IID_IDXGIFactory2, (void**)&dxgi_factory);
   if (FAILED(hr)) {
     napi_throw_error(env, "osr-gpu", "CreateDXGIFactory failed");
-    return;
+    return nullptr;
   }
 
   hr = dxgi_factory->EnumAdapters(0, &adapter);
   if (FAILED(hr)) {
     napi_throw_error(env, "osr-gpu", "EnumAdapters failed");
-    return;
+    return nullptr;
   }
 
   DXGI_ADAPTER_DESC adapter_desc;
@@ -160,22 +163,25 @@ void InitializeDirectX(napi_env env) {
                          D3D11_SDK_VERSION, &device, &feature_level, &context);
   if (FAILED(hr)) {
     napi_throw_error(env, "osr-gpu", "D3D11CreateDevice failed");
-    return;
+    return nullptr;
   }
 
   hr = device->QueryInterface(IID_PPV_ARGS(&device1));
   if (FAILED(hr)) {
     napi_throw_error(env, "osr-gpu", "Failed to open d3d11_1 device");
+    return nullptr;
   }
+
+  return nullptr;
 }
 
 napi_value Init(napi_env env, napi_value exports) {
-  InitializeDirectX(env);
-
   napi_status status;
-  napi_property_descriptor descriptors[] = {{"ExtractPixels", NULL,
-                                             ExtractPixels, NULL, NULL, NULL,
-                                             napi_default, NULL}};
+  napi_property_descriptor descriptors[] = {
+      {"ExtractPixels", NULL, ExtractPixels, NULL, NULL, NULL, napi_default,
+       NULL},
+      {"InitializeGpu", NULL, InitializeGpu, NULL, NULL, NULL, napi_default,
+       NULL}};
 
   status = napi_define_properties(
       env, exports, sizeof(descriptors) / sizeof(*descriptors), descriptors);
