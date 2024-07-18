@@ -10,12 +10,15 @@
 
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
-#include "gin/arguments.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+
+namespace gin {
+class Arguments;
+}  // namespace gin
 
 namespace electron::api {
 
