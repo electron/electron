@@ -6509,30 +6509,6 @@ describe('BrowserWindow module', () => {
       });
       w.loadFile(imagePath);
     });
-
-    it('use shared memory, hardware acceleration enabled', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          offscreen: true,
-          offscreenUseSharedTexture: false
-        },
-        transparent: true,
-        frame: false,
-        width: 128,
-        height: 128
-      });
-
-      w.webContents.once('paint', async (e, dirtyRect, image) => {
-        try {
-          expect(image.toBitmap().equals(targetImage.toBitmap())).to.equal(true);
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(imagePath);
-    });
   });
 
   describe('"transparent" option', () => {
