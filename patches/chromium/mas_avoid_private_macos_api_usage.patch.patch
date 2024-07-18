@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ec7885456d502c4f794753eeb0f8603b6879a450..edb28f65458b4118395261c9796a1de6edbe9786 100644
+index 2bacdb6c4c074adc45a0fec8b1f2144c1a37eb99..de398a8d9c91dcf32b35c6417f28ac994e2745a6 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1048,6 +1048,7 @@ component("base") {
+@@ -1049,6 +1049,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c7d5c4a47f6150024174628352cdc3b4880e0646..1339d0cadf7bdbf913f1a89ba014429e8c92d556 100644
+index 83343c7e2217d308e5a8235ebc6d490cb2cafa20..034873d32661f2bbe8622c3dca4fcece6fe9b6ad 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3a907ac785f029c0b0faae89ff2e0ce7751a7ad8..c9bd8db4b09eb6565d448a8089c7b804acaefce4 100644
+index 80e460816558d43b87949703c4ec4f2c9394d13c..645823743ef5421551ed63f96b1c94991a591011 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -720,7 +720,7 @@ index 3a907ac785f029c0b0faae89ff2e0ce7751a7ad8..c9bd8db4b09eb6565d448a8089c7b804
    ]
  
    public_deps = [
-@@ -1103,6 +1104,7 @@ static_library("browsertest_support") {
+@@ -1104,6 +1105,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -728,7 +728,7 @@ index 3a907ac785f029c0b0faae89ff2e0ce7751a7ad8..c9bd8db4b09eb6565d448a8089c7b804
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1718,6 +1720,7 @@ test("content_browsertests") {
+@@ -1719,6 +1721,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -736,7 +736,7 @@ index 3a907ac785f029c0b0faae89ff2e0ce7751a7ad8..c9bd8db4b09eb6565d448a8089c7b804
  
    public_deps = [
      ":test_interfaces",
-@@ -2973,6 +2976,7 @@ test("content_unittests") {
+@@ -2976,6 +2979,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1426,7 +1426,7 @@ index 84e156b7ff28abc2071dde155e56a2a92a53b142..bd73dac7fe3ed256cab805a0815d31d4
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 70342aaf70db9d0d53494ea98c4eec5e36c58de5..ecf8c102cbb6110eabeba95053a2fdfb739c954c 100644
+index 381ecc15e5cd3ef6275ce36335e95fc745788c32..08438eb0ed184c2afa1bf2501a5cccf77056cbed 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -363,6 +363,7 @@ component("base") {
@@ -1626,7 +1626,7 @@ index cd6c9a924dce762ff935ef722c8873c974772225..b162795219e0fac3d9caa6bbfead126c
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index e92ca79bebffde146bd0d8778f126651f44e527e..298f06095ea598348eec489b0a4be737945b87de 100644
+index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0947cc6ce 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -31,7 +31,9 @@
@@ -1639,7 +1639,7 @@ index e92ca79bebffde146bd0d8778f126651f44e527e..298f06095ea598348eec489b0a4be737
  @class NSView;
  
  namespace remote_cocoa {
-@@ -475,10 +477,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -479,10 +481,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -1653,10 +1653,10 @@ index e92ca79bebffde146bd0d8778f126651f44e527e..298f06095ea598348eec489b0a4be737
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index fb7b64fc07b41c802d9c8c39a1a681c4c95465f8..22eb36e3b689400cb20922cf2b380fd7a69782dc 100644
+index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995ad80c26bb 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -345,7 +345,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -349,7 +349,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();
@@ -1668,7 +1668,7 @@ index fb7b64fc07b41c802d9c8c39a1a681c4c95465f8..22eb36e3b689400cb20922cf2b380fd7
  }
  
  gfx::NativeViewAccessible
-@@ -360,7 +364,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -364,7 +368,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      return [in_process_ns_window_bridge_->ns_view() window];
    }
  
@@ -1680,7 +1680,7 @@ index fb7b64fc07b41c802d9c8c39a1a681c4c95465f8..22eb36e3b689400cb20922cf2b380fd7
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1297,9 +1305,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1316,9 +1324,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -1692,7 +1692,7 @@ index fb7b64fc07b41c802d9c8c39a1a681c4c95465f8..22eb36e3b689400cb20922cf2b380fd7
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1460,17 +1470,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1481,17 +1491,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1713,7 +1713,7 @@ index fb7b64fc07b41c802d9c8c39a1a681c4c95465f8..22eb36e3b689400cb20922cf2b380fd7
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1483,6 +1496,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1504,6 +1517,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 2cbcb0edce1c6b4a6c2f2f64bd7eed977633d2da..44fe72f16ef3d2a15e57091837eeb528fb07b586 100644
+index 5d692d88c9f95845c97f848fd421916c52bd2416..b0131582dc0a308e1525b12b554dd03e3373e8b1 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -48,7 +48,7 @@ index 2cbcb0edce1c6b4a6c2f2f64bd7eed977633d2da..44fe72f16ef3d2a15e57091837eeb528
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -380,7 +383,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -383,7 +386,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -57,7 +57,7 @@ index 2cbcb0edce1c6b4a6c2f2f64bd7eed977633d2da..44fe72f16ef3d2a15e57091837eeb528
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -466,6 +469,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -469,6 +472,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -65,7 +65,7 @@ index 2cbcb0edce1c6b4a6c2f2f64bd7eed977633d2da..44fe72f16ef3d2a15e57091837eeb528
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -504,6 +508,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -507,6 +511,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
