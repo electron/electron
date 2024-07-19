@@ -14,7 +14,6 @@
 
 #include "base/apple/scoped_cftyperef.h"
 #include "base/containers/flat_map.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"

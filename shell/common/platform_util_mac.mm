@@ -19,7 +19,6 @@
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/mac/scoped_aedesc.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"

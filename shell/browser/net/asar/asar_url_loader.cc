@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/strings/stringprintf.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "electron/fuses.h"

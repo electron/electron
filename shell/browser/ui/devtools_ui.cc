@@ -11,7 +11,6 @@
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/url_data_source.h"
