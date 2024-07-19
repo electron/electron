@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_ICON_PAINTER_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_ICON_PAINTER_H_
 
-#include "ui/gfx/canvas.h"
+namespace gfx {
+class Canvas;
+}  // namespace gfx
 
 namespace electron {
 
