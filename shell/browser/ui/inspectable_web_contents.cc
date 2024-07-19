@@ -10,8 +10,6 @@
 #include <utility>
 
 #include "base/base64.h"
-#include "base/json/json_reader.h"
-#include "base/json/json_writer.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/ranges/algorithm.h"

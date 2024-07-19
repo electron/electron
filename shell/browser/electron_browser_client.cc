@@ -16,7 +16,6 @@
 #include "base/debug/crash_logging.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
-#include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
