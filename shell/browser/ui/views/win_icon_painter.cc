@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/win_icon_painter.h"
 
 #include "base/numerics/safe_conversions.h"
+#include "cc/paint/paint_flags.h"
 #include "third_party/skia/include/core/SkPath.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/rect_conversions.h"

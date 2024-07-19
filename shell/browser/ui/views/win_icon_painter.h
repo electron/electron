@@ -5,8 +5,13 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_ICON_PAINTER_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_ICON_PAINTER_H_
 
+namespace cc {
+class PaintFlags;
+}  // namespace cc
+
 namespace gfx {
 class Canvas;
+class Rect;
 }  // namespace gfx
 
 namespace electron {
