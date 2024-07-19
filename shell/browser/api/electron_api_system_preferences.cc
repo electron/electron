@@ -9,7 +9,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
-#include "ui/native_theme/native_theme.h"
 
 namespace electron::api {
 

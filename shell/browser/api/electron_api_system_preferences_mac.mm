@@ -27,7 +27,6 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
-#include "ui/native_theme/native_theme.h"
 
 namespace gin {
 
