@@ -75,7 +75,6 @@ class WebContentsPreferences
   bool AllowsNodeIntegrationInSubFrames() const {
     return node_integration_in_sub_frames_;
   }
-  bool ShouldDisableDialogs() const { return disable_dialogs_; }
   bool ShouldUseSafeDialogs() const { return safe_dialogs_; }
   bool GetSafeDialogsMessage(std::string* message) const;
   bool ShouldDisablePopups() const { return disable_popups_; }
