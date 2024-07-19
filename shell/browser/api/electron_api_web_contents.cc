@@ -3614,9 +3614,8 @@ std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
   auto result = SessionPreferences::GetValidPreloads(GetBrowserContext());
 
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
-    base::FilePath preload;
-    if (web_preferences->GetPreloadPath(&preload)) {
-      result.emplace_back(preload);
+    if (auto preload = web_preferences->GetPreloadPath()) {
+      result.emplace_back(*preload);
     }
   }
 
