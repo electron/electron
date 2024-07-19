@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"

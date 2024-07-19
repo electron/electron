@@ -15,7 +15,6 @@
 #include "base/types/optional_util.h"
 #include "chrome/common/extensions/api/scripting.h"
 #include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
