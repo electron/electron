@@ -52,7 +52,7 @@ class WebContentsPreferences
   void OverrideWebkitPrefs(blink::web_pref::WebPreferences* prefs,
                            blink::RendererPreferences* renderer_prefs);
 
-  base::Value* last_preference() { return &last_web_preferences_; }
+  const base::Value* last_preference() const { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return offscreen_; }
   std::optional<SkColor> GetBackgroundColor() const {
