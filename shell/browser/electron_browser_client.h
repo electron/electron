@@ -339,10 +339,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<ElectronHidDelegate> hid_delegate_;
   std::unique_ptr<ElectronWebAuthenticationDelegate>
       web_authentication_delegate_;
-
-#if BUILDFLAG(IS_MAC)
-  raw_ptr<ElectronBrowserMainParts> browser_main_parts_ = nullptr;
-#endif
 };
 
 }  // namespace electron
