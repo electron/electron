@@ -15,7 +15,6 @@
 #include "base/values.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(IS_WIN)

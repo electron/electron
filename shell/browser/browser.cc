@@ -21,6 +21,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/thread_restrictions.h"
 
