@@ -17,7 +17,6 @@
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
-#include "gin/wrappable.h"
 #include "net/base/data_url.h"
 #include "shell/browser/browser.h"
 #include "shell/common/asar/asar_util.h"
