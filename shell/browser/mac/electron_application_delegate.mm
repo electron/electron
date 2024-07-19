@@ -11,7 +11,6 @@
 #include "base/allocator/partition_allocator/src/partition_alloc/shim/allocator_shim.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/values.h"
 #include "shell/browser/api/electron_api_push_notifications.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
