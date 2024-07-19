@@ -15,7 +15,6 @@
 #include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/files/file_util.h"
-#include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
 

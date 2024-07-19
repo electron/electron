@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/containers/contains.h"
-#include "base/logging.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
 #include "base/values.h"
