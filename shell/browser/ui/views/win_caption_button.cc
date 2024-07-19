@@ -18,7 +18,6 @@
 #include "ui/base/theme_provider.h"
 #include "ui/gfx/animation/tween.h"
 #include "ui/gfx/canvas.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/scoped_canvas.h"
 
