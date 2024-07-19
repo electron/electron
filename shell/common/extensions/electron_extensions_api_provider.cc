@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/containers/span.h"
-#include "base/strings/utf_string_conversions.h"
 #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "chrome/common/extensions/manifest_handlers/minimum_chrome_version_checker.h"
 #include "electron/buildflags/buildflags.h"

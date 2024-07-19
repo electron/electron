@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_notification.h"
 
-#include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"

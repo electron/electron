@@ -10,7 +10,6 @@
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/strings/stringprintf.h"
-#include "base/strings/utf_string_conversions.h"
 #include "device/bluetooth/public/cpp/bluetooth_uuid.h"
 #include "services/device/public/cpp/bluetooth/bluetooth_utils.h"
 #include "services/device/public/mojom/serial.mojom.h"

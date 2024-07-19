@@ -17,7 +17,6 @@
 #include "base/environment.h"
 #include "base/feature_list.h"
 #include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "content/public/common/content_switches.h"
