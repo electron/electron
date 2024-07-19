@@ -62,10 +62,10 @@ index e724e46e422be25ddab8b94d03324832ab08e518..b5c4c9c41607d55d89a1ee6831848d4e
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index b935f996b137d91d82f89414122355d5db65aeb9..6d7d84cd2ea6d9197c4ff1149131658e49f2ff23 100644
+index c6a080107949c435565d6e57646f36fd5e3b912d..e37331436cf5d4bca41bb39a288d395e820736fd 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -72,14 +72,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+@@ -77,14 +77,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32];
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {

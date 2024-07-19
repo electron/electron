@@ -112,7 +112,7 @@ index 3450c15835d8b792f37764f6edc4a4560be435ef..b1034aa141d6121f8e1524fb34a28a04
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 6c9bc3c25abd8f15ac0b61a3ee18f739fc6a3b42..3bff0983f6a2f4ca52995782faa6dce171eb183e 100644
+index 0f42a915d4755d9a7e531f5d1aba4060f77482ab..9334a3ccc919eb2420543679084e90485ba9c609 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -712,6 +712,7 @@ URLLoader::URLLoader(
@@ -132,7 +132,7 @@ index 6c9bc3c25abd8f15ac0b61a3ee18f739fc6a3b42..3bff0983f6a2f4ca52995782faa6dce1
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1707,6 +1708,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1713,6 +1714,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,10 +153,10 @@ index 6c9bc3c25abd8f15ac0b61a3ee18f739fc6a3b42..3bff0983f6a2f4ca52995782faa6dce1
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 67befb7918adc1d7ff7f969adfadfe461f2a5f33..75813aadd7c496e8a6b9e95e8fc442da048f7c66 100644
+index 457068609918167a0cd7714ddea922dc91e173b1..0a9dd2a04353d345e1d2a2f7d5519b4fd35025e6 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -655,6 +655,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -670,6 +670,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

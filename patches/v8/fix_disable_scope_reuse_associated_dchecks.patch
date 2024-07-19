@@ -40,10 +40,10 @@ index 530a249adde65a47c8e0babf5723b52b8d2a6b1a..fca49d135ad2f23307654e1b0c36e846
          scope->AsDeclarationScope()->ShouldEagerCompile()) {
        scope->AllocateScopeInfosRecursively(isolate, next_outer_scope,
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 10fe26539516b3cb1a18ebefcb876d4b6ff6a116..82e32908e53b9dc30dc26517b9560a7014971669 100644
+index 9588f292a3c15a5cfc88b3089196145f9580ae05..5df9afc76e6a59b9a471190b4f59b9c87d3bf9e1 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -992,6 +992,8 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -993,6 +993,8 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  

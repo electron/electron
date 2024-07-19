@@ -64,7 +64,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 6d8396ba4dc3e8542d53d4911318e772444346e8..8196884357a5c9cb7fd9a023304e1cb7e378ba8a 100644
+index d34e0e29de055b560d191356d0328fa528add7d5..fe25b70c84a2ee4c2950ccc92042b9ea906f2ff2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3113,6 +3113,7 @@ void LocalFrame::RequestExecuteScript(
@@ -204,7 +204,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 9b3f4feb8b5167a3e362a9344dfccb8bb9758133..a19082db1952cb5e7bd28b6968ce9a4b6c6511e1 100644
+index db1cc198dfc40ce359bad4157a4aad396e1be1a0..424fa3415a9f7d44a8422ecf0eb3670bfffd910a 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -294,6 +294,7 @@ void ExecuteScriptsInMainWorld(

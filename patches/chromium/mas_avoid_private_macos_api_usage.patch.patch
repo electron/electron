@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 83343c7e2217d308e5a8235ebc6d490cb2cafa20..034873d32661f2bbe8622c3dca4fcece6fe9b6ad 100644
+index 93cb8d16fe074ea48705cfaad057244e297310e4..ebe854ac4dcc057fc6d869f2e3cd8f2fe70e80e1 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -1526,7 +1526,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 2bb34b94116ad47717e2ec14c328f25dc807eff8..686f92a8cd9f11483bd9afefe048e0e93eadd160 100644
+index 9fb3bee897513d262ac44dccfe6662cc145a8df7..5b7592d7f739b5e580429a69575e6df5ee7e4695 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -72,6 +72,10 @@ component("display") {
