@@ -22,7 +22,6 @@
 
 #include "base/containers/contains.h"
 #include "base/memory/raw_ref.h"
-#include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "base/containers/contains.h"
-#include "base/stl_util.h"
 #include "extensions/common/command.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"

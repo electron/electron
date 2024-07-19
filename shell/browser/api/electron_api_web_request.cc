@@ -12,7 +12,6 @@
 #include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
-#include "base/stl_util.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "extensions/browser/api/web_request/web_request_resource_type.h"
