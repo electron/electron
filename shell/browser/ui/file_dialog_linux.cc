@@ -67,36 +67,18 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
   ~FileChooserDialog() override = default;
 
-  ui::SelectFileDialogLinux::ExtraSettings GetExtraSettings(
-      const DialogSettings& settings) {
-    ui::SelectFileDialogLinux::ExtraSettings extra;
-    extra.button_label = settings.button_label;
-    extra.show_overwrite_confirmation =
-        settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
-    extra.allow_multiple_selection =
-        settings.properties & OPEN_DIALOG_MULTI_SELECTIONS;
-    if (type_ == DialogType::SAVE) {
-      extra.show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
-    } else {
-      extra.show_hidden = settings.properties & OPEN_DIALOG_SHOW_HIDDEN_FILES;
-    }
-
-    return extra;
-  }
-
   void RunSaveDialogImpl(const DialogSettings& settings) {
     type_ = DialogType::SAVE;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
-    auto extra_settings = GetExtraSettings(settings);
+    ApplySettings(settings);
     dialog_->SelectFile(
         ui::SelectFileDialog::SELECT_SAVEAS_FILE,
         base::UTF8ToUTF16(settings.title), settings.default_path,
         &file_info /* file_types */, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
-                               : nullptr,
-        static_cast<void*>(&extra_settings));
+                               : nullptr);
   }
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -115,14 +97,13 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     type_ = DialogType::OPEN;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
-    auto extra_settings = GetExtraSettings(settings);
+    ApplySettings(settings);
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
         settings.default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
-                               : nullptr,
-        static_cast<void*>(&extra_settings));
+                               : nullptr);
   }
 
   void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -198,6 +179,18 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   }
 
  private:
+  void ApplySettings(const DialogSettings& settings) {
+    dialog_->SetButtonLabel(settings.button_label);
+    dialog_->SetOverwriteConfirmationShown(
+        settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION);
+    dialog_->SetMultipleSelectionsAllowed(settings.properties &
+                                          OPEN_DIALOG_MULTI_SELECTIONS);
+    int hidden_flag = type_ == DialogType::SAVE
+                          ? static_cast<int>(SAVE_DIALOG_SHOW_HIDDEN_FILES)
+                          : static_cast<int>(OPEN_DIALOG_SHOW_HIDDEN_FILES);
+    dialog_->SetHiddenShown(settings.properties & hidden_flag);
+  }
+
   DialogType type_;
   scoped_refptr<ui::SelectFileDialog> dialog_;
   base::OnceCallback<void(gin_helper::Dictionary)> callback_;
