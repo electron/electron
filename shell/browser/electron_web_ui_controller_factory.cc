@@ -4,6 +4,7 @@
 
 #include "shell/browser/electron_web_ui_controller_factory.h"
 
+#include "base/memory/singleton.h"
 #include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui_controller.h"
