@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/observer_list.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "ui/gfx/geometry/rect.h"
 
