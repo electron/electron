@@ -275,15 +275,6 @@ bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
   return false;
 }
 
-bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
-  DCHECK(path);
-  if (preload_path_) {
-    *path = *preload_path_;
-    return true;
-  }
-  return false;
-}
-
 bool WebContentsPreferences::IsSandboxed() const {
   if (sandbox_)
     return *sandbox_;

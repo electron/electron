@@ -77,7 +77,7 @@ class WebContentsPreferences
   }
   bool ShouldDisablePopups() const { return disable_popups_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
-  bool GetPreloadPath(base::FilePath* path) const;
+  std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
   bool IsSandboxed() const;
 
  private:
