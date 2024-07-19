@@ -1638,8 +1638,8 @@ ElectronBrowserClient::CreateLoginDelegate(
     bool first_auth_attempt,
     LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
-      auth_info, web_contents, is_main_frame, url, response_headers,
-      first_auth_attempt, std::move(auth_required_callback));
+      auth_info, web_contents, is_main_frame, base::kNullProcessId, url,
+      response_headers, first_auth_attempt, std::move(auth_required_callback));
 }
 
 std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
