@@ -8,7 +8,10 @@
 #include <string>
 
 #include "electron/shell/common/api/api.mojom.h"
-#include "ui/gfx/geometry/rect.h"
+
+namespace gfx {
+class Rect;
+}
 
 namespace electron {
 
