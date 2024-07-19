@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ref.h"
 #include "shell/browser/ui/accelerator_util.h"
 #include "ui/gfx/geometry/insets.h"
