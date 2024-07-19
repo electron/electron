@@ -199,26 +199,35 @@ index 58985ce62dc569256bad5e94de9c0d125fc470d0..33436784b691c860d58f8b4dfcc6718e
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..5a6285ddd3e1d3356fff3d5fa52cac71642a5a84 100644
+index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..9a892a2d1ac1480d3af7968c9dcaa7c69806fd0e 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -552,7 +552,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -216,6 +216,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+                      weak_factory_.GetWeakPtr()));
+   info_->type = type;
+   info_->main_task_runner = base::SequencedTaskRunner::GetCurrentDefault();
++  info_->button_label = button_label();
++  info_->allow_multiple_selection = allow_multiple_selection();
+ 
+   if (owning_window) {
+     if (auto* root = owning_window->GetRootWindow()) {
+@@ -552,7 +554,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
                       response_handle_token);
  
    if (type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER) {
 -    AppendStringOption(&options_writer, kFileChooserOptionAcceptLabel,
 +    const std::string accept_label =
-+        button_label().empty() ? kFileChooserOptionAcceptLabel : button_label();
++        button_label.empty() ? kFileChooserOptionAcceptLabel : button_label;
 +    AppendStringOption(&options_writer, accept_label,
                         l10n_util::GetStringUTF8(
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
-@@ -561,12 +563,13 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -561,12 +565,13 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);
 +    AppendBoolOption(&options_writer, kFileChooserOptionMultiple,
-+                     allow_multiple_selection());
++                     allow_multiple_selection);
    } else if (type == SelectFileDialog::Type::SELECT_OPEN_MULTI_FILE) {
      AppendBoolOption(&options_writer, kFileChooserOptionMultiple, true);
    }
@@ -229,3 +238,16 @@ index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..5a6285ddd3e1d3356fff3d5fa52cac71
      if (default_path_exists) {
        // If this is an existing directory, navigate to that directory, with no
        // filename.
+diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
+index 47e3b0e658858ba5f3219f04d258bdf6dd7c26ed..ff8eaabb406cdf759f7a62725171aaf9f74ce183 100644
+--- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
++++ b/ui/shell_dialogs/select_file_dialog_linux_portal.h
+@@ -117,6 +117,8 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {
+     Type type;
+     // The task runner the SelectFileImpl method was called on.
+     scoped_refptr<base::SequencedTaskRunner> main_task_runner;
++    std::string button_label;
++    bool allow_multiple_selection = false;
+ 
+    private:
+     friend class base::RefCountedThreadSafe<DialogInfo>;
