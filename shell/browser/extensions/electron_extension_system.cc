@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/files/file_path.h"
-#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
@@ -33,7 +32,6 @@
 #include "extensions/browser/service_worker_manager.h"
 #include "extensions/browser/user_script_manager.h"
 #include "extensions/common/constants.h"
-#include "extensions/common/file_util.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
