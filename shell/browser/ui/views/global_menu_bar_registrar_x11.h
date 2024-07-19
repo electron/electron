@@ -10,7 +10,6 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/ref_counted.h"
 #include "base/memory/singleton.h"
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/x/xproto.h"

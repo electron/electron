@@ -10,7 +10,6 @@
 
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
-#include "base/memory/ref_counted.h"
 #include "net/cert/nss_cert_database.h"
 
 // CertificateManagerModel provides the data to be displayed in the certificate
