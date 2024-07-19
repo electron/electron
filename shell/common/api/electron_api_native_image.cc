@@ -13,7 +13,6 @@
 #include "base/logging.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/pattern.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
