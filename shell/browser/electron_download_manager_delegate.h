@@ -20,9 +20,6 @@ namespace electron {
 class ElectronDownloadManagerDelegate
     : public content::DownloadManagerDelegate {
  public:
-  using CreateDownloadPathCallback =
-      base::RepeatingCallback<void(const base::FilePath&)>;
-
   explicit ElectronDownloadManagerDelegate(content::DownloadManager* manager);
   ~ElectronDownloadManagerDelegate() override;
 
