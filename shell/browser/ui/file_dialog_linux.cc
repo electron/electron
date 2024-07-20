@@ -78,7 +78,8 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         &file_info /* file_types */, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
-                               : nullptr);
+                               : nullptr,
+        nullptr);
   }
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -103,7 +104,8 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         settings.default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
-                               : nullptr);
+                               : nullptr,
+        nullptr);
   }
 
   void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -119,9 +121,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   }
 
   // ui::SelectFileDialog::Listener
-  void FileSelected(const ui::SelectedFileInfo& file,
-                    int index,
-                    void* params) override {
+  void FileSelected(const ui::SelectedFileInfo& file, int index) override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -141,8 +141,8 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     delete this;
   }
 
-  void MultiFilesSelected(const std::vector<ui::SelectedFileInfo>& files,
-                          void* params) override {
+  void MultiFilesSelected(
+      const std::vector<ui::SelectedFileInfo>& files) override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -158,7 +158,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     delete this;
   }
 
-  void FileSelectionCanceled(void* params) override {
+  void FileSelectionCanceled() override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);

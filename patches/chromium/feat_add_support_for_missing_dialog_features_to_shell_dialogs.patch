@@ -97,7 +97,7 @@ index e10245b4f36f324510a2dfd785ffaa2ceaad48d6..befb5666134d5f299b228e3d654fa2b0
  }
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index 657faef293353ab97e815b9682068a43963ea5a7..33bb80cb2ccd389d295754b48da0c1d435f554ff 100644
+index 657faef293353ab97e815b9682068a43963ea5a7..5ffa267d190d41b45f8b5bcdcf80297ab5ac3819 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
 @@ -222,6 +222,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
@@ -106,17 +106,17 @@ index 657faef293353ab97e815b9682068a43963ea5a7..33bb80cb2ccd389d295754b48da0c1d4
  
 +#if BUILDFLAG(IS_LINUX)
 +  // Set the label used for the file select button.
-+  virtual void SetButtonLabel(const std::string& label);
++  virtual void SetButtonLabel(const std::string& label) = 0;
 +
 +  // Set whether a confirmation should be shown when attempting to overwrite an
 +  // existing file.
-+  virtual void SetOverwriteConfirmationShown(bool is_shown);
++  virtual void SetOverwriteConfirmationShown(bool is_shown) = 0;
 +
 +  // Set whether hidden files should be shown.
-+  virtual void SetHiddenShown(bool is_shown);
++  virtual void SetHiddenShown(bool is_shown) = 0;
 +
 +  // Set whether multiple file/directory selections are allowed
-+  virtual void SetMultipleSelectionsAllowed(bool is_allowed);
++  virtual void SetMultipleSelectionsAllowed(bool is_allowed) = 0;
 +#endif
 +
   protected:
