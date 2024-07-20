@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2bacdb6c4c074adc45a0fec8b1f2144c1a37eb99..de398a8d9c91dcf32b35c6417f28ac994e2745a6 100644
+index 7265859c7c83b25ffb7d13240d2143b7c3a2aff4..23fcc66ac00e0d593c67581f95210252b78deba4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1049,6 +1049,7 @@ component("base") {
@@ -303,7 +303,7 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index baa5b94234aa92f6d8cccd3235d97ba23383d701..f9971bfc65ee1d423e5ca1ee31f2e7141c1f3088 100644
+index 5df3e394a693939e021be4e9e3222989ae6e5122..06ec9f081f22afbda243bb69759dd1972dff8dd0 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -106,14 +106,18 @@ void OrderChildWindow(NSWindow* child_window,
@@ -334,7 +334,7 @@ index baa5b94234aa92f6d8cccd3235d97ba23383d701..f9971bfc65ee1d423e5ca1ee31f2e714
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -210,6 +216,8 @@ - (BOOL)usesCustomDrawing {
+@@ -214,6 +220,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -343,7 +343,7 @@ index baa5b94234aa92f6d8cccd3235d97ba23383d701..f9971bfc65ee1d423e5ca1ee31f2e714
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -398,6 +406,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -402,6 +410,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -352,7 +352,7 @@ index baa5b94234aa92f6d8cccd3235d97ba23383d701..f9971bfc65ee1d423e5ca1ee31f2e714
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -409,6 +419,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -413,6 +423,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 93cb8d16fe074ea48705cfaad057244e297310e4..ebe854ac4dcc057fc6d869f2e3cd8f2fe70e80e1 100644
+index 6b8d614f08dfe2e1c1b1458e70452195fb0934d6..684acd5d99dc1fa78261861870fb865a2d923c18 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 80e460816558d43b87949703c4ec4f2c9394d13c..645823743ef5421551ed63f96b1c94991a591011 100644
+index 9be91de90914c3da214982e128ab3b506196232f..e0698a2ba0d23fd39702d19e34e1ef64c5cef0d4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -720,7 +720,7 @@ index 80e460816558d43b87949703c4ec4f2c9394d13c..645823743ef5421551ed63f96b1c9499
    ]
  
    public_deps = [
-@@ -1104,6 +1105,7 @@ static_library("browsertest_support") {
+@@ -1103,6 +1104,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -728,7 +728,7 @@ index 80e460816558d43b87949703c4ec4f2c9394d13c..645823743ef5421551ed63f96b1c9499
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1719,6 +1721,7 @@ test("content_browsertests") {
+@@ -1718,6 +1720,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -736,7 +736,7 @@ index 80e460816558d43b87949703c4ec4f2c9394d13c..645823743ef5421551ed63f96b1c9499
  
    public_deps = [
      ":test_interfaces",
-@@ -2976,6 +2979,7 @@ test("content_unittests") {
+@@ -2974,6 +2977,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
