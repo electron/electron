@@ -63,10 +63,9 @@ jobs:
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
@@ -127,10 +126,9 @@ jobs:
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
