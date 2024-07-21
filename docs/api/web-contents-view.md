@@ -34,6 +34,17 @@ Process: [Main](../glossary.md#main-process)
 
 ### `new WebContentsView([options])`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/35658
+changes:
+  - pr-url: https://github.com/electron/electron/pull/42086
+    description: Extended `WebContentsView` to accept pre-existing `webContents` object.
+    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
+```
+-->
+
 * `options` Object (optional)
   * `webPreferences` [WebPreferences](structures/web-preferences.md) (optional) - Settings of web page's features.
   * `webContents` [WebContents](web-contents.md) (optional) - If present, the given WebContents will be adopted by the WebContentsView. A WebContents may only be presented in one WebContentsView at a time.
