@@ -127,6 +127,7 @@ jobs:
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         if [ "`uname`" = "Linux" ]; then
+          git fetch --unshallow
           git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         fi
         touch .disable_auto_update

@@ -104,17 +104,17 @@ jobs:
       timeout-minutes: 5
       run: |
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        if [ "`uname`" = "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          cd depot_tools
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
+        if [ "`uname`" = "Darwin" ]; then
+          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./autoninja
+        else
+          sed -i '/ninjalog_uploader_wrapper.py/d' ./autoninja
+          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+          git fetch --unshallow
+          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
+        fi
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
