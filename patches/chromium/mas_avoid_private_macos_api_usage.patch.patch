@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7265859c7c83b25ffb7d13240d2143b7c3a2aff4..23fcc66ac00e0d593c67581f95210252b78deba4 100644
+index e80597587f9afc01bc5b3e9f2a1dc9a5d9c4d4e0..5cf0e7276cdc167b42a45d680e7ba5fc58979e22 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1049,6 +1049,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
