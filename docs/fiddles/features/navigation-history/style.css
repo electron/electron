@@ -1,0 +1,58 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+#controls {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #ccc;
+}
+button {
+    margin-right: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+button:hover {
+    background-color: #45a049;
+}
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+#urlInput {
+    flex-grow: 1;
+    margin: 0 10px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+#historyPanel {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 10px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+  #historyPanel div {
+    cursor: pointer;
+    padding: 5px;
+}
+
+#description {
+    background-color: #f0f0f0;
+    padding: 10px;
+    margin-top: 150px;
+}
