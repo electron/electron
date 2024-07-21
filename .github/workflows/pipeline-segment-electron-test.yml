@@ -103,7 +103,7 @@ jobs:
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
-        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         if [ "`uname`" = "Darwin" ]; then
