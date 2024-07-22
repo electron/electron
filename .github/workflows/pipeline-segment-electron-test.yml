@@ -189,7 +189,7 @@ jobs:
         fi
     - name: Upload Test Artifacts
       if: always() && !cancelled()
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}
         path: src/electron/spec/artifacts
