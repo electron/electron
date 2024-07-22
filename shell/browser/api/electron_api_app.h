@@ -21,7 +21,6 @@
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
-#include "shell/browser/api/process_metric.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
@@ -43,6 +42,8 @@ class Image;
 }
 
 namespace electron {
+
+struct ProcessMetric;
 
 #if BUILDFLAG(IS_WIN)
 enum class JumpListResult : int;
