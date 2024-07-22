@@ -14,7 +14,6 @@
 #include "content/public/browser/hid_chooser.h"
 #include "content/public/browser/hid_delegate.h"
 #include "services/device/public/mojom/hid.mojom-forward.h"
-#include "shell/browser/hid/hid_chooser_context.h"
 #include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
 #include "url/origin.h"
 
