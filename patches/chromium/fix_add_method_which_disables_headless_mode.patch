@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cezary Kulakowski <cezary@openfin.co>
+Date: Mon, 22 Jul 2024 16:23:13 +0200
+Subject: fix: add method which disables headless mode on native widget
+
+
+diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
+index e6e8e42178d1a67d1e527a0045893950910471df..36e356df3c5d121f74eb56b59d18ead02daad0a5 100644
+--- a/ui/views/widget/widget.h
++++ b/ui/views/widget/widget.h
+@@ -1083,6 +1083,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   // True if widget was created in headless mode.
+   bool is_headless() const { return is_headless_; }
+ 
++  void DisableHeadlessMode() { is_headless_ = false; }
++
+   // True if the window size will follow the content preferred size.
+   bool is_autosized() const { return is_autosized_; }
+ 

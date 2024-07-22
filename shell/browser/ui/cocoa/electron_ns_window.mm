@@ -204,6 +204,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // shown, but we don't want the headless behavior of allowing the window to be
   // placed unconstrained.
   self.isHeadless = false;
+  shell_->widget()->DisableHeadlessMode();
 
   // Resizing is disabled.
   if (electron::ScopedDisableResize::IsResizeDisabled())
