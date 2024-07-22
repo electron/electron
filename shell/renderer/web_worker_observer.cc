@@ -4,7 +4,6 @@
 
 #include "shell/renderer/web_worker_observer.h"
 
-#include <set>
 #include <utility>
 
 #include "base/no_destructor.h"

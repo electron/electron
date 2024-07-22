@@ -7,9 +7,7 @@
 
 #include <string>
 
-#include "base/memory/ref_counted.h"
 #include "net/cert/x509_certificate.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/promise.h"
 
 namespace electron {

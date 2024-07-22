@@ -21,7 +21,15 @@
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/common/gin_helper/dictionary.h"
+#include "v8/include/v8-array-buffer.h"
+
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+class Dictionary;
+}  // namespace gin_helper
 
 namespace electron {
 

@@ -13,7 +13,6 @@
 #include <memory>
 #include <string>
 
-#include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/prefs/pref_service.h"

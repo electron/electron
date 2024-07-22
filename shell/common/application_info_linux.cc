@@ -9,7 +9,6 @@
 
 #include <string>
 
-#include "base/environment.h"
 #include "base/logging.h"
 #include "electron/electron_version.h"
 #include "shell/common/platform_util.h"

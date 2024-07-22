@@ -143,6 +143,71 @@ Returns:
 Emitted after an extension is loaded and all necessary browser state is
 initialized to support the start of the extension's background page.
 
+#### Event: 'file-system-access-restricted'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `origin` string - The origin that initiated access to the blocked path.
+  * `isDirectory` boolean - Whether or not the path is a directory.
+  * `path` string - The blocked path attempting to be accessed.
+* `callback` Function
+  * `action` string - The action to take as a result of the restricted path access attempt.
+    * `allow` - This will allow `path` to be accessed despite restricted status.
+    * `deny` - This will block the access request and trigger an [`AbortError`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort).
+    * `tryAgain` - This will open a new file picker and allow the user to choose another path.
+
+```js
+const { app, dialog, BrowserWindow, session } = require('electron')
+
+async function createWindow () {
+  const mainWindow = new BrowserWindow()
+
+  await mainWindow.loadURL('https://buzzfeed.com')
+
+  session.defaultSession.on('file-system-access-restricted', async (e, details, callback) => {
+    const { origin, path } = details
+    const { response } = await dialog.showMessageBox({
+      message: `Are you sure you want ${origin} to open restricted path ${path}?`,
+      title: 'File System Access Restricted',
+      buttons: ['Choose a different folder', 'Allow', 'Cancel'],
+      cancelId: 2
+    })
+
+    if (response === 0) {
+      callback('tryAgain')
+    } else if (response === 1) {
+      callback('allow')
+    } else {
+      callback('deny')
+    }
+  })
+
+  mainWindow.webContents.executeJavaScript(`
+    window.showDirectoryPicker({
+      id: 'electron-demo',
+      mode: 'readwrite',
+      startIn: 'downloads',
+    }).catch(e => {
+      console.log(e)
+    })`, true
+  )
+}
+
+app.whenReady().then(() => {
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') app.quit()
+})
+```
+
 #### Event: 'preconnect'
 
 Returns:

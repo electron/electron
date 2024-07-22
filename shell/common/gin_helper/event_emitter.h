@@ -7,9 +7,7 @@
 
 #include <string_view>
 #include <utility>
-#include <vector>
 
-#include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"
@@ -27,7 +25,6 @@ template <typename T>
 class EventEmitter : public gin_helper::Wrappable<T> {
  public:
   using Base = gin_helper::Wrappable<T>;
-  using ValueArray = std::vector<v8::Local<v8::Value>>;
 
   // Make the convenient methods visible:
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members

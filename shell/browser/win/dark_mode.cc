@@ -7,6 +7,7 @@
 #include <dwmapi.h>  // DwmSetWindowAttribute()
 
 #include "base/win/windows_version.h"
+#include "ui/native_theme/native_theme.h"
 
 // This flag works since Win10 20H1 but is not documented until Windows 11
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20

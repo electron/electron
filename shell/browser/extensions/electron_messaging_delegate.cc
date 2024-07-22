@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/functional/callback.h"
-#include "base/logging.h"
 #include "base/values.h"
 #include "build/build_config.h"
 #include "components/prefs/pref_service.h"

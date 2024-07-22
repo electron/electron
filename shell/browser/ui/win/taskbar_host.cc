@@ -7,7 +7,6 @@
 #include <objbase.h>
 #include <string>
 
-#include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/native_window.h"

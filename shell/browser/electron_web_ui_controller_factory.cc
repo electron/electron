@@ -4,10 +4,10 @@
 
 #include "shell/browser/electron_web_ui_controller_factory.h"
 
+#include "base/memory/singleton.h"
 #include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui_controller.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/devtools_ui.h"
 #include "shell/browser/ui/webui/accessibility_ui.h"
 

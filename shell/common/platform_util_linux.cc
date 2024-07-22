@@ -15,6 +15,7 @@
 #include "base/containers/contains.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/files/scoped_file.h"
 #include "base/logging.h"
 #include "base/memory/raw_ptr.h"
 #include "base/nix/xdg_util.h"

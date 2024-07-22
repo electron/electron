@@ -17,7 +17,6 @@
 #include "shell/browser/ui/cocoa/electron_menu_controller.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
-#include "ui/native_theme/native_theme.h"
 
 @interface StatusItemView : NSView {
   raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak

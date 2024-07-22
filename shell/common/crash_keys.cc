@@ -12,7 +12,6 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/no_destructor.h"
-#include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"

@@ -52,7 +52,6 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/models/image_model.h"
-#include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/browser/print_to_pdf/pdf_print_result.h"

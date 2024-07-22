@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "extensions/common/extensions_client.h"
 #include "url/gurl.h"
 

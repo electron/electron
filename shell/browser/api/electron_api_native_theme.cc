@@ -13,7 +13,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace electron::api {

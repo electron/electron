@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "base/files/file_util.h"
-#include "base/logging.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/thread_restrictions.h"
 
