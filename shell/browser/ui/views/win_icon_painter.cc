@@ -9,7 +9,6 @@
 #include "third_party/skia/include/core/SkPath.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/rrect_f.h"
-#include "ui/gfx/scoped_canvas.h"
 
 namespace {
 
