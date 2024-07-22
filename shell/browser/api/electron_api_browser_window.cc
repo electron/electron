@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
-#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
