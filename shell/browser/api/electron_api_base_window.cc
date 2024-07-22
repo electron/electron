@@ -121,6 +121,11 @@ BaseWindow::BaseWindow(gin_helper::Arguments* args,
 BaseWindow::~BaseWindow() {
   CloseImmediately();
 
+  // Destroy the native window in next tick because the native code might be
+  // iterating all windows.
+  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(
+      FROM_HERE, window_.release());
+
   // Remove global reference so the JS object can be garbage collected.
   self_ref_.Reset();
 }
