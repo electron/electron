@@ -16,6 +16,7 @@
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
