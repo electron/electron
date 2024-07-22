@@ -45,9 +45,6 @@ class WrappableBase {
   v8::Isolate* isolate() const { return isolate_; }
 
  protected:
-  // Called after the "_init" method gets called in JavaScript.
-  virtual void AfterInit(v8::Isolate* isolate) {}
-
   // Bind the C++ class to the JS wrapper.
   // This method should only be called by classes using Constructor.
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
