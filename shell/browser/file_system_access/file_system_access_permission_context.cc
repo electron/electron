@@ -55,7 +55,7 @@ struct Converter<
     else if (type == "tryAgain")
       *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
           kTryAgain;
-    else if (type == "block")
+    else if (type == "deny")
       *out =
           ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::kAbort;
     else
