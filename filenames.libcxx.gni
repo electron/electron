@@ -712,6 +712,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__thread/timed_backoff_policy.h",
   "//third_party/libc++/src/include/__tree",
   "//third_party/libc++/src/include/__tuple/find_index.h",
+  "//third_party/libc++/src/include/__tuple/ignore.h",
   "//third_party/libc++/src/include/__tuple/make_tuple_types.h",
   "//third_party/libc++/src/include/__tuple/sfinae_helpers.h",
   "//third_party/libc++/src/include/__tuple/tuple_element.h",
