@@ -27,10 +27,6 @@
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 
-namespace base {
-class FilePath;
-}
-
 namespace gin_helper {
 class Arguments;
 }

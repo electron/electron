@@ -11,7 +11,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
