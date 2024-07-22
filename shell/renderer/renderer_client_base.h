@@ -10,8 +10,6 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
-#include "media/base/key_systems_support_registration.h"
-#include "printing/buildflags/buildflags.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
