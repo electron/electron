@@ -12,9 +12,12 @@
 #include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_job.h"
 #include "components/printing/common/print.mojom.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "printing/print_settings.h"
+
+namespace content {
+class RenderFrameHost;
+}
 
 namespace electron {
 
