@@ -50,7 +50,6 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
-#include "ui/base/cursor/cursor.h"
 #include "ui/base/models/image_model.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -81,6 +80,10 @@ class ResourceRequestBody;
 
 namespace gin {
 class Arguments;
+}
+
+namespace ui {
+class Cursor;
 }
 
 class SkRegion;
