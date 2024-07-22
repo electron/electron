@@ -876,9 +876,21 @@ Returns:
 
 Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
 
-When using shared texture, it is possible to pass texture to other processes through IPC, or handle the event in async handler.
-It is important to call `texture.release()` when the texture is no longer needed as soon as possible, before the underlying
-frame pool is drained. By managing the lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes.
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({ webPreferences: { offscreen: true } })
+win.webContents.on('paint', (event, dirty, image) => {
+  // updateBitmap(dirty, image.getBitmap())
+})
+win.loadURL('https://github.com')
+```
+
+When using shared texture (set `webPreferences.offscreenUseSharedTexture` to `true`) feature, you can pass the texture handle to external rendering pipeline without the overhead of
+copying data between CPU and GPU memory, with Chromium's hardware acceleration support. This feature is helpful for high-performance rendering scenarios.
+
+It is important to call `texture.release()` when the texture is no longer needed as soon as possible, before the underlying frame pool is drained.
+By managing the texture lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes through IPC.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -886,15 +898,16 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ webPreferences: { offscreen: true, offscreenUseSharedTexture: true } })
 win.webContents.on('paint', async (e, dirty, image) => {
   if (e.texture) {
-    // You can handle the event in async handler
+    // By managing lifecycle yourself, you can handle the event in async handler or pass the `e.texture.textureInfo`
+    // to other processes (not `e.texture`, the `e.texture.release` function is not passable through IPC).
     await new Promise(resolve => setTimeout(resolve, 50))
+
+    // You can send the native texture handle to native code for importing into your rendering pipeline.
+    // For example: https://github.com/electron/electron/tree/main/spec/fixtures/native-addon/osr-gpu
     // importTextureHandle(dirty, e.texture.textureInfo)
-    // You can also pass the `textureInfo` to other processes (not `texture`, the `release` function is not passable)
-    // You have to release the texture at this process when you are done with it
+
+    // You must call `e.texture.release()` as soon as possible, before the underlying frame pool is drained.
     e.texture.release()
-  } else {
-    // details.texture will be null when offscreenUseSharedTexture is false
-    // importBitmap(dirty, image.getBitmap())
   }
 })
 win.loadURL('https://github.com')

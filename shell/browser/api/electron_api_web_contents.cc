@@ -3548,9 +3548,11 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
-
   gin_helper::Dictionary dict(isolate, event_object);
-  dict.Set("texture", tex);
+
+  if (offscreen_use_shared_texture_) {
+    dict.Set("texture", tex);
+  }
 
   EmitWithoutEvent("paint", event, dirty_rect,
                    gfx::Image::CreateFrom1xBitmap(bitmap));
