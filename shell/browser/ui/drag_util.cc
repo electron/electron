@@ -5,7 +5,6 @@
 #include "shell/browser/ui/drag_util.h"
 
 #include "third_party/blink/public/mojom/page/draggable_region.mojom.h"
-#include "ui/gfx/geometry/skia_conversions.h"
 
 namespace electron {
 
