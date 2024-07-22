@@ -153,7 +153,10 @@ Returns:
   * `isDirectory` boolean - Whether or not the path is a directory.
   * `path` string - The blocked path attempting to be accessed.
 * `callback` Function
-  * `action` string - Can be one of `block`, `tryAgain`, or `allow`.
+  * `action` string - The action to take as a result of the restricted path access attempt.
+    * `block` - This will block the access request and trigger an `AbortError`.
+    * `tryAgain` - This will open a new file picker and allow the user to choose another path.
+    * `allow` - This will allow `path` to be accessed despite restricted status.
 
 ```js
 const { app, dialog, BrowserWindow, session } = require('electron')
@@ -166,13 +169,19 @@ async function createWindow () {
   session.defaultSession.on('file-system-access-restricted', async (e, details, callback) => {
     const { origin, path } = details
     const { response } = await dialog.showMessageBox({
-      message: `${origin} can't open ${path} because it contains system files`,
+      message: `Are you sure you want ${origin} to open restricted path ${path}?`,
       title: 'File System Access Restricted',
-      buttons: ['Choose a different folder', 'Cancel'],
-      cancelId: 1
+      buttons: ['Choose a different folder', 'Allow', 'Cancel'],
+      cancelId: 2
     })
 
-    callback(response === 1)
+    if (response === 0) {
+      callback('tryAgain')
+    } else if (response === 1) {
+      callback('allow')
+    } else {
+      callback('block')
+    }
   })
 
   mainWindow.webContents.executeJavaScript(`
