@@ -56,8 +56,6 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
     init->Call(isolate->GetCurrentContext(), wrapper, 0, nullptr).IsEmpty();
-
-  AfterInit(isolate);
 }
 
 // static
