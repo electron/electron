@@ -4,8 +4,10 @@
 
 #include "shell/browser/extensions/api/tabs/tabs_api.h"
 
-#include <memory>
+#include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/strings/pattern.h"

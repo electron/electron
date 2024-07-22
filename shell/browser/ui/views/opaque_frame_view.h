@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_OPAQUE_FRAME_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_OPAQUE_FRAME_VIEW_H_
 
-#include <memory>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/view_ids.h"

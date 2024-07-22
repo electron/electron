@@ -4,7 +4,6 @@
 
 #import "shell/browser/mac/electron_application_delegate.h"
 
-#include <memory>
 #include <string>
 
 #include "base/allocator/buildflags.h"
