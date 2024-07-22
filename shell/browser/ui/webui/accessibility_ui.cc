@@ -5,7 +5,6 @@
 #include "shell/browser/ui/webui/accessibility_ui.h"
 
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
