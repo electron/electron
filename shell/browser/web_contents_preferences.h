@@ -52,7 +52,7 @@ class WebContentsPreferences
   void OverrideWebkitPrefs(blink::web_pref::WebPreferences* prefs,
                            blink::RendererPreferences* renderer_prefs);
 
-  base::Value* last_preference() { return &last_web_preferences_; }
+  const base::Value* last_preference() const { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return offscreen_; }
   std::optional<SkColor> GetBackgroundColor() const {
@@ -75,12 +75,9 @@ class WebContentsPreferences
   bool AllowsNodeIntegrationInSubFrames() const {
     return node_integration_in_sub_frames_;
   }
-  bool ShouldDisableDialogs() const { return disable_dialogs_; }
-  bool ShouldUseSafeDialogs() const { return safe_dialogs_; }
-  bool GetSafeDialogsMessage(std::string* message) const;
   bool ShouldDisablePopups() const { return disable_popups_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
-  bool GetPreloadPath(base::FilePath* path) const;
+  std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
   bool IsSandboxed() const;
 
  private:
