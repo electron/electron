@@ -16,7 +16,6 @@
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/image/image.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace {
