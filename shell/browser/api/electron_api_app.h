@@ -12,7 +12,6 @@
 
 #include "base/containers/flat_map.h"
 #include "base/task/cancelable_task_tracker.h"
-#include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
@@ -37,6 +36,10 @@
 
 namespace base {
 class FilePath;
+}
+
+namespace gfx {
+class Image;
 }
 
 namespace electron {
