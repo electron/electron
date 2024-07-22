@@ -9,7 +9,6 @@
 
 #include "base/functional/bind.h"
 #include "base/ranges/algorithm.h"
-#include "build/build_config.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"

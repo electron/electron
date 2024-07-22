@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
 
 #include "base/files/file_path.h"
-#include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
 
 namespace electron {
