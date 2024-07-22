@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 
 #include <limits>
+#include <list>
 #include <memory>
 #include <optional>
 #include <set>
