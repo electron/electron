@@ -21,10 +21,11 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/usb_manager.mojom.h"
 #include "services/device/public/mojom/usb_manager_client.mojom.h"
-#include "shell/browser/electron_browser_context.h"
 #include "url/origin.h"
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 class UsbChooserContext : public KeyedService,
                           public device::mojom::UsbDeviceManagerClient {

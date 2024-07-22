@@ -13,6 +13,7 @@
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/browser/hid/hid_chooser_context_factory.h"

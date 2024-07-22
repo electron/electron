@@ -16,6 +16,7 @@
 #include "services/device/public/cpp/usb/usb_ids.h"
 #include "services/device/public/mojom/usb_device.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/electron_constants.h"

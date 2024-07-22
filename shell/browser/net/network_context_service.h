@@ -11,13 +11,18 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/electron_browser_context.h"
 
 namespace base {
 class FilePath;
 }  // namespace base
 
+namespace content {
+class BrowserContext;
+}  // namespace content
+
 namespace electron {
+
+class ElectronBrowserContext;
 
 // KeyedService that initializes and provides access to the NetworkContexts for
 // a BrowserContext.

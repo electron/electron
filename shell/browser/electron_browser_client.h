@@ -29,6 +29,7 @@
 
 namespace content {
 class ClientCertificateDelegate;
+class PlatformNotificationService;
 class QuotaPermissionContext;
 }  // namespace content
 

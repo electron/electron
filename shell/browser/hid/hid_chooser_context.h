@@ -21,7 +21,6 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/hid.mojom.h"
-#include "shell/browser/electron_browser_context.h"
 #include "url/origin.h"
 
 namespace base {
@@ -29,6 +28,8 @@ class Value;
 }
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 extern const char kHidDeviceNameKey[];
 extern const char kHidGuidKey[];

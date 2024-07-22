@@ -17,6 +17,7 @@
 #include "services/network/public/cpp/cors/origin_access_list.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
 namespace electron {
