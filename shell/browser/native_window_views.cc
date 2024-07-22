@@ -55,7 +55,6 @@
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
-#include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
