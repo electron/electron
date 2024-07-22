@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
 #define ELECTRON_SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
 
-#include "base/memory/singleton.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 
 class KeyedService;

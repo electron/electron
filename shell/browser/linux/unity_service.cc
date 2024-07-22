@@ -9,7 +9,6 @@
 
 #include <string>
 
-#include "base/environment.h"
 #include "base/nix/xdg_util.h"
 
 // Unity data typedefs.

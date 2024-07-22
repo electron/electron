@@ -11,7 +11,6 @@
 
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
-#include "base/observer_list.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_util.h"

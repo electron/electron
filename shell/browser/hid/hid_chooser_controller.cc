@@ -21,7 +21,6 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/hid_device_info_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
 #include "ui/base/l10n/l10n_util.h"

@@ -9,9 +9,9 @@
 #include <sys/prctl.h>
 #include <sys/signalfd.h>
 
-#include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
 #include "base/logging.h"
+#include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
 #include "base/synchronization/waitable_event.h"
 

@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_LOGIN_HANDLER_H_
 #define ELECTRON_SHELL_BROWSER_LOGIN_HANDLER_H_
 
-#include "base/values.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/login_delegate.h"
 #include "content/public/browser/web_contents_observer.h"

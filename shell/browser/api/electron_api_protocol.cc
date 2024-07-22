@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/command_line.h"
-#include "base/stl_util.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "gin/object_template_builder.h"

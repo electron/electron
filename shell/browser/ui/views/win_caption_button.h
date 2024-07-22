@@ -15,8 +15,11 @@
 #include "shell/browser/ui/views/win_icon_painter.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
-#include "ui/gfx/canvas.h"
 #include "ui/views/controls/button/button.h"
+
+namespace gfx {
+class Canvas;
+}
 
 namespace electron {
 

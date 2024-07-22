@@ -11,7 +11,6 @@
 #include "base/process/process_handle.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_number_conversions_win.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"

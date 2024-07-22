@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "base/containers/flat_map.h"
 #include "ui/views/views_delegate.h"
 

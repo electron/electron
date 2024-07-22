@@ -13,7 +13,6 @@
 #include "base/path_service.h"
 #include "base/task/thread_pool.h"
 #include "base/time/time.h"
-#include "base/timer/timer.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck

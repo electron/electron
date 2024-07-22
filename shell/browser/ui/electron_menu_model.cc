@@ -6,8 +6,6 @@
 
 #include <utility>
 
-#include "base/stl_util.h"
-
 namespace electron {
 
 #if BUILDFLAG(IS_MAC)

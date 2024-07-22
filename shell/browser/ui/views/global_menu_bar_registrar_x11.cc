@@ -8,7 +8,7 @@
 
 #include "base/debug/leak_annotations.h"
 #include "base/functional/bind.h"
-#include "base/logging.h"
+#include "base/memory/singleton.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 

@@ -10,6 +10,7 @@
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
 

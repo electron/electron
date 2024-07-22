@@ -9,7 +9,6 @@
 #include "base/functional/bind.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "shell/common/platform_util_internal.h"
 
 namespace platform_util {

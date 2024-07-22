@@ -8,7 +8,6 @@
 #include <string>
 #include <string_view>
 
-#include "base/stl_util.h"
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"

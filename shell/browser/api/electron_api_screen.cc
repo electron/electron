@@ -8,7 +8,6 @@
 #include <string_view>
 
 #include "base/functional/bind.h"
-#include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"

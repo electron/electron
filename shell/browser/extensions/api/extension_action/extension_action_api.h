@@ -8,8 +8,6 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
-#include "base/observer_list.h"
-#include "base/values.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_action.h"
 #include "extensions/browser/extension_function.h"

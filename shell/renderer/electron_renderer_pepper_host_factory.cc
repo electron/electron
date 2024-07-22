@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "base/logging.h"
 #include "content/public/renderer/renderer_ppapi_host.h"
 #include "ppapi/host/dispatch_host_message.h"
 #include "ppapi/host/ppapi_host.h"

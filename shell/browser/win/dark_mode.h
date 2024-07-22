@@ -13,8 +13,6 @@
 #undef WIN32_LEAN_AND_MEAN
 #endif
 
-#include "ui/native_theme/native_theme.h"
-
 namespace electron::win {
 
 bool IsDarkModeSupported();

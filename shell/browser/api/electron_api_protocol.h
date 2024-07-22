@@ -15,6 +15,10 @@
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/gin_helper/constructible.h"
 
+namespace gin {
+class Arguments;
+}  // namespace gin
+
 namespace electron {
 
 class ElectronBrowserContext;

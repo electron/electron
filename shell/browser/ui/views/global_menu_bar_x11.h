@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/scoped_gsignal.h"
