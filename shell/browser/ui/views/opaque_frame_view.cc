@@ -9,7 +9,6 @@
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"

@@ -21,7 +21,6 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
-#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
