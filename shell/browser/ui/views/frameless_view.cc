@@ -5,7 +5,6 @@
 #include "shell/browser/ui/views/frameless_view.h"
 
 #include "shell/browser/native_window_views.h"
-#include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/widget/widget.h"

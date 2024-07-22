@@ -10,7 +10,6 @@
 #include "components/strings/grit/components_strings.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
-#include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"

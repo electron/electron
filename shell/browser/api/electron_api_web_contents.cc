@@ -137,6 +137,7 @@
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
+#include "ui/aura/window.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
@@ -146,9 +147,7 @@
 #include "shell/browser/native_window_views.h"
 #endif
 
-#if !BUILDFLAG(IS_MAC)
-#include "ui/aura/window.h"
-#else
+#if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
 #endif
 
