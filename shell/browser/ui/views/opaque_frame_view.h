@@ -11,7 +11,6 @@
 #include "chrome/browser/ui/view_ids.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/linux/nav_button_provider.h"
 #include "ui/linux/window_button_order_observer.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/window/caption_button_types.h"
