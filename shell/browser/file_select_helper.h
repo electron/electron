@@ -12,8 +12,6 @@
 #include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/render_widget_host_observer.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "net/base/directory_lister.h"
 #include "third_party/blink/public/mojom/choosers/file_chooser.mojom.h"
