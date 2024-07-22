@@ -51,18 +51,12 @@ void WindowList::AddWindow(NativeWindow* window) {
   // Push |window| on the appropriate list instance.
   WindowVector& windows = GetInstance()->windows_;
   windows.push_back(window);
-
-  for (WindowListObserver& observer : GetObservers())
-    observer.OnWindowAdded(window);
 }
 
 // static
 void WindowList::RemoveWindow(NativeWindow* window) {
   WindowVector& windows = GetInstance()->windows_;
   std::erase(windows, window);
-
-  for (WindowListObserver& observer : GetObservers())
-    observer.OnWindowRemoved(window);
 
   if (windows.empty()) {
     for (WindowListObserver& observer : GetObservers())
