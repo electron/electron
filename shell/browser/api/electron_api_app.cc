@@ -57,7 +57,6 @@
 #include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/api/process_metric.h"
 #include "shell/browser/browser_process_impl.h"
-#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"

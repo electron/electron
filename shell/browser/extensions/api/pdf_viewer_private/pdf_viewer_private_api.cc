@@ -16,7 +16,6 @@
 #include "components/pdf/common/constants.h"
 #include "components/prefs/pref_service.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
-#include "shell/browser/electron_browser_context.h"
 #include "url/url_constants.h"
 
 namespace extensions {
