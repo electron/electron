@@ -21,7 +21,6 @@
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
-#include "ui/views/window/non_client_view.h"
 
 namespace electron {
 

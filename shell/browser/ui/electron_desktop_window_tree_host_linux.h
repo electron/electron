@@ -12,14 +12,16 @@
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "third_party/skia/include/core/SkRRect.h"
 #include "ui/linux/device_scale_factor_observer.h"
+#include "ui/linux/linux_ui.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
 namespace electron {
+
+class ClientFrameViewLinux;
 
 class ElectronDesktopWindowTreeHostLinux
     : public views::DesktopWindowTreeHostLinux,
