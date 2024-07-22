@@ -33,8 +33,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  base::WeakPtr<BaseWindow> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
-
   NativeWindow* window() const { return window_.get(); }
 
  protected:
@@ -277,6 +275,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
+ private:
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
