@@ -34,7 +34,6 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
 #endif
 

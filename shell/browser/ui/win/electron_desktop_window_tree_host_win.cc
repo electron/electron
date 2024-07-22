@@ -11,7 +11,6 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
 #include "ui/base/win/hwnd_metrics.h"
-#include "ui/base/win/shell.h"
 
 namespace electron {
 
