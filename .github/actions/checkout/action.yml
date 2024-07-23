@@ -57,13 +57,13 @@ runs:
       cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
       echo "Using cache key: $DEPSHASH"
       echo "Checking for cache in: $cache_path"
-      if [ ! -f "$cache_path" ]; then
+      # if [ ! -f "$cache_path" ]; then
         echo "cache_exists=false" >> $GITHUB_OUTPUT
         echo "Cache Does Not Exist for $DEPSHASH"
-      else
-        echo "cache_exists=true" >> $GITHUB_OUTPUT
-        echo "Cache Already Exists for $DEPSHASH, Skipping.."
-      fi
+      # else
+      #   echo "cache_exists=true" >> $GITHUB_OUTPUT
+      #   echo "Cache Already Exists for $DEPSHASH, Skipping.."
+      # fi
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
