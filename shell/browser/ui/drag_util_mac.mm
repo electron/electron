@@ -11,6 +11,7 @@
 #include "base/apple/foundation_util.h"
 #include "base/files/file_path.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
+#include "ui/gfx/image/image.h"
 
 // Contents largely copied from
 // chrome/browser/download/drag_download_item_mac.mm.
