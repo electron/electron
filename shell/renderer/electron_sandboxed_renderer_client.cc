@@ -95,7 +95,7 @@ double Uptime() {
       .InSecondsF();
 }
 
-void InvokeEmitProcessEvent(v8::Handle<v8::Context> context,
+void InvokeEmitProcessEvent(v8::Local<v8::Context> context,
                             const std::string& event_name) {
   auto* isolate = context->GetIsolate();
   // set by sandboxed_renderer/init.js
@@ -167,7 +167,7 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
 }
 
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
@@ -198,7 +198,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 }
 
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)
     return;
