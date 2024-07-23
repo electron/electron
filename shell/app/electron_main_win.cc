@@ -22,7 +22,6 @@
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/dark_mode_support.h"
-#include "base/win/windows_version.h"
 #include "chrome/app/exit_code_watcher_win.h"
 #include "components/crash/core/app/crash_switches.h"
 #include "components/crash/core/app/run_as_crashpad_handler_win.h"

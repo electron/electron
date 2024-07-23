@@ -9,7 +9,6 @@
 #include "base/logging.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/win/windows_version.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/screen.h"
