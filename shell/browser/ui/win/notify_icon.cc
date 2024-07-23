@@ -10,7 +10,6 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
-#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/point.h"

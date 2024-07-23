@@ -31,7 +31,6 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
 #include "third_party/blink/public/platform/web_vector.h"
-#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer_delegate.h"
@@ -42,6 +41,8 @@
 #if BUILDFLAG(IS_WIN)
 #include "ui/gfx/win/window_impl.h"
 #endif
+
+class SkBitmap;
 
 namespace gfx {
 class Point;
