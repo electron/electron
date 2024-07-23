@@ -11,10 +11,10 @@ ServiceProcessHost::Observer functions, but we need to pass the exit code to
 the observer.
 
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e3551231523d8b555 100644
+index 45cf31157c535a0cdc9236a07e2ffffd166ba412..9c89cdb3a290a7b0e68539ccd5383f2a26cc7ab3 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
-@@ -72,12 +72,15 @@ class ServiceProcessTracker {
+@@ -73,12 +73,15 @@ class ServiceProcessTracker {
      processes_.erase(iter);
    }
  
@@ -22,7 +22,7 @@ index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e35512315
 +  void NotifyCrashed(ServiceProcessId id, int exit_code) {
      DCHECK_CURRENTLY_ON(BrowserThread::UI);
      auto iter = processes_.find(id);
-     DCHECK(iter != processes_.end());
+     CHECK(iter != processes_.end(), base::NotFatalUntil::M130);
 -    for (auto& observer : observers_)
 -      observer.OnServiceProcessCrashed(iter->second.Duplicate());
 +    for (auto& observer : observers_) {
@@ -33,7 +33,7 @@ index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e35512315
      processes_.erase(iter);
    }
  
-@@ -86,6 +89,11 @@ class ServiceProcessTracker {
+@@ -87,6 +90,11 @@ class ServiceProcessTracker {
      observers_.AddObserver(observer);
    }
  
@@ -45,7 +45,7 @@ index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e35512315
    void RemoveObserver(ServiceProcessHost::Observer* observer) {
      // NOTE: Some tests may remove observers after BrowserThreads are shut down.
      DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -153,7 +161,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
+@@ -154,7 +162,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
          process_info_->service_process_id());
    }
  
@@ -54,7 +54,7 @@ index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e35512315
      // TODO(crbug.com/40654042): It is unclear how we can observe
      // |OnProcessCrashed()| without observing |OnProcessLaunched()| first, but
      // it can happen on Android. Ignore the notification in this case.
-@@ -161,7 +169,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
+@@ -162,7 +170,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
        return;
  
      GetServiceProcessTracker().NotifyCrashed(
@@ -63,7 +63,7 @@ index 642f8b6da39615d1c68584ff18fc57ceb95b84b2..cb58d75aa172b5144998fc2e35512315
    }
  
   private:
-@@ -230,6 +238,11 @@ void ServiceProcessHost::AddObserver(Observer* observer) {
+@@ -231,6 +239,11 @@ void ServiceProcessHost::AddObserver(Observer* observer) {
    GetServiceProcessTracker().AddObserver(observer);
  }
  

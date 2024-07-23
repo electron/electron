@@ -11,18 +11,18 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index a8acaa1780af7a0801832e1a698ed8d03598618c..5d92376feebc94d0c0e7658496eb9742740b089d 100644
+index 91226bd6e383636ecebdac93b151e107b3f943d9..7fe79f49484b50d2ae9a8d5d0ba9749c62464378 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
-@@ -7,6 +7,7 @@
- #include "base/check.h"
+@@ -8,6 +8,7 @@
+ #include "base/not_fatal_until.h"
  #include "base/notreached.h"
  #include "content/public/browser/browser_thread.h"
 +#include "content/public/browser/media_keys_listener_manager.h"
  #include "ui/base/accelerators/accelerator.h"
  
  using content::BrowserThread;
-@@ -66,6 +67,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
+@@ -67,6 +68,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
      StopListening();
  }
  

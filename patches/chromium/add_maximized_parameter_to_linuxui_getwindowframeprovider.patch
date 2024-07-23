@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index 668c90b2102448a9fe215a70b727dc82d10c78fe..a6a41271bacf89e86ab64422ce0a77ae671c541c 100644
+index ca2fc0b1b3fe9f7fd65f55f8924b4b5e324bfdd4..da8ebfad6404c59471dc31625aeb4e68659116a3 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -567,11 +567,12 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -577,11 +577,12 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
  }
  
  ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame,
@@ -28,11 +28,11 @@ index 668c90b2102448a9fe215a70b727dc82d10c78fe..a6a41271bacf89e86ab64422ce0a77ae
    return provider.get();
  }
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index 0432ea4f5906502a4f6def46ab064292a6628218..e3cbfa3a1ac8c169c429e29c1262d0dd2a05a4b6 100644
+index 32051374590fc1179e5cfa21ebc34474d2ce0190..09e9399a67d30d4686f4c141050538b8dde9f301 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -107,7 +107,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
-   void SetDarkTheme(bool dark) override;
+@@ -110,7 +110,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
+   void SetAccentColor(std::optional<SkColor> accent_color) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
    ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
 -                                                  bool tiled) override;
@@ -41,7 +41,7 @@ index 0432ea4f5906502a4f6def46ab064292a6628218..e3cbfa3a1ac8c169c429e29c1262d0dd
  
   private:
    using TintMap = std::map<int, color_utils::HSL>;
-@@ -191,7 +192,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -199,7 +200,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
    // while Chrome is running.  This 2D array is indexed first by whether the
    // frame is translucent (0) or solid(1), then by whether the frame is normal
    // (0) or tiled (1).
@@ -173,10 +173,10 @@ index 4faaae32a203bfa57f3e61c391dc6917c4a0bf59..94050a0136b78730f607f42991742e04
    // Scale-independent metric calculated based on the bitmaps.
    std::optional<gfx::Insets> frame_thickness_dip_;
 diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
-index 8903f9ba950e7878fbd1bfa0cf2a42e0cc9daa21..7d13381eb1d16193bad0be1318e8ed199c6fb845 100644
+index e4a7f8eb0ef8bacd2d4e4231d0990b4a01021626..3477542587b08691c164941b2c2e3b22050231ca 100644
 --- a/ui/linux/fallback_linux_ui.cc
 +++ b/ui/linux/fallback_linux_ui.cc
-@@ -141,7 +141,8 @@ FallbackLinuxUi::CreateNavButtonProvider() {
+@@ -143,7 +143,8 @@ FallbackLinuxUi::CreateNavButtonProvider() {
  
  ui::WindowFrameProvider* FallbackLinuxUi::GetWindowFrameProvider(
      bool solid_frame,
@@ -187,11 +187,11 @@ index 8903f9ba950e7878fbd1bfa0cf2a42e0cc9daa21..7d13381eb1d16193bad0be1318e8ed19
  }
  
 diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
-index 2612cb68984a8435c84f0b0592eda8a5df6dd91e..282b48038f83d4a6dafe734f639d994c245c67ac 100644
+index 0800349bc18753e6a41a938c70213dd7dd123d0d..a1553e0cb1fac188fb2c74e10163c52dead02f29 100644
 --- a/ui/linux/fallback_linux_ui.h
 +++ b/ui/linux/fallback_linux_ui.h
-@@ -66,7 +66,8 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
-   void SetDarkTheme(bool dark) override;
+@@ -67,7 +67,8 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
+   void SetAccentColor(std::optional<SkColor> accent_color) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
    ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
 -                                                  bool tiled) override;
@@ -201,10 +201,10 @@ index 2612cb68984a8435c84f0b0592eda8a5df6dd91e..282b48038f83d4a6dafe734f639d994c
   private:
    std::optional<gfx::FontRenderParams> default_font_render_params_;
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index b940382678ba70debaf7f33698c0b8bd02c42c4e..4477a1012fef5ad6dd365d70d28eadd3db136ceb 100644
+index 0a4c394b07a682d55639f37414331d68f175841c..45db96c165d61f551b344c7c852c083546508325 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -304,7 +304,8 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+@@ -307,7 +307,8 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.
    virtual WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,

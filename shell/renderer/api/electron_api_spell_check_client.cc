@@ -109,8 +109,8 @@ void SpellCheckClient::RequestCheckingOfText(
       std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
 
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&SpellCheckClient::SpellCheckText, AsWeakPtr()));
+      FROM_HERE, base::BindOnce(&SpellCheckClient::SpellCheckText,
+                                weak_factory_.GetWeakPtr()));
 }
 
 bool SpellCheckClient::IsSpellCheckingEnabled() const {
@@ -225,8 +225,8 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
       v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
-      isolate_,
-      base::BindRepeating(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));
+      isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,
+                                    weak_factory_.GetWeakPtr()));
   v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function
