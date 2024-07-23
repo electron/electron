@@ -10,8 +10,9 @@
 
 #include "electron/shell/common/api/api.mojom.h"
 #include "third_party/blink/public/mojom/page/draggable_region.mojom-forward.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/native_widget_types.h"
+
+class SkRegion;
 
 namespace base {
 class FilePath;
