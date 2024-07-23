@@ -20,10 +20,6 @@
 #include "shell/common/options_switches.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-#if defined(TOOLKIT_VIEWS)
-#include "shell/browser/native_window_views.h"
-#endif
-
 namespace electron::api {
 
 BrowserWindow::BrowserWindow(gin::Arguments* args,

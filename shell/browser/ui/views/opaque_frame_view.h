@@ -21,6 +21,8 @@ class CaptionButtonPlaceholderContainer;
 
 namespace electron {
 
+class NativeWindowViews;
+
 class OpaqueFrameView : public FramelessView {
   METADATA_HEADER(OpaqueFrameView, FramelessView)
 

@@ -28,6 +28,8 @@
 
 namespace electron {
 
+class NativeWindowViews;
+
 class ClientFrameViewLinux : public FramelessView,
                              private ui::NativeThemeObserver,
                              private ui::WindowButtonOrderObserver {

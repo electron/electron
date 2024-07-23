@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_NATIVE_WIDGET_AURA_H_
 #define ELECTRON_SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_NATIVE_WIDGET_AURA_H_
 
-#include "shell/browser/native_window_views.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 
 namespace views {
@@ -13,6 +12,8 @@ class DesktopWindowTreeHost;
 }
 
 namespace electron {
+
+class NativeWindowViews;
 
 class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:

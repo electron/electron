@@ -11,7 +11,6 @@
 #include "components/autofill/core/common/autofill_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "shell/browser/ui/autofill_popup.h"

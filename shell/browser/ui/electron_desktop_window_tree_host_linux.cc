@@ -13,6 +13,7 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "shell/browser/native_window_features.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"

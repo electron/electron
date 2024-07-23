@@ -143,10 +143,6 @@
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "shell/browser/native_window_views.h"
-#endif
-
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
 #endif
