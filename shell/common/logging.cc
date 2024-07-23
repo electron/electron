@@ -16,7 +16,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
-#include "shell/common/electron_paths.h"
 
 namespace logging {
 

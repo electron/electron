@@ -13,7 +13,6 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
-#include "shell/common/electron_paths.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 
 namespace electron {
