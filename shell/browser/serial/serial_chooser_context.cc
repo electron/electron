@@ -9,6 +9,7 @@
 
 #include "base/base64.h"
 #include "base/containers/contains.h"
+#include "base/strings/string_piece.h"
 #include "base/values.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/web_contents.h"

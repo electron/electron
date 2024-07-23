@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/strings/string_piece.h"
 #include "base/values.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"

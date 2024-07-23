@@ -62,7 +62,7 @@ jobs:
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
-        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
         SEDOPTION="-i"
         if [ "`uname`" = "Darwin" ]; then

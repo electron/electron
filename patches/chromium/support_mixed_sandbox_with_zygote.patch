@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a25d966c3395d89c9a1533356de19a3d6fa5279b..f3f70ca3a47414f18d56070d60b288e38bbb265b 100644
+index f8e2b5c2f270b9ed6e8ceda213decb0d81d56a41..03c7c523920d8670bad599dde8e9075f31603c19 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1602,9 +1602,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1604,9 +1604,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              *cmd_line, IsPdf(), /*is_jit_disabled=*/IsPdf());
@@ -42,7 +42,7 @@ index a25d966c3395d89c9a1533356de19a3d6fa5279b..f3f70ca3a47414f18d56070d60b288e3
  
      auto tracing_config_memory_region =
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 01c5da99e5bd8dd9d38e5cec9ad4f953e8167cbe..2005dc7c90d1851f9368a7ef3231f4cca52fafca 100644
+index 2c724b73a55fa21154ff8cedd41d3ca5738dfa76..b3f5973a4b686542d46d8338722f5fe42c86c529 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -35,6 +35,9 @@ namespace content {
@@ -55,7 +55,7 @@ index 01c5da99e5bd8dd9d38e5cec9ad4f953e8167cbe..2005dc7c90d1851f9368a7ef3231f4cc
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -69,6 +72,9 @@ RendererSandboxedProcessLauncherDelegateWin::
+@@ -70,6 +73,9 @@ RendererSandboxedProcessLauncherDelegateWin::
        is_pdf_renderer_(is_pdf_renderer) {
    // PDF renderers must be jitless.
    CHECK(!is_pdf_renderer || is_jit_disabled);

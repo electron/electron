@@ -1337,7 +1337,7 @@ void WebContents::UpdateExclusiveAccessBubble(
 
 void WebContents::OnExclusiveAccessUserInput() {}
 
-content::WebContents* WebContents::GetActiveWebContents() {
+content::WebContents* WebContents::GetWebContentsForExclusiveAccess() {
   return web_contents();
 }
 

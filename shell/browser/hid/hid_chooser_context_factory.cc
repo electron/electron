@@ -49,7 +49,4 @@ content::BrowserContext* HidChooserContextFactory::GetBrowserContextToUse(
   return context;
 }
 
-void HidChooserContextFactory::BrowserContextShutdown(
-    content::BrowserContext* context) {}
-
 }  // namespace electron

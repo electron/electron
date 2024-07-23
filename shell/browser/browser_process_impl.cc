@@ -93,6 +93,11 @@ BuildState* BrowserProcessImpl::GetBuildState() {
   return nullptr;
 }
 
+GlobalDesktopFeatures* BrowserProcessImpl::GetDesktopFeatures() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
 void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();

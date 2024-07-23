@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/strings/string_piece.h"
 #include "content/public/common/content_client.h"
 
 namespace electron {
