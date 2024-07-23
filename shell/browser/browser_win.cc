@@ -15,6 +15,7 @@
 #include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/base_paths.h"
+#include "base/command_line.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"

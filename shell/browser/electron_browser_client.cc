@@ -198,6 +198,7 @@
 #include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
+#include "ui/aura/window_tree_host.h"
 #include "ui/base/win/shell.h"
 #include "ui/views/widget/widget.h"
 #endif
