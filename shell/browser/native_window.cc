@@ -47,7 +47,7 @@ namespace gin {
 template <>
 struct Converter<electron::NativeWindow::TitleBarStyle> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      electron::NativeWindow::TitleBarStyle* out) {
     using TitleBarStyle = electron::NativeWindow::TitleBarStyle;
     std::string title_bar_style;
