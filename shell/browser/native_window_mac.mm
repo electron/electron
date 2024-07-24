@@ -94,7 +94,7 @@ namespace gin {
 template <>
 struct Converter<electron::NativeWindowMac::VisualEffectState> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      electron::NativeWindowMac::VisualEffectState* out) {
     using VisualEffectState = electron::NativeWindowMac::VisualEffectState;
     std::string visual_effect_state;
