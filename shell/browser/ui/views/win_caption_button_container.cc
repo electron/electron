@@ -10,6 +10,7 @@
 #include <memory>
 #include <utility>
 
+#include <windows.h>
 #include <winuser.h>
 
 #include "shell/browser/native_window_views.h"
