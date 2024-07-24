@@ -497,7 +497,6 @@ source_set("electron_lib") {
     "//ui/native_theme",
     "//ui/shell_dialogs",
     "//ui/views",
-    "//ui/views/controls/webview",
     "//v8",
     "//v8:v8_libplatform",
   ]
@@ -633,6 +632,7 @@ source_set("electron_lib") {
       "//ui/gtk:gtk_config",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
+      "//ui/views/controls/webview",
       "//ui/wm",
     ]
     if (ozone_platform_x11) {
@@ -662,6 +662,7 @@ source_set("electron_lib") {
       "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
+      "//ui/views/controls/webview",
       "//ui/wm",
       "//ui/wm/public",
     ]

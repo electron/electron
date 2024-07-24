@@ -236,7 +236,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       views::Widget::InitParams::TYPE_WINDOW);
   params.bounds = bounds;
   params.delegate = this;
-  params.headless_mode = true;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
