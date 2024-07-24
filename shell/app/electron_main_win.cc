@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "base/at_exit.h"
+#include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/process/launch.h"
