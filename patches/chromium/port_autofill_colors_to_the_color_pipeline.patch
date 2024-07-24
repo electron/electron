@@ -61,7 +61,7 @@ index 6ec67f8c283779fc76d38ba15c095152bf3aba76..964cd58619476634299c067498f09d46
                                               ? SkColorSetRGB(0x99, 0xC8, 0xFF)
                                               : SkColorSetRGB(0x00, 0x75, 0xFF)};
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index f85dc80f3e90c4758f1aef770c9c2a10c723a5ff..f990ccbe41355c00bd3cd34c0ef169429eea7cc6 100644
+index 075e91f94be217ce9bbd85450ff652efd9685af1..b68bb0c442919fc09ef19f8a68dfc2456d4edaef 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -171,6 +171,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
@@ -91,7 +91,7 @@ index f85dc80f3e90c4758f1aef770c9c2a10c723a5ff..f990ccbe41355c00bd3cd34c0ef16942
  
    // Hyperlinks
    mixer[kColorLinkForegroundDefault] = {kColorNativeHotlight};
-@@ -235,6 +241,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -234,6 +240,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};

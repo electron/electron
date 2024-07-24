@@ -97,10 +97,10 @@ index e10245b4f36f324510a2dfd785ffaa2ceaad48d6..befb5666134d5f299b228e3d654fa2b0
  }
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index 657faef293353ab97e815b9682068a43963ea5a7..5ffa267d190d41b45f8b5bcdcf80297ab5ac3819 100644
+index ab916846f3776075221611eca461d7c49176ae95..e8abe5d0b3423b4709575253f4289ac3687df998 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
-@@ -222,6 +222,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+@@ -220,6 +220,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
                    const GURL* caller = nullptr);
    bool HasMultipleFileTypeChoices();
  
