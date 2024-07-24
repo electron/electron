@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/json/values_util.h"
 #include "base/path_service.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
@@ -26,18 +27,52 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
+#include "gin/data_object_builder.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+
+namespace gin {
+
+template <>
+struct Converter<
+    ChromeFileSystemAccessPermissionContext::SensitiveEntryResult> {
+  static bool FromV8(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> val,
+      ChromeFileSystemAccessPermissionContext::SensitiveEntryResult* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "allow")
+      *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
+          kAllowed;
+    else if (type == "tryAgain")
+      *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
+          kTryAgain;
+    else if (type == "deny")
+      *out =
+          ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::kAbort;
+    else
+      return false;
+    return true;
+  }
+};
+
+}  // namespace gin
 
 namespace {
 
 using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
+using SensitiveEntryResult =
+    ChromeFileSystemAccessPermissionContext::SensitiveEntryResult;
 using blink::mojom::PermissionStatus;
 
 // Dictionary keys for the FILE_SYSTEM_LAST_PICKED_DIRECTORY website setting.
@@ -527,11 +562,11 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  callback_ = std::move(callback);
 
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
-      GetWeakPtr(), origin, path, handle_type, user_action, frame_id,
-      std::move(callback));
+      GetWeakPtr(), origin, path, handle_type, user_action, frame_id);
   CheckPathAgainstBlocklist(path_type, path, handle_type,
                             std::move(after_blocklist_check_callback));
 }
@@ -570,31 +605,54 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
   std::move(callback).Run(AfterWriteCheckResult::kAllow);
 }
 
+void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
+    SensitiveEntryResult result) {
+  if (callback_)
+    std::move(callback_).Run(result);
+}
+
+void FileSystemAccessPermissionContext::OnRestrictedPathResult(
+    gin::Arguments* args) {
+  SensitiveEntryResult result = SensitiveEntryResult::kAbort;
+  args->GetNext(&result);
+  RunRestrictedPathCallback(result);
+}
+
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     const url::Origin& origin,
     const base::FilePath& path,
     HandleType handle_type,
     UserAction user_action,
     content::GlobalRenderFrameHostId frame_id,
-    base::OnceCallback<void(SensitiveEntryResult)> callback,
     bool should_block) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   if (user_action == UserAction::kNone) {
-    std::move(callback).Run(should_block ? SensitiveEntryResult::kAbort
-                                         : SensitiveEntryResult::kAllowed);
+    RunRestrictedPathCallback(should_block ? SensitiveEntryResult::kAbort
+                                           : SensitiveEntryResult::kAllowed);
     return;
   }
 
-  // Chromium opens a dialog here, but in Electron's case we log and abort.
   if (should_block) {
-    LOG(INFO) << path.value()
-              << " is blocked by the blocklis and cannot be accessed";
-    std::move(callback).Run(SensitiveEntryResult::kAbort);
+    auto* session =
+        electron::api::Session::FromBrowserContext(browser_context());
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    v8::Local<v8::Object> details =
+        gin::DataObjectBuilder(isolate)
+            .Set("origin", origin.GetURL().spec())
+            .Set("isDirectory", handle_type == HandleType::kDirectory)
+            .Set("path", path)
+            .Build();
+    session->Emit(
+        "file-system-access-restricted", details,
+        base::BindRepeating(
+            &FileSystemAccessPermissionContext::OnRestrictedPathResult,
+            weak_factory_.GetWeakPtr()));
     return;
   }
 
-  std::move(callback).Run(SensitiveEntryResult::kAllowed);
+  RunRestrictedPathCallback(SensitiveEntryResult::kAllowed);
 }
 
 void FileSystemAccessPermissionContext::MaybeEvictEntries(
