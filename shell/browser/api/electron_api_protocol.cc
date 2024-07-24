@@ -168,7 +168,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
       return;
     // Add the schemes to command line switches, so child processes can also
     // register them.
-    auto existing = base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(switch_name)
+    auto existing = base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(switch_name);
     auto combined = base::SplitString(existing, ",",  base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
     std::copy(std::begin(schemes), std::end(schemes), std::back_inserter(combined));
     
