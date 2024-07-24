@@ -72,3 +72,7 @@ or is being instructed to use an inverted color scheme.
 
 A `boolean` indicating whether Chromium is in forced colors mode, controlled by system accessibility settings.
 Currently, Windows high contrast is the only system setting that triggers forced colors mode.
+
+### `nativeTheme.prefersReducedTransparency` _Readonly_
+
+A `boolean` that indicates the whether the user has chosen via system accessibility settings to reduce transparency at the OS level.

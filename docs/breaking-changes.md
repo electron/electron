@@ -12,6 +12,20 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (33.0)
+
+### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
+
+The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.
+
+```js
+// Deprecated
+const shouldReduceTransparency = systemPreferences.accessibilityDisplayShouldReduceTransparency
+
+// Replace with:
+const prefersReducedTransparency = nativeTheme.prefersReducedTransparency
+```
+
 ## Planned Breaking API Changes (32.0)
 
 ### Removed: `File.path`
