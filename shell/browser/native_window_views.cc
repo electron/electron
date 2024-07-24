@@ -1743,7 +1743,7 @@ void NativeWindowViews::HandleKeyboardEvent(
 }
 
 void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
-  if (event->type() != ui::ET_MOUSE_PRESSED)
+  if (event->type() != ui::EventType::kMousePressed)
     return;
 
   // Alt+Click should not toggle menu bar.
