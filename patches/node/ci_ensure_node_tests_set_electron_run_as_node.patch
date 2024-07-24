@@ -45,10 +45,10 @@ index f995c170540ffaa80b1b5f8b95dbd8f52bbd5431..6455dbdd015477e16c414b6d21131393
          fixtures.path(name),
          transform ?? defaultTransform,
 diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
-index c0acee2bfc8c124e9d9b254041589a49c8301b8f..0e266899ffc0918b2f94e8f636043a6ec5f0870f 100644
+index 84f20a77dda367fe1ada8d616c7b6813d39efd43..27d16d74884a006ba01b777f5a20339b4906197b 100644
 --- a/test/parallel/test-node-output-errors.mjs
 +++ b/test/parallel/test-node-output-errors.mjs
-@@ -61,21 +61,22 @@ describe('errors output', { concurrency: true }, () => {
+@@ -59,21 +59,22 @@ describe('errors output', { concurrency: true }, () => {
      { name: 'errors/events_unhandled_error_subclass.js', transform: errTransform },
      { name: 'errors/if-error-has-good-stack.js', transform: errTransform },
      { name: 'errors/throw_custom_error.js', transform: errTransform },
@@ -69,11 +69,12 @@ index c0acee2bfc8c124e9d9b254041589a49c8301b8f..0e266899ffc0918b2f94e8f636043a6e
 -    { skip: skipForceColors, name: 'errors/force_colors.js',
 -      transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
 +    // { skip: skipForceColors, name: 'errors/force_colors.js',
-+      // transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
++    //   transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
    ];
    for (const { name, transform = defaultTransform, env, skip = false } of tests) {
      it(name, { skip }, async () => {
 +      if (env) env.ELECTRON_RUN_AS_NODE = 1;
-       await snapshot.spawnAndAssert(fixtures.path(name), transform, { env });
+       await snapshot.spawnAndAssert(fixtures.path(name), transform, { env: { ...env, ...process.env } });
      });
    }
+
