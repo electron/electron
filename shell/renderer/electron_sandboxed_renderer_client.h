@@ -34,9 +34,9 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
                           v8::Local<v8::Context> context,
                           content::RenderFrame* render_frame);
   // electron::RendererClientBase:
-  void DidCreateScriptContext(v8::Handle<v8::Context> context,
+  void DidCreateScriptContext(v8::Local<v8::Context> context,
                               content::RenderFrame* render_frame) override;
-  void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
