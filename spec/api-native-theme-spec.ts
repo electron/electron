@@ -105,4 +105,10 @@ describe('nativeTheme module', () => {
       expect(nativeTheme.inForcedColorsMode).to.be.a('boolean');
     });
   });
+
+  describe('nativeTheme.prefersReducesTransparency', () => {
+    it('returns a boolean', () => {
+      expect(nativeTheme.prefersReducedTransparency).to.be.a('boolean');
+    });
+  });
 });
