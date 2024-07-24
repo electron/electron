@@ -55,28 +55,28 @@ namespace {
 const float kDefaultScaleFactor = 1.0;
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
-  ui::EventType type = ui::EventType::ET_UNKNOWN;
+  ui::EventType type = ui::EventType::kUnknown;
   switch (event.GetType()) {
     case blink::WebInputEvent::Type::kMouseDown:
-      type = ui::EventType::ET_MOUSE_PRESSED;
+      type = ui::EventType::kMousePressed;
       break;
     case blink::WebInputEvent::Type::kMouseUp:
-      type = ui::EventType::ET_MOUSE_RELEASED;
+      type = ui::EventType::kMouseReleased;
       break;
     case blink::WebInputEvent::Type::kMouseMove:
-      type = ui::EventType::ET_MOUSE_MOVED;
+      type = ui::EventType::kMouseMoved;
       break;
     case blink::WebInputEvent::Type::kMouseEnter:
-      type = ui::EventType::ET_MOUSE_ENTERED;
+      type = ui::EventType::kMouseEntered;
       break;
     case blink::WebInputEvent::Type::kMouseLeave:
-      type = ui::EventType::ET_MOUSE_EXITED;
+      type = ui::EventType::kMouseExited;
       break;
     case blink::WebInputEvent::Type::kMouseWheel:
-      type = ui::EventType::ET_MOUSEWHEEL;
+      type = ui::EventType::kMousewheel;
       break;
     default:
-      type = ui::EventType::ET_UNKNOWN;
+      type = ui::EventType::kUnknown;
       break;
   }
 
