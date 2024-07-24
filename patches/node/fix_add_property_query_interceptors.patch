@@ -13,7 +13,7 @@ CL: https://chromium-review.googlesource.com/c/v8/v8/+/5630388
 This patch can be removed when the node change is incorporated into main.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index f6969e635f692b17b4efca1dfbee086a0199db6e..6ace71b04e9da761c77838dde2abd8088abcb6c4 100644
+index 4b7c4556d4cc94f589065409ed2a0aca497c99d0..b4d6116f0c84b0cf3e1045c6b9571fd295fe5412 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -49,6 +49,7 @@ using v8::FunctionTemplate;
