@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "third_party/skia/include/core/SkImageInfo.h"
 
 #include <IOSurface/IOSurface.h>
 

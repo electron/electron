@@ -8,8 +8,6 @@
 #include <map>
 #include <string>
 
-#include "build/build_config.h"
-
 namespace base {
 class Time;
 }

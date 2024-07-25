@@ -10,7 +10,7 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
-#include "shell/browser/event_emitter_mixin.h"
+#include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
 namespace v8 {
 template <class T>

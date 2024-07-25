@@ -13,7 +13,6 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/platform_util.h"
 
 namespace electron::safestorage {
 

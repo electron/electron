@@ -10,13 +10,14 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 
 namespace electron {
+
+class NativeWindowViews;
 
 class WinFrameView : public FramelessView {
   METADATA_HEADER(WinFrameView, FramelessView)

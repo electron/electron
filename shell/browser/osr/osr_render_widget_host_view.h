@@ -26,17 +26,14 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
-#include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
 #include "third_party/blink/public/platform/web_vector.h"
-#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer_delegate.h"
 #include "ui/compositor/layer_owner.h"
-#include "ui/gfx/geometry/point.h"
 
 #include "components/viz/host/host_display_client.h"
 
@@ -44,20 +41,28 @@
 #include "ui/gfx/win/window_impl.h"
 #endif
 
+class SkBitmap;
+
+namespace gfx {
+class Point;
+class PointF;
+class Rect;
+}  // namespace gfx
+
 namespace input {
 class CursorManager;
 }
 
 namespace electron {
 
-class ElectronCopyFrameGenerator;
 class ElectronBeginFrameTimer;
-
+class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
+class OffScreenHostDisplayClient;
 
-typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
-    OnPaintCallback;
-typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
+using OnPaintCallback =
+    base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>;
+using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
 
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,

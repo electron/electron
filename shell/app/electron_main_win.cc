@@ -17,12 +17,12 @@
 #include <vector>
 
 #include "base/at_exit.h"
+#include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/dark_mode_support.h"
-#include "base/win/windows_version.h"
 #include "chrome/app/exit_code_watcher_win.h"
 #include "components/crash/core/app/crash_switches.h"
 #include "components/crash/core/app/run_as_crashpad_handler_win.h"

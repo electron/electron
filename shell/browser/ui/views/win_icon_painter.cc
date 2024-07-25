@@ -8,10 +8,7 @@
 #include "cc/paint/paint_flags.h"
 #include "third_party/skia/include/core/SkPath.h"
 #include "ui/gfx/canvas.h"
-#include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/rrect_f.h"
-#include "ui/gfx/geometry/skia_conversions.h"
-#include "ui/gfx/scoped_canvas.h"
 
 namespace {
 

@@ -8,7 +8,9 @@
 
 #include <string>
 
-#include "base/files/file_path.h"
+namespace base {
+class FilePath;
+}
 
 namespace electron {
 

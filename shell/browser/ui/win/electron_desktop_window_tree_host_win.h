@@ -9,10 +9,11 @@
 
 #include <optional>
 
-#include "shell/browser/native_window_views.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
 namespace electron {
+
+class NativeWindowViews;
 
 class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                                          public ::ui::NativeThemeObserver {

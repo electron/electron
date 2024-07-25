@@ -10,6 +10,10 @@
 #include <memory>
 #include <utility>
 
+#include <windows.h>
+#include <winuser.h>
+
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "ui/base/l10n/l10n_util.h"

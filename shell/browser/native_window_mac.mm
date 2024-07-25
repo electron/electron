@@ -40,7 +40,6 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"

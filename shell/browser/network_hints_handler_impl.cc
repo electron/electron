@@ -12,7 +12,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_session.h"
-#include "shell/browser/electron_browser_context.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "v8/include/v8.h"
 

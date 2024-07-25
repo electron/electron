@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/task/cancelable_task_tracker.h"
 #include "extensions/browser/api/management/management_api_delegate.h"
 #include "extensions/common/extension_id.h"
 

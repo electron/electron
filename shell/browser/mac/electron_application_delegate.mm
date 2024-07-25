@@ -4,11 +4,11 @@
 
 #import "shell/browser/mac/electron_application_delegate.h"
 
-#include <memory>
 #include <string>
 
 #include "base/allocator/buildflags.h"
 #include "base/allocator/partition_allocator/src/partition_alloc/shim/allocator_shim.h"
+#include "base/functional/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/api/electron_api_push_notifications.h"

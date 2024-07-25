@@ -5,7 +5,6 @@
 #include "shell/browser/special_storage_policy.h"
 
 #include "base/functional/bind.h"
-#include "base/functional/callback.h"
 #include "services/network/public/cpp/session_cookie_delete_predicate.h"
 
 namespace electron {

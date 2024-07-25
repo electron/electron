@@ -5,9 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
 #define ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
 
-#include <algorithm>
 #include <memory>
-#include <optional>
 
 #include "crypto/secure_hash.h"
 #include "mojo/public/cpp/system/file_data_source.h"

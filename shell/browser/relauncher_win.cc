@@ -14,7 +14,6 @@
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
-#include "ui/base/win/shell.h"
 
 namespace relauncher::internal {
 

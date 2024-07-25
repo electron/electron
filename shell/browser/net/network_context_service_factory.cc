@@ -6,6 +6,7 @@
 
 #include "base/no_destructor.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/network_context_service.h"
 
 namespace electron {

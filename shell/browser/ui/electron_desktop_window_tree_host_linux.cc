@@ -13,7 +13,9 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "shell/browser/native_window_features.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
@@ -21,7 +23,6 @@
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
-#include "ui/views/window/non_client_view.h"
 
 namespace electron {
 

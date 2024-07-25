@@ -16,9 +16,9 @@
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/serial_delegate.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
-#include "shell/browser/electron_browser_context.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -28,6 +28,8 @@ class Value;
 }
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 #if BUILDFLAG(IS_WIN)
 extern const char kDeviceInstanceIdKey[];

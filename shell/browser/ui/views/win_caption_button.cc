@@ -12,6 +12,7 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/win/windows_version.h"
 #include "chrome/grit/theme_resources.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/common/color_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
