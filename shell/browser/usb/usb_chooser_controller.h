@@ -9,7 +9,6 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/usb_device.mojom.h"
 #include "shell/browser/usb/electron_usb_delegate.h"
@@ -19,7 +18,8 @@
 
 namespace content {
 class RenderFrameHost;
-}
+class WebContents;
+}  // namespace content
 
 namespace gin {
 class Arguments;

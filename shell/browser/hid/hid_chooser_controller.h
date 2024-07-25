@@ -14,7 +14,6 @@
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/hid_chooser.h"
 #include "content/public/browser/weak_document_ptr.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/hid.mojom-forward.h"
 #include "shell/browser/hid/hid_chooser_context.h"
@@ -24,6 +23,7 @@
 
 namespace content {
 class RenderFrameHost;
+class WebContents;
 }  // namespace content
 
 namespace gin {

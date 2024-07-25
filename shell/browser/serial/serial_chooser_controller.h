@@ -11,7 +11,6 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
@@ -20,7 +19,8 @@
 
 namespace content {
 class RenderFrameHost;
-}
+class WebContents;
+}  // namespace content
 
 namespace electron {
 
