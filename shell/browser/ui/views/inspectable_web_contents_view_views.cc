@@ -108,6 +108,15 @@ views::View* InspectableWebContentsViewViews::GetView() {
   return this;
 }
 
+void InspectableWebContentsViewViews::SetCornerRadii(
+    const gfx::RoundedCornersF& corner_radii) {
+  // WebView won't exist for offscreen rendering.
+  if (contents_web_view_) {
+    contents_web_view_->holder()->SetCornerRadii(
+        gfx::RoundedCornersF(border_radius().value()));
+  }
+}
+
 void InspectableWebContentsViewViews::ShowDevTools(bool activate) {
   if (devtools_visible_)
     return;

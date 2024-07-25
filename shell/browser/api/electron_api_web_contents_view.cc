@@ -89,15 +89,8 @@ void WebContentsView::SetBorderRadius(int radius) {
 
 void WebContentsView::ApplyBorderRadius() {
   if (border_radius().has_value() && api_web_contents_ && view()->GetWidget()) {
-    auto* web_view = api_web_contents_->inspectable_web_contents()
-                         ->GetView()
-                         ->contents_web_view();
-
-    // WebView won't exist for offscreen rendering.
-    if (web_view) {
-      web_view->holder()->SetCornerRadii(
-          gfx::RoundedCornersF(border_radius().value()));
-    }
+    auto* view = api_web_contents_->inspectable_web_contents()->GetView();
+    view->SetCornerRadii(gfx::RoundedCornersF(border_radius().value()));
   }
 }
 

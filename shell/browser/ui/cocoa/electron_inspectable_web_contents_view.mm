@@ -81,6 +81,19 @@
     inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
 }
 
+- (void)setCornerRadii {
+  auto* inspectable_web_contents =
+      inspectableWebContentsView_->inspectable_web_contents();
+  DCHECK(inspectable_web_contents);
+  auto* webContents = inspectable_web_contents->GetWebContents();
+  if (!webContents)
+    return;
+  auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
+  webContentsView.wantsLayer = YES;
+  webContentsView.layer.masksToBounds = YES;
+  webContentsView.layer.cornerRadius = 10.0;
+}
+
 - (void)notifyDevToolsResized {
   // When devtools is opened, resizing devtools would not trigger
   // UpdateDraggableRegions for WebContents, so we have to notify the window

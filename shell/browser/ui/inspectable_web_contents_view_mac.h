@@ -22,6 +22,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   ~InspectableWebContentsViewMac() override;
 
   gfx::NativeView GetNativeView() const override;
+  void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) override;
   void ShowDevTools(bool activate) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;

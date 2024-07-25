@@ -10,6 +10,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "ui/gfx/geometry/rounded_corners_f.h"
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;
@@ -35,8 +36,6 @@ class InspectableWebContentsView {
     return inspectable_web_contents_;
   }
 
-  views::WebView* contents_web_view() const { return contents_web_view_; }
-
   // The delegate manages its own life.
   void SetDelegate(InspectableWebContentsViewDelegate* delegate) {
     delegate_ = delegate;
@@ -46,11 +45,13 @@ class InspectableWebContentsView {
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
   // Returns the container control, which has devtools view attached.
   virtual views::View* GetView() = 0;
+  virtual views::WebView* GetContentsWebView() = 0;
 #else
   virtual gfx::NativeView GetNativeView() const = 0;
 #endif
 
   virtual void ShowDevTools(bool activate) = 0;
+  virtual void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) = 0;
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
