@@ -78,6 +78,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/badging/badge_manager.h"
+#include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_api_ipc_handler_impl.h"
 #include "shell/browser/electron_autofill_driver_factory.h"

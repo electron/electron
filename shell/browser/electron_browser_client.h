@@ -22,7 +22,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
-#include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
@@ -38,6 +37,7 @@ class SSLCertRequestInfo;
 
 namespace electron {
 
+class ElectronBluetoothDelegate;
 class ElectronBrowserMainParts;
 class ElectronHidDelegate;
 class ElectronUsbDelegate;
