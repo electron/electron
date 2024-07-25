@@ -51,7 +51,6 @@ class BrowserProcessImpl : public BrowserProcess {
 
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
-  BuildState* GetBuildState() override;
   void PostEarlyInitialization();
   void PreCreateThreads();
   void PreMainMessageLoopRun();
@@ -68,6 +67,9 @@ class BrowserProcessImpl : public BrowserProcess {
   }
 #endif
 
+  // BrowserProcess
+  BuildState* GetBuildState() override;
+  GlobalDesktopFeatures* GetDesktopFeatures() override;
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;

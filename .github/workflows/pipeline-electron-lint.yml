@@ -32,7 +32,7 @@ jobs:
       shell: bash
       run: |
         # "depot_tools" has to be checkout into "//third_party/depot_tools" so pylint.py can a "pylintrc" file.
-        git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git src/third_party/depot_tools
+        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git src/third_party/depot_tools
         echo "$(pwd)/src/third_party/depot_tools" >> $GITHUB_PATH
     - name: Download GN Binary
       shell: bash

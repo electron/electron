@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 70600292ad70c7cae3c42a434aeb8c70c0f97b16..bf0984fc166b9b41342d8bdb74493d31d495e304 100644
+index eaca11c1b16ee0befe8f5bfd3735a582a63cbd81..9f042cd993e46993826634772714c4f2c2089705 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -26,6 +26,7 @@
@@ -30,10 +30,10 @@ index 70600292ad70c7cae3c42a434aeb8c70c0f97b16..bf0984fc166b9b41342d8bdb74493d31
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2c0aec08ab428de9e028dc39694e7d72ede50490..9f8dfe77123c6229bc186d0619e6108da8bd9832 100644
+index e5778e3fe86517fb2ee4177aa7d4b49a147f14d5..f52c0ba0fce5747dff3c97a4423874fcf34fdb2a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1974,6 +1974,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -1966,6 +1966,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,10 +44,10 @@ index 2c0aec08ab428de9e028dc39694e7d72ede50490..9f8dfe77123c6229bc186d0619e6108d
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f8d747565a1d5570c78301ee960ea7cbc4702c65..c02d1b289350c3b3bfb3f0206bc7595e1b84e187 100644
+index 697dc1f6dcb5c2ad5a44566a07471dd21a5787ad..aa0841abdacb72309365f7abd5e7f78129798f0a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5454,6 +5454,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5386,6 +5386,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index f8d747565a1d5570c78301ee960ea7cbc4702c65..c02d1b289350c3b3bfb3f0206bc7595e
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index b4efaee46c41aa00ce375c8b3c446ee59e8ecc9a..2cae6395e6e780b5179d2db378c4e80ebbd6d743 100644
+index 31b97a40964d73a5d4d05209253e07bc1a93ca48..38743cefe8b34ed9e4fd4f71515701fbb0085642 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1095,6 +1095,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1099,6 +1099,7 @@ class CONTENT_EXPORT WebContentsImpl
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index b4efaee46c41aa00ce375c8b3c446ee59e8ecc9a..2cae6395e6e780b5179d2db378c4e80e
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index da6b102da0927221568580b405ef22271ce43055..8021248b3ea764c802e27e0a6b06088fa0841aa7 100644
+index 7e1fc02b877333fea43ea0a95ebd0ca455cef623..7b80d6cb769dd0388338f4afca3b75ecc0a68c99 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@

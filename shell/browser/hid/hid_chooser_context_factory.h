@@ -30,12 +30,11 @@ class HidChooserContextFactory : public BrowserContextKeyedServiceFactory {
   HidChooserContextFactory();
   ~HidChooserContextFactory() override;
 
-  // BrowserContextKeyedBaseFactory:
+  // BrowserContextKeyedServiceFactory:
   KeyedService* BuildServiceInstanceFor(
       content::BrowserContext* profile) const override;
   content::BrowserContext* GetBrowserContextToUse(
       content::BrowserContext* context) const override;
-  void BrowserContextShutdown(content::BrowserContext* context) override;
 };
 
 }  // namespace electron

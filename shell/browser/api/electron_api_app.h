@@ -132,6 +132,7 @@ class App : public ElectronBrowserClient::Delegate,
       override;
   base::OnceClosure SelectClientCertificate(
       content::BrowserContext* browser_context,
+      int process_id,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList identities,

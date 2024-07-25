@@ -18,11 +18,11 @@ index 50992a3f4502d46a1bc2713c25bec6095c541ffa..121a09d7fa00162fe64ce901cae96d8f
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 361b6ad8fea1b6caa4ffa35ddb73b813fab0e388..234c469cbbc611f3cb1b05bb71e36729606009b4 100644
+index e347f59477744c7c4c8b2a7fbe04107e997a9bbe..f3decca9583976705b8f29fe431068575755ed07 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -48,7 +48,9 @@
- /cygwin
+ /data_sharing_sdk
  /devserver
  /directxsdk
 +/electron_node
@@ -31,14 +31,14 @@ index 361b6ad8fea1b6caa4ffa35ddb73b813fab0e388..234c469cbbc611f3cb1b05bb71e36729
  /espresso/lib/
  /eyesfree/src
  /fuchsia-sdk/images
-@@ -104,6 +106,7 @@
+@@ -103,6 +105,7 @@
+ /mocha
  /mockito/src
  /nacl_sdk_binaries/
- /ninja
 +/nan
+ /ninja
  /node/*.tar.gz
  /node/linux/
- /node/mac/
 @@ -153,6 +156,7 @@
  /spirv-headers/src
  /spirv-tools/src

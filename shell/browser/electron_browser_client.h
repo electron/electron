@@ -14,6 +14,7 @@
 #include "base/containers/flat_set.h"
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
+#include "base/strings/string_piece.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
@@ -144,6 +145,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       override;
   base::OnceClosure SelectClientCertificate(
       content::BrowserContext* browser_context,
+      int process_id,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList client_certs,
@@ -239,6 +241,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::NavigationUIData* navigation_ui_data,
       int frame_tree_node_id,
       int64_t navigation_id,
+      bool force_no_https_upgrade,
       scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner)
       override;
   bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(

@@ -287,13 +287,12 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
-    size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
     std::u16string text16 = character_str.empty()
                                 ? base::UTF8ToUTF16(str)
                                 : base::UTF8ToUTF16(character_str);
-    std::fill_n(out->text, text_length_cap, 0);
-    std::fill_n(out->unmodified_text, text_length_cap, 0);
-    for (size_t i = 0; i < std::min(text_length_cap - 1, text16.size()); ++i) {
+    std::ranges::fill(out->text, 0);
+    std::ranges::fill(out->unmodified_text, 0);
+    for (size_t i = 0; i < std::min(out->text.size() - 1, text16.size()); ++i) {
       out->text[i] = text16[i];
       out->unmodified_text[i] = text16[i];
     }

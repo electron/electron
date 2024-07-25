@@ -87,7 +87,7 @@ runs:
           # Export it
           mkdir -p ../../patches
           git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
-          if (node ./script/push-patch.js 2> /dev/null > /dev/null); then
+          if node ./script/push-patch.js; then
             echo
             echo "======================================================================"
             echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
@@ -100,6 +100,8 @@ runs:
             echo "There were changes to the patches when applying."
             echo "Check the CI artifacts for a patch you can apply to fix it."
             echo "======================================================================"
+            echo
+            cat ../../patches/update-patches.patch
             exit 1
           fi
         fi

@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 7982c87feb19cf80aa05025996b50b1d9be5f54c..8434fdab9d0e66f54381ed96142b138a5149c9ce 100644
+index d9e3751608d19adc82bf67959a44926852d8eb85..3ad5a73c1326e4f9333d4f1af90bdd064e4024dd 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -12,6 +12,7 @@
@@ -20,7 +20,7 @@ index 7982c87feb19cf80aa05025996b50b1d9be5f54c..8434fdab9d0e66f54381ed96142b138a
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -32,6 +33,7 @@
+@@ -36,6 +37,7 @@
  #include "net/http/http_cache.h"
  #include "third_party/blink/public/common/scheme_registry.h"
  #include "url/gurl.h"
@@ -28,7 +28,7 @@ index 7982c87feb19cf80aa05025996b50b1d9be5f54c..8434fdab9d0e66f54381ed96142b138a
  
  using storage::BigIOBuffer;
  
-@@ -44,7 +46,7 @@ constexpr char kSeparator[] = " \n";
+@@ -48,7 +50,7 @@ constexpr char kSeparator[] = " \n";
  
  // We always expect to receive valid URLs that can be used as keys to the code
  // cache. The relevant checks (for ex: resource_url is valid, origin_lock is
@@ -37,7 +37,7 @@ index 7982c87feb19cf80aa05025996b50b1d9be5f54c..8434fdab9d0e66f54381ed96142b138a
  //
  // This function doesn't enforce anything in the production code. It is here
  // to make the assumptions explicit and to catch any errors when DCHECKs are
-@@ -54,33 +56,55 @@ void CheckValidKeys(const GURL& resource_url,
+@@ -58,33 +60,55 @@ void CheckValidKeys(const GURL& resource_url,
                      GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
@@ -117,7 +117,7 @@ index 7982c87feb19cf80aa05025996b50b1d9be5f54c..8434fdab9d0e66f54381ed96142b138a
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index f5c5ff2c89489257003dfe3284ee9de9f517c99b..fdd2e2483171c4d43963590200817dac27d22cf9 100644
+index e0cdc785d2557bc79bde98728c23c239ed8d0961..74e0acbea1e0c18a6ac8971170efc945ca58f4ed 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
 @@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {

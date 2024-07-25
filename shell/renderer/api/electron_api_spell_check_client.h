@@ -27,8 +27,7 @@ class WebTextCheckingCompletion;
 namespace electron::api {
 
 class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
-                         public blink::WebTextCheckClient,
-                         public base::SupportsWeakPtr<SpellCheckClient> {
+                         public blink::WebTextCheckClient {
  public:
   SpellCheckClient(const std::string& language,
                    v8::Isolate* isolate,
@@ -106,6 +105,8 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> provider_;
   v8::Global<v8::Function> spell_check_;
+
+  base::WeakPtrFactory<SpellCheckClient> weak_factory_{this};
 };
 
 }  // namespace electron::api
