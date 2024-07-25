@@ -298,65 +298,6 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-#if BUILDFLAG(IS_WIN)
-void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                       gin_helper::Arguments* args) {
-  // Ensure WCO is already enabled on this window
-  if (!window_->titlebar_overlay_enabled()) {
-    args->ThrowError("Titlebar overlay is not enabled");
-    return;
-  }
-
-  auto* window = static_cast<NativeWindowViews*>(window_.get());
-  bool updated = false;
-
-  // Check and update the button color
-  std::string btn_color;
-  if (options.Get(options::kOverlayButtonColor, &btn_color)) {
-    // Parse the string as a CSS color
-    SkColor color;
-    if (!content::ParseCssColorString(btn_color, &color)) {
-      args->ThrowError("Could not parse color as CSS color");
-      return;
-    }
-
-    // Update the view
-    window->set_overlay_button_color(color);
-    updated = true;
-  }
-
-  // Check and update the symbol color
-  std::string symbol_color;
-  if (options.Get(options::kOverlaySymbolColor, &symbol_color)) {
-    // Parse the string as a CSS color
-    SkColor color;
-    if (!content::ParseCssColorString(symbol_color, &color)) {
-      args->ThrowError("Could not parse symbol color as CSS color");
-      return;
-    }
-
-    // Update the view
-    window->set_overlay_symbol_color(color);
-    updated = true;
-  }
-
-  // Check and update the height
-  int height = 0;
-  if (options.Get(options::kOverlayHeight, &height)) {
-    window->set_titlebar_overlay_height(height);
-    updated = true;
-  }
-
-  // If anything was updated, invalidate the layout and schedule a paint of the
-  // window's frame view
-  if (updated) {
-    auto* frame_view = static_cast<WinFrameView*>(
-        window->widget()->non_client_view()->frame_view());
-    frame_view->InvalidateCaptionButtons();
-  }
-}
-#endif
-
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresponsive_closure_.IsCancelled())
     return;
