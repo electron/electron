@@ -72,7 +72,7 @@ void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
 }
 
 void ElectronRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> renderer_context,
+    v8::Local<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
@@ -158,7 +158,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 }
 
 void ElectronRendererClient::WillReleaseScriptContext(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)
     return;
