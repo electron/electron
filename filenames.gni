@@ -387,6 +387,8 @@ filenames = {
     "shell/browser/file_system_access/file_system_access_permission_context.h",
     "shell/browser/file_system_access/file_system_access_permission_context_factory.cc",
     "shell/browser/file_system_access/file_system_access_permission_context_factory.h",
+    "shell/browser/file_system_access/file_system_access_web_contents_helper.cc",
+    "shell/browser/file_system_access/file_system_access_web_contents_helper.h",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
     "shell/browser/hid/electron_hid_delegate.cc",
