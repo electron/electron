@@ -83,13 +83,13 @@ index 7bd5edf61c339daa1e1b0df8e2e91680948641de..b75f3d11054a656ac0acadea27cd183d
 +// should simply use v8::Object::Wrap() and v8::Object::Unwrap(). We preserve
 +// this layout only to distinguish internally how the memory of a Node.js
 +// wrapper is managed or whether a wrapper is managed by Node.js.
- constexpr uint16_t kDefaultCppGCEmebdderID = 0x90de;
+ constexpr uint16_t kDefaultCppGCEmbedderID = 0x90de;
  Mutex IsolateData::isolate_data_mutex_;
  std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
 @@ -539,36 +547,16 @@ IsolateData::IsolateData(Isolate* isolate,
    v8::CppHeap* cpp_heap = isolate->GetCppHeap();
  
-   uint16_t cppgc_id = kDefaultCppGCEmebdderID;
+   uint16_t cppgc_id = kDefaultCppGCEmbedderID;
 -  if (cpp_heap != nullptr) {
 -    // The general convention of the wrappable layout for cppgc in the
 -    // ecosystem is:
