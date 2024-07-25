@@ -152,7 +152,11 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   it('does not affect window resizable state', async () => {
     w.resizable = false;
 
-    const sources = await desktopCapturer.getSources({ types: ['window'] });
+    const wShown = once(w, 'show');
+    w.show();
+    await wShown;
+
+    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
     expect(sources).to.be.an('array').that.is.not.empty();
 
     expect(w.resizable).to.be.false();
