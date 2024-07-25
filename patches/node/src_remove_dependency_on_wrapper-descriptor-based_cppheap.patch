@@ -52,7 +52,7 @@ index 63ce35ba68b48a55d8150395304bf86c2bf23aae..c6fc53d1666ae51e69257c9bbcaf4cbf
    return &(wrapper_data_->cppgc_id);
  }
 diff --git a/src/env.cc b/src/env.cc
-index 7bd5edf61c339daa1e1b0df8e2e91680948641de..b75f3d11054a656ac0acadea27cd183d71b5d90f 100644
+index ea0ae4e08ec7dd98721bc89d2fe80fa47eaddfec..0f9846baeef6fd490cdc43893e29ea2d0a731d1d 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -22,6 +22,7 @@
@@ -71,7 +71,7 @@ index 7bd5edf61c339daa1e1b0df8e2e91680948641de..b75f3d11054a656ac0acadea27cd183d
  using worker::Worker;
  
  int const ContextEmbedderTag::kNodeContextTag = 0x6e6f64;
-@@ -518,6 +518,14 @@ void IsolateData::CreateProperties() {
+@@ -530,6 +530,14 @@ void IsolateData::CreateProperties() {
    CreateEnvProxyTemplate(this);
  }
  
@@ -86,7 +86,7 @@ index 7bd5edf61c339daa1e1b0df8e2e91680948641de..b75f3d11054a656ac0acadea27cd183d
  constexpr uint16_t kDefaultCppGCEmbedderID = 0x90de;
  Mutex IsolateData::isolate_data_mutex_;
  std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
-@@ -539,36 +547,16 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -551,36 +559,16 @@ IsolateData::IsolateData(Isolate* isolate,
    v8::CppHeap* cpp_heap = isolate->GetCppHeap();
  
    uint16_t cppgc_id = kDefaultCppGCEmbedderID;
@@ -130,7 +130,7 @@ index 7bd5edf61c339daa1e1b0df8e2e91680948641de..b75f3d11054a656ac0acadea27cd183d
  
    {
      // GC could still be run after the IsolateData is destroyed, so we store
-@@ -600,11 +588,12 @@ IsolateData::~IsolateData() {
+@@ -612,11 +600,12 @@ IsolateData::~IsolateData() {
    }
  }
  
@@ -146,7 +146,7 @@ index 7bd5edf61c339daa1e1b0df8e2e91680948641de..b75f3d11054a656ac0acadea27cd183d
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index 910c69b6d1d17ef25201dbb39d3d074f4f3f011f..5fd375f143dd529c83aca59348182cce47d3abf8 100644
+index 2310c89227f08cdcca6c4965cc163031af303626..d00dcc4e6661999d97943ce0398f568fc5e1e44f 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -164,10 +164,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {

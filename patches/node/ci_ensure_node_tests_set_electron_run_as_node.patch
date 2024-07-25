@@ -77,4 +77,3 @@ index 84f20a77dda367fe1ada8d616c7b6813d39efd43..27d16d74884a006ba01b777f5a20339b
        await snapshot.spawnAndAssert(fixtures.path(name), transform, { env: { ...env, ...process.env } });
      });
    }
-

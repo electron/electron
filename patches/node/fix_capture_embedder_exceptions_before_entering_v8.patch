@@ -24,7 +24,7 @@ index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c2
        wrap->object()->Has(env->context(), env->handle_onclose_symbol())
        .FromMaybe(false)) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index ca8575e9a21b9a0b8089484a04abe702b2fe6d4e..df1d9cb4fd0442ec6ce6164a136b7a5fbcbe5b67 100644
+index d873792ab95e41d54579f552c6c1fa43447ca4cd..708fa03d088e67a50dc4e69bb3f2cc14529dc3f1 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -460,6 +460,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {

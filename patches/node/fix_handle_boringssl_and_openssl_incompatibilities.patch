@@ -38,10 +38,10 @@ index 67cd4f2adf15e7d8511f561c54163b1842e971af..88471fd6bc0b8a810bb55464cd2d1933
  
    const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index ee1c7931a5c83eec00fe05807ddb97572fe70cc9..008fa0c04c3dadfe69f87728840f9326a150c7b3 100644
+index 962018583360a137639682d4aec8b0ebad2f3070..ebb184b6fbc3c2bdbe39deb470208df8d3a58f21 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -158,7 +158,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -166,7 +166,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -50,7 +50,7 @@ index ee1c7931a5c83eec00fe05807ddb97572fe70cc9..008fa0c04c3dadfe69f87728840f9326
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -171,13 +171,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -179,13 +179,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return nullptr;
    return reinterpret_cast<const char*>(buf + 3);
@@ -67,7 +67,7 @@ index ee1c7931a5c83eec00fe05807ddb97572fe70cc9..008fa0c04c3dadfe69f87728840f9326
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -199,6 +201,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -207,6 +209,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -96,7 +96,7 @@ index ee1c7931a5c83eec00fe05807ddb97572fe70cc9..008fa0c04c3dadfe69f87728840f9326
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 6e5bbe07d0c337b36f3157c2e6404fdc91849fd1..7ec682833213de9054a8c30751436d12baaea235 100644
+index e26e64834bee7fd9cd4e18bfe69a4f41d51fa8e9..a5b1ec5ea6284ab9892d5a2e576f369ae3bbac91 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -63,7 +63,7 @@ inline X509_STORE* GetOrCreateRootCertStore() {
@@ -224,7 +224,7 @@ index 3fa4a415dc911a13afd90dfb31c1ed4ad0fd268f..fa48dffc31342c44a1c1207b9d4c3dc7
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index c5dd2fb8fce40f2bf6f9a8543047ffb50cc08084..d850af9257cc194ee385130ce3cd2c0101b2455f 100644
+index a4979cf5586a7be6308a917eb020bedafa17f683..e4705482c6d45138deac84c59d8192bb2a284a76 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
 @@ -1241,6 +1241,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
@@ -340,7 +340,7 @@ index 5734d8fdc5505e1586f571c19b840bd56e9c9f1f..3034b114e081e2b32dd5b71653927a41
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 3b3724d6c7156b87555be31470e75b1cf28b5e3f..910c69b6d1d17ef25201dbb39d3d074f4f3f011f 100644
+index cd8db07919dc4d00675bbaae976e8fa1fcc16028..2310c89227f08cdcca6c4965cc163031af303626 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -49,7 +49,7 @@
@@ -352,7 +352,7 @@ index 3b3724d6c7156b87555be31470e75b1cf28b5e3f..910c69b6d1d17ef25201dbb39d3d074f
  #include <openssl/evp.h>
  #endif
  
-@@ -1036,7 +1036,7 @@ class Environment : public MemoryRetainer {
+@@ -1038,7 +1038,7 @@ class Environment : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -375,7 +375,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 7110b4d984b72fa8c9bef2cbe6e37b1871e14d08..753311e15f161547be4277016efe11cc57d351db 100644
+index 1ba0bfcd9b3096c4bffe518ad08973edb895e8c3..28fbd93c5d4a6f379844e10e556920b7614910d8 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -388,7 +388,7 @@ index 7110b4d984b72fa8c9bef2cbe6e37b1871e14d08..753311e15f161547be4277016efe11cc
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 3c67c3680b045786dafb8435f5b311c3f386a943..546c3979e2c8d7498aa92df4c89ee867c6485080 100644
+index 1357e5b42869e8e3a30d2bf6db0faed565d99754..49c6d8b4162977a926e36bad7183a10502b2beaf 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
