@@ -24,7 +24,6 @@
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
-#include "shell/browser/usb/electron_usb_delegate.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace content {
@@ -41,6 +40,7 @@ namespace electron {
 
 class ElectronBrowserMainParts;
 class ElectronHidDelegate;
+class ElectronUsbDelegate;
 class ElectronWebAuthenticationDelegate;
 class NotificationPresenter;
 class PlatformNotificationService;
