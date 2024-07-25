@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 25 Jul 2024 12:19:41 +0200
+Subject: src: account for OpenSSL unexpected version
+
+Fixes a crash that occurs because the logic to parse for an OpenSSL
+version didn't account for OpenSSL_version returning a value that
+doesn't match the expected pattern of OpenSSL 1.1.0i 14 Aug 2018.
+In Electron's case, OpenSSL_version returns just BoringSSL, which in
+combination with the search logic not accounting for the delimiter not
+being present caused an out-of-bounds crash:
+
+out_of_range was thrown in -fno-exceptions mode with message "basic_string"
+
+This fixes that by checking for the null terminator and returning 0.0.0
+when the target delimiter isn't present.
+
+Upstreamed at https://github.com/nodejs/node/pull/54038
+
+diff --git a/src/node_metadata.cc b/src/node_metadata.cc
+index 985d44b3cd1f1aa5c09f99e868083f2e48c7e32b..1876249eb88065f649aee2c8348f42ec90ab70da 100644
+--- a/src/node_metadata.cc
++++ b/src/node_metadata.cc
+@@ -48,14 +48,19 @@ Metadata metadata;
+ 
+ #if HAVE_OPENSSL
+ static constexpr size_t search(const char* s, char c, size_t n = 0) {
+-  return *s == c ? n : search(s + 1, c, n + 1);
++  return *s == '\0' ? n : (*s == c ? n : search(s + 1, c, n + 1));
+ }
+ 
+ static inline std::string GetOpenSSLVersion() {
+   // sample openssl version string format
+   // for reference: "OpenSSL 1.1.0i 14 Aug 2018"
+   const char* version = OpenSSL_version(OPENSSL_VERSION);
+-  const size_t start = search(version, ' ') + 1;
++  const size_t first_space = search(version, ' ');
++  if (version[first_space] == '\0') {
++    return std::string("0.0.0");
++  }
++
++  const size_t start = first_space + 1;
+   const size_t len = search(&version[start], ' ');
+   return std::string(version, start, len);
+ }

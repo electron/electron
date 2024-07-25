@@ -51,3 +51,4 @@ test_update_v8-stats_test_for_v8_12_6.patch
 chore_remove_calls_to_v8_functioncallbackinfo_holder.patch
 src_do_not_use_soon-to-be-deprecated_v8_api.patch
 fix_add_property_query_interceptors.patch
+src_account_for_openssl_unexpected_version.patch
