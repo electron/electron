@@ -106,11 +106,29 @@ BrowserWindow::~BrowserWindow() {
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
   WindowList::WindowCloseCancelled(window());
+  // Cancel unresponsive event when window close is cancelled.
+  window_unresponsive_closure_.Cancel();
+}
+
+void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicitly started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
+  ScheduleUnresponsiveEvent(50);
 }
 
 void BrowserWindow::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   CloseImmediately();
+}
+
+void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
+  window_unresponsive_closure_.Cancel();
+  Emit("responsive");
 }
 
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
@@ -147,6 +165,13 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   // not close the window immediately, instead we try to close the web page
   // first, and when the web page is closed the window will also be closed.
   *prevent_default = true;
+
+  // Assume the window is not responding if it doesn't cancel the close and is
+  // not closed in 5s, in this way we can quickly show the unresponsive
+  // dialog when the window is busy executing some script without waiting for
+  // the unresponsive timeout.
+  if (window_unresponsive_closure_.IsCancelled())
+    ScheduleUnresponsiveEvent(5000);
 
   // Already closed by renderer.
   if (!web_contents() || !api_web_contents_)
@@ -214,6 +239,9 @@ void BrowserWindow::CloseImmediately() {
   }
 
   BaseWindow::CloseImmediately();
+
+  // Do not sent "unresponsive" event after window is closed.
+  window_unresponsive_closure_.Cancel();
 }
 
 void BrowserWindow::Focus() {
@@ -262,6 +290,24 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   if (web_contents_.IsEmpty())
     return v8::Null(isolate);
   return v8::Local<v8::Value>::New(isolate, web_contents_);
+}
+
+void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
+  if (!window_unresponsive_closure_.IsCancelled())
+    return;
+
+  window_unresponsive_closure_.Reset(base::BindRepeating(
+      &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE, window_unresponsive_closure_.callback(),
+      base::Milliseconds(ms));
+}
+
+void BrowserWindow::NotifyWindowUnresponsive() {
+  window_unresponsive_closure_.Cancel();
+  if (!window_->IsClosed() && window_->IsEnabled()) {
+    Emit("unresponsive");
+  }
 }
 
 void BrowserWindow::OnWindowShow() {
