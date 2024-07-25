@@ -158,7 +158,7 @@ index a955d19eedfe56ae3a115ce4c77fea016fd66d49..ad2557495a02cae03dd2b87df8659a6f
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae9475cb8112 100644
+index e18825e295cf55d0b6cd899fbab1f0a477ade370..9b69bc04d13ac294d213988269649cafa9122012 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
 @@ -31,11 +31,13 @@ const x11::ModMask kModifiersMasks[] = {

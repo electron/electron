@@ -10,10 +10,10 @@ This can't be upstreamed though may be replaceable later with some upstream refa
 around reclient config generation.
 
 diff --git a/buildtools/reclient_cfgs/configure_reclient_cfgs.py b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
-index 672f5a99575b69469137c5cf086471ec20401916..92fbfcbd119c48c2d8a09628ac4d73fcdb232870 100755
+index 9d8ebedb3373441e02a2a7edb28535c587753446..705c62eb357036018df630fce6e4021b64595cea 100755
 --- a/buildtools/reclient_cfgs/configure_reclient_cfgs.py
 +++ b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
-@@ -382,4 +382,13 @@ def main():
+@@ -322,4 +322,13 @@ def main():
  
  
  if __name__ == "__main__":
