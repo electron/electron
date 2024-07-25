@@ -148,6 +148,20 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 
+  // Regression test - see https://github.com/electron/electron/issues/43002
+  it('does not affect window resizable state', async () => {
+    w.resizable = false;
+
+    const wShown = once(w, 'show');
+    w.show();
+    await wShown;
+
+    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
+    expect(sources).to.be.an('array').that.is.not.empty();
+
+    expect(w.resizable).to.be.false();
+  });
+
   it('moveAbove should move the window at the requested place', async () => {
     // DesktopCapturer.getSources() is guaranteed to return in the correct
     // z-order from foreground to background.
