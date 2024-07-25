@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 #include "base/values.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -59,7 +59,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   void OnWrite(base::OnceClosure resume, MojoResult result);
 
   // SimpleURLLoaderStreamConsumer:
-  void OnDataReceived(base::StringPiece string_piece,
+  void OnDataReceived(std::string_view string_view,
                       base::OnceClosure resume) override;
   void OnComplete(bool success) override;
   void OnRetry(base::OnceClosure start_retry) override;

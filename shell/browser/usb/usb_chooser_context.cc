@@ -7,9 +7,9 @@
 #include <utility>
 #include <vector>
 
+#include <string_view>
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
-#include "base/strings/string_piece.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "build/build_config.h"
@@ -80,7 +80,7 @@ base::Value UsbChooserContext::DeviceInfoToValue(
   base::Value::Dict device_value;
   device_value.Set(kDeviceNameKey, device_info.product_name
                                        ? *device_info.product_name
-                                       : base::StringPiece16());
+                                       : std::u16string_view());
   device_value.Set(kDeviceVendorIdKey, device_info.vendor_id);
   device_value.Set(kDeviceProductIdKey, device_info.product_id);
 

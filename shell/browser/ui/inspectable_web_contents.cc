@@ -9,13 +9,13 @@
 #include <string_view>
 #include <utility>
 
+#include <string_view>
 #include "base/base64.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/ranges/algorithm.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -240,7 +240,7 @@ class InspectableWebContents::NetworkResourceLoader
   }
 
   // network::SimpleURLLoaderStreamConsumer
-  void OnDataReceived(base::StringPiece chunk,
+  void OnDataReceived(std::string_view chunk,
                       base::OnceClosure resume) override {
     bool encoded = !base::IsStringUTF8(chunk);
     bindings_->CallClientFunction(
@@ -940,7 +940,7 @@ void InspectableWebContents::DispatchProtocolMessage(
     size_t total_size = str_message.length();
     for (size_t pos = 0; pos < str_message.length();
          pos += kMaxMessageChunkSize) {
-      base::StringPiece str_message_chunk =
+      std::string_view str_message_chunk =
           str_message.substr(pos, kMaxMessageChunkSize);
 
       CallClientFunction(
