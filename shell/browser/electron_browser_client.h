@@ -22,7 +22,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
-#include "shell/browser/serial/electron_serial_delegate.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace content {
@@ -40,6 +39,7 @@ namespace electron {
 class ElectronBluetoothDelegate;
 class ElectronBrowserMainParts;
 class ElectronHidDelegate;
+class ElectronSerialDelegate;
 class ElectronUsbDelegate;
 class ElectronWebAuthenticationDelegate;
 class NotificationPresenter;

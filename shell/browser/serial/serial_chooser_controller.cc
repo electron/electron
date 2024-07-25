@@ -15,6 +15,7 @@
 #include "services/device/public/cpp/bluetooth/bluetooth_utils.h"
 #include "services/device/public/mojom/serial.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_context_factory.h"
 #include "shell/common/gin_converters/callback_converter.h"

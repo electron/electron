@@ -49,6 +49,7 @@
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/webui/accessibility_ui.h"
