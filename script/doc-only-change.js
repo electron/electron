@@ -7,8 +7,7 @@ async function checkIfDocOnlyChange () {
 
   if (prNumber || prURL) {
     try {
-      // CircleCI doesn't provide the PR number except on forked PRs,
-      // so to cover all cases we just extract it from the PR URL.
+      // extract the PR number from the PR URL.
       if (!prNumber || isNaN(prNumber)) {
         if (args.prURL) {
           prNumber = prURL.split('/').pop();

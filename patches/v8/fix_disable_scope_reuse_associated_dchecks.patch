@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Wed, 17 Jul 2024 12:52:10 -0600
+Subject: fix: disable scope reuse & associated dchecks
+
+This change was introduced in https://crrev.com/c/5630974 which reuses
+scope info objects across allocations. Unfortunately, this change seems
+to be not yet fully cooked and causes crashes with normal usage of V8.
+
+In particular, Node.js call's V8's `v8::ScriptCompiler::CompileFunction`
+method. This ends up wrapping the source code in a function, which this
+code is not yet prepared to handle. The generated function wrapper
+(created by V8) has no source position, so it reports being at the start
+of the source, which may overlap with other scopes that are in the
+original source. This new feature adds a "UniqueIdInScript" concept that
+is derived from the source position of a scope, along with the invariant
+that inner scopes have a higher ID than outer scopes, which does not
+hold for the above situation.
+
+This patch is not intended to remain indefinitely. Once the upstream
+feature stabilizes, we can remove this patch. Unfortunately, there is no
+public tracking bug for this feature nor the crashes its been causing,
+so we'll have to keep an eye on this for the time being.
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 530a249adde65a47c8e0babf5723b52b8d2a6b1a..fca49d135ad2f23307654e1b0c36e846ca5a6ec6 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2717,9 +2717,9 @@ void Scope::AllocateScopeInfosRecursively(
+ 
+   // Allocate ScopeInfos for inner scopes.
+   for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
+-    DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
+-    DCHECK_IMPLIES(scope->sibling_, scope->sibling_->UniqueIdInScript() !=
+-                                        scope->UniqueIdInScript());
++    // DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
++    // DCHECK_IMPLIES(scope->sibling_, scope->sibling_->UniqueIdInScript() !=
++    //                                     scope->UniqueIdInScript());
+     if (!scope->is_function_scope() ||
+         scope->AsDeclarationScope()->ShouldEagerCompile()) {
+       scope->AllocateScopeInfosRecursively(isolate, next_outer_scope,
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index 657ac0ebd872d6be4e2fa962a17259dd96f047b7..8e413913048d20b57bdd40807bfa4365e9d9ec77 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -993,6 +993,8 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+ DEFINE_BOOL(trace_migration, false, "trace object migration")
+ DEFINE_BOOL(trace_generalization, false, "trace map generalization")
+ 
++// ELECTRON: The following flag should remain false by default until we can
++//   remove `fix_disable_scope_reuse_associated_dchecks.patch`
+ DEFINE_BOOL(reuse_scope_infos, false,
+             "reuse scope infos from previous compiles")
+ 

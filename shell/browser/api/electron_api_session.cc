@@ -530,9 +530,10 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 struct UserDataLink : base::SupportsUserData::Data {
-  explicit UserDataLink(Session* ses) : session(ses) {}
+  explicit UserDataLink(base::WeakPtr<Session> session_in)
+      : session{std::move(session_in)} {}
 
-  raw_ptr<Session> session;
+  base::WeakPtr<Session> session;
 };
 
 const void* kElectronApiSessionKey = &kElectronApiSessionKey;
@@ -552,8 +553,9 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
 
-  browser_context->SetUserData(kElectronApiSessionKey,
-                               std::make_unique<UserDataLink>(this));
+  browser_context->SetUserData(
+      kElectronApiSessionKey,
+      std::make_unique<UserDataLink>(weak_factory_.GetWeakPtr()));
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
@@ -1512,7 +1514,7 @@ bool Session::IsSpellCheckerEnabled() const {
 Session* Session::FromBrowserContext(content::BrowserContext* context) {
   auto* data =
       static_cast<UserDataLink*>(context->GetUserData(kElectronApiSessionKey));
-  return data ? data->session : nullptr;
+  return data ? data->session.get() : nullptr;
 }
 
 // static

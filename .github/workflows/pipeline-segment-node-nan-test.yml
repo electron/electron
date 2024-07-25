@@ -37,7 +37,7 @@ env:
 jobs:
   node-tests:
     name: Run Node.js Tests
-    runs-on: aks-linux-medium-plus
+    runs-on: electron-arc-linux-amd64-8core
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -61,12 +61,11 @@ jobs:
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
-        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
@@ -101,7 +100,7 @@ jobs:
         done
   nan-tests:
     name: Run Nan Tests
-    runs-on: aks-linux-medium
+    runs-on: electron-arc-linux-amd64-4core
     timeout-minutes: 20
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -125,12 +124,11 @@ jobs:
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
-        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
+        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH

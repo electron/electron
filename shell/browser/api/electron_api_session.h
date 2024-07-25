@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
@@ -215,7 +216,9 @@ class Session : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  const raw_ptr<ElectronBrowserContext> browser_context_;
+
+  base::WeakPtrFactory<Session> weak_factory_{this};
 };
 
 }  // namespace api

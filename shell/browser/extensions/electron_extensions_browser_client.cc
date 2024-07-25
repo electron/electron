@@ -213,10 +213,11 @@ bool AllowCrossRendererResourceLoad(
     const extensions::Extension* extension,
     const extensions::ExtensionSet& extensions,
     const extensions::ProcessMap& process_map,
+    const GURL& upstream_url,
     bool* allowed) {
   if (extensions::url_request_util::AllowCrossRendererResourceLoad(
           request, destination, page_transition, child_id, is_incognito,
-          extension, extensions, process_map, allowed)) {
+          extension, extensions, process_map, upstream_url, allowed)) {
     return true;
   }
 
@@ -242,11 +243,12 @@ bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
     bool is_incognito,
     const extensions::Extension* extension,
     const extensions::ExtensionSet& extensions,
-    const extensions::ProcessMap& process_map) {
+    const extensions::ProcessMap& process_map,
+    const GURL& upstream_url) {
   bool allowed = false;
   if (::electron::AllowCrossRendererResourceLoad(
           request, destination, page_transition, child_id, is_incognito,
-          extension, extensions, process_map, &allowed)) {
+          extension, extensions, process_map, upstream_url, &allowed)) {
     return allowed;
   }
 
@@ -343,13 +345,12 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     return;
   }
 
-  auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
-                                                   args.Clone());
   for (auto const& [key, browser_context] :
        ElectronBrowserContext::browser_context_map()) {
     if (browser_context) {
       extensions::EventRouter::Get(browser_context.get())
-          ->BroadcastEvent(std::move(event));
+          ->BroadcastEvent(std::make_unique<extensions::Event>(
+              histogram_value, event_name, args.Clone()));
     }
   }
 }

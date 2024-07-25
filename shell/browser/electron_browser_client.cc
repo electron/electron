@@ -424,6 +424,7 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   renderer_prefs->can_accept_load_drops = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->in_forced_colors = native_theme->InForcedColorsMode();
   prefs->preferred_color_scheme =
       native_theme->ShouldUseDarkColors()
           ? blink::mojom::PreferredColorScheme::kDark
@@ -615,6 +616,7 @@ void ElectronBrowserClient::AllowCertificateError(
 
 base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
     content::BrowserContext* browser_context,
+    int process_id,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
@@ -623,7 +625,7 @@ base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
     delegate->ContinueWithCertificate(nullptr, nullptr);
   } else if (delegate_) {
     delegate_->SelectClientCertificate(
-        browser_context, web_contents, cert_request_info,
+        browser_context, process_id, web_contents, cert_request_info,
         std::move(client_certs), std::move(delegate));
   }
 
@@ -823,13 +825,7 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(bool /* is_integration_test */) {
-  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>();
-
-#if BUILDFLAG(IS_MAC)
-  browser_main_parts_ = browser_main_parts.get();
-#endif
-
-  return browser_main_parts;
+  return std::make_unique<ElectronBrowserMainParts>();
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
@@ -1360,6 +1356,7 @@ ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,
     int frame_tree_node_id,
     int64_t navigation_id,
+    bool force_no_https_upgrade,
     scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
       interceptors;

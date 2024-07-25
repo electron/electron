@@ -51,7 +51,7 @@ namespace gin {
 template <>
 struct Converter<char16_t> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      char16_t* out) {
     std::u16string code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
     if (code.length() != 1)
@@ -108,7 +108,7 @@ struct Converter<char16_t> {
 
 bool Converter<blink::WebInputEvent::Type>::FromV8(
     v8::Isolate* isolate,
-    v8::Handle<v8::Value> val,
+    v8::Local<v8::Value> val,
     blink::WebInputEvent::Type* out) {
   std::string type = gin::V8ToString(isolate, val);
 #define CASE_TYPE(event_type, js_name)                   \
@@ -134,7 +134,7 @@ v8::Local<v8::Value> Converter<blink::WebInputEvent::Type>::ToV8(
 template <>
 struct Converter<blink::WebMouseEvent::Button> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      blink::WebMouseEvent::Button* out) {
     using Val = blink::WebMouseEvent::Button;
     static constexpr auto Lookup =
@@ -193,7 +193,7 @@ static constexpr auto ReferrerPolicies =
 template <>
 struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
     return FromV8WithLowerLookup(isolate, val, Modifiers, out) ||
            FromV8WithLowerLookup(isolate, val, ModifierAliases, out);
@@ -287,13 +287,12 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
-    size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
     std::u16string text16 = character_str.empty()
                                 ? base::UTF8ToUTF16(str)
                                 : base::UTF8ToUTF16(character_str);
-    std::fill_n(out->text, text_length_cap, 0);
-    std::fill_n(out->unmodified_text, text_length_cap, 0);
-    for (size_t i = 0; i < std::min(text_length_cap - 1, text16.size()); ++i) {
+    std::ranges::fill(out->text, 0);
+    std::ranges::fill(out->unmodified_text, 0);
+    for (size_t i = 0; i < std::min(out->text.size() - 1, text16.size()); ++i) {
       out->text[i] = text16[i];
       out->unmodified_text[i] = text16[i];
     }
@@ -662,7 +661,7 @@ v8::Local<v8::Value> Converter<network::mojom::ReferrerPolicy>::ToV8(
 // static
 bool Converter<network::mojom::ReferrerPolicy>::FromV8(
     v8::Isolate* isolate,
-    v8::Handle<v8::Value> val,
+    v8::Local<v8::Value> val,
     network::mojom::ReferrerPolicy* out) {
   return FromV8WithLowerLookup(isolate, val, ReferrerPolicies, out);
 }
@@ -701,7 +700,7 @@ v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
 }
 
 bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
-                                                v8::Handle<v8::Value> val,
+                                                v8::Local<v8::Value> val,
                                                 blink::CloneableMessage* out) {
   return electron::SerializeV8Value(isolate, val, out);
 }

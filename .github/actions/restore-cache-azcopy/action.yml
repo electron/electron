@@ -23,7 +23,7 @@ runs:
     # or it was uploaded in the checkout job for a previous commit.
     uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
     with:
-      timeout_minutes: 20
+      timeout_minutes: 30
       max_attempts: 3
       retry_on: error
       command: |
@@ -32,8 +32,11 @@ runs:
           echo "SAS Token not found; exiting src cache download early..."
           exit 1
         fi
-        azcopy copy \
+        azcopy copy --log-level=ERROR \
           "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+    env:
+      AZURE_AKS_CACHE_STORAGE_ACCOUNT: f723719aa87a34622b5f7f3
+      AZURE_AKS_CACHE_SHARE_NAME: pvc-f6a4089f-b082-4bee-a3f9-c3e1c0c02d8f
   - name: Clean SAS Key
     shell: bash
     run: rm -f sas-token

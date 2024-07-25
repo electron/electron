@@ -93,6 +93,11 @@ BuildState* BrowserProcessImpl::GetBuildState() {
   return nullptr;
 }
 
+GlobalDesktopFeatures* BrowserProcessImpl::GetDesktopFeatures() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
 void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
@@ -329,7 +334,7 @@ const std::string& BrowserProcessImpl::GetSystemLocale() const {
 electron::ResolveProxyHelper* BrowserProcessImpl::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
     resolve_proxy_helper_ = base::MakeRefCounted<electron::ResolveProxyHelper>(
-        system_network_context_manager()->GetContext());
+        nullptr /* browser_context */);
   }
   return resolve_proxy_helper_.get();
 }

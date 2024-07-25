@@ -178,7 +178,7 @@ View::~View() {
     return;
   view_->RemoveObserver(this);
   if (delete_view_)
-    delete view_;
+    view_.ClearAndDelete();
 }
 
 void View::ReorderChildView(gin::Handle<View> child, size_t index) {
@@ -248,14 +248,16 @@ void View::AddChildViewAt(gin::Handle<View> child,
 void View::RemoveChildView(gin::Handle<View> child) {
   if (!view_)
     return;
-  if (!child->view())
-    return;
+
   const auto it = base::ranges::find(child_views_, child.ToV8());
   if (it != child_views_.end()) {
 #if BUILDFLAG(IS_MAC)
     ScopedCAActionDisabler disable_animations;
 #endif
-    view_->RemoveChildView(child->view());
+    // It's possible for the child's view to be invalid here
+    // if the child's webContents was closed or destroyed.
+    if (child->view())
+      view_->RemoveChildView(child->view());
     child_views_.erase(it);
   }
 }

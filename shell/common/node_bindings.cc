@@ -578,7 +578,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::vector<std::string> args,
     std::vector<std::string> exec_args,
@@ -780,7 +780,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
 #if BUILDFLAG(IS_WIN)

@@ -11,7 +11,10 @@
 #include "base/files/file_path.h"
 #include "base/json/values_util.h"
 #include "base/path_service.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
+#include "base/time/time.h"
+#include "base/timer/timer.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
@@ -24,19 +27,71 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
+#include "gin/data_object_builder.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+
+namespace gin {
+
+template <>
+struct Converter<
+    ChromeFileSystemAccessPermissionContext::SensitiveEntryResult> {
+  static bool FromV8(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> val,
+      ChromeFileSystemAccessPermissionContext::SensitiveEntryResult* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "allow")
+      *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
+          kAllowed;
+    else if (type == "tryAgain")
+      *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
+          kTryAgain;
+    else if (type == "deny")
+      *out =
+          ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::kAbort;
+    else
+      return false;
+    return true;
+  }
+};
+
+}  // namespace gin
 
 namespace {
 
 using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
+using SensitiveEntryResult =
+    ChromeFileSystemAccessPermissionContext::SensitiveEntryResult;
 using blink::mojom::PermissionStatus;
+
+// Dictionary keys for the FILE_SYSTEM_LAST_PICKED_DIRECTORY website setting.
+// Schema (per origin):
+// {
+//  ...
+//   {
+//     "default-id" : { "path" : <path> , "path-type" : <type>}
+//     "custom-id-fruit" : { "path" : <path> , "path-type" : <type> }
+//     "custom-id-flower" : { "path" : <path> , "path-type" : <type> }
+//     ...
+//   }
+//  ...
+// }
+const char kDefaultLastPickedDirectoryKey[] = "default-id";
+const char kCustomLastPickedDirectoryKey[] = "custom-id";
+const char kPathKey[] = "path";
+const char kPathTypeKey[] = "path-type";
+const char kTimestampKey[] = "timestamp";
 
 #if BUILDFLAG(IS_WIN)
 [[nodiscard]] constexpr bool ContainsInvalidDNSCharacter(
@@ -79,7 +134,7 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 
   return false;
 }
-#endif
+#endif  // BUILDFLAG(IS_WIN)
 
 // Describes a rule for blocking a directory, which can be constructed
 // dynamically (based on state) or statically (from kBlockedPaths).
@@ -102,7 +157,7 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
       MaybeIsLocalUNCPath(path)) {
     return true;
   }
-#endif
+#endif  // BUILDFLAG(IS_WIN)
 
   // Add the hard-coded rules to the dynamic rules.
   for (auto const& [key, rule_path, type] :
@@ -148,6 +203,11 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
   DLOG(INFO) << "Blocking access to " << path << " because it is inside "
              << nearest_ancestor;
   return true;
+}
+
+std::string GenerateLastPickedDirectoryKey(const std::string& id) {
+  return id.empty() ? kDefaultLastPickedDirectoryKey
+                    : base::StrCat({kCustomLastPickedDirectoryKey, "-", id});
 }
 
 }  // namespace
@@ -367,8 +427,9 @@ struct FileSystemAccessPermissionContext::OriginState {
 };
 
 FileSystemAccessPermissionContext::FileSystemAccessPermissionContext(
-    content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {
+    content::BrowserContext* browser_context,
+    const base::Clock* clock)
+    : browser_context_(browser_context), clock_(clock) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
 }
 
@@ -501,11 +562,11 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  callback_ = std::move(callback);
 
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
-      GetWeakPtr(), origin, path, handle_type, user_action, frame_id,
-      std::move(callback));
+      GetWeakPtr(), origin, path, handle_type, user_action, frame_id);
   CheckPathAgainstBlocklist(path_type, path, handle_type,
                             std::move(after_blocklist_check_callback));
 }
@@ -544,31 +605,87 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
   std::move(callback).Run(AfterWriteCheckResult::kAllow);
 }
 
+void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
+    SensitiveEntryResult result) {
+  if (callback_)
+    std::move(callback_).Run(result);
+}
+
+void FileSystemAccessPermissionContext::OnRestrictedPathResult(
+    gin::Arguments* args) {
+  SensitiveEntryResult result = SensitiveEntryResult::kAbort;
+  args->GetNext(&result);
+  RunRestrictedPathCallback(result);
+}
+
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     const url::Origin& origin,
     const base::FilePath& path,
     HandleType handle_type,
     UserAction user_action,
     content::GlobalRenderFrameHostId frame_id,
-    base::OnceCallback<void(SensitiveEntryResult)> callback,
     bool should_block) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   if (user_action == UserAction::kNone) {
-    std::move(callback).Run(should_block ? SensitiveEntryResult::kAbort
-                                         : SensitiveEntryResult::kAllowed);
+    RunRestrictedPathCallback(should_block ? SensitiveEntryResult::kAbort
+                                           : SensitiveEntryResult::kAllowed);
     return;
   }
 
-  // Chromium opens a dialog here, but in Electron's case we log and abort.
   if (should_block) {
-    LOG(INFO) << path.value()
-              << " is blocked by the blocklis and cannot be accessed";
-    std::move(callback).Run(SensitiveEntryResult::kAbort);
+    auto* session =
+        electron::api::Session::FromBrowserContext(browser_context());
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    v8::Local<v8::Object> details =
+        gin::DataObjectBuilder(isolate)
+            .Set("origin", origin.GetURL().spec())
+            .Set("isDirectory", handle_type == HandleType::kDirectory)
+            .Set("path", path)
+            .Build();
+    session->Emit(
+        "file-system-access-restricted", details,
+        base::BindRepeating(
+            &FileSystemAccessPermissionContext::OnRestrictedPathResult,
+            weak_factory_.GetWeakPtr()));
     return;
   }
 
-  std::move(callback).Run(SensitiveEntryResult::kAllowed);
+  RunRestrictedPathCallback(SensitiveEntryResult::kAllowed);
+}
+
+void FileSystemAccessPermissionContext::MaybeEvictEntries(
+    base::Value::Dict& dict) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+  std::vector<std::pair<base::Time, std::string>> entries;
+  entries.reserve(dict.size());
+  for (auto entry : dict) {
+    // Don't evict the default ID.
+    if (entry.first == kDefaultLastPickedDirectoryKey) {
+      continue;
+    }
+    // If the data is corrupted and `entry.second` is for some reason not a
+    // dict, it should be first in line for eviction.
+    auto timestamp = base::Time::Min();
+    if (entry.second.is_dict()) {
+      timestamp = base::ValueToTime(entry.second.GetDict().Find(kTimestampKey))
+                      .value_or(base::Time::Min());
+    }
+    entries.emplace_back(timestamp, entry.first);
+  }
+
+  if (entries.size() <= max_ids_per_origin_) {
+    return;
+  }
+
+  base::ranges::sort(entries);
+  size_t entries_to_remove = entries.size() - max_ids_per_origin_;
+  for (size_t i = 0; i < entries_to_remove; ++i) {
+    bool did_remove_entry = dict.Remove(entries[i].second);
+    DCHECK(did_remove_entry);
+  }
 }
 
 void FileSystemAccessPermissionContext::SetLastPickedDirectory(
@@ -577,7 +694,24 @@ void FileSystemAccessPermissionContext::SetLastPickedDirectory(
     const base::FilePath& path,
     const PathType type) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  LOG(INFO) << "NOTIMPLEMENTED SetLastPickedDirectory: " << path.value();
+
+  // Create an entry into the nested dictionary.
+  base::Value::Dict entry;
+  entry.Set(kPathKey, base::FilePathToValue(path));
+  entry.Set(kPathTypeKey, static_cast<int>(type));
+  entry.Set(kTimestampKey, base::TimeToValue(clock_->Now()));
+
+  auto it = id_pathinfo_map_.find(origin);
+  if (it != id_pathinfo_map_.end()) {
+    base::Value::Dict& dict = it->second;
+    dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
+    MaybeEvictEntries(dict);
+  } else {
+    base::Value::Dict dict;
+    dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
+    MaybeEvictEntries(dict);
+    id_pathinfo_map_.insert(std::make_pair(origin, std::move(dict)));
+  }
 }
 
 FileSystemAccessPermissionContext::PathInfo
@@ -585,8 +719,27 @@ FileSystemAccessPermissionContext::GetLastPickedDirectory(
     const url::Origin& origin,
     const std::string& id) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  LOG(INFO) << "NOTIMPLEMENTED GetLastPickedDirectory";
-  return PathInfo();
+
+  auto it = id_pathinfo_map_.find(origin);
+
+  PathInfo path_info;
+  if (it == id_pathinfo_map_.end()) {
+    return path_info;
+  }
+
+  auto* entry = it->second.FindDict(GenerateLastPickedDirectoryKey(id));
+  if (!entry) {
+    return path_info;
+  }
+
+  auto type_int =
+      entry->FindInt(kPathTypeKey).value_or(static_cast<int>(PathType::kLocal));
+  path_info.type = type_int == static_cast<int>(PathType::kExternal)
+                       ? PathType::kExternal
+                       : PathType::kLocal;
+  path_info.path =
+      base::ValueToFilePath(entry->Find(kPathKey)).value_or(base::FilePath());
+  return path_info;
 }
 
 base::FilePath FileSystemAccessPermissionContext::GetWellKnownDirectoryPath(

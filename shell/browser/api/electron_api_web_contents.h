@@ -720,7 +720,7 @@ class WebContents : public ExclusiveAccessContext,
       const ExclusiveAccessBubbleParams& params,
       ExclusiveAccessBubbleHideCallback bubble_first_hide_callback) override;
   void OnExclusiveAccessUserInput() override;
-  content::WebContents* GetActiveWebContents() override;
+  content::WebContents* GetWebContentsForExclusiveAccess() override;
   bool CanUserExitFullscreen() const override;
   bool IsExclusiveAccessBubbleDisplayed() const override;
 
