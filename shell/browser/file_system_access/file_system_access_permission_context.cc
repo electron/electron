@@ -93,6 +93,8 @@ const char kPathKey[] = "path";
 const char kPathTypeKey[] = "path-type";
 const char kTimestampKey[] = "timestamp";
 
+constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
+
 #if BUILDFLAG(IS_WIN)
 [[nodiscard]] constexpr bool ContainsInvalidDNSCharacter(
     base::FilePath::StringType hostname) {
@@ -419,6 +421,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
 };
 
 struct FileSystemAccessPermissionContext::OriginState {
+  std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
   // Raw pointers, owned collectively by all the handles that reference this
   // grant. When last reference goes away this state is cleared as well by
   // PermissionGrantDestroyed().
@@ -832,7 +835,7 @@ void FileSystemAccessPermissionContext::CheckPathsAgainstEnterprisePolicy(
   std::move(callback).Run(std::move(entries));
 }
 
-void FileSystemAccessPermissionContext::RevokeGrant(
+void FileSystemAccessPermissionContext::RevokeActiveGrants(
     const url::Origin& origin,
     const base::FilePath& file_path) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -882,10 +885,30 @@ bool FileSystemAccessPermissionContext::OriginHasWriteAccess(
   return false;
 }
 
+void FileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  auto it = active_permissions_map_.find(origin);
+  // If we have no permissions for the origin, there is nothing to do.
+  if (it == active_permissions_map_.end()) {
+    return;
+  }
+
+  // Start a timer to possibly clean up permissions for this origin.
+  if (!it->second.cleanup_timer) {
+    it->second.cleanup_timer = std::make_unique<base::RetainingOneShotTimer>(
+        FROM_HERE, kPermissionRevocationTimeout,
+        base::BindRepeating(
+            &FileSystemAccessPermissionContext::CleanupPermissions,
+            base::Unretained(this), origin));
+  }
+  it->second.cleanup_timer->Reset();
+}
+
 void FileSystemAccessPermissionContext::CleanupPermissions(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  RevokeGrant(origin);
+  RevokeActiveGrants(origin);
 }
 
 bool FileSystemAccessPermissionContext::AncestorHasActivePermission(
