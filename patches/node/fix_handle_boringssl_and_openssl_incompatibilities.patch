@@ -38,7 +38,7 @@ index 67cd4f2adf15e7d8511f561c54163b1842e971af..88471fd6bc0b8a810bb55464cd2d1933
  
    const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 962018583360a137639682d4aec8b0ebad2f3070..ebb184b6fbc3c2bdbe39deb470208df8d3a58f21 100644
+index 962018583360a137639682d4aec8b0ebad2f3070..4f569daa0d5e9976f40f30b77425679798a0b8b8 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -166,7 +166,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -95,6 +95,19 @@ index 962018583360a137639682d4aec8b0ebad2f3070..ebb184b6fbc3c2bdbe39deb470208df8
      Local<Object> obj = Object::New(env->isolate());
      if (!Set(env->context(),
               obj,
+@@ -1104,8 +1108,11 @@ MaybeLocal<Object> GetEphemeralKey(Environment* env, const SSLPointer& ssl) {
+ 
+   EscapableHandleScope scope(env->isolate());
+   Local<Object> info = Object::New(env->isolate());
++#ifndef OPENSSL_IS_BORINGSSL
+   if (!SSL_get_peer_tmp_key(ssl.get(), &raw_key)) return scope.Escape(info);
+-
++#else
++  if (!SSL_get_server_tmp_key(ssl.get(), &raw_key)) return scope.Escape(info);
++#endif
+   Local<Context> context = env->context();
+   crypto::EVPKeyPointer key(raw_key);
+ 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
 index e26e64834bee7fd9cd4e18bfe69a4f41d51fa8e9..a5b1ec5ea6284ab9892d5a2e576f369ae3bbac91 100644
 --- a/src/crypto/crypto_context.cc
