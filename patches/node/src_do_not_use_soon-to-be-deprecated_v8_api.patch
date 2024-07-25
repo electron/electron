@@ -78,7 +78,7 @@ index 274f1f01de8d84596ea24bd2bd65e83d69605178..935a6c612d706a611d4cf3f812f30978
  
    // --security-revert flags
  #define V(code, _, __)                                                        \
-@@ -235,11 +239,14 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+@@ -240,12 +244,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
  
    // process.debugPort
    CHECK(process
@@ -87,6 +87,7 @@ index 274f1f01de8d84596ea24bd2bd65e83d69605178..935a6c612d706a611d4cf3f812f30978
 -                          DebugPortGetter,
 -                          env->owns_process_state() ? DebugPortSetter : nullptr,
 -                          Local<Value>())
+-            .FromJust());
 +            ->SetNativeDataProperty(
 +                context,
 +                FIXED_ONE_BYTE_STRING(isolate, "debugPort"),
@@ -95,9 +96,10 @@ index 274f1f01de8d84596ea24bd2bd65e83d69605178..935a6c612d706a611d4cf3f812f30978
 +                Local<Value>(),
 +                None,
 +                SideEffectType::kHasNoSideEffect)
-             .FromJust());
- }
++             .FromJust());
  
+   // process.versions
+   Local<Object> versions = Object::New(isolate);
 diff --git a/test/parallel/test-worker-unsupported-things.js b/test/parallel/test-worker-unsupported-things.js
 index 18c1617c3cde5ef12f9c97828840c39e0be3dc2c..95d93d24dec9f1944091a97574f01c94d617cc49 100644
 --- a/test/parallel/test-worker-unsupported-things.js
