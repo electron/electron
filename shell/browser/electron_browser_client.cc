@@ -87,6 +87,7 @@
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
 #include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
+#include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"

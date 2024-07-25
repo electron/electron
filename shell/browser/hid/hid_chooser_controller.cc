@@ -14,6 +14,7 @@
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/browser/hid/hid_chooser_context_factory.h"
 #include "shell/browser/javascript_environment.h"
