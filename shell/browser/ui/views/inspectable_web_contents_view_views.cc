@@ -88,14 +88,14 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
     auto* contents_web_view = new views::WebView(nullptr);
     contents_web_view->SetWebContents(
         inspectable_web_contents_->GetWebContents());
-    contents_web_view_ = contents_web_view;
+    contents_view_ = contents_web_view_ = contents_web_view;
   } else {
-    contents_web_view_ = new views::Label(u"No content under offscreen mode");
+    contents_view_ = new views::Label(u"No content under offscreen mode");
   }
 
   devtools_web_view_->SetVisible(false);
   AddChildView(devtools_web_view_.get());
-  AddChildView(contents_web_view_.get());
+  AddChildView(contents_view_.get());
 }
 
 InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {
@@ -113,7 +113,7 @@ void InspectableWebContentsViewViews::SetCornerRadii(
   // WebView won't exist for offscreen rendering.
   if (contents_web_view_) {
     contents_web_view_->holder()->SetCornerRadii(
-        gfx::RoundedCornersF(border_radius().value()));
+        gfx::RoundedCornersF(corner_radii));
   }
 }
 

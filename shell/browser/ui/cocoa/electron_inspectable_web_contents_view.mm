@@ -81,7 +81,7 @@
     inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
 }
 
-- (void)setCornerRadii {
+- (void)setCornerRadii:(CGFloat)cornerRadius {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
   DCHECK(inspectable_web_contents);
@@ -90,8 +90,7 @@
     return;
   auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
   webContentsView.wantsLayer = YES;
-  webContentsView.layer.masksToBounds = YES;
-  webContentsView.layer.cornerRadius = 10.0;
+  webContentsView.layer.cornerRadius = cornerRadius;
 }
 
 - (void)notifyDevToolsResized {

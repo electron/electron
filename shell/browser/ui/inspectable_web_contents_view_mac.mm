@@ -34,7 +34,8 @@ gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
 
 void InspectableWebContentsViewMac::SetCornerRadii(
     const gfx::RoundedCornersF& corner_radii) {
-  [view_ setCornerRadii];
+  // We can assume all four values are identical.
+  [view_ setCornerRadii:corner_radii.upper_left()];
 }
 
 void InspectableWebContentsViewMac::ShowDevTools(bool activate) {
