@@ -38,7 +38,6 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -94,7 +93,6 @@ class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
-class FrameSubscriber;
 class WebDialogHelper;
 class NativeWindow;
 class OffScreenRenderWidgetHostView;
@@ -103,6 +101,7 @@ class OffScreenWebContentsView;
 namespace api {
 
 class BaseWindow;
+class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
 class WebContents : public ExclusiveAccessContext,

@@ -83,6 +83,7 @@
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
+#include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
