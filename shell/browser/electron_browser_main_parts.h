@@ -16,7 +16,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
-#include "ui/display/screen.h"
 #include "ui/views/layout/layout_provider.h"
 
 class BrowserProcessImpl;
@@ -25,6 +24,11 @@ class IconManager;
 namespace base {
 class FieldTrialList;
 }
+
+namespace display {
+class Screen;
+class ScopedNativeScreen;
+}  // namespace display
 
 #if defined(USE_AURA)
 namespace wm {
