@@ -27,6 +27,11 @@ base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
 }
 
 void NotificationPresenter::RemoveNotification(Notification* notification) {
+  auto it = notifications_.find(notification);
+  if (it == notifications_.end()) {
+    return;
+  }
+
   notifications_.erase(notification);
   delete notification;
 }
