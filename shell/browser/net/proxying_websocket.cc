@@ -12,7 +12,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
-#include "net/http/http_util.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 
 namespace electron {

@@ -37,6 +37,7 @@
   "parallel/test-module-loading-globalpaths",
   "parallel/test-openssl-ca-options",
   "parallel/test-process-versions",
+  "parallel/test-process-get-builtin",
   "parallel/test-repl",
   "parallel/test-repl-underscore",
   "parallel/test-single-executable-blob-config",

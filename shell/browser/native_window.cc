@@ -16,6 +16,7 @@
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
@@ -23,7 +24,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
 #include "ui/views/widget/widget.h"
@@ -33,7 +33,6 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
 #endif
 
@@ -47,7 +46,7 @@ namespace gin {
 template <>
 struct Converter<electron::NativeWindow::TitleBarStyle> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      electron::NativeWindow::TitleBarStyle* out) {
     using TitleBarStyle = electron::NativeWindow::TitleBarStyle;
     std::string title_bar_style;

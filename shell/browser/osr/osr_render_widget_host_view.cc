@@ -32,7 +32,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "gpu/command_buffer/client/gl_helper.h"
-#include "media/base/video_frame.h"
+#include "shell/browser/osr/osr_host_display_client.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"

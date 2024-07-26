@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/extension_registry.h"

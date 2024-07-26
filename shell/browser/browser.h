@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -27,8 +28,10 @@
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 
-namespace base {
-class FilePath;
+class GURL;
+
+namespace gin {
+class Arguments;
 }
 
 namespace gin_helper {

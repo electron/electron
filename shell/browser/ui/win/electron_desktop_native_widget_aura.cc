@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/wm/public/tooltip_client.h"

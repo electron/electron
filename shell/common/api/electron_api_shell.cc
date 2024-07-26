@@ -24,7 +24,7 @@ namespace gin {
 template <>
 struct Converter<base::win::ShortcutOperation> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::win::ShortcutOperation* out) {
     std::string operation;
     if (!ConvertFromV8(isolate, val, &operation))

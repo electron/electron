@@ -78,7 +78,7 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
       !web_frame->IsOnInitialEmptyDocument()) {
     v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
     v8::HandleScope handle_scope{isolate};
-    v8::Handle<v8::Context> context = web_frame->MainWorldScriptContext();
+    v8::Local<v8::Context> context = web_frame->MainWorldScriptContext();
     v8::MicrotasksScope microtasks_scope(
         isolate, context->GetMicrotaskQueue(),
         v8::MicrotasksScope::kDoNotRunMicrotasks);
@@ -91,7 +91,7 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 }
 
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     int world_id) {
   // When a child window is created with window.open, its WebPreferences will
   // be copied from its parent, and Chromium will initialize JS context in it

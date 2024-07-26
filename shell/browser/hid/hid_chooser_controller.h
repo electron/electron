@@ -17,7 +17,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/hid.mojom-forward.h"
-#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/common/gin_converters/frame_converter.h"
@@ -28,7 +27,14 @@ namespace content {
 class RenderFrameHost;
 }  // namespace content
 
+namespace gin {
+class Arguments;
+}
+
 namespace electron {
+namespace api {
+class Session;
+}
 
 class ElectronHidDelegate;
 

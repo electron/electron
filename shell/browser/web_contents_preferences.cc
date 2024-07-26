@@ -14,7 +14,6 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/ptr_util.h"
 #include "cc/base/switches.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"

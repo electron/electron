@@ -690,6 +690,8 @@ Sets whether the window should be in fullscreen mode.
 
 Returns `boolean` - Whether the window is in fullscreen mode.
 
+**Note:** On macOS, fullscreen transitions take place asynchronously. When querying for a BrowserWindow's fullscreen status, you should ensure that either the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events have been emitted.
+
 #### `win.setSimpleFullScreen(flag)` _macOS_
 
 * `flag` boolean

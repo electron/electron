@@ -64,7 +64,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/common/permissions/permissions_data.h"
-#include "shell/browser/electron_browser_context.h"
 #endif
 
 namespace electron {

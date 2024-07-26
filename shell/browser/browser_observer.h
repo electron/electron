@@ -9,8 +9,8 @@
 
 #include "base/memory/scoped_refptr.h"
 #include "base/observer_list_types.h"
+#include "base/values.h"
 #include "build/build_config.h"
-#include "shell/browser/login_handler.h"
 
 namespace electron {
 

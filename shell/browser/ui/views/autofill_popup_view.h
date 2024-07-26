@@ -15,13 +15,16 @@
 #include "content/public/browser/render_widget_host.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/osr/osr_view_proxy.h"
-#include "ui/accessibility/ax_node_data.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
+
+namespace ui {
+struct AXNodeData;
+}
 
 namespace electron {
 

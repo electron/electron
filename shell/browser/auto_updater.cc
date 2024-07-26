@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "shell/browser/auto_updater.h"
+#include "build/build_config.h"
 
 namespace auto_updater {
 

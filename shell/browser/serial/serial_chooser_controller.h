@@ -14,7 +14,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
-#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom.h"
@@ -24,6 +23,10 @@ class RenderFrameHost;
 }
 
 namespace electron {
+
+namespace api {
+class Session;
+}
 
 class ElectronSerialDelegate;
 
