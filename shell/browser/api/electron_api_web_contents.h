@@ -46,7 +46,6 @@
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
 
@@ -73,7 +72,10 @@ class Arguments;
 
 namespace gin_helper {
 class Dictionary;
-}
+class ErrorThrower;
+template <typename T>
+class Promise;
+}  // namespace gin_helper
 
 namespace network {
 class ResourceRequestBody;

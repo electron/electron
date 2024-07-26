@@ -13,7 +13,6 @@
 #include "base/values.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
@@ -35,7 +34,8 @@ class Size;
 
 namespace gin_helper {
 class Dictionary;
-}
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace gin {
 class Arguments;

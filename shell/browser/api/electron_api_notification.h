@@ -16,7 +16,6 @@
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {
@@ -24,6 +23,10 @@ class Arguments;
 template <typename T>
 class Handle;
 }  // namespace gin
+
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron::api {
 

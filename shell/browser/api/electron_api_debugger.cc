@@ -16,6 +16,7 @@
 #include "gin/per_isolate_data.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
 using content::DevToolsAgentHost;

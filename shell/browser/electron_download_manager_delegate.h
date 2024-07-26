@@ -9,10 +9,13 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/common/gin_helper/dictionary.h"
 
 namespace content {
 class DownloadManager;
+}
+
+namespace gin_helper {
+class Dictionary;
 }
 
 namespace electron {

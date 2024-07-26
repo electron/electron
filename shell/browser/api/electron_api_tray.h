@@ -18,7 +18,6 @@
 #include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
 
 namespace gfx {
@@ -27,7 +26,8 @@ class Image;
 
 namespace gin_helper {
 class Dictionary;
-}
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron::api {
 

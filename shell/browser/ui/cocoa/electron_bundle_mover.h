@@ -6,11 +6,14 @@
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_BUNDLE_MOVER_H_
 
 #include "base/apple/foundation_util.h"
-#include "shell/common/gin_helper/error_thrower.h"
 
 namespace gin {
 class Arguments;
 }
+
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron {
 

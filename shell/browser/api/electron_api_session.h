@@ -23,9 +23,7 @@
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
-#include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
@@ -44,7 +42,8 @@ class FilePath;
 
 namespace gin_helper {
 class Dictionary;
-}
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace gin {
 class Arguments;

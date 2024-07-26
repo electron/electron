@@ -11,6 +11,7 @@
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/thread_restrictions.h"
 
 namespace electron {
