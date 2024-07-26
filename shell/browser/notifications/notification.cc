@@ -46,7 +46,9 @@ void Notification::NotificationFailed(const std::string& error) {
 void Notification::Remove() {}
 
 void Notification::Destroy() {
-  presenter()->RemoveNotification(this);
+  if (presenter()) {
+    presenter()->RemoveNotification(this);
+  }
 }
 
 }  // namespace electron
