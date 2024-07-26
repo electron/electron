@@ -1194,6 +1194,30 @@ describe('protocol module', () => {
       expect(body).to.equal(text);
     });
 
+    it('calls destroy on aborted body stream', async () => {
+      const abortController = new AbortController();
+
+      class TestStream extends stream.Readable {
+        _read () {
+          this.push('infinite data');
+
+          // Abort the request that reads from this stream.
+          abortController.abort();
+        }
+      };
+      const body = new TestStream();
+      protocol.handle('test-scheme', () => {
+        return new Response(stream.Readable.toWeb(body) as ReadableStream<ArrayBufferView>);
+      });
+      defer(() => { protocol.unhandle('test-scheme'); });
+
+      const res = net.fetch('test-scheme://foo', {
+        signal: abortController.signal
+      });
+      await expect(res).to.be.rejectedWith('This operation was aborted');
+      await expect(once(body, 'end')).to.be.rejectedWith('The operation was aborted');
+    });
+
     it('accepts urls with no hostname in non-standard schemes', async () => {
       protocol.handle('test-scheme', (req) => new Response(req.url));
       defer(() => { protocol.unhandle('test-scheme'); });
