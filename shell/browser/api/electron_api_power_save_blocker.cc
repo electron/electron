@@ -11,6 +11,8 @@
 #include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "shell/common/node_includes.h"

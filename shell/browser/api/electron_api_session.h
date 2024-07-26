@@ -15,7 +15,6 @@
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
@@ -40,14 +39,16 @@ namespace base {
 class FilePath;
 }
 
+namespace gin {
+class Arguments;
+template <typename T>
+class Handle;
+}  // namespace gin
+
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
 }  // namespace gin_helper
-
-namespace gin {
-class Arguments;
-}
 
 namespace net {
 class ProxyConfig;

@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
+#include "gin/handle.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"

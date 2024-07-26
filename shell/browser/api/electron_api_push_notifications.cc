@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_push_notifications.h"
 
+#include "gin/handle.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"

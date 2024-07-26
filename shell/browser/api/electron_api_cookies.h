@@ -10,10 +10,14 @@
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_change_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace gin_helper {
 class Dictionary;

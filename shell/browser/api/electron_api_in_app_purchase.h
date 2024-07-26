@@ -8,13 +8,17 @@
 #include <string>
 #include <vector>
 
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"
 #include "v8/include/v8-forward.h"
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

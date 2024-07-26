@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/tray_icon.h"
@@ -22,7 +21,13 @@
 
 namespace gfx {
 class Image;
-}
+class Image;
+}  // namespace gfx
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace gin_helper {
 class Dictionary;

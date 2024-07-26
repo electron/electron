@@ -19,6 +19,7 @@
 #include "extensions/common/url_pattern.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/http/http_content_disposition.h"
 #include "shell/browser/api/electron_api_session.h"

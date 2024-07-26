@@ -11,7 +11,6 @@
 #include "base/containers/flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_rep.h"
@@ -31,6 +30,11 @@ namespace gfx {
 class Rect;
 class Size;
 }  // namespace gfx
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace gin_helper {
 class Dictionary;

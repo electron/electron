@@ -11,7 +11,6 @@
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 
@@ -25,6 +24,8 @@ class Arguments;
 }  // namespace gin
 
 namespace gin_helper {
+template <typename T>
+class Handle;
 template <typename T>
 class Promise;
 }  // namespace gin_helper

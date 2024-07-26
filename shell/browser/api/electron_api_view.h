@@ -8,12 +8,16 @@
 #include <optional>
 
 #include "base/memory/raw_ptr.h"
-#include "gin/handle.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "ui/views/view.h"
 #include "ui/views/view_observer.h"
 #include "v8/include/v8-value.h"
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

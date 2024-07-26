@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/values.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 
@@ -18,6 +17,11 @@
 #include "shell/browser/browser_observer.h"
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace gin_helper {
 class ErrorThrower;

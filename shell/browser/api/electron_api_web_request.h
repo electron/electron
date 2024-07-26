@@ -9,7 +9,6 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
 
@@ -25,7 +24,10 @@ enum class WebRequestResourceType : uint8_t;
 
 namespace gin {
 class Arguments;
-}
+
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

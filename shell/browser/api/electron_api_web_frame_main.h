@@ -12,7 +12,6 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -29,7 +28,10 @@ class RenderFrameHost;
 
 namespace gin {
 class Arguments;
-}
+
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

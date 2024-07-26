@@ -11,7 +11,6 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/log/net_log_capture_mode.h"
@@ -20,7 +19,10 @@
 
 namespace gin {
 class Arguments;
-}
+
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron {
 
