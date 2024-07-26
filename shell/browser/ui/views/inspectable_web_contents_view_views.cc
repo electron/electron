@@ -227,7 +227,7 @@ const std::u16string InspectableWebContentsViewViews::GetTitle() {
 
 void InspectableWebContentsViewViews::Layout(PassKey) {
   if (!devtools_web_view_->GetVisible()) {
-    contents_web_view_->SetBoundsRect(GetContentsBounds());
+    contents_view_->SetBoundsRect(GetContentsBounds());
     // Propagate layout call to all children, for example browser views.
     LayoutSuperclass<View>(this);
     return;
@@ -245,7 +245,7 @@ void InspectableWebContentsViewViews::Layout(PassKey) {
   new_contents_bounds.set_x(GetMirroredXForRect(new_contents_bounds));
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
-  contents_web_view_->SetBoundsRect(new_contents_bounds);
+  contents_view_->SetBoundsRect(new_contents_bounds);
 
   // Propagate layout call to all children, for example browser views.
   LayoutSuperclass<View>(this);
