@@ -4,7 +4,6 @@
 
 #include "shell/browser/net/electron_url_loader_factory.h"
 
-#include <list>
 #include <memory>
 #include <string>
 #include <string_view>

@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 
 #include <limits>
+#include <list>
 #include <memory>
 #include <optional>
 #include <set>
@@ -86,7 +87,6 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
-#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
@@ -142,13 +142,7 @@
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "shell/browser/native_window_views.h"
-#endif
-
-#if !BUILDFLAG(IS_MAC)
-#include "ui/aura/window.h"
-#else
+#if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
 #endif
 
@@ -157,6 +151,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+#include "ui/aura/window.h"
 #include "ui/gfx/font_render_params.h"
 #endif
 

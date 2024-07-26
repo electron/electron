@@ -7,11 +7,13 @@
 
 #include <string>
 
-#include "ui/accessibility/ax_node_data.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
-#include "ui/views/animation/ink_drop_highlight.h"
 #include "ui/views/controls/button/menu_button.h"
+
+namespace ui {
+struct AXNodeData;
+}
 
 namespace electron {
 

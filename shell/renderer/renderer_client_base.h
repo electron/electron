@@ -10,8 +10,6 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
-#include "media/base/key_systems_support_registration.h"
-#include "printing/buildflags/buildflags.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
@@ -64,12 +62,12 @@ class RendererClientBase : public content::ContentRendererClient
                     mojo::ScopedMessagePipeHandle interface_pipe) override;
 #endif
 
-  virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
+  virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                       content::RenderFrame* render_frame) = 0;
-  virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+  virtual void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
-  virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
+  virtual void SetupMainWorldOverrides(v8::Local<v8::Context> context,
                                        content::RenderFrame* render_frame);
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
@@ -84,7 +82,7 @@ class RendererClientBase : public content::ContentRendererClient
       v8::Local<v8::Object> context,
       v8::Local<v8::Function> register_cb);
 
-  bool IsWebViewFrame(v8::Handle<v8::Context> context,
+  bool IsWebViewFrame(v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -96,7 +94,7 @@ class RendererClientBase : public content::ContentRendererClient
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
 
-  bool ShouldLoadPreload(v8::Handle<v8::Context> context,
+  bool ShouldLoadPreload(v8::Local<v8::Context> context,
                          content::RenderFrame* render_frame) const;
 
   // content::ContentRendererClient:

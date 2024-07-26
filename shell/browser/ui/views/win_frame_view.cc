@@ -12,7 +12,6 @@
 #include <dwmapi.h>
 #include <memory>
 
-#include "base/win/windows_version.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/metadata/metadata_impl_macros.h"

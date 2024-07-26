@@ -5,14 +5,12 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_OPAQUE_FRAME_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_OPAQUE_FRAME_VIEW_H_
 
-#include <memory>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/gfx/font_list.h"
-#include "ui/linux/nav_button_provider.h"
 #include "ui/linux/window_button_order_observer.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/window/caption_button_types.h"
@@ -22,6 +20,8 @@
 class CaptionButtonPlaceholderContainer;
 
 namespace electron {
+
+class NativeWindowViews;
 
 class OpaqueFrameView : public FramelessView {
   METADATA_HEADER(OpaqueFrameView, FramelessView)

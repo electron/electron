@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_RENDERER_PEPPER_HELPER_H_
 #define ELECTRON_SHELL_RENDERER_PEPPER_HELPER_H_
 
-#include "base/component_export.h"
 #include "content/public/renderer/render_frame_observer.h"
 
 // This class listens for Pepper creation events from the RenderFrame and

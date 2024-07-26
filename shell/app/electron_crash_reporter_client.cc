@@ -13,7 +13,6 @@
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
-#include "chrome/common/chrome_paths.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "components/upload_list/crash_upload_list.h"
 #include "content/public/common/content_switches.h"

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { startRemoteControlApp } from './lib/spec-helpers';
 import { once } from 'node:events';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { BrowserWindow } from 'electron';
 import path = require('node:path');
 
@@ -15,6 +15,13 @@ describe('fuses', () => {
     const [code1] = await once(child1, 'exit');
     // Should print the version and exit with 0
     expect(code1).to.equal(0);
+  });
+
+  it('disables --inspect flag when node_cli_inspect is 0', () => {
+    const { status, stderr } = spawnSync(process.execPath, ['--set-fuse-node_cli_inspect=0', '--inspect', '-v'], { encoding: 'utf-8' });
+    expect(stderr).to.not.include('Debugger listening on ws://');
+    // Should print the version and exit with 0
+    expect(status).to.equal(0);
   });
 
   it('disables fetching file:// URLs when grant_file_protocol_extra_privileges is 0', async () => {

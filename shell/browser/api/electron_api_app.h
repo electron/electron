@@ -12,7 +12,6 @@
 
 #include "base/containers/flat_map.h"
 #include "base/task/cancelable_task_tracker.h"
-#include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
@@ -22,7 +21,6 @@
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
-#include "shell/browser/api/process_metric.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
@@ -39,7 +37,13 @@ namespace base {
 class FilePath;
 }
 
+namespace gfx {
+class Image;
+}
+
 namespace electron {
+
+struct ProcessMetric;
 
 #if BUILDFLAG(IS_WIN)
 enum class JumpListResult : int;

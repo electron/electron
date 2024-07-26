@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_GTK_MENU_GTK_H_
 #define ELECTRON_SHELL_BROWSER_UI_GTK_MENU_GTK_H_
 
-#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "ui/base/glib/scoped_gobject.h"
 #include "ui/base/glib/scoped_gsignal.h"

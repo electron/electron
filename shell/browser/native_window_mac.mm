@@ -40,7 +40,6 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
@@ -93,7 +92,7 @@ namespace gin {
 template <>
 struct Converter<electron::NativeWindowMac::VisualEffectState> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      electron::NativeWindowMac::VisualEffectState* out) {
     using VisualEffectState = electron::NativeWindowMac::VisualEffectState;
     std::string visual_effect_state;

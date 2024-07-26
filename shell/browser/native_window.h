@@ -20,12 +20,11 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/app_window/size_constraints.h"
-#include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_observer.h"
-#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
+class DraggableRegionProvider;
 
 namespace input {
 struct NativeWebKeyboardEvent;

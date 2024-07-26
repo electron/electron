@@ -20,7 +20,6 @@
 #include "content/public/renderer/render_thread.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
-#include "media/base/key_systems_support_registration.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -214,7 +213,7 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
 }
 
 bool RendererClientBase::ShouldLoadPreload(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
   auto prefs = render_frame->GetBlinkPreferences();
   bool is_main_frame = render_frame->IsMainFrame();
@@ -580,7 +579,7 @@ extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
 #endif
 
 bool RendererClientBase::IsWebViewFrame(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
   auto* isolate = context->GetIsolate();
 
@@ -601,7 +600,7 @@ bool RendererClientBase::IsWebViewFrame(
 }
 
 void RendererClientBase::SetupMainWorldOverrides(
-    v8::Handle<v8::Context> context,
+    v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   auto prefs = render_frame->GetBlinkPreferences();
   // We only need to run the isolated bundle if webview is enabled

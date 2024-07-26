@@ -13,7 +13,6 @@
 #include <string_view>
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
-#include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"

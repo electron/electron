@@ -7,7 +7,6 @@
 
 #include <map>
 
-#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"

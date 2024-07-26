@@ -15,6 +15,7 @@
 #include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/base_paths.h"
+#include "base/command_line.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
@@ -27,7 +28,6 @@
 #include "base/win/windows_version.h"
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
-#include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"

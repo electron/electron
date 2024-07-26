@@ -9,8 +9,6 @@
 
 #include <string>
 
-#include "base/nix/xdg_util.h"
-
 // Unity data typedefs.
 typedef struct _UnityInspector UnityInspector;
 typedef UnityInspector* (*unity_inspector_get_default_func)();

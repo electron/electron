@@ -10,7 +10,10 @@
 #include <string_view>
 
 #include "content/public/app/content_main_delegate.h"
-#include "content/public/common/content_client.h"
+
+namespace content {
+class Client;
+}
 
 namespace tracing {
 class TracingSamplerProfiler;

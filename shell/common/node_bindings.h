@@ -11,7 +11,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -93,7 +92,7 @@ class NodeBindings {
 
   // Create the environment and load node.js.
   std::shared_ptr<node::Environment> CreateEnvironment(
-      v8::Handle<v8::Context> context,
+      v8::Local<v8::Context> context,
       node::MultiIsolatePlatform* platform,
       std::vector<std::string> args,
       std::vector<std::string> exec_args,
@@ -101,7 +100,7 @@ class NodeBindings {
           std::nullopt);
 
   std::shared_ptr<node::Environment> CreateEnvironment(
-      v8::Handle<v8::Context> context,
+      v8::Local<v8::Context> context,
       node::MultiIsolatePlatform* platform,
       std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
           std::nullopt);

@@ -50,7 +50,7 @@ namespace gin {
 template <>
 struct Converter<electron::TaskbarHost::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      electron::TaskbarHost::ThumbarButton* out) {
     gin::Dictionary dict(isolate);
     if (!gin::ConvertFromV8(isolate, val, &dict))

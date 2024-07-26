@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/files/file_path.h"
-#include "base/functional/callback.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/electron_browser_context.h"
 

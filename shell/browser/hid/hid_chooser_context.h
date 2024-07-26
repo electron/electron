@@ -17,12 +17,10 @@
 #include "base/scoped_observation_traits.h"
 #include "base/unguessable_token.h"
 #include "components/keyed_service/core/keyed_service.h"
-#include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/hid.mojom.h"
-#include "shell/browser/electron_browser_context.h"
 #include "url/origin.h"
 
 namespace base {
@@ -30,6 +28,8 @@ class Value;
 }
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 extern const char kHidDeviceNameKey[];
 extern const char kHidGuidKey[];

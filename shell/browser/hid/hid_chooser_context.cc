@@ -4,11 +4,8 @@
 
 #include "shell/browser/hid/hid_chooser_context.h"
 
-#include <utility>
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include <string_view>
-#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include <utility>
 
 #include "base/command_line.h"
 #include "base/containers/contains.h"
@@ -23,6 +20,7 @@
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/electron_constants.h"
