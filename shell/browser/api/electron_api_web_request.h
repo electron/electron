@@ -9,14 +9,19 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "extensions/common/url_pattern.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
 
+class URLPattern;
+
 namespace content {
 class BrowserContext;
 }
+
+namespace extensions {
+enum class WebRequestResourceType : uint8_t;
+}  // namespace extensions
 
 namespace gin {
 class Arguments;
