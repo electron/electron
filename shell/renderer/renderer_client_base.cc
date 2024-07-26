@@ -50,6 +50,10 @@
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 #include "third_party/widevine/cdm/buildflags.h"
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
 #if BUILDFLAG(IS_MAC)
 #include "base/strings/sys_string_conversions.h"
 #endif

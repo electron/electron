@@ -51,7 +51,6 @@
 #include "ui/base/models/image_model.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -68,6 +67,10 @@ struct DeviceEmulationParams;
 // enum class PermissionType;
 }  // namespace blink
 
+namespace gin {
+class Arguments;
+}
+
 namespace gin_helper {
 class Dictionary;
 }
@@ -76,9 +79,9 @@ namespace network {
 class ResourceRequestBody;
 }
 
-namespace gin {
-class Arguments;
-}
+namespace print_to_pdf {
+enum class PdfPrintResult;
+}  // namespace print_to_pdf
 
 namespace ui {
 class Cursor;
