@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 
+#include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/display/screen.h"
 
