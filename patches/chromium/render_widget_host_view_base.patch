@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index ae1a7849dab02ef96209a426b49f0d4c5759371e..29647b61c9c12cbc54840e94e42c945c2cc88af6 100644
+index 63cd2577218a518f2e883ae79d5d951f7545290d..8036e0bcc5c468f1dbefc1d20331a4867c36189c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -778,6 +778,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
+@@ -779,6 +779,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
    return false;
  }
  
@@ -24,7 +24,7 @@ index ae1a7849dab02ef96209a426b49f0d4c5759371e..29647b61c9c12cbc54840e94e42c945c
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 41308c925e5e3142ec05b84aa99e90e096d7b2d3..f77e038309ffa5207ecec957fdd7035530b4ee58 100644
+index f1e4add6622951447a9b95ac5fa2a4f59758448c..8de0f9754a8172533dabf9c636d4c474c2dfb713 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -29,8 +29,11 @@
@@ -62,7 +62,7 @@ index 41308c925e5e3142ec05b84aa99e90e096d7b2d3..f77e038309ffa5207ecec957fdd70355
    viz::FrameSinkId GetRootFrameSinkId() override;
    void NotifyHitTestRegionUpdated(
        const viz::AggregatedHitTestRegion& region) override {}
-@@ -234,6 +243,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -235,6 +244,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  

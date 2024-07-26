@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 681fe10f2826088abc2e8ebdc388ff6f4314cbcf..45b19cac6ef98007e80a0577b3ed924c05eba0f7 100644
+index 255714d953d3177347a395a2cc235961fbb16650..03074109ef58a2c18cef7ef7632eebb148411a7b 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2069,12 +2069,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2094,12 +2094,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 681fe10f2826088abc2e8ebdc388ff6f4314cbcf..45b19cac6ef98007e80a0577b3ed924c
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index cbc5ae1c02941bcf9b2adedbac2eb1baf7227305..0d204f9d06d59f2b6464df3009af1edc75ebe6b0 100644
+index 58b91584d6140a4f0d68abc6de79f69d935d48fe..5860efd8ea5712c5bc3114fe0c1caacbfa00fdb6 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -977,8 +977,7 @@ class Browser : public TabStripModelObserver,
+@@ -986,8 +986,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1ce88da97fdc4b9cdc1cc73f72ef05f80f4a0f64..a04acf4c5a456b6754778ed6c032767c187ff546 100644
+index 970d56419b675b461b9c1e2fffadc2302c3d94a0..a473ff79dd958560365087a2bc3156191cf450ef 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4628,8 +4628,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4629,8 +4629,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

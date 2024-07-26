@@ -21,10 +21,10 @@ index ba4144d79029ac05076d5cef01ea39d07a7630c2..952d0e3c3da884fef62494d81a1632c0
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b66f7c515370fc90847434436551eb252982039e..d0a30ab3fa8f4f0d7fb3aabe086d14c6b617638e 100644
+index 46d708a611db0e70d97fd811bd39ebf44783c227..7213f6d9b24bc505b1ab2044cdc50e5b36a3bad3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4726,6 +4726,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4727,6 +4727,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    new_contents_impl->is_popup_ =
        params.disposition == WindowOpenDisposition::NEW_POPUP;
  
@@ -37,7 +37,7 @@ index b66f7c515370fc90847434436551eb252982039e..d0a30ab3fa8f4f0d7fb3aabe086d14c6
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4767,12 +4773,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4768,12 +4774,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -148,10 +148,10 @@ index 138761070b63c16ea440f9eee98fe1139e7c0b09..f7bfa43693cff1a55a1e59950f1ecb06
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 15d19eee4c9a135080294f4a65639c813a8a4dc5..b559b333138e46192c6d85d7b4dfd0a66fcdc7da 100644
+index 7b443a718ba4d9aff69ba66a6e1ee40c760a03bb..d833b71a88e91b128236233323fdf6c3d2972f9f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6663,6 +6663,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6664,6 +6664,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -163,10 +163,10 @@ index 15d19eee4c9a135080294f4a65639c813a8a4dc5..b559b333138e46192c6d85d7b4dfd0a6
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 221efc6ba624036cfb9fc7a287dae29312d4efc1..4319af90dedb12b3ffcacb81e72d8fe073c1da2f 100644
+index 634a48627e1fa1442d5977b9b09692e933ae5001..e39e2e16d98f3d9258aea360f5c89781d2100ac8 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -515,6 +515,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -516,6 +516,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -176,10 +176,10 @@ index 221efc6ba624036cfb9fc7a287dae29312d4efc1..4319af90dedb12b3ffcacb81e72d8fe0
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/web_test/browser/web_test_content_browser_client.h b/content/web_test/browser/web_test_content_browser_client.h
-index 53949c3510d0755e608847e174de63f46c8c2363..f6644476d8714fd02480830ebb0f0571de8ea262 100644
+index 115b75966f53ee16f7886fc4152741727c7825c8..a1944f7de539f04f85fdb238ccf67e091f413ad3 100644
 --- a/content/web_test/browser/web_test_content_browser_client.h
 +++ b/content/web_test/browser/web_test_content_browser_client.h
-@@ -91,6 +91,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
+@@ -92,6 +92,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
                         const std::string& frame_name,
                         WindowOpenDisposition disposition,
                         const blink::mojom::WindowFeatures& features,
