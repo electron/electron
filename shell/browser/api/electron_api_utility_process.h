@@ -15,9 +15,7 @@
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
 #include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
-#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -33,6 +31,10 @@ class Handle;
 namespace base {
 class Process;
 }  // namespace base
+
+namespace mojo {
+class Connector;
+}  // namespace mojo
 
 namespace electron::api {
 

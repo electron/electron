@@ -11,13 +11,19 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "v8/include/v8.h"
+
+namespace mojo {
+class DataPipeProducer;
+template <typename T>
+class PendingReceiver;
+template <typename T>
+class PendingRemote;
+}  // namespace mojo
 
 namespace electron {
 

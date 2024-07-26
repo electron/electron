@@ -36,7 +36,6 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"

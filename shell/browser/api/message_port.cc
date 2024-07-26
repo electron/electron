@@ -62,6 +62,14 @@ gin::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, new MessagePort());
 }
 
+bool MessagePort::IsEntangled() const {
+  return !closed_ && !IsNeutered();
+}
+
+bool MessagePort::IsNeutered() const {
+  return !connector_ || !connector_->is_valid();
+}
+
 void MessagePort::PostMessage(gin::Arguments* args) {
   if (!IsEntangled())
     return;
