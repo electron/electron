@@ -24,7 +24,7 @@ class GURL;
 
 namespace base {
 class FilePath;
-}
+}  // namespace base
 
 namespace gfx {
 class Rect;
@@ -32,6 +32,8 @@ class Size;
 }  // namespace gfx
 
 namespace gin {
+class Arguments;
+
 template <typename T>
 class Handle;
 }  // namespace gin
@@ -40,10 +42,6 @@ namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
 }  // namespace gin_helper
-
-namespace gin {
-class Arguments;
-}
 
 namespace electron::api {
 

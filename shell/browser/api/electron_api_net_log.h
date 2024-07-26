@@ -7,7 +7,6 @@
 
 #include <optional>
 
-#include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
@@ -16,6 +15,11 @@
 #include "net/log/net_log_capture_mode.h"
 #include "services/network/public/mojom/net_log.mojom.h"
 #include "shell/common/gin_helper/promise.h"
+
+namespace base {
+class FilePath;
+class TaskRunner;
+}  // namespace base
 
 namespace gin {
 class Arguments;
