@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 #include "base/values.h"
 #include "content/public/browser/permission_controller_delegate.h"
 
