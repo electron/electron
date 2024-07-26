@@ -18,6 +18,7 @@
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/native_window.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"

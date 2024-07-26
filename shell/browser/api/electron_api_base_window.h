@@ -15,12 +15,20 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
-namespace electron::api {
+namespace gin_helper {
+class Arguments;
+class PersistentDictionary;
+}  // namespace gin_helper
+
+namespace electron {
+
+class NativeWindow;
+
+namespace api {
 
 class View;
 
@@ -278,6 +286,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
-}  // namespace electron::api
+}  // namespace api
+}  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
-#include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 
 #include "base/memory/raw_ptr.h"
@@ -25,6 +24,8 @@ class OffScreenView;
 #endif
 
 namespace electron {
+
+class NativeWindow;
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView,

@@ -10,6 +10,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
