@@ -9,6 +9,7 @@
 #endif
 
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "base/base_switches.h"
@@ -1208,7 +1209,7 @@ void ElectronBrowserClient::
 }
 
 bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
-    base::StringPiece scheme,
+    std::string_view scheme,
     bool is_embedded_origin_secure) {
   if (is_embedded_origin_secure && scheme == content::kChromeUIScheme)
     return true;

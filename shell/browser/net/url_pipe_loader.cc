@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/url_pipe_loader.h"
 
+#include <string_view>
 #include <utility>
 
 #include "base/task/sequenced_task_runner.h"
@@ -82,7 +83,7 @@ void URLPipeLoader::OnWrite(base::OnceClosure resume, MojoResult result) {
     NotifyComplete(net::ERR_FAILED);
 }
 
-void URLPipeLoader::OnDataReceived(base::StringPiece string_piece,
+void URLPipeLoader::OnDataReceived(std::string_view string_view,
                                    base::OnceClosure resume) {
   producer_->Write(
       std::make_unique<mojo::StringDataSource>(
