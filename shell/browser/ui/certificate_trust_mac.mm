@@ -16,6 +16,7 @@
 #include "net/cert/x509_util_apple.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/gin_helper/promise.h"
 
 @interface TrustDelegate : NSObject {
  @private

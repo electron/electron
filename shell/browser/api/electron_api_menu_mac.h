@@ -11,7 +11,10 @@
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
-namespace electron::api {
+namespace electron {
+class NativeWindow;
+
+namespace api {
 
 class MenuMac : public Menu {
  protected:
@@ -48,6 +51,7 @@ class MenuMac : public Menu {
   base::WeakPtrFactory<MenuMac> weak_factory_{this};
 };
 
-}  // namespace electron::api
+}  // namespace api
+}  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
