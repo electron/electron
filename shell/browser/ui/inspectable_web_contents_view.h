@@ -18,7 +18,8 @@ class DevToolsContentsResizingStrategy;
 #if defined(TOOLKIT_VIEWS)
 namespace views {
 class View;
-}
+class WebView;
+}  // namespace views
 #endif
 
 namespace electron {
