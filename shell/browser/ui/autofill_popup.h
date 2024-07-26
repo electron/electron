@@ -10,10 +10,13 @@
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/render_frame_host.h"
 #include "shell/browser/ui/views/autofill_popup_view.h"
-#include "ui/color/color_id.h"
 #include "ui/gfx/font_list.h"
 #include "ui/views/view.h"
 #include "ui/views/widget/widget.h"
+
+namespace ui {
+using ColorId = int;
+}  // namespace ui
 
 namespace electron {
 

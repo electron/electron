@@ -15,7 +15,6 @@
 #include "base/sequence_checker.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
-#include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
@@ -30,6 +29,10 @@ class Arguments;
 template <typename T>
 class Handle;
 }  // namespace gin
+
+namespace net {
+class AuthChallengeInfo;
+}  // namespace net
 
 namespace network {
 class SimpleURLLoader;

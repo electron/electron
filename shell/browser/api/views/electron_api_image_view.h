@@ -7,8 +7,11 @@
 
 #include "gin/handle.h"
 #include "shell/browser/api/electron_api_view.h"
-#include "ui/gfx/image/image.h"
 #include "ui/views/controls/image_view.h"
+
+namespace gfx {
+class Image;
+}
 
 namespace gin_helper {
 class Arguments;
