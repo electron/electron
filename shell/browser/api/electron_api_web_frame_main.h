@@ -79,8 +79,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void Destroyed();
 
   // Mark RenderFrameHost as disposed and to no longer access it. This can
-  // happen when the WebFrameMain v8 handle is GC'd or when a FrameTreeNode
-  // is removed.
+  // happen when the WebFrameMain v8-forward.handle is GC'd or when a
+  // FrameTreeNode is removed.
   void MarkRenderFrameDisposed();
 
   // Swap out the internal RFH when cross-origin navigation occurs.

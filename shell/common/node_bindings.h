@@ -19,7 +19,7 @@
 #include "gin/public/gin_embedders.h"
 #include "shell/common/node_includes.h"
 #include "uv.h"  // NOLINT(build/include_directory)
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace base {
 class SingleThreadTaskRunner;

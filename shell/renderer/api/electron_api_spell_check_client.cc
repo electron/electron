@@ -23,6 +23,7 @@
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
+#include "v8/include/v8-function.h"
 
 namespace electron::api {
 

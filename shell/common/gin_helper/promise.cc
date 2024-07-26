@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "shell/common/gin_helper/promise.h"
+#include "v8/include/v8-context.h"
 
 namespace gin_helper {
 

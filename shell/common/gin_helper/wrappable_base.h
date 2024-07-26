@@ -6,7 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
 
 #include "base/memory/raw_ptr.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace gin {
 class Arguments;

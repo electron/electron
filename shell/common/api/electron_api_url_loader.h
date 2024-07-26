@@ -23,7 +23,7 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "url/gurl.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace gin {
 class Arguments;

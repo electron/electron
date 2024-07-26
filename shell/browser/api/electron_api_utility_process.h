@@ -20,7 +20,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace gin {
 class Arguments;

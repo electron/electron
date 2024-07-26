@@ -14,7 +14,7 @@
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace electron::api {
 

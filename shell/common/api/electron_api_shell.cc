@@ -13,6 +13,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
+#include "v8/include/v8-microtask-queue.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_com_initializer.h"

@@ -7,7 +7,8 @@
 
 #include <memory>
 
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
+#include "v8/include/v8-microtask-queue.h"
 
 namespace gin_helper {
 

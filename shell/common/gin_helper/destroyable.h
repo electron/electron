@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_DESTROYABLE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_DESTROYABLE_H_
 
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace gin_helper {
 

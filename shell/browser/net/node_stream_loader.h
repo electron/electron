@@ -15,7 +15,9 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
+#include "v8/include/v8-object.h"
+#include "v8/include/v8-persistent-handle.h"
 
 namespace mojo {
 class DataPipeProducer;
