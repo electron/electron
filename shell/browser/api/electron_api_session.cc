@@ -21,6 +21,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"

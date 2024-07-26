@@ -15,7 +15,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
@@ -36,6 +35,10 @@ class Arguments;
 namespace network {
 class SharedURLLoaderFactory;
 }
+
+namespace predictors {
+class PreconnectManager;
+}  // namespace predictors
 
 namespace storage {
 class SpecialStoragePolicy;
