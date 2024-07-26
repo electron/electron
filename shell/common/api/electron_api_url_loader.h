@@ -67,7 +67,7 @@ class SimpleURLLoaderWrapper
                          int options);
 
   // SimpleURLLoaderStreamConsumer:
-  void OnDataReceived(std::string_view string_piece,
+  void OnDataReceived(std::string_view string_view,
                       base::OnceClosure resume) override;
   void OnComplete(bool success) override;
   void OnRetry(base::OnceClosure start_retry) override;

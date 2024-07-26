@@ -87,8 +87,8 @@ void URLPipeLoader::OnDataReceived(std::string_view string_view,
                                    base::OnceClosure resume) {
   producer_->Write(
       std::make_unique<mojo::StringDataSource>(
-          string_piece, mojo::StringDataSource::AsyncWritingMode::
-                            STRING_MAY_BE_INVALIDATED_BEFORE_COMPLETION),
+          string_view, mojo::StringDataSource::AsyncWritingMode::
+                           STRING_MAY_BE_INVALIDATED_BEFORE_COMPLETION),
       base::BindOnce(&URLPipeLoader::OnWrite, weak_factory_.GetWeakPtr(),
                      std::move(resume)));
 }

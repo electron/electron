@@ -695,14 +695,14 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   return ret;
 }
 
-void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_piece,
+void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
                                             base::OnceClosure resume) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
+  auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
   auto backing_store = array_buffer->GetBackingStore();
-  memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
+  memcpy(backing_store->Data(), string_view.data(), string_view.size());
   Emit("data", array_buffer,
        base::AdaptCallbackForRepeating(std::move(resume)));
 }
