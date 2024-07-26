@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 59f1502704eacd0ad089e7f89239b09c28899634..3f00dabee02851fdeb4814f82abde07615799114 100644
+index e488ab1c8dcdc12a32d426445c0408d0edc373de..334585b4f40bf8d1f077f944509931c6f9f86b48 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1048,6 +1048,7 @@ component("base") {
@@ -303,7 +303,7 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 5df3e394a693939e021be4e9e3222989ae6e5122..06ec9f081f22afbda243bb69759dd1972dff8dd0 100644
+index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a91334c093c1a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -106,14 +106,18 @@ void OrderChildWindow(NSWindow* child_window,
@@ -552,7 +552,7 @@ index 940adeedcd38062b44afdeda1b41c89394e5e420..0809615a9818da6c6b5fd8363b168336
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 078f33c9c4b628b4427bb152912bf2a221e29efb..222a9cd87290efb0e30b503f9b6aaba122019bbe 100644
+index bf22cfed27b51c3be2b8b956f8d9df945c08dd5f..d9d3527a146890a3c1934e77bec6b20b8a76291d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -1626,7 +1626,7 @@ index cd6c9a924dce762ff935ef722c8873c974772225..b162795219e0fac3d9caa6bbfead126c
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0947cc6ce 100644
+index 4d2776c4a245dc755d4619c8680952cb8290e404..1f5a395de74f5d2d1a18c5f8ca7eeabfc671ede2 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -31,7 +31,9 @@
@@ -1639,7 +1639,7 @@ index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0
  @class NSView;
  
  namespace remote_cocoa {
-@@ -479,10 +481,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -483,10 +485,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -1653,7 +1653,7 @@ index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995ad80c26bb 100644
+index c45bb34a05ad4e068f0f9f8bcab1da3dc84306e8..1dac5aef9961651cc1786eca028f2590ad34cfff 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -349,7 +349,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -1680,7 +1680,7 @@ index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995a
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1316,9 +1324,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1333,9 +1341,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -1692,7 +1692,7 @@ index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995a
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1481,17 +1491,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1498,17 +1508,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1713,7 +1713,7 @@ index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995a
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1504,6 +1517,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1521,6 +1534,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
