@@ -42,14 +42,15 @@ class Dictionary : public gin::Dictionary {
   // 3. It accepts arbitrary type of key.
   template <typename K, typename V>
   bool Get(const K& key, V* out) const {
+    const auto handle = GetHandle();
     // Check for existence before getting, otherwise this method will always
     // returns true when T == v8::Local<v8::Value>.
     v8::Local<v8::Context> context = isolate()->GetCurrentContext();
     v8::Local<v8::Value> v8_key = gin::ConvertToV8(isolate(), key);
     v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->Has(context, v8_key);
+    v8::Maybe<bool> result = handle->Has(context, v8_key);
     if (result.IsJust() && result.FromJust() &&
-        GetHandle()->Get(context, v8_key).ToLocal(&value))
+        handle->Get(context, v8_key).ToLocal(&value))
       return gin::ConvertFromV8(isolate(), value, out);
     return false;
   }
@@ -81,13 +82,14 @@ class Dictionary : public gin::Dictionary {
 
   template <typename T>
   bool GetHidden(std::string_view key, T* out) const {
+    const auto handle = GetHandle();
     v8::Local<v8::Context> context = isolate()->GetCurrentContext();
     v8::Local<v8::Private> privateKey =
         v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
     v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->HasPrivate(context, privateKey);
+    v8::Maybe<bool> result = handle->HasPrivate(context, privateKey);
     if (result.IsJust() && result.FromJust() &&
-        GetHandle()->GetPrivate(context, privateKey).ToLocal(&value))
+        handle->GetPrivate(context, privateKey).ToLocal(&value))
       return gin::ConvertFromV8(isolate(), value, out);
     return false;
   }
