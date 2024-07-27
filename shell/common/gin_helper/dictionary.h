@@ -65,7 +65,7 @@ class Dictionary : public gin::Dictionary {
     v8::Maybe<bool> result =
         GetHandle()->Set(isolate()->GetCurrentContext(),
                          gin::ConvertToV8(isolate(), key), v8_value);
-    return !result.IsNothing() && result.FromJust();
+    return result.IsJust() && result.FromJust();
   }
 
   // Like normal Get but put result in an std::optional.
@@ -104,7 +104,7 @@ class Dictionary : public gin::Dictionary {
         v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
     v8::Maybe<bool> result =
         GetHandle()->SetPrivate(context, privateKey, v8_value);
-    return !result.IsNothing() && result.FromJust();
+    return result.IsJust() && result.FromJust();
   }
 
   template <typename T>
@@ -157,7 +157,7 @@ class Dictionary : public gin::Dictionary {
     v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
         v8_value, v8::ReadOnly);
-    return !result.IsNothing() && result.FromJust();
+    return result.IsJust() && result.FromJust();
   }
 
   // Note: If we plan to add more Set methods, consider adding an option instead
@@ -171,19 +171,19 @@ class Dictionary : public gin::Dictionary {
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
         v8_value,
         static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
-    return !result.IsNothing() && result.FromJust();
+    return result.IsJust() && result.FromJust();
   }
 
   bool Has(std::string_view key) const {
     v8::Maybe<bool> result = GetHandle()->Has(isolate()->GetCurrentContext(),
                                               gin::StringToV8(isolate(), key));
-    return !result.IsNothing() && result.FromJust();
+    return result.IsJust() && result.FromJust();
   }
 
   bool Delete(std::string_view key) {
     v8::Maybe<bool> result = GetHandle()->Delete(
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
-    return !result.IsNothing() && result.FromJust();
+    return result.IsJust() && result.FromJust();
   }
 
   bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
