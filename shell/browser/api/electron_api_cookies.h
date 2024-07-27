@@ -10,7 +10,6 @@
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "net/cookies/cookie_change_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
 
 namespace gin {
@@ -20,7 +19,11 @@ class Handle;
 
 namespace gin_helper {
 class Dictionary;
-}
+}  // namespace gin_helper
+
+namespace net {
+struct CookieChangeInfo;
+}  // namespace net
 
 namespace electron {
 
