@@ -49,8 +49,7 @@ class Dictionary : public gin::Dictionary {
     v8::Local<v8::Value> v8_key = gin::ConvertToV8(isolate(), key);
     v8::Local<v8::Value> value;
     v8::Maybe<bool> result = handle->Has(context, v8_key);
-    if (result.IsJust() && result.FromJust() &&
-        handle->Get(context, v8_key).ToLocal(&value))
+    if (result.FromMaybe(false) && handle->Get(context, v8_key).ToLocal(&value))
       return gin::ConvertFromV8(isolate(), value, out);
     return false;
   }
@@ -65,7 +64,7 @@ class Dictionary : public gin::Dictionary {
     v8::Maybe<bool> result =
         GetHandle()->Set(isolate()->GetCurrentContext(),
                          gin::ConvertToV8(isolate(), key), v8_value);
-    return result.IsJust() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   // Like normal Get but put result in an std::optional.
@@ -88,7 +87,7 @@ class Dictionary : public gin::Dictionary {
         v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
     v8::Local<v8::Value> value;
     v8::Maybe<bool> result = handle->HasPrivate(context, privateKey);
-    if (result.IsJust() && result.FromJust() &&
+    if (result.FromMaybe(false) &&
         handle->GetPrivate(context, privateKey).ToLocal(&value))
       return gin::ConvertFromV8(isolate(), value, out);
     return false;
@@ -104,7 +103,7 @@ class Dictionary : public gin::Dictionary {
         v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
     v8::Maybe<bool> result =
         GetHandle()->SetPrivate(context, privateKey, v8_value);
-    return result.IsJust() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   template <typename T>
@@ -157,7 +156,7 @@ class Dictionary : public gin::Dictionary {
     v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
         v8_value, v8::ReadOnly);
-    return result.IsJust() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   // Note: If we plan to add more Set methods, consider adding an option instead
@@ -171,19 +170,19 @@ class Dictionary : public gin::Dictionary {
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
         v8_value,
         static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
-    return result.IsJust() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   bool Has(std::string_view key) const {
     v8::Maybe<bool> result = GetHandle()->Has(isolate()->GetCurrentContext(),
                                               gin::StringToV8(isolate(), key));
-    return result.IsJust() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   bool Delete(std::string_view key) {
     v8::Maybe<bool> result = GetHandle()->Delete(
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
-    return result.IsJust() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
