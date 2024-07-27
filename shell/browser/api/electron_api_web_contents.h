@@ -25,7 +25,6 @@
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/javascript_dialog_manager.h"
-#include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -63,6 +62,7 @@ struct DeviceEmulationParams;
 }  // namespace blink
 
 namespace content {
+enum class KeyboardEventProcessingResult;
 class WebContents;
 }  // namespace content
 
