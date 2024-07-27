@@ -7,7 +7,6 @@
 #include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "net/cookies/canonical_cookie.h"
 #include "shell/browser/electron_browser_context.h"
 
 using content::BrowserThread;
