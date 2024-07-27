@@ -47,6 +47,8 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   using EventCallback = base::RepeatingCallback<void()>;
 
   void Start(network::mojom::URLResponseHeadPtr head);
+  void NotifyEnd();
+  void NotifyError();
   void NotifyReadable();
   void NotifyComplete(int result);
   void ReadMore();
@@ -86,8 +88,12 @@ class NodeStreamLoader : public network::mojom::URLLoader {
 
   // When NotifyComplete is called while writing, we will save the result and
   // quit with it after the write is done.
-  bool ended_ = false;
+  bool pending_result_ = false;
   int result_ = net::OK;
+
+  // Set to `true` when we get either `end` or `error` event on the stream.
+  // If `false` - we call `stream.destroy()` to finalize the stream.
+  bool destroyed_ = false;
 
   // When the stream emits the readable event, we only want to start reading
   // data if the stream was not readable before, so we store the state in a
