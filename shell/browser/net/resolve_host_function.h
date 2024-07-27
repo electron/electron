@@ -12,11 +12,14 @@
 #include "base/memory/ref_counted.h"
 #include "base/sequence_checker.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-#include "net/base/address_list.h"
 #include "net/dns/public/host_resolver_results.h"
 #include "services/network/public/cpp/resolve_host_client_base.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+
+namespace net {
+class AddressList;
+}  // namespace net
 
 namespace electron {
 
