@@ -9,6 +9,7 @@
 #import "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "ui/gfx/geometry/rounded_corners_f.h"
 
 namespace electron {
 
