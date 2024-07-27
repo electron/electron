@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "net/cert/cert_verify_result.h"
-#include "net/cert/x509_certificate.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
 namespace electron {
