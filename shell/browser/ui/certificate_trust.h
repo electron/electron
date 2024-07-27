@@ -7,11 +7,16 @@
 
 #include <string>
 
-#include "net/cert/x509_certificate.h"
+template <typename T>
+class scoped_refptr;
 
 namespace electron {
 class NativeWindow;
-}
+}  // namespace electron
+
+namespace net {
+class X509Certificate;
+}  // namespace net
 
 namespace v8 {
 class Promise;

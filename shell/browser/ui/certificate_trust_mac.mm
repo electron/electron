@@ -11,8 +11,10 @@
 #import <Cocoa/Cocoa.h>
 #import <SecurityInterface/SFCertificateTrustPanel.h>
 
+#include "base/memory/scoped_refptr.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/cert/cert_database.h"
+#include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util_apple.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"

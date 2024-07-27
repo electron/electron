@@ -7,8 +7,11 @@
 
 #include <string>
 
-#include "net/cert/x509_certificate.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+
+namespace net {
+class X509Certificate;
+}  // namespace net
 
 namespace electron {
 

@@ -8,7 +8,9 @@
 
 #include <wincrypt.h>
 
+#include "base/memory/scoped_refptr.h"
 #include "net/cert/cert_database.h"
+#include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util_win.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/promise.h"
