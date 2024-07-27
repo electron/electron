@@ -26,6 +26,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"

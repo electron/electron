@@ -19,7 +19,6 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/thread_pool.h"
-#include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
@@ -91,6 +90,7 @@ namespace ui {
 class Cursor;
 }
 
+class DevToolsEyeDropper;
 class SkRegion;
 
 namespace electron {
