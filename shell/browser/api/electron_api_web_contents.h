@@ -28,7 +28,6 @@
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
@@ -64,6 +63,10 @@ namespace blink {
 struct DeviceEmulationParams;
 // enum class PermissionType;
 }  // namespace blink
+
+namespace content {
+class WebContents;
+}  // namespace content
 
 namespace gin {
 class Arguments;

@@ -11,7 +11,6 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
-#include "content/public/browser/web_contents.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "third_party/blink/public/common/page/drag_mojom_traits.h"
 
@@ -22,6 +21,10 @@
 class OffScreenView;
 #endif
 #endif
+
+namespace content {
+class WebContents;
+}
 
 namespace electron {
 
