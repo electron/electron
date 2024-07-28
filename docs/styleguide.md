@@ -252,7 +252,7 @@ belongs to a module or a class.
 
 ## API History
 
-An "API History" block is a YAML code block encapsulated by a HTML comment that
+An "API History" block is a YAML code block encapsulated by an HTML comment that
 should be placed directly after the Markdown header for a class or method, like so:
 
 `````markdown
@@ -313,7 +313,7 @@ There are a few style guidelines that aren't covered by the linting script:
   | `BLANK LINE`                | `​`                                |
 
 * Use two spaces for indentation in the YAML.
-* Keep change descriptions concise.
+* Keep change descriptions concise - favor using the release notes from the associated PR whenever possible.
   * Developers can always view the breaking changes document or linked
     pull request for more details.
 
