@@ -7,7 +7,7 @@
       "type": "object",
       "properties": {
         "pr-url": {
-          "description": "URL to the 'root' GitHub Pull Request for the change (i.e. not a backport PR)",
+          "description": "URL to the 'main' GitHub Pull Request for the change (i.e. not a backport PR)",
           "type": "string", "pattern": "^https://github.com/electron/electron/pull/\\d+$",
           "examples": [ "https://github.com/electron/electron/pull/26789" ]
         },
