@@ -1053,8 +1053,6 @@ win.setSheetOffset(toolbarRect.height)
 
 <!--
 ```YAML history
-added:
-  - pr-url: https://github.com/electron/electron/pull/35658
 changes:
   - pr-url: https://github.com/electron/electron/pull/41391
     description: "`window.flashFrame(bool)` will flash dock icon continuously on macOS"
