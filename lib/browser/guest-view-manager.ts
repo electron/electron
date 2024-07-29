@@ -2,7 +2,7 @@ import { webContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
-import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
+import { syncMethods, asyncMethods, properties, navigationHistorySyncMethods } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/browser/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
@@ -310,6 +310,14 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestIn
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
   if (!syncMethods.has(method)) {
     throw new Error(`Invalid method: ${method}`);
+  }
+  // Redirect history methods to updated navigationHistory property on webContents. See issue #42879.
+  if (navigationHistorySyncMethods.has(method)) {
+    let navigationMethod = method;
+    if (method === 'clearHistory') {
+      navigationMethod = 'clear';
+    }
+    return (guest as any).navigationHistory[navigationMethod](...args);
   }
 
   return (guest as any)[method](...args);
