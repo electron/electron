@@ -1,3 +1,14 @@
+export const navigationHistorySyncMethods = new Set([
+  'canGoBack',
+  'canGoForward',
+  'canGoToOffset',
+  'clearHistory',
+  'goBack',
+  'goForward',
+  'goToIndex',
+  'goToOffset'
+]);
+
 // Public-facing API methods.
 export const syncMethods = new Set([
   'getURL',
@@ -8,14 +19,6 @@ export const syncMethods = new Set([
   'stop',
   'reload',
   'reloadIgnoringCache',
-  'canGoBack',
-  'canGoForward',
-  'canGoToOffset',
-  'clearHistory',
-  'goBack',
-  'goForward',
-  'goToIndex',
-  'goToOffset',
   'isCrashed',
   'setUserAgent',
   'getUserAgent',
@@ -51,7 +54,8 @@ export const syncMethods = new Set([
   'getZoomFactor',
   'getZoomLevel',
   'setZoomFactor',
-  'setZoomLevel'
+  'setZoomLevel',
+  ...navigationHistorySyncMethods
 ]);
 
 export const properties = new Set([
