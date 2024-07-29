@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"

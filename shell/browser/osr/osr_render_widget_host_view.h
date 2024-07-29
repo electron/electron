@@ -16,9 +16,8 @@
 #include <windows.h>
 #endif
 
+#include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
-#include "base/process/kill.h"
-#include "base/threading/thread.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck

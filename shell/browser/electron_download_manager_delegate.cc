@@ -29,6 +29,8 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
 

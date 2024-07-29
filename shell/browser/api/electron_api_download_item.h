@@ -11,13 +11,17 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "components/download/public/common/download_item.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/pinnable.h"
 
 class GURL;
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

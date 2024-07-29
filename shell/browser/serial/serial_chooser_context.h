@@ -15,7 +15,6 @@
 #include "base/unguessable_token.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/serial_delegate.h"
-#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
@@ -26,6 +25,11 @@
 namespace base {
 class Value;
 }
+
+namespace mojo {
+template <typename T>
+class PendingRemote;
+}  // namespace mojo
 
 namespace electron {
 

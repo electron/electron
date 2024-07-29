@@ -16,6 +16,7 @@
 #include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"

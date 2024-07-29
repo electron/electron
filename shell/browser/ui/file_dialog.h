@@ -11,12 +11,16 @@
 
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr_exclusion.h"
-#include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/promise.h"
 
 namespace electron {
 class NativeWindow;
 }
+
+namespace gin_helper {
+class Dictionary;
+template <typename T>
+class Promise;
+}  // namespace gin_helper
 
 namespace file_dialog {
 

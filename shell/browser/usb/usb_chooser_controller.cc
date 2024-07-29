@@ -17,6 +17,7 @@
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/usb/electron_usb_delegate.h"
 #include "shell/browser/usb/usb_chooser_context_factory.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"

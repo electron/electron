@@ -18,42 +18,33 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/observer_list_types.h"
 #include "base/task/thread_pool.h"
-#include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/javascript_dialog_manager.h"
-#include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
-#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -70,22 +61,35 @@ struct DeviceEmulationParams;
 // enum class PermissionType;
 }  // namespace blink
 
-namespace gin_helper {
-class Dictionary;
-}
-
-namespace network {
-class ResourceRequestBody;
-}
+namespace content {
+enum class KeyboardEventProcessingResult;
+class WebContents;
+}  // namespace content
 
 namespace gin {
 class Arguments;
 }
 
+namespace gin_helper {
+class Dictionary;
+class ErrorThrower;
+template <typename T>
+class Promise;
+}  // namespace gin_helper
+
+namespace network {
+class ResourceRequestBody;
+}
+
+namespace print_to_pdf {
+enum class PdfPrintResult;
+}  // namespace print_to_pdf
+
 namespace ui {
 class Cursor;
 }
 
+class DevToolsEyeDropper;
 class SkRegion;
 
 namespace electron {
@@ -94,7 +98,6 @@ class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
-class FrameSubscriber;
 class WebDialogHelper;
 class NativeWindow;
 class OffScreenRenderWidgetHostView;
@@ -103,6 +106,7 @@ class OffScreenWebContentsView;
 namespace api {
 
 class BaseWindow;
+class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
 class WebContents : public ExclusiveAccessContext,

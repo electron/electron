@@ -24,7 +24,6 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_document_helper.h"  // nogncheck
-#include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
 namespace extensions {

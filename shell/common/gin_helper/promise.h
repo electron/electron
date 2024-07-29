@@ -18,6 +18,7 @@
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/process_util.h"
+#include "v8/include/v8-context.h"
 
 namespace gin_helper {
 

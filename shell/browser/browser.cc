@@ -59,6 +59,14 @@ Browser::~Browser() {
   WindowList::RemoveObserver(this);
 }
 
+void Browser::AddObserver(BrowserObserver* obs) {
+  observers_.AddObserver(obs);
+}
+
+void Browser::RemoveObserver(BrowserObserver* obs) {
+  observers_.RemoveObserver(obs);
+}
+
 // static
 Browser* Browser::Get() {
   return ElectronBrowserMainParts::Get()->browser();

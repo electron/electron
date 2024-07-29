@@ -12,6 +12,7 @@
 
 #include "ash/style/rounded_rect_cutout_path_builder.h"
 #include "gin/data_object_builder.h"
+#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"

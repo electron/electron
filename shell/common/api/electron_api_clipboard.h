@@ -10,8 +10,11 @@
 
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/clipboard/clipboard.h"
-#include "ui/gfx/image/image.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
+
+namespace gfx {
+class Image;
+}  // namespace gfx
 
 namespace gin_helper {
 class Arguments;

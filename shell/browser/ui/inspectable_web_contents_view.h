@@ -10,10 +10,18 @@
 
 #include "base/memory/raw_ptr.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "ui/gfx/geometry/rounded_corners_f.h"
+
+#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
+#include "ui/views/view.h"
+#else
 #include "ui/gfx/native_widget_types.h"
+#endif
 
 class DevToolsContentsResizingStrategy;
+
+namespace gfx {
+class RoundedCornersF;
+}  // namespace gfx
 
 #if defined(TOOLKIT_VIEWS)
 namespace views {

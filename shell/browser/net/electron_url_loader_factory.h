@@ -11,9 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
-#include "mojo/public/cpp/bindings/receiver_set.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/cpp/resource_request.h"
@@ -30,6 +29,11 @@ class Arguments;
 namespace gin_helper {
 class Dictionary;
 }  // namespace gin_helper
+
+namespace mojo {
+template <typename T>
+class PendingReceiver;
+}  // namespace mojo
 
 namespace electron {
 

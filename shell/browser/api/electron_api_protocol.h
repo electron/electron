@@ -10,13 +10,14 @@
 
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/content_browser_client.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/gin_helper/constructible.h"
 
 namespace gin {
 class Arguments;
+template <typename T>
+class Handle;
 }  // namespace gin
 
 namespace electron {

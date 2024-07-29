@@ -14,13 +14,11 @@
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
-#include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
-#include "base/files/file_path.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
@@ -40,6 +38,7 @@ class Arguments;
 
 namespace electron {
 
+class BrowserObserver;
 class ElectronMenuModel;
 
 #if BUILDFLAG(IS_WIN)
@@ -314,9 +313,8 @@ class Browser : private WindowListObserver {
   // instance is destroyed.
   void SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure);
 
-  void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
-
-  void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
+  void AddObserver(BrowserObserver* obs);
+  void RemoveObserver(BrowserObserver* obs);
 
 #if BUILDFLAG(IS_MAC)
   // Returns whether secure input is enabled

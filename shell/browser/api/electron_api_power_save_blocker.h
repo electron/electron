@@ -6,11 +6,16 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include "base/containers/flat_map.h"
-#include "gin/handle.h"
-#include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
+
+namespace gin {
+class ObjectTemplateBuilder;
+
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

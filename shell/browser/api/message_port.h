@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
@@ -20,6 +19,10 @@ class Arguments;
 template <typename T>
 class Handle;
 }  // namespace gin
+
+namespace mojo {
+class Connector;
+}  // namespace mojo
 
 namespace electron {
 
@@ -40,8 +43,8 @@ class MessagePort : public gin::Wrappable<MessagePort>,
 
   blink::MessagePortChannel Disentangle();
 
-  bool IsEntangled() const { return !closed_ && !IsNeutered(); }
-  bool IsNeutered() const { return !connector_ || !connector_->is_valid(); }
+  [[nodiscard]] bool IsEntangled() const;
+  [[nodiscard]] bool IsNeutered() const;
 
   static std::vector<gin::Handle<MessagePort>> EntanglePorts(
       v8::Isolate* isolate,

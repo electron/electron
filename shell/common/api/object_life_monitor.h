@@ -6,7 +6,9 @@
 #define ELECTRON_SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
 #include "base/memory/weak_ptr.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-object.h"
+#include "v8/include/v8-persistent-handle.h"
+#include "v8/include/v8-weak-callback-info.h"
 
 namespace electron {
 
