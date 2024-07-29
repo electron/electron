@@ -64,10 +64,10 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index d34e0e29de055b560d191356d0328fa528add7d5..fe25b70c84a2ee4c2950ccc92042b9ea906f2ff2 100644
+index 4357c005f9b731566451b31d133d441f084a1c86..0ae4ec8b42ad5f82c7d3ad1b9b91e690548daab4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -3113,6 +3113,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3110,6 +3110,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -75,7 +75,7 @@ index d34e0e29de055b560d191356d0328fa528add7d5..fe25b70c84a2ee4c2950ccc92042b9ea
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -3146,7 +3147,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3143,7 +3144,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -85,7 +85,7 @@ index d34e0e29de055b560d191356d0328fa528add7d5..fe25b70c84a2ee4c2950ccc92042b9ea
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 95fa065a5d077ef88c5a575c5366bfc9cc3d709b..6b9d6c69589b292ddfbfa477c549d85a71ac24b7 100644
+index 0fad9323d35be707afe398c98f721b9c53665653..019bf127dc351eb2d01f4d1885669561cc61e413 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -826,6 +826,7 @@ class CORE_EXPORT LocalFrame final

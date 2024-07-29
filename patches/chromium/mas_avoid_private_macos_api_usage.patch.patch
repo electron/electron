@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e80597587f9afc01bc5b3e9f2a1dc9a5d9c4d4e0..5cf0e7276cdc167b42a45d680e7ba5fc58979e22 100644
+index 59f1502704eacd0ad089e7f89239b09c28899634..3f00dabee02851fdeb4814f82abde07615799114 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1048,6 +1048,7 @@ component("base") {
@@ -303,7 +303,7 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 5df3e394a693939e021be4e9e3222989ae6e5122..06ec9f081f22afbda243bb69759dd1972dff8dd0 100644
+index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a91334c093c1a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -106,14 +106,18 @@ void OrderChildWindow(NSWindow* child_window,
