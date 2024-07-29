@@ -324,23 +324,23 @@ void AutofillPopupView::OnMouseReleased(const ui::MouseEvent& event) {
 
 void AutofillPopupView::OnGestureEvent(ui::GestureEvent* event) {
   switch (event->type()) {
-    case ui::ET_GESTURE_TAP_DOWN:
-    case ui::ET_GESTURE_SCROLL_BEGIN:
-    case ui::ET_GESTURE_SCROLL_UPDATE:
+    case ui::EventType::kGestureTapDown:
+    case ui::EventType::kGestureScrollBegin:
+    case ui::EventType::kGestureScrollUpdate:
       if (HitTestPoint(event->location()))
         SetSelection(event->location());
       else
         ClearSelection();
       break;
-    case ui::ET_GESTURE_TAP:
-    case ui::ET_GESTURE_SCROLL_END:
+    case ui::EventType::kGestureTap:
+    case ui::EventType::kGestureScrollEnd:
       if (HitTestPoint(event->location()))
         AcceptSelection(event->location());
       else
         ClearSelection();
       break;
-    case ui::ET_GESTURE_TAP_CANCEL:
-    case ui::ET_SCROLL_FLING_START:
+    case ui::EventType::kGestureTapCancel:
+    case ui::EventType::kScrollFlingStart:
       ClearSelection();
       break;
     default:

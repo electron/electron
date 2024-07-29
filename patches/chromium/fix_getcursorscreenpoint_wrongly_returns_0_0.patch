@@ -10,10 +10,10 @@ This patch should be backported to e29, upstreamed to Chromium, and then
 removed if it lands upstream.
 
 diff --git a/ui/events/x/events_x_utils.cc b/ui/events/x/events_x_utils.cc
-index aeb7d986d8ac1b471bdd382e65d688f79aa127d3..c2e035e0ad650dc7e4ff6e415232d7dd6e077858 100644
+index ca90a0a253c905c40e8a051ca57ef3a33baf7447..449f498e6954fd1cf938ff849367a980df3a028e 100644
 --- a/ui/events/x/events_x_utils.cc
 +++ b/ui/events/x/events_x_utils.cc
-@@ -586,6 +586,9 @@ gfx::Point EventLocationFromXEvent(const x11::Event& xev) {
+@@ -594,6 +594,9 @@ gfx::Point EventLocationFromXEvent(const x11::Event& xev) {
  gfx::Point EventSystemLocationFromXEvent(const x11::Event& xev) {
    if (auto* crossing = xev.As<x11::CrossingEvent>())
      return gfx::Point(crossing->root_x, crossing->root_y);

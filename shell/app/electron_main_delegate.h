@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "content/public/app/content_main_delegate.h"
 
@@ -35,7 +36,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 
  protected:
   // content::ContentMainDelegate:
-  base::StringPiece GetBrowserV8SnapshotFilename() override;
+  std::string_view GetBrowserV8SnapshotFilename() override;
   std::optional<int> BasicStartupComplete() override;
   void PreSandboxStartup() override;
   void SandboxInitialized(const std::string& process_type) override;

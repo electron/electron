@@ -7,9 +7,9 @@
 #include <string>
 #include <utility>
 
+#include <string_view>
 #include "base/base64.h"
 #include "base/containers/contains.h"
-#include "base/strings/string_piece.h"
 #include "base/values.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/web_contents.h"
@@ -40,7 +40,7 @@ std::string EncodeToken(const base::UnguessableToken& token) {
   const uint64_t data[2] = {token.GetHighForSerialization(),
                             token.GetLowForSerialization()};
   return base::Base64Encode(
-      base::StringPiece(reinterpret_cast<const char*>(&data[0]), sizeof(data)));
+      std::string_view(reinterpret_cast<const char*>(&data[0]), sizeof(data)));
 }
 
 base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {

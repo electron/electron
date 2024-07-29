@@ -411,7 +411,7 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   return std::nullopt;
 }
 
-base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
+std::string_view ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
   bool load_browser_process_specific_v8_snapshot =
       IsBrowserProcess() &&
       electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();

@@ -23,10 +23,10 @@ public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index 530a249adde65a47c8e0babf5723b52b8d2a6b1a..fca49d135ad2f23307654e1b0c36e846ca5a6ec6 100644
+index 6c85e6734d40bbbe24d883b083f6712c474cc283..dc39bceb9b7c939eba8f4d2dd0c53395bde8fec4 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -2717,9 +2717,9 @@ void Scope::AllocateScopeInfosRecursively(
+@@ -2722,9 +2722,9 @@ void Scope::AllocateScopeInfosRecursively(
  
    // Allocate ScopeInfos for inner scopes.
    for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
@@ -40,15 +40,20 @@ index 530a249adde65a47c8e0babf5723b52b8d2a6b1a..fca49d135ad2f23307654e1b0c36e846
          scope->AsDeclarationScope()->ShouldEagerCompile()) {
        scope->AllocateScopeInfosRecursively(isolate, next_outer_scope,
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 657ac0ebd872d6be4e2fa962a17259dd96f047b7..8e413913048d20b57bdd40807bfa4365e9d9ec77 100644
+index 2ac4e74daa5e8837f459755d85b4f451a7f5bb31..326b42c92dc1f20b0abff4b9f49657df6489f78d 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -993,6 +993,8 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -996,7 +996,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  
+-DEFINE_BOOL(reuse_scope_infos, true, "reuse scope infos from previous compiles")
 +// ELECTRON: The following flag should remain false by default until we can
 +//   remove `fix_disable_scope_reuse_associated_dchecks.patch`
- DEFINE_BOOL(reuse_scope_infos, false,
-             "reuse scope infos from previous compiles")
++DEFINE_BOOL(reuse_scope_infos, false,
++            "reuse scope infos from previous compiles")
++
++DEFINE_IMPLICATION(fuzzing, reuse_scope_infos)
  
+ // Flags for Sparkplug
+ #undef FLAG

@@ -126,7 +126,7 @@ std::u16string ElectronContentClient::GetLocalizedString(int message_id) {
   return l10n_util::GetStringUTF16(message_id);
 }
 
-base::StringPiece ElectronContentClient::GetDataResource(
+std::string_view ElectronContentClient::GetDataResource(
     int resource_id,
     ui::ResourceScaleFactor scale_factor) {
   return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(

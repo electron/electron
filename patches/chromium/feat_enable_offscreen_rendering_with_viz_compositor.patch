@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3c5ab7a6e6608b3f5e35f8b46a59880100b2a627..2cefb70548ddfbd1f98d4028177e661fec4cea9b 100644
+index 002b83ff8b81e485739658c8ae236b06b8d36c4d..256266d6e6c8bcd052fb075e2b9f83530174c057 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -169,6 +169,8 @@ viz_component("service") {
+@@ -173,6 +173,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -520,7 +520,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 2cf77183de23c2715d5fcf93e03185da87e56e90..abc08f01c19afd62d97effe1c104f95ddaa3a1e6 100644
+index 4022dff593fb718b6e97c35fbf928af129495aaf..d51b9d9c7eb7e2cef09d9d7745d4b54a27b69168 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -595,7 +595,7 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 7eff777e19817bc321d770cab31db17bd9bdf6b6..c7fad80559177054f048885c7b70484b8e8bc5de 100644
+index b2862af94fb95ace58123a96f457c579588b83a0..20bdc378d204e9ef7a8c3e1229b5b1abac0f1628 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -34,6 +34,7 @@ struct RootCompositorFrameSinkParams {

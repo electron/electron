@@ -68,7 +68,7 @@ class BrowserProcessImpl : public BrowserProcess {
 
   // BrowserProcess
   BuildState* GetBuildState() override;
-  GlobalDesktopFeatures* GetDesktopFeatures() override;
+  GlobalFeatures* GetFeatures() override;
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
