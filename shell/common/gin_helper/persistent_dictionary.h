@@ -32,14 +32,13 @@ class PersistentDictionary {
 
   template <typename K, typename V>
   bool Get(const K& key, V* out) const {
+    const auto handle = GetHandle();
     v8::Local<v8::Context> context = isolate_->GetCurrentContext();
     v8::Local<v8::Value> v8_key = gin::ConvertToV8(isolate_, key);
     v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->Has(context, v8_key);
-    if (result.IsJust() && result.FromJust() &&
-        GetHandle()->Get(context, v8_key).ToLocal(&value))
-      return gin::ConvertFromV8(isolate_, value, out);
-    return false;
+    return handle->Has(context, v8_key).FromMaybe(false) &&
+           handle->Get(context, v8_key).ToLocal(&value) &&
+           gin::ConvertFromV8(isolate_, value, out);
   }
 
  private:
