@@ -36,7 +36,7 @@ runs:
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
