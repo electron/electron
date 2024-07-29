@@ -187,8 +187,8 @@ void WebFrameMain::Send(v8::Isolate* isolate,
                         v8::Local<v8::Value> args) {
   blink::CloneableMessage message;
   if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
+    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8Literal(
+        isolate, "Failed to serialize arguments")));
     return;
   }
 
@@ -251,8 +251,9 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
   if (transfer && !transfer.value()->IsUndefined()) {
     if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "Invalid value for transfer")));
+      isolate->ThrowException(
+          v8::Exception::Error(v8::String::NewFromUtf8Literal(
+              isolate, "Invalid value for transfer")));
       return;
     }
   }

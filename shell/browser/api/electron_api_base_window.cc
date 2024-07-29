@@ -722,8 +722,8 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
-    isolate->ThrowException(
-        v8::Exception::TypeError(gin::StringToV8(isolate, "Invalid Menu")));
+    isolate->ThrowException(v8::Exception::TypeError(
+        v8::String::NewFromUtf8Literal(isolate, "Invalid Menu")));
   }
 }
 
@@ -1144,7 +1144,8 @@ gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
 // static
 void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "BaseWindow"));
+  prototype->SetClassName(
+      v8::String::NewFromUtf8Literal(isolate, "BaseWindow"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setContentView", &BaseWindow::SetContentView)

@@ -3384,8 +3384,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   }
 
-  isolate->ThrowException(
-      v8::Exception::Error(gin::StringToV8(isolate, "Invalid event object")));
+  isolate->ThrowException(v8::Exception::Error(
+      v8::String::NewFromUtf8Literal(isolate, "Invalid event object")));
 }
 
 void WebContents::BeginFrameSubscription(gin::Arguments* args) {

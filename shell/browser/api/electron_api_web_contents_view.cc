@@ -226,7 +226,8 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
 void WebContentsView::BuildPrototype(
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
+  prototype->SetClassName(
+      v8::String::NewFromUtf8Literal(isolate, "WebContentsView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setBackgroundColor", &WebContentsView::SetBackgroundColor)
       .SetMethod("setBorderRadius", &WebContentsView::SetBorderRadius)

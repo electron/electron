@@ -346,7 +346,8 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
 // static
 void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
+  prototype->SetClassName(
+      v8::String::NewFromUtf8Literal(isolate, "BrowserWindow"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)

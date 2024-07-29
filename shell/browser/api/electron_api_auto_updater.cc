@@ -39,7 +39,7 @@ void AutoUpdater::OnError(const std::string& message) {
   if (GetWrapper(isolate).ToLocal(&wrapper)) {
     auto error = v8::Exception::Error(gin::StringToV8(isolate, message));
     std::vector<v8::Local<v8::Value>> args = {
-        gin::StringToV8(isolate, "error"),
+        v8::String::NewFromUtf8Literal(isolate, "error"),
         gin::ConvertToV8(
             isolate,
             error->ToObject(isolate->GetCurrentContext()).ToLocalChecked()),
@@ -70,11 +70,11 @@ void AutoUpdater::OnError(const std::string& message,
 
     // add two new params for better error handling
     errorObject
-        ->Set(context, gin::StringToV8(isolate, "code"),
+        ->Set(context, v8::String::NewFromUtf8Literal(isolate, "code"),
               v8::Integer::New(isolate, code))
         .Check();
     errorObject
-        ->Set(context, gin::StringToV8(isolate, "domain"),
+        ->Set(context, v8::String::NewFromUtf8Literal(isolate, "domain"),
               gin::StringToV8(isolate, domain))
         .Check();
 

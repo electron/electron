@@ -34,7 +34,7 @@ gin_helper::WrappableBase* ImageView::New(gin_helper::Arguments* args) {
 // static
 void ImageView::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "ImageView"));
+  prototype->SetClassName(v8::String::NewFromUtf8Literal(isolate, "ImageView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setImage", &ImageView::SetImage);
 }

@@ -143,7 +143,7 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
                                       v8::Local<v8::Value> arg1,
                                       v8::Local<v8::Value> arg2) {
   v8::MaybeLocal<v8::Value> bind =
-      func->Get(context, gin::StringToV8(isolate, "bind"));
+      func->Get(context, v8::String::NewFromUtf8Literal(isolate, "bind"));
   CHECK(!bind.IsEmpty());
   v8::Local<v8::Function> bind_func = bind.ToLocalChecked().As<v8::Function>();
   v8::Local<v8::Value> converted[] = {func, arg1, arg2};

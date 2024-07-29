@@ -539,7 +539,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
                              const std::string& language,
                              v8::Local<v8::Object> provider) {
     auto context = isolate->GetCurrentContext();
-    if (!provider->Has(context, gin::StringToV8(isolate, "spellCheck"))
+    if (!provider
+             ->Has(context,
+                   v8::String::NewFromUtf8Literal(isolate, "spellCheck"))
              .ToChecked()) {
       thrower.ThrowError("\"spellCheck\" has to be defined");
       return;

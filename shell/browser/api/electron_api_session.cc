@@ -338,10 +338,10 @@ class ClearDataTask {
       // Create a rich error object with extra detail about what data types
       // failed
       auto error = v8::Exception::Error(
-          gin::StringToV8(isolate, "Failed to clear data"));
+          v8::String::NewFromUtf8Literal(isolate, "Failed to clear data"));
       error.As<v8::Object>()
           ->Set(promise_.GetContext(),
-                gin::StringToV8(isolate, "failedDataTypes"),
+                v8::String::NewFromUtf8Literal(isolate, "failedDataTypes"),
                 failed_data_types_array)
           .Check();
 
@@ -1046,13 +1046,15 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   options.Get("eTag", &etag);
   options.Get("startTime", &start_time);
   if (path.empty() || url_chain.empty() || length == 0) {
-    isolate_->ThrowException(v8::Exception::Error(gin::StringToV8(
-        isolate_, "Must pass non-empty path, urlChain and length.")));
+    isolate_->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8Literal(
+            isolate_, "Must pass non-empty path, urlChain and length.")));
     return;
   }
   if (offset >= length) {
-    isolate_->ThrowException(v8::Exception::Error(gin::StringToV8(
-        isolate_, "Must pass an offset value less than length.")));
+    isolate_->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8Literal(
+            isolate_, "Must pass an offset value less than length.")));
     return;
   }
   auto* download_manager = browser_context()->GetDownloadManager();
