@@ -22,6 +22,25 @@ feature stabilizes, we can remove this patch. Unfortunately, there is no
 public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 9b20de0820929175c1869d4281616f88cf377916..1df33e8cec62260ad441039f26011875c2583d8a 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2727,10 +2727,10 @@ void Scope::AllocateScopeInfosRecursively(
+   for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
+ #ifdef DEBUG
+     if (!scope->is_hidden_catch_scope()) {
+-      DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
+-      DCHECK_IMPLIES(
+-          scope->sibling_ && !scope->sibling_->is_hidden_catch_scope(),
+-          scope->sibling_->UniqueIdInScript() != scope->UniqueIdInScript());
++      // DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
++      // DCHECK_IMPLIES(
++      //     scope->sibling_ && !scope->sibling_->is_hidden_catch_scope(),
++      //     scope->sibling_->UniqueIdInScript() != scope->UniqueIdInScript());
+     }
+ #endif
+     if (!scope->is_function_scope() ||
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
 index 78547e3a6d61f47087c4a4f0ef193a7e7219a971..146a3e9aceb86e5e6d898f16f720db01212c902d 100644
 --- a/src/flags/flag-definitions.h
