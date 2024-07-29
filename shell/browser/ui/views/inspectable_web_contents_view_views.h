@@ -32,7 +32,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   // InspectableWebContentsView:
   views::View* GetView() override;
   void ShowDevTools(bool activate) override;
-  void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
   bool IsDevToolsViewFocused() override;
@@ -48,8 +47,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
  private:
   std::unique_ptr<views::Widget> devtools_window_;
   raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
-  raw_ptr<views::WebView> contents_web_view_ = nullptr;
-  raw_ptr<views::View> contents_view_ = nullptr;
+  raw_ptr<views::View> contents_web_view_ = nullptr;
   raw_ptr<views::WebView> devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
