@@ -80,18 +80,6 @@ void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   }
 }
 
-void WebContentsView::SetBorderRadius(int radius) {
-  View::SetBorderRadius(radius);
-  ApplyBorderRadius();
-}
-
-void WebContentsView::ApplyBorderRadius() {
-  if (border_radius().has_value() && api_web_contents_ && view()->GetWidget()) {
-    auto* view = api_web_contents_->inspectable_web_contents()->GetView();
-    view->SetCornerRadii(gfx::RoundedCornersF(border_radius().value()));
-  }
-}
-
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   if (api_web_contents_) {
     gfx::Point local_point(point);

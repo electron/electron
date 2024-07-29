@@ -51,7 +51,6 @@ class InspectableWebContentsView {
 #endif
 
   virtual void ShowDevTools(bool activate) = 0;
-  virtual void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) = 0;
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
