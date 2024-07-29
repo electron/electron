@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Sun, 28 Jul 2024 09:20:12 +0200
+Subject: src: stop using deprecated fields of `v8::FastApiCallbackOptions`
+
+Two fields on the `v8::FastApiCallbackOptions` struct were deprecated
+recently: `fallback` and `wasm_memory`. This PR removes uses of these
+two fields in node.js.
+
+(This is a subset of upstream commit d0000b118 from the `canary-base`
+branch of Node.js. This patch can be removed when Electron upgrades to
+a stable Node release that contains the change. -- Charles)
+
+diff --git a/src/histogram.cc b/src/histogram.cc
+index 4f58359fe58529329fca8b13d4d4655d87a097f2..18983209db834d10faad6c2a56658ab060bcd097 100644
+--- a/src/histogram.cc
++++ b/src/histogram.cc
+@@ -193,7 +193,8 @@ void HistogramBase::FastRecord(Local<Value> receiver,
+                                const int64_t value,
+                                FastApiCallbackOptions& options) {
+   if (value < 1) {
+-    options.fallback = true;
++    Environment* env = Environment::GetCurrent(options.isolate);
++    THROW_ERR_OUT_OF_RANGE(env, "value is out of range");
+     return;
+   }
+   HistogramBase* histogram;
+diff --git a/src/node_wasi.cc b/src/node_wasi.cc
+index ad1da44a01f437c97e06a3857eebd2edcebc83da..7123278e1a0942b61a76e9b1e7464eb8b5064079 100644
+--- a/src/node_wasi.cc
++++ b/src/node_wasi.cc
+@@ -248,17 +248,18 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+   WASI* wasi = reinterpret_cast<WASI*>(BaseObject::FromJSObject(receiver));
+   if (UNLIKELY(wasi == nullptr)) return EinvalError<R>();
+ 
+-  if (UNLIKELY(options.wasm_memory == nullptr || wasi->memory_.IsEmpty())) {
+-    // fallback to slow path which to throw an error about missing memory.
+-    options.fallback = true;
++  v8::Isolate* isolate = receiver->GetIsolate();
++  v8::HandleScope handle_scope(isolate);
++  if (wasi->memory_.IsEmpty()) {
++    THROW_ERR_WASI_NOT_STARTED(isolate);
+     return EinvalError<R>();
+   }
+-  uint8_t* memory = nullptr;
+-  CHECK(LIKELY(options.wasm_memory->getStorageIfAligned(&memory)));
++  Local<ArrayBuffer> ab = wasi->memory_.Get(isolate)->Buffer();
++  size_t mem_size = ab->ByteLength();
++  char* mem_data = static_cast<char*>(ab->Data());
++  CHECK_NOT_NULL(mem_data);
+ 
+-  return F(*wasi,
+-           {reinterpret_cast<char*>(memory), options.wasm_memory->length()},
+-           args...);
++  return F(*wasi, {mem_data, mem_size}, args...);
+ }
+ 
+ namespace {
