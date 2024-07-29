@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index ca2fc0b1b3fe9f7fd65f55f8924b4b5e324bfdd4..da8ebfad6404c59471dc31625aeb4e68659116a3 100644
+index 3ad76e316d4dc2009f0637618b39f16c24c64809..853edba64e5c7473d32889425223cd07b7975a72 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -577,11 +577,12 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -582,11 +582,12 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
  }
  
  ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame,

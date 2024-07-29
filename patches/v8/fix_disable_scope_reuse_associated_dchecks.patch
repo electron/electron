@@ -23,10 +23,10 @@ public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 2ac4e74daa5e8837f459755d85b4f451a7f5bb31..326b42c92dc1f20b0abff4b9f49657df6489f78d 100644
+index 78547e3a6d61f47087c4a4f0ef193a7e7219a971..146a3e9aceb86e5e6d898f16f720db01212c902d 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -996,7 +996,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -984,7 +984,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  

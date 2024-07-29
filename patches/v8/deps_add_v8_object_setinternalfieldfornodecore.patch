@@ -11,7 +11,7 @@ This is a non-ABI breaking solution added by Node.js in v20.x for:
 which are necessary for backporting the vm-related memory fixes in https://github.com/nodejs/node/pull/48510.
 
 diff --git a/include/v8-object.h b/include/v8-object.h
-index d03b33acd7c83ef1e683e2ddc4eb6c1ecafd83b3..626425af0b121e3489e7ac8171af64b1c7a25f55 100644
+index 71a6c2c9c149116caa410d25aef4087774b81b44..ad8416ea2500f10aad31f25da96b235f4e9c118f 100644
 --- a/include/v8-object.h
 +++ b/include/v8-object.h
 @@ -22,6 +22,8 @@ class Function;
@@ -46,10 +46,10 @@ index d03b33acd7c83ef1e683e2ddc4eb6c1ecafd83b3..626425af0b121e3489e7ac8171af64b1
    V8_INLINE static void* GetAlignedPointerFromInternalField(
        const BasicTracedReference<Object>& object, int index) {
 diff --git a/src/api/api.cc b/src/api/api.cc
-index f8d3c5aa1231f4b62a614bc0c705366d922b4c75..88118ae452275ff2a515c5efbad4f6ecb3629abd 100644
+index 92d52b3ea869a666e953ccad1c8a0316b76c734f..a4c61b377b81f3a29f18fc83d8a86682a817ba48 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -6372,14 +6372,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
+@@ -6384,14 +6384,33 @@ Local<Data> v8::Object::SlowGetInternalField(int index) {
        isolate);
  }
  
