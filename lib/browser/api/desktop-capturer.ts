@@ -1,3 +1,4 @@
+import { nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 const { createDesktopCapturer } = process._linkedBinding('electron_browser_desktop_capturer');
 
@@ -17,6 +18,7 @@ export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
+  const selfWindows: ElectronInternal.GetSourcesResult[] = [];
   if (process.platform === 'darwin') {
     // Fix for bug in ScreenCaptureKit that modifies a window's styleMask the first time
     // it captures a non-resizable window. We record each non-resizable window's styleMask,
@@ -50,7 +52,7 @@ export async function getSources (args: Electron.SourcesOptions) {
   const getSources = new Promise<ElectronInternal.GetSourcesResult[]>((resolve, reject) => {
     let capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer();
 
-    const stopRunning = () => {
+    const stopRunning = async () => {
       if (capturer) {
         delete capturer._onerror;
         delete capturer._onfinished;
@@ -62,20 +64,35 @@ export async function getSources (args: Electron.SourcesOptions) {
               win.resizable = resizableValues.get(win.id);
             }
           };
+          // On Windows, the underlying WebRTC implementation does not return sources
+          // originating owned by the current process due to a Windows deadlock issue.
+          // CL: https://chromium-review.googlesource.com/c/chromium/src/+/2907415
+        } else if (process.platform === 'win32') {
+          for (const win of BrowserWindow.getAllWindows()) {
+            const pageContents = await win.capturePage();
+            const thumbnail = pageContents.resize(thumbnailSize);
+            selfWindows.push({
+              id: win.getMediaSourceId(),
+              name: win.getTitle(),
+              thumbnail: thumbnail,
+              display_id: win.id.toString(),
+              appIcon: nativeImage.createFromDataURL('')
+            });
+          };
         }
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options);
     };
 
-    capturer._onerror = (error: string) => {
-      stopRunning();
+    capturer._onerror = async (error: string) => {
+      await stopRunning();
       reject(error);
     };
 
-    capturer._onfinished = (sources: Electron.DesktopCapturerSource[]) => {
-      stopRunning();
-      resolve(sources);
+    capturer._onfinished = async (sources: Electron.DesktopCapturerSource[]) => {
+      await stopRunning();
+      resolve([...sources, ...selfWindows]);
     };
 
     capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
