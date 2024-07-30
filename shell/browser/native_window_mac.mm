@@ -469,7 +469,7 @@ void NativeWindowMac::ShowInactive() {
   if (parent())
     InternalSetParentWindow(parent(), true);
 
-  [window_ orderFrontKeepWindowKeyState];
+  [window_ orderFrontRegardless];
 }
 
 void NativeWindowMac::Hide() {
