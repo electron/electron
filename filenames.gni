@@ -555,8 +555,6 @@ filenames = {
     "shell/common/api/electron_bindings.cc",
     "shell/common/api/electron_bindings.h",
     "shell/common/api/features.cc",
-    "shell/common/api/object_life_monitor.cc",
-    "shell/common/api/object_life_monitor.h",
     "shell/common/application_info.cc",
     "shell/common/application_info.h",
     "shell/common/asar/archive.cc",
