@@ -1263,6 +1263,8 @@ Returns `string` - The user agent for this session.
     Ex: To disable TLS_RSA_WITH_RC4_128_MD5, specify 0x0004, while to
     disable TLS_ECDH_ECDSA_WITH_RC4_128_SHA, specify 0xC002.
     Note that TLSv1.3 ciphers cannot be disabled using this mechanism.
+  * `postQuantum` boolean (optional) - controls whether post-quantum key agreement in TLS connections is allowed.
+  * `echEnabled` boolean (optional) - Controls whether ECH is enabled.
 
 Sets the SSL configuration for the session. All subsequent network requests
 will use the new configuration. Existing network connections (such as WebSocket

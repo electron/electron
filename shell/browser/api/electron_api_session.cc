@@ -457,6 +457,20 @@ struct Converter<network::mojom::SSLConfigPtr> {
     std::sort((*out)->disabled_cipher_suites.begin(),
               (*out)->disabled_cipher_suites.end());
 
+    if (options.Has("postQuantum")) {
+      bool post_quantum = false;
+      if (!options.Get("postQuantum", &post_quantum)) {
+        (*out)->post_quantum_override =
+            post_quantum ? network::mojom::OptionalBool::kTrue
+                         : network::mojom::OptionalBool::kFalse;
+        return false;
+      }
+    }
+
+    if (options.Has("echEnabled ") &&
+        !options.Get("echEnabled", &(*out)->ech_enabled)) {
+      return false;
+    }
     // TODO(nornagon): also support other SSLConfig properties?
     return true;
   }
