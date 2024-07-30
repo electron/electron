@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { defer, ifit } from './lib/spec-helpers';
+import { defer, ifit, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
@@ -181,6 +181,11 @@ describe('WebContentsView', () => {
   });
 
   describe('visibilityState', () => {
+    async function haveVisibilityState (view: WebContentsView, state: string) {
+      const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
+      return docVisState === state;
+    }
+
     it('is initially hidden', async () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
@@ -217,7 +222,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
       // We have to wait until the listener above is fully registered before hiding the window.
       // On Windows, the executeJavaScript and the visibilitychange can happen out of order
@@ -249,7 +254,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
 
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
       // Ensure the listener has been registered.
