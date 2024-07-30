@@ -4,7 +4,8 @@
 
 #include "shell/renderer/api/context_bridge/object_cache.h"
 
-#include "shell/common/api/object_life_monitor.h"
+#include "v8/include/v8-local-handle.h"
+#include "v8/include/v8-object.h"
 
 namespace electron::api::context_bridge {
 
