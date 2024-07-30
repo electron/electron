@@ -1463,8 +1463,8 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
       // Vibrant view is inserted into the root view hierarchy underneath all
       // other views.
-      vibrant_native_view_host_ = new views::NativeViewHost();
-      rootView->AddChildViewAt(vibrant_native_view_host_, 0);
+      vibrant_native_view_host_ = rootView->AddChildViewAt(
+          std::make_unique<views::NativeViewHost>(), 0);
       vibrant_native_view_host_->Attach(vibrantView);
 
       rootView->DeprecatedLayoutImmediately();
