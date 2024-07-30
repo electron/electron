@@ -18,7 +18,7 @@ export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
-  const selfWindows: ElectronInternal.GetSourcesResult[] = [];
+  const winsOwnedByElectronProcess: ElectronInternal.GetSourcesResult[] = [];
   if (process.platform === 'darwin') {
     // Fix for bug in ScreenCaptureKit that modifies a window's styleMask the first time
     // it captures a non-resizable window. We record each non-resizable window's styleMask,
@@ -69,17 +69,22 @@ export async function getSources (args: Electron.SourcesOptions) {
           // CL: https://chromium-review.googlesource.com/c/chromium/src/+/2907415
         } else if (process.platform === 'win32') {
           for (const win of BrowserWindow.getAllWindows()) {
-            const pageContents = await win.capturePage();
-            const thumbnail = pageContents.resize(thumbnailSize);
-            selfWindows.push({
-              id: win.getMediaSourceId(),
+            let thumbnail = null;
+            if (thumbnailSize.width > 0 && thumbnailSize.height > 0) {
+              const pageContents = await win.capturePage();
+              thumbnail = pageContents.resize(thumbnailSize);
+            } else {
+              thumbnail = nativeImage.createEmpty();
+            }
+            winsOwnedByElectronProcess.push({
               name: win.getTitle(),
+              id: win.getMediaSourceId(),
               thumbnail: thumbnail,
-              display_id: win.id.toString(),
-              appIcon: nativeImage.createFromDataURL('')
+              display_id: '',
+              appIcon: null
             });
-          };
-        }
+          }
+        };
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options);
@@ -92,7 +97,7 @@ export async function getSources (args: Electron.SourcesOptions) {
 
     capturer._onfinished = async (sources: Electron.DesktopCapturerSource[]) => {
       await stopRunning();
-      resolve([...sources, ...selfWindows]);
+      resolve([...sources, ...winsOwnedByElectronProcess]);
     };
 
     capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
