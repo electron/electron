@@ -154,6 +154,11 @@
   }
 }
 
+// TODO: remove NSWindowStyleMaskTexturedBackground.
+// https://github.com/electron/electron/issues/43125
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 - (void)setIsDocked:(BOOL)docked activate:(BOOL)activate {
   // Revert to no-devtools state.
   [self setDevToolsVisible:NO activate:NO];
@@ -195,6 +200,9 @@
   }
   [self setDevToolsVisible:YES activate:activate];
 }
+
+// -Wdeprecated-declarations
+#pragma clang diagnostic pop
 
 - (void)setContentsResizingStrategy:
     (const DevToolsContentsResizingStrategy&)strategy {
