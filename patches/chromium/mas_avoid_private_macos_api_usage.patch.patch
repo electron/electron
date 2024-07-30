@@ -73,7 +73,7 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..57d4756c0d87b9313e8566b3083c0132
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index d1b09cb1a75000cf41f31bddcdcb739f776920aa..825a6ecd65bc4e3412db83413d6de34ea997ddd0 100644
+index 2512b3f43b6ac84dd2a440ac3e68d282c7e429d9..2cb281abf2cc3bd800a2349e41a59454db6da953 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,13 +21,18 @@
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6ea732cf28fab289463b636a8eea9597deef106f..79f2a34a5f5202b0f6c41dda670ce5fd1bb6ea71 100644
+index dda475287c4541b570fb41d01a8a86d5156de812..43e523c48fec1980b2bb72e1abd6c4f6d7baaee2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -852,10 +852,10 @@ index 6f3b368103b05f07ae67da4c0307efe039b8dfce..a1b11c298ee8b2c9b3cbe6307bc7744c
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 808f4e1c7beb03cc5377465882940eea94ad61a7..d001436c3a5a8a0fc25995519772478f04ddb35f 100644
+index 22da921f1ef329746b0190aca677a1c940c3127c..1f6e6f066504da48af13aa200f8158c07dcb5f3e 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
-@@ -34,19 +34,23 @@
+@@ -39,19 +39,23 @@
  
  namespace {
  extern "C" {

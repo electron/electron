@@ -21,7 +21,7 @@ index be1639d3a138ba0f7f77ab8213d91575ed8b045a..e6e8abfbfc96440f972c5f501806c4b5
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cc59d3ef330327afd1bf40f89828a5c610a4d141..1ec0b97e3d6dbbb6962bd75532cd817f45ec9455 100644
+index c15230dc2060270b5b6d61b0264cce73d461748b..68b5d176f3b98e639f0c1c563b81a55f66c3b6d3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4728,6 +4728,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
