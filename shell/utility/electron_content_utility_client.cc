@@ -95,7 +95,7 @@ ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
 #if BUILDFLAG(IS_WIN)
-  auto& cmd_line = *base::CommandLine::ForCurrentProcess();
+  const auto& cmd_line = *base::CommandLine::ForCurrentProcess();
   auto sandbox_type = sandbox::policy::SandboxTypeFromCommandLine(cmd_line);
   utility_process_running_elevated_ =
       sandbox_type == sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges;
