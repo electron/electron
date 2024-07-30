@@ -1637,6 +1637,10 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
 }
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
+  // Sometimes both windowDidFailToExitFullScreen and windowDidExitFullScreen
+  // run, so we might have set this to true before
+  UpdateVibrancyRadii(false);
+
   NativeWindow::NotifyWindowLeaveFullScreen();
   // Restore window buttons.
   if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
@@ -1652,6 +1656,13 @@ void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
   UpdateVibrancyRadii(true);
 }
 
+void NativeWindowMac::NotifyWindowDidFailToEnterFullScreen() {
+  UpdateVibrancyRadii(false);
+
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
+}
+
 void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
   if (buttons_proxy_) {
     // Hide window title when leaving fullscreen.
@@ -1660,6 +1671,13 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
     [buttons_proxy_ setVisible:NO];
   }
   UpdateVibrancyRadii(false);
+}
+
+void NativeWindowMac::NotifyWindowDidFailToLeaveFullScreen() {
+  UpdateVibrancyRadii(true);
+
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
 }
 
 void NativeWindowMac::SetActive(bool is_key) {
