@@ -159,8 +159,12 @@ filenames = {
     "shell/browser/osr/osr_web_contents_view_mac.mm",
     "shell/browser/relauncher_mac.cc",
     "shell/browser/ui/certificate_trust_mac.mm",
+    "shell/browser/ui/cocoa/delayed_native_view_host.h",
+    "shell/browser/ui/cocoa/delayed_native_view_host.mm",
     "shell/browser/ui/cocoa/electron_bundle_mover.h",
     "shell/browser/ui/cocoa/electron_bundle_mover.mm",
+    "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h",
+    "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.mm",
     "shell/browser/ui/cocoa/electron_menu_controller.h",
     "shell/browser/ui/cocoa/electron_menu_controller.mm",
     "shell/browser/ui/cocoa/electron_native_widget_mac.h",
@@ -187,6 +191,8 @@ filenames = {
     "shell/browser/ui/cocoa/window_buttons_proxy.mm",
     "shell/browser/ui/drag_util_mac.mm",
     "shell/browser/ui/file_dialog_mac.mm",
+    "shell/browser/ui/inspectable_web_contents_view_mac.h",
+    "shell/browser/ui/inspectable_web_contents_view_mac.mm",
     "shell/browser/ui/message_box_mac.mm",
     "shell/browser/ui/tray_icon_cocoa.h",
     "shell/browser/ui/tray_icon_cocoa.mm",
@@ -202,7 +208,6 @@ filenames = {
     "shell/common/node_bindings_mac.cc",
     "shell/common/node_bindings_mac.h",
     "shell/common/platform_util_mac.mm",
-    "shell/browser/ui/views/inspectable_web_contents_view_mac.mm",
   ]
 
   lib_sources_views = [
@@ -217,6 +222,8 @@ filenames = {
     "shell/browser/ui/views/electron_views_delegate.h",
     "shell/browser/ui/views/frameless_view.cc",
     "shell/browser/ui/views/frameless_view.h",
+    "shell/browser/ui/views/inspectable_web_contents_view_views.cc",
+    "shell/browser/ui/views/inspectable_web_contents_view_views.h",
     "shell/browser/ui/views/menu_bar.cc",
     "shell/browser/ui/views/menu_bar.h",
     "shell/browser/ui/views/menu_delegate.cc",
