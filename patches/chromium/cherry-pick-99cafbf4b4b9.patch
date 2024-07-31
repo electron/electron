@@ -1,0 +1,167 @@
+From 99cafbf4b4b90cfc773826ea17fdaffe094207af Mon Sep 17 00:00:00 2001
+From: Yann Dago <ydago@chromium.org>
+Date: Mon, 08 Jul 2024 16:20:32 +0000
+Subject: [PATCH] Ensure chrome://policy/test messages ignored when not supported
+
+It was possible to go to chrome://policy and in the dev tools and send
+the right message to set test policies even if the policy test page was disabled and/or unavailable because both pages share the same handler.
+
+Bug: 338248595
+Change-Id: If689325999cb108b2b71b2821d905e42efd3390d
+Low-Coverage-Reason: TRIVIAL_CHANGE
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5679162
+Auto-Submit: Yann Dago <ydago@chromium.org>
+Reviewed-by: Rohit Rao <rohitrao@chromium.org>
+Reviewed-by: Sergey Poromov <poromov@chromium.org>
+Commit-Queue: Rohit Rao <rohitrao@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1324277}
+---
+
+diff --git a/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc b/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc
+index c191e83d..a85b9495 100644
+--- a/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc
++++ b/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc
+@@ -10,6 +10,7 @@
+ #include "base/test/scoped_feature_list.h"
+ #include "build/build_config.h"
+ #include "build/chromeos_buildflags.h"
++#include "chrome/browser/enterprise/browser_management/browser_management_service.h"
+ #include "chrome/browser/enterprise/browser_management/management_service_factory.h"
+ #include "chrome/browser/lifetime/application_lifetime.h"
+ #include "chrome/browser/policy/chrome_browser_policy_connector.h"
+@@ -273,6 +274,57 @@
+ };
+ 
+ IN_PROC_BROWSER_TEST_F(PolicyTestHandlerTest,
++                       HandleSetLocalTestPoliciesNotSupported) {
++  // Ensure chrome://policy/test not supported.
++  policy::ScopedManagementServiceOverrideForTesting profile_management(
++      policy::ManagementServiceFactory::GetForProfile(GetProfile()),
++      policy::EnterpriseManagementAuthority::CLOUD);
++  std::unique_ptr<PolicyUIHandler> handler = SetUpHandler();
++  const std::string jsonString =
++      R"([
++      {"level": 0,"scope": 0,"source": 0, "namespace": "chrome",
++       "name": "AutofillAddressEnabled","value": false},
++      {"level": 1,"scope": 1,"source": 2, "namespace": "chrome",
++       "name": "CloudReportingEnabled","value": true}
++      ])";
++  const std::string revertAppliedPoliciesButtonDisabledJs =
++      R"(
++        document
++          .querySelector('#revert-applied-policies')
++          .disabled;
++      )";
++
++  base::Value::List list_args;
++
++  list_args.Append("setLocalTestPolicies");
++  list_args.Append(jsonString);
++  list_args.Append("{}");
++
++  // Open chrome://policy
++  ASSERT_TRUE(
++      content::NavigateToURL(web_contents(), GURL(chrome::kChromeUIPolicyURL)));
++  web_ui()->HandleReceivedMessage("setLocalTestPolicies", list_args);
++
++  base::RunLoop().RunUntilIdle();
++
++  const policy::PolicyNamespace chrome_namespace(policy::POLICY_DOMAIN_CHROME,
++                                                 std::string());
++  policy::PolicyService* policy_service =
++      GetProfile()->GetProfilePolicyConnector()->policy_service();
++
++  // Check policies not applied
++  const policy::PolicyMap* policy_map =
++      &policy_service->GetPolicies(chrome_namespace);
++  ASSERT_TRUE(policy_map);
++
++  {
++    const policy::PolicyMap::Entry* entry =
++        policy_map->Get(policy::key::kAutofillAddressEnabled);
++    ASSERT_FALSE(entry);
++  }
++}
++
++IN_PROC_BROWSER_TEST_F(PolicyTestHandlerTest,
+                        HandleSetAndRevertLocalTestPolicies) {
+   if (!policy::utils::IsPolicyTestingEnabled(/*pref_service=*/nullptr,
+                                              chrome::GetChannel())) {
+diff --git a/chrome/browser/ui/webui/policy/policy_ui_handler.cc b/chrome/browser/ui/webui/policy/policy_ui_handler.cc
+index a09cb79..bafa7ad 100644
+--- a/chrome/browser/ui/webui/policy/policy_ui_handler.cc
++++ b/chrome/browser/ui/webui/policy/policy_ui_handler.cc
+@@ -49,6 +49,7 @@
+ #include "chrome/browser/ui/chrome_select_file_policy.h"
+ #include "chrome/browser/ui/webui/policy/policy_ui.h"
+ #include "chrome/browser/ui/webui/webui_util.h"
++#include "chrome/common/channel_info.h"
+ #include "chrome/grit/branded_strings.h"
+ #include "components/crx_file/id_util.h"
+ #include "components/enterprise/browser/controller/browser_dm_token_storage.h"
+@@ -69,6 +70,7 @@
+ #include "components/policy/core/common/policy_pref_names.h"
+ #include "components/policy/core/common/policy_scheduler.h"
+ #include "components/policy/core/common/policy_types.h"
++#include "components/policy/core/common/policy_utils.h"
+ #include "components/policy/core/common/remote_commands/remote_commands_service.h"
+ #include "components/policy/core/common/schema.h"
+ #include "components/policy/core/common/schema_map.h"
+@@ -318,6 +320,12 @@
+ void PolicyUIHandler::HandleSetLocalTestPolicies(
+     const base::Value::List& args) {
+   std::string policies = args[1].GetString();
++  AllowJavascript();
++
++  if (!PolicyUI::ShouldLoadTestPage(Profile::FromWebUI(web_ui()))) {
++    ResolveJavascriptCallback(args[0], true);
++    return;
++  }
+ 
+   policy::LocalTestPolicyProvider* local_test_provider =
+       static_cast<policy::LocalTestPolicyProvider*>(
+@@ -340,12 +348,14 @@
+       ->UseLocalTestPolicyProvider();
+ 
+   local_test_provider->LoadJsonPolicies(policies);
+-  AllowJavascript();
+   ResolveJavascriptCallback(args[0], true);
+ }
+ 
+ void PolicyUIHandler::HandleRevertLocalTestPolicies(
+     const base::Value::List& args) {
++  if (!PolicyUI::ShouldLoadTestPage(Profile::FromWebUI(web_ui()))) {
++    return;
++  }
+ #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
+   Profile::FromWebUI(web_ui())->GetPrefs()->ClearPref(
+       prefs::kUserCloudSigninPolicyResponseFromPolicyTestPage);
+diff --git a/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm b/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm
+index fe5c3c4..5f30dcb 100644
+--- a/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm
++++ b/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm
+@@ -226,6 +226,12 @@
+     const base::Value::List& args) {
+   std::string json_policies_string = args[1].GetString();
+ 
++  if (!PolicyUI::ShouldLoadTestPage(
++          ChromeBrowserState::FromWebUIIOS(web_ui()))) {
++    web_ui()->ResolveJavascriptCallback(args[0], true);
++    return;
++  }
++
+   policy::LocalTestPolicyProvider* local_test_provider =
+       static_cast<policy::LocalTestPolicyProvider*>(
+           GetApplicationContext()
+@@ -244,6 +250,11 @@
+ 
+ void PolicyUIHandler::HandleRevertLocalTestPolicies(
+     const base::Value::List& args) {
++  if (!PolicyUI::ShouldLoadTestPage(
++          ChromeBrowserState::FromWebUIIOS(web_ui()))) {
++    return;
++  }
++
+   ChromeBrowserState::FromWebUIIOS(web_ui())
+       ->GetPolicyConnector()
+       ->RevertUseLocalTestPolicyProvider();

@@ -1,0 +1,33 @@
+From c5dd8839bfaf4207a7db7a39c922daf67634936d Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Wed, 19 Jun 2024 02:49:58 +0000
+Subject: [PATCH] Destruct controller before referenced WebUI in CreateWebUIIfNeeded
+
+Reset `controller` first before resetting `web_ui_`, since the
+controller still has a pointer to `web_ui_`, to avoid referencing to
+the already deleted `web_ui_` object from `controller`'s destructor.
+
+Bug: 345640549
+Change-Id: Ie9c193436b593845d8269605f68bf94bc75beed7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5624749
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1316830}
+---
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 8297580..cc703c5 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -10395,6 +10395,11 @@
+       bindings() != web_ui_->GetBindings()) {
+     RecordAction(base::UserMetricsAction("ProcessSwapBindingsMismatch_RVHM"));
+     base::WeakPtr<NavigationRequest> self = GetWeakPtr();
++    // Reset `controller` first before resetting `web_ui_`, since the controller
++    // still has a pointer to `web_ui_`, to avoid referencing to the already
++    // deleted  `web_ui_` object from `controller`'s destructor. See also
++    // https://crbug.com/345640549.
++    controller.reset();
+     web_ui_.reset();
+     // Resetting the WebUI may indirectly call content's embedders and delete
+     // `this`. There are no known occurrences of it, so we assume this never

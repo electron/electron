@@ -1,0 +1,89 @@
+From 38e4483e47f99a565221629e0a5446166193cb97 Mon Sep 17 00:00:00 2001
+From: Johannes Kron <kron@chromium.org>
+Date: Wed, 19 Jun 2024 20:59:48 +0000
+Subject: [PATCH] [SCK] Use BindPostTask() + weak pointer in callback handler
+
+The callback handler incorrectly accessed member objects directly which may
+cause UAF. Avoid this by using BindPostTask() together with a weak pointer.
+
+Fixed: 346898524
+Change-Id: I9d03d6decfd0212af88d3d0d8d70f83f1081d2e3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5639016
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Mark Foltz <mfoltz@chromium.org>
+Commit-Queue: Johannes Kron <kron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1317142}
+---
+
+diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+index a1e225d..152b9001 100644
+--- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
++++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+@@ -334,13 +334,18 @@
+                                destRectInFrame:dest_rect_in_frame
+                                      frameRate:requested_capture_format_->
+                                                frame_rate];
++
++          __block base::OnceCallback<void()> on_update_configuration_error =
++              base::BindPostTask(
++                  device_task_runner_,
++                  base::BindOnce(
++                      &ScreenCaptureKitDeviceMac::OnUpdateConfigurationError,
++                      weak_factory_.GetWeakPtr()));
+           [stream_
+               updateConfiguration:config
+                 completionHandler:^(NSError* _Nullable error) {
+                   if (error) {
+-                    client()->OnError(
+-                        media::VideoCaptureError::kScreenCaptureKitStreamError,
+-                        FROM_HERE, "Error on updateConfiguration");
++                    std::move(on_update_configuration_error).Run();
+                   }
+                 }];
+         }
+@@ -371,6 +376,21 @@
+                         FROM_HERE, "Stream delegate called didStopWithError");
+     }
+   }
++  void OnUpdateContentFilterCompleted(NSError* _Nullable error) {
++    DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
++    is_resetting_ = false;
++
++    if (error) {
++      client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
++                        FROM_HERE,
++                        "Error on updateContentFilter (fullscreen window).");
++    }
++  }
++  void OnUpdateConfigurationError() {
++    DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
++    client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
++                      FROM_HERE, "Error on updateConfiguration");
++  }
+ 
+   // IOSurfaceCaptureDeviceBase:
+   void OnStart() override {
+@@ -427,15 +447,16 @@
+     SCContentFilter* filter =
+         [[SCContentFilter alloc] initWithDesktopIndependentWindow:window];
+ 
++    __block base::OnceCallback<void(NSError*)>
++        on_update_content_filter_completed = base::BindPostTask(
++            device_task_runner_,
++            base::BindOnce(
++                &ScreenCaptureKitDeviceMac::OnUpdateContentFilterCompleted,
++                weak_factory_.GetWeakPtr()));
++
+     [stream_ updateContentFilter:filter
+                completionHandler:^(NSError* _Nullable error) {
+-                 is_resetting_ = false;
+-                 if (error) {
+-                   client()->OnError(
+-                       media::VideoCaptureError::kScreenCaptureKitStreamError,
+-                       FROM_HERE,
+-                       "Error on updateContentFilter (fullscreen window).");
+-                 }
++                 std::move(on_update_content_filter_completed).Run(error);
+                }];
+   }
+ 

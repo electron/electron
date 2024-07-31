@@ -10,3 +10,8 @@ cherry-pick-f911ff372723.patch
 cherry-pick-8b400f9b7d66.patch
 cherry-pick-ba6cab40612d.patch
 merged_wasm_add_missing_type_canonicalization_for_exceptions_js.patch
+cherry-pick-cdbc1d9684a3.patch
+cherry-pick-70d2fe6b7c47.patch
+cherry-pick-901377bb2f3b.patch
+cherry-pick-bb28367eed73.patch
+cherry-pick-bc545b15a0ee.patch
