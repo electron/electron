@@ -98,19 +98,10 @@ is as follows:
 
 <img src="https://raw.githubusercontent.com/nodejs/Release/main/schedule.svg?sanitize=true" alt="Releases">
 
-As a rule, stable branches of Electron do not receive Node.js upgrades after they have been cut.
 If Electron has recently updated its `main` branch to a new major version of Node.js, the next stable
 branch to be cut will be released with the new version.
 
-Patch upgrades of Node that contain significant security or bug fixes, and are submitted
-more than 2 weeks prior to a stable release date, will be accepted into an Electron alpha
-or beta release branch.
-
-Minor upgrades of Node that contain significant security or bug fixes, and are submitted
-more than 2 weeks prior to a stable release date may be accepted into an Electron alpha or
-beta release branch on a case-by-case basis. These requests will be reviewed and voted on
-by the [Releases Working Group](https://github.com/electron/governance/tree/main/wg-releases),
-to ensure minimal disruption for developers who may be consuming alpha or beta releases.
+Stable release lines of Electron will receive minor and patch bumps of Node.js after they are released. Patch bumps to Node.js will be released in patch releases of Electron, and minor bumps to Node.js will result in a minor release of Electron. Security-only release branches will receive security-related changes from Node.js releases, but not the full release.
 
 ### Breaking API changes
 
