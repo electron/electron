@@ -100,7 +100,9 @@ is as follows:
 If Electron has recently updated its `main` branch to a new major version of Node.js, the next stable
 branch to be cut will be released with the new version.
 
-Stable release lines of Electron will receive minor and patch bumps of Node.js after they are released. Patch bumps to Node.js will be released in patch releases of Electron, and minor bumps to Node.js will result in a minor release of Electron. Security-only release branches will receive security-related changes from Node.js releases, but not the full release.
+Stable release lines of Electron will receive minor and patch bumps of Node.js after they are released.
+Patch bumps to Node.js will be released in patch releases of Electron, and minor bumps to Node.js will result in a minor release of Electron.
+Security-only release branches will receive security-related changes from Node.js releases, but not the full release.
 
 ### Breaking API changes
 
