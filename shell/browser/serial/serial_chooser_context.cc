@@ -182,7 +182,7 @@ bool SerialChooserContext::CanStorePersistentEntry(
 
   const bool has_bluetooth = port.bluetooth_service_class_id &&
                              port.bluetooth_service_class_id->IsValid() &&
-                             !port.path.LossyDisplayName().empty();
+                             !port.path.empty();
   if (has_bluetooth) {
     return true;
   }
