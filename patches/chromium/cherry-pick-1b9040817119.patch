@@ -1,0 +1,84 @@
+From 1b90408171198d05295a02b4c5ffdbe011f13636 Mon Sep 17 00:00:00 2001
+From: Bryant Chandler <bryantchandler@chromium.org>
+Date: Mon, 24 Jun 2024 17:28:53 +0000
+Subject: [PATCH] [media_preview] Fix pointer tear down order problem
+
+Holding a RenderFrameHost* in the `OnceBinding` isn't safe,
+because the `RenderFrameHost` can be destroyed before the
+binding. This CL changes the task strategy so that the
+RenderFrameHost* doesn't need to be bound in a callback.
+
+Tested using the repro steps in the bug and this change stops
+it from reproducing.
+
+Fixed: 347373236
+Change-Id: Id639f317b0f37a508833aba9fe52ffc5c0ed590c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5640501
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Bryant Chandler <bryantchandler@chromium.org>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1318653}
+---
+
+diff --git a/content/browser/renderer_host/media/media_stream_manager.cc b/content/browser/renderer_host/media/media_stream_manager.cc
+index 250ad2f..3d30af4 100644
+--- a/content/browser/renderer_host/media/media_stream_manager.cc
++++ b/content/browser/renderer_host/media/media_stream_manager.cc
+@@ -2893,25 +2893,19 @@
+     RenderFrameHost* render_frame_host,
+     blink::mojom::MediaStreamType type,
+     GetRawDeviceIdsOpenedForFrameCallback callback) const {
+-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+-  CHECK(render_frame_host);
+-  auto collect_all_render_frame_host_ids = base::BindOnce(
+-      [](RenderFrameHost* render_frame_host) {
+-        base::flat_set<GlobalRenderFrameHostId> all_render_frame_host_ids;
+-        render_frame_host->ForEachRenderFrameHost(
+-            [&all_render_frame_host_ids](RenderFrameHost* render_frame_host) {
+-              all_render_frame_host_ids.insert(
+-                  render_frame_host->GetGlobalId());
+-            });
+-        return all_render_frame_host_ids;
+-      },
+-      render_frame_host);
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+-  GetUIThreadTaskRunner()->PostTaskAndReplyWithResult(
+-      FROM_HERE, std::move(collect_all_render_frame_host_ids),
+-      base::BindPostTaskToCurrentDefault(
+-          base::BindOnce(&MediaStreamManager::GetRawDeviceIdsOpenedForFrameIds,
+-                         base::Unretained(this), type, std::move(callback))));
++  base::flat_set<GlobalRenderFrameHostId> all_render_frame_host_ids;
++  render_frame_host->ForEachRenderFrameHost(
++      [&all_render_frame_host_ids](RenderFrameHost* render_frame_host) {
++        all_render_frame_host_ids.insert(render_frame_host->GetGlobalId());
++      });
++
++  GetIOThreadTaskRunner()->PostTask(
++      FROM_HERE,
++      base::BindOnce(&MediaStreamManager::GetRawDeviceIdsOpenedForFrameIds,
++                     base::Unretained(this), type, std::move(callback),
++                     all_render_frame_host_ids));
+ }
+ 
+ void MediaStreamManager::GetRawDeviceIdsOpenedForFrameIds(
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 5a5d2db..7953d5ff 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -11126,12 +11126,9 @@
+     return;
+   }
+ 
+-  GetIOThreadTaskRunner({})->PostTask(
+-      FROM_HERE,
+-      base::BindOnce(&MediaStreamManager::GetRawDeviceIdsOpenedForFrame,
+-                     base::Unretained(media_stream_manager),
+-                     GetPrimaryMainFrame(), type,
+-                     base::BindPostTaskToCurrentDefault(std::move(callback))));
++  media_stream_manager->GetRawDeviceIdsOpenedForFrame(
++      GetPrimaryMainFrame(), type,
++      base::BindPostTaskToCurrentDefault(std::move(callback)));
+ }
+ 
+ }  // namespace content
