@@ -1,7 +1,7 @@
-From 99cafbf4b4b90cfc773826ea17fdaffe094207af Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yann Dago <ydago@chromium.org>
-Date: Mon, 08 Jul 2024 16:20:32 +0000
-Subject: [PATCH] Ensure chrome://policy/test messages ignored when not supported
+Date: Mon, 8 Jul 2024 16:20:32 +0000
+Subject: Ensure chrome://policy/test messages ignored when not supported
 
 It was possible to go to chrome://policy and in the dev tools and send
 the right message to set test policies even if the policy test page was disabled and/or unavailable because both pages share the same handler.
@@ -15,10 +15,9 @@ Reviewed-by: Rohit Rao <rohitrao@chromium.org>
 Reviewed-by: Sergey Poromov <poromov@chromium.org>
 Commit-Queue: Rohit Rao <rohitrao@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1324277}
----
 
 diff --git a/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc b/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc
-index c191e83d..a85b9495 100644
+index f223be51c902b99fbb67f90b7edfa05e7ea77c37..60c3d2e133a1a811ff7b83c0d0b8cc4bdd44e23b 100644
 --- a/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc
 +++ b/chrome/browser/ui/webui/policy/policy_test_ui_browsertest.cc
 @@ -10,6 +10,7 @@
@@ -29,10 +28,11 @@ index c191e83d..a85b9495 100644
  #include "chrome/browser/enterprise/browser_management/management_service_factory.h"
  #include "chrome/browser/lifetime/application_lifetime.h"
  #include "chrome/browser/policy/chrome_browser_policy_connector.h"
-@@ -273,6 +274,57 @@
+@@ -272,6 +273,57 @@ class PolicyTestHandlerTest : public PlatformBrowserTest {
+ #endif
  };
  
- IN_PROC_BROWSER_TEST_F(PolicyTestHandlerTest,
++IN_PROC_BROWSER_TEST_F(PolicyTestHandlerTest,
 +                       HandleSetLocalTestPoliciesNotSupported) {
 +  // Ensure chrome://policy/test not supported.
 +  policy::ScopedManagementServiceOverrideForTesting profile_management(
@@ -83,12 +83,11 @@ index c191e83d..a85b9495 100644
 +  }
 +}
 +
-+IN_PROC_BROWSER_TEST_F(PolicyTestHandlerTest,
+ IN_PROC_BROWSER_TEST_F(PolicyTestHandlerTest,
                         HandleSetAndRevertLocalTestPolicies) {
    if (!policy::utils::IsPolicyTestingEnabled(/*pref_service=*/nullptr,
-                                              chrome::GetChannel())) {
 diff --git a/chrome/browser/ui/webui/policy/policy_ui_handler.cc b/chrome/browser/ui/webui/policy/policy_ui_handler.cc
-index a09cb79..bafa7ad 100644
+index a09cb79373f424010a1c02f0c1da5ae3e8c55389..bafa7adf244685fe9af7dd4358fb0ec77bb39fbf 100644
 --- a/chrome/browser/ui/webui/policy/policy_ui_handler.cc
 +++ b/chrome/browser/ui/webui/policy/policy_ui_handler.cc
 @@ -49,6 +49,7 @@
@@ -107,7 +106,7 @@ index a09cb79..bafa7ad 100644
  #include "components/policy/core/common/remote_commands/remote_commands_service.h"
  #include "components/policy/core/common/schema.h"
  #include "components/policy/core/common/schema_map.h"
-@@ -318,6 +320,12 @@
+@@ -318,6 +320,12 @@ void PolicyUIHandler::HandleCopyPoliciesJson(const base::Value::List& args) {
  void PolicyUIHandler::HandleSetLocalTestPolicies(
      const base::Value::List& args) {
    std::string policies = args[1].GetString();
@@ -120,7 +119,7 @@ index a09cb79..bafa7ad 100644
  
    policy::LocalTestPolicyProvider* local_test_provider =
        static_cast<policy::LocalTestPolicyProvider*>(
-@@ -340,12 +348,14 @@
+@@ -340,12 +348,14 @@ void PolicyUIHandler::HandleSetLocalTestPolicies(
        ->UseLocalTestPolicyProvider();
  
    local_test_provider->LoadJsonPolicies(policies);
@@ -137,7 +136,7 @@ index a09cb79..bafa7ad 100644
    Profile::FromWebUI(web_ui())->GetPrefs()->ClearPref(
        prefs::kUserCloudSigninPolicyResponseFromPolicyTestPage);
 diff --git a/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm b/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm
-index fe5c3c4..5f30dcb 100644
+index fe5c3c43f36e5c13b75512572ffc7eea0f85be5b..5f30dcb42ad942499d31305a094f536e73fe5a1f 100644
 --- a/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm
 +++ b/ios/chrome/browser/webui/ui_bundled/policy/policy_ui_handler.mm
 @@ -226,6 +226,12 @@

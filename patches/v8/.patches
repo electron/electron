@@ -2,7 +2,4 @@ chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 revert_heap_add_checks_position_info.patch
 revert_api_cleanup_remove_setaccessor_and_setnativedataproperty.patch
-cherry-pick-cdbc1d9684a3.patch
-cherry-pick-70d2fe6b7c47.patch
 cherry-pick-901377bb2f3b.patch
-cherry-pick-bc545b15a0ee.patch
