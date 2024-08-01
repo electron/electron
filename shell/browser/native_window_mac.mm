@@ -1664,6 +1664,13 @@ void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
   UpdateVibrancyRadii(true);
 }
 
+void NativeWindowMac::NotifyWindowDidFailToEnterFullScreen() {
+  UpdateVibrancyRadii(false);
+
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
+}
+
 void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
   if (buttons_proxy_) {
     // Hide window title when leaving fullscreen.
