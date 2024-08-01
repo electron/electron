@@ -37,6 +37,35 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
 
+namespace gin {
+
+template <>
+struct Converter<
+    ChromeFileSystemAccessPermissionContext::SensitiveEntryResult> {
+  static bool FromV8(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> val,
+      ChromeFileSystemAccessPermissionContext::SensitiveEntryResult* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "allow")
+      *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
+          kAllowed;
+    else if (type == "tryAgain")
+      *out = ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::
+          kTryAgain;
+    else if (type == "block")
+      *out =
+          ChromeFileSystemAccessPermissionContext::SensitiveEntryResult::kAbort;
+    else
+      return false;
+    return true;
+  }
+};
+
+}  // namespace gin
+
 namespace {
 
 using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
@@ -584,10 +613,9 @@ void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
 
 void FileSystemAccessPermissionContext::OnRestrictedPathResult(
     gin::Arguments* args) {
-  bool should_block = false;
-  args->GetNext(&should_block);
-  RunRestrictedPathCallback(should_block ? SensitiveEntryResult::kAbort
-                                         : SensitiveEntryResult::kTryAgain);
+  SensitiveEntryResult result = SensitiveEntryResult::kAbort;
+  args->GetNext(&result);
+  RunRestrictedPathCallback(result);
 }
 
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
