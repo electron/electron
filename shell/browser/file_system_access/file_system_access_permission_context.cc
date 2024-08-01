@@ -4,6 +4,7 @@
 
 #include "shell/browser/file_system_access/file_system_access_permission_context.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 
@@ -98,7 +99,7 @@ constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
 #if BUILDFLAG(IS_WIN)
 [[nodiscard]] constexpr bool ContainsInvalidDNSCharacter(
     base::FilePath::StringType hostname) {
-  return !base::ranges::all_of(hostname, [](base::FilePath::CharType c) {
+  return !std::ranges::all_of(hostname, [](base::FilePath::CharType c) {
     return (c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
            (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-');
   });
@@ -355,7 +356,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       const base::FilePath& old_path,
       const base::FilePath& new_path) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    auto entry_it = base::ranges::find_if(
+    auto entry_it = std::ranges::find_if(
         grants,
         [&old_path](const auto& entry) { return entry.first == old_path; });
 
@@ -683,7 +684,7 @@ void FileSystemAccessPermissionContext::MaybeEvictEntries(
     return;
   }
 
-  base::ranges::sort(entries);
+  std::ranges::sort(entries);
   size_t entries_to_remove = entries.size() - max_ids_per_origin_;
   for (size_t i = 0; i < entries_to_remove; ++i) {
     bool did_remove_entry = dict.Remove(entries[i].second);
@@ -862,7 +863,7 @@ bool FileSystemAccessPermissionContext::OriginHasReadAccess(
 
   auto it = active_permissions_map_.find(origin);
   if (it != active_permissions_map_.end()) {
-    return base::ranges::any_of(it->second.read_grants, [&](const auto& grant) {
+    return std::ranges::any_of(it->second.read_grants, [&](const auto& grant) {
       return grant.second->GetStatus() == PermissionStatus::GRANTED;
     });
   }
@@ -876,10 +877,9 @@ bool FileSystemAccessPermissionContext::OriginHasWriteAccess(
 
   auto it = active_permissions_map_.find(origin);
   if (it != active_permissions_map_.end()) {
-    return base::ranges::any_of(
-        it->second.write_grants, [&](const auto& grant) {
-          return grant.second->GetStatus() == PermissionStatus::GRANTED;
-        });
+    return std::ranges::any_of(it->second.write_grants, [&](const auto& grant) {
+      return grant.second->GetStatus() == PermissionStatus::GRANTED;
+    });
   }
 
   return false;

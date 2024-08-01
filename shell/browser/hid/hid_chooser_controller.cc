@@ -4,6 +4,7 @@
 
 #include "shell/browser/hid/hid_chooser_controller.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "base/command_line.h"
@@ -368,8 +369,8 @@ void HidChooserController::UpdateDeviceInfo(
   auto physical_device_it = device_map_.find(id);
   DCHECK(physical_device_it != device_map_.end());
   auto& device_infos = physical_device_it->second;
-  auto device_it = base::ranges::find(device_infos, device.guid,
-                                      &device::mojom::HidDeviceInfo::guid);
+  auto device_it = std::ranges::find(device_infos, device.guid,
+                                     &device::mojom::HidDeviceInfo::guid);
   DCHECK(device_it != device_infos.end());
   *device_it = device.Clone();
 }
