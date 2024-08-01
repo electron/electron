@@ -143,6 +143,62 @@ Returns:
 Emitted after an extension is loaded and all necessary browser state is
 initialized to support the start of the extension's background page.
 
+#### Event: 'file-system-access-restricted'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `origin` string - The origin that initiated access to the blocked path.
+  * `isDirectory` boolean - Whether or not the path is a directory.
+  * `path` string - The blocked path attempting to be accessed.
+* `callback` Function
+  * `shouldBlock` boolean - `true` to abort the file system access attempt, and `false` to try again with a non-restricted location.
+
+```js
+const { app, dialog, BrowserWindow, session } = require('electron')
+
+async function createWindow () {
+  const mainWindow = new BrowserWindow()
+
+  await mainWindow.loadURL('https://buzzfeed.com')
+
+  session.defaultSession.on('file-system-access-restricted', async (e, details, callback) => {
+    const { origin, path } = details
+    const { response } = await dialog.showMessageBox({
+      message: `${origin} can't open ${path} because it contains system files`,
+      title: 'File System Access Restricted',
+      buttons: ['Choose a different folder', 'Cancel'],
+      cancelId: 1
+    })
+
+    callback(response === 1)
+  })
+
+  mainWindow.webContents.executeJavaScript(`
+    window.showDirectoryPicker({
+      id: 'electron-demo',
+      mode: 'readwrite',
+      startIn: 'downloads',
+    }).catch(e => {
+      console.log(e)
+    })`, true
+  )
+}
+
+app.whenReady().then(() => {
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') app.quit()
+})
+```
+
 #### Event: 'preconnect'
 
 Returns:
