@@ -66,10 +66,10 @@ index 3c2fc1707e38345c114e140104ffc5a93d704918..40dac9fd7beb7a1a589a479a8035391d
  
    bool is_listening_ = false;
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 2ce5b0038cb613d0a70d7c086e470f4428160b4b..5fa64783dc49193770fa316be92e82f4d73e901b 100644
+index ac1142e268b88b7332f556344491288d8539a5c9..c23852622e292b056d8dbbeb2a83dd29de1743fd 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
-@@ -63,6 +63,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
+@@ -64,6 +64,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -78,7 +78,7 @@ index 2ce5b0038cb613d0a70d7c086e470f4428160b4b..5fa64783dc49193770fa316be92e82f4
    ui::Accelerator accelerator(
        ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
  
-@@ -93,6 +95,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
+@@ -94,6 +96,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
    modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
    modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
    modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;

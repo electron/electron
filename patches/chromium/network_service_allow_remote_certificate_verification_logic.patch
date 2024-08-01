@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index bcad166b1eff4e1f9a620ff4e00275b71180e848..09cdb8b2b3140df3f72edeb071bc523ccc150703 100644
+index 02ff46371083e4a5821e8877fbd31796fdb6a0a9..0d6d4d646bd6e7c187b5174edff2ddb0c51d7867 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -157,6 +157,11 @@
@@ -136,7 +136,7 @@ index bcad166b1eff4e1f9a620ff4e00275b71180e848..09cdb8b2b3140df3f72edeb071bc523c
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2467,6 +2572,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2474,6 +2579,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index bcad166b1eff4e1f9a620ff4e00275b71180e848..09cdb8b2b3140df3f72edeb071bc523c
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 016323982be348613b1625c62314a9e2f37231fb..6d0e259f0753d0f3962b8f9a35383ce0f5c7b2ea 100644
+index 4f1cd30aa54de9a64372c7dced2bdaa683cc0d8e..b0df50eca7d4bed289940ebdf968a36fd891297b 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -115,6 +115,7 @@ class URLMatcher;
@@ -177,7 +177,7 @@ index 016323982be348613b1625c62314a9e2f37231fb..6d0e259f0753d0f3962b8f9a35383ce0
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 4c2831a91d499b2ee5abcd1f11c8f6b3009d20e2..e9a96598f11fd0160e6990356b8ea0b0a1555d90 100644
+index 1abef24d101b3426544f24484c32e7999535d3d0..1686353217d288c2faaef98f8cd445baf8ee0df5 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -298,6 +298,16 @@ struct SocketBrokerRemotes {

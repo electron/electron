@@ -303,10 +303,10 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..c01b2fdecf9b54fa01e5be9f45eaa234
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a91334c093c1a 100644
+index 4f37e077120a311638c64e715059e5c08b1f1045..30027aafc16d48ac076dca3223f3a38dc6c8e85e 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -106,14 +106,18 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -111,14 +111,18 @@ void OrderChildWindow(NSWindow* child_window,
  
  }  // namespace
  
@@ -325,7 +325,7 @@ index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a9133
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -152,6 +156,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -157,6 +161,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -334,7 +334,7 @@ index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a9133
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -214,6 +220,8 @@ - (BOOL)usesCustomDrawing {
+@@ -219,6 +225,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -343,7 +343,7 @@ index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a9133
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -402,6 +410,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -409,6 +417,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -352,7 +352,7 @@ index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a9133
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -413,6 +423,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -420,6 +430,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index dda475287c4541b570fb41d01a8a86d5156de812..43e523c48fec1980b2bb72e1abd6c4f6d7baaee2 100644
+index e784717f1e6aac06a28f39e70115aa9e63a43859..68b325f7d504571b81a13877654d1b1852057417 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -70,6 +70,7 @@ source_set("browser") {
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 784a1d1c27b94961ab8054ba7f8aaca7874c569c..220c484f218f45c2a85dcbd4ab57d6fc87269fc4 100644
+index cfcc4bc7fbcc6209c86f07ae1b6e920c5258173c..18395806b05c7deef7a0415031c376f7c2239bfd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -852,7 +852,7 @@ index 6f3b368103b05f07ae67da4c0307efe039b8dfce..a1b11c298ee8b2c9b3cbe6307bc7744c
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 22da921f1ef329746b0190aca677a1c940c3127c..1f6e6f066504da48af13aa200f8158c07dcb5f3e 100644
+index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..fc5508c41aa08dd7bf1365a7c03b68723aae3a4b 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -39,19 +39,23 @@
