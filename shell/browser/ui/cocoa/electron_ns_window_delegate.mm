@@ -341,17 +341,6 @@ using FullScreenTransitionState =
   shell_->HandlePendingFullscreenTransitions();
 }
 
-- (void)windowDidFailToExitFullScreen:(NSWindow*)window {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
-
-  shell_->NotifyWindowDidFailToLeaveFullScreen();
-
-  if (shell_->HandleDeferredClose())
-    return;
-
-  shell_->HandlePendingFullscreenTransitions();
-}
-
 - (void)windowWillClose:(NSNotification*)notification {
   shell_->Cleanup();
   shell_->NotifyWindowClosed();
