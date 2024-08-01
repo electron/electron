@@ -12,6 +12,8 @@
 #include "base/json/values_util.h"
 #include "base/path_service.h"
 #include "base/task/thread_pool.h"
+#include "base/time/time.h"
+#include "base/timer/timer.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
@@ -37,6 +39,24 @@ using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
 using blink::mojom::PermissionStatus;
+
+// Dictionary keys for the FILE_SYSTEM_LAST_PICKED_DIRECTORY website setting.
+// Schema (per origin):
+// {
+//  ...
+//   {
+//     "default-id" : { "path" : <path> , "path-type" : <type>}
+//     "custom-id-fruit" : { "path" : <path> , "path-type" : <type> }
+//     "custom-id-flower" : { "path" : <path> , "path-type" : <type> }
+//     ...
+//   }
+//  ...
+// }
+const char kDefaultLastPickedDirectoryKey[] = "default-id";
+const char kCustomLastPickedDirectoryKey[] = "custom-id";
+const char kPathKey[] = "path";
+const char kPathTypeKey[] = "path-type";
+const char kTimestampKey[] = "timestamp";
 
 #if BUILDFLAG(IS_WIN)
 [[nodiscard]] constexpr bool ContainsInvalidDNSCharacter(
@@ -79,7 +99,7 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 
   return false;
 }
-#endif
+#endif  // BUILDFLAG(IS_WIN)
 
 // Describes a rule for blocking a directory, which can be constructed
 // dynamically (based on state) or statically (from kBlockedPaths).
@@ -102,7 +122,7 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
       MaybeIsLocalUNCPath(path)) {
     return true;
   }
-#endif
+#endif  // BUILDFLAG(IS_WIN)
 
   // Add the hard-coded rules to the dynamic rules.
   for (auto const& [key, rule_path, type] :
@@ -148,6 +168,11 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
   DLOG(INFO) << "Blocking access to " << path << " because it is inside "
              << nearest_ancestor;
   return true;
+}
+
+std::string GenerateLastPickedDirectoryKey(const std::string& id) {
+  return id.empty() ? kDefaultLastPickedDirectoryKey
+                    : base::StrCat({kCustomLastPickedDirectoryKey, "-", id});
 }
 
 }  // namespace
@@ -367,8 +392,9 @@ struct FileSystemAccessPermissionContext::OriginState {
 };
 
 FileSystemAccessPermissionContext::FileSystemAccessPermissionContext(
-    content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {
+    content::BrowserContext* browser_context,
+    const base::Clock* clock)
+    : browser_context_(browser_context), clock_(clock) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
 }
 
@@ -571,13 +597,63 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
   std::move(callback).Run(SensitiveEntryResult::kAllowed);
 }
 
+void FileSystemAccessPermissionContext::MaybeEvictEntries(
+    base::Value::Dict& dict) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+  std::vector<std::pair<base::Time, std::string>> entries;
+  entries.reserve(dict.size());
+  for (auto entry : dict) {
+    // Don't evict the default ID.
+    if (entry.first == kDefaultLastPickedDirectoryKey) {
+      continue;
+    }
+    // If the data is corrupted and `entry.second` is for some reason not a
+    // dict, it should be first in line for eviction.
+    auto timestamp = base::Time::Min();
+    if (entry.second.is_dict()) {
+      timestamp = base::ValueToTime(entry.second.GetDict().Find(kTimestampKey))
+                      .value_or(base::Time::Min());
+    }
+    entries.emplace_back(timestamp, entry.first);
+  }
+
+  if (entries.size() <= max_ids_per_origin_) {
+    return;
+  }
+
+  base::ranges::sort(entries);
+  size_t entries_to_remove = entries.size() - max_ids_per_origin_;
+  for (size_t i = 0; i < entries_to_remove; ++i) {
+    bool did_remove_entry = dict.Remove(entries[i].second);
+    DCHECK(did_remove_entry);
+  }
+}
+
 void FileSystemAccessPermissionContext::SetLastPickedDirectory(
     const url::Origin& origin,
     const std::string& id,
     const base::FilePath& path,
     const PathType type) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  LOG(INFO) << "NOTIMPLEMENTED SetLastPickedDirectory: " << path.value();
+
+  // Create an entry into the nested dictionary.
+  base::Value::Dict entry;
+  entry.Set(kPathKey, base::FilePathToValue(path));
+  entry.Set(kPathTypeKey, static_cast<int>(type));
+  entry.Set(kTimestampKey, base::TimeToValue(clock_->Now()));
+
+  auto it = id_pathinfo_map_.find(origin);
+  if (it != id_pathinfo_map_.end()) {
+    base::Value::Dict& dict = it->second;
+    dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
+    MaybeEvictEntries(dict);
+  } else {
+    base::Value::Dict dict;
+    dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
+    MaybeEvictEntries(dict);
+    id_pathinfo_map_.insert(std::make_pair(origin, std::move(dict)));
+  }
 }
 
 FileSystemAccessPermissionContext::PathInfo
@@ -585,8 +661,27 @@ FileSystemAccessPermissionContext::GetLastPickedDirectory(
     const url::Origin& origin,
     const std::string& id) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  LOG(INFO) << "NOTIMPLEMENTED GetLastPickedDirectory";
-  return PathInfo();
+
+  auto it = id_pathinfo_map_.find(origin);
+
+  PathInfo path_info;
+  if (it == id_pathinfo_map_.end()) {
+    return path_info;
+  }
+
+  auto* entry = it->second.FindDict(GenerateLastPickedDirectoryKey(id));
+  if (!entry) {
+    return path_info;
+  }
+
+  auto type_int =
+      entry->FindInt(kPathTypeKey).value_or(static_cast<int>(PathType::kLocal));
+  path_info.type = type_int == static_cast<int>(PathType::kExternal)
+                       ? PathType::kExternal
+                       : PathType::kLocal;
+  path_info.path =
+      base::ValueToFilePath(entry->Find(kPathKey)).value_or(base::FilePath());
+  return path_info;
 }
 
 base::FilePath FileSystemAccessPermissionContext::GetWellKnownDirectoryPath(
