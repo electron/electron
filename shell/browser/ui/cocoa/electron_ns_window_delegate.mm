@@ -311,6 +311,18 @@ using FullScreenTransitionState =
   shell_->HandlePendingFullscreenTransitions();
 }
 
+- (void)windowDidFailToEnterFullScreen:(NSWindow*)window {
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
+
+  shell_->SetResizable(is_resizable_);
+  shell_->NotifyWindowDidFailToEnterFullScreen();
+
+  if (shell_->HandleDeferredClose())
+    return;
+
+  shell_->HandlePendingFullscreenTransitions();
+}
+
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
   shell_->set_fullscreen_transition_state(FullScreenTransitionState::kExiting);
 
