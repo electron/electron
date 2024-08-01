@@ -1,7 +1,10 @@
-From bb28367eed73bd354d3a9d9ad424ba52b84ae5b0 Mon Sep 17 00:00:00 2001
-From: Olivier Flückiger <olivf@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
 Date: Mon, 24 Jun 2024 16:22:09 +0200
-Subject: [PATCH] [maglev] Fix skipped smi check due to phi hoisting
+Subject: Fix skipped smi check due to phi hoisting
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Given we have a phi (29) assumed to be smi at graph building time, we
 must not untag it's input phis (10,12) to float64.
@@ -31,13 +34,12 @@ Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
 Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
 Auto-Submit: Olivier Flückiger <olivf@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#94615}
----
 
 diff --git a/src/maglev/maglev-phi-representation-selector.cc b/src/maglev/maglev-phi-representation-selector.cc
-index 483f35e..21952eb 100644
+index 02e030bcb543287433c944e5f298998cdc5b7ce9..cabe3a29383b111fc0f1568a40d439e1513bc154 100644
 --- a/src/maglev/maglev-phi-representation-selector.cc
 +++ b/src/maglev/maglev-phi-representation-selector.cc
-@@ -289,6 +289,14 @@
+@@ -285,6 +285,14 @@ MaglevPhiRepresentationSelector::ProcessPhi(Phi* node) {
                                 ValueRepresentation::kHoleyFloat64};
    }
  
@@ -52,7 +54,7 @@ index 483f35e..21952eb 100644
    auto intersection = possible_inputs & allowed_inputs_for_uses;
  
    TRACE_UNTAGGING("  + intersection reprs: " << intersection);
-@@ -619,6 +627,7 @@
+@@ -615,6 +623,7 @@ void MaglevPhiRepresentationSelector::ConvertTaggedPhiTo(
                                     TaggedToFloat64ConversionType::kOnlyNumber),
                                 block, NewNodePosition::kEnd);
            } else {

@@ -1,7 +1,7 @@
-From c5dd8839bfaf4207a7db7a39c922daf67634936d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rakina Zata Amni <rakina@chromium.org>
 Date: Wed, 19 Jun 2024 02:49:58 +0000
-Subject: [PATCH] Destruct controller before referenced WebUI in CreateWebUIIfNeeded
+Subject: Destruct controller before referenced WebUI in CreateWebUIIfNeeded
 
 Reset `controller` first before resetting `web_ui_`, since the
 controller still has a pointer to `web_ui_`, to avoid referencing to
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5624749
 Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
 Reviewed-by: Nasko Oskov <nasko@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1316830}
----
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 8297580..cc703c5 100644
+index 8a9beaf3bfb9fe5eca8ca6675c7c45b4b880db03..85041c38c8d2e84d780948a4dab94013ce39dfbe 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10395,6 +10395,11 @@
+@@ -10268,6 +10268,11 @@ void NavigationRequest::CreateWebUIIfNeeded(RenderFrameHostImpl* frame_host) {
        bindings() != web_ui_->GetBindings()) {
      RecordAction(base::UserMetricsAction("ProcessSwapBindingsMismatch_RVHM"));
      base::WeakPtr<NavigationRequest> self = GetWeakPtr();

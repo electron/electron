@@ -1,7 +1,7 @@
-From 38e4483e47f99a565221629e0a5446166193cb97 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Johannes Kron <kron@chromium.org>
 Date: Wed, 19 Jun 2024 20:59:48 +0000
-Subject: [PATCH] [SCK] Use BindPostTask() + weak pointer in callback handler
+Subject: Use BindPostTask() + weak pointer in callback handler
 
 The callback handler incorrectly accessed member objects directly which may
 cause UAF. Avoid this by using BindPostTask() together with a weak pointer.
@@ -13,13 +13,12 @@ Reviewed-by: Avi Drissman <avi@chromium.org>
 Reviewed-by: Mark Foltz <mfoltz@chromium.org>
 Commit-Queue: Johannes Kron <kron@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1317142}
----
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index a1e225d..152b9001 100644
+index 4fb3e8eb5f34a7ee9e8b0f22a7c842129cdc31eb..e2710fba1a8d7a4cee6023558898c74706a9c189 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -334,13 +334,18 @@
+@@ -326,13 +326,18 @@ void OnStreamSample(gfx::ScopedInUseIOSurface io_surface,
                                 destRectInFrame:dest_rect_in_frame
                                       frameRate:requested_capture_format_->
                                                 frame_rate];
@@ -41,7 +40,7 @@ index a1e225d..152b9001 100644
                    }
                  }];
          }
-@@ -371,6 +376,21 @@
+@@ -361,6 +366,21 @@ void OnStreamError() {
                          FROM_HERE, "Stream delegate called didStopWithError");
      }
    }
@@ -63,7 +62,7 @@ index a1e225d..152b9001 100644
  
    // IOSurfaceCaptureDeviceBase:
    void OnStart() override {
-@@ -427,15 +447,16 @@
+@@ -411,15 +431,16 @@ void ResetStreamTo(SCWindow* window) override {
      SCContentFilter* filter =
          [[SCContentFilter alloc] initWithDesktopIndependentWindow:window];
  
