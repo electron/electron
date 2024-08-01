@@ -66,17 +66,6 @@ void SetHiddenValue(v8::Isolate* isolate,
   object->SetPrivate(context, privateKey, value);
 }
 
-void DeleteHiddenValue(v8::Isolate* isolate,
-                       v8::Local<v8::Object> object,
-                       v8::Local<v8::String> key) {
-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-  // Actually deleting the value would make force the object into
-  // dictionary mode which is unnecessarily slow. Instead, we replace
-  // the hidden value with "undefined".
-  object->SetPrivate(context, privateKey, v8::Undefined(isolate));
-}
-
 int32_t GetObjectHash(v8::Local<v8::Object> object) {
   return object->GetIdentityHash();
 }
@@ -113,7 +102,6 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
-  dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("requestGarbageCollectionForTesting",
