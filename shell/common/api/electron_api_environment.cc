@@ -25,10 +25,6 @@ bool SetVar(const std::string& name, const std::string& value) {
   return base::Environment::Create()->SetVar(name, value);
 }
 
-bool UnSetVar(const std::string& name) {
-  return base::Environment::Create()->UnSetVar(name);
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -37,7 +33,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getVar", &GetVar);
   dict.SetMethod("hasVar", &HasVar);
   dict.SetMethod("setVar", &SetVar);
-  dict.SetMethod("unSetVar", &UnSetVar);
 }
 
 }  // namespace
