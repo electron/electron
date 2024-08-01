@@ -27,7 +27,7 @@ index 2e9feebe066f938506d63d157be65828aa2a27c9..39de006f5f97f9e2a84ee4d38f7bb98e
    "inspector_media_context_impl_unittest.cc",
    "inspector_session_state_test.cc",
 diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
-index 1825080b32ab6d7adb86236a389c08caf0b90c5c..62a5d9b831f11d6d74b1a8a0b51d2a436f0eb8c5 100644
+index 1825080b32ab6d7adb86236a389c08caf0b90c5c..f17565a6178c3f47037378faf965cd0f52cb0d26 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 +++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 @@ -479,6 +479,42 @@ String InspectorPageAgent::CachedResourceTypeJson(
@@ -102,29 +102,19 @@ index 1825080b32ab6d7adb86236a389c08caf0b90c5c..62a5d9b831f11d6d74b1a8a0b51d2a43
    instrumenting_agents_->RemoveInspectorPageAgent(this);
    inspector_resource_content_loader_->Cancel(
        resource_content_loader_client_id_);
-@@ -671,9 +705,18 @@ protocol::Response InspectorPageAgent::setAdBlockingEnabled(bool enable) {
- 
+@@ -672,8 +706,9 @@ protocol::Response InspectorPageAgent::setAdBlockingEnabled(bool enable) {
  protocol::Response InspectorPageAgent::reload(
      Maybe<bool> optional_bypass_cache,
--    Maybe<String> optional_script_to_evaluate_on_load) {
+     Maybe<String> optional_script_to_evaluate_on_load) {
 -  pending_script_to_evaluate_on_load_once_.Set(
 -      optional_script_to_evaluate_on_load.value_or(""));
-+    Maybe<String> optional_script_to_evaluate_on_load,
-+    Maybe<String> loader_id) {
-+  if (loader_id.has_value() && inspected_frames_->Root()
-+                                       ->Loader()
-+                                       .GetDocumentLoader()
-+                                       ->GetDevToolsNavigationToken()
-+                                       .ToString() != loader_id->Ascii()) {
-+    return protocol::Response::InvalidParams("Document already navigated");
-+  }
 +  script_injection_on_load_.SetPending(
 +      optional_script_to_evaluate_on_load.value_or(""),
 +      inspected_frames_->Root()->Loader().GetDocumentLoader()->Url());
    v8_session_->setSkipAllPauses(true);
    v8_session_->resume(true /* terminate on resume */);
    return protocol::Response::Success();
-@@ -989,7 +1032,9 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
+@@ -989,7 +1024,9 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
      EvaluateScriptOnNewDocument(*frame, key);
    }
  
@@ -135,7 +125,7 @@ index 1825080b32ab6d7adb86236a389c08caf0b90c5c..62a5d9b831f11d6d74b1a8a0b51d2a43
      return;
    }
    ScriptState* script_state = ToScriptStateForMainWorld(frame);
-@@ -997,9 +1042,8 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
+@@ -997,9 +1034,8 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
      return;
    }
  
@@ -147,7 +137,7 @@ index 1825080b32ab6d7adb86236a389c08caf0b90c5c..62a5d9b831f11d6d74b1a8a0b51d2a43
  }
  
  void InspectorPageAgent::EvaluateScriptOnNewDocument(
-@@ -1049,9 +1093,7 @@ void InspectorPageAgent::LoadEventFired(LocalFrame* frame) {
+@@ -1049,9 +1085,7 @@ void InspectorPageAgent::LoadEventFired(LocalFrame* frame) {
  
  void InspectorPageAgent::WillCommitLoad(LocalFrame*, DocumentLoader* loader) {
    if (loader->GetFrame() == inspected_frames_->Root()) {
