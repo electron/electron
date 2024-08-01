@@ -24,14 +24,15 @@ namespace electron {
 
 constexpr char kPortNameKey[] = "name";
 constexpr char kTokenKey[] = "token";
+constexpr char kBluetoothDevicePathKey[] = "bluetooth_device_path";
 #if BUILDFLAG(IS_WIN)
-const char kDeviceInstanceIdKey[] = "device_instance_id";
+constexpr char kDeviceInstanceIdKey[] = "device_instance_id";
 #else
-const char kVendorIdKey[] = "vendor_id";
-const char kProductIdKey[] = "product_id";
-const char kSerialNumberKey[] = "serial_number";
+constexpr char kVendorIdKey[] = "vendor_id";
+constexpr char kProductIdKey[] = "product_id";
+constexpr char kSerialNumberKey[] = "serial_number";
 #if BUILDFLAG(IS_MAC)
-const char kUsbDriverKey[] = "usb_driver";
+constexpr char kUsbDriverKey[] = "usb_driver";
 #endif  // BUILDFLAG(IS_MAC)
 #endif  // BUILDFLAG(IS_WIN)
 
@@ -44,33 +45,38 @@ std::string EncodeToken(const base::UnguessableToken& token) {
 
 base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   base::Value::Dict value;
-  if (port.display_name && !port.display_name->empty())
+  if (port.display_name && !port.display_name->empty()) {
     value.Set(kPortNameKey, *port.display_name);
-  else
+  } else {
     value.Set(kPortNameKey, port.path.LossyDisplayName());
+  }
 
   if (!SerialChooserContext::CanStorePersistentEntry(port)) {
     value.Set(kTokenKey, EncodeToken(port.token));
     return base::Value(std::move(value));
   }
 
+  if (port.bluetooth_service_class_id &&
+      port.bluetooth_service_class_id->IsValid()) {
+    value.Set(kBluetoothDevicePathKey, port.path.LossyDisplayName());
+  } else {
 #if BUILDFLAG(IS_WIN)
-  // Windows provides a handy device identifier which we can rely on to be
-  // sufficiently stable for identifying devices across restarts.
-  value.Set(kDeviceInstanceIdKey, port.device_instance_id);
+    // Windows provides a handy device identifier which we can rely on to be
+    // sufficiently stable for identifying devices across restarts.
+    value.Set(kDeviceInstanceIdKey, port.device_instance_id);
 #else
-  DCHECK(port.has_vendor_id);
-  value.Set(kVendorIdKey, port.vendor_id);
-  DCHECK(port.has_product_id);
-  value.Set(kProductIdKey, port.product_id);
-  DCHECK(port.serial_number);
-  value.Set(kSerialNumberKey, *port.serial_number);
-
+    CHECK(port.has_vendor_id);
+    value.Set(kVendorIdKey, port.vendor_id);
+    CHECK(port.has_product_id);
+    value.Set(kProductIdKey, port.product_id);
+    CHECK(port.serial_number);
+    value.Set(kSerialNumberKey, *port.serial_number);
 #if BUILDFLAG(IS_MAC)
-  DCHECK(port.usb_driver_name && !port.usb_driver_name->empty());
-  value.Set(kUsbDriverKey, *port.usb_driver_name);
+    CHECK(port.usb_driver_name && !port.usb_driver_name->empty());
+    value.Set(kUsbDriverKey, *port.usb_driver_name);
 #endif  // BUILDFLAG(IS_MAC)
 #endif  // BUILDFLAG(IS_WIN)
+  }
   return base::Value(std::move(value));
 }
 
@@ -173,11 +179,19 @@ bool SerialChooserContext::CanStorePersistentEntry(
   if (!port.display_name || port.display_name->empty())
     return false;
 
+  const bool has_bluetooth = port.bluetooth_service_class_id &&
+                             port.bluetooth_service_class_id->IsValid() &&
+                             !port.path.LossyDisplayName().empty();
+  if (has_bluetooth) {
+    return true;
+  }
+
 #if BUILDFLAG(IS_WIN)
   return !port.device_instance_id.empty();
 #else
-  if (!port.has_vendor_id || !port.has_product_id || !port.serial_number ||
-      port.serial_number->empty()) {
+  const bool has_usb = port.has_vendor_id && port.has_product_id &&
+                       port.serial_number && !port.serial_number->empty();
+  if (!has_usb) {
     return false;
   }
 
