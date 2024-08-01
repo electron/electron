@@ -143,7 +143,7 @@ index e681cc05ca3b3198d70457288ca5ee877c63f94f..a451bcadad1b1279e16a38e770c3dd05
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index d48fd46095400bf5eeaa874eaa5d8e6f05b4e7da..7789be00bbc503d8278e38fcb1e7feebac9ff325 100644
+index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..1ac631bacf574f0ce491aa75d40d74006da55321 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -17,12 +17,13 @@
@@ -161,17 +161,16 @@ index d48fd46095400bf5eeaa874eaa5d8e6f05b4e7da..7789be00bbc503d8278e38fcb1e7feeb
  #if !BUILDFLAG(IS_ANDROID)
  #include "chrome/browser/permissions/one_time_permissions_tracker.h"
  #include "chrome/browser/permissions/one_time_permissions_tracker_observer.h"
-@@ -30,7 +31,8 @@
+@@ -30,7 +31,7 @@
  #include "chrome/browser/web_applications/web_app_install_manager_observer.h"
  #endif
  
 -#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
 +#if 0
-+#include "components/enterprise/buildflags/buildflags.h"
- #include "chrome/browser/enterprise/connectors/analysis/content_analysis_delegate.h"
  #include "components/enterprise/common/files_scan_data.h"
  #endif
-@@ -337,6 +339,119 @@ class ChromeFileSystemAccessPermissionContext
+ 
+@@ -336,6 +337,119 @@ class ChromeFileSystemAccessPermissionContext
    // KeyedService:
    void Shutdown() override;
  
@@ -291,7 +290,7 @@ index d48fd46095400bf5eeaa874eaa5d8e6f05b4e7da..7789be00bbc503d8278e38fcb1e7feeb
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -356,7 +471,7 @@ class ChromeFileSystemAccessPermissionContext
+@@ -355,7 +469,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  
