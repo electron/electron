@@ -1394,13 +1394,19 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   NativeWindow::SetVibrancy(type);
 
   NSVisualEffectView* vibrantView = [window_ vibrantView];
+  views::View* rootView = GetContentsView();
 
   if (type.empty()) {
-    if (vibrantView == nil)
-      return;
+    if (vibrant_native_view_host_ != nullptr) {
+      // Transfers ownership back to caller in the form of a unique_ptr which is
+      // subsequently deleted.
+      rootView->RemoveChildViewT(vibrant_native_view_host_);
+      vibrant_native_view_host_ = nullptr;
+    }
 
-    [vibrantView removeFromSuperview];
-    [window_ setVibrantView:nil];
+    if (vibrantView != nil) {
+      [window_ setVibrantView:nil];
+    }
 
     return;
   }
@@ -1456,9 +1462,13 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
         [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
       }
 
-      [[window_ contentView] addSubview:vibrantView
-                             positioned:NSWindowBelow
-                             relativeTo:nil];
+      // Vibrant view is inserted into the root view hierarchy underneath all
+      // other views.
+      vibrant_native_view_host_ = rootView->AddChildViewAt(
+          std::make_unique<views::NativeViewHost>(), 0);
+      vibrant_native_view_host_->Attach(vibrantView);
+
+      rootView->DeprecatedLayoutImmediately();
 
       UpdateVibrancyRadii(IsFullscreen());
     }
