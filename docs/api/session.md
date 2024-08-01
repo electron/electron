@@ -154,9 +154,9 @@ Returns:
   * `path` string - The blocked path attempting to be accessed.
 * `callback` Function
   * `action` string - The action to take as a result of the restricted path access attempt.
-    * `block` - This will block the access request and trigger an [`AbortError`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort).
-    * `tryAgain` - This will open a new file picker and allow the user to choose another path.
     * `allow` - This will allow `path` to be accessed despite restricted status.
+    * `deny` - This will block the access request and trigger an [`AbortError`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort).
+    * `tryAgain` - This will open a new file picker and allow the user to choose another path.
 
 ```js
 const { app, dialog, BrowserWindow, session } = require('electron')
@@ -180,7 +180,7 @@ async function createWindow () {
     } else if (response === 1) {
       callback('allow')
     } else {
-      callback('block')
+      callback('deny')
     }
   })
 
