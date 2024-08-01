@@ -1,0 +1,289 @@
+From 44b7fbf35b10d81c2882a18b28580f943a07c86a Mon Sep 17 00:00:00 2001
+From: Hiroshige Hayashizaki <hiroshige@chromium.org>
+Date: Tue, 16 Jul 2024 03:44:29 +0000
+Subject: [PATCH] [M127] Handle ThrottlingURLLoader deletion during throttle calls
+
+Theoretically `ThrottlingURLLoader` can be deleted during
+throttle calls and some call sites have already protection
+for such cases. This CL adds the protection for more call sites.
+
+This CL also adds more unit tests for cancelling/deleting
+`ThrottlingURLLoader` during throttle calls.
+
+(cherry picked from commit c40f8866cfd6438725cc58e5db2d792e6d9f869b)
+
+Bug: 349342289
+Change-Id: I80d64be9ba1a3ac920315f5b4012b29c9737e414
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5665925
+Commit-Queue: Hiroshige Hayashizaki <hiroshige@chromium.org>
+Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1323986}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5710951
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6533@{#1515}
+Cr-Branched-From: 7e0b87ec6b8cb5cb2969e1479fc25776e582721d-refs/heads/main@{#1313161}
+---
+
+diff --git a/third_party/blink/common/loader/throttling_url_loader.cc b/third_party/blink/common/loader/throttling_url_loader.cc
+index a5edecd..11a1e88 100644
+--- a/third_party/blink/common/loader/throttling_url_loader.cc
++++ b/third_party/blink/common/loader/throttling_url_loader.cc
+@@ -661,8 +661,12 @@
+     for (auto& entry : throttles_) {
+       auto* throttle = entry.throttle.get();
+       base::Time start = base::Time::Now();
++      auto weak_ptr = weak_factory_.GetWeakPtr();
+       throttle->BeforeWillProcessResponse(response_url_, *response_head,
+                                           &has_pending_restart);
++      if (!weak_ptr) {
++        return;
++      }
+       RecordExecutionTimeHistogram("BeforeWillProcessResponse", start);
+       if (!HandleThrottleResult(throttle)) {
+         return;
+@@ -682,8 +686,12 @@
+       auto* throttle = entry.throttle.get();
+       bool throttle_deferred = false;
+       base::Time start = base::Time::Now();
++      auto weak_ptr = weak_factory_.GetWeakPtr();
+       throttle->WillProcessResponse(response_url_, response_head.get(),
+                                     &throttle_deferred);
++      if (!weak_ptr) {
++        return;
++      }
+       RecordExecutionTimeHistogram(GetStageNameForHistogram(DEFERRED_RESPONSE),
+                                    start);
+       if (!HandleThrottleResult(throttle, throttle_deferred, &deferred))
+@@ -853,7 +861,11 @@
+     for (auto& entry : throttles_) {
+       auto* throttle = entry.throttle.get();
+       base::Time start = base::Time::Now();
++      auto weak_ptr = weak_factory_.GetWeakPtr();
+       throttle->WillOnCompleteWithError(status);
++      if (!weak_ptr) {
++        return;
++      }
+       RecordExecutionTimeHistogram("WillOnCompleteWithError", start);
+       if (!HandleThrottleResult(throttle)) {
+         return;
+diff --git a/third_party/blink/common/loader/throttling_url_loader_unittest.cc b/third_party/blink/common/loader/throttling_url_loader_unittest.cc
+index f93f4be..a48527d 100644
+--- a/third_party/blink/common/loader/throttling_url_loader_unittest.cc
++++ b/third_party/blink/common/loader/throttling_url_loader_unittest.cc
+@@ -338,9 +338,9 @@
+                            network::mojom::URLResponseHead* response_head,
+                            bool* defer) override {
+     will_process_response_called_++;
++    response_url_ = response_url;
+     if (will_process_response_callback_)
+       will_process_response_callback_.Run(delegate_.get(), defer);
+-    response_url_ = response_url;
+   }
+ 
+   void BeforeWillProcessResponse(
+@@ -422,6 +422,11 @@
+     factory_.factory_remote().FlushForTesting();
+   }
+ 
++  void ResetLoader() {
++    ResetThrottleRawPointer();
++    loader_.reset();
++  }
++
+   void ResetThrottleRawPointer() { throttle_ = nullptr; }
+ 
+   // Be the first member so it is destroyed last.
+@@ -467,6 +472,25 @@
+   EXPECT_EQ(1u, client_.on_complete_called());
+ }
+ 
++TEST_F(ThrottlingURLLoaderTest, DeleteBeforeStart) {
++  base::RunLoop run_loop;
++  throttle_->set_will_start_request_callback(base::BindLambdaForTesting(
++      [this, &run_loop](blink::URLLoaderThrottle::Delegate* delegate,
++                        bool* defer) {
++        ResetLoader();
++        run_loop.Quit();
++      }));
++
++  CreateLoaderAndStart();
++  run_loop.Run();
++
++  EXPECT_EQ(1u, factory_.create_loader_and_start_called());
++
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(0u, client_.on_complete_called());
++}
++
+ TEST_F(ThrottlingURLLoaderTest, DeferBeforeStart) {
+   throttle_->set_will_start_request_callback(base::BindLambdaForTesting(
+       [](blink::URLLoaderThrottle::Delegate* delegate, bool* defer) {
+@@ -667,6 +691,88 @@
+   EXPECT_EQ(1u, client_.on_complete_called());
+ }
+ 
++TEST_F(ThrottlingURLLoaderTest, DeleteBeforeRedirect) {
++  base::RunLoop run_loop;
++  throttle_->set_will_redirect_request_callback(base::BindLambdaForTesting(
++      [this, &run_loop](
++          blink::URLLoaderThrottle::Delegate* delegate, bool* /* defer */,
++          std::vector<std::string>* /* removed_headers */,
++          net::HttpRequestHeaders* /* modified_headers */,
++          net::HttpRequestHeaders* /* modified_cors_exempt_headers */) {
++        ResetLoader();
++        run_loop.Quit();
++      }));
++
++  CreateLoaderAndStart();
++
++  factory_.NotifyClientOnReceiveRedirect();
++
++  run_loop.Run();
++
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(0u, client_.on_complete_called());
++}
++
++TEST_F(ThrottlingURLLoaderTest, CancelBeforeWillRedirect) {
++  throttle_->set_before_will_redirect_request_callback(
++      base::BindLambdaForTesting(
++          [](blink::URLLoaderThrottle::Delegate* delegate,
++             RestartWithURLReset* restart_with_url_reset,
++             std::vector<std::string>* /* removed_headers */,
++             net::HttpRequestHeaders* /* modified_headers */,
++             net::HttpRequestHeaders* /* modified_cors_exempt_headers */) {
++            delegate->CancelWithError(net::ERR_ACCESS_DENIED);
++          }));
++
++  base::RunLoop run_loop;
++  client_.set_on_complete_callback(
++      base::BindLambdaForTesting([&run_loop](int error) {
++        EXPECT_EQ(net::ERR_ACCESS_DENIED, error);
++        run_loop.Quit();
++      }));
++
++  CreateLoaderAndStart();
++
++  factory_.NotifyClientOnReceiveRedirect();
++
++  run_loop.Run();
++
++  EXPECT_EQ(1u, throttle_->will_start_request_called());
++  EXPECT_EQ(1u, throttle_->will_redirect_request_called());
++  EXPECT_EQ(0u, throttle_->before_will_process_response_called());
++  EXPECT_EQ(0u, throttle_->will_process_response_called());
++
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(1u, client_.on_complete_called());
++}
++
++TEST_F(ThrottlingURLLoaderTest, DeleteBeforeWillRedirect) {
++  base::RunLoop run_loop;
++  throttle_->set_before_will_redirect_request_callback(
++      base::BindLambdaForTesting(
++          [this, &run_loop](
++              blink::URLLoaderThrottle::Delegate* delegate,
++              RestartWithURLReset* restart_with_url_reset,
++              std::vector<std::string>* /* removed_headers */,
++              net::HttpRequestHeaders* /* modified_headers */,
++              net::HttpRequestHeaders* /* modified_cors_exempt_headers */) {
++            ResetLoader();
++            run_loop.Quit();
++          }));
++
++  CreateLoaderAndStart();
++
++  factory_.NotifyClientOnReceiveRedirect();
++
++  run_loop.Run();
++
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(0u, client_.on_complete_called());
++}
++
+ TEST_F(ThrottlingURLLoaderTest, DeferBeforeRedirect) {
+   base::RunLoop run_loop1;
+   throttle_->set_will_redirect_request_callback(base::BindLambdaForTesting(
+@@ -880,6 +986,77 @@
+   EXPECT_EQ(1u, client_.on_complete_called());
+ }
+ 
++TEST_F(ThrottlingURLLoaderTest, DeleteBeforeResponse) {
++  base::RunLoop run_loop;
++  throttle_->set_will_process_response_callback(base::BindLambdaForTesting(
++      [this, &run_loop](blink::URLLoaderThrottle::Delegate* delegate,
++                        bool* defer) {
++        ResetLoader();
++        run_loop.Quit();
++      }));
++
++  CreateLoaderAndStart();
++
++  factory_.NotifyClientOnReceiveResponse();
++
++  run_loop.Run();
++
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(0u, client_.on_complete_called());
++}
++
++TEST_F(ThrottlingURLLoaderTest, CancelBeforeWillProcessResponse) {
++  throttle_->set_before_will_process_response_callback(
++      base::BindLambdaForTesting(
++          [](blink::URLLoaderThrottle::Delegate* delegate,
++             RestartWithURLReset* restart_with_url_reset) {
++            delegate->CancelWithError(net::ERR_ACCESS_DENIED);
++          }));
++
++  base::RunLoop run_loop;
++  client_.set_on_complete_callback(
++      base::BindLambdaForTesting([&run_loop](int error) {
++        EXPECT_EQ(net::ERR_ACCESS_DENIED, error);
++        run_loop.Quit();
++      }));
++
++  CreateLoaderAndStart();
++
++  factory_.NotifyClientOnReceiveResponse();
++
++  run_loop.Run();
++
++  EXPECT_EQ(1u, throttle_->will_start_request_called());
++  EXPECT_EQ(0u, throttle_->will_redirect_request_called());
++  EXPECT_EQ(1u, throttle_->before_will_process_response_called());
++  EXPECT_EQ(0u, throttle_->will_process_response_called());
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(1u, client_.on_complete_called());
++}
++
++TEST_F(ThrottlingURLLoaderTest, DeleteBeforeWillProcessResponse) {
++  base::RunLoop run_loop;
++  throttle_->set_before_will_process_response_callback(
++      base::BindLambdaForTesting(
++          [this, &run_loop](blink::URLLoaderThrottle::Delegate* delegate,
++                            RestartWithURLReset* restart_with_url_reset) {
++            ResetLoader();
++            run_loop.Quit();
++          }));
++
++  CreateLoaderAndStart();
++
++  factory_.NotifyClientOnReceiveResponse();
++
++  run_loop.Run();
++
++  EXPECT_EQ(0u, client_.on_received_response_called());
++  EXPECT_EQ(0u, client_.on_received_redirect_called());
++  EXPECT_EQ(0u, client_.on_complete_called());
++}
++
+ TEST_F(ThrottlingURLLoaderTest, DeferBeforeResponse) {
+   base::RunLoop run_loop1;
+   throttle_->set_will_process_response_callback(base::BindRepeating(
