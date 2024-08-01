@@ -167,6 +167,7 @@ class NativeWindowMac : public NativeWindow,
   void DetachChildren() override;
 
   void NotifyWindowWillEnterFullScreen();
+  void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
   // Cleanup observers when window is getting closed. Note that the destructor
