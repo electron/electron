@@ -1,14 +1,13 @@
-From 9463ce9cd8d9b02b98edb746431c0bbcf9654ae4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Neto <dneto@google.com>
 Date: Tue, 16 Jul 2024 16:34:52 -0400
-Subject: [PATCH] Add CMake option DXC_CODEGEN_EXCEPTIONS_TRAP (#6764)
+Subject: Add CMake option DXC_CODEGEN_EXCEPTIONS_TRAP (#6764)
 
 When enabled, any hlsl::Exception thrown during code generation and
 optimization will cause the process to trap.
 
 Bug: 346618785
 Change-Id: I9ac966d339ec3090e3455d51a9d7516cc5a3f153
-
 
 HLMatrixLower: allow exceptions to propagate out (#6710)
 
@@ -24,13 +23,12 @@ Bug: 346618785
 Change-Id: Id421ca324e4d799477a41abb14b966e8f39be482
 Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5715228
 Reviewed-by: Natalie Chouinard <chouinard@google.com>
----
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 15097b8..ac35ebd 100644
+index 15097b8473bf9f6c2b6c28ac095936616aa917f6..ac35ebd1a6afd55934da502ddb0e0c286da10db8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -104,6 +104,9 @@
+@@ -104,6 +104,9 @@ endif()
  option(DXC_DISABLE_ALLOCATOR_OVERRIDES "Disable usage of allocator overrides" OFF)
  mark_as_advanced(DXC_DISABLE_ALLOCATOR_OVERRIDES)
  
@@ -41,7 +39,7 @@ index 15097b8..ac35ebd 100644
  if(NOT CMAKE_VERSION VERSION_LESS "3.13" AND WIN32 AND NOT CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64EC")
    add_link_options(/DEBUGTYPE:CV,FIXUP,PDATA /INCREMENTAL:NO)
 diff --git a/include/dxc/config.h.cmake b/include/dxc/config.h.cmake
-index 6d74503..7226ed7 100644
+index 6d7450323ec864ef5f6e8796c46423d49f278b76..7226ed75a108f63c3c894b59eb7e0dbc5fb66002 100644
 --- a/include/dxc/config.h.cmake
 +++ b/include/dxc/config.h.cmake
 @@ -1,2 +1,4 @@
@@ -50,10 +48,10 @@ index 6d74503..7226ed7 100644
 +/* Generate a trap if an hlsl::Exception is thrown during code generation */
 +#cmakedefine DXC_CODEGEN_EXCEPTIONS_TRAP
 diff --git a/lib/HLSL/HLMatrixLowerPass.cpp b/lib/HLSL/HLMatrixLowerPass.cpp
-index 0b54648..897e0d7 100644
+index 0b54648dec558b218acde08da7b1cb8519e6a48e..897e0d72dae068c6f9281185c9f315f70faeea9f 100644
 --- a/lib/HLSL/HLMatrixLowerPass.cpp
 +++ b/lib/HLSL/HLMatrixLowerPass.cpp
-@@ -60,7 +60,12 @@
+@@ -60,7 +60,12 @@ class TempOverloadPool {
  public:
    TempOverloadPool(llvm::Module &Module, const char *BaseName)
        : Module(Module), BaseName(BaseName) {}
@@ -67,7 +65,7 @@ index 0b54648..897e0d7 100644
  
    Function *get(FunctionType *Ty);
    bool contains(FunctionType *Ty) const { return Funcs.count(Ty) != 0; }
-@@ -248,12 +253,15 @@
+@@ -248,12 +253,15 @@ bool HLMatrixLowerPass::runOnModule(Module &M) {
    m_matToVecStubs = nullptr;
    m_vecToMatStubs = nullptr;
  
@@ -85,7 +83,7 @@ index 0b54648..897e0d7 100644
  }
  
 diff --git a/tools/clang/lib/CodeGen/BackendUtil.cpp b/tools/clang/lib/CodeGen/BackendUtil.cpp
-index 294ca05..1e9adb4 100644
+index 294ca05946eed6d87a3ad4e2b56a641d24065760..1e9adb40f4bae4cada42b5581582d50dc3676594 100644
 --- a/tools/clang/lib/CodeGen/BackendUtil.cpp
 +++ b/tools/clang/lib/CodeGen/BackendUtil.cpp
 @@ -8,6 +8,10 @@
@@ -111,7 +109,7 @@ index 294ca05..1e9adb4 100644
  
  using namespace clang;
  using namespace llvm;
-@@ -780,6 +782,13 @@
+@@ -780,6 +782,13 @@ void clang::EmitBackendOutput(DiagnosticsEngine &Diags,
    } catch (const ::hlsl::Exception &hlslException) {
      Diags.Report(Diags.getCustomDiagID(DiagnosticsEngine::Error, "%0\n"))
          << StringRef(hlslException.what());
@@ -127,7 +125,7 @@ index 294ca05..1e9adb4 100644
    // If an optional clang TargetInfo description string was passed in, use it to
 diff --git a/tools/clang/test/DXC/Passes/HLMatrixLower/dont_crash_on_invalid_cast.ll b/tools/clang/test/DXC/Passes/HLMatrixLower/dont_crash_on_invalid_cast.ll
 new file mode 100644
-index 0000000..fca52d1
+index 0000000000000000000000000000000000000000..fca52d11595d3ac99dedb28219f0746a26add6c9
 --- /dev/null
 +++ b/tools/clang/test/DXC/Passes/HLMatrixLower/dont_crash_on_invalid_cast.ll
 @@ -0,0 +1,130 @@

@@ -1,7 +1,7 @@
-From 44b7fbf35b10d81c2882a18b28580f943a07c86a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hiroshige Hayashizaki <hiroshige@chromium.org>
 Date: Tue, 16 Jul 2024 03:44:29 +0000
-Subject: [PATCH] [M127] Handle ThrottlingURLLoader deletion during throttle calls
+Subject: Handle ThrottlingURLLoader deletion during throttle calls
 
 Theoretically `ThrottlingURLLoader` can be deleted during
 throttle calls and some call sites have already protection
@@ -23,13 +23,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6533@{#1515}
 Cr-Branched-From: 7e0b87ec6b8cb5cb2969e1479fc25776e582721d-refs/heads/main@{#1313161}
----
 
 diff --git a/third_party/blink/common/loader/throttling_url_loader.cc b/third_party/blink/common/loader/throttling_url_loader.cc
-index a5edecd..11a1e88 100644
+index b4924e7441f45881ad1e33aaab61a49400832f54..eeed93d8e7791b51bf17b4b6243251823824872b 100644
 --- a/third_party/blink/common/loader/throttling_url_loader.cc
 +++ b/third_party/blink/common/loader/throttling_url_loader.cc
-@@ -661,8 +661,12 @@
+@@ -660,8 +660,12 @@ void ThrottlingURLLoader::OnReceiveResponse(
      for (auto& entry : throttles_) {
        auto* throttle = entry.throttle.get();
        base::Time start = base::Time::Now();
@@ -42,7 +41,7 @@ index a5edecd..11a1e88 100644
        RecordExecutionTimeHistogram("BeforeWillProcessResponse", start);
        if (!HandleThrottleResult(throttle)) {
          return;
-@@ -682,8 +686,12 @@
+@@ -681,8 +685,12 @@ void ThrottlingURLLoader::OnReceiveResponse(
        auto* throttle = entry.throttle.get();
        bool throttle_deferred = false;
        base::Time start = base::Time::Now();
@@ -55,7 +54,7 @@ index a5edecd..11a1e88 100644
        RecordExecutionTimeHistogram(GetStageNameForHistogram(DEFERRED_RESPONSE),
                                     start);
        if (!HandleThrottleResult(throttle, throttle_deferred, &deferred))
-@@ -853,7 +861,11 @@
+@@ -852,7 +860,11 @@ void ThrottlingURLLoader::OnComplete(
      for (auto& entry : throttles_) {
        auto* throttle = entry.throttle.get();
        base::Time start = base::Time::Now();
@@ -68,10 +67,10 @@ index a5edecd..11a1e88 100644
        if (!HandleThrottleResult(throttle)) {
          return;
 diff --git a/third_party/blink/common/loader/throttling_url_loader_unittest.cc b/third_party/blink/common/loader/throttling_url_loader_unittest.cc
-index f93f4be..a48527d 100644
+index 2c73705d12445c13067e937b4bfae1c99290da09..a7e037b2dde9390d9cc15d863ed926809f9afccf 100644
 --- a/third_party/blink/common/loader/throttling_url_loader_unittest.cc
 +++ b/third_party/blink/common/loader/throttling_url_loader_unittest.cc
-@@ -338,9 +338,9 @@
+@@ -338,9 +338,9 @@ class TestURLLoaderThrottle : public blink::URLLoaderThrottle {
                             network::mojom::URLResponseHead* response_head,
                             bool* defer) override {
      will_process_response_called_++;
@@ -82,7 +81,7 @@ index f93f4be..a48527d 100644
    }
  
    void BeforeWillProcessResponse(
-@@ -422,6 +422,11 @@
+@@ -422,6 +422,11 @@ class ThrottlingURLLoaderTest : public testing::Test {
      factory_.factory_remote().FlushForTesting();
    }
  
@@ -94,7 +93,7 @@ index f93f4be..a48527d 100644
    void ResetThrottleRawPointer() { throttle_ = nullptr; }
  
    // Be the first member so it is destroyed last.
-@@ -467,6 +472,25 @@
+@@ -467,6 +472,25 @@ TEST_F(ThrottlingURLLoaderTest, CancelBeforeStart) {
    EXPECT_EQ(1u, client_.on_complete_called());
  }
  
@@ -120,7 +119,7 @@ index f93f4be..a48527d 100644
  TEST_F(ThrottlingURLLoaderTest, DeferBeforeStart) {
    throttle_->set_will_start_request_callback(base::BindLambdaForTesting(
        [](blink::URLLoaderThrottle::Delegate* delegate, bool* defer) {
-@@ -667,6 +691,88 @@
+@@ -667,6 +691,88 @@ TEST_F(ThrottlingURLLoaderTest, CancelBeforeRedirect) {
    EXPECT_EQ(1u, client_.on_complete_called());
  }
  
@@ -209,7 +208,7 @@ index f93f4be..a48527d 100644
  TEST_F(ThrottlingURLLoaderTest, DeferBeforeRedirect) {
    base::RunLoop run_loop1;
    throttle_->set_will_redirect_request_callback(base::BindLambdaForTesting(
-@@ -880,6 +986,77 @@
+@@ -880,6 +986,77 @@ TEST_F(ThrottlingURLLoaderTest, CancelBeforeResponse) {
    EXPECT_EQ(1u, client_.on_complete_called());
  }
  
