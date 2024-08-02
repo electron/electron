@@ -46,6 +46,7 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
   bool ShouldUseHighContrastColors();
   bool ShouldUseInvertedColorScheme();
   bool InForcedColorsMode();
+  bool GetPrefersReducedTransparency();
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;

@@ -11,5 +11,7 @@
   { "patch_dir": "src/electron/patches/Mantle", "repo": "src/third_party/squirrel.mac/vendor/Mantle" },
   { "patch_dir": "src/electron/patches/ReactiveObjC", "repo": "src/third_party/squirrel.mac/vendor/ReactiveObjC" },
   { "patch_dir": "src/electron/patches/webrtc", "repo": "src/third_party/webrtc" },
-  { "patch_dir": "src/electron/patches/reclient-configs", "repo": "src/third_party/engflow-reclient-configs" }
+  { "patch_dir": "src/electron/patches/reclient-configs", "repo": "src/third_party/engflow-reclient-configs" },
+  { "patch_dir": "src/electron/patches/dawn", "repo": "src/third_party/dawn"},
+  { "patch_dir": "src/electron/patches/DirectXShaderCompiler", "repo": "src/third_party/dawn/third_party/dxc"}
 ]

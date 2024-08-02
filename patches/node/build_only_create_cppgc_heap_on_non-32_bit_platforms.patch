@@ -33,10 +33,10 @@ index 2ce1e8a7dcca2ba153d387d11970c72b5f43c167..590303d1b78e2c28d7c3338196b12fcf
      node_platform = "win32"
    } else if (target_os == "mac") {
 diff --git a/src/env.cc b/src/env.cc
-index 7bd5edf61c339daa1e1b0df8e2e91680948641de..401bc2fc819b85baba2509de6cd4dbcde5f67559 100644
+index ea0ae4e08ec7dd98721bc89d2fe80fa47eaddfec..cad55dc4458cc64d701b53975f817b1552660d73 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -557,7 +557,8 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -569,7 +569,8 @@ IsolateData::IsolateData(Isolate* isolate,
      // for embedder ID, V8 could accidentally enable cppgc on them. So
      // safe guard against this.
      DCHECK_NE(descriptor.wrappable_type_index, BaseObject::kSlot);
@@ -46,7 +46,7 @@ index 7bd5edf61c339daa1e1b0df8e2e91680948641de..401bc2fc819b85baba2509de6cd4dbcd
      cpp_heap_ = CppHeap::Create(
          platform,
          CppHeapCreateParams{
-@@ -565,6 +566,7 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -577,6 +578,7 @@ IsolateData::IsolateData(Isolate* isolate,
              WrapperDescriptor(
                  BaseObject::kEmbedderType, BaseObject::kSlot, cppgc_id)});
      isolate->AttachCppHeap(cpp_heap_.get());
