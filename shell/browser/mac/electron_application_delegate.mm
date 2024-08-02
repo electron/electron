@@ -68,6 +68,11 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser::Get()->WillFinishLaunching();
 }
 
+// NSUserNotification is deprecated; all calls should be replaced with
+// UserNotifications.frameworks API
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
   NSObject* user_notification =
       [notify userInfo][NSApplicationLaunchUserNotificationKey];
@@ -94,6 +99,9 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser::Get()->DidFinishLaunching(
       electron::NSDictionaryToValue(notification_info));
 }
+
+// -Wdeprecated-declarations
+#pragma clang diagnostic pop
 
 - (void)applicationDidBecomeActive:(NSNotification*)notification {
   electron::Browser::Get()->DidBecomeActive();

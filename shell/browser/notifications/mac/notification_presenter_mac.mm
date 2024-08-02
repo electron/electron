@@ -9,6 +9,11 @@
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 
+// NSUserNotification is deprecated; we need to use the
+// UserNotifications.frameworks API instead
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 namespace electron {
 
 // static

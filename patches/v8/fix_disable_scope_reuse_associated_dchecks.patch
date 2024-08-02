@@ -23,27 +23,29 @@ public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index 6c85e6734d40bbbe24d883b083f6712c474cc283..dc39bceb9b7c939eba8f4d2dd0c53395bde8fec4 100644
+index 63595b84b71957a81c50d054b8db573be9d9d981..f23453f86cb0786d59328177be1a9bc6b4801c1a 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -2722,9 +2722,9 @@ void Scope::AllocateScopeInfosRecursively(
- 
-   // Allocate ScopeInfos for inner scopes.
+@@ -2724,10 +2724,10 @@ void Scope::AllocateScopeInfosRecursively(
    for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
--    DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
--    DCHECK_IMPLIES(scope->sibling_, scope->sibling_->UniqueIdInScript() !=
--                                        scope->UniqueIdInScript());
-+    // DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
-+    // DCHECK_IMPLIES(scope->sibling_, scope->sibling_->UniqueIdInScript() !=
-+    //                                     scope->UniqueIdInScript());
+ #ifdef DEBUG
+     if (!scope->is_hidden_catch_scope()) {
+-      DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
+-      DCHECK_IMPLIES(
+-          scope->sibling_ && !scope->sibling_->is_hidden_catch_scope(),
+-          scope->sibling_->UniqueIdInScript() != scope->UniqueIdInScript());
++      // DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
++      // DCHECK_IMPLIES(
++      //     scope->sibling_ && !scope->sibling_->is_hidden_catch_scope(),
++      //     scope->sibling_->UniqueIdInScript() != scope->UniqueIdInScript());
+     }
+ #endif
      if (!scope->is_function_scope() ||
-         scope->AsDeclarationScope()->ShouldEagerCompile()) {
-       scope->AllocateScopeInfosRecursively(isolate, next_outer_scope,
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 2ac4e74daa5e8837f459755d85b4f451a7f5bb31..326b42c92dc1f20b0abff4b9f49657df6489f78d 100644
+index df04f66444cb4aee60244a19e38775033efe7fe8..b9414b7e830b4b1a102ed2b277a4aa8ab3cbc351 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -996,7 +996,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -979,7 +979,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  

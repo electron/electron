@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 1 Aug 2024 10:02:46 -0500
+Subject: chore: turn off launchApplicationAtURL deprecation errors in Squirrel
+
+Add pragmas to disable deprecation warnings. This patch should be
+updated to use non-deprecated API in upgrade-follow-up ticket
+https://github.com/electron/electron/issues/43168
+
+diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
+index 671f8fa2104df85046ff813d4b824a65caae502f..acf545199dbf1831fe8a73155c6e4d0db4047934 100644
+--- a/Squirrel/ShipIt-main.m
++++ b/Squirrel/ShipIt-main.m
+@@ -186,10 +186,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+ 							NSLog(@"New ShipIt exited");
+ 						} else {
+ 							NSLog(@"Attempting to launch app on lower than 11.0");
++// TODO: https://github.com/electron/electron/issues/43168
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+ 							if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
+ 								NSLog(@"Could not launch application at %@: %@", bundleURL, error);
+ 								return;
+ 							}
++#pragma clang diagnostic pop
+ 
+ 							NSLog(@"Application launched at %@", bundleURL);
+ 						}
+@@ -235,12 +239,16 @@ int main(int argc, const char * argv[]) {
+ 
+ 		if (strcmp(jobLabel, [launchSignal UTF8String]) == 0) {
+ 			NSLog(@"Detected this as a launch request");
++// TODO: https://github.com/electron/electron/issues/43168
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+ 			NSError *error;
+ 			if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:shipItStateURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
+ 				NSLog(@"Could not launch application at %@: %@", shipItStateURL, error);
+ 			} else {
+ 				NSLog(@"Successfully launched application at %@", shipItStateURL);
+ 			}
++#pragma clang diagnostic pop
+ 			exit(EXIT_SUCCESS);
+ 		} else {
+ 			NSLog(@"Detected this as an install request");

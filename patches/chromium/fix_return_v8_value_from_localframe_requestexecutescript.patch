@@ -97,10 +97,10 @@ index 0fad9323d35be707afe398c98f721b9c53665653..019bf127dc351eb2d01f4d1885669561
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 3c2e7b3b2f30d62d9d65b28ebea15a34bb3e8d82..26d635918d732a8f085952fa13f8095d1fdabeba 100644
+index 452ac81650a3aef222c494821211d970cc044971..e26dc921d7d29a5582fe080918632320a4116dfd 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -959,6 +959,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -968,6 +968,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -216,7 +216,7 @@ index db1cc198dfc40ce359bad4157a4aad396e1be1a0..424fa3415a9f7d44a8422ecf0eb3670b
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 0799f6b0f1789885b98698085a1bf592d7b090f7..36e344e290f24297c3e9905b4b9e32dab617d515 100644
+index e9b2bddc2bf046baa94273d9785087c9235bd7d1..56d5140360395c1bccb03136334fd95b3a5d6686 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1095,14 +1095,15 @@ void WebLocalFrameImpl::RequestExecuteScript(

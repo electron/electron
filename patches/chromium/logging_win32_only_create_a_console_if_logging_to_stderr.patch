@@ -9,7 +9,7 @@ be created for each child process, despite logs being redirected to a
 file.
 
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index 4251459b695e6375618de489415c3105afb1449d..6cb3cb7fd49f57f19f9780cac32218b8331c3d38 100644
+index ecc03076fa344ddc805f034602648a25d429ee4e..68969db128377fce81d19f497e4ef2fe33d5bf00 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
 @@ -306,16 +306,14 @@ RunContentProcess(ContentMainParams params,
