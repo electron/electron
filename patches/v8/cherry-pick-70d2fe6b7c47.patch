@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 21 Jun 2024 15:11:40 +0200
+Subject: Allow reduced hasInstance to abort
+
+Fixed: 343507800
+Change-Id: I579041fe82e975d83a72e4744013cb04c4d3dc70
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5644891
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#94585}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index efcdd6d2028a5e0f0ec1149925ab2e1fe5f90412..78f4dd57d339eaad8b265721ef37137291da7940 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -8639,10 +8639,9 @@ ReduceResult MaglevGraphBuilder::TryBuildFastInstanceOf(
+ 
+       if (has_instance_field->IsJSFunction()) {
+         SaveCallSpeculationScope saved(this);
+-        ReduceResult result =
+-            ReduceCallForConstant(has_instance_field->AsJSFunction(), args);
+-        DCHECK(!result.IsDoneWithAbort());
+-        call_result = result.value();
++        GET_VALUE_OR_ABORT(
++            call_result,
++            ReduceCallForConstant(has_instance_field->AsJSFunction(), args));
+       } else {
+         call_result = BuildGenericCall(GetConstant(*has_instance_field),
+                                        Call::TargetType::kAny, args);
