@@ -51,10 +51,10 @@ index 23a8257aa2a0a671cf7af35aff9906891091606d..31f5b160e4cd755cfb56a62b04261ee1
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee270f4f5e 100644
+index 14b9c99e81e0999d1a2e25557e6a731ec88f6a22..f8cf2fb4ab66dae92b80c17cdda8b984fe4807c7 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -54,6 +54,7 @@
+@@ -59,6 +59,7 @@
  #include <memory>
  #include <set>
  #include <string>
@@ -62,7 +62,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
  #include <type_traits>
  
  #include "base/base_paths.h"
-@@ -81,6 +82,7 @@
+@@ -86,6 +87,7 @@
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/sequenced_task_runner_helpers.h"
  #include "base/task/single_thread_task_runner.h"
@@ -70,7 +70,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
  #include "base/threading/platform_thread.h"
  #include "base/time/time.h"
  #include "base/timer/timer.h"
-@@ -97,7 +99,7 @@
+@@ -102,7 +104,7 @@
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/resource/scoped_startup_resource_bundle.h"
  
@@ -79,7 +79,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
  #include "chrome/browser/ui/process_singleton_dialog_linux.h"
  #endif
  
-@@ -343,6 +345,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -348,6 +350,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -88,7 +88,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
    // Ensure there is an instance of ResourceBundle that is initialized for
    // localized string resource accesses.
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
-@@ -366,6 +370,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -371,6 +375,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED_IN_MIGRATION();
    return false;
@@ -96,7 +96,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -378,6 +383,21 @@ bool IsChromeProcess(pid_t pid) {
+@@ -383,6 +388,21 @@ bool IsChromeProcess(pid_t pid) {
                base::FilePath(chrome::kBrowserProcessExecutableName));
  }
  
@@ -118,7 +118,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
  // A helper class to hold onto a socket.
  class ScopedSocket {
   public:
-@@ -781,6 +801,10 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -786,6 +806,10 @@ ProcessSingleton::~ProcessSingleton() {
    if (watcher_) {
      watcher_->OnEminentProcessSingletonDestruction();
    }
@@ -129,7 +129,7 @@ index c3cf6e083105159fbb815f3754423d276d416036..2205fa3ee2bd2611bad0594680a7cdee
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1048,11 +1072,32 @@ bool ProcessSingleton::Create() {
+@@ -1053,11 +1077,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
