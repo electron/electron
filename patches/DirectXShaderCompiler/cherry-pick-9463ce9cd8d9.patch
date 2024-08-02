@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Neto <dneto@google.com>
+Date: Tue, 16 Jul 2024 16:34:52 -0400
+Subject: Add CMake option DXC_CODEGEN_EXCEPTIONS_TRAP (#6764)
+
+When enabled, any hlsl::Exception thrown during code generation and
+optimization will cause the process to trap.
+
+Bug: 346618785
+Change-Id: I9ac966d339ec3090e3455d51a9d7516cc5a3f153
+
+HLMatrixLower: allow exceptions to propagate out (#6710)
+
+If an exception is thrown, don't block it in the TempOverloadPool
+destructor. Allow it to propagate out as a user-visible error.
+
+Explicitly clear the TempOverloadPool before returning from the
+HLMatrixLowerPass::runOnModule. In the normal case, when no exception is
+thrown, that will still verify that all the overloads actually have been
+lowered, and will assert out if they aren't.
+
+Bug: 346618785
+Change-Id: Id421ca324e4d799477a41abb14b966e8f39be482
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5715228
+Reviewed-by: Natalie Chouinard <chouinard@google.com>
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 15097b8473bf9f6c2b6c28ac095936616aa917f6..ac35ebd1a6afd55934da502ddb0e0c286da10db8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -104,6 +104,9 @@ endif()
+ option(DXC_DISABLE_ALLOCATOR_OVERRIDES "Disable usage of allocator overrides" OFF)
+ mark_as_advanced(DXC_DISABLE_ALLOCATOR_OVERRIDES)
+ 
++option(DXC_CODEGEN_EXCEPTIONS_TRAP "An exception in code generation generates a trap, ending the compiler process" OFF)
++mark_as_advanced(DXC_CODEGEN_EXCEPTIONS_TRAP)
++
+ # adjust link option to enable debugging from kernel mode; not compatible with incremental linking
+ if(NOT CMAKE_VERSION VERSION_LESS "3.13" AND WIN32 AND NOT CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64EC")
+   add_link_options(/DEBUGTYPE:CV,FIXUP,PDATA /INCREMENTAL:NO)
+diff --git a/include/dxc/config.h.cmake b/include/dxc/config.h.cmake
+index 6d7450323ec864ef5f6e8796c46423d49f278b76..7226ed75a108f63c3c894b59eb7e0dbc5fb66002 100644
+--- a/include/dxc/config.h.cmake
++++ b/include/dxc/config.h.cmake
+@@ -1,2 +1,4 @@
+ /* Disable overriding memory allocators. */
+ #cmakedefine DXC_DISABLE_ALLOCATOR_OVERRIDES
++/* Generate a trap if an hlsl::Exception is thrown during code generation */
++#cmakedefine DXC_CODEGEN_EXCEPTIONS_TRAP
+diff --git a/lib/HLSL/HLMatrixLowerPass.cpp b/lib/HLSL/HLMatrixLowerPass.cpp
+index d5959eb9335465f67d8e7ef7d7ab4eb720274226..3bb9f65834ecfd0c7a25c8a176f62c124e9967e5 100644
+--- a/lib/HLSL/HLMatrixLowerPass.cpp
++++ b/lib/HLSL/HLMatrixLowerPass.cpp
+@@ -60,7 +60,12 @@ class TempOverloadPool {
+ public:
+   TempOverloadPool(llvm::Module &Module, const char *BaseName)
+       : Module(Module), BaseName(BaseName) {}
+-  ~TempOverloadPool() { clear(); }
++  ~TempOverloadPool() {
++    if (!Funcs.empty()) {
++      // The flow has thrown an exception. Let that exception
++      // propagate out and be reported as a compile error.
++    }
++  }
+ 
+   Function *get(FunctionType *Ty);
+   bool contains(FunctionType *Ty) const { return Funcs.count(Ty) != 0; }
+@@ -248,12 +253,15 @@ bool HLMatrixLowerPass::runOnModule(Module &M) {
+   m_matToVecStubs = nullptr;
+   m_vecToMatStubs = nullptr;
+ 
+-  // If you hit an assert during TempOverloadPool destruction,
++  // If you hit an assert while clearing TempOverloadPool,
+   // it means that either a matrix producer was lowered,
+   // causing a translation stub to be created,
+   // but the consumer of that matrix was never (properly) lowered.
+   // Or the opposite: a matrix consumer was lowered and not its producer.
+ 
++  matToVecStubs.clear();
++  vecToMatStubs.clear();
++
+   return true;
+ }
+ 
+diff --git a/tools/clang/lib/CodeGen/BackendUtil.cpp b/tools/clang/lib/CodeGen/BackendUtil.cpp
+index 294ca05946eed6d87a3ad4e2b56a641d24065760..1e9adb40f4bae4cada42b5581582d50dc3676594 100644
+--- a/tools/clang/lib/CodeGen/BackendUtil.cpp
++++ b/tools/clang/lib/CodeGen/BackendUtil.cpp
+@@ -8,6 +8,10 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "clang/CodeGen/BackendUtil.h"
++#include "dxc/HLSL/DxilGenerationPass.h" // HLSL Change
++#include "dxc/HLSL/HLMatrixLowerPass.h"  // HLSL Change
++#include "dxc/Support/Global.h"          // HLSL Change
++#include "dxc/config.h"                  // HLSL Change
+ #include "clang/Basic/Diagnostic.h"
+ #include "clang/Basic/LangOptions.h"
+ #include "clang/Basic/TargetOptions.h"
+@@ -41,10 +45,8 @@
+ #include "llvm/Transforms/ObjCARC.h"
+ #include "llvm/Transforms/Scalar.h"
+ #include "llvm/Transforms/Utils/SymbolRewriter.h"
++#include <cstdio>
+ #include <memory>
+-#include "dxc/HLSL/DxilGenerationPass.h" // HLSL Change
+-#include "dxc/HLSL/HLMatrixLowerPass.h"  // HLSL Change
+-#include "dxc/Support/Global.h" // HLSL Change
+ 
+ using namespace clang;
+ using namespace llvm;
+@@ -780,6 +782,13 @@ void clang::EmitBackendOutput(DiagnosticsEngine &Diags,
+   } catch (const ::hlsl::Exception &hlslException) {
+     Diags.Report(Diags.getCustomDiagID(DiagnosticsEngine::Error, "%0\n"))
+         << StringRef(hlslException.what());
++#if defined(DXC_CODEGEN_EXCEPTIONS_TRAP)
++    // llvm::errs() doesn't work in release builds on Linux.
++    // Use C-style fprintf because it works everywhere.
++    fprintf(stderr, "internal codegen error: %s\n", hlslException.what());
++    fflush(stderr);
++    LLVM_BUILTIN_TRAP;
++#endif
+   } // HLSL Change Ends
+ 
+   // If an optional clang TargetInfo description string was passed in, use it to
+diff --git a/tools/clang/test/DXC/Passes/HLMatrixLower/dont_crash_on_invalid_cast.ll b/tools/clang/test/DXC/Passes/HLMatrixLower/dont_crash_on_invalid_cast.ll
+new file mode 100644
+index 0000000000000000000000000000000000000000..fca52d11595d3ac99dedb28219f0746a26add6c9
+--- /dev/null
++++ b/tools/clang/test/DXC/Passes/HLMatrixLower/dont_crash_on_invalid_cast.ll
+@@ -0,0 +1,130 @@
++; RUN: not %dxopt %s -hlsl-passes-resume -hlmatrixlower -S | FileCheck %s
++
++
++; The HL matrix lowering pass can sometimes throw an exception
++; due to an invalid LLVM-level cast<Ty> call.  Make sure that
++; propagates out to a user-level error.
++
++; Note: There is still a bug in the compiler here.  Not all matrix
++; lowerings are covered by the pass.
++
++; TODO: Fix the underlying bug https://github.com/microsoft/DirectXShaderCompiler/issues/6723
++; Once that is fixed, this test changes or should be deleted.
++
++
++; CHECK: Operation failed - error code
++
++;
++; Buffer Definitions:
++;
++; cbuffer $Globals
++; {
++;
++;   [0 x i8] (type annotation not present)
++;
++; }
++;
++;
++; Resource Bindings:
++;
++; Name                                 Type  Format         Dim      ID      HLSL Bind  Count
++; ------------------------------ ---------- ------- ----------- ------- -------------- ------
++; $Globals                          cbuffer      NA          NA     CB0   cb4294967295     1
++;
++target datalayout = "e-m:e-p:32:32-i1:32-i8:32-i16:32-i32:32-i64:64-f16:32-f32:32-f64:64-n8:16:32:64"
++target triple = "dxil-ms-dx"
++
++%ConstantBuffer = type opaque
++%class.matrix.float.2.4 = type { [2 x <4 x float>] }
++%struct.e = type { [1 x %struct.d], [1 x %struct.d] }
++%struct.d = type { %struct.a }
++%struct.a = type { float, %class.matrix.float.2.4 }
++
++@"$Globals" = external constant %ConstantBuffer
++@g.0.0.0 = internal global [1 x float] undef, align 4
++@g.0.0.1 = internal global [1 x %class.matrix.float.2.4] undef, align 4
++@g.1.0.0 = internal global [1 x float] undef, align 4
++@g.1.0.1 = internal global [1 x %class.matrix.float.2.4] undef, align 4
++
++; Function Attrs: nounwind
++define void @main() #0 {
++entry:
++  %h.0.1 = alloca %class.matrix.float.2.4, !dbg !26 ; line:13 col:17
++  store float 0.000000e+00, float* getelementptr inbounds ([1 x float], [1 x float]* @g.0.0.0, i32 0, i32 0), !dbg !26 ; line:13 col:17
++  %0 = call %class.matrix.float.2.4 @"dx.hl.init.rn.%class.matrix.float.2.4 (i32, <8 x float>)"(i32 0, <8 x float> zeroinitializer) #0, !dbg !26 ; line:13 col:17
++  %1 = call %class.matrix.float.2.4 @"dx.hl.cast.rowMatToColMat.%class.matrix.float.2.4 (i32, %class.matrix.float.2.4)"(i32 7, %class.matrix.float.2.4 %0) #0, !dbg !26 ; line:13 col:17
++  %2 = call %class.matrix.float.2.4 @"dx.hl.matldst.colStore.%class.matrix.float.2.4 (i32, %class.matrix.float.2.4*, %class.matrix.float.2.4)"(i32 1, %class.matrix.float.2.4* getelementptr inbounds ([1 x %class.matrix.float.2.4], [1 x %class.matrix.float.2.4]* @g.0.0.1, i32 0, i32 0), %class.matrix.float.2.4 %1) #0, !dbg !26 ; line:13 col:17
++  store float 0.000000e+00, float* getelementptr inbounds ([1 x float], [1 x float]* @g.1.0.0, i32 0, i32 0), !dbg !26 ; line:13 col:17
++  %3 = call %class.matrix.float.2.4 @"dx.hl.init.rn.%class.matrix.float.2.4 (i32, <8 x float>)"(i32 0, <8 x float> zeroinitializer) #0, !dbg !26 ; line:13 col:17
++  %4 = call %class.matrix.float.2.4 @"dx.hl.cast.rowMatToColMat.%class.matrix.float.2.4 (i32, %class.matrix.float.2.4)"(i32 7, %class.matrix.float.2.4 %3) #0, !dbg !26 ; line:13 col:17
++  %5 = call %class.matrix.float.2.4 @"dx.hl.matldst.colStore.%class.matrix.float.2.4 (i32, %class.matrix.float.2.4*, %class.matrix.float.2.4)"(i32 1, %class.matrix.float.2.4* getelementptr inbounds ([1 x %class.matrix.float.2.4], [1 x %class.matrix.float.2.4]* @g.1.0.1, i32 0, i32 0), %class.matrix.float.2.4 %4) #0, !dbg !26 ; line:13 col:17
++  %6 = load float, float* getelementptr inbounds ([1 x float], [1 x float]* @g.1.0.0, i32 0, i32 0), !dbg !32 ; line:17 col:9
++  %7 = getelementptr inbounds %class.matrix.float.2.4, %class.matrix.float.2.4* %h.0.1, i32 0, i32 0, i32 0, !dbg !32 ; line:17 col:9
++  %8 = load <4 x float>, <4 x float>* getelementptr inbounds ([1 x %class.matrix.float.2.4], [1 x %class.matrix.float.2.4]* @g.1.0.1, i32 0, i32 0, i32 0, i32 0), !dbg !32 ; line:17 col:9
++  store <4 x float> %8, <4 x float>* %7, !dbg !32 ; line:17 col:9
++  %9 = getelementptr inbounds %class.matrix.float.2.4, %class.matrix.float.2.4* %h.0.1, i32 0, i32 0, i32 1, !dbg !32 ; line:17 col:9
++  %10 = load <4 x float>, <4 x float>* getelementptr inbounds ([1 x %class.matrix.float.2.4], [1 x %class.matrix.float.2.4]* @g.1.0.1, i32 0, i32 0, i32 0, i32 1), !dbg !32 ; line:17 col:9
++  store <4 x float> %10, <4 x float>* %9, !dbg !32 ; line:17 col:9
++  ret void, !dbg !33 ; line:18 col:3
++}
++
++; Function Attrs: nounwind
++declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i32, i1) #0
++
++; Function Attrs: nounwind readnone
++declare %class.matrix.float.2.4 @"dx.hl.init.rn.%class.matrix.float.2.4 (i32, <8 x float>)"(i32, <8 x float>) #1
++
++; Function Attrs: nounwind readnone
++declare %class.matrix.float.2.4 @"dx.hl.cast.rowMatToColMat.%class.matrix.float.2.4 (i32, %class.matrix.float.2.4)"(i32, %class.matrix.float.2.4) #1
++
++; Function Attrs: nounwind
++declare %class.matrix.float.2.4 @"dx.hl.matldst.colStore.%class.matrix.float.2.4 (i32, %class.matrix.float.2.4*, %class.matrix.float.2.4)"(i32, %class.matrix.float.2.4*, %class.matrix.float.2.4) #0
++
++attributes #0 = { nounwind }
++attributes #1 = { nounwind readnone }
++
++!llvm.module.flags = !{!0}
++!pauseresume = !{!1}
++!llvm.ident = !{!2}
++!dx.version = !{!3}
++!dx.valver = !{!4}
++!dx.shaderModel = !{!5}
++!dx.typeAnnotations = !{!6, !15}
++!dx.entryPoints = !{!19}
++!dx.fnprops = !{!23}
++!dx.options = !{!24, !25}
++
++!0 = !{i32 2, !"Debug Info Version", i32 3}
++!1 = !{!"hlsl-hlemit", !"hlsl-hlensure"}
++!2 = !{!"dxc(private) 1.8.0.4640 (issue-785, 45018c752d)"}
++!3 = !{i32 1, i32 0}
++!4 = !{i32 1, i32 8}
++!5 = !{!"cs", i32 6, i32 0}
++!6 = !{i32 0, %struct.e undef, !7, %struct.d undef, !10, %struct.a undef, !11}
++!7 = !{i32 152, !8, !9}
++!8 = !{i32 6, !"c", i32 3, i32 0}
++!9 = !{i32 6, !"f", i32 3, i32 80}
++!10 = !{i32 72, !8}
++!11 = !{i32 72, !12, !13}
++!12 = !{i32 6, !"b", i32 3, i32 0, i32 7, i32 9}
++!13 = !{i32 6, !"c", i32 2, !14, i32 3, i32 16, i32 7, i32 9}
++!14 = !{i32 2, i32 4, i32 2}
++!15 = !{i32 1, void ()* @main, !16}
++!16 = !{!17}
++!17 = !{i32 1, !18, !18}
++!18 = !{}
++!19 = !{void ()* @main, !"main", null, !20, null}
++!20 = !{null, null, !21, null}
++!21 = !{!22}
++!22 = !{i32 0, %ConstantBuffer* @"$Globals", !"$Globals", i32 0, i32 -1, i32 1, i32 0, null}
++!23 = !{void ()* @main, i32 5, i32 1, i32 1, i32 1}
++!24 = !{i32 64}
++!25 = !{i32 -1}
++!26 = !DILocation(line: 13, column: 17, scope: !27, inlinedAt: !30)
++!27 = !DISubprogram(name: "??__Eg@@YAXXZ", scope: !28, file: !28, line: 13, type: !29, isLocal: true, isDefinition: true, scopeLine: 13, flags: DIFlagPrototyped, isOptimized: false)
++!28 = !DIFile(filename: "a.hlsl", directory: "")
++!29 = !DISubroutineType(types: !18)
++!30 = distinct !DILocation(line: 16, scope: !31)
++!31 = !DISubprogram(name: "main", scope: !28, file: !28, line: 16, type: !29, isLocal: false, isDefinition: true, scopeLine: 16, flags: DIFlagPrototyped, isOptimized: false, function: void ()* @main)
++!32 = !DILocation(line: 17, column: 9, scope: !31)
++!33 = !DILocation(line: 18, column: 3, scope: !31)
