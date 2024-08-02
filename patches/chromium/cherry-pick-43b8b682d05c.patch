@@ -27,7 +27,7 @@ index 2e9feebe066f938506d63d157be65828aa2a27c9..39de006f5f97f9e2a84ee4d38f7bb98e
    "inspector_media_context_impl_unittest.cc",
    "inspector_session_state_test.cc",
 diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
-index 6936ee92726937deba7e85e30259d7d276f6a397..aaf9571e2f4558b51c6583b538356b57609a1654 100644
+index 6936ee92726937deba7e85e30259d7d276f6a397..b4a38117cad3fbe032ac578724032fec7fd6e586 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 +++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 @@ -477,6 +477,42 @@ String InspectorPageAgent::CachedResourceTypeJson(
@@ -51,7 +51,7 @@ index 6936ee92726937deba7e85e30259d7d276f6a397..aaf9571e2f4558b51c6583b538356b57
 +    String script,
 +    const KURL& target_url) {
 +  pending_script_to_evaluate_on_load_once_.Set(script);
-+  target_url_for_pending_script_.Set(target_url.GetString().GetString());
++  target_url_for_pending_script_.Set(target_url.GetString());
 +}
 +
 +void InspectorPageAgent::PageReloadScriptInjection::PromoteToLoadOnce() {
