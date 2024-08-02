@@ -42,7 +42,7 @@ index 63595b84b71957a81c50d054b8db573be9d9d981..f23453f86cb0786d59328177be1a9bc6
  #endif
      if (!scope->is_function_scope() ||
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index df04f66444cb4aee60244a19e38775033efe7fe8..b9414b7e830b4b1a102ed2b277a4aa8ab3cbc351 100644
+index 41dfc4f9ed0e17b3e808922c65167551a937d3df..5547c52e34d91fa2dcf122c3e1043829f345658b 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
 @@ -979,7 +979,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
