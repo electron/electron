@@ -1,7 +1,7 @@
-From 901377bb2f3b8ff45fbd077fc425fc2f4e66036a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thibaud Michaud <thibaudm@chromium.org>
 Date: Fri, 21 Jun 2024 16:31:15 +0200
-Subject: [PATCH] [wasm] Fix scanning of wasm-to-js params
+Subject: Fix scanning of wasm-to-js params
 
 Wasm-to-js wrappers are sometimes compiled as on-heap Code objects, for
 example when tiering-up from a WasmFuncRef call origin. The frames of
@@ -22,45 +22,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5639725
 Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
 Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#94589}
----
 
-diff --git a/src/compiler/pipeline.cc b/src/compiler/pipeline.cc
-index d5b5474..e992d2d 100644
---- a/src/compiler/pipeline.cc
-+++ b/src/compiler/pipeline.cc
-@@ -2314,6 +2314,14 @@
-                                        Cast<AbstractCode>(code),
-                                        info->GetDebugName().get()));
-     }
-+    // Set the wasm-to-js specific code fields needed to scan the incoming stack
-+    // parameters.
-+    if (code->kind() == CodeKind::WASM_TO_JS_FUNCTION) {
-+      code->set_wasm_js_tagged_parameter_count(
-+          call_descriptor->GetTaggedParameterSlots() & 0xffff);
-+      code->set_wasm_js_first_tagged_parameter(
-+          call_descriptor->GetTaggedParameterSlots() >> 16);
-+    }
-     return CompilationJob::SUCCEEDED;
- }
- 
-@@ -2341,6 +2349,12 @@
-                                      Cast<AbstractCode>(code),
-                                      info->GetDebugName().get()));
-   }
-+  if (code->kind() == CodeKind::WASM_TO_JS_FUNCTION) {
-+    code->set_wasm_js_tagged_parameter_count(
-+        call_descriptor->GetTaggedParameterSlots() & 0xffff);
-+    code->set_wasm_js_first_tagged_parameter(
-+        call_descriptor->GetTaggedParameterSlots() >> 16);
-+  }
-   return CompilationJob::SUCCEEDED;
- }
- }  // namespace
 diff --git a/src/diagnostics/objects-printer.cc b/src/diagnostics/objects-printer.cc
-index 7b152c3..343d778 100644
+index 4246209b6974d5cb575382c71384fda1c5b6eba0..7759fb1391e6019bf9eaaca0b6e9191f19f64838 100644
 --- a/src/diagnostics/objects-printer.cc
 +++ b/src/diagnostics/objects-printer.cc
-@@ -2234,7 +2234,14 @@
+@@ -2048,7 +2048,14 @@ void Code::CodePrint(std::ostream& os, const char* name, Address current_pc) {
    os << "\n - instruction_size: " << instruction_size();
    os << "\n - metadata_size: " << metadata_size();
  
@@ -77,10 +44,10 @@ index 7b152c3..343d778 100644
    os << "\n - handler_table_offset: " << handler_table_offset();
    os << "\n - unwinding_info_offset: " << unwinding_info_offset();
 diff --git a/src/execution/frames.cc b/src/execution/frames.cc
-index 962d552..4b0a371 100644
+index 7b8507384ab5fd8009d2cf2cb2afc764a5332d61..efde8eb70717e785747f335c1b817cdab525ffdc 100644
 --- a/src/execution/frames.cc
 +++ b/src/execution/frames.cc
-@@ -1627,7 +1627,7 @@
+@@ -1536,7 +1536,7 @@ void WasmFrame::Iterate(RootVisitor* v) const {
                         frame_header_limit);
  }
  
@@ -89,7 +56,7 @@ index 962d552..4b0a371 100644
    Tagged<Object> maybe_signature = Tagged<Object>(
        Memory<Address>(fp() + WasmToJSWrapperConstants::kSignatureOffset));
    if (IsSmi(maybe_signature)) {
-@@ -1743,6 +1743,18 @@
+@@ -1652,6 +1652,18 @@ void TypedFrame::IterateParamsOfWasmToJSWrapper(RootVisitor* v) const {
      }
    }
  }
@@ -108,7 +75,7 @@ index 962d552..4b0a371 100644
  #endif  // V8_ENABLE_WEBASSEMBLY
  
  void TypedFrame::Iterate(RootVisitor* v) const {
-@@ -1774,10 +1786,13 @@
+@@ -1683,10 +1695,13 @@ void TypedFrame::Iterate(RootVisitor* v) const {
    CHECK(entry->code.has_value());
    Tagged<GcSafeCode> code = entry->code.value();
  #if V8_ENABLE_WEBASSEMBLY
@@ -125,7 +92,7 @@ index 962d552..4b0a371 100644
    }
  #endif  // V8_ENABLE_WEBASSEMBLY
    DCHECK(code->is_turbofanned());
-@@ -1810,10 +1825,14 @@
+@@ -1719,10 +1734,13 @@ void TypedFrame::Iterate(RootVisitor* v) const {
    // wrapper switched to before pushing the outgoing stack parameters and
    // calling the target. It marks the limit of the stack param area, and is
    // distinct from the beginning of the spill area.
@@ -137,17 +104,16 @@ index 962d552..4b0a371 100644
 +          : WasmImportWrapperFrameConstants::kCentralStackSPOffset;
 +  Address central_stack_sp = Memory<Address>(fp() + central_stack_sp_offset);
    FullObjectSlot parameters_limit(
--      is_wasm_to_js && central_stack_sp != kNullAddress
-+      (is_generic_wasm_to_js || is_optimized_wasm_to_js) &&
-+              central_stack_sp != kNullAddress
+-      v8_flags.experimental_wasm_stack_switching && is_wasm_to_js &&
++      v8_flags.experimental_wasm_stack_switching && is_generic_wasm_to_js &&
+               central_stack_sp != kNullAddress
            ? central_stack_sp
            : frame_header_base.address() - spill_slots_size);
- #else
 diff --git a/src/execution/frames.h b/src/execution/frames.h
-index cf92379..3297e60 100644
+index 428e50c32a7eca9ad579b2c634607f4be5d1734e..a578a87d67905b19f045465d04532bbb1706e585 100644
 --- a/src/execution/frames.h
 +++ b/src/execution/frames.h
-@@ -644,7 +644,8 @@
+@@ -626,7 +626,8 @@ class TypedFrame : public CommonFrame {
    Tagged<HeapObject> unchecked_code() const override { return {}; }
    void Iterate(RootVisitor* v) const override;
  
@@ -158,10 +124,10 @@ index cf92379..3297e60 100644
   protected:
    inline explicit TypedFrame(StackFrameIteratorBase* iterator);
 diff --git a/src/objects/code-inl.h b/src/objects/code-inl.h
-index f81af10..fb7d53a 100644
+index da3c0bd4fe8b9c593ecc25d9a3c277160b9df95b..4f6082f171948385c0fe9feeba51cc51b6fd9674 100644
 --- a/src/objects/code-inl.h
 +++ b/src/objects/code-inl.h
-@@ -45,6 +45,8 @@
+@@ -48,6 +48,8 @@ GCSAFE_CODE_FWD_ACCESSOR(bool, has_tagged_outgoing_params)
  GCSAFE_CODE_FWD_ACCESSOR(bool, marked_for_deoptimization)
  GCSAFE_CODE_FWD_ACCESSOR(Tagged<Object>, raw_instruction_stream)
  GCSAFE_CODE_FWD_ACCESSOR(int, stack_slots)
@@ -170,7 +136,7 @@ index f81af10..fb7d53a 100644
  GCSAFE_CODE_FWD_ACCESSOR(Address, constant_pool)
  GCSAFE_CODE_FWD_ACCESSOR(Address, safepoint_table_address)
  #undef GCSAFE_CODE_FWD_ACCESSOR
-@@ -429,6 +431,31 @@
+@@ -371,6 +373,31 @@ void Code::set_inlined_bytecode_size(unsigned size) {
    RELAXED_WRITE_UINT_FIELD(*this, kInlinedBytecodeSizeOffset, size);
  }
  
@@ -203,19 +169,36 @@ index f81af10..fb7d53a 100644
    return BytecodeOffset(RELAXED_READ_INT32_FIELD(*this, kOsrOffsetOffset));
  }
 diff --git a/src/objects/code.h b/src/objects/code.h
-index b8b12e4..122d0bb 100644
+index c6b0eda42849ac46498bb292566b6f74a6716a25..b500da60feb9c60ef77add1a8e8102bdb0b3829a 100644
 --- a/src/objects/code.h
 +++ b/src/objects/code.h
-@@ -131,6 +131,8 @@
-   // BytecodeArray is available from which it can be copied.
-   DECL_PRIMITIVE_ACCESSORS(parameter_count, uint16_t)
-   inline uint16_t parameter_count_without_receiver() const;
+@@ -124,6 +124,25 @@ class Code : public ExposedTrustedObject {
+   // [deoptimization_data]: Array containing data for deopt for non-baseline
+   // code.
+   DECL_ACCESSORS(deoptimization_data, Tagged<FixedArray>)
++  // [parameter_count]: The number of formal parameters, including the
++  // receiver. Currently only available for optimized functions.
++  // TODO(saelo): make this always available. This is just a matter of figuring
++  // out how to obtain the parameter count during code generation when no
++  // BytecodeArray is available from which it can be copied.
++  DECL_PRIMITIVE_ACCESSORS(parameter_count, uint16_t)
++  inline uint16_t parameter_count_without_receiver() const;
 +  DECL_PRIMITIVE_ACCESSORS(wasm_js_tagged_parameter_count, uint16_t)
 +  DECL_PRIMITIVE_ACCESSORS(wasm_js_first_tagged_parameter, uint16_t)
- 
-   // Whether this type of Code uses deoptimization data, in which case the
-   // deoptimization_data field will be populated.
-@@ -513,6 +515,10 @@
++
++  // Whether this type of Code uses deoptimization data, in which case the
++  // deoptimization_data field will be populated.
++  inline bool uses_deoptimization_data() const;
++
++  // If neither deoptimization data nor bytecode/interpreter data are used
++  // (e.g. for builtin code), the respective field will contain Smi::zero().
++  inline void clear_deoptimization_data_and_interpreter_data();
++  inline bool has_deoptimization_data_or_interpreter_data() const;
++
+   // [bytecode_or_interpreter_data]: BytecodeArray or InterpreterData for
+   // baseline code.
+   // As BytecodeArrays are located in trusted space, but InterpreterData
+@@ -482,6 +501,10 @@ class GcSafeCode : public HeapObject {
    inline bool CanDeoptAt(Isolate* isolate, Address pc) const;
    inline Tagged<Object> raw_instruction_stream(
        PtrComprCageBase code_cage_base) const;
