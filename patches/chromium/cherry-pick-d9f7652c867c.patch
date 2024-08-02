@@ -1,7 +1,7 @@
-From d9f7652c867c474738055eb362cb064f98c9ebc4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Adam Rice <ricea@chromium.org>
 Date: Thu, 25 Jul 2024 05:28:45 +0000
-Subject: [PATCH] Don't allocate WebTransportCloseInfo on stack
+Subject: Don't allocate WebTransportCloseInfo on stack
 
 blink::WebTransport::OnClosed() was allocating a WebTransportCloseInfo
 object on the stack. Since it is a garbage-collected object, this is
@@ -20,13 +20,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5740536
 Commit-Queue: Adam Rice <ricea@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6478@{#1848}
 Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
----
 
 diff --git a/third_party/blink/renderer/modules/webtransport/web_transport.cc b/third_party/blink/renderer/modules/webtransport/web_transport.cc
-index 04e5aff..ec4312c 100644
+index 04e5aff72fe4f9ba37132713d811c63b54ceafb8..ec4312c4746e46dc1cb281422a1cfa24d04d928d 100644
 --- a/third_party/blink/renderer/modules/webtransport/web_transport.cc
 +++ b/third_party/blink/renderer/modules/webtransport/web_transport.cc
-@@ -1096,17 +1096,17 @@
+@@ -1096,17 +1096,17 @@ void WebTransport::OnClosed(
  
    latest_stats_ = ConvertStatsFromMojom(std::move(final_stats));
  
@@ -49,10 +48,10 @@ index 04e5aff..ec4312c 100644
  
  void WebTransport::OnOutgoingStreamClosed(uint32_t stream_id) {
 diff --git a/third_party/blink/renderer/modules/webtransport/web_transport_test.cc b/third_party/blink/renderer/modules/webtransport/web_transport_test.cc
-index 12f412ec..e2861387 100644
+index 12f412ec7c4cd9f9a86d706eb32413a298f8d5b5..e286138728ff891d166b236af4782c8bde219984 100644
 --- a/third_party/blink/renderer/modules/webtransport/web_transport_test.cc
 +++ b/third_party/blink/renderer/modules/webtransport/web_transport_test.cc
-@@ -1974,6 +1974,21 @@
+@@ -1974,6 +1974,21 @@ TEST_F(WebTransportTest, OnClosed) {
    EXPECT_EQ(close_info->reason(), "reason");
  }
  
@@ -75,7 +74,7 @@ index 12f412ec..e2861387 100644
    V8TestingScope scope;
    v8::Isolate* isolate = scope.GetIsolate();
 diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt
-index d4e43ed..09e2bbd 100644
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
 --- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt
 +++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt
 @@ -1,4 +1,5 @@
@@ -85,10 +84,10 @@ index d4e43ed..09e2bbd 100644
    promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
  [FAIL] opening bidirectional stream before ready
 diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js
-index 0d85795..d69967ba 100644
+index 0d8579584fbb21e74595588f663ef21c3b028c63..d69967ba70bb716f8664f973fe83d4158ba6da89 100644
 --- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js
 +++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js
-@@ -163,3 +163,24 @@
+@@ -163,3 +163,24 @@ promise_test(async t => {
    const wt = new WebTransport(webtransport_url('server-close.py'));
    promise_rejects_dom(t, "InvalidStateError", wt.createBidirectionalStream());
  }, 'server initiated closure while opening bidirectional stream before ready');
@@ -114,7 +113,7 @@ index 0d85795..d69967ba 100644
 +  assert_equals(closeCode, 0, 'closeCode should be default');
 +}, 'reading closed property after close should work');
 diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt
-index d4e43ed..09e2bbd 100644
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
 --- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt
 +++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt
 @@ -1,4 +1,5 @@
@@ -124,7 +123,7 @@ index d4e43ed..09e2bbd 100644
    promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
  [FAIL] opening bidirectional stream before ready
 diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt
-index d4e43ed..09e2bbd 100644
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
 --- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt
 +++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt
 @@ -1,4 +1,5 @@
@@ -134,7 +133,7 @@ index d4e43ed..09e2bbd 100644
    promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
  [FAIL] opening bidirectional stream before ready
 diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt
-index d4e43ed..09e2bbd 100644
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
 --- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt
 +++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt
 @@ -1,4 +1,5 @@
@@ -145,7 +144,7 @@ index d4e43ed..09e2bbd 100644
  [FAIL] opening bidirectional stream before ready
 diff --git a/third_party/blink/web_tests/external/wpt/webtransport/handlers/server-read-then-close.py b/third_party/blink/web_tests/external/wpt/webtransport/handlers/server-read-then-close.py
 new file mode 100644
-index 0000000..7f992e0
+index 0000000000000000000000000000000000000000..7f992e0dcca3ae62277cac0fa39355fce3e57be0
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/webtransport/handlers/server-read-then-close.py
 @@ -0,0 +1,9 @@
