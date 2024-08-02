@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Neto <dneto@google.com>
+Date: Mon, 29 Jul 2024 20:20:18 +0000
+Subject: Reland "DEPS: Update DXC to patched branch"
+
+This is a reland of commit 5fd60bc03720ebd5a804cd64e8a52ba9e95593f5
+
+Original change's description:
+> DEPS: Update DXC to patched branch
+>
+> Also, add DXC_CODEGEN_EXCEPTIONS_TRAP=1 to DXC gn config.
+>
+> Bug: chromium:346618785, chromium:350696474
+> Change-Id: I4c1ac753d824c4790e78d8f36231c8f2fe0e2722
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/198756
+> Reviewed-by: Natalie Chouinard <chouinard@google.com>
+
+Bug: chromium:346618785, chromium:350696474
+Change-Id: I9205dc9a028654388e09ffb853c64ff2010b793f
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/200494
+Reviewed-by: David Neto <dneto@google.com>
+Reviewed-by: Natalie Chouinard <chouinard@google.com>
+
+diff --git a/third_party/gn/dxc/BUILD.gn b/third_party/gn/dxc/BUILD.gn
+index aadb64eeb4fba2f2da442a8a7f4b285a469c5cdd..0060484cefcf1835138b111258c33e09fab1279c 100644
+--- a/third_party/gn/dxc/BUILD.gn
++++ b/third_party/gn/dxc/BUILD.gn
+@@ -453,7 +453,10 @@ cmake_configure_file("clang-config-h") {
+ cmake_configure_file("dxc-config-h") {
+   input = "$dawn_dxc_dir/include/dxc/config.h.cmake"
+   output = "$target_gen_dir/include/dxc/config.h"
+-  values = [ "DXC_DISABLE_ALLOCATOR_OVERRIDES=1" ]
++  values = [
++    "DXC_DISABLE_ALLOCATOR_OVERRIDES=1",
++    "DXC_CODEGEN_EXCEPTIONS_TRAP=1",
++  ]
+ }
+ 
+ #######################################################################
