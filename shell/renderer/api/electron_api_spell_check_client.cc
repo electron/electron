@@ -221,9 +221,9 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
   DCHECK(!scope.spell_check_.IsEmpty());
 
   auto context = isolate_->GetCurrentContext();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate_, context->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope{
+      isolate_, context->GetMicrotaskQueue(), false,
+      v8::MicrotasksScope::kDoNotRunMicrotasks};
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,
