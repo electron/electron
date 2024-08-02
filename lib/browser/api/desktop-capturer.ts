@@ -18,7 +18,7 @@ export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
-  const winsOwnedByElectronProcess: ElectronInternal.GetSourcesResult[] = [];
+  let winsOwnedByElectronProcess: ElectronInternal.GetSourcesResult[];
   if (process.platform === 'darwin') {
     // Fix for bug in ScreenCaptureKit that modifies a window's styleMask the first time
     // it captures a non-resizable window. We record each non-resizable window's styleMask,
@@ -67,8 +67,8 @@ export async function getSources (args: Electron.SourcesOptions) {
           // On Windows, the underlying WebRTC implementation does not return sources
           // originating owned by the current process due to a Windows deadlock issue.
           // CL: https://chromium-review.googlesource.com/c/chromium/src/+/2907415
-        } else if (process.platform === 'win32') {
-          for (const win of BrowserWindow.getAllWindows()) {
+        } else if (process.platform === 'win32' && captureWindow) {
+          const fetches = BrowserWindow.getAllWindows().map(async (win) => {
             let thumbnail = null;
             if (thumbnailSize.width > 0 && thumbnailSize.height > 0) {
               const pageContents = await win.capturePage();
@@ -76,14 +76,15 @@ export async function getSources (args: Electron.SourcesOptions) {
             } else {
               thumbnail = nativeImage.createEmpty();
             }
-            winsOwnedByElectronProcess.push({
+            return {
               name: win.getTitle(),
               id: win.getMediaSourceId(),
               thumbnail: thumbnail,
               display_id: '',
               appIcon: null
-            });
-          }
+            };
+          });
+          winsOwnedByElectronProcess = await Promise.all(fetches);
         };
       }
       // Remove from currentlyRunning once we resolve or reject
@@ -97,7 +98,11 @@ export async function getSources (args: Electron.SourcesOptions) {
 
     capturer._onfinished = async (sources: Electron.DesktopCapturerSource[]) => {
       await stopRunning();
-      resolve([...sources, ...winsOwnedByElectronProcess]);
+      if (Array.isArray(winsOwnedByElectronProcess)) {
+        resolve([...sources, ...winsOwnedByElectronProcess]);
+      } else {
+        resolve(sources);
+      }
     };
 
     capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
