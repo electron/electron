@@ -52,7 +52,6 @@ declare namespace NodeJS {
     getVar(name: string): string | null;
     hasVar(name: string): boolean;
     setVar(name: string, value: string): boolean;
-    unSetVar(name: string): boolean;
   }
 
   type AsarFileInfo = {
