@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 18 Jun 2024 16:10:26 +0200
+Subject: Lower LoadStackArgument to a Tagged load
+
+If we start with a graph that looks like
+
+```
+x = LoadStackArgument(a, 40)
+...
+Allocate()
+...
+y = LoadStackArgument(a, 40)
+```
+
+This used to be lowered to
+
+```
+x1 = Load<WordPtr>(a, 40)
+x2 = TaggedBitcast(x1, WordPtr->Tagged)
+...
+Allocate()
+...
+y1 = Load<WordPtr>(a, 40)
+y2 = TaggedBitcast(y1, WordPtr->Tagged)
+```
+
+And then, Load Elimination would remove the second Load, and we'd get:
+
+```
+x1 = Load<WordPtr>(a, 40)
+x2 = TaggedBitcast(x1, WordPtr->Tagged)
+...
+Allocate()
+...
+y2 = TaggedBitcast(x1, WordPtr->Tagged)
+```
+
+And now we would be in trouble: if the allocation in the middle
+triggers a GC, then `x1` could move, and thus `y2` could refer to a
+stale pointer. In theory, Turbofan knows where tagged values are, and
+can thus update them when the GC moves things, but here, `x1` is not
+marked as Tagged (but rather as a raw WordPtr).
+
+This CL fixes this issue by doing a Tagged load from the start, since
+the value we're loading is clearly tagged.
+
+Fixed: chromium:347724915
+Change-Id: Ia659155fbc602907ab9a50fb992c79df6ccdaa44
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5630530
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#94527}
+
+diff --git a/src/compiler/turboshaft/machine-lowering-reducer-inl.h b/src/compiler/turboshaft/machine-lowering-reducer-inl.h
+index 69607d0bf0ddfe032b6650433685ccb3286807bc..11dcadfbbbc771abd4ce9901c84fb4f7c45f4ff7 100644
+--- a/src/compiler/turboshaft/machine-lowering-reducer-inl.h
++++ b/src/compiler/turboshaft/machine-lowering-reducer-inl.h
+@@ -2100,9 +2100,17 @@ class MachineLoweringReducer : public Next {
+   }
+ 
+   V<Object> REDUCE(LoadStackArgument)(V<WordPtr> base, V<WordPtr> index) {
+-    V<WordPtr> argument = __ template LoadNonArrayBufferElement<WordPtr>(
+-        base, AccessBuilder::ForStackArgument(), index);
+-    return __ BitcastWordPtrToTagged(argument);
++    // Note that this is a load of a Tagged value
++    // (MemoryRepresentation::TaggedPointer()), but since it's on the stack
++    // where stack slots are all kSystemPointerSize, we use kSystemPointerSize
++    // for element_size_log2. On 64-bit plateforms with pointer compression,
++    // this means that we're kinda loading a 32-bit value from an array of
++    // 64-bit values.
++    return __ Load(
++        base, index, LoadOp::Kind::RawAligned(),
++        MemoryRepresentation::TaggedPointer(),
++        CommonFrameConstants::kFixedFrameSizeAboveFp - kSystemPointerSize,
++        kSystemPointerSizeLog2);
+   }
+ 
+   OpIndex REDUCE(StoreTypedElement)(OpIndex buffer, V<Object> base,
+diff --git a/test/mjsunit/compiler/regress-347724915.js b/test/mjsunit/compiler/regress-347724915.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a5d1a9a2e3dd7674bf0872c94a971b5f28ddf72
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-347724915.js
+@@ -0,0 +1,26 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function f(...args) {
++  let arr1 = [ undefined, undefined, undefined ];
++  %SimulateNewspaceFull();
++  arr1[0] = args[0];
++  // The following allocation will trigger a full GC, which will move the
++  // argument passed to the function (because it was a young object).
++  let arr2 = [ arr1 ];
++  // Here we're accessing `args[0]` again. This might be load-eliminated with
++  // the `args[0]` load from a few lines above, which has been moved by the GC
++  // since then. This should be fine though, as the loaded value should be
++  // marked as Tagged, which means that it shouldn't point to the stale value
++  // but instead have been updated during GC.
++  arr1[1] = args[0]
++  return arr2;
++}
++
++%PrepareFunctionForOptimization(f);
++let expected = f({ x : 42 });
++%OptimizeFunctionOnNextCall(f);
++assertEquals(expected, f({x : 42}));
