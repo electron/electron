@@ -1,7 +1,7 @@
-From cdbc1d9684a3602c77c39d23b4e95a8522a0cc90 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Darius Mercadier <dmercadier@chromium.org>
 Date: Tue, 18 Jun 2024 16:10:26 +0200
-Subject: [PATCH] [turboshaft] Lower LoadStackArgument to a Tagged load
+Subject: Lower LoadStackArgument to a Tagged load
 
 If we start with a graph that looks like
 
@@ -52,48 +52,12 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
 Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#94527}
----
 
-diff --git a/src/compiler/access-builder.cc b/src/compiler/access-builder.cc
-index 258a9e5..6bdf19b 100644
---- a/src/compiler/access-builder.cc
-+++ b/src/compiler/access-builder.cc
-@@ -1153,16 +1153,6 @@
- }
- 
- // static
--ElementAccess AccessBuilder::ForStackArgument() {
--  ElementAccess access = {
--      kUntaggedBase,
--      CommonFrameConstants::kFixedFrameSizeAboveFp - kSystemPointerSize,
--      Type::NonInternal(), MachineType::Pointer(),
--      WriteBarrierKind::kNoWriteBarrier};
--  return access;
--}
--
--// static
- ElementAccess AccessBuilder::ForFixedDoubleArrayElement() {
-   ElementAccess access = {kTaggedBase, FixedDoubleArray::kHeaderSize,
-                           TypeCache::Get()->kFloat64, MachineType::Float64(),
-diff --git a/src/compiler/access-builder.h b/src/compiler/access-builder.h
-index 37332f1..0c9558a 100644
---- a/src/compiler/access-builder.h
-+++ b/src/compiler/access-builder.h
-@@ -337,9 +337,6 @@
-   // Provides access to SloppyArgumentsElements elements.
-   static ElementAccess ForSloppyArgumentsElementsMappedEntry();
- 
--  // Provides access to stack arguments
--  static ElementAccess ForStackArgument();
--
-   // Provides access to FixedDoubleArray elements.
-   static ElementAccess ForFixedDoubleArrayElement();
- 
 diff --git a/src/compiler/turboshaft/machine-lowering-reducer-inl.h b/src/compiler/turboshaft/machine-lowering-reducer-inl.h
-index ce6dc64..1a6059a 100644
+index 69607d0bf0ddfe032b6650433685ccb3286807bc..11dcadfbbbc771abd4ce9901c84fb4f7c45f4ff7 100644
 --- a/src/compiler/turboshaft/machine-lowering-reducer-inl.h
 +++ b/src/compiler/turboshaft/machine-lowering-reducer-inl.h
-@@ -2445,9 +2445,17 @@
+@@ -2100,9 +2100,17 @@ class MachineLoweringReducer : public Next {
    }
  
    V<Object> REDUCE(LoadStackArgument)(V<WordPtr> base, V<WordPtr> index) {
@@ -116,7 +80,7 @@ index ce6dc64..1a6059a 100644
    OpIndex REDUCE(StoreTypedElement)(OpIndex buffer, V<Object> base,
 diff --git a/test/mjsunit/compiler/regress-347724915.js b/test/mjsunit/compiler/regress-347724915.js
 new file mode 100644
-index 0000000..4a5d1a9
+index 0000000000000000000000000000000000000000..4a5d1a9a2e3dd7674bf0872c94a971b5f28ddf72
 --- /dev/null
 +++ b/test/mjsunit/compiler/regress-347724915.js
 @@ -0,0 +1,26 @@
