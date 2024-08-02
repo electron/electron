@@ -16,7 +16,7 @@ This document uses the following convention to categorize breaking changes:
 
 ### Deprecated: `textured` option in `BrowserWindowConstructorOption.type`
 
-The `textured` option of `type` in `BrowserWindowConstructorOptions` has been depecated with no replacement. This option relied on the [`NSWindowStyleMaskTexturedBackground`](https://developer.apple.com/documentation/appkit/nswindowstylemask/nswindowstylemasktexturedbackground) style mask on macOS, which has been deprecated with no alternative.
+The `textured` option of `type` in `BrowserWindowConstructorOptions` has been deprecated with no replacement. This option relied on the [`NSWindowStyleMaskTexturedBackground`](https://developer.apple.com/documentation/appkit/nswindowstylemask/nswindowstylemasktexturedbackground) style mask on macOS, which has been deprecated with no alternative.
 
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
