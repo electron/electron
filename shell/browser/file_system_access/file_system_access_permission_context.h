@@ -13,6 +13,9 @@
 
 #include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "base/time/clock.h"
+#include "base/time/default_clock.h"
+#include "base/values.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/file_system_access_permission_context.h"
 
@@ -35,7 +38,8 @@ class FileSystemAccessPermissionContext
   enum class GrantType { kRead, kWrite };
 
   explicit FileSystemAccessPermissionContext(
-      content::BrowserContext* browser_context);
+      content::BrowserContext* browser_context,
+      const base::Clock* clock = base::DefaultClock::GetInstance());
   FileSystemAccessPermissionContext(const FileSystemAccessPermissionContext&) =
       delete;
   FileSystemAccessPermissionContext& operator=(
@@ -133,6 +137,8 @@ class FileSystemAccessPermissionContext
       base::OnceCallback<void(SensitiveEntryResult)> callback,
       bool should_block);
 
+  void MaybeEvictEntries(base::Value::Dict& dict);
+
   void CleanupPermissions(const url::Origin& origin);
 
   bool AncestorHasActivePermission(const url::Origin& origin,
@@ -145,6 +151,13 @@ class FileSystemAccessPermissionContext
 
   struct OriginState;
   std::map<url::Origin, OriginState> active_permissions_map_;
+
+  // Number of custom IDs an origin can specify.
+  size_t max_ids_per_origin_ = 32u;
+
+  const raw_ptr<const base::Clock> clock_;
+
+  std::map<url::Origin, base::Value::Dict> id_pathinfo_map_;
 
   base::WeakPtrFactory<FileSystemAccessPermissionContext> weak_factory_{this};
 };

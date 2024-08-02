@@ -1,0 +1,264 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Pfaffe <pfaffe@chromium.org>
+Date: Tue, 18 Jun 2024 10:04:45 +0000
+Subject: Prevent script injection on reload when racing with a navigation
+
+DevTools passes the loaderId now when calling Page.reload, in order to
+prevent accidentally reloading the wrong page when a navigation occurred
+concurrently. It can still happen that the navigation kicks in in between the reload iniated in the browser and the script injection that happens in the renderer, which would run the injected script on the wrong target. We need to check the loaderId also on the renderer side.
+
+Fixed: 341136300
+Change-Id: I891fb37fa10e6789c8697a0f29bf7118788a9319
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5625857
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1316330}
+
+diff --git a/third_party/blink/renderer/core/inspector/build.gni b/third_party/blink/renderer/core/inspector/build.gni
+index 2e9feebe066f938506d63d157be65828aa2a27c9..39de006f5f97f9e2a84ee4d38f7bb98e99c41924 100644
+--- a/third_party/blink/renderer/core/inspector/build.gni
++++ b/third_party/blink/renderer/core/inspector/build.gni
+@@ -138,6 +138,7 @@ blink_core_tests_inspector = [
+   "inspector_emulation_agent_test.cc",
+   "inspector_highlight_test.cc",
+   "inspector_history_test.cc",
++  "inspector_page_agent_unittest.cc",
+   "inspector_preload_agent_unittest.cc",
+   "inspector_media_context_impl_unittest.cc",
+   "inspector_session_state_test.cc",
+diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
+index 1825080b32ab6d7adb86236a389c08caf0b90c5c..f17565a6178c3f47037378faf965cd0f52cb0d26 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
+@@ -479,6 +479,42 @@ String InspectorPageAgent::CachedResourceTypeJson(
+   return ResourceTypeJson(ToResourceType(cached_resource.GetType()));
+ }
+ 
++InspectorPageAgent::PageReloadScriptInjection::PageReloadScriptInjection(
++    InspectorAgentState& agent_state)
++    : pending_script_to_evaluate_on_load_once_(&agent_state,
++                                               /*default_value=*/{}),
++      target_url_for_pending_script_(&agent_state,
++                                     /*default_value=*/{}) {}
++
++void InspectorPageAgent::PageReloadScriptInjection::clear() {
++  script_to_evaluate_on_load_once_ = {};
++  pending_script_to_evaluate_on_load_once_.Set({});
++  target_url_for_pending_script_.Set({});
++}
++
++void InspectorPageAgent::PageReloadScriptInjection::SetPending(
++    String script,
++    const KURL& target_url) {
++  pending_script_to_evaluate_on_load_once_.Set(script);
++  target_url_for_pending_script_.Set(target_url.GetString().GetString());
++}
++
++void InspectorPageAgent::PageReloadScriptInjection::PromoteToLoadOnce() {
++  script_to_evaluate_on_load_once_ =
++      pending_script_to_evaluate_on_load_once_.Get();
++  target_url_for_active_script_ = target_url_for_pending_script_.Get();
++  pending_script_to_evaluate_on_load_once_.Set({});
++  target_url_for_pending_script_.Set({});
++}
++
++String InspectorPageAgent::PageReloadScriptInjection::GetScriptForInjection(
++    const KURL& target_url) {
++  if (target_url_for_active_script_ == target_url.GetString()) {
++    return script_to_evaluate_on_load_once_;
++  }
++  return {};
++}
++
+ InspectorPageAgent::InspectorPageAgent(
+     InspectedFrames* inspected_frames,
+     Client* client,
+@@ -495,8 +531,6 @@ InspectorPageAgent::InspectorPageAgent(
+       screencast_enabled_(&agent_state_, /*default_value=*/false),
+       lifecycle_events_enabled_(&agent_state_, /*default_value=*/false),
+       bypass_csp_enabled_(&agent_state_, /*default_value=*/false),
+-      pending_script_to_evaluate_on_load_once_(&agent_state_,
+-                                               /*default_value=*/String()),
+       scripts_to_evaluate_on_load_(&agent_state_,
+                                    /*default_value=*/String()),
+       worlds_to_evaluate_on_load_(&agent_state_,
+@@ -506,7 +540,8 @@ InspectorPageAgent::InspectorPageAgent(
+           /*default_value=*/false),
+       standard_font_size_(&agent_state_, /*default_value=*/0),
+       fixed_font_size_(&agent_state_, /*default_value=*/0),
+-      script_font_families_cbor_(&agent_state_, std::vector<uint8_t>()) {}
++      script_font_families_cbor_(&agent_state_, std::vector<uint8_t>()),
++      script_injection_on_load_(agent_state_) {}
+ 
+ void InspectorPageAgent::Restore() {
+   if (enabled_.Get())
+@@ -545,8 +580,7 @@ protocol::Response InspectorPageAgent::enable() {
+ protocol::Response InspectorPageAgent::disable() {
+   agent_state_.ClearAllFields();
+   pending_isolated_worlds_.clear();
+-  script_to_evaluate_on_load_once_ = String();
+-  pending_script_to_evaluate_on_load_once_.Set(String());
++  script_injection_on_load_.clear();
+   instrumenting_agents_->RemoveInspectorPageAgent(this);
+   inspector_resource_content_loader_->Cancel(
+       resource_content_loader_client_id_);
+@@ -672,8 +706,9 @@ protocol::Response InspectorPageAgent::setAdBlockingEnabled(bool enable) {
+ protocol::Response InspectorPageAgent::reload(
+     Maybe<bool> optional_bypass_cache,
+     Maybe<String> optional_script_to_evaluate_on_load) {
+-  pending_script_to_evaluate_on_load_once_.Set(
+-      optional_script_to_evaluate_on_load.value_or(""));
++  script_injection_on_load_.SetPending(
++      optional_script_to_evaluate_on_load.value_or(""),
++      inspected_frames_->Root()->Loader().GetDocumentLoader()->Url());
+   v8_session_->setSkipAllPauses(true);
+   v8_session_->resume(true /* terminate on resume */);
+   return protocol::Response::Success();
+@@ -989,7 +1024,9 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
+     EvaluateScriptOnNewDocument(*frame, key);
+   }
+ 
+-  if (script_to_evaluate_on_load_once_.empty()) {
++  String script = script_injection_on_load_.GetScriptForInjection(
++      frame->Loader().GetDocumentLoader()->Url());
++  if (script.empty()) {
+     return;
+   }
+   ScriptState* script_state = ToScriptStateForMainWorld(frame);
+@@ -997,9 +1034,8 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
+     return;
+   }
+ 
+-  v8_session_->evaluate(
+-      script_state->GetContext(),
+-      ToV8InspectorStringView(script_to_evaluate_on_load_once_));
++  v8_session_->evaluate(script_state->GetContext(),
++                        ToV8InspectorStringView(script));
+ }
+ 
+ void InspectorPageAgent::EvaluateScriptOnNewDocument(
+@@ -1049,9 +1085,7 @@ void InspectorPageAgent::LoadEventFired(LocalFrame* frame) {
+ 
+ void InspectorPageAgent::WillCommitLoad(LocalFrame*, DocumentLoader* loader) {
+   if (loader->GetFrame() == inspected_frames_->Root()) {
+-    script_to_evaluate_on_load_once_ =
+-        pending_script_to_evaluate_on_load_once_.Get();
+-    pending_script_to_evaluate_on_load_once_.Set(String());
++    script_injection_on_load_.PromoteToLoadOnce();
+   }
+   GetFrontend()->frameNavigated(BuildObjectForFrame(loader->GetFrame()),
+                                 protocol::Page::NavigationTypeEnum::Navigation);
+diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.h b/third_party/blink/renderer/core/inspector/inspector_page_agent.h
+index 6e6263beee810946d03934e7f707bb49a3177a2f..e7003baa895494bf61ad06f875d825ac9f53aec2 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_page_agent.h
++++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.h
+@@ -94,6 +94,22 @@ class CORE_EXPORT InspectorPageAgent final
+     kOtherResource
+   };
+ 
++  class CORE_EXPORT PageReloadScriptInjection {
++   private:
++    String script_to_evaluate_on_load_once_;
++    String target_url_for_active_script_;
++    InspectorAgentState::String pending_script_to_evaluate_on_load_once_;
++    InspectorAgentState::String target_url_for_pending_script_;
++
++   public:
++    explicit PageReloadScriptInjection(InspectorAgentState&);
++
++    void clear();
++    void SetPending(String script, const KURL& target_url);
++    void PromoteToLoadOnce();
++    String GetScriptForInjection(const KURL& target_url);
++  };
++
+   static bool CachedResourceContent(const Resource*,
+                                     String* result,
+                                     bool* base64_encoded);
+@@ -307,7 +323,6 @@ class CORE_EXPORT InspectorPageAgent final
+       ad_script_identifiers_;
+   v8_inspector::V8InspectorSession* v8_session_;
+   Client* client_;
+-  String script_to_evaluate_on_load_once_;
+   Member<InspectorResourceContentLoader> inspector_resource_content_loader_;
+   int resource_content_loader_client_id_;
+   InspectorAgentState::Boolean intercept_file_chooser_;
+@@ -315,7 +330,6 @@ class CORE_EXPORT InspectorPageAgent final
+   InspectorAgentState::Boolean screencast_enabled_;
+   InspectorAgentState::Boolean lifecycle_events_enabled_;
+   InspectorAgentState::Boolean bypass_csp_enabled_;
+-  InspectorAgentState::String pending_script_to_evaluate_on_load_once_;
+   InspectorAgentState::StringMap scripts_to_evaluate_on_load_;
+   InspectorAgentState::StringMap worlds_to_evaluate_on_load_;
+   InspectorAgentState::BooleanMap
+@@ -323,6 +337,7 @@ class CORE_EXPORT InspectorPageAgent final
+   InspectorAgentState::Integer standard_font_size_;
+   InspectorAgentState::Integer fixed_font_size_;
+   InspectorAgentState::Bytes script_font_families_cbor_;
++  PageReloadScriptInjection script_injection_on_load_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent_unittest.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..b81f6b4735392f3f542ccbb2a114c2def185be1c
+--- /dev/null
++++ b/third_party/blink/renderer/core/inspector/inspector_page_agent_unittest.cc
+@@ -0,0 +1,57 @@
++// Copyright 2024 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/inspector/inspector_page_agent.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/inspector/inspector_session_state.h"
++#include "third_party/blink/renderer/platform/weborigin/kurl.h"
++
++class PageReloadScriptInjectionTest : public testing::Test {
++ protected:
++  blink::mojom::blink::DevToolsSessionStatePtr session_state_cookie_;
++  blink::InspectorAgentState agent_state_;
++  blink::InspectorPageAgent::PageReloadScriptInjection injection_;
++  blink::InspectorSessionState state_;
++
++ public:
++  PageReloadScriptInjectionTest()
++      : agent_state_("page"),
++        injection_(agent_state_),
++        state_(session_state_cookie_.Clone()) {}
++
++  void SetUp() override { agent_state_.InitFrom(&state_); }
++};
++
++TEST_F(PageReloadScriptInjectionTest, PromotesScript) {
++  blink::KURL url("http://example.com");
++  injection_.SetPending("script", url);
++  ASSERT_TRUE(injection_.GetScriptForInjection(url).empty());
++  injection_.PromoteToLoadOnce();
++  ASSERT_EQ(injection_.GetScriptForInjection(url), "script");
++  injection_.PromoteToLoadOnce();
++  ASSERT_TRUE(injection_.GetScriptForInjection(url).empty());
++}
++
++TEST_F(PageReloadScriptInjectionTest, ClearsScript) {
++  blink::KURL url("http://example.com");
++  injection_.SetPending("script", url);
++  injection_.clear();
++  injection_.PromoteToLoadOnce();
++  ASSERT_TRUE(injection_.GetScriptForInjection(url).empty());
++
++  injection_.SetPending("script", url);
++  injection_.PromoteToLoadOnce();
++  ASSERT_EQ(injection_.GetScriptForInjection(url), "script");
++  injection_.clear();
++  ASSERT_TRUE(injection_.GetScriptForInjection(url).empty());
++}
++
++TEST_F(PageReloadScriptInjectionTest, ChecksLoaderId) {
++  blink::KURL url("http://example.com");
++  blink::KURL url2("about:blank");
++  injection_.SetPending("script", url);
++  injection_.PromoteToLoadOnce();
++  ASSERT_TRUE(injection_.GetScriptForInjection(url2).empty());
++}
