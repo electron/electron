@@ -1,7 +1,7 @@
-From 1b90408171198d05295a02b4c5ffdbe011f13636 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bryant Chandler <bryantchandler@chromium.org>
 Date: Mon, 24 Jun 2024 17:28:53 +0000
-Subject: [PATCH] [media_preview] Fix pointer tear down order problem
+Subject: Fix pointer tear down order problem
 
 Holding a RenderFrameHost* in the `OnceBinding` isn't safe,
 because the `RenderFrameHost` can be destroyed before the
@@ -18,13 +18,12 @@ Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
 Commit-Queue: Bryant Chandler <bryantchandler@chromium.org>
 Reviewed-by: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1318653}
----
 
 diff --git a/content/browser/renderer_host/media/media_stream_manager.cc b/content/browser/renderer_host/media/media_stream_manager.cc
-index 250ad2f..3d30af4 100644
+index 5db8665f1466dcfd896b3de3b2f3a2ae307e87de..0153cd1160cb47de471df92211c320920758058a 100644
 --- a/content/browser/renderer_host/media/media_stream_manager.cc
 +++ b/content/browser/renderer_host/media/media_stream_manager.cc
-@@ -2893,25 +2893,19 @@
+@@ -2847,25 +2847,19 @@ void MediaStreamManager::GetRawDeviceIdsOpenedForFrame(
      RenderFrameHost* render_frame_host,
      blink::mojom::MediaStreamType type,
      GetRawDeviceIdsOpenedForFrameCallback callback) const {
@@ -41,13 +40,14 @@ index 250ad2f..3d30af4 100644
 -        return all_render_frame_host_ids;
 -      },
 -      render_frame_host);
-+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
- 
+-
 -  GetUIThreadTaskRunner()->PostTaskAndReplyWithResult(
 -      FROM_HERE, std::move(collect_all_render_frame_host_ids),
 -      base::BindPostTaskToCurrentDefault(
 -          base::BindOnce(&MediaStreamManager::GetRawDeviceIdsOpenedForFrameIds,
 -                         base::Unretained(this), type, std::move(callback))));
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++
 +  base::flat_set<GlobalRenderFrameHostId> all_render_frame_host_ids;
 +  render_frame_host->ForEachRenderFrameHost(
 +      [&all_render_frame_host_ids](RenderFrameHost* render_frame_host) {
@@ -63,10 +63,10 @@ index 250ad2f..3d30af4 100644
  
  void MediaStreamManager::GetRawDeviceIdsOpenedForFrameIds(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5a5d2db..7953d5ff 100644
+index 00e0321382a562ffb3733c48540d4f3071f13527..90cd9138510cf1c4a77bdd39610890a407870a22 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11126,12 +11126,9 @@
+@@ -10613,12 +10613,9 @@ void WebContentsImpl::GetMediaCaptureRawDeviceIdsOpened(
      return;
    }
  

@@ -1,7 +1,7 @@
-From d54105311590b41164bcd8e8d81edac187cf5690 Mon Sep 17 00:00:00 2001
-From: mark a. foltz <mfoltz@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "mark a. foltz" <mfoltz@chromium.org>
 Date: Mon, 17 Jun 2024 23:07:32 +0000
-Subject: [PATCH] [SCK] Retain refptr to shared helper to prevent UAF.
+Subject: Retain refptr to shared helper to prevent UAF.
 
 Capture a reference to the shared helper in the onerror handler to
 prevent a UAF that can occur when the browser drops the mojo
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5634908
 Reviewed-by: Avi Drissman <avi@chromium.org>
 Commit-Queue: Mark Foltz <mfoltz@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1316145}
----
 
 diff --git a/media/audio/mac/audio_loopback_input_mac_impl.mm b/media/audio/mac/audio_loopback_input_mac_impl.mm
-index fd85a71..e5a3b97 100644
+index 7b301492f17a3f1da96b8ff990f6deeb4a19b6e3..f90c00e668f58c2389e622466422ae7aa237c94d 100644
 --- a/media/audio/mac/audio_loopback_input_mac_impl.mm
 +++ b/media/audio/mac/audio_loopback_input_mac_impl.mm
-@@ -394,12 +394,15 @@
+@@ -394,12 +394,15 @@ - (void)stream:(SCStream*)stream
        base::BindRepeating(&SCKAudioInputStream::OnStreamError,
                            base::Unretained(this)));
  

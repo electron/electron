@@ -1,7 +1,7 @@
-From 70d2fe6b7c474de33577cad6b22b031ce9ddc013 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Leszek Swirski <leszeks@chromium.org>
 Date: Fri, 21 Jun 2024 15:11:40 +0200
-Subject: [PATCH] [maglev] Allow reduced hasInstance to abort
+Subject: Allow reduced hasInstance to abort
 
 Fixed: 343507800
 Change-Id: I579041fe82e975d83a72e4744013cb04c4d3dc70
@@ -11,13 +11,12 @@ Commit-Queue: Leszek Swirski <leszeks@chromium.org>
 Auto-Submit: Leszek Swirski <leszeks@chromium.org>
 Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#94585}
----
 
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index bb8c031..7985c4b 100644
+index 728105c0aaccbaeb018eb9b9a660b5acba4650d8..6bd303b5721403719f1c1a359817e56cd53a3e95 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -9886,10 +9886,9 @@
+@@ -8446,10 +8446,9 @@ ReduceResult MaglevGraphBuilder::TryBuildFastInstanceOf(
  
        if (has_instance_field->IsJSFunction()) {
          SaveCallSpeculationScope saved(this);

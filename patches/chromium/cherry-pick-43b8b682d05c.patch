@@ -1,7 +1,7 @@
-From 43b8b682d05c75caf0daf1643b84575009cc0052 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Philip Pfaffe <pfaffe@chromium.org>
 Date: Tue, 18 Jun 2024 10:04:45 +0000
-Subject: [PATCH] Prevent script injection on reload when racing with a navigation
+Subject: Prevent script injection on reload when racing with a navigation
 
 DevTools passes the loaderId now when calling Page.reload, in order to
 prevent accidentally reloading the wrong page when a navigation occurred
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5625857
 Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
 Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1316330}
----
 
 diff --git a/third_party/blink/renderer/core/inspector/build.gni b/third_party/blink/renderer/core/inspector/build.gni
-index 13062c25..652ee89 100644
+index 2e9feebe066f938506d63d157be65828aa2a27c9..39de006f5f97f9e2a84ee4d38f7bb98e99c41924 100644
 --- a/third_party/blink/renderer/core/inspector/build.gni
 +++ b/third_party/blink/renderer/core/inspector/build.gni
-@@ -140,6 +140,7 @@
+@@ -138,6 +138,7 @@ blink_core_tests_inspector = [
    "inspector_emulation_agent_test.cc",
    "inspector_highlight_test.cc",
    "inspector_history_test.cc",
@@ -28,10 +27,10 @@ index 13062c25..652ee89 100644
    "inspector_media_context_impl_unittest.cc",
    "inspector_session_state_test.cc",
 diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
-index d8261592..0337bbf 100644
+index 6936ee92726937deba7e85e30259d7d276f6a397..aaf9571e2f4558b51c6583b538356b57609a1654 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 +++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
-@@ -479,6 +479,42 @@
+@@ -477,6 +477,42 @@ String InspectorPageAgent::CachedResourceTypeJson(
    return ResourceTypeJson(ToResourceType(cached_resource.GetType()));
  }
  
@@ -74,7 +73,7 @@ index d8261592..0337bbf 100644
  InspectorPageAgent::InspectorPageAgent(
      InspectedFrames* inspected_frames,
      Client* client,
-@@ -495,8 +531,6 @@
+@@ -493,8 +529,6 @@ InspectorPageAgent::InspectorPageAgent(
        screencast_enabled_(&agent_state_, /*default_value=*/false),
        lifecycle_events_enabled_(&agent_state_, /*default_value=*/false),
        bypass_csp_enabled_(&agent_state_, /*default_value=*/false),
@@ -83,7 +82,7 @@ index d8261592..0337bbf 100644
        scripts_to_evaluate_on_load_(&agent_state_,
                                     /*default_value=*/String()),
        worlds_to_evaluate_on_load_(&agent_state_,
-@@ -506,7 +540,8 @@
+@@ -504,7 +538,8 @@ InspectorPageAgent::InspectorPageAgent(
            /*default_value=*/false),
        standard_font_size_(&agent_state_, /*default_value=*/0),
        fixed_font_size_(&agent_state_, /*default_value=*/0),
@@ -93,7 +92,7 @@ index d8261592..0337bbf 100644
  
  void InspectorPageAgent::Restore() {
    if (enabled_.Get())
-@@ -545,8 +580,7 @@
+@@ -543,8 +578,7 @@ protocol::Response InspectorPageAgent::enable() {
  protocol::Response InspectorPageAgent::disable() {
    agent_state_.ClearAllFields();
    pending_isolated_worlds_.clear();
@@ -103,26 +102,19 @@ index d8261592..0337bbf 100644
    instrumenting_agents_->RemoveInspectorPageAgent(this);
    inspector_resource_content_loader_->Cancel(
        resource_content_loader_client_id_);
-@@ -673,8 +707,16 @@
+@@ -670,8 +704,9 @@ protocol::Response InspectorPageAgent::setAdBlockingEnabled(bool enable) {
+ protocol::Response InspectorPageAgent::reload(
      Maybe<bool> optional_bypass_cache,
-     Maybe<String> optional_script_to_evaluate_on_load,
-     Maybe<String> loader_id) {
+     Maybe<String> optional_script_to_evaluate_on_load) {
 -  pending_script_to_evaluate_on_load_once_.Set(
 -      optional_script_to_evaluate_on_load.value_or(""));
-+  if (loader_id.has_value() && inspected_frames_->Root()
-+                                       ->Loader()
-+                                       .GetDocumentLoader()
-+                                       ->GetDevToolsNavigationToken()
-+                                       .ToString() != loader_id->Ascii()) {
-+    return protocol::Response::InvalidParams("Document already navigated");
-+  }
 +  script_injection_on_load_.SetPending(
 +      optional_script_to_evaluate_on_load.value_or(""),
 +      inspected_frames_->Root()->Loader().GetDocumentLoader()->Url());
    v8_session_->setSkipAllPauses(true);
    v8_session_->resume(true /* terminate on resume */);
    return protocol::Response::Success();
-@@ -994,7 +1036,9 @@
+@@ -987,7 +1022,9 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
      EvaluateScriptOnNewDocument(*frame, key);
    }
  
@@ -133,7 +125,7 @@ index d8261592..0337bbf 100644
      return;
    }
    ScriptState* script_state = ToScriptStateForMainWorld(frame);
-@@ -1002,9 +1046,8 @@
+@@ -995,9 +1032,8 @@ void InspectorPageAgent::DidCreateMainWorldContext(LocalFrame* frame) {
      return;
    }
  
@@ -145,7 +137,7 @@ index d8261592..0337bbf 100644
  }
  
  void InspectorPageAgent::EvaluateScriptOnNewDocument(
-@@ -1054,9 +1097,7 @@
+@@ -1047,9 +1083,7 @@ void InspectorPageAgent::LoadEventFired(LocalFrame* frame) {
  
  void InspectorPageAgent::WillCommitLoad(LocalFrame*, DocumentLoader* loader) {
    if (loader->GetFrame() == inspected_frames_->Root()) {
@@ -157,10 +149,10 @@ index d8261592..0337bbf 100644
    GetFrontend()->frameNavigated(BuildObjectForFrame(loader->GetFrame()),
                                  protocol::Page::NavigationTypeEnum::Navigation);
 diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.h b/third_party/blink/renderer/core/inspector/inspector_page_agent.h
-index d104b9c..4a4bd78 100644
+index d0da21e12df1dd11bd57b2226491f61aa34d62c9..3eb5e24fb13428e38a1ebc2e64bdeab9eed28ef2 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_page_agent.h
 +++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.h
-@@ -94,6 +94,22 @@
+@@ -93,6 +93,22 @@ class CORE_EXPORT InspectorPageAgent final
      kOtherResource
    };
  
@@ -183,7 +175,7 @@ index d104b9c..4a4bd78 100644
    static bool CachedResourceContent(const Resource*,
                                      String* result,
                                      bool* base64_encoded);
-@@ -308,7 +324,6 @@
+@@ -306,7 +322,6 @@ class CORE_EXPORT InspectorPageAgent final
        ad_script_identifiers_;
    v8_inspector::V8InspectorSession* v8_session_;
    Client* client_;
@@ -191,7 +183,7 @@ index d104b9c..4a4bd78 100644
    Member<InspectorResourceContentLoader> inspector_resource_content_loader_;
    int resource_content_loader_client_id_;
    InspectorAgentState::Boolean intercept_file_chooser_;
-@@ -316,7 +331,6 @@
+@@ -314,7 +329,6 @@ class CORE_EXPORT InspectorPageAgent final
    InspectorAgentState::Boolean screencast_enabled_;
    InspectorAgentState::Boolean lifecycle_events_enabled_;
    InspectorAgentState::Boolean bypass_csp_enabled_;
@@ -199,7 +191,7 @@ index d104b9c..4a4bd78 100644
    InspectorAgentState::StringMap scripts_to_evaluate_on_load_;
    InspectorAgentState::StringMap worlds_to_evaluate_on_load_;
    InspectorAgentState::BooleanMap
-@@ -324,6 +338,7 @@
+@@ -322,6 +336,7 @@ class CORE_EXPORT InspectorPageAgent final
    InspectorAgentState::Integer standard_font_size_;
    InspectorAgentState::Integer fixed_font_size_;
    InspectorAgentState::Bytes script_font_families_cbor_;
@@ -209,7 +201,7 @@ index d104b9c..4a4bd78 100644
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent_unittest.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent_unittest.cc
 new file mode 100644
-index 0000000..b81f6b4
+index 0000000000000000000000000000000000000000..b81f6b4735392f3f542ccbb2a114c2def185be1c
 --- /dev/null
 +++ b/third_party/blink/renderer/core/inspector/inspector_page_agent_unittest.cc
 @@ -0,0 +1,57 @@

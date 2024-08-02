@@ -1,7 +1,7 @@
-From bc545b15a0ee5dd3bea9f2bfb991b380f5f3659c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Kummerow <jkummerow@chromium.org>
 Date: Thu, 11 Jul 2024 16:34:00 +0200
-Subject: [PATCH] [wasm][multi-memory] Fix cast of memory index
+Subject: Fix cast of memory index
 
 "uint8_t" must have been a typo.
 
@@ -14,13 +14,12 @@ Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
 Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
 Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#94981}
----
 
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index 3fecdb9..a1a8b10 100644
+index 5d7d03536d44c283b9ed049a3eec2dde43024af8..89ece5e51eab038b559cc7f2c5205275c0c41a72 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
-@@ -3359,7 +3359,7 @@
+@@ -3426,7 +3426,7 @@ Node* WasmGraphBuilder::MemStart(uint32_t mem_index) {
    DCHECK_NOT_NULL(instance_cache_);
    V8_ASSUME(cached_memory_index_ == kNoCachedMemoryIndex ||
              cached_memory_index_ >= 0);
@@ -29,7 +28,7 @@ index 3fecdb9..a1a8b10 100644
      return instance_cache_->mem_start;
    }
    return LoadMemStart(mem_index);
-@@ -3369,7 +3369,7 @@
+@@ -3436,7 +3436,7 @@ Node* WasmGraphBuilder::MemSize(uint32_t mem_index) {
    DCHECK_NOT_NULL(instance_cache_);
    V8_ASSUME(cached_memory_index_ == kNoCachedMemoryIndex ||
              cached_memory_index_ >= 0);
