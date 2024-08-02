@@ -38,14 +38,12 @@ class Dictionary : public gin::Dictionary {
 
   // Differences from the Get method in gin::Dictionary:
   // 1. This is a const method;
-  // 2. It checks whether the key exists before reading;
-  // 3. It accepts arbitrary type of key.
-  template <typename K, typename V>
-  bool Get(const K& key, V* out) const {
+  // 2. It checks whether the key exists before reading
+  template <typename V>
+  bool Get(v8::Local<v8::Value> v8_key, V* out) const {
     v8::Isolate* const iso = isolate();
     v8::Local<v8::Object> handle = GetHandle();
     v8::Local<v8::Context> context = iso->GetCurrentContext();
-    v8::Local<v8::Value> v8_key = gin::ConvertToV8(iso, key);
     v8::Local<v8::Value> value;
     // Check for existence before getting, otherwise this method will always
     // returns true when T == v8::Local<v8::Value>.
@@ -54,17 +52,39 @@ class Dictionary : public gin::Dictionary {
            gin::ConvertFromV8(iso, value, out);
   }
 
+  // Get() variant optimized for string literals e.g. `Get("key", &val)`
+  template <int N, typename V>
+  bool Get(const char (&key_literal)[N], V* out) const {
+    return Get(v8::String::NewFromUtf8Literal(isolate(), key_literal), out);
+  }
+
+  // Get() variant that accepts arbitrary key types
+  template <typename K, typename V>
+  bool Get(const K& key, V* out) const {
+    return Get(gin::ConvertToV8(isolate(), key), out);
+  }
+
   // Differences from the Set method in gin::Dictionary:
   // 1. It accepts arbitrary type of key.
   template <typename K, typename V>
-  bool Set(const K& key, const V& val) {
+  bool Set(v8::Local<v8::Value> v8_key, const V& value) {
     v8::Local<v8::Value> v8_value;
-    if (!gin::TryConvertToV8(isolate(), val, &v8_value))
-      return false;
-    v8::Maybe<bool> result =
-        GetHandle()->Set(isolate()->GetCurrentContext(),
-                         gin::ConvertToV8(isolate(), key), v8_value);
-    return result.FromMaybe(false);
+    return gin::TryConvertToV8(isolate(), value, &v8_value) &&
+           GetHandle()
+               ->Set(isolate()->GetCurrentContext(), v8_key, v8_value)
+               .FromMaybe(false);
+  }
+
+  // Set() variant optimized for string literals e.g. `Set("key", val)`
+  template <int N, typename V>
+  bool Set(const char (&key_literal)[N], const V& val) {
+    return Set(v8::String::NewFromUtf8Literal(isolate(), key_literal), val);
+  }
+
+  // Set() variant that accepts abitrary key types
+  template <typename K, typename V>
+  bool Set(const K& key, const V& val) {
+    return Set(gin::ConvertToV8(isolate(), key), val);
   }
 
   // Like normal Get but put result in an std::optional.
