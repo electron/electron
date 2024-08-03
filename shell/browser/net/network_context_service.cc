@@ -39,7 +39,7 @@ bool ShouldTriggerNetworkDataMigration() {
 
 NetworkContextService::NetworkContextService(content::BrowserContext* context)
     : browser_context_(static_cast<ElectronBrowserContext*>(context)),
-      proxy_config_monitor_(browser_context_->prefs()) {}
+      proxy_config_monitor_(browser_context_->GetPrefs()) {}
 
 NetworkContextService::~NetworkContextService() = default;
 

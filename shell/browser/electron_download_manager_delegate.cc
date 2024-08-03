@@ -359,7 +359,8 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
   auto* browser_context = static_cast<ElectronBrowserContext*>(
       download_manager_->GetBrowserContext());
   base::FilePath default_download_path =
-      browser_context->prefs()->GetFilePath(prefs::kDownloadDefaultDirectory);
+      browser_context->GetPrefs()->GetFilePath(
+          prefs::kDownloadDefaultDirectory);
 
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE,

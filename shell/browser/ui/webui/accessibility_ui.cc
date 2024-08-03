@@ -176,7 +176,8 @@ void HandleAccessibilityRequestCallback(
 
   base::Value::Dict data;
   PrefService* pref =
-      static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
+      static_cast<electron::ElectronBrowserContext*>(current_context)
+          ->GetPrefs();
   ui::AXMode mode =
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
   bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()

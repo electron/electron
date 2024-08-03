@@ -630,7 +630,7 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
   auto* context = web_contents->GetBrowserContext();
-  return static_cast<electron::ElectronBrowserContext*>(context)->prefs();
+  return static_cast<electron::ElectronBrowserContext*>(context)->GetPrefs();
 }
 
 std::map<std::string, std::string> GetAddedFileSystemPaths(
@@ -974,7 +974,7 @@ void WebContents::InitWithWebContents(
 
   // Create InspectableWebContents.
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
-      std::move(web_contents), browser_context->prefs(), is_guest);
+      std::move(web_contents), browser_context->GetPrefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
 }
 

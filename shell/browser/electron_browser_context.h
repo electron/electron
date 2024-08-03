@@ -147,7 +147,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
-  PrefService* prefs() const { return prefs_.get(); }
+  PrefService* GetPrefs() const { return prefs_.get(); }
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_.get();
   }

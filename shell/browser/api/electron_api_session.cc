@@ -714,7 +714,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
-    MediaDeviceIDSalt::Reset(browser_context()->prefs());
+    MediaDeviceIDSalt::Reset(browser_context()->GetPrefs());
   }
 
   storage_partition->ClearData(
@@ -792,8 +792,8 @@ v8::Local<v8::Promise> Session::ForceReloadProxyConfig() {
 }
 
 void Session::SetDownloadPath(const base::FilePath& path) {
-  browser_context_->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                         path);
+  browser_context_->GetPrefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                            path);
 }
 
 void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
@@ -1392,7 +1392,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
-  return browser_context_->prefs()
+  return browser_context_->GetPrefs()
       ->GetValue(spellcheck::prefs::kSpellCheckDictionaries)
       .Clone();
 }
@@ -1411,11 +1411,11 @@ void Session::SetSpellCheckerLanguages(
     }
     language_codes.Append(code);
   }
-  browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
-                                 base::Value(std::move(language_codes)));
+  browser_context_->GetPrefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
+                                    base::Value(std::move(language_codes)));
   // Enable spellcheck if > 0 languages, disable if no languages set
-  browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
-                                        !languages.empty());
+  browser_context_->GetPrefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
+                                           !languages.empty());
 #endif
 }
 
@@ -1500,12 +1500,12 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 }
 
 void Session::SetSpellCheckerEnabled(bool b) {
-  browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
-                                        b);
+  browser_context_->GetPrefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
+                                           b);
 }
 
 bool Session::IsSpellCheckerEnabled() const {
-  return browser_context_->prefs()->GetBoolean(
+  return browser_context_->GetPrefs()->GetBoolean(
       spellcheck::prefs::kSpellCheckEnable);
 }
 

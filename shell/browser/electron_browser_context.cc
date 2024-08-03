@@ -445,14 +445,14 @@ void ElectronBrowserContext::InitPrefs() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // No configured dictionaries, the default will be en-US
-  if (prefs()->GetList(spellcheck::prefs::kSpellCheckDictionaries).empty()) {
+  if (GetPrefs()->GetList(spellcheck::prefs::kSpellCheckDictionaries).empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
       base::Value::List language_codes;
       language_codes.Append(default_code);
-      prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
-                   base::Value(std::move(language_codes)));
+      GetPrefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
+                      base::Value(std::move(language_codes)));
     }
   }
 #endif
@@ -480,7 +480,7 @@ std::unique_ptr<content::ZoomLevelDelegate>
 ElectronBrowserContext::CreateZoomLevelDelegate(
     const base::FilePath& partition_path) {
   if (!IsOffTheRecord()) {
-    return std::make_unique<ZoomLevelDelegate>(prefs(), partition_path);
+    return std::make_unique<ZoomLevelDelegate>(GetPrefs(), partition_path);
   }
   return std::unique_ptr<content::ZoomLevelDelegate>();
 }

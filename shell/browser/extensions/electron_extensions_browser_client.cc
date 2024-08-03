@@ -256,7 +256,7 @@ bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
 
 PrefService* ElectronExtensionsBrowserClient::GetPrefServiceForContext(
     BrowserContext* context) {
-  return static_cast<ElectronBrowserContext*>(context)->prefs();
+  return static_cast<ElectronBrowserContext*>(context)->GetPrefs();
 }
 
 void ElectronExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(

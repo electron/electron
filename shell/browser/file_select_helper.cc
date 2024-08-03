@@ -381,7 +381,7 @@ void FileSelectHelper::GetSanitizedFilenameOnUIThread(
   auto* browser_context = static_cast<electron::ElectronBrowserContext*>(
       render_frame_host_->GetProcess()->GetBrowserContext());
   base::FilePath default_file_path =
-      browser_context->prefs()
+      browser_context->GetPrefs()
           ->GetFilePath(prefs::kSelectFileLastDirectory)
           .Append(params->default_file_name);
 
