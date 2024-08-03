@@ -520,7 +520,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 2cf77183de23c2715d5fcf93e03185da87e56e90..abc08f01c19afd62d97effe1c104f95ddaa3a1e6 100644
+index 1e769dddb58b8bee48c52263783cfc1f675e182d..cdc69580f1ee9b418a474ff167e2b3e4c79df962 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -562,7 +562,7 @@ index febb2718cb34ea4d9f411f068d8c01a89c7db888..be8bd51cb61c20ef3df8552972a0ac2f
    gpu::SyncPointManager* GetSyncPointManager() override;
  };
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index b9ad5c8cbeb5b3684af6d84f70aa8aace69dc01a..55ea89b5c08daf3dd5cdf332be96ff43b8590233 100644
+index 2ea7347d2abe0a4ac9c1e57ea5249660ca2203fc..d71e6349fa887ddaf2d03438e72b4d696d9bf9c5 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -390,8 +390,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -595,7 +595,7 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 7eff777e19817bc321d770cab31db17bd9bdf6b6..c7fad80559177054f048885c7b70484b8e8bc5de 100644
+index 0462e5b8727577c252048462685132685d308e35..c5a4ffe8ab668d408bc8f3dc1db0371fa363f32e 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -34,6 +34,7 @@ struct RootCompositorFrameSinkParams {

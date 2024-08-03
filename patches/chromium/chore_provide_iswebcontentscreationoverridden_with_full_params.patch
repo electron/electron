@@ -80,7 +80,7 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 681fe10f2826088abc2e8ebdc388ff6f4314cbcf..45b19cac6ef98007e80a0577b3ed924c05eba0f7 100644
+index 5513b0d21ea63e53088cd815f13b51174bf06d19..c85fa3e9b304382385a2f29e417f224777f9d4e3 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2069,12 +2069,11 @@ bool Browser::IsWebContentsCreationOverridden(
