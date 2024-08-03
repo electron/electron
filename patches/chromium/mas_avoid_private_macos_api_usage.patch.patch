@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f23f880efa562ed992eb9dc92946437b2151d1f1..848f860907f118a8f6cea188601e0873397265cd 100644
+index 556c7b5e4f73a9bd3b1d14589e823b6b1bafe8db..570dc5fa4c56bd3392ab2f0d813373ab2ba2d09a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1050,6 +1050,7 @@ component("base") {
@@ -171,7 +171,7 @@ index 4fe7a0bfaa5b3398372f55c6454e738f140efe6b..b1c70281c45aaca4ae483f1f28e9d219
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index bc054fb378181210794a1b3453f7c14443da0dab..b9690bbdd2d126c09396c02a8cae5d91bab6bcd4 100644
+index 73a4b456147bd18617ddc9be48b44d1b37d3a2f1..bb0b5a86d24aa5f3d597a6e2e07513f513496741 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -362,10 +362,10 @@ index 4f37e077120a311638c64e715059e5c08b1f1045..30027aafc16d48ac076dca3223f3a38d
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b3c087eda0561d94d205ef0cbbb341a7e2a34638..035202378209e32e6f7c630140367cda7a34e483 100644
+index 897e8a7d807fa7e6d5b461b5413483114871bfbb..45f292bad3d69073e52de2d4175c6126898ca7a1 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -627,10 +627,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -635,10 +635,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -379,10 +379,10 @@ index b3c087eda0561d94d205ef0cbbb341a7e2a34638..035202378209e32e6f7c630140367cda
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 5162f0de437618af7ce9de59209e090ac56881b9..1c5e059cee6593f61270559a58cee7450b52ab8c 100644
+index c72378fbfd823855b41e094e16e4e92d9fbaefcc..f907a3eea3843ccad7b15ca34137f42dbe57baa1 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -367,6 +367,7 @@ viz_component("service") {
+@@ -368,6 +368,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -390,7 +390,7 @@ index 5162f0de437618af7ce9de59209e090ac56881b9..1c5e059cee6593f61270559a58cee745
    }
  
    if (is_android || use_ozone) {
-@@ -639,6 +640,7 @@ viz_source_set("unit_tests") {
+@@ -640,6 +641,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index cfcc4bc7fbcc6209c86f07ae1b6e920c5258173c..18395806b05c7deef7a0415031c376f7c2239bfd 100644
+index 69a89c9937899620d8774b1bf288349d0efb535c..6b14a1fe2762b2ae513c522798e77aa6b3403193 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -502,6 +502,7 @@ static_library("test_support") {
@@ -770,7 +770,7 @@ index 2e53ca913d9b4380792df82f73dcfdd5177c0214..edb1e1a3283ee1978d64527c29ad207e
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 4244e70c523d584fb796f4ce741376c6f72531cd..25db1e83fefecd01820923e5d182b882426eebfd 100644
+index 25f2c71ac4d74f1843b3fa5b16a8833170240431..ee2fa297f5cf555269ebb5d6e413cc337e2b6ee9 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -39,6 +39,7 @@
@@ -800,7 +800,7 @@ index 4244e70c523d584fb796f4ce741376c6f72531cd..25db1e83fefecd01820923e5d182b882
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -297,8 +301,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -307,8 +311,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
