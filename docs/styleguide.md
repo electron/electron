@@ -301,16 +301,17 @@ There are a few style guidelines that aren't covered by the linting script:
 
 * Always adhere to this format:
 
-  | Type                        | Line                              |
-  |----------------------------:|:----------------------------------|
-  | `API HEADER`                | `` #### `win.flashFrame(flag)` `` |
-  | `BLANK LINE`                | `​`                                |
-  | `HTML COMMENT OPENING TAG`  | `` <!-- ``                        |
-  | `API HISTORY OPENING TAG`   | `` ```YAML history ``             |
-  | `API HISTORY`               | `added: ...`                      |
-  | `API HISTORY CLOSING TAG`   | `` ``` ``                         |
-  | `HTML COMMENT CLOSING TAG`  | `` --> ``                         |
-  | `BLANK LINE`                | `​`                                |
+  ```markdown
+  API HEADER                  |  #### `win.flashFrame(flag)`
+  BLANK LINE                  | 
+  HTML COMMENT OPENING TAG    |  <!--
+  API HISTORY OPENING TAG     |  ```YAML history
+  API HISTORY                 |  added:
+                              |    - pr-url: https://github.com/electron/electron/pull/22533
+  API HISTORY CLOSING TAG     |  ```
+  HTML COMMENT CLOSING TAG    |  -->
+  BLANK LINE                  |
+  ```
 
 * Use two spaces for indentation in the YAML.
 * Keep change descriptions concise - favor using the release notes from the associated PR whenever possible.
