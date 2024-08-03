@@ -333,11 +333,6 @@ void HidChooserContext::OnHidManagerConnectionError() {
   hid_manager_.reset();
   client_receiver_.reset();
   devices_.clear();
-
-  std::vector<url::Origin> revoked_origins;
-  revoked_origins.reserve(ephemeral_devices_.size());
-  for (const auto& map_entry : ephemeral_devices_)
-    revoked_origins.push_back(map_entry.first);
   ephemeral_devices_.clear();
 
   // Notify all device observers.
