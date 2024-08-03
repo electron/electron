@@ -93,7 +93,7 @@ Objects created with `new BrowserView` have the following instance methods:
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/35658
-    description: Standardized auto-resizing behavior across all platforms
+    description: "Standardized auto-resizing behavior across all platforms"
     breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658

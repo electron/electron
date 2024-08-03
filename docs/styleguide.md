@@ -264,7 +264,7 @@ added:
   - pr-url: https://github.com/electron/electron/pull/22533
 changes:
   - pr-url: https://github.com/electron/electron/pull/26789
-    description: Made `trafficLightPosition` option work for `customButtonOnHover` window.
+    description: "Made `trafficLightPosition` option work for `customButtonOnHover` window."
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/37094
     breaking-changes-header: deprecated-browserwindowsettrafficlightpositionposition
@@ -314,6 +314,8 @@ There are a few style guidelines that aren't covered by the linting script:
   ```
 
 * Use two spaces for indentation in the YAML.
+* Always wrap descriptions with double quotation marks (i.e. "example").
+  * [Certain special characters (e.g. `[`, `]`) can break YAML parsing](https://stackoverflow.com/a/37015689/19020549).
 * Keep change descriptions concise - favor using the release notes from the associated PR whenever possible.
   * Developers can always view the breaking changes document or linked
     pull request for more details.
