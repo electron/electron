@@ -4,9 +4,9 @@
 
 #include "shell/browser/electron_browser_context.h"
 
+#include <algorithm>
 #include <memory>
 #include <optional>
-
 #include <utility>
 
 #include "base/barrier_closure.h"
@@ -129,7 +129,7 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
 
   const auto& captured_config = captured->GetCaptureHandleConfig();
   if (!captured_config.all_origins_permitted &&
-      base::ranges::none_of(
+      std::ranges::none_of(
           captured_config.permitted_origins,
           [capturer_origin](const url::Origin& permitted_origin) {
             return capturer_origin.IsSameOriginWith(permitted_origin);

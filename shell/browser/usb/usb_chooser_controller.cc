@@ -4,11 +4,11 @@
 
 #include "shell/browser/usb/usb_chooser_controller.h"
 
-#include <stddef.h>
+#include <algorithm>
+#include <cstddef>
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/ranges/algorithm.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -146,7 +146,7 @@ bool UsbChooserController::DisplayDevice(
     return false;
   }
 
-  if (base::ranges::any_of(
+  if (std::ranges::any_of(
           options_->exclusion_filters, [&device_info](const auto& filter) {
             return device::UsbDeviceFilterMatches(*filter, device_info);
           })) {
