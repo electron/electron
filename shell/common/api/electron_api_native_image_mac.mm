@@ -128,8 +128,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
 
     if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
       gfx::Image gfx_image = gfx::Image::CreateFrom1xPNGBytes(
-          reinterpret_cast<const unsigned char*>((char*)[png_data bytes]),
-          [png_data length]);
+          {reinterpret_cast<const uint8_t*>((char*)[png_data bytes]),
+           [png_data length]});
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
                                 safeShift(hsl_shift[1], 0.5),
                                 safeShift(hsl_shift[2], 0.5)};
