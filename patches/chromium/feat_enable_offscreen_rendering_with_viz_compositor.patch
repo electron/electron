@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3c5ab7a6e6608b3f5e35f8b46a59880100b2a627..2cefb70548ddfbd1f98d4028177e661fec4cea9b 100644
+index f907a3eea3843ccad7b15ca34137f42dbe57baa1..f3f0812be22067a06fc0afc3e52ffc252cd33f86 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -169,6 +169,8 @@ viz_component("service") {
+@@ -172,6 +172,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -203,10 +203,10 @@ index d149ef23deaf591e472fcd00a7ea32b2e4052b98..6e93321d2856d40a00fa04fe03a2bb72
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 5dccc2360cd1f3d83ffc59697aeb559a19b0547a..5fe62069b15e6370e63645b257d931be2a714bc3 100644
+index 7d58c00ddee8b8e14f89b9ba0f82f734294a4828..b9f7c11f28a7fd61cac594cac862d6524b83296d 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
-@@ -106,6 +106,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
+@@ -111,6 +111,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
  
  SkCanvas* SoftwareOutputDeviceMac::BeginPaint(
      const gfx::Rect& new_damage_rect) {
@@ -215,7 +215,7 @@ index 5dccc2360cd1f3d83ffc59697aeb559a19b0547a..5fe62069b15e6370e63645b257d931be
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -194,6 +196,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+@@ -199,6 +201,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
      ca_layer_params.is_empty = false;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;
@@ -520,7 +520,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 2cf77183de23c2715d5fcf93e03185da87e56e90..abc08f01c19afd62d97effe1c104f95ddaa3a1e6 100644
+index 4022dff593fb718b6e97c35fbf928af129495aaf..d51b9d9c7eb7e2cef09d9d7745d4b54a27b69168 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -595,10 +595,10 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 7eff777e19817bc321d770cab31db17bd9bdf6b6..c7fad80559177054f048885c7b70484b8e8bc5de 100644
+index 3ec6e6aec3d9ca1cedc0004388f88e2624bb688d..0a44bf55d47d38e7566d50f1d04c36338eb9f014 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -34,6 +34,7 @@ struct RootCompositorFrameSinkParams {
+@@ -35,6 +35,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;

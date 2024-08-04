@@ -4,6 +4,8 @@
 
 #include "shell/renderer/electron_renderer_client.h"
 
+#include <algorithm>
+
 #include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/debug/stack_trace.h"
@@ -163,7 +165,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
     return;
 
   node::Environment* env = node::Environment::GetCurrent(context);
-  const auto iter = base::ranges::find_if(
+  const auto iter = std::ranges::find_if(
       environments_, [env](auto& item) { return env == item.get(); });
   if (iter == environments_.end())
     return;

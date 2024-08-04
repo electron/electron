@@ -14,6 +14,11 @@
 
 namespace electron {
 
+// NSUserNotification is deprecated; all calls should be replaced with
+// UserNotifications.frameworks API
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 class CocoaNotification : public Notification {
  public:
   CocoaNotification(NotificationDelegate* delegate,
@@ -39,6 +44,9 @@ class CocoaNotification : public Notification {
   std::map<std::string, unsigned> additional_action_indices_;
   unsigned action_index_;
 };
+
+// -Wdeprecated-declarations
+#pragma clang diagnostic pop
 
 }  // namespace electron
 

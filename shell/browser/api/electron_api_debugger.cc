@@ -7,15 +7,17 @@
 #include <string>
 #include <utility>
 
+#include <string_view>
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
-#include "base/strings/string_piece.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
 using content::DevToolsAgentHost;
@@ -43,8 +45,8 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  base::StringPiece message_str(reinterpret_cast<const char*>(message.data()),
-                                message.size());
+  std::string_view message_str(reinterpret_cast<const char*>(message.data()),
+                               message.size());
   std::optional<base::Value> parsed_message = base::JSONReader::Read(
       message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())

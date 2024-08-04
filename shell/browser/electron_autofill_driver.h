@@ -14,8 +14,12 @@
 
 #include "base/memory/raw_ptr.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
-#include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "shell/common/api/api.mojom.h"
+
+namespace mojo {
+template <typename T>
+class PendingAssociatedReceiver;
+}  // namespace mojo
 
 namespace electron {
 

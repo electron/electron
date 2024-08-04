@@ -17,6 +17,9 @@
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-external.h"
+#include "v8/include/v8-template.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
 // 1. Support for additional types of arguments.

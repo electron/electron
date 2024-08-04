@@ -16,6 +16,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/bind_post_task.h"
 #include "gin/arguments.h"
+#include "gin/handle.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/gfx/color_utils.h"
@@ -127,8 +128,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
 
     if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
       gfx::Image gfx_image = gfx::Image::CreateFrom1xPNGBytes(
-          reinterpret_cast<const unsigned char*>((char*)[png_data bytes]),
-          [png_data length]);
+          {reinterpret_cast<const uint8_t*>((char*)[png_data bytes]),
+           [png_data length]});
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
                                 safeShift(hsl_shift[1], 0.5),
                                 safeShift(hsl_shift[2], 0.5)};

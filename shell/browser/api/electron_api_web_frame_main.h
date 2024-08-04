@@ -12,8 +12,8 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -28,7 +28,10 @@ class RenderFrameHost;
 
 namespace gin {
 class Arguments;
-}
+
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 
@@ -78,8 +81,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void Destroyed();
 
   // Mark RenderFrameHost as disposed and to no longer access it. This can
-  // happen when the WebFrameMain v8 handle is GC'd or when a FrameTreeNode
-  // is removed.
+  // happen when the WebFrameMain v8-forward.handle is GC'd or when a
+  // FrameTreeNode is removed.
   void MarkRenderFrameDisposed();
 
   // Swap out the internal RFH when cross-origin navigation occurs.

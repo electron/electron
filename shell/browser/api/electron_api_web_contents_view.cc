@@ -9,6 +9,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -26,14 +27,29 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
 
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
+#endif
+
 namespace electron::api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
-    : View(web_contents->inspectable_web_contents()->GetView()),
+#if BUILDFLAG(IS_MAC)
+    : View(new DelayedNativeViewHost(web_contents->inspectable_web_contents()
+                                         ->GetView()
+                                         ->GetNativeView())),
+#else
+    : View(web_contents->inspectable_web_contents()->GetView()->GetView()),
+#endif
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
+#if !BUILDFLAG(IS_MAC)
+  // On macOS the View is a newly-created |DelayedNativeViewHost| and it is our
+  // responsibility to delete it. On other platforms the View is created and
+  // managed by InspectableWebContents.
   set_delete_view(false);
+#endif
   view()->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
@@ -74,15 +90,8 @@ void WebContentsView::SetBorderRadius(int radius) {
 
 void WebContentsView::ApplyBorderRadius() {
   if (border_radius().has_value() && api_web_contents_ && view()->GetWidget()) {
-    auto* web_view = api_web_contents_->inspectable_web_contents()
-                         ->GetView()
-                         ->contents_web_view();
-
-    // WebView won't exist for offscreen rendering.
-    if (web_view) {
-      web_view->holder()->SetCornerRadii(
-          gfx::RoundedCornersF(border_radius().value()));
-    }
+    auto* view = api_web_contents_->inspectable_web_contents()->GetView();
+    view->SetCornerRadii(gfx::RoundedCornersF(border_radius().value()));
   }
 }
 

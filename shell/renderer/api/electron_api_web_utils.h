@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_RENDERER_API_ELECTRON_API_WEB_UTILS_H_
 #define ELECTRON_SHELL_RENDERER_API_ELECTRON_API_WEB_UTILS_H_
 
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace electron::api::web_utils {
 

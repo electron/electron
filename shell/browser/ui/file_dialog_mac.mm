@@ -21,6 +21,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/thread_restrictions.h"
 
 @interface PopUpButtonHandler : NSObject

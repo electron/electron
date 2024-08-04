@@ -5,17 +5,17 @@
 
 #include "shell/browser/ui/inspectable_web_contents.h"
 
+#include <algorithm>
 #include <memory>
 #include <string_view>
 #include <utility>
 
+#include <string_view>
 #include "base/base64.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
-#include "base/ranges/algorithm.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -111,10 +111,10 @@ gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  return base::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
-                              [&point](auto const& display) {
-                                return display.bounds().Contains(point);
-                              });
+  return std::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+                             [&point](auto const& display) {
+                               return display.bounds().Contains(point);
+                             });
 }
 
 void SetZoomLevelForWebContents(content::WebContents* web_contents,
@@ -239,7 +239,7 @@ class InspectableWebContents::NetworkResourceLoader
   }
 
   // network::SimpleURLLoaderStreamConsumer
-  void OnDataReceived(base::StringPiece chunk,
+  void OnDataReceived(std::string_view chunk,
                       base::OnceClosure resume) override {
     bool encoded = !base::IsStringUTF8(chunk);
     bindings_->CallClientFunction(
@@ -297,6 +297,11 @@ class InspectableWebContents::NetworkResourceLoader
   base::TimeDelta retry_delay_;
 };
 
+// Implemented separately on each platform.
+InspectableWebContentsView* CreateInspectableContentsView(
+    InspectableWebContents* inspectable_web_contents);
+
+// static
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -312,7 +317,7 @@ InspectableWebContents::InspectableWebContents(
     : pref_service_(pref_service),
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
-      view_(new InspectableWebContentsView(this)) {
+      view_(CreateInspectableContentsView(this)) {
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
@@ -939,7 +944,7 @@ void InspectableWebContents::DispatchProtocolMessage(
     size_t total_size = str_message.length();
     for (size_t pos = 0; pos < str_message.length();
          pos += kMaxMessageChunkSize) {
-      base::StringPiece str_message_chunk =
+      std::string_view str_message_chunk =
           str_message.substr(pos, kMaxMessageChunkSize);
 
       CallClientFunction(

@@ -97,10 +97,10 @@ index e10245b4f36f324510a2dfd785ffaa2ceaad48d6..befb5666134d5f299b228e3d654fa2b0
  }
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index 657faef293353ab97e815b9682068a43963ea5a7..5ffa267d190d41b45f8b5bcdcf80297ab5ac3819 100644
+index ab916846f3776075221611eca461d7c49176ae95..e8abe5d0b3423b4709575253f4289ac3687df998 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
-@@ -222,6 +222,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+@@ -220,6 +220,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
                    const GURL* caller = nullptr);
    bool HasMultipleFileTypeChoices();
  
@@ -199,10 +199,10 @@ index 58985ce62dc569256bad5e94de9c0d125fc470d0..33436784b691c860d58f8b4dfcc6718e
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..9a892a2d1ac1480d3af7968c9dcaa7c69806fd0e 100644
+index 1ce06cc0044eecc8662fadcd086f27872e7618b6..d77ea886d4b28f92fe7fe4ee20fa61f0f5386273 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -216,6 +216,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -221,6 +221,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
                       weak_factory_.GetWeakPtr()));
    info_->type = type;
    info_->main_task_runner = base::SequencedTaskRunner::GetCurrentDefault();
@@ -211,7 +211,7 @@ index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..9a892a2d1ac1480d3af7968c9dcaa7c6
  
    if (owning_window) {
      if (auto* root = owning_window->GetRootWindow()) {
-@@ -552,7 +554,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -557,7 +559,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
                       response_handle_token);
  
    if (type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER) {
@@ -222,7 +222,7 @@ index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..9a892a2d1ac1480d3af7968c9dcaa7c6
                         l10n_util::GetStringUTF8(
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
-@@ -561,12 +565,13 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -566,12 +570,13 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace electron {
 

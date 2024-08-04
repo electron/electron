@@ -23,32 +23,39 @@ public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index 530a249adde65a47c8e0babf5723b52b8d2a6b1a..fca49d135ad2f23307654e1b0c36e846ca5a6ec6 100644
+index 63595b84b71957a81c50d054b8db573be9d9d981..f23453f86cb0786d59328177be1a9bc6b4801c1a 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -2717,9 +2717,9 @@ void Scope::AllocateScopeInfosRecursively(
- 
-   // Allocate ScopeInfos for inner scopes.
+@@ -2724,10 +2724,10 @@ void Scope::AllocateScopeInfosRecursively(
    for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
--    DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
--    DCHECK_IMPLIES(scope->sibling_, scope->sibling_->UniqueIdInScript() !=
--                                        scope->UniqueIdInScript());
-+    // DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
-+    // DCHECK_IMPLIES(scope->sibling_, scope->sibling_->UniqueIdInScript() !=
-+    //                                     scope->UniqueIdInScript());
+ #ifdef DEBUG
+     if (!scope->is_hidden_catch_scope()) {
+-      DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
+-      DCHECK_IMPLIES(
+-          scope->sibling_ && !scope->sibling_->is_hidden_catch_scope(),
+-          scope->sibling_->UniqueIdInScript() != scope->UniqueIdInScript());
++      // DCHECK_GT(scope->UniqueIdInScript(), UniqueIdInScript());
++      // DCHECK_IMPLIES(
++      //     scope->sibling_ && !scope->sibling_->is_hidden_catch_scope(),
++      //     scope->sibling_->UniqueIdInScript() != scope->UniqueIdInScript());
+     }
+ #endif
      if (!scope->is_function_scope() ||
-         scope->AsDeclarationScope()->ShouldEagerCompile()) {
-       scope->AllocateScopeInfosRecursively(isolate, next_outer_scope,
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 657ac0ebd872d6be4e2fa962a17259dd96f047b7..8e413913048d20b57bdd40807bfa4365e9d9ec77 100644
+index 41dfc4f9ed0e17b3e808922c65167551a937d3df..5547c52e34d91fa2dcf122c3e1043829f345658b 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -993,6 +993,8 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -979,7 +979,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  
+-DEFINE_BOOL(reuse_scope_infos, true, "reuse scope infos from previous compiles")
 +// ELECTRON: The following flag should remain false by default until we can
 +//   remove `fix_disable_scope_reuse_associated_dchecks.patch`
- DEFINE_BOOL(reuse_scope_infos, false,
-             "reuse scope infos from previous compiles")
++DEFINE_BOOL(reuse_scope_infos, false,
++            "reuse scope infos from previous compiles")
++
++DEFINE_IMPLICATION(fuzzing, reuse_scope_infos)
  
+ // Flags for Sparkplug
+ #undef FLAG

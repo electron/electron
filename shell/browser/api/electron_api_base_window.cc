@@ -14,10 +14,12 @@
 #include "content/public/common/color_parser.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
+#include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/native_window.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -120,6 +122,11 @@ BaseWindow::BaseWindow(gin_helper::Arguments* args,
 
 BaseWindow::~BaseWindow() {
   CloseImmediately();
+
+  // Destroy the native window in next tick because the native code might be
+  // iterating all windows.
+  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(
+      FROM_HERE, window_.release());
 
   // Remove global reference so the JS object can be garbage collected.
   self_ref_.Reset();

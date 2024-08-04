@@ -11,9 +11,13 @@
 
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/pinnable.h"
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron::api {
 

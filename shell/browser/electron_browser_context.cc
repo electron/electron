@@ -4,9 +4,9 @@
 
 #include "shell/browser/electron_browser_context.h"
 
+#include <algorithm>
 #include <memory>
 #include <optional>
-
 #include <utility>
 
 #include "base/barrier_closure.h"
@@ -18,6 +18,7 @@
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -36,6 +37,7 @@
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
+#include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
@@ -49,6 +51,7 @@
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/webui/accessibility_ui.h"
@@ -59,6 +62,7 @@
 #include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
@@ -125,7 +129,7 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
 
   const auto& captured_config = captured->GetCaptureHandleConfig();
   if (!captured_config.all_origins_permitted &&
-      base::ranges::none_of(
+      std::ranges::none_of(
           captured_config.permitted_origins,
           [capturer_origin](const url::Origin& permitted_origin) {
             return capturer_origin.IsSameOriginWith(permitted_origin);

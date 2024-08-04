@@ -24,6 +24,7 @@
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"

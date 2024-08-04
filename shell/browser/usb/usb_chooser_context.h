@@ -13,15 +13,21 @@
 #include "base/containers/queue.h"
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
+#include "base/observer_list_types.h"
 #include "base/values.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
-#include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/usb_manager.mojom.h"
 #include "services/device/public/mojom/usb_manager_client.mojom.h"
 #include "url/origin.h"
+
+namespace mojo {
+template <typename T>
+class PendingReciever;
+template <typename T>
+class PendingRemote;
+}  // namespace mojo
 
 namespace electron {
 

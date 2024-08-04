@@ -20,6 +20,7 @@
 #include "chrome/browser/browser_process.h"
 #include "net/base/apple/url_conversions.h"
 #include "shell/browser/badging/badge_manager.h"
+#include "shell/browser/browser_observer.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"

@@ -10,15 +10,18 @@
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/strings/stringprintf.h"
+#include "content/public/browser/web_contents.h"
 #include "device/bluetooth/public/cpp/bluetooth_uuid.h"
 #include "services/device/public/cpp/bluetooth/bluetooth_utils.h"
 #include "services/device/public/mojom/serial.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_context_factory.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace gin {
@@ -151,8 +154,8 @@ void SerialChooserController::OnPortAdded(
 
 void SerialChooserController::OnPortRemoved(
     const device::mojom::SerialPortInfo& port) {
-  const auto it = base::ranges::find(ports_, port.token,
-                                     &device::mojom::SerialPortInfo::token);
+  const auto it = std::ranges::find(ports_, port.token,
+                                    &device::mojom::SerialPortInfo::token);
   if (it != ports_.end()) {
     api::Session* session = GetSession();
     if (session) {

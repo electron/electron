@@ -35,6 +35,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -435,6 +436,20 @@ NodeBindings::~NodeBindings() {
   // Clean up worker loop
   if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
+}
+
+node::IsolateData* NodeBindings::isolate_data(
+    v8::Local<v8::Context> context) const {
+  if (context->GetNumberOfEmbedderDataFields() <=
+      kElectronContextEmbedderDataIndex) {
+    return nullptr;
+  }
+  auto* isolate_data = static_cast<node::IsolateData*>(
+      context->GetAlignedPointerFromEmbedderData(
+          kElectronContextEmbedderDataIndex));
+  CHECK(isolate_data);
+  CHECK(isolate_data->event_loop());
+  return isolate_data;
 }
 
 // static

@@ -4,11 +4,11 @@
 
 #include "shell/browser/usb/usb_chooser_controller.h"
 
-#include <stddef.h>
+#include <algorithm>
+#include <cstddef>
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/ranges/algorithm.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -17,6 +17,7 @@
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/usb/electron_usb_delegate.h"
 #include "shell/browser/usb/usb_chooser_context_factory.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -145,7 +146,7 @@ bool UsbChooserController::DisplayDevice(
     return false;
   }
 
-  if (base::ranges::any_of(
+  if (std::ranges::any_of(
           options_->exclusion_filters, [&device_info](const auto& filter) {
             return device::UsbDeviceFilterMatches(*filter, device_info);
           })) {

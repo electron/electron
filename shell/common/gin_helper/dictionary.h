@@ -42,16 +42,16 @@ class Dictionary : public gin::Dictionary {
   // 3. It accepts arbitrary type of key.
   template <typename K, typename V>
   bool Get(const K& key, V* out) const {
+    v8::Isolate* const iso = isolate();
+    v8::Local<v8::Object> handle = GetHandle();
+    v8::Local<v8::Context> context = iso->GetCurrentContext();
+    v8::Local<v8::Value> v8_key = gin::ConvertToV8(iso, key);
+    v8::Local<v8::Value> value;
     // Check for existence before getting, otherwise this method will always
     // returns true when T == v8::Local<v8::Value>.
-    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
-    v8::Local<v8::Value> v8_key = gin::ConvertToV8(isolate(), key);
-    v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->Has(context, v8_key);
-    if (result.IsJust() && result.FromJust() &&
-        GetHandle()->Get(context, v8_key).ToLocal(&value))
-      return gin::ConvertFromV8(isolate(), value, out);
-    return false;
+    return handle->Has(context, v8_key).FromMaybe(false) &&
+           handle->Get(context, v8_key).ToLocal(&value) &&
+           gin::ConvertFromV8(iso, value, out);
   }
 
   // Differences from the Set method in gin::Dictionary:
@@ -64,7 +64,7 @@ class Dictionary : public gin::Dictionary {
     v8::Maybe<bool> result =
         GetHandle()->Set(isolate()->GetCurrentContext(),
                          gin::ConvertToV8(isolate(), key), v8_value);
-    return !result.IsNothing() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   // Like normal Get but put result in an std::optional.
@@ -81,28 +81,27 @@ class Dictionary : public gin::Dictionary {
 
   template <typename T>
   bool GetHidden(std::string_view key, T* out) const {
-    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
-    v8::Local<v8::Private> privateKey =
-        v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
+    v8::Isolate* const iso = isolate();
+    v8::Local<v8::Object> handle = GetHandle();
+    v8::Local<v8::Context> context = iso->GetCurrentContext();
+    v8::Local<v8::Private> privateKey = MakeHiddenKey(key);
     v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->HasPrivate(context, privateKey);
-    if (result.IsJust() && result.FromJust() &&
-        GetHandle()->GetPrivate(context, privateKey).ToLocal(&value))
-      return gin::ConvertFromV8(isolate(), value, out);
-    return false;
+    return handle->HasPrivate(context, privateKey).FromMaybe(false) &&
+           handle->GetPrivate(context, privateKey).ToLocal(&value) &&
+           gin::ConvertFromV8(iso, value, out);
   }
 
   template <typename T>
   bool SetHidden(std::string_view key, T val) {
+    v8::Isolate* const iso = isolate();
     v8::Local<v8::Value> v8_value;
-    if (!gin::TryConvertToV8(isolate(), val, &v8_value))
+    if (!gin::TryConvertToV8(iso, val, &v8_value))
       return false;
-    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
-    v8::Local<v8::Private> privateKey =
-        v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
+    v8::Local<v8::Context> context = iso->GetCurrentContext();
+    v8::Local<v8::Private> privateKey = MakeHiddenKey(key);
     v8::Maybe<bool> result =
         GetHandle()->SetPrivate(context, privateKey, v8_value);
-    return !result.IsNothing() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   template <typename T>
@@ -110,7 +109,7 @@ class Dictionary : public gin::Dictionary {
     auto context = isolate()->GetCurrentContext();
     auto templ = CallbackTraits<T>::CreateTemplate(isolate(), callback);
     return GetHandle()
-        ->Set(context, gin::StringToV8(isolate(), key),
+        ->Set(context, MakeKey(key),
               templ->GetFunction(context).ToLocalChecked())
         .ToChecked();
   }
@@ -130,7 +129,7 @@ class Dictionary : public gin::Dictionary {
 
     return GetHandle()
         ->SetNativeDataProperty(
-            context, gin::StringToV8(isolate(), key),
+            context, MakeKey(key),
             [](v8::Local<v8::Name> property_name,
                const v8::PropertyCallbackInfo<v8::Value>& info) {
               AccessorValue<V> acc_value;
@@ -153,9 +152,8 @@ class Dictionary : public gin::Dictionary {
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
     v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
-        isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
-        v8_value, v8::ReadOnly);
-    return !result.IsNothing() && result.FromJust();
+        isolate()->GetCurrentContext(), MakeKey(key), v8_value, v8::ReadOnly);
+    return result.FromMaybe(false);
   }
 
   // Note: If we plan to add more Set methods, consider adding an option instead
@@ -166,22 +164,21 @@ class Dictionary : public gin::Dictionary {
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
     v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
-        isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
-        v8_value,
+        isolate()->GetCurrentContext(), MakeKey(key), v8_value,
         static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
-    return !result.IsNothing() && result.FromJust();
+    return result.FromMaybe(false);
   }
 
   bool Has(std::string_view key) const {
-    v8::Maybe<bool> result = GetHandle()->Has(isolate()->GetCurrentContext(),
-                                              gin::StringToV8(isolate(), key));
-    return !result.IsNothing() && result.FromJust();
+    v8::Maybe<bool> result =
+        GetHandle()->Has(isolate()->GetCurrentContext(), MakeKey(key));
+    return result.FromMaybe(false);
   }
 
   bool Delete(std::string_view key) {
-    v8::Maybe<bool> result = GetHandle()->Delete(
-        isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
-    return !result.IsNothing() && result.FromJust();
+    v8::Maybe<bool> result =
+        GetHandle()->Delete(isolate()->GetCurrentContext(), MakeKey(key));
+    return result.FromMaybe(false);
   }
 
   bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
@@ -194,6 +191,16 @@ class Dictionary : public gin::Dictionary {
 
  private:
   // DO NOT ADD ANY DATA MEMBER.
+
+  [[nodiscard]] v8::Local<v8::String> MakeKey(
+      const std::string_view key) const {
+    return gin::StringToV8(isolate(), key);
+  }
+
+  [[nodiscard]] v8::Local<v8::Private> MakeHiddenKey(
+      const std::string_view key) const {
+    return v8::Private::ForApi(isolate(), MakeKey(key));
+  }
 };
 
 }  // namespace gin_helper

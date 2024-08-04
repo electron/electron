@@ -12,8 +12,11 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "shell/browser/native_window.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
+
+namespace electron {
+class NativeWindow;
+}  // namespace electron
 
 @interface ElectronTouchBar : NSObject <NSScrubberDelegate,
                                         NSScrubberDataSource,

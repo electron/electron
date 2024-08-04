@@ -15,6 +15,7 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"

@@ -32,7 +32,6 @@ declare namespace NodeJS {
   interface V8UtilBinding {
     getHiddenValue<T>(obj: any, key: string): T;
     setHiddenValue<T>(obj: any, key: string, value: T): void;
-    deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
@@ -53,7 +52,6 @@ declare namespace NodeJS {
     getVar(name: string): string | null;
     hasVar(name: string): boolean;
     setVar(name: string, value: string): boolean;
-    unSetVar(name: string): boolean;
   }
 
   type AsarFileInfo = {

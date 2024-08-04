@@ -8,9 +8,13 @@
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron {
 

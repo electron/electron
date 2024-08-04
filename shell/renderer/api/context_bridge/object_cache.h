@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "base/containers/linked_list.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "shell/renderer/electron_render_frame_observer.h"

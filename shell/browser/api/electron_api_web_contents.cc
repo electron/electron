@@ -26,6 +26,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
@@ -48,6 +49,7 @@
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
+#include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
@@ -83,6 +85,7 @@
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
+#include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
@@ -121,7 +124,9 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -179,7 +184,6 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_document_helper.h"  // nogncheck
-#include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)

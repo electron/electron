@@ -9,7 +9,7 @@
 
 #include <string>
 
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 #include "ui/base/glib/scoped_gsignal.h"
 
 namespace gfx {

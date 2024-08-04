@@ -9,14 +9,23 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 #include "base/values.h"
 #include "content/public/browser/permission_controller_delegate.h"
-#include "shell/common/gin_helper/dictionary.h"
 
 namespace content {
 class WebContents;
 }
+
+namespace gin_helper {
+class Dictionary;
+}  // namespace gin_helper
+
+namespace v8 {
+class Object;
+template <typename T>
+class Local;
+}  // namespace v8
 
 namespace electron {
 

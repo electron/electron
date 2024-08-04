@@ -10,7 +10,6 @@
 #include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "ui/display/display_observer.h"
 #include "ui/display/screen.h"
 
@@ -19,6 +18,10 @@ class Point;
 class Rect;
 class Screen;
 }  // namespace gfx
+
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron::api {
 

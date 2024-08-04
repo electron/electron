@@ -14,6 +14,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (33.0)
 
+### Removed: macOS 10.15 support
+
+macOS 10.15 (Catalina) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/5734361).
+
+Older versions of Electron will continue to run on Catalina, but macOS 11 (Big Sur)
+or later will be required to run Electron v33.0.0 and higher.
+
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
 The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.

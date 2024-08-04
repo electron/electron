@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/event.h"
 #include "gin/dictionary.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 
 namespace gin_helper::internal {

@@ -17,6 +17,7 @@
 #include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"

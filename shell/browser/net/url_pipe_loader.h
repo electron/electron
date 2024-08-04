@@ -9,15 +9,18 @@
 #include <string>
 #include <vector>
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 #include "base/values.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+
+namespace mojo {
+class DataPipeProducer;
+}
 
 namespace network {
 class SharedURLLoaderFactory;
@@ -59,7 +62,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   void OnWrite(base::OnceClosure resume, MojoResult result);
 
   // SimpleURLLoaderStreamConsumer:
-  void OnDataReceived(base::StringPiece string_piece,
+  void OnDataReceived(std::string_view string_view,
                       base::OnceClosure resume) override;
   void OnComplete(bool success) override;
   void OnRetry(base::OnceClosure start_retry) override;

@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index e53015c127ada628fec797fb4d9e553b1010f353..b04d6307475d10be9431b37c97ae514795b40842 100644
+index 9477ad58da9934bc28bddd8bbaab9c7d5a5ff438..61dc5122a8ec925adada339f5c03773b49880591 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2068,12 +2068,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2121,12 +2121,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index e53015c127ada628fec797fb4d9e553b1010f353..b04d6307475d10be9431b37c97ae5147
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index cbc5ae1c02941bcf9b2adedbac2eb1baf7227305..0d204f9d06d59f2b6464df3009af1edc75ebe6b0 100644
+index 5e5cbb8a9c0916a558261bffa45d684feb0e0439..59b3d7d18cee6372aed19277a48445228d9c336b 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -977,8 +977,7 @@ class Browser : public TabStripModelObserver,
+@@ -994,8 +994,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -141,7 +141,7 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 1b29ac2afdbbc10ea59649b741e17583abf10536..cef3d60636e39cab514c45a085cc3a1d6587729a 100644
+index 7350c38fa03a7f3176e0727631863eba470683ca..3792bc743d4eeea5305a69f9a2dab9e29a1d1d5d 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -75,8 +75,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index aa0841abdacb72309365f7abd5e7f78129798f0a..7e252a7017b3f6905627b6b8cd203dc2d9baf00b 100644
+index bf42c63ea9282b814a35eb56fd64db4411516a9a..05f2d3dbeb8aae82cacec6c223f2defb1174151d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4597,8 +4597,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4630,8 +4630,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

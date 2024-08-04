@@ -9,6 +9,7 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "components/autofill/core/common/autofill_features.h"
+#include "content/public/browser/render_frame_host.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"

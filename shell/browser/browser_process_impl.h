@@ -15,7 +15,6 @@
 
 #include "chrome/browser/browser_process.h"
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
-#include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
@@ -25,6 +24,8 @@
 #if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/sync/key_storage_util_linux.h"
 #endif
+
+class PrefService;
 
 namespace printing {
 class PrintJobManager;
@@ -68,7 +69,7 @@ class BrowserProcessImpl : public BrowserProcess {
 
   // BrowserProcess
   BuildState* GetBuildState() override;
-  GlobalDesktopFeatures* GetDesktopFeatures() override;
+  GlobalFeatures* GetFeatures() override;
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;

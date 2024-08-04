@@ -13,10 +13,6 @@
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "services/service_manager/public/cpp/local_interface_provider.h"

@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -259,7 +259,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     if (!net::GetMimeTypeFromFile(path, &head->mime_type)) {
       std::string new_type;
       net::SniffMimeType(
-          base::StringPiece(initial_read_buffer.data(), read_result.bytes_read),
+          std::string_view(initial_read_buffer.data(), read_result.bytes_read),
           request.url, head->mime_type,
           net::ForceSniffFileUrlsForHtml::kDisabled, &new_type);
       head->mime_type.assign(new_type);

@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/tray_icon.h"
@@ -18,16 +17,22 @@
 #include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
 
 namespace gfx {
 class Image;
-}
+class Image;
+}  // namespace gfx
+
+namespace gin {
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace gin_helper {
 class Dictionary;
-}
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron::api {
 

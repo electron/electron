@@ -4,8 +4,8 @@
 
 #include "shell/common/process_util.h"
 
+#include <string_view>
 #include "base/command_line.h"
-#include "base/strings/string_piece.h"
 #include "content/public/common/content_switches.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -19,8 +19,8 @@ void EmitWarning(node::Environment* env,
   v8::HandleScope scope(env->isolate());
   gin::Dictionary process(env->isolate(), env->process_object());
 
-  base::RepeatingCallback<void(base::StringPiece, base::StringPiece,
-                               base::StringPiece)>
+  base::RepeatingCallback<void(std::string_view, std::string_view,
+                               std::string_view)>
       emit_warning;
   process.Get("emitWarning", &emit_warning);
 

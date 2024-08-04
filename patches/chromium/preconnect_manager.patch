@@ -10,13 +10,13 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 7eb87e7e7128da73ff78323c50d4efa488de781c..54cd08ea761076034fda450abe07e40d3235d9b0 100644
+index 02bdfd1f176d4ce44984387226b6fc2e6551f15e..1fabbbdd5359073692724ff722e205bbbb08e8be 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
-@@ -11,9 +11,11 @@
- #include "base/metrics/histogram_macros.h"
+@@ -13,9 +13,11 @@
  #include "base/not_fatal_until.h"
  #include "base/trace_event/trace_event.h"
+ #include "chrome/browser/predictors/predictors_features.h"
 +#if 0
  #include "chrome/browser/predictors/resource_prefetch_predictor.h"
  #include "chrome/browser/preloading/preloading_prefs.h"
@@ -25,7 +25,7 @@ index 7eb87e7e7128da73ff78323c50d4efa488de781c..54cd08ea761076034fda450abe07e40d
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
-@@ -24,6 +26,20 @@ namespace predictors {
+@@ -26,6 +28,20 @@ namespace predictors {
  
  const bool kAllowCredentialsOnPreconnectByDefault = true;
  
@@ -46,7 +46,7 @@ index 7eb87e7e7128da73ff78323c50d4efa488de781c..54cd08ea761076034fda450abe07e40d
  PreconnectedRequestStats::PreconnectedRequestStats(const url::Origin& origin,
                                                     bool was_preconnected)
      : origin(origin), was_preconnected(was_preconnected) {}
-@@ -84,12 +100,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
+@@ -86,12 +102,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
  PreconnectManager::~PreconnectManager() = default;
  
  bool PreconnectManager::IsEnabled() {

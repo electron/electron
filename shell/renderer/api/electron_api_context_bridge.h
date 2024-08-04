@@ -6,7 +6,7 @@
 #define ELECTRON_SHELL_RENDERER_API_ELECTRON_API_CONTEXT_BRIDGE_H_
 
 #include "shell/renderer/api/context_bridge/object_cache.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace gin_helper {
 class Arguments;

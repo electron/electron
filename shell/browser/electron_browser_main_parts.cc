@@ -67,10 +67,10 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
 #include "ui/color/color_provider_manager.h"
+#include "ui/display/screen.h"
 #include "url/url_util.h"
 
 #if defined(USE_AURA)
-#include "ui/display/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 #include "ui/wm/core/wm_state.h"
 #endif

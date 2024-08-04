@@ -33,7 +33,6 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/drag_util.h"
-#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -220,6 +219,11 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (!rounded_corner && !has_frame())
     styleMask = NSWindowStyleMaskBorderless;
 
+// TODO: remove NSWindowStyleMaskTexturedBackground.
+// https://github.com/electron/electron/issues/43125
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
   if (minimizable)
     styleMask |= NSWindowStyleMaskMiniaturizable;
   if (closable)
@@ -229,6 +233,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (!useStandardWindow || transparent() || !has_frame())
     styleMask |= NSWindowStyleMaskTexturedBackground;
 
+// -Wdeprecated-declarations
+#pragma clang diagnostic pop
+
   // Create views::Widget and assign window_ with it.
   // TODO(zcbenz): Get rid of the window_ in future.
   views::Widget::InitParams params(
@@ -236,7 +243,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       views::Widget::InitParams::TYPE_WINDOW);
   params.bounds = bounds;
   params.delegate = this;
-  params.headless_mode = true;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
@@ -467,7 +474,7 @@ void NativeWindowMac::ShowInactive() {
   if (parent())
     InternalSetParentWindow(parent(), true);
 
-  [window_ orderFrontKeepWindowKeyState];
+  [window_ orderFrontRegardless];
 }
 
 void NativeWindowMac::Hide() {
@@ -1392,13 +1399,19 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   NativeWindow::SetVibrancy(type);
 
   NSVisualEffectView* vibrantView = [window_ vibrantView];
+  views::View* rootView = GetContentsView();
 
   if (type.empty()) {
-    if (vibrantView == nil)
-      return;
+    if (vibrant_native_view_host_ != nullptr) {
+      // Transfers ownership back to caller in the form of a unique_ptr which is
+      // subsequently deleted.
+      rootView->RemoveChildViewT(vibrant_native_view_host_);
+      vibrant_native_view_host_ = nullptr;
+    }
 
-    [vibrantView removeFromSuperview];
-    [window_ setVibrantView:nil];
+    if (vibrantView != nil) {
+      [window_ setVibrantView:nil];
+    }
 
     return;
   }
@@ -1454,9 +1467,13 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
         [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
       }
 
-      [[window_ contentView] addSubview:vibrantView
-                             positioned:NSWindowBelow
-                             relativeTo:nil];
+      // Vibrant view is inserted into the root view hierarchy underneath all
+      // other views.
+      vibrant_native_view_host_ = rootView->AddChildViewAt(
+          std::make_unique<views::NativeViewHost>(), 0);
+      vibrant_native_view_host_->Attach(vibrantView);
+
+      rootView->DeprecatedLayoutImmediately();
 
       UpdateVibrancyRadii(IsFullscreen());
     }
@@ -1651,6 +1668,13 @@ void NativeWindowMac::NotifyWindowLeaveFullScreen() {
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
   UpdateVibrancyRadii(true);
+}
+
+void NativeWindowMac::NotifyWindowDidFailToEnterFullScreen() {
+  UpdateVibrancyRadii(false);
+
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
 }
 
 void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {

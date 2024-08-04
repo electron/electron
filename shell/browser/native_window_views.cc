@@ -26,7 +26,6 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
@@ -1739,7 +1738,7 @@ void NativeWindowViews::HandleKeyboardEvent(
 }
 
 void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
-  if (event->type() != ui::ET_MOUSE_PRESSED)
+  if (event->type() != ui::EventType::kMousePressed)
     return;
 
   // Alt+Click should not toggle menu bar.
