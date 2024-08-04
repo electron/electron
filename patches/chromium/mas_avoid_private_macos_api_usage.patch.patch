@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 556c7b5e4f73a9bd3b1d14589e823b6b1bafe8db..570dc5fa4c56bd3392ab2f0d813373ab2ba2d09a 100644
+index f23f880efa562ed992eb9dc92946437b2151d1f1..848f860907f118a8f6cea188601e0873397265cd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1050,6 +1050,7 @@ component("base") {
@@ -629,7 +629,7 @@ index 0738636a7462fd973c12d0e26e298c3b767f0c53..977e90c5dc3d8ff48ba9674c1c7d5eb6
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index aa858c2dd7594798e7b8d1a947fb85b0eb506710..8e9c678f9af71175c842343e3fd19b2c2cce1416 100644
+index 6b6d292cf28c25c5ee903b2833eaf797bcbd8706..cedeb95341224e404372f7e54b8c8b026c6fb926 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -232,6 +232,7 @@ target(link_target_type, "renderer") {
