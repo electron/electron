@@ -313,12 +313,22 @@ There are a few style guidelines that aren't covered by the linting script:
   BLANK LINE                  |
   ```
 
-* Use two spaces for indentation in the YAML.
-* Always wrap descriptions with double quotation marks (i.e. "example").
-  * [Certain special characters (e.g. `[`, `]`) can break YAML parsing](https://stackoverflow.com/a/37015689/19020549).
-* Keep change descriptions concise - favor using the release notes from the associated PR whenever possible.
-  * Developers can always view the breaking changes document or linked
-    pull request for more details.
+* **YAML:**
+  * Use two spaces for indentation.
+  * Do not use comments.
+* **Descriptions:**
+  * Always wrap descriptions with double quotation marks (i.e. "example").
+    * [Certain special characters (e.g. `[`, `]`) can break YAML parsing](https://stackoverflow.com/a/37015689/19020549).
+  * Describe the change in a way relevant to app developers and make it
+    capitalized, punctuated, and past tense.
+    * Refer to [Clerk](https://github.com/electron/clerk/blob/main/README.md#examples)
+      for examples.
+  * Keep descriptions concise.
+    * Ideally, a description will match its corresponding header in the
+      breaking changes document.
+    * Favor using the release notes from the associated PR whenever possible.
+    * Developers can always view the breaking changes document or linked
+      pull request for more details.
 
 ## Documentation translations
 
