@@ -278,13 +278,8 @@ void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
   if (CanStorePersistentEntry(*device))
     return;
 
-  std::vector<url::Origin> revoked_origins;
-  for (auto& map_entry : ephemeral_devices_) {
-    if (map_entry.second.erase(device->guid) > 0)
-      revoked_origins.push_back(map_entry.first);
-  }
-  if (revoked_origins.empty())
-    return;
+  for (auto& [origin, guids] : ephemeral_devices_)
+    guids.erase(device->guid);
 }
 
 void HidChooserContext::DeviceChanged(device::mojom::HidDeviceInfoPtr device) {
@@ -343,11 +338,6 @@ void HidChooserContext::OnHidManagerConnectionError() {
   hid_manager_.reset();
   client_receiver_.reset();
   devices_.clear();
-
-  std::vector<url::Origin> revoked_origins;
-  revoked_origins.reserve(ephemeral_devices_.size());
-  for (const auto& map_entry : ephemeral_devices_)
-    revoked_origins.push_back(map_entry.first);
   ephemeral_devices_.clear();
 
   // Notify all device observers.
