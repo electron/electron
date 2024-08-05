@@ -122,8 +122,9 @@ class Promise : public PromiseBase {
   v8::Maybe<bool> Resolve(const RT& value) {
     gin_helper::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
-    gin_helper::MicrotasksScope microtasks_scope(
-        isolate(), GetContext()->GetMicrotaskQueue());
+    gin_helper::MicrotasksScope microtasks_scope{
+        isolate(), GetContext()->GetMicrotaskQueue(), false,
+        v8::MicrotasksScope::kRunMicrotasks};
     v8::Context::Scope context_scope(GetContext());
 
     return GetInner()->Resolve(GetContext(),
