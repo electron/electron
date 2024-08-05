@@ -8,7 +8,7 @@ Here are some resources you can use to find information on the history of an API
 
 ### Breaking Changes
 
-* [`breaking-changes.md`](./breaking-changes.md)
+* [`breaking-changes.md`](../breaking-changes.md)
 
 ### Additions
 
@@ -22,8 +22,8 @@ Here are some resources you can use to find information on the history of an API
 > The associated API is already removed, we will ignore that for the purpose of
 > this example.
 
-If we search through [`breaking-changes.md`](./breaking-changes.md) we can find
-[a function that was deprecated in Electron `25.0`](./breaking-changes.md#deprecated-browserwindowsettrafficlightpositionposition).
+If we search through [`breaking-changes.md`](../breaking-changes.md) we can find
+[a function that was deprecated in Electron `25.0`](../breaking-changes.md#deprecated-browserwindowsettrafficlightpositionposition).
 
 ```markdown
 <!-- docs/breaking-changes.md -->
@@ -65,7 +65,7 @@ Verify that the Pull Request is correct and make a corresponding entry in the
 API History:
 
 > [!NOTE]
-> Refer to the [API History section of `styleguide.md`](./styleguide.md#api-history)
+> Refer to the [API History section of `styleguide.md`](../styleguide.md#api-history)
 for information on how to create API History blocks.
 
 `````markdown
