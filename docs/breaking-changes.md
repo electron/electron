@@ -65,7 +65,7 @@ contextBridge.exposeInMainWorld('electron', {
 })
 ```
 
-### Deprecated: `clearHistory`, `canGoBack`, `goBack`, `canGoForward`, `goForward`, `canGoToOffset`, `goToOffset` on `WebContents`
+### Deprecated: `clearHistory`, `canGoBack`, `goBack`, `canGoForward`, `goForward`, `goToIndex`, `canGoToOffset`, `goToOffset` on `WebContents`
 
 The navigation-related APIs are now deprecated.
 
@@ -78,6 +78,7 @@ win.webContents.canGoBack()
 win.webContents.goBack()
 win.webContents.canGoForward()
 win.webContents.goForward()
+win.webContents.goToIndex(index)
 win.webContents.canGoToOffset()
 win.webContents.goToOffset(index)
 
