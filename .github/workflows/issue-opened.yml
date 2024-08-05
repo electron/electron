@@ -86,6 +86,29 @@ jobs:
               }
             }
 
+            const operatingSystems = select('heading:has(> text[value="What operating system(s) are you using?"]) + paragraph > text', tree)?.value.trim().split(', ');
+            const platformLabels = new Set();
+            for (const operatingSystem of (operatingSystems ?? [])) {
+              switch (operatingSystem) {
+                case 'Windows':
+                  platformLabels.add('platform/windows');
+                  break;
+                case 'macOS':
+                  platformLabels.add('platform/macOS');
+                  break;
+                case 'Ubuntu':
+                case 'Other Linux':
+                  platformLabels.add('platform/linux');
+                  break;
+              }
+            }
+
+            if (platformLabels.size === 3) {
+              labels.push('platform/all');
+            } else {
+              labels.push(...platformLabels);
+            }
+
             const gistUrl = select('heading:has(> text[value="Testcase Gist URL"]) + paragraph > text', tree)?.value.trim();
             if (gistUrl !== undefined && gistUrl.startsWith('https://gist.github.com/')) {
               labels.push('has-repro-gist');
