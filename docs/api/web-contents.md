@@ -870,7 +870,7 @@ app.whenReady().then(() => {
 Returns:
 
 * `details` Event\<\>
-  * `texture` [OffscreenSharedTexture](structures/offscreen-shared-texture.md) (optional) _Experimental_ - The GPU shared texture of the frame, when `webPreferences.offscreenUseSharedTexture` is `true`.
+  * `texture` [OffscreenSharedTexture](structures/offscreen-shared-texture.md) (optional) _Experimental_ - The GPU shared texture of the frame, when `webPreferences.offscreen.useSharedTexture` is `true`.
 * `dirtyRect` [Rectangle](structures/rectangle.md)
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
@@ -886,7 +886,7 @@ win.webContents.on('paint', (event, dirty, image) => {
 win.loadURL('https://github.com')
 ```
 
-When using shared texture (set `webPreferences.offscreenUseSharedTexture` to `true`) feature, you can pass the texture handle to external rendering pipeline without the overhead of
+When using shared texture (set `webPreferences.offscreen.useSharedTexture` to `true`) feature, you can pass the texture handle to external rendering pipeline without the overhead of
 copying data between CPU and GPU memory, with Chromium's hardware acceleration support. This feature is helpful for high-performance rendering scenarios.
 
 It is important to call `texture.release()` when the texture is no longer needed as soon as possible, before the underlying frame pool is drained.
@@ -895,7 +895,7 @@ By managing the texture lifecycle by yourself, you can safely pass the `texture.
 ```js
 const { BrowserWindow } = require('electron')
 
-const win = new BrowserWindow({ webPreferences: { offscreen: true, offscreenUseSharedTexture: true } })
+const win = new BrowserWindow({ webPreferences: { offscreen: { useSharedTexture: true } } })
 win.webContents.on('paint', async (e, dirty, image) => {
   if (e.texture) {
     // By managing lifecycle yourself, you can handle the event in async handler or pass the `e.texture.textureInfo`

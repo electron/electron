@@ -26,7 +26,7 @@ losses with no benefits.
 
 GPU accelerated rendering means that the GPU is used for composition. The benefit
 of this mode is that WebGL and 3D CSS animations are supported. There are two
-different approaches depending on whether `webPreferences.offscreenUseSharedTexture`
+different approaches depending on whether `webPreferences.offscreen.useSharedTexture`
 is set to true.
 
 1. Use GPU shared texture

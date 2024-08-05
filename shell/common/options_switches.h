@@ -79,7 +79,7 @@ extern const char kSandbox[];
 extern const char kWebSecurity[];
 extern const char kAllowRunningInsecureContent[];
 extern const char kOffscreen[];
-extern const char kOffscreenUseSharedTexture[];
+extern const char kUseSharedTexture[];
 extern const char kNodeIntegrationInSubFrames[];
 extern const char kDisableHtmlFullscreenWindowResize[];
 extern const char kJavaScript[];
