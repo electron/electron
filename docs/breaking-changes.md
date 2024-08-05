@@ -482,7 +482,7 @@ systemPreferences.getColor('selected-content-background')
 
 ## Planned Breaking API Changes (25.0)
 
-### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
+### Deprecated: `protocol.{un,}{register,intercept}{Buffer,String,Stream,File,Http}Protocol` and `protocol.isProtocol{Registered,Intercepted}`
 
 The `protocol.register*Protocol` and `protocol.intercept*Protocol` methods have
 been replaced with [`protocol.handle`](api/protocol.md#protocolhandlescheme-handler).
