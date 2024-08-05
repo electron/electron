@@ -4,7 +4,6 @@
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -23,7 +22,6 @@ relative to its owning window. It is meant to be an alternative to the
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -60,7 +58,6 @@ app.whenReady().then(() => {
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -77,7 +74,6 @@ Objects created with `new BrowserView` have the following properties:
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -97,7 +93,6 @@ changes:
     breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -117,7 +112,6 @@ deprecated:
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -131,7 +125,6 @@ Resizes and moves the view to the supplied bounds relative to the window.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
@@ -145,7 +138,6 @@ The `bounds` of this BrowserView instance as `Object`.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
-    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 ```
 -->
 
