@@ -276,8 +276,8 @@ void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
   if (CanStorePersistentEntry(*device))
     return;
 
-  for (auto& map_entry : ephemeral_devices_)
-    map_entry.second.erase(device->guid);
+  for (auto& [origin, guids] : ephemeral_devices_)
+    guids.erase(device->guid);
 }
 
 void HidChooserContext::DeviceChanged(device::mojom::HidDeviceInfoPtr device) {
