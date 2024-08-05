@@ -117,50 +117,6 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 
 namespace electron {
 
-namespace {
-// -[NSWindow orderWindow] does not handle reordering for children
-// windows. Their order is fixed to the attachment order (the last attached
-// window is on the top). Therefore, work around it by re-parenting in our
-// desired order.
-void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
-  NSWindow* parent = [child_window parentWindow];
-  DCHECK(parent);
-
-  // `ordered_children` sorts children windows back to front.
-  NSArray<NSWindow*>* children = [[child_window parentWindow] childWindows];
-  std::vector<std::pair<NSInteger, NSWindow*>> ordered_children;
-  for (NSWindow* child in children)
-    ordered_children.push_back({[child orderedIndex], child});
-  std::sort(ordered_children.begin(), ordered_children.end(), std::greater<>());
-
-  // If `other_window` is nullptr, place `child_window` in front of
-  // all other children windows.
-  if (other_window == nullptr)
-    other_window = ordered_children.back().second;
-
-  if (child_window == other_window)
-    return;
-
-  for (NSWindow* child in children)
-    [parent removeChildWindow:child];
-
-  const bool relative_to_parent = parent == other_window;
-  if (relative_to_parent)
-    [parent addChildWindow:child_window ordered:NSWindowAbove];
-
-  // Re-parent children windows in the desired order.
-  for (auto [ordered_index, child] : ordered_children) {
-    if (child != child_window && child != other_window) {
-      [parent addChildWindow:child ordered:NSWindowAbove];
-    } else if (child == other_window && !relative_to_parent) {
-      [parent addChildWindow:other_window ordered:NSWindowAbove];
-      [parent addChildWindow:child_window ordered:NSWindowAbove];
-    }
-  }
-}
-
-}  // namespace
-
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
@@ -787,22 +743,12 @@ bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
   if (!webrtc::GetWindowOwnerPid(window_id))
     return false;
 
-  if (!parent() || is_modal()) {
-    [window_ orderWindow:NSWindowAbove relativeTo:window_id];
-  } else {
-    NSWindow* other_window = [NSApp windowWithWindowNumber:window_id];
-    ReorderChildWindowAbove(window_, other_window);
-  }
-
+  [window_ orderWindowByShuffling:NSWindowAbove relativeTo:window_id];
   return true;
 }
 
 void NativeWindowMac::MoveTop() {
-  if (!parent() || is_modal()) {
-    [window_ orderWindow:NSWindowAbove relativeTo:0];
-  } else {
-    ReorderChildWindowAbove(window_, nullptr);
-  }
+  [window_ orderWindowByShuffling:NSWindowAbove relativeTo:0];
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
