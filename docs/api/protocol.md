@@ -194,7 +194,7 @@ Returns `boolean` - Whether `scheme` is already handled.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -224,7 +224,7 @@ from protocols that follow the "generic URI syntax" like `file:`.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -257,7 +257,7 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -282,7 +282,7 @@ property.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -306,7 +306,7 @@ should be called with an object that has the `url` property.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -364,7 +364,7 @@ protocol.registerStreamProtocol('atom', (request, callback) => {
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -381,7 +381,7 @@ Unregisters the custom protocol of `scheme`.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -396,7 +396,7 @@ Returns `boolean` - Whether `scheme` is already registered.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -418,7 +418,7 @@ which sends a file as a response.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -440,7 +440,7 @@ which sends a `string` as a response.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -462,7 +462,7 @@ which sends a `Buffer` as a response.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -484,7 +484,7 @@ which sends a new HTTP request as a response.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -506,7 +506,7 @@ protocol handler.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 
@@ -523,7 +523,7 @@ Remove the interceptor installed for `scheme` and restore its original handler.
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/36674
     description: "`protocol.register*Protocol` and `protocol.intercept*Protocol` methods have been replaced with `protocol.handle`"
-    breaking-changes-header: deprecated-protocolregisterinterceptbufferstringstreamfilehttpprotocol
+    breaking-changes-header: deprecated-protocolunregisterinterceptbufferstringstreamfilehttpprotocol-and-protocolisprotocolregisteredintercepted
 ```
 -->
 

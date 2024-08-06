@@ -1130,7 +1130,7 @@ Reloads current page and ignores cache.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1144,7 +1144,7 @@ Returns `boolean` - Whether the browser can go back to previous web page.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1158,7 +1158,7 @@ Returns `boolean` - Whether the browser can go forward to next web page.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1174,7 +1174,7 @@ Returns `boolean` - Whether the web page can go to `offset`.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1188,7 +1188,7 @@ Clears the navigation history.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1202,7 +1202,7 @@ Makes the browser go back a web page.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1216,7 +1216,7 @@ Makes the browser go forward a web page.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
@@ -1232,7 +1232,7 @@ Navigates browser to the specified absolute web page index.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/41752
-    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-cangotooffset-gotooffset-on-webcontents
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
 ```
 -->
 
