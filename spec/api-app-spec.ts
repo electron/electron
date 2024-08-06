@@ -11,6 +11,7 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
@@ -18,6 +19,8 @@ import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
+
+const isMacOSx64 = process.platform === 'darwin' && process.arch === 'x64';
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {
@@ -356,6 +359,44 @@ describe('app module', () => {
     });
   });
 
+  // GitHub Actions macOS-13 runners used for x64 seem to have a problem with this test.
+  ifdescribe(process.platform !== 'linux' && !isMacOSx64)('app.{add|get|clear}RecentDocument(s)', () => {
+    const tempFiles = [
+      path.join(fixturesPath, 'foo.txt'),
+      path.join(fixturesPath, 'bar.txt'),
+      path.join(fixturesPath, 'baz.txt')
+    ];
+
+    afterEach(() => {
+      app.clearRecentDocuments();
+      for (const file of tempFiles) {
+        fs.unlinkSync(file);
+      }
+    });
+
+    beforeEach(() => {
+      for (const file of tempFiles) {
+        fs.writeFileSync(file, 'Lorem Ipsum');
+      }
+    });
+
+    it('can add a recent document', async () => {
+      app.addRecentDocument(tempFiles[0]);
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.include.members([tempFiles[0]]);
+    });
+
+    it('can clear recent documents', async () => {
+      app.addRecentDocument(tempFiles[1]);
+      app.addRecentDocument(tempFiles[2]);
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.include.members([tempFiles[1], tempFiles[2]]);
+      app.clearRecentDocuments();
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.deep.equal([]);
+    });
+  });
+
   describe('app.relaunch', () => {
     let server: net.Server | null = null;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
@@ -553,8 +594,8 @@ describe('app module', () => {
 
   describe('app.badgeCount', () => {
     const platformIsNotSupported =
-        (process.platform === 'win32') ||
-        (process.platform === 'linux' && !app.isUnityRunning());
+      (process.platform === 'win32') ||
+      (process.platform === 'linux' && !app.isUnityRunning());
 
     const expectedBadgeCount = 42;
 
