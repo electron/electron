@@ -8,6 +8,10 @@
 DEPS                                    @electron/wg-upgrades
 
 # Releases WG
+/.github/actions/                       @electron/wg-releases
+/.github/workflows/*-publish.yml        @electron/wg-releases
+/.github/workflows/build.yml            @electron/wg-releases
+/.github/workflows/pipeline-*.yml       @electron/wg-releases
 /docs/breaking-changes.md               @electron/wg-releases
 /npm/                                   @electron/wg-releases
 /script/release                         @electron/wg-releases
