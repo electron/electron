@@ -4,6 +4,7 @@
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -22,6 +23,7 @@ relative to its owning window. It is meant to be an alternative to the
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -58,6 +60,7 @@ app.whenReady().then(() => {
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -74,6 +77,7 @@ Objects created with `new BrowserView` have the following properties:
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -93,6 +97,7 @@ changes:
     breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -112,6 +117,7 @@ deprecated:
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -125,6 +131,7 @@ Resizes and moves the view to the supplied bounds relative to the window.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
@@ -138,6 +145,7 @@ The `bounds` of this BrowserView instance as `Object`.
 ```YAML history
 deprecated:
   - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
 ```
 -->
 
