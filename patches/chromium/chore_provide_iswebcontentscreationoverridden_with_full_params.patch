@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 9477ad58da9934bc28bddd8bbaab9c7d5a5ff438..61dc5122a8ec925adada339f5c03773b49880591 100644
+index 8b53ab304ab2f6dee6eef40a2d1c7fe0b13842ce..40bbeefab03dbca85d3c8de530861e5a33fd3a4a 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2121,12 +2121,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2123,12 +2123,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,7 +99,7 @@ index 9477ad58da9934bc28bddd8bbaab9c7d5a5ff438..61dc5122a8ec925adada339f5c03773b
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 5e5cbb8a9c0916a558261bffa45d684feb0e0439..59b3d7d18cee6372aed19277a48445228d9c336b 100644
+index c944587773194d22bf7196d324b5ae160ffdb6a7..eeebb773987bdb6b92be572eeb51555d39c990f0 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -994,8 +994,7 @@ class Browser : public TabStripModelObserver,
@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index bf42c63ea9282b814a35eb56fd64db4411516a9a..05f2d3dbeb8aae82cacec6c223f2defb1174151d 100644
+index 85161cf2414a573ae7419bcea796838e63512c2d..08c279fdc9b5113a2cef1d4344255b15f0db9613 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4630,8 +4630,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

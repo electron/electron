@@ -520,10 +520,10 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 4022dff593fb718b6e97c35fbf928af129495aaf..d51b9d9c7eb7e2cef09d9d7745d4b54a27b69168 100644
+index 580eef2080fa3a98edf56e749377a520e5aead00..20d782bd618a8cb65ae401d70827f074f8333155 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -100,7 +100,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -101,7 +101,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
