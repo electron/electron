@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Thu, 25 Jul 2024 05:28:45 +0000
+Subject: Don't allocate WebTransportCloseInfo on stack
+
+blink::WebTransport::OnClosed() was allocating a WebTransportCloseInfo
+object on the stack. Since it is a garbage-collected object, this is
+wrong. Allocate it with MakeGarbageCollected<>() instead.
+
+(cherry picked from commit 84c1481d8a8d5e7f51316b648d1bf71f2ae52122)
+
+Fixed: 352872238
+Change-Id: I83484021d5f3f6d49d3c222c8f2dc34219f2d240
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5725413
+Commit-Queue: Nidhi Jaju <nidhijaju@chromium.org>
+Reviewed-by: Nidhi Jaju <nidhijaju@chromium.org>
+Auto-Submit: Adam Rice <ricea@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1331525}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5740536
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6478@{#1848}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/modules/webtransport/web_transport.cc b/third_party/blink/renderer/modules/webtransport/web_transport.cc
+index bcfa17448f3051dc2b292aa3e19dbfb915cf692a..4922359605b53c6b9ac5339f6ce6b3613bfe275b 100644
+--- a/third_party/blink/renderer/modules/webtransport/web_transport.cc
++++ b/third_party/blink/renderer/modules/webtransport/web_transport.cc
+@@ -1092,17 +1092,17 @@ void WebTransport::OnClosed(
+ 
+   latest_stats_ = ConvertStatsFromMojom(std::move(final_stats));
+ 
+-  WebTransportCloseInfo idl_close_info;
++  auto* idl_close_info = MakeGarbageCollected<WebTransportCloseInfo>();
+   if (close_info) {
+-    idl_close_info.setCloseCode(close_info->code);
+-    idl_close_info.setReason(close_info->reason);
++    idl_close_info->setCloseCode(close_info->code);
++    idl_close_info->setReason(close_info->reason);
+   }
+ 
+   v8::Local<v8::Value> error = WebTransportError::Create(
+       isolate, /*stream_error_code=*/std::nullopt, "The session is closed.",
+       WebTransportError::Source::kSession);
+ 
+-  Cleanup(&idl_close_info, error, /*abruptly=*/false);
++  Cleanup(idl_close_info, error, /*abruptly=*/false);
+ }
+ 
+ void WebTransport::OnOutgoingStreamClosed(uint32_t stream_id) {
+diff --git a/third_party/blink/renderer/modules/webtransport/web_transport_test.cc b/third_party/blink/renderer/modules/webtransport/web_transport_test.cc
+index 01f5a0fca58d88e342298e03231dd2263ca5a678..fc05ad637888df648f8692683f8a626c8d6a38dd 100644
+--- a/third_party/blink/renderer/modules/webtransport/web_transport_test.cc
++++ b/third_party/blink/renderer/modules/webtransport/web_transport_test.cc
+@@ -1959,6 +1959,21 @@ TEST_F(WebTransportTest, OnClosed) {
+   EXPECT_EQ(close_info->reason(), "reason");
+ }
+ 
++// Regression test for https://crbug.com/347710668.
++TEST_F(WebTransportTest, ClosedAccessorCalledAfterOnClosed) {
++  V8TestingScope scope;
++
++  auto* web_transport =
++      CreateAndConnectSuccessfully(scope, "https://example.com");
++
++  web_transport->OnClosed(
++      network::mojom::blink::WebTransportCloseInfo::New(99, "reason"),
++      network::mojom::blink::WebTransportStats::New());
++
++  // If this doesn't crash then the test passed.
++  EXPECT_FALSE(web_transport->closed(scope.GetScriptState()).IsEmpty());
++}
++
+ TEST_F(WebTransportTest, OnClosedWithNull) {
+   V8TestingScope scope;
+   v8::Isolate* isolate = scope.GetIsolate();
+diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
+--- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any-expected.txt
+@@ -1,4 +1,5 @@
+ This is a testharness.js-based test.
++Harness Error. harness_status.status = 1 , harness_status.message = Unhandled rejection: promise_rejects_dom: function "function() { throw e }" threw object "NetworkError: Failed to execute 'createBidirectionalStream' on 'WebTransport': No connection." that is not a DOMException InvalidStateError: property "code" is equal to 19, expected 11
+ [FAIL] opening unidirectional stream before ready
+   promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
+ [FAIL] opening bidirectional stream before ready
+diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js
+index 0d8579584fbb21e74595588f663ef21c3b028c63..d69967ba70bb716f8664f973fe83d4158ba6da89 100644
+--- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js
++++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.js
+@@ -163,3 +163,24 @@ promise_test(async t => {
+   const wt = new WebTransport(webtransport_url('server-close.py'));
+   promise_rejects_dom(t, "InvalidStateError", wt.createBidirectionalStream());
+ }, 'server initiated closure while opening bidirectional stream before ready');
++
++// Regression test for https://crbug.com/347710668.
++promise_test(async t => {
++  const wt = new WebTransport(webtransport_url('server-read-then-close.py'));
++  add_completion_callback(() => wt.close());
++  await wt.ready;
++
++  const bidi_reader = wt.incomingBidirectionalStreams.getReader();
++  const { value: bidi } = await bidi_reader.read();
++
++  bidi.writable.getWriter().write(new TextEncoder().encode('some data'));
++  const reader = bidi.readable.getReader();
++  await reader.closed.catch(t.step_func(
++      e => assert_true(e instanceof WebTransportError)));
++
++  // The WebTransport session will already be closed.
++  const {reason, closeCode} = await wt.closed;
++
++  assert_equals(reason, '', 'reason should be default');
++  assert_equals(closeCode, 0, 'closeCode should be default');
++}, 'reading closed property after close should work');
+diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
+--- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.serviceworker-expected.txt
+@@ -1,4 +1,5 @@
+ This is a testharness.js-based test.
++Harness Error. harness_status.status = 1 , harness_status.message = Unhandled rejection: promise_rejects_dom: function "function() { throw e }" threw object "NetworkError: Failed to execute 'createBidirectionalStream' on 'WebTransport': No connection." that is not a DOMException InvalidStateError: property "code" is equal to 19, expected 11
+ [FAIL] opening unidirectional stream before ready
+   promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
+ [FAIL] opening bidirectional stream before ready
+diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
+--- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.sharedworker-expected.txt
+@@ -1,4 +1,5 @@
+ This is a testharness.js-based test.
++Harness Error. harness_status.status = 1 , harness_status.message = Unhandled rejection: promise_rejects_dom: function "function() { throw e }" threw object "NetworkError: Failed to execute 'createBidirectionalStream' on 'WebTransport': No connection." that is not a DOMException InvalidStateError: property "code" is equal to 19, expected 11
+ [FAIL] opening unidirectional stream before ready
+   promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
+ [FAIL] opening bidirectional stream before ready
+diff --git a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt
+index d4e43edbd19a9eb16f3384c1c95e5c3d1a2f2619..09e2bbddaa40e1cfc192d3adbeb9538e7aeaebfe 100644
+--- a/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/webtransport/close.https.any.worker-expected.txt
+@@ -1,4 +1,5 @@
+ This is a testharness.js-based test.
++Harness Error. harness_status.status = 1 , harness_status.message = Unhandled rejection: promise_rejects_dom: function "function() { throw e }" threw object "NetworkError: Failed to execute 'createBidirectionalStream' on 'WebTransport': No connection." that is not a DOMException InvalidStateError: property "code" is equal to 19, expected 11
+ [FAIL] opening unidirectional stream before ready
+   promise_test: Unhandled rejection with value: object "NetworkError: Failed to execute 'createUnidirectionalStream' on 'WebTransport': No connection."
+ [FAIL] opening bidirectional stream before ready
+diff --git a/third_party/blink/web_tests/external/wpt/webtransport/handlers/server-read-then-close.py b/third_party/blink/web_tests/external/wpt/webtransport/handlers/server-read-then-close.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..7f992e0dcca3ae62277cac0fa39355fce3e57be0
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webtransport/handlers/server-read-then-close.py
+@@ -0,0 +1,9 @@
++def session_established(session):
++    stream_id = session.create_bidirectional_stream()
++
++
++def stream_data_received(session,
++                         stream_id: int,
++                         data: bytes,
++                         stream_ended: bool):
++    session.close(None)
