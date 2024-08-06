@@ -16,10 +16,10 @@ MainFrameImpl is not null.
 Upstreamed in https://chromium-review.googlesource.com/c/chromium/src/+/5756619
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index ef68f9cbc63772f50269520fb0198a95e4270947..948cf94e2e4af0bbbf1f9c2322d00075bdaca0b2 100644
+index b6c1bbe08e8e2b3bb85b5c91eac512078cd3f1b4..f234a5f3a412d9c6976018ac81d6fee8cbc51d32 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -4073,11 +4073,12 @@ bool WebViewImpl::IsFencedFrameRoot() const {
+@@ -4039,11 +4039,12 @@ bool WebViewImpl::IsFencedFrameRoot() const {
  }
  
  void WebViewImpl::SetSupportsDraggableRegions(bool supports_draggable_regions) {
