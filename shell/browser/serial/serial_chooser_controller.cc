@@ -154,8 +154,8 @@ void SerialChooserController::OnPortAdded(
 
 void SerialChooserController::OnPortRemoved(
     const device::mojom::SerialPortInfo& port) {
-  const auto it = base::ranges::find(ports_, port.token,
-                                     &device::mojom::SerialPortInfo::token);
+  const auto it = std::ranges::find(ports_, port.token,
+                                    &device::mojom::SerialPortInfo::token);
   if (it != ports_.end()) {
     api::Session* session = GetSession();
     if (session) {

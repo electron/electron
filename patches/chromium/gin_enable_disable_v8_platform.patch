@@ -38,7 +38,7 @@ index c19eb72e8d37fe8145b813d07875addf793e12dc..a5db8841773618814ac90f740201d4d7
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 9dd24650d22d63b3b5eeea4d654e20c20f62091c..ee092cf1223844f999de54937737fb3451e0f8fc 100644
+index 3330857c13004f8c3af01037d78570165b3b05f7..74f67a1c85c8430e1924eae3fb82dc708db4a0f8 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -483,7 +483,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,

@@ -20,8 +20,8 @@ body:
     description: |
       What version of Electron are you using?
 
-      Note: Please only report issues for [currently supported versions of Electron](https://www.electronjs.org/docs/latest/tutorial/support#currently-supported-versions).
-    placeholder: 17.0.0
+      Note: Please only report issues for [currently supported versions of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline).
+    placeholder: 32.0.0
   validations:
     required: true
 - type: dropdown

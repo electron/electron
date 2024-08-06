@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2f1e760394a86c8e4f26e95a0837dabce9c61ddd..9910b595e250e5635310e33a66a00d654f41556a 100644
+index 630b7b17066a427c2baefd0f0acfb3abab6123f5..bb5ac504809d0027ed434ddac2766e02f3643c4b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -778,6 +778,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -787,6 +787,9 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -20,10 +20,10 @@ index 2f1e760394a86c8e4f26e95a0837dabce9c61ddd..9910b595e250e5635310e33a66a00d65
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 6f4e44aba5c19fcc2865b070708ef310d6a78d18..b7daed50073b61bf9ceab2c001b52e32cff42bf7 100644
+index e9f357b26b449634a7399f329ac435efa46a5d39..82489872df5efce285d29b9d7492d34f9613c02e 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1000,6 +1000,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1001,6 +1001,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    // Requests a commit and forced redraw in the renderer compositor.
    void ForceRedrawForTesting();
  

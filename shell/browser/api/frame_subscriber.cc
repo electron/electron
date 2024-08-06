@@ -38,13 +38,14 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
 
   // The view can be null if the renderer process has crashed.
   // (https://crbug.com/847363)
-  if (!host_->GetView())
+  auto* rwhv = host_->GetView();
+  if (!rwhv)
     return;
 
   // Create and configure the video capturer.
   gfx::Size size = GetRenderViewSize();
   DCHECK(!size.IsEmpty());
-  video_capturer_ = host_->GetView()->CreateVideoCapturer();
+  video_capturer_ = rwhv->CreateVideoCapturer();
   video_capturer_->SetResolutionConstraints(size, size, true);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());

@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <algorithm>
 #include <vector>
 
 #include "base/files/file_util.h"
@@ -45,7 +46,7 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
     file_type_info.extension_description_overrides.push_back(
         base::UTF8ToUTF16(name));
 
-    const bool has_all_files_wildcard = base::ranges::any_of(
+    const bool has_all_files_wildcard = std::ranges::any_of(
         extension_group, [](const auto& ext) { return ext == "*"; });
     if (has_all_files_wildcard) {
       file_type_info.include_all_files = true;

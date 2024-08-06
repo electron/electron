@@ -18,6 +18,13 @@ This document uses the following convention to categorize breaking changes:
 
 The `textured` option of `type` in `BrowserWindowConstructorOptions` has been deprecated with no replacement. This option relied on the [`NSWindowStyleMaskTexturedBackground`](https://developer.apple.com/documentation/appkit/nswindowstylemask/nswindowstylemasktexturedbackground) style mask on macOS, which has been deprecated with no alternative.
 
+### Removed: macOS 10.15 support
+
+macOS 10.15 (Catalina) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/5734361).
+
+Older versions of Electron will continue to run on Catalina, but macOS 11 (Big Sur)
+or later will be required to run Electron v33.0.0 and higher.
+
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
 The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.
@@ -62,7 +69,7 @@ contextBridge.exposeInMainWorld('electron', {
 })
 ```
 
-### Deprecated: `clearHistory`, `canGoBack`, `goBack`, `canGoForward`, `goForward`, `canGoToOffset`, `goToOffset` on `WebContents`
+### Deprecated: `clearHistory`, `canGoBack`, `goBack`, `canGoForward`, `goForward`, `goToIndex`, `canGoToOffset`, `goToOffset` on `WebContents`
 
 The navigation-related APIs are now deprecated.
 
@@ -75,6 +82,7 @@ win.webContents.canGoBack()
 win.webContents.goBack()
 win.webContents.canGoForward()
 win.webContents.goForward()
+win.webContents.goToIndex(index)
 win.webContents.canGoToOffset()
 win.webContents.goToOffset(index)
 
@@ -132,6 +140,24 @@ The autoresizing behavior is now standardized across all platforms.
 
 If your app uses `BrowserView.setAutoResize` to do anything more complex than making a BrowserView fill the entire window, it's likely you already had custom logic in place to handle this difference in behavior on macOS.
 If so, that logic will no longer be needed in Electron 30 as autoresizing behavior is consistent.
+
+### Deprecated: `BrowserView`
+
+The [`BrowserView`](./api/browser-view.md) class has been deprecated and
+replaced by the new [`WebContentsView`](./api/web-contents-view.md) class.
+
+`BrowserView` related methods in [`BrowserWindow`](./api/browser-window.md) have
+also been deprecated:
+
+```js
+BrowserWindow.fromBrowserView(browserView)
+win.setBrowserView(browserView)
+win.getBrowserView()
+win.addBrowserView(browserView)
+win.removeBrowserView(browserView)
+win.setTopBrowserView(browserView)
+win.getBrowserViews()
+```
 
 ### Removed: `params.inputFormType` property on `context-menu` on `WebContents`
 
@@ -460,7 +486,7 @@ systemPreferences.getColor('selected-content-background')
 
 ## Planned Breaking API Changes (25.0)
 
-### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
+### Deprecated: `protocol.{un,}{register,intercept}{Buffer,String,Stream,File,Http}Protocol` and `protocol.isProtocol{Registered,Intercepted}`
 
 The `protocol.register*Protocol` and `protocol.intercept*Protocol` methods have
 been replaced with [`protocol.handle`](api/protocol.md#protocolhandlescheme-handler).

@@ -5,6 +5,7 @@
 
 #include "shell/browser/ui/inspectable_web_contents.h"
 
+#include <algorithm>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -13,7 +14,6 @@
 #include "base/base64.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
-#include "base/ranges/algorithm.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -111,10 +111,10 @@ gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  return base::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
-                              [&point](auto const& display) {
-                                return display.bounds().Contains(point);
-                              });
+  return std::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+                             [&point](auto const& display) {
+                               return display.bounds().Contains(point);
+                             });
 }
 
 void SetZoomLevelForWebContents(content::WebContents* web_contents,

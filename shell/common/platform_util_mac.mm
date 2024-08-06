@@ -25,6 +25,11 @@
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
+// platform_util_mac.mm uses a lot of deprecated API.
+// https://github.com/electron/electron/issues/43126
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 namespace {
 
 // This may be called from a global dispatch queue, the methods used here are
@@ -77,6 +82,9 @@ std::string OpenPathOnThread(const base::FilePath& full_path) {
 
   return success ? "" : "Failed to open path";
 }
+
+// -Wdeprecated-declarations
+#pragma clang diagnostic pop
 
 // https://developer.apple.com/documentation/servicemanagement/1561515-service_management_errors?language=objc
 std::string GetLaunchStringForError(NSError* error) {

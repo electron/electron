@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index da5c502c627bc017175ab06fb4266bce167588a6..fccf51257d286956bce543d761a13a3a05c87288 100644
+index d5d2f0738d89805a418fa90e062567ba66e96c2f..6c23ecefaf8162efde4379b90d9b116e63175d48 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -156,6 +156,11 @@
+@@ -157,6 +157,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index da5c502c627bc017175ab06fb4266bce167588a6..fccf51257d286956bce543d761a13a3a
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -580,6 +585,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
+@@ -581,6 +586,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index da5c502c627bc017175ab06fb4266bce167588a6..fccf51257d286956bce543d761a13a3a
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -961,6 +1059,13 @@ void NetworkContext::SetClient(
+@@ -962,6 +1060,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index da5c502c627bc017175ab06fb4266bce167588a6..fccf51257d286956bce543d761a13a3a
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2466,6 +2571,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2493,6 +2598,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index da5c502c627bc017175ab06fb4266bce167588a6..fccf51257d286956bce543d761a13a3a
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 016323982be348613b1625c62314a9e2f37231fb..6d0e259f0753d0f3962b8f9a35383ce0f5c7b2ea 100644
+index c73d2ca100eeda97406427f6ff20b12b0ce393f2..5ddd56b235229f85fa2d0619b7f4614cb00d914e 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -115,6 +115,7 @@ class URLMatcher;
@@ -167,7 +167,7 @@ index 016323982be348613b1625c62314a9e2f37231fb..6d0e259f0753d0f3962b8f9a35383ce0
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -923,6 +926,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -925,6 +928,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,7 +177,7 @@ index 016323982be348613b1625c62314a9e2f37231fb..6d0e259f0753d0f3962b8f9a35383ce0
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 4c2831a91d499b2ee5abcd1f11c8f6b3009d20e2..e9a96598f11fd0160e6990356b8ea0b0a1555d90 100644
+index 0678afc12458f8609741bce73effe5315ec94036..1b3143b046135369c8b6a22b15d16fbfea3e615a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -298,6 +298,16 @@ struct SocketBrokerRemotes {
@@ -208,7 +208,7 @@ index 4c2831a91d499b2ee5abcd1f11c8f6b3009d20e2..e9a96598f11fd0160e6990356b8ea0b0
    CreateURLLoaderFactory(pending_receiver<URLLoaderFactory> url_loader_factory,
                           URLLoaderFactoryParams params);
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index c4444fef6804a1e494320e2cd539262e4e8b4f1b..edb9e10bca66bc93c274652574360dacadf02949 100644
+index c025846455a8a3b024fe6f39274c68b8f8d30899..3640daadd0f1874930d0ffe9e560b53771e1ade7 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
