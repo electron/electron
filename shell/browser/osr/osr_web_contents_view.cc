@@ -33,8 +33,8 @@ void OffScreenWebContentsView::SetWebContents(
     content::WebContents* web_contents) {
   web_contents_ = web_contents;
 
-  if (GetView())
-    GetView()->InstallTransparency();
+  if (auto* view = GetView())
+    view->InstallTransparency();
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -51,8 +51,8 @@ void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
 
 void OffScreenWebContentsView::OnWindowResize() {
   // In offscreen mode call RenderWidgetHostView's SetSize explicitly
-  if (GetView())
-    GetView()->SetSize(GetSize());
+  if (auto* view = GetView())
+    view->SetSize(GetSize());
 }
 
 void OffScreenWebContentsView::OnWindowClosed() {
@@ -109,7 +109,9 @@ void OffScreenWebContentsView::TransferDragSecurityInfo(WebContentsView* view) {
 }
 
 gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
-  return GetView() ? GetView()->GetViewBounds() : gfx::Rect();
+  if (auto* view = GetView())
+    return view->GetViewBounds();
+  return {};
 }
 
 void OffScreenWebContentsView::CreateView(gfx::NativeView context) {}
@@ -117,10 +119,8 @@ void OffScreenWebContentsView::CreateView(gfx::NativeView context) {}
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host) {
-  if (render_widget_host->GetView()) {
-    return static_cast<content::RenderWidgetHostViewBase*>(
-        render_widget_host->GetView());
-  }
+  if (auto* rwhv = render_widget_host->GetView())
+    return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
 
   return new OffScreenRenderWidgetHostView(
       transparent_, painting_, GetFrameRate(), callback_, render_widget_host,
@@ -146,8 +146,8 @@ OffScreenWebContentsView::CreateViewForChildWidget(
 void OffScreenWebContentsView::SetPageTitle(const std::u16string& title) {}
 
 void OffScreenWebContentsView::RenderViewReady() {
-  if (GetView())
-    GetView()->InstallTransparency();
+  if (auto* view = GetView())
+    view->InstallTransparency();
 }
 
 void OffScreenWebContentsView::RenderViewHostChanged(
@@ -183,11 +183,9 @@ void OffScreenWebContentsView::UpdateDragOperation(
     bool document_is_handling_drag) {}
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
-  auto* view = GetView();
   painting_ = painting;
-  if (view != nullptr) {
+  if (auto* view = GetView())
     view->SetPainting(painting);
-  }
 }
 
 bool OffScreenWebContentsView::IsPainting() const {
@@ -197,11 +195,9 @@ bool OffScreenWebContentsView::IsPainting() const {
 }
 
 void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
-  auto* view = GetView();
   frame_rate_ = frame_rate;
-  if (view != nullptr) {
+  if (auto* view = GetView())
     view->SetFrameRate(frame_rate);
-  }
 }
 
 int OffScreenWebContentsView::GetFrameRate() const {
