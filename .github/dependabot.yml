@@ -7,3 +7,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    labels:
+      - "no-backport"
+      - "semver/none"
