@@ -192,11 +192,8 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
   view_ = new AutofillPopupView(this, parent->GetWidget());
 
   if (offscreen) {
-    auto* rwhv = frame_host->GetView();
-    if (embedder_frame_host != nullptr) {
-      rwhv = embedder_frame_host->GetView();
-    }
-
+    auto* rwhv = embedder_frame_host ? embedder_frame_host->GetView()
+                                     : frame_host->GetView();
     auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(rwhv);
     view_->view_proxy_ = std::make_unique<OffscreenViewProxy>(view_);
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
