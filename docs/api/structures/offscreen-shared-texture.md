@@ -10,7 +10,7 @@
   * `metadata` Object - Extra metadata. See comments in src\media\base\video_frame_metadata.h for accurate details.
     * `captureUpdateRect` [Rectangle](rectangle.md) (optional) - Updated area of frame, can be considered as the `dirty` area.
     * `regionCaptureRect` [Rectangle](rectangle.md) (optional) - May reflects where the frame's contents originate from if region capture is used internally.
-    * `sourceSize` [Rectangle](rectangle.md) (optional) - Full size of the source frame.
+    * `sourceSize` [Size](size.md) (optional) - Full size of the source frame.
     * `frameCount` number (optional) - The increasing count of captured frame. May contain gaps if frames are dropped between two consecutively received frames.
   * `sharedTextureHandle` Buffer _Windows_ _macOS_ - The handle to the shared texture.
   * `planes` Object[] _Linux_ - Each plane's info of the shared texture.
