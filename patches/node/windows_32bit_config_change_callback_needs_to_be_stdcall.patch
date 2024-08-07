@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Thu, 25 Jul 2024 15:26:37 -0700
+Subject: windows 32bit: config change callback needs to be stdcall
+
+Patch of upstream fix: https://github.com/c-ares/c-ares/commit/8f265c9d5109e5665136396d347c0a93ea78999e
+
+diff --git a/deps/cares/src/lib/ares_event_configchg.c b/deps/cares/src/lib/ares_event_configchg.c
+index b7c5ad8c75b6218cf36283fb6d0f8cd702224b87..c9b39f7b3358f37e61fb95e440695a9b590c2090 100644
+--- a/deps/cares/src/lib/ares_event_configchg.c
++++ b/deps/cares/src/lib/ares_event_configchg.c
+@@ -239,9 +239,10 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+ 
+ 
+ #  ifndef __WATCOMC__
+-static void ares_event_configchg_ip_cb(PVOID                 CallerContext,
+-                                       PMIB_IPINTERFACE_ROW  Row,
+-                                       MIB_NOTIFICATION_TYPE NotificationType)
++static void NETIOAPI_API_
++  ares_event_configchg_ip_cb(PVOID                 CallerContext,
++                             PMIB_IPINTERFACE_ROW  Row,
++                             MIB_NOTIFICATION_TYPE NotificationType)
+ {
+   ares_event_configchg_t *configchg = CallerContext;
+   (void)Row;
+@@ -308,7 +309,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
+    *       that didn't get triggered either.
+    */
+   if (NotifyIpInterfaceChange(
+-        AF_UNSPEC, (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
++        AF_UNSPEC, ares_event_configchg_ip_cb,
+         *configchg, FALSE, &c->ifchg_hnd) != NO_ERROR) {
+     status = ARES_ESERVFAIL;
+     goto done;

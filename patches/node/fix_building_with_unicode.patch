@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Thu, 25 Jul 2024 15:29:12 -0700
+Subject: fix: building with UNICODE
+
+Use the unicode version of 'RegOpenKeyEx' to avoid compilation error on string type.
+
+Backport of https://github.com/c-ares/c-ares/pull/802.
+
+diff --git a/deps/cares/src/lib/ares_event_configchg.c b/deps/cares/src/lib/ares_event_configchg.c
+index c9b39f7b3358f37e61fb95e440695a9b590c2090..b33141ce3a30dd92509de8a4aff1a7fc76a5b915 100644
+--- a/deps/cares/src/lib/ares_event_configchg.c
++++ b/deps/cares/src/lib/ares_event_configchg.c
+@@ -319,15 +319,15 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
+   /* Monitor HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\Interfaces
+    * and HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces
+    * for changes via RegNotifyChangeKeyValue() */
+-  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+-        "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces",
++  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,
++        L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces",
+         0, KEY_NOTIFY, &c->regip4) != ERROR_SUCCESS) {
+     status = ARES_ESERVFAIL;
+     goto done;
+   }
+ 
+-  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+-        "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters\\Interfaces",
++  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,
++        L"SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters\\Interfaces",
+         0, KEY_NOTIFY, &c->regip6) != ERROR_SUCCESS) {
+     status = ARES_ESERVFAIL;
+     goto done;

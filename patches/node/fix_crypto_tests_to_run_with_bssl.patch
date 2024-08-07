@@ -31,7 +31,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 6178445adbc634160c3c3ca699a36868f894e544..ff4dc2f7d527b5eb1fa442ba6b0f9ba04af39357 100644
+index 59dd3b69c4bdf6dbd7b5e4f03df74caac551d459..1e0f9ce4c979683530afdf83ac3dc095acad2eb8 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -48,7 +48,9 @@ const errMessages = {
@@ -381,7 +381,7 @@ index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af5
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index 3b738b7f47ec59ba718a92e3a0024fed45a9c87c..fabf5775a263804f5974b10cf73c6886d59bf1fa 100644
+index fb580e1b315445182538c56fc114742ce896bf4c..36014fe7cb411016d72a7f4ab118923d12e97898 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -55,18 +55,17 @@ const crypto = require('crypto');
@@ -594,6 +594,19 @@ index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..73bb53b0405b20f51b13326cc70e5275
    assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
  }
 +*/
+diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
+index 61bd65fc92678c24baa3c0eb9ffb1ead64ace70b..cb690351696a811210b9d990ee4cde3cfb2a3446 100644
+--- a/test/parallel/test-crypto-scrypt.js
++++ b/test/parallel/test-crypto-scrypt.js
+@@ -178,7 +178,7 @@ for (const options of bad) {
+ 
+ for (const options of toobig) {
+   const expected = {
+-    message: /Invalid scrypt params:.*memory limit exceeded/,
++    message: /Invalid scrypt params/,
+     code: 'ERR_CRYPTO_INVALID_SCRYPT_PARAMS',
+   };
+   assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
 index 56e5c16c2867f019caccf42f228193cae6167150..dc585c44db9894ae57a5e11d453af03e1ea4f211 100644
 --- a/test/parallel/test-crypto-sign-verify.js
