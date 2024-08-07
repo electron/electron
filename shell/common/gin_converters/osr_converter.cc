@@ -106,7 +106,7 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   metadata.Set("captureUpdateRect", val.capture_update_rect);
   metadata.Set("regionCaptureRect", val.region_capture_rect);
   metadata.Set("sourceSize", val.source_size);
-  metadata.Set("frameCount", val.frame_count);
+  metadata.Set("captureCounter", val.capture_counter);
   dict.Set("metadata", ConvertToV8(isolate, metadata));
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
