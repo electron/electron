@@ -86,8 +86,8 @@ struct OffscreenSharedTextureValue {
   // The capture timestamp, microseconds since capture start
   int64_t timestamp;
 
-  // The frame count
-  int64_t frame_count;
+  // The capture counter
+  int64_t capture_counter;
 
   // Releaser holder
   raw_ptr<OffscreenReleaserHolder> releaser_holder;
