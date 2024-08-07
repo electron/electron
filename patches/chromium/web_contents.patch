@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 08c279fdc9b5113a2cef1d4344255b15f0db9613..802d1c226cf23745c0edec99819f7367318e0327 100644
+index b74d288ea989960d45f8f730891affbf5513fa90..7fc00ba5df467fa579178f352ac8692a9fe02682 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3619,6 +3619,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
@@ -35,7 +35,7 @@ index 08c279fdc9b5113a2cef1d4344255b15f0db9613..802d1c226cf23745c0edec99819f7367
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 0872a5a027bc3cbc4a52390d62001e1f871b32af..3f419f9d42b0c0683f4df9e24759b703e4d6e008 100644
+index a5040c39d0ad04caf8df940d44eda46d76766c31..7a4916852140bf138bd4bfb5870ff51782577424 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -109,10 +109,13 @@ class BrowserContext;
@@ -61,5 +61,5 @@ index 0872a5a027bc3cbc4a52390d62001e1f871b32af..3f419f9d42b0c0683f4df9e24759b703
 +    raw_ptr<content::RenderViewHostDelegateView> delegate_view = nullptr;
 +
      // Value used to set the last time the WebContents was made active, this is
-     // the value that'll be returned by GetLastActiveTime(). If this is left
-     // default initialized then the value is not passed on to the WebContents
+     // the value that'll be returned by GetLastActiveTimeTicks(). If this is
+     // left default initialized then the value is not passed on to the

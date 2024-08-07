@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index e9fdcaea286437d0ad32efceb3860a75da39e270..132ca4c31a19e90cc4f65ce666cf95637f702dab 100644
+index d28df507c84683de0ccd4726af6ce587b4eb2426..b8d27a061fde59a1852d575ff29eb0abfe6a231e 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -1001,7 +1001,6 @@ if (is_win) {
@@ -873,10 +873,10 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 87f4eee0e17d4770996357f9d6f9736dec7300eb..f98be49762c217959ed428610068caa76337bd34 100644
+index 0c6e7e22ca8cc62687bd863268bfc8256ccae8b9..70afbd28b3ec204bf6a87e953aadfe37cf33310e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3002,8 +3002,9 @@ source_set("browser") {
+@@ -3005,8 +3005,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
