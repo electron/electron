@@ -11,7 +11,7 @@
     * `captureUpdateRect` [Rectangle](rectangle.md) (optional) - Updated area of frame, can be considered as the `dirty` area.
     * `regionCaptureRect` [Rectangle](rectangle.md) (optional) - May reflects where the frame's contents originate from if region capture is used internally.
     * `sourceSize` [Size](size.md) (optional) - Full size of the source frame.
-    * `frameCount` number (optional) - The increasing count of captured frame. May contain gaps if frames are dropped between two consecutively received frames.
+    * `captureCounter ` number (optional) - The increasing count of captured frame. May contain gaps if frames are dropped between two consecutively received frames.
   * `sharedTextureHandle` Buffer _Windows_ _macOS_ - The handle to the shared texture.
   * `planes` Object[] _Linux_ - Each plane's info of the shared texture.
     * `stride` number - The strides and offsets in bytes to be used when accessing the buffers via a memory mapping. One per plane per entry.
