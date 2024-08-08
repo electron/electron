@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Thu, 8 Aug 2024 08:39:10 -0700
+Subject: feat: allow usage of SCContentSharingPicker on supported platforms
+
+This is implemented as a magic "window id" that instead of pulling an SCStream manually
+instead farms out to the screen picker.
+
+diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+index 5c09b98b0c0ade9197a73186809ae4da28a12506..6622c39ce6b7750883cd1d0720a580fb1d876d94 100644
+--- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
++++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+@@ -25,6 +25,52 @@
+                                                     std::optional<gfx::Rect>)>;
+ using ErrorCallback = base::RepeatingClosure;
+ 
++API_AVAILABLE(macos(14.0))
++@interface ScreenCaptureKitPickerHelper
++    : NSObject <SCContentSharingPickerObserver>
++
++- (void)contentSharingPicker:(SCContentSharingPicker *)picker
++          didCancelForStream:(SCStream *)stream;
++
++- (void)contentSharingPicker:(SCContentSharingPicker *)picker
++         didUpdateWithFilter:(SCContentFilter *)filter
++                   forStream:(SCStream *)stream;
++
++- (void)contentSharingPickerStartDidFailWithError:(NSError *)error;
++
++@end
++
++@implementation ScreenCaptureKitPickerHelper {
++  base::RepeatingCallback<void(SCContentFilter *)> _pickerCallback;
++  ErrorCallback _errorCallback;
++}
++
++- (void)contentSharingPicker:(SCContentSharingPicker *)picker
++          didCancelForStream:(SCStream *)stream {
++  // This is handled elsewhere in a stream cancel observer
++}
++
++- (void)contentSharingPicker:(SCContentSharingPicker *)picker
++         didUpdateWithFilter:(SCContentFilter *)filter
++                   forStream:(SCStream *)stream {
++  _pickerCallback.Run(filter);
++}
++
++- (void)contentSharingPickerStartDidFailWithError:(NSError *)error {
++  _errorCallback.Run();
++}
++
++- (instancetype)initWithStreamPickCallback:(base::RepeatingCallback<void(SCContentFilter *)>)pickerCallback
++                             errorCallback:(ErrorCallback)errorCallback {
++  if (self = [super init]) {
++    _pickerCallback = pickerCallback;
++    _errorCallback = errorCallback;
++  }
++  return self;
++}
++
++@end
++
+ API_AVAILABLE(macos(12.3))
+ @interface ScreenCaptureKitDeviceHelper
+     : NSObject <SCStreamDelegate, SCStreamOutput>
+@@ -141,7 +187,8 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+ 
+ class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
+     : public IOSurfaceCaptureDeviceBase,
+-      public ScreenCaptureKitResetStreamInterface {
++      public ScreenCaptureKitResetStreamInterface
++       {
+  public:
+   explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
+       : source_(source),
+@@ -157,6 +204,15 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
+     helper_ = [[ScreenCaptureKitDeviceHelper alloc]
+         initWithSampleCallback:sample_callback
+                  errorCallback:error_callback];
++
++    if (@available(macOS 14.0, *)) {
++      auto picker_callback = base::BindPostTask(
++        device_task_runner_,
++        base::BindRepeating(&ScreenCaptureKitDeviceMac::OnContentFilterReady, weak_factory_.GetWeakPtr())
++      );
++      auto* picker_observer = [[ScreenCaptureKitPickerHelper alloc] initWithStreamPickCallback:picker_callback];
++      [[SCContentSharingPicker sharedPicker] addObserver:picker_observer];
++    }
+   }
+   ScreenCaptureKitDeviceMac(const ScreenCaptureKitDeviceMac&) = delete;
+   ScreenCaptureKitDeviceMac& operator=(const ScreenCaptureKitDeviceMac&) =
+@@ -225,6 +281,9 @@ void OnShareableContentCreated(SCShareableContent* content) {
+       return;
+     }
+ 
++    OnContentFilterReady(filter);
++  }
++  void OnContentFilterReady(SCContentFilter* filter) {
+     gfx::RectF dest_rect_in_frame;
+     actual_capture_format_ = capture_params().requested_format;
+     actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
+@@ -238,6 +297,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
+     stream_ = [[SCStream alloc] initWithFilter:filter
+                                  configuration:config
+                                       delegate:helper_];
++
+     {
+       NSError* error = nil;
+       bool add_stream_output_result =
+@@ -405,6 +465,24 @@ void OnUpdateConfigurationError() {
+   void OnStart() override {
+     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+ 
++    if (@available(macOS 14.0, *)) {
++      if (source_.id == 0 && source_.window_id == 0) {
++        auto* picker = [SCContentSharingPicker sharedPicker];
++        if (!picker.active) {
++          picker.active = true;
++        }
++        NSMutableArray<NSNumber*>* exclude_ns_windows = [NSMutableArray array];
++        [[[[NSApplication sharedApplication] windows] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSWindow* win, NSDictionary *bindings) {
++          return [win sharingType] == NSWindowSharingNone;
++        }]] enumerateObjectsUsingBlock:^(NSWindow* win, NSUInteger idx, BOOL *stop) {
++          [exclude_ns_windows addObject:@([win windowNumber])];
++        }];
++        picker.defaultConfiguration.excludedWindowIDs = exclude_ns_windows;
++        [picker present];
++        return;
++      }
++    }
++
+     auto content_callback = base::BindPostTask(
+         device_task_runner_,
+         base::BindRepeating(
