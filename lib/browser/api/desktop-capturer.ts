@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron/main';
-const { createDesktopCapturer } = process._linkedBinding('electron_browser_desktop_capturer');
+const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
 const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -12,6 +12,13 @@ let currentlyRunning: {
 function isValid (options: Electron.SourcesOptions) {
   return Array.isArray(options?.types);
 }
+
+const systemPickerVideoSource = Object.create(null);
+systemPickerVideoSource.id = 'window:0:0';
+systemPickerVideoSource.name = '';
+Object.freeze(systemPickerVideoSource);
+
+export { isDisplayMediaSystemPickerAvailable, systemPickerVideoSource };
 
 export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
