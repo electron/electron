@@ -130,40 +130,48 @@ describe('session module', () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
+      const url = 'https://microsoft.com/';
 
-      await cookies.set({ url: 'https://microsoft.com/', name, value });
+      await cookies.set({ url, name, value });
       const cs = await cookies.get({ domain: '' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
+      cookies.remove(url, name);
     });
 
     it('gets domain-equal cookies', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
+      const url = 'https://microsoft.com/';
 
-      await cookies.set({ url: 'https://microsoft.com/', name, value });
+      await cookies.set({ url, name, value });
       const cs = await cookies.get({ domain: 'microsoft.com' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
+      cookies.remove(url, name);
     });
 
     it('gets domain-inclusive cookies', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
+      const url = 'https://subdomain.microsoft.com/';
 
-      await cookies.set({ url: 'https://subdomain.microsoft.com/', name, value });
+      await cookies.set({ url, name, value });
       const cs = await cookies.get({ domain: 'microsoft.com' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
+      cookies.remove(url, name);
     });
 
     it('omits domain-exclusive cookies', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
+      const url = 'https://microsoft.com';
 
-      await cookies.set({ url: 'https://microsoft.com/', name, value });
+      await cookies.set({ url, name, value });
       const cs = await cookies.get({ domain: 'subdomain.microsoft.com' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
+      cookies.remove(url, name);
     });
 
     it('rejects when setting a cookie with missing required fields', async () => {
