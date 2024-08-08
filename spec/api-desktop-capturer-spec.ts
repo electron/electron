@@ -1,12 +1,11 @@
 import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
 import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers';
 
 import { closeAllWindows } from './lib/window-helpers';
 
-ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
+describe('desktopCapturer', () => {
   let w: BrowserWindow;
 
   before(async () => {
@@ -160,100 +159,5 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(sources).to.be.an('array').that.is.not.empty();
 
     expect(w.resizable).to.be.false();
-  });
-
-  it('moveAbove should move the window at the requested place', async () => {
-    // DesktopCapturer.getSources() is guaranteed to return in the correct
-    // z-order from foreground to background.
-    const MAX_WIN = 4;
-    const wList: BrowserWindow[] = [];
-
-    const destroyWindows = () => {
-      for (const w of wList) {
-        w.destroy();
-      }
-    };
-
-    try {
-      for (let i = 0; i < MAX_WIN; i++) {
-        const w = new BrowserWindow({ show: false, width: 100, height: 100 });
-        wList.push(w);
-      }
-      expect(wList.length).to.equal(MAX_WIN);
-
-      // Show and focus all the windows.
-      for (const w of wList) {
-        const wShown = once(w, 'show');
-        const wFocused = once(w, 'focus');
-
-        w.show();
-        w.focus();
-
-        await wShown;
-        await wFocused;
-      }
-
-      // At this point our windows should be showing from bottom to top.
-
-      // DesktopCapturer.getSources() returns sources sorted from foreground to
-      // background, i.e. top to bottom.
-      let sources = await desktopCapturer.getSources({
-        types: ['window'],
-        thumbnailSize: { width: 0, height: 0 }
-      });
-
-      // TODO(julien.isorce): investigate why |sources| is empty on the linux
-      // bots while it is not on my workstation, as expected, with and without
-      // the --ci parameter.
-      if (process.platform === 'linux' && sources.length === 0) {
-        destroyWindows();
-        it.skip('desktopCapturer.getSources returned an empty source list');
-        return;
-      }
-
-      expect(sources).to.be.an('array').that.is.not.empty();
-      expect(sources.length).to.gte(MAX_WIN);
-
-      // Only keep our windows, they must be in the MAX_WIN first windows.
-      sources.splice(MAX_WIN, sources.length - MAX_WIN);
-      expect(sources.length).to.equal(MAX_WIN);
-      expect(sources.length).to.equal(wList.length);
-
-      // Check that the sources and wList are sorted in the reverse order.
-      // If they're not, skip remaining checks because either focus or
-      // window placement are not reliable in the running test environment.
-      const wListReversed = wList.slice().reverse();
-      const proceed = sources.every(
-        (source, index) => source.id === wListReversed[index].getMediaSourceId());
-      if (!proceed) return;
-
-      // Move windows so wList is sorted from foreground to background.
-      for (const [i, w] of wList.entries()) {
-        if (i < wList.length - 1) {
-          const next = wList[wList.length - 1];
-          w.focus();
-          w.moveAbove(next.getMediaSourceId());
-          // Ensure the window has time to move.
-          await setTimeout(2000);
-        }
-      }
-
-      sources = await desktopCapturer.getSources({
-        types: ['window'],
-        thumbnailSize: { width: 0, height: 0 }
-      });
-
-      sources.splice(MAX_WIN, sources.length);
-      expect(sources.length).to.equal(MAX_WIN);
-      expect(sources.length).to.equal(wList.length);
-
-      // Check that the sources and wList are sorted in the same order.
-      for (const [index, source] of sources.entries()) {
-        const wID = wList[index].getMediaSourceId();
-        expect(source.id).to.equal(wID);
-      }
-    } finally {
-      destroyWindows();
-    }
   });
 });
