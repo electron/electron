@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Thu, 8 Aug 2024 16:42:52 -0700
+Subject: tmp
+
+
+diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+index 770d204c7bf2de705023e4797e78c497464e5a26..31e8dc1ed83149b7e879b66b4babfec183a4057c 100644
+--- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
++++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+@@ -48,6 +48,7 @@ @implementation ScreenCaptureKitPickerHelper {
+ - (void)contentSharingPicker:(SCContentSharingPicker *)picker
+           didCancelForStream:(SCStream *)stream {
+   // This is handled elsewhere in a stream cancel observer
++  LOG(ERROR) << "didCancelForStream";
+ }
+ 
+ - (void)contentSharingPicker:(SCContentSharingPicker *)picker
+@@ -217,7 +218,16 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
+   ScreenCaptureKitDeviceMac(const ScreenCaptureKitDeviceMac&) = delete;
+   ScreenCaptureKitDeviceMac& operator=(const ScreenCaptureKitDeviceMac&) =
+       delete;
+-  ~ScreenCaptureKitDeviceMac() override = default;
++  ~ScreenCaptureKitDeviceMac() override {
++    LOG(ERROR) << "~ScreenCaptureKitDeviceMac";
++    if (@available(macOS 14.0, *)) {
++      auto* picker = [SCContentSharingPicker sharedPicker];
++      ScreenCaptureKitDeviceMac::active_streams_--;
++      if (ScreenCaptureKitDeviceMac::active_streams_ == 0 && picker.active) {
++        picker.active = false;
++      }
++    }
++  }
+ 
+   void OnShareableContentCreated(SCShareableContent* content) {
+     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+@@ -466,8 +476,10 @@ void OnStart() override {
+     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+ 
+     if (@available(macOS 14.0, *)) {
+-      if (source_.id == 0 && source_.window_id == 0) {
++      LOG(ERROR) << "Source: " << source_.id << " :: " << source_.window_id;
++      if (source_.id < 0 && source_.window_id == 0) {
+         auto* picker = [SCContentSharingPicker sharedPicker];
++        ScreenCaptureKitDeviceMac::active_streams_++;
+         if (!picker.active) {
+           picker.active = true;
+         }
+@@ -548,6 +560,8 @@ void ResetStreamTo(SCWindow* window) override {
+   }
+ 
+  private:
++  static int active_streams_;
++
+   const DesktopMediaID source_;
+   const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
+ 
+@@ -576,6 +590,8 @@ void ResetStreamTo(SCWindow* window) override {
+   base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
+ };
+ 
++int ScreenCaptureKitDeviceMac::active_streams_ = 0;
++
+ }  // namespace
+ 
+ std::unique_ptr<media::VideoCaptureDevice> CreateScreenCaptureKitDeviceMac(
