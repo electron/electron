@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import * as crypto from 'node:crypto';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
@@ -128,7 +129,7 @@ describe('session module', () => {
 
     it('does not match on empty domain filter strings', async () => {
       const { cookies } = session.defaultSession;
-      const name = '1';
+      const name = crypto.randomBytes(20).toString('hex');
       const value = '1';
       const url = 'https://microsoft.com/';
 
@@ -140,7 +141,7 @@ describe('session module', () => {
 
     it('gets domain-equal cookies', async () => {
       const { cookies } = session.defaultSession;
-      const name = '1';
+      const name = crypto.randomBytes(20).toString('hex');
       const value = '1';
       const url = 'https://microsoft.com/';
 
@@ -152,7 +153,7 @@ describe('session module', () => {
 
     it('gets domain-inclusive cookies', async () => {
       const { cookies } = session.defaultSession;
-      const name = '1';
+      const name = crypto.randomBytes(20).toString('hex');
       const value = '1';
       const url = 'https://subdomain.microsoft.com/';
 
@@ -164,7 +165,7 @@ describe('session module', () => {
 
     it('omits domain-exclusive cookies', async () => {
       const { cookies } = session.defaultSession;
-      const name = '1';
+      const name = crypto.randomBytes(20).toString('hex');
       const value = '1';
       const url = 'https://microsoft.com';
 
