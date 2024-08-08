@@ -130,10 +130,9 @@ describe('session module', () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
-      const domain = 'github.com';
 
-      await cookies.set({ url: `https://${domain}/foo`, name, value });
-      const cs = await cookies.get({ domain });
+      await cookies.set({ url: 'https://microsoft.com/', name, value });
+      const cs = await cookies.get({ domain: 'microsoft.com' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
     });
 
@@ -141,11 +140,9 @@ describe('session module', () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
-      const domain = 'github.com';
-      const subdomain = `subdomain.${domain}`;
 
-      await cookies.set({ url: `https://${subdomain}/foo`, name, value });
-      const cs = await cookies.get({ domain });
+      await cookies.set({ url: 'https://subdomain.microsoft.com/', name, value });
+      const cs = await cookies.get({ domain: 'microsoft.com' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
     });
 
@@ -153,11 +150,9 @@ describe('session module', () => {
       const { cookies } = session.defaultSession;
       const name = '1';
       const value = '1';
-      const domain = 'github.com';
-      const subdomain = `subdomain.${domain}`;
 
-      await cookies.set({ url: `https://${domain}/foo`, name, value });
-      const cs = await cookies.get({ domain: subdomain });
+      await cookies.set({ url: 'https://microsoft.com/', name, value });
+      const cs = await cookies.get({ domain: 'subdomain.microsoft.com' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
     });
 
