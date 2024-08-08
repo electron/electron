@@ -1634,14 +1634,25 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   root_view_.ResetAltState();
 }
 
-void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
-                                              const gfx::Rect& bounds) {
+void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget, const gfx::Rect& bounds) {
   if (changed_widget != widget())
     return;
 
   // Note: We intentionally use `GetBounds()` instead of `bounds` to properly
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
+
+  // Enforce minimum and maximum size constraints
+  if (new_bounds.width() < min_width_)
+    new_bounds.set_width(min_width_);
+  if (new_bounds.height() < min_height_)
+    new_bounds.set_height(min_height_);
+  if (new_bounds.width() > max_width_)
+    new_bounds.set_width(max_width_);
+  if (new_bounds.height() > max_height_)
+    new_bounds.set_height(max_height_);
+
+  // Notify and update only if there is a change in size
   if (widget_size_ != new_bounds.size()) {
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
