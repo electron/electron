@@ -126,6 +126,41 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
     });
 
+    it('gets domain-equal cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+      const domain = 'github.com';
+
+      await cookies.set({ url: `https://${domain}/foo`, name, value });
+      const cs = await cookies.get({ domain });
+      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
+    });
+
+    it('gets domain-inclusive cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+      const domain = 'github.com';
+      const subdomain = `subdomain.${domain}`;
+
+      await cookies.set({ url: `https://${subdomain}/foo`, name, value });
+      const cs = await cookies.get({ domain });
+      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
+    });
+
+    it('omits domain-exclusive cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+      const domain = 'github.com';
+      const subdomain = `subdomain.${domain}`;
+
+      await cookies.set({ url: `https://${domain}/foo`, name, value });
+      const cs = await cookies.get({ domain: subdomain });
+      expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
+    });
+
     it('rejects when setting a cookie with missing required fields', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
