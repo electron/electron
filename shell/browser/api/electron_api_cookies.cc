@@ -79,17 +79,17 @@ struct Converter<net::CookieChangeCause> {
     switch (val) {
       case net::CookieChangeCause::INSERTED:
       case net::CookieChangeCause::EXPLICIT:
-        return gin::StringToV8(isolate, "explicit");
+        return v8::String::NewFromUtf8Literal(isolate, "explicit");
       case net::CookieChangeCause::OVERWRITE:
-        return gin::StringToV8(isolate, "overwrite");
+        return v8::String::NewFromUtf8Literal(isolate, "overwrite");
       case net::CookieChangeCause::EXPIRED:
-        return gin::StringToV8(isolate, "expired");
+        return v8::String::NewFromUtf8Literal(isolate, "expired");
       case net::CookieChangeCause::EVICTED:
-        return gin::StringToV8(isolate, "evicted");
+        return v8::String::NewFromUtf8Literal(isolate, "evicted");
       case net::CookieChangeCause::EXPIRED_OVERWRITE:
-        return gin::StringToV8(isolate, "expired-overwrite");
+        return v8::String::NewFromUtf8Literal(isolate, "expired-overwrite");
       default:
-        return gin::StringToV8(isolate, "unknown");
+        return v8::String::NewFromUtf8Literal(isolate, "unknown");
     }
   }
 };

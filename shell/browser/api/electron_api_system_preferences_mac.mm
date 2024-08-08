@@ -208,7 +208,7 @@ int SystemPreferences::DoSubscribeNotification(
   if (!(maybe_name->IsNull() ||
         gin::ConvertFromV8(isolate, maybe_name, &name_str))) {
     isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Must pass null or a string")));
+        v8::String::NewFromUtf8Literal(isolate, "Must pass null or a string")));
     return -1;
   }
 

@@ -26,11 +26,11 @@ struct Converter<electron::BundlerMoverConflictType> {
                                    electron::BundlerMoverConflictType value) {
     switch (value) {
       case electron::BundlerMoverConflictType::kExists:
-        return gin::StringToV8(isolate, "exists");
+        return v8::String::NewFromUtf8Literal(isolate, "exists");
       case electron::BundlerMoverConflictType::kExistsAndRunning:
-        return gin::StringToV8(isolate, "existsAndRunning");
+        return v8::String::NewFromUtf8Literal(isolate, "existsAndRunning");
       default:
-        return gin::StringToV8(isolate, "");
+        return v8::String::NewFromUtf8Literal(isolate, "");
     }
   }
 };

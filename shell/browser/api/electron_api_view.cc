@@ -420,7 +420,7 @@ gin::Handle<View> View::Create(v8::Isolate* isolate) {
 // static
 void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "View"));
+  prototype->SetClassName(v8::String::NewFromUtf8Literal(isolate, "View"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("addChildView", &View::AddChildViewAt)
       .SetMethod("removeChildView", &View::RemoveChildView)
