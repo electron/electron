@@ -7,7 +7,7 @@ This is implemented as a magic "window id" that instead of pulling an SCStream m
 instead farms out to the screen picker.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 5c09b98b0c0ade9197a73186809ae4da28a12506..6622c39ce6b7750883cd1d0720a580fb1d876d94 100644
+index 5c09b98b0c0ade9197a73186809ae4da28a12506..770d204c7bf2de705023e4797e78c497464e5a26 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -25,6 +25,52 @@
@@ -83,7 +83,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..6622c39ce6b7750883cd1d0720a580fb
 +        device_task_runner_,
 +        base::BindRepeating(&ScreenCaptureKitDeviceMac::OnContentFilterReady, weak_factory_.GetWeakPtr())
 +      );
-+      auto* picker_observer = [[ScreenCaptureKitPickerHelper alloc] initWithStreamPickCallback:picker_callback];
++      auto* picker_observer = [[ScreenCaptureKitPickerHelper alloc] initWithStreamPickCallback:picker_callback errorCallback:error_callback];
 +      [[SCContentSharingPicker sharedPicker] addObserver:picker_observer];
 +    }
    }
