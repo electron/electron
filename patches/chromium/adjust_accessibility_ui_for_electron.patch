@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 125316ef23a7d82d778aca9e40c99144a6d29ba1..a2aa6da83f0d77fd0c1cba864578ff7bcb471510 100644
+index 125316ef23a7d82d778aca9e40c99144a6d29ba1..ff88146ff502a2835a17b9b30d818998be2a19f6 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -48,6 +48,7 @@
@@ -35,7 +35,7 @@ index 125316ef23a7d82d778aca9e40c99144a6d29ba1..a2aa6da83f0d77fd0c1cba864578ff7b
  
    base::Value::Dict data;
 -  PrefService* pref = Profile::FromBrowserContext(current_context)->GetPrefs();
-+  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
++  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(current_context)->GetPrefs();
    ui::AXMode mode =
        content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
    bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
@@ -68,7 +68,7 @@ index 125316ef23a7d82d778aca9e40c99144a6d29ba1..a2aa6da83f0d77fd0c1cba864578ff7b
    if (string_name == kApiTypeField) {
 -    PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
 +    PrefService* pref = static_cast<electron::ElectronBrowserContext*>(
-+            web_ui()->GetWebContents()->GetBrowserContext())->prefs();
++            web_ui()->GetWebContents()->GetBrowserContext())->GetPrefs();
      pref->SetString(prefs::kShownAccessibilityApiType, value);
    }
  }
@@ -78,7 +78,7 @@ index 125316ef23a7d82d778aca9e40c99144a6d29ba1..a2aa6da83f0d77fd0c1cba864578ff7b
  
 -  PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
 +  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(
-+              web_contents->GetBrowserContext())->prefs();
++              web_contents->GetBrowserContext())->GetPrefs();
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
    std::string accessibility_contents =
@@ -106,7 +106,7 @@ index 125316ef23a7d82d778aca9e40c99144a6d29ba1..a2aa6da83f0d77fd0c1cba864578ff7b
 -  const std::vector<ui::AXApiType::Type> supported_types =
 -      content::AXInspectFactory::SupportedApis();
 +  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(
-+            web_ui()->GetWebContents()->GetBrowserContext())->prefs();
++            web_ui()->GetWebContents()->GetBrowserContext())->GetPrefs();
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
 +
