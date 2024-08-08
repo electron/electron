@@ -126,6 +126,16 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
     });
 
+    it('does not match on empty domain filter strings', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+
+      await cookies.set({ url: 'https://microsoft.com/', name, value });
+      const cs = await cookies.get({ domain: '' });
+      expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
+    });
+
     it('gets domain-equal cookies', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
