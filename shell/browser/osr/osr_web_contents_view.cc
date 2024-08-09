@@ -129,20 +129,10 @@ OffScreenWebContentsView::CreateViewForChildWidget(
                                            render_widget_host, view, GetSize());
 }
 
-void OffScreenWebContentsView::SetPageTitle(const std::u16string& title) {}
-
 void OffScreenWebContentsView::RenderViewReady() {
   if (auto* view = GetView())
     view->InstallTransparency();
 }
-
-void OffScreenWebContentsView::RenderViewHostChanged(
-    content::RenderViewHost* old_host,
-    content::RenderViewHost* new_host) {}
-
-void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {}
-
-void OffScreenWebContentsView::OnCapturerCountChanged() {}
 
 #if BUILDFLAG(IS_MAC)
 bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
@@ -163,10 +153,6 @@ void OffScreenWebContentsView::StartDragging(
     static_cast<content::WebContentsImpl*>(web_contents_)
         ->SystemDragEnded(source_rwh);
 }
-
-void OffScreenWebContentsView::UpdateDragOperation(
-    ui::mojom::DragOperation operation,
-    bool document_is_handling_drag) {}
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   painting_ = painting;
@@ -199,11 +185,6 @@ OffScreenRenderWidgetHostView* OffScreenWebContentsView::GetView() const {
   }
   return nullptr;
 }
-
-void OffScreenWebContentsView::FullscreenStateChanged(bool is_fullscreen) {}
-
-void OffScreenWebContentsView::UpdateWindowControlsOverlay(
-    const gfx::Rect& bounding_rect) {}
 
 content::BackForwardTransitionAnimationManager*
 OffScreenWebContentsView::GetBackForwardTransitionAnimationManager() {
