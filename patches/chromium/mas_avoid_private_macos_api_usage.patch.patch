@@ -171,7 +171,7 @@ index 4fe7a0bfaa5b3398372f55c6454e738f140efe6b..b1c70281c45aaca4ae483f1f28e9d219
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 459f14da45419a2a0340199d9cf311e3bba437e6..3b7908c559ddd3d6101801f8de256aa80a9411a2 100644
+index 1773f707ec0ed241dd737df6c900990a457a95c6..c37cddcf2566cce8c1f9259ff7272d57bc692cf6 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -362,10 +362,10 @@ index 8206b065e36ea5264ab01f0abb0c60c7f059cee5..219e2e73a986ed90585adc2baf1a9133
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b3c087eda0561d94d205ef0cbbb341a7e2a34638..035202378209e32e6f7c630140367cda7a34e483 100644
+index 897e8a7d807fa7e6d5b461b5413483114871bfbb..45f292bad3d69073e52de2d4175c6126898ca7a1 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -627,10 +627,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -635,10 +635,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -1626,7 +1626,7 @@ index cd6c9a924dce762ff935ef722c8873c974772225..b162795219e0fac3d9caa6bbfead126c
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0947cc6ce 100644
+index 4d2776c4a245dc755d4619c8680952cb8290e404..1f5a395de74f5d2d1a18c5f8ca7eeabfc671ede2 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -31,7 +31,9 @@
@@ -1639,7 +1639,7 @@ index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0
  @class NSView;
  
  namespace remote_cocoa {
-@@ -479,10 +481,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -483,10 +485,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -1653,7 +1653,7 @@ index 3911cb0691cb74c855c8edc9402cfd5a7fa7ddf3..8014af9cb95cdcb976c2f070b5a158c0
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995ad80c26bb 100644
+index c45bb34a05ad4e068f0f9f8bcab1da3dc84306e8..1dac5aef9961651cc1786eca028f2590ad34cfff 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -349,7 +349,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -1680,7 +1680,7 @@ index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995a
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1316,9 +1324,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1333,9 +1341,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -1692,7 +1692,7 @@ index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995a
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1481,17 +1491,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1498,17 +1508,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1713,7 +1713,7 @@ index 5d03d63d5ac0f114269b03098364ee3ab2620daa..7200b48bd63e1c951d51781c92a7995a
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1504,6 +1517,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1521,6 +1534,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
