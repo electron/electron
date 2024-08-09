@@ -36,6 +36,8 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
 
   static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
+  static bool IsDisplayMediaSystemPickerAvailable();
+
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size,

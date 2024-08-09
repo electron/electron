@@ -58,6 +58,11 @@ void InitializeFeatureList() {
   if (platform_specific_enable_features.size() > 0) {
     enable_features += std::string(",") + platform_specific_enable_features;
   }
+  std::string platform_specific_disable_features =
+      DisablePlatformSpecificFeatures();
+  if (platform_specific_disable_features.size() > 0) {
+    disable_features += std::string(",") + platform_specific_disable_features;
+  }
   base::FeatureList::InitInstance(enable_features, disable_features);
 }
 
@@ -71,6 +76,9 @@ void InitializeFieldTrials() {
 
 #if !BUILDFLAG(IS_MAC)
 std::string EnablePlatformSpecificFeatures() {
+  return "";
+}
+std::string DisablePlatformSpecificFeatures() {
   return "";
 }
 #endif

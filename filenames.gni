@@ -270,6 +270,7 @@ filenames = {
     "shell/browser/api/electron_api_debugger.h",
     "shell/browser/api/electron_api_desktop_capturer.cc",
     "shell/browser/api/electron_api_desktop_capturer.h",
+    "shell/browser/api/electron_api_desktop_capturer_mac.mm",
     "shell/browser/api/electron_api_dialog.cc",
     "shell/browser/api/electron_api_download_item.cc",
     "shell/browser/api/electron_api_download_item.h",
