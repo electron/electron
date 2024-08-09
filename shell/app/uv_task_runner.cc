@@ -12,12 +12,7 @@ namespace electron {
 
 UvTaskRunner::UvTaskRunner(uv_loop_t* loop) : loop_(loop) {}
 
-UvTaskRunner::~UvTaskRunner() {
-  for (auto& iter : tasks_) {
-    uv_unref(reinterpret_cast<uv_handle_t*>(iter.first));
-    delete iter.first;
-  }
-}
+UvTaskRunner::~UvTaskRunner() = default;
 
 bool UvTaskRunner::PostDelayedTask(const base::Location& from_here,
                                    base::OnceClosure task,
@@ -26,7 +21,7 @@ bool UvTaskRunner::PostDelayedTask(const base::Location& from_here,
   timer->data = this;
   uv_timer_init(loop_, timer);
   uv_timer_start(timer, UvTaskRunner::OnTimeout, delay.InMilliseconds(), 0);
-  tasks_[timer] = std::move(task);
+  tasks_.try_emplace(UvHandle<uv_timer_t>{timer}, std::move(task));
   return true;
 }
 
@@ -43,19 +38,14 @@ bool UvTaskRunner::PostNonNestableDelayedTask(const base::Location& from_here,
 // static
 void UvTaskRunner::OnTimeout(uv_timer_t* timer) {
   auto& tasks = static_cast<UvTaskRunner*>(timer->data)->tasks_;
-  const auto iter = tasks.find(timer);
-  if (iter == std::end(tasks))
-    return;
 
-  std::move(iter->second).Run();
-  tasks.erase(iter);
-  uv_timer_stop(timer);
-  uv_close(reinterpret_cast<uv_handle_t*>(timer), UvTaskRunner::OnClose);
-}
-
-// static
-void UvTaskRunner::OnClose(uv_handle_t* handle) {
-  delete reinterpret_cast<uv_timer_t*>(handle);
+  for (auto it = std::begin(tasks), end = std::end(tasks); it != end; ++it) {
+    if (it->first.get() == timer) {
+      std::move(it->second).Run();
+      tasks.erase(it);
+      break;
+    }
+  }
 }
 
 }  // namespace electron
