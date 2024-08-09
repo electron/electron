@@ -362,10 +362,10 @@ index 2aa2bd8d68c08359461254875f02fc37f8693058..6ba759f96ffff4d31509248bb7add047
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 897e8a7d807fa7e6d5b461b5413483114871bfbb..45f292bad3d69073e52de2d4175c6126898ca7a1 100644
+index f511bdc7fab3eb36b4a3590922c20212cf6aad34..d5f934512f3acd5a323f8838844a6bb7f3e64ace 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -635,10 +635,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -637,10 +637,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -1592,10 +1592,10 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index e9d6ed14f532029aa50f342d4f79bdd3bdaf8429..20fde4a3ebaf1bc9a4a054cad625e7bff07aadf8 100644
+index d9ba2d8c885e0272b5705276b700a62cfa63412b..c659348a120caeca83d434b5f67905022b0fe195 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -718,6 +718,7 @@ component("views") {
+@@ -721,6 +721,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1603,8 +1603,8 @@ index e9d6ed14f532029aa50f342d4f79bdd3bdaf8429..20fde4a3ebaf1bc9a4a054cad625e7bf
    }
  
    if (is_win) {
-@@ -1147,6 +1148,8 @@ source_set("test_support") {
-     "//testing/gtest",
+@@ -1151,6 +1152,8 @@ source_set("test_support") {
+     "//ui/base/mojom:mojom",
    ]
  
 +  configs += ["//electron/build/config:mas_build"]

@@ -102,8 +102,6 @@ extern const char kSpellcheck[];
 namespace switches {
 
 extern const char kEnableSandbox[];
-extern const char kPpapiFlashPath[];
-extern const char kPpapiFlashVersion[];
 extern const char kDisableHttpCache[];
 extern const char kStandardSchemes[];
 extern const char kServiceWorkerSchemes[];

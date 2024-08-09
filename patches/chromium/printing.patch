@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 6845af7a3ee82dd2321c3097795f84a7daaccc86..ef8a4df14c190b6e157a7bc8cd402c09639f12c2 100644
+index 1845333d12696aaabc798b3c58e34f8ef3f77e4e..664a43872d8016be7744bcf8d09f7b436862b949 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -998,7 +998,6 @@ if (is_win) {
@@ -925,10 +925,10 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    virtual mojom::ResultCode OnError();
  
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index e89fd87753bad3c5663fa53f8dcc4542e7e307e5..2b433a0705234af6f9808ee741a9795d5e251785 100644
+index 8bb26f3212d406419d957250adbaf4cb682df801..2345917c71ddf7fda171672b736724087fc873e8 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -38,6 +38,10 @@
+@@ -35,6 +35,10 @@
  #include "sandbox/policy/mac/utility.sb.h"
  #include "sandbox/policy/mojom/sandbox.mojom.h"
  
