@@ -23,10 +23,10 @@ public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index 530a249adde65a47c8e0babf5723b52b8d2a6b1a..fca49d135ad2f23307654e1b0c36e846ca5a6ec6 100644
+index e2b2405aaae8fb324ab12250fd3ee767fd3a7ce4..e83a8a4ffbc31ec1336d5bd289039f9ba31a3052 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -2717,9 +2717,9 @@ void Scope::AllocateScopeInfosRecursively(
+@@ -2713,9 +2713,9 @@ void Scope::AllocateScopeInfosRecursively(
  
    // Allocate ScopeInfos for inner scopes.
    for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
