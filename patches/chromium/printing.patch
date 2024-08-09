@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 6845af7a3ee82dd2321c3097795f84a7daaccc86..ef8a4df14c190b6e157a7bc8cd402c09639f12c2 100644
+index 1845333d12696aaabc798b3c58e34f8ef3f77e4e..664a43872d8016be7744bcf8d09f7b436862b949 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -998,7 +998,6 @@ if (is_win) {
