@@ -114,6 +114,16 @@ void PlatformNotificationService::DisplayNotification(
   }
 }
 
+void PlatformNotificationService::DisplayPersistentNotification(
+    const std::string& notification_id,
+    const GURL& service_worker_scope,
+    const GURL& origin,
+    const blink::PlatformNotificationData& notification_data,
+    const blink::NotificationResources& notification_resources) {}
+
+void PlatformNotificationService::ClosePersistentNotification(
+    const std::string& notification_id) {}
+
 void PlatformNotificationService::CloseNotification(
     const std::string& notification_id) {
   auto* presenter = browser_client_->GetNotificationPresenter();
@@ -133,6 +143,11 @@ int64_t PlatformNotificationService::ReadNextPersistentNotificationId() {
   // Electron doesn't support persistent notifications.
   return 0;
 }
+
+void PlatformNotificationService::RecordNotificationUkmEvent(
+    const content::NotificationDatabaseData& data) {}
+
+void PlatformNotificationService::ScheduleTrigger(base::Time timestamp) {}
 
 base::Time PlatformNotificationService::ReadNextTriggerTimestamp() {
   return base::Time::Max();
