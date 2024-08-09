@@ -37,6 +37,7 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -308,7 +309,9 @@ class WebContents : public ExclusiveAccessContext,
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
-  void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
+  void OnPaint(const gfx::Rect& dirty_rect,
+               const SkBitmap& bitmap,
+               const OffscreenSharedTexture& info);
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
@@ -837,6 +840,9 @@ class WebContents : public ExclusiveAccessContext,
   base::WeakPtr<NativeWindow> owner_window_;
 
   bool offscreen_ = false;
+
+  // Whether offscreen rendering use gpu shared texture
+  bool offscreen_use_shared_texture_ = false;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
