@@ -1328,14 +1328,6 @@ void WebContents::EnterFullscreen(const GURL& url,
                                   ExclusiveAccessBubbleType bubble_type,
                                   const int64_t display_id) {}
 
-void WebContents::ExitFullscreen() {}
-
-void WebContents::UpdateExclusiveAccessBubble(
-    const ExclusiveAccessBubbleParams& params,
-    ExclusiveAccessBubbleHideCallback bubble_first_hide_callback) {}
-
-void WebContents::OnExclusiveAccessUserInput() {}
-
 content::WebContents* WebContents::GetWebContentsForExclusiveAccess() {
   return web_contents();
 }
