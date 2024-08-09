@@ -51,14 +51,14 @@ class OffScreenWebContentsView : public content::WebContentsView,
   gfx::NativeView GetContentNativeView() const override;
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
   gfx::Rect GetContainerBounds() const override;
-  void Focus() override;
-  void SetInitialFocus() override;
-  void StoreFocus() override;
-  void RestoreFocus() override;
-  void FocusThroughTabTraversal(bool reverse) override;
+  void Focus() override {}
+  void SetInitialFocus() override {}
+  void StoreFocus() override {}
+  void RestoreFocus() override {}
+  void FocusThroughTabTraversal(bool reverse) override {}
   content::DropData* GetDropData() const override;
   gfx::Rect GetViewBounds() const override;
-  void CreateView(gfx::NativeView context) override;
+  void CreateView(gfx::NativeView context) override {}
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost* render_widget_host) override;
   content::RenderWidgetHostViewBase* CreateViewForChildWidget(

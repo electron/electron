@@ -92,16 +92,6 @@ gfx::Rect OffScreenWebContentsView::GetContainerBounds() const {
   return GetViewBounds();
 }
 
-void OffScreenWebContentsView::Focus() {}
-
-void OffScreenWebContentsView::SetInitialFocus() {}
-
-void OffScreenWebContentsView::StoreFocus() {}
-
-void OffScreenWebContentsView::RestoreFocus() {}
-
-void OffScreenWebContentsView::FocusThroughTabTraversal(bool reverse) {}
-
 content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }
@@ -111,8 +101,6 @@ gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
     return view->GetViewBounds();
   return {};
 }
-
-void OffScreenWebContentsView::CreateView(gfx::NativeView context) {}
 
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForWidget(
