@@ -66,7 +66,7 @@ index 37a00f8d520e6043faa9b202e2f7a3d7a0794664..08b56afaa591137aafc4aad38da84361
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index dc4110d8878b83c537f8ba32ecbf445ff766341f..83c3de7a2d65310faa4b52d9f5949901206dc15f 100644
+index 7f43e745f4d9764b720a976d3343637ec9457415..113262c96869f766c80c4485e55902accc43c239 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -750,6 +750,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,10 +79,10 @@ index dc4110d8878b83c537f8ba32ecbf445ff766341f..83c3de7a2d65310faa4b52d9f5949901
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d4d906bdaac87eee0351612584473684e4fcc389..793c55425396998f7dfeba3c7dc0e59e90ef3874 100644
+index 4c982411a8508270ec93b444ae999f7e51973aaa..9aff128608ca60c2031b131eff59622e74b5a55a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -189,6 +189,7 @@ class NetworkService;
+@@ -190,6 +190,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -90,7 +90,7 @@ index d4d906bdaac87eee0351612584473684e4fcc389..793c55425396998f7dfeba3c7dc0e59e
  }  // namespace network
  
  namespace sandbox {
-@@ -1285,6 +1286,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1286,6 +1287,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -148,10 +148,10 @@ index 138761070b63c16ea440f9eee98fe1139e7c0b09..f7bfa43693cff1a55a1e59950f1ecb06
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e6172e2b3ccd9758e86498fe8c722af9e0ddb8a3..833761e8401c4f521614e438224c9f2ab691933f 100644
+index ccaa4b368f7831edae409f68765c496c70ed4889..ee688da4100412ff58bffa1b266a4c823486dd56 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6697,6 +6697,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6701,6 +6701,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
