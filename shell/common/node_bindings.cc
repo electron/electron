@@ -420,6 +420,10 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env)
       uv_loop_{InitEventLoop(browser_env, &worker_loop_)} {}
 
 NodeBindings::~NodeBindings() {
+  // If the loop is not initialized then there is nothing to clean up.
+  if (!initialized_)
+    return;
+  
   // Quit the embed thread.
   embed_closed_ = true;
   uv_sem_post(&embed_sem_);
