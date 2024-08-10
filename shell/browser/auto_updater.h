@@ -64,9 +64,9 @@ class AutoUpdater {
   // FIXME(zcbenz): We should not do V8 in this file, this method should only
   // accept C++ struct as parameter, and atom_api_auto_updater.cc is responsible
   // for parsing the parameter from JavaScript.
-  static void SetFeedURL(gin::Arguments* args) {}
-  static void CheckForUpdates() {}
-  static void QuitAndInstall() {}
+  static void SetFeedURL(gin::Arguments* args);
+  static void CheckForUpdates();
+  static void QuitAndInstall();
 
   static bool IsVersionAllowedForUpdate(const std::string& current_version,
                                         const std::string& target_version);

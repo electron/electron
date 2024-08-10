@@ -22,6 +22,12 @@ std::string AutoUpdater::GetFeedURL() {
   return "";
 }
 
+void AutoUpdater::SetFeedURL(gin::Arguments* args) {}
+
+void AutoUpdater::CheckForUpdates() {}
+
+void AutoUpdater::QuitAndInstall() {}
+
 bool AutoUpdater::IsVersionAllowedForUpdate(const std::string& current_version,
                                             const std::string& target_version) {
   return false;
