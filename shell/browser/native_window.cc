@@ -471,6 +471,9 @@ void NativeWindow::SetBackgroundMaterial(const std::string& type) {
   background_material_ = type;
 }
 
+void NativeWindow::SetTouchBar(
+    std::vector<gin_helper::PersistentDictionary> items) {}
+
 void NativeWindow::SetEscapeTouchBarItem(
     gin_helper::PersistentDictionary item) {}
 

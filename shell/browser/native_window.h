@@ -242,8 +242,7 @@ class NativeWindow : public base::SupportsUserData,
 #endif
 
   // Touchbar API
-  virtual void SetTouchBar(
-      std::vector<gin_helper::PersistentDictionary> items) {}
+  virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id) {}
   virtual void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
 
