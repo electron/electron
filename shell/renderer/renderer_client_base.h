@@ -101,6 +101,7 @@ class RendererClientBase : public content::ContentRendererClient
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
   void DidSetUserAgent(const std::string& user_agent) override;
+  bool AllowPopup() override;
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
