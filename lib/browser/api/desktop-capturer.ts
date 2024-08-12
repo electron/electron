@@ -18,7 +18,7 @@ export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
-  let winsOwnedByElectronProcess: ElectronInternal.GetSourcesResult[];
+  let winsOwnedByElectronProcess: Promise<ElectronInternal.GetSourcesResult[]>;
   if (process.platform === 'darwin') {
     // Fix for bug in ScreenCaptureKit that modifies a window's styleMask the first time
     // it captures a non-resizable window. We record each non-resizable window's styleMask,
@@ -52,7 +52,7 @@ export async function getSources (args: Electron.SourcesOptions) {
   const getSources = new Promise<ElectronInternal.GetSourcesResult[]>((resolve, reject) => {
     let capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer();
 
-    const stopRunning = async () => {
+    const stopRunning = () => {
       if (capturer) {
         delete capturer._onerror;
         delete capturer._onfinished;
@@ -84,25 +84,23 @@ export async function getSources (args: Electron.SourcesOptions) {
               appIcon: null
             };
           });
-          winsOwnedByElectronProcess = await Promise.all(fetches);
+          winsOwnedByElectronProcess = Promise.all(fetches);
         };
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options);
     };
 
-    capturer._onerror = async (error: string) => {
-      await stopRunning();
+    capturer._onerror = (error: string) => {
+      stopRunning();
       reject(error);
     };
 
-    capturer._onfinished = async (sources: Electron.DesktopCapturerSource[]) => {
-      await stopRunning();
-      if (Array.isArray(winsOwnedByElectronProcess)) {
-        resolve([...sources, ...winsOwnedByElectronProcess]);
-      } else {
-        resolve(sources);
-      }
+    capturer._onfinished = (sources: Electron.DesktopCapturerSource[]) => {
+      stopRunning();
+      winsOwnedByElectronProcess.then((wins) => {
+        resolve([...sources, ...wins]);
+      });
     };
 
     capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
