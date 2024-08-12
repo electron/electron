@@ -596,10 +596,10 @@ index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index d26282108d32f604730cc0101c5b346ce90c7f6c..2545154a6111c6283b2c2262e7d7747533c41dbd 100644
+index adcbd1bae0af1142fc2152f9a4148b499934180f..6556352329a9f485059360187abda12d7d431dff 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -36,6 +36,7 @@ struct RootCompositorFrameSinkParams {
+@@ -38,6 +38,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;

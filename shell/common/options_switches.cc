@@ -195,12 +195,6 @@ namespace switches {
 // Enable chromium sandbox.
 const char kEnableSandbox[] = "enable-sandbox";
 
-// Ppapi Flash path.
-const char kPpapiFlashPath[] = "ppapi-flash-path";
-
-// Ppapi Flash version.
-const char kPpapiFlashVersion[] = "ppapi-flash-version";
-
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
 

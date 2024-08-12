@@ -155,10 +155,10 @@ index 7350c38fa03a7f3176e0727631863eba470683ca..3792bc743d4eeea5305a69f9a2dab9e2
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 4eb165e1f38e389d9d4e4495e630b7a67b010e95..7c93f3c1a4e351669eca4a58b992ba11f784499d 100644
+index 9fdb1e276a7712c5cd99829b4e0a6868e6608420..5b42be1a1c61b3ce2557e8e1854642c701381d38 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -180,14 +180,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -181,14 +181,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -176,7 +176,7 @@ index 4eb165e1f38e389d9d4e4495e630b7a67b010e95..7c93f3c1a4e351669eca4a58b992ba11
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index eb1ac072d3a032f7af5afc92aeef5c5415dce7a4..24f36918eda4c9197e45a811692c5027620602ed 100644
+index 215d105b5f4b19c6f0dc4e15427af07bcf8f009f..f337a2b1774b08ce608dcc9007cca0e6025501ee 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -81,8 +81,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -232,7 +232,7 @@ index 6037b2a0612448e20150cdaec7cddbcd9b5141c5..7a2cda01e910b2b89a74ef95fea4866d
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index ef00a3636e7cbbff08365f140da58fef6522005c..685a8007072638ed8a21974e162a44900a2bdc80 100644
+index 4998328a01525a12fa54ca5b9bf85f518c64de83..7119de8f574e81d90d17a60baec24a6c3137300a 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -140,8 +140,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,10 +246,10 @@ index ef00a3636e7cbbff08365f140da58fef6522005c..685a8007072638ed8a21974e162a4490
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index f7bfa43693cff1a55a1e59950f1ecb06d67b8f3a..843111cdfd1364bae993fababd3fdea8334f5289 100644
+index 38ab9071bdab02e855f59c93941da1153cd06d88..5394297482ab10a9463cb9cc9791a1e71899a459 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -337,8 +337,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -338,8 +338,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -358,7 +358,7 @@ index 602ce992279f95d9a5926cb7bf5db485215d331f..44cf33b9602581b3b46d54789933b209
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index a0b515b6e8ac360063790c56f8912051c506f6b8..d1cb266f888548ab13b676c8443c4a14622165b3 100644
+index e1be942c74a4289773b279ee71ac1370600f6529..ace61774dd7bc0a7472cbdf96f4b50aae9f91e1d 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -448,8 +448,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
@@ -372,10 +372,10 @@ index a0b515b6e8ac360063790c56f8912051c506f6b8..d1cb266f888548ab13b676c8443c4a14
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index e4dd6b6acab981a3c7f1bd354932cbf57281809e..a42e4aa7f8195130b7374272f01989754633a1b6 100644
+index 77b903f2c4adcc5a5aec6de9fa98828931eb0f51..a991767546370b359cee3593f8a7ab2dd45296eb 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
-@@ -165,8 +165,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
+@@ -166,8 +166,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
