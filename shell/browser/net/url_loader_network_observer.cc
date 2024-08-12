@@ -68,7 +68,7 @@ URLLoaderNetworkObserver::Bind() {
 
 void URLLoaderNetworkObserver::OnAuthRequired(
     const std::optional<base::UnguessableToken>& window_id,
-    uint32_t request_id,
+    int32_t request_id,
     const GURL& url,
     bool first_auth_attempt,
     const net::AuthChallengeInfo& auth_info,
