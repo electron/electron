@@ -16,7 +16,7 @@ MainFrameImpl is not null.
 Upstreamed in https://chromium-review.googlesource.com/c/chromium/src/+/5756619
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 99b1895903c2ae8aa36c76f578e1f51318033ad9..685b85e1d7294af5e8be2ae771bd352b1427c923 100644
+index e375fdb171c059baa3e707edcb95523d63239528..d572195a972ecd59a83acabdc8e8ed3d7f9d00a2 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -4071,11 +4071,12 @@ bool WebViewImpl::IsFencedFrameRoot() const {
