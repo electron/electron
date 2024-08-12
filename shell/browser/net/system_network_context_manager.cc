@@ -198,6 +198,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
     network::mojom::NetworkContextParams* network_context_params) {
   network_context_params->enable_brotli = true;
+  network_context_params->enable_zstd = true;
 
   network_context_params->enable_referrers = true;
 
