@@ -345,7 +345,7 @@ app.on('select-client-certificate', (event, webContents, url, list, callback) =>
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md)
+* `webContents` [WebContents](web-contents.md) (optional)
 * `authenticationResponseDetails` Object
   * `url` URL
   * `pid` number

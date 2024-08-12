@@ -62,6 +62,7 @@ void LoginHandler::EmitEvent(
 
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
+  details.Set("pid", process_id);
 
   // These parameters aren't documented, and I'm not sure that they're useful,
   // but we might as well stick 'em on the details object. If it turns out they
@@ -69,7 +70,6 @@ void LoginHandler::EmitEvent(
   details.Set("isMainFrame", is_main_frame);
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
-  details.Set("pid", process_id);
 
   auto weak_this = weak_factory_.GetWeakPtr();
   bool default_prevented = false;
