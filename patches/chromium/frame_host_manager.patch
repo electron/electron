@@ -20,10 +20,10 @@ index d8e55dd35c7bcfc341585b901ed8dc261d03870a..eaa3b5fe6320a746298c45c799ef4b29
  }
  
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 9aff128608ca60c2031b131eff59622e74b5a55a..64c2b82f58f01f2e3044ca6f2ab212384302f380 100644
+index 811ec61bcb9b962bc71f8959e6b9cb0757bf7143..c406f4e23091e368389acebd71bb4d1c95197080 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -330,6 +330,11 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -329,6 +329,11 @@ class CONTENT_EXPORT ContentBrowserClient {
  
    virtual ~ContentBrowserClient() = default;
  

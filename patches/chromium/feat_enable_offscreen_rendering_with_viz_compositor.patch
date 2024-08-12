@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 0ad0fcd3d3ab1f13c3fc133db39135679bf84735..94cb46494157f7683931c54e135572245da79ae0 100644
+index d20063ec5ccbe6a555fe5da92f4c99a405ecb988..96ee427015987b38c9cb341afc8400ce26795fa6 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -39,7 +39,7 @@ index 0ad0fcd3d3ab1f13c3fc133db39135679bf84735..94cb46494157f7683931c54e13557224
      gpu::SurfaceHandle child_window) {
    NOTREACHED_IN_MIGRATION();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index cb16487f9fc0811ef577d455098f09e3000db86a..d67c0f8bce3c6a8f7643409e07e21e789b4bd391 100644
+index 294f99f234006709363d5ae1c7d52aeb19691a7c..e5b9d104e157b588dcd0a2e856a1db2df1cfe658 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -39,6 +39,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -521,10 +521,10 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index eaae03e885e57a52cfc6ec43f657b8412fb79004..f77dcdfeed252f49cc84038b5bf560c0e7971c84 100644
+index 588aa93863516e230e03e7c45f5c2c4e75ba7f81..53f2ab48523e3bfecc5c90933701ae18463a882c 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -101,7 +101,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -563,10 +563,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index b9ad5c8cbeb5b3684af6d84f70aa8aace69dc01a..55ea89b5c08daf3dd5cdf332be96ff43b8590233 100644
+index fff599e7c04ae6dabb72aefad09779bcc163d0ac..2ae57f7816b9f04fcacaa3276abac64c04214897 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -390,8 +390,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -396,8 +396,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -584,7 +584,7 @@ index b9ad5c8cbeb5b3684af6d84f70aa8aace69dc01a..55ea89b5c08daf3dd5cdf332be96ff43
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index d7deccb6e6ec63592cd840a05403f402238e645e..4c4356b8def15ed3156db38d0a593b83a0544ed4 100644
+index ccd10adec50100bf5a58f766edeb3671af38d12e..13ce386b6a3b420a99ed3c039d0b99f0cacb37eb 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -114,7 +114,6 @@ interface DisplayClient {
