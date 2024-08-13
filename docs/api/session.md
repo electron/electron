@@ -889,20 +889,15 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
-To clear the handler, call `setPermissionRequestHandler(null)`.  Please note that
+To clear the handler, call `setPermissionRequestHandler(null)`. Please note that
 you must also implement `setPermissionCheckHandler` to get complete permission handling.
 Most web APIs do a permission check and then make a permission request if the check is denied.
 
-```js
-const { session } = require('electron')
-session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
-  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
-    return callback(false) // denied.
-  }
+:::info
 
-  callback(true)
-})
-```
+For more context, refer to the [Web API Permissions](../tutorial/web-api-permissions.md) guide.
+
+:::
 
 #### `ses.setPermissionCheckHandler(handler)`
 
@@ -936,7 +931,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `isMainFrame` boolean - Whether the frame making the request is the main frame
 
 Sets the handler which can be used to respond to permission checks for the `session`.
-Returning `true` will allow the permission and `false` will reject it.  Please note that
+Returning `true` will allow the permission and `false` will reject it. Please note that
 you must also implement `setPermissionRequestHandler` to get complete permission handling.
 Most web APIs do a permission check and then make a permission request if the check is denied.
 To clear the handler, call `setPermissionCheckHandler(null)`.
@@ -952,6 +947,12 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   return false // denied
 })
 ```
+
+:::info
+
+For more context, refer to the [Web API Permissions](../tutorial/web-api-permissions.md) guide.
+
+:::
 
 #### `ses.setDisplayMediaRequestHandler(handler)`
 
