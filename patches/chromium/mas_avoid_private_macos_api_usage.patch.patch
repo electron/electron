@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 822fa7d9d61f17ef0a94cb0529d239ba98656dd7..d7455c28a5a37434fa6bc7bba7b089d15b603fd1 100644
+index 8e8263420459fedb9445512f3a28b690a0ed4704..f7e8bc3565f8a969f3f0e7f2bbd422defe3cbed2 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1048,6 +1048,7 @@ component("base") {
+@@ -1049,6 +1049,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 877e9075f38a66f63a8e049a48798d871055c9a5..62277bb4e69734c89ab06a88124169962a60cbad 100644
+index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d74d18807b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -503,6 +503,7 @@ static_library("test_support") {
@@ -736,7 +736,7 @@ index 877e9075f38a66f63a8e049a48798d871055c9a5..62277bb4e69734c89ab06a8812416996
  
    public_deps = [
      ":test_interfaces",
-@@ -2985,6 +2988,7 @@ test("content_unittests") {
+@@ -2986,6 +2989,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1256,7 +1256,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index fb1e7f7238358ca9d505f76a158b88f4412412f7..3340e675bed474cba55d78b249c4658dcf91f990 100644
+index 4b802b3ae001b2d2713bff0199945cea078e843f..6ad833655e9534907865a6676a67baed27cb0c05 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -332,6 +332,7 @@ component("core") {
@@ -1381,10 +1381,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..6ffffe8b3946e0427aead8be19878c53
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 9803795cb3567ee4ae94927f4d46a5d53cd63ed1..41fc650b36349eaebd571a814ed27776c1ee1c0c 100644
+index ad1807ebfa054c68aead72ac8eb9c7323ca1d9fa..91124462bd61672114479ea9577b3924c89417ac 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -254,6 +254,7 @@ component("platform") {
+@@ -240,6 +240,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
@@ -1528,7 +1528,7 @@ index 333424e572626bd9c372ed88601a1e80b45fe511..99aa8f04cdc22254eb70b5ab41987a56
  
    if (is_win) {
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 592e9611f6315f6f96918ee0a6489c38d6fa49e8..e885e86126429e7ae42991b6bd7a78bd4c9f96a7 100644
+index 35b71abc95f83bb01dba3f69e2d69a026840b7a2..f9d556e6b221d17035cd9e8d1f5620c52f3fb744 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -176,7 +176,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
@@ -1548,7 +1548,7 @@ index 592e9611f6315f6f96918ee0a6489c38d6fa49e8..e885e86126429e7ae42991b6bd7a78bd
 +#endif
  
    // Query the display's refresh rate.
-   {
+   if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
 index 5255116a8e8f897607e5c5df2875dbaf275ec919..0a28b2832470f3c9d45f70499be29c2b29cb1b25 100644
 --- a/ui/gfx/BUILD.gn
