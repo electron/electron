@@ -33,6 +33,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   views::View* GetView() override;
   void ShowDevTools(bool activate) override;
   void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) override;
+  void SetBackgroundColor(std::optional<SkColor> color) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
   bool IsDevToolsViewFocused() override;

@@ -40,6 +40,7 @@ using electron::InspectableWebContentsViewMac;
     (InspectableWebContentsViewMac*)view;
 - (void)notifyDevToolsFocused;
 - (void)setCornerRadii:(CGFloat)cornerRadius;
+- (void)setBackgroundColor:(CGColorRef)color;
 - (void)setDevToolsVisible:(BOOL)visible activate:(BOOL)activate;
 - (BOOL)isDevToolsVisible;
 - (BOOL)isDevToolsFocused;

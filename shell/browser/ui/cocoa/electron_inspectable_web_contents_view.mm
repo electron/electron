@@ -81,16 +81,28 @@
     inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
 }
 
+- (void)setBackgroundColor:(CGColorRef)color {
+  auto* inspectable_web_contents =
+      inspectableWebContentsView_->inspectable_web_contents();
+  DCHECK(inspectable_web_contents);
+
+  if (auto* webContents = inspectable_web_contents->GetWebContents()) {
+    auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
+    webContentsView.wantsLayer = YES;
+    webContentsView.layer.backgroundColor = color;
+  }
+}
+
 - (void)setCornerRadii:(CGFloat)cornerRadius {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
   DCHECK(inspectable_web_contents);
-  auto* webContents = inspectable_web_contents->GetWebContents();
-  if (!webContents)
-    return;
-  auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
-  webContentsView.wantsLayer = YES;
-  webContentsView.layer.cornerRadius = cornerRadius;
+
+  if (auto* webContents = inspectable_web_contents->GetWebContents()) {
+    auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
+    webContentsView.wantsLayer = YES;
+    webContentsView.layer.cornerRadius = cornerRadius;
+  }
 }
 
 - (void)notifyDevToolsResized {

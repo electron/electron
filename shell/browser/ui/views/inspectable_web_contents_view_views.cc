@@ -118,6 +118,11 @@ void InspectableWebContentsViewViews::SetCornerRadii(
   }
 }
 
+void InspectableWebContentsViewViews::SetBackgroundColor(
+    std::optional<SkColor> color) {
+  // TODO(codebytere): implement this
+}
+
 void InspectableWebContentsViewViews::ShowDevTools(bool activate) {
   if (devtools_visible_)
     return;

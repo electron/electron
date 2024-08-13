@@ -9,6 +9,7 @@
 #import "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#import "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rounded_corners_f.h"
 
 namespace electron {
@@ -31,6 +32,16 @@ InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
 
 gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
   return view_;
+}
+
+void InspectableWebContentsViewMac::SetBackgroundColor(
+    std::optional<SkColor> color) {
+  if (!color.has_value())
+    return;
+
+  base::apple::ScopedCFTypeRef<CGColorRef> cgcolor(
+      skia::CGColorCreateFromSkColor(color.value()));
+  [view_ setBackgroundColor:cgcolor.get()];
 }
 
 void InspectableWebContentsViewMac::SetCornerRadii(

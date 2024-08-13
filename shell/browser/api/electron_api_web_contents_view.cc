@@ -77,9 +77,11 @@ void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
     // on the next load URL call
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
-    if (web_preferences) {
+    if (web_preferences)
       web_preferences->SetBackgroundColor(color);
-    }
+
+    auto* iwcv = api_web_contents_->inspectable_web_contents()->GetView();
+    iwcv->SetBackgroundColor(color.value());
   }
 }
 
