@@ -893,6 +893,16 @@ To clear the handler, call `setPermissionRequestHandler(null)`. Please note that
 you must also implement `setPermissionCheckHandler` to get complete permission handling.
 Most web APIs do a permission check and then make a permission request if the check is denied.
 
+```js
+const { session } = require('electron')
+session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return callback(false) // denied
+  }
+  callback(true) // granted
+})
+```
+
 :::info
 
 For more context, refer to the [Web API Permissions](../tutorial/web-api-permissions.md) guide.
@@ -943,7 +953,6 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   if (new URL(requestingOrigin).hostname === 'some-host' && permission === 'notifications') {
     return true // granted
   }
-
   return false // denied
 })
 ```

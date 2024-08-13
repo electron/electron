@@ -11,7 +11,7 @@ by the Chromium team.
 
 ## Managing API permissions in Electron
 
-In general, Electron’s renderer processes inherits its API permissions model from Chromium.
+In general, Electron’s renderer processes inherit their API permissions model from Chromium.
 However, requests are handled differently because Electron does not contain any UI layer that can
 allow or block permissions.
 
