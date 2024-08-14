@@ -14,6 +14,12 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (33.0)
 
+### Behavior Changed: `webContents` property on `login` on `app`
+
+The `webContents` property in the `login` event from `app` will be `null`
+when the event is triggered for requests from the [utility process](api/utility-process.md)
+created with `respondToAuthRequestsFromMainProcess` option.
+
 ### Deprecated: `textured` option in `BrowserWindowConstructorOption.type`
 
 The `textured` option of `type` in `BrowserWindowConstructorOptions` has been deprecated with no replacement. This option relied on the [`NSWindowStyleMaskTexturedBackground`](https://developer.apple.com/documentation/appkit/nswindowstylemask/nswindowstylemasktexturedbackground) style mask on macOS, which has been deprecated with no alternative.
