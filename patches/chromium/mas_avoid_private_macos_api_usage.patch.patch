@@ -552,7 +552,7 @@ index a9c8c574b83c78988016e38931ab7273e426c6fd..1f23d45ca2d9fd09b2f88f61f9daeece
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 1f1a670ed0f8de345b4bc8bbd0ad8f3d794201ac..79913025edf73dfdbdb5f135dc5cda43ac9e29f2 100644
+index 4aa1a1479d7b8b9129c4e88bb0c416792515d3f6..362b8c764317815dd69f7339b6d1eb614bc4fa16 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -272,8 +272,10 @@
@@ -770,7 +770,7 @@ index 2e53ca913d9b4380792df82f73dcfdd5177c0214..edb1e1a3283ee1978d64527c29ad207e
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 4244e70c523d584fb796f4ce741376c6f72531cd..25db1e83fefecd01820923e5d182b882426eebfd 100644
+index 25f2c71ac4d74f1843b3fa5b16a8833170240431..ee2fa297f5cf555269ebb5d6e413cc337e2b6ee9 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -39,6 +39,7 @@
@@ -800,7 +800,7 @@ index 4244e70c523d584fb796f4ce741376c6f72531cd..25db1e83fefecd01820923e5d182b882
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -297,8 +301,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -307,8 +311,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

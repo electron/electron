@@ -218,10 +218,10 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a4217e49b3df358dbd24c609ab451c6e32f3ff50..b4c3117a56002d8ead12611f0a386d477f0597b1 100644
+index 1ce88da97fdc4b9cdc1cc73f72ef05f80f4a0f64..a04acf4c5a456b6754778ed6c032767c187ff546 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4612,8 +4612,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4628,8 +4628,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
