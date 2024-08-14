@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8e8263420459fedb9445512f3a28b690a0ed4704..f7e8bc3565f8a969f3f0e7f2bbd422defe3cbed2 100644
+index 543bd2e276dbd3635d5af43963a62fb9f47dbb8e..cc0ab9111775c3b3fe4305d3816c4ad8ef5fd1f7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1049,6 +1049,7 @@ component("base") {
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f6f32109e6e12879d7ae3e637fc06ecef3937427..091a8e4cac4fab9a5980f64ec226df0363eff8fb 100644
+index 4c4d49e93f8ed866ef9f5aab54ae6e30981705bf..a4f104cd00ac1b3100bd464545cc59cc5e0dcdcc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -72,6 +72,7 @@ source_set("browser") {
@@ -1256,7 +1256,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 4b802b3ae001b2d2713bff0199945cea078e843f..6ad833655e9534907865a6676a67baed27cb0c05 100644
+index e5ecd99e1f690d2559058aeda76666b321193a07..8c79df3ba29976172f1214c4a65a80d596eada3f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -332,6 +332,7 @@ component("core") {

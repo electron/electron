@@ -79,6 +79,8 @@ class BrowserProcessImpl : public BrowserProcess {
   metrics::MetricsService* metrics_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
+  signin::ActivePrimaryAccountsMetricsRecorder*
+  active_primary_accounts_metrics_recorder() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()
       override;
   variations::VariationsService* variations_service() override;
