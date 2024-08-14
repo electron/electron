@@ -2899,11 +2899,7 @@ void WebContents::OnGetDeviceNameToUse(
   if (!print_view_manager)
     return;
 
-  auto* focused_frame = web_contents()->GetFocusedFrame();
-  auto* rfh = focused_frame && focused_frame->HasSelection()
-                  ? focused_frame
-                  : web_contents()->GetPrimaryMainFrame();
-
+  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
   print_view_manager->PrintNow(rfh, std::move(print_settings),
                                std::move(print_callback));
 }
@@ -3100,12 +3096,13 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto generate_document_outline =
       settings.GetDict().FindBool("generateDocumentOutline");
 
+  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
-          web_contents()->GetPrimaryMainFrame()->GetLastCommittedURL(),
-          landscape, display_header_footer, print_background, scale,
-          paper_width, paper_height, margin_top, margin_bottom, margin_left,
-          margin_right, std::make_optional(header_template),
+          rfh->GetLastCommittedURL(), landscape, display_header_footer,
+          print_background, scale, paper_width, paper_height, margin_top,
+          margin_bottom, margin_left, margin_right,
+          std::make_optional(header_template),
           std::make_optional(footer_template), prefer_css_page_size,
           generate_tagged_pdf, generate_document_outline);
 
@@ -3125,8 +3122,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
       absl::get<printing::mojom::PrintPagesParamsPtr>(print_pages_params));
   params->params->document_cookie = unique_id.value_or(0);
 
-  manager->PrintToPdf(web_contents()->GetPrimaryMainFrame(), page_ranges,
-                      std::move(params),
+  manager->PrintToPdf(rfh, page_ranges, std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
 
