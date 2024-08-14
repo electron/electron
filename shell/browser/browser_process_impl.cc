@@ -169,6 +169,11 @@ PrefService* BrowserProcessImpl::local_state() {
   return local_state_.get();
 }
 
+signin::ActivePrimaryAccountsMetricsRecorder*
+BrowserProcessImpl::active_primary_accounts_metrics_recorder() {
+  return nullptr;
+}
+
 scoped_refptr<network::SharedURLLoaderFactory>
 BrowserProcessImpl::shared_url_loader_factory() {
   return system_network_context_manager()->GetSharedURLLoaderFactory();
