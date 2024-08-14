@@ -33,7 +33,7 @@ index a71fc6ca3a3c86d96dde7401aa8b5d071c0862f2..dfe1b53cbc4ad08e20e2bec7c36d23ad
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 05de84c314ab93845d553780beff1a5b0231c844..988a99d070211d97d71a3fe1ec9abd9466357db7 100644
+index 8d085b7fb399b4d0121e054408b6e0afce973f7c..3f2594d06e4c9c1c6cbf8956a6af88f6603a515a 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4455,7 +4455,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index 05de84c314ab93845d553780beff1a5b0231c844..988a99d070211d97d71a3fe1ec9abd94
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index d459ff8c761a43e5558534b3c4d2942d5838ea60..6030a87cd6d6d91325c0d9077a4f1780279124e9 100644
+index 0a66362c3e3799806d3182ee82c6a0e1573085db..0fa89988dd96be88ef3cb0b13961b27c28851458 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7048,9 +7048,12 @@ test("unit_tests") {
+@@ -7032,9 +7032,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index d459ff8c761a43e5558534b3c4d2942d5838ea60..6030a87cd6d6d91325c0d9077a4f1780
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8072,6 +8075,10 @@ test("unit_tests") {
+@@ -8056,6 +8059,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index d459ff8c761a43e5558534b3c4d2942d5838ea60..6030a87cd6d6d91325c0d9077a4f1780
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8139,7 +8146,6 @@ test("unit_tests") {
+@@ -8123,7 +8130,6 @@ test("unit_tests") {
      # Non-android deps for "unit_tests" target.
      deps += [
        "../browser/screen_ai:screen_ai_install_state",
