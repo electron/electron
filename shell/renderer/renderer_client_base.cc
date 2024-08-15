@@ -256,7 +256,7 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_renderer_client_->RenderThreadStarted();
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
-  thread->AddObserver(extensions_renderer_client_->GetDispatcher());
+  thread->AddObserver(extensions_renderer_client_->dispatcher());
 
   WTF::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
@@ -346,7 +346,7 @@ void RendererClientBase::RenderFrameCreated(
   new ElectronApiServiceImpl(render_frame, this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* dispatcher = extensions_renderer_client_->GetDispatcher();
+  auto* dispatcher = extensions_renderer_client_->dispatcher();
   // ExtensionFrameHelper destroys itself when the RenderFrame is destroyed.
   new extensions::ExtensionFrameHelper(render_frame, dispatcher);
 
@@ -508,7 +508,7 @@ void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
     const GURL& service_worker_scope,
     const GURL& script_url) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_renderer_client_->GetDispatcher()
+  extensions_renderer_client_->dispatcher()
       ->DidInitializeServiceWorkerContextOnWorkerThread(
           context_proxy, service_worker_scope, script_url);
 #endif
@@ -522,7 +522,7 @@ void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
     const GURL& script_url,
     const blink::ServiceWorkerToken& service_worker_token) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_renderer_client_->GetDispatcher()
+  extensions_renderer_client_->dispatcher()
       ->WillEvaluateServiceWorkerOnWorkerThread(
           context_proxy, v8_context, service_worker_version_id,
           service_worker_scope, script_url, service_worker_token);
@@ -534,7 +534,7 @@ void RendererClientBase::DidStartServiceWorkerContextOnWorkerThread(
     const GURL& service_worker_scope,
     const GURL& script_url) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_renderer_client_->GetDispatcher()
+  extensions_renderer_client_->dispatcher()
       ->DidStartServiceWorkerContextOnWorkerThread(
           service_worker_version_id, service_worker_scope, script_url);
 #endif
@@ -546,7 +546,7 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
     const GURL& service_worker_scope,
     const GURL& script_url) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_renderer_client_->GetDispatcher()
+  extensions_renderer_client_->dispatcher()
       ->WillDestroyServiceWorkerContextOnWorkerThread(
           context, service_worker_version_id, service_worker_scope, script_url);
 #endif
