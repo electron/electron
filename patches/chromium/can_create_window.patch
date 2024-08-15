@@ -21,10 +21,10 @@ index 83f9f7bc9ece3f3c1c4b21287881470fe188fe8b..4a3b534c1ec27b906b47fe2ea79b0005
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7318d2937012de43b1cf8e2562fb4866d1a62e82..e83eb02e51b90aea187a5513404ac1aa50232906 100644
+index b66f7c515370fc90847434436551eb252982039e..d0a30ab3fa8f4f0d7fb3aabe086d14c6b617638e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4710,6 +4710,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4726,6 +4726,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    new_contents_impl->is_popup_ =
        params.disposition == WindowOpenDisposition::NEW_POPUP;
  
@@ -37,7 +37,7 @@ index 7318d2937012de43b1cf8e2562fb4866d1a62e82..e83eb02e51b90aea187a5513404ac1aa
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4751,12 +4757,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4767,12 +4773,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -148,10 +148,10 @@ index 138761070b63c16ea440f9eee98fe1139e7c0b09..f7bfa43693cff1a55a1e59950f1ecb06
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 7b443a718ba4d9aff69ba66a6e1ee40c760a03bb..d833b71a88e91b128236233323fdf6c3d2972f9f 100644
+index 21520a93f79811e3108192363ddecaa3ab80e78f..538fd09c289ae49250c9b03de63bb065c0d16094 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6664,6 +6664,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6668,6 +6668,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
