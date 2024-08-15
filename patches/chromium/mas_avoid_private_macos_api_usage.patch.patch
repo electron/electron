@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 543bd2e276dbd3635d5af43963a62fb9f47dbb8e..cc0ab9111775c3b3fe4305d3816c4ad8ef5fd1f7 100644
+index fdbbfc143e26b174ed2b4e87109f0cf03a3401a5..f35521d057569f310fb8d94da6c80d82ad3f926c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1049,6 +1049,7 @@ component("base") {
+@@ -1050,6 +1050,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d74d18807b 100644
+index 8fdc5e03b618bbb94d5036322563efee2dbce1cd..b2e111abdf99a0f5f72202b4b1ecc4ed560e83c6 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -503,6 +503,7 @@ static_library("test_support") {
@@ -736,7 +736,7 @@ index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d7
  
    public_deps = [
      ":test_interfaces",
-@@ -2986,6 +2989,7 @@ test("content_unittests") {
+@@ -2992,6 +2995,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -770,7 +770,7 @@ index 82d4f2bf563f6bf489b1f257efb249ba4ec9a7f3..2959a166d0acf29d79b2c006e0d0f5ab
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 25f2c71ac4d74f1843b3fa5b16a8833170240431..ee2fa297f5cf555269ebb5d6e413cc337e2b6ee9 100644
+index fa86583a2d82c4076cfcf64cdc3f6bbb533b95d7..71b731e2e25ba876639d169c2242087dcf9ff389 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -39,6 +39,7 @@
@@ -789,7 +789,7 @@ index 25f2c71ac4d74f1843b3fa5b16a8833170240431..ee2fa297f5cf555269ebb5d6e413cc33
  
  // A simple helper class that forwards any Bluetooth device connect notification
  // to its wrapped |_adapter|.
-@@ -150,8 +152,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -161,8 +163,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -800,7 +800,7 @@ index 25f2c71ac4d74f1843b3fa5b16a8833170240431..ee2fa297f5cf555269ebb5d6e413cc33
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -307,8 +311,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -313,8 +317,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -1592,7 +1592,7 @@ index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b4
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index d9ba2d8c885e0272b5705276b700a62cfa63412b..c659348a120caeca83d434b5f67905022b0fe195 100644
+index fcb49d6e5b2f3a3926bd939f30e0513e984b3b76..6245fa6660d96caae28418c7d9fe700012c430d2 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -721,6 +721,7 @@ component("views") {
