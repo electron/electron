@@ -2126,6 +2126,10 @@ describe('webContents module', () => {
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let w: BrowserWindow;
 
+    const containsText = (items: any[], text: RegExp) => {
+      return items.some(({ str }: { str: string }) => str.match(text));
+    };
+
     beforeEach(() => {
       w = new BrowserWindow({
         show: false,
@@ -2248,7 +2252,7 @@ describe('webContents module', () => {
     });
 
     it('with custom header and footer', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(path.join(fixturesPath, 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({
         displayHeaderFooter: true,
@@ -2261,11 +2265,8 @@ describe('webContents module', () => {
 
       const { items } = await page.getTextContent();
 
-      // Check that generated PDF contains a header.
-      const containsText = (text: RegExp) => items.some(({ str }: { str: string }) => str.match(text));
-
-      expect(containsText(/I'm a PDF header/)).to.be.true();
-      expect(containsText(/I'm a PDF footer/)).to.be.true();
+      expect(containsText(items, /I'm a PDF header/)).to.be.true();
+      expect(containsText(items, /I'm a PDF footer/)).to.be.true();
     });
 
     it('in landscape mode', async () => {
@@ -2316,6 +2317,25 @@ describe('webContents module', () => {
         UserProperties: false,
         Suspects: false
       });
+    });
+
+    it('from an existing pdf document', async () => {
+      const pdfPath = path.join(fixturesPath, 'cat.pdf');
+      await w.loadFile(pdfPath);
+
+      // TODO(codebytere): the PDF plugin is not always ready immediately
+      // after the document is loaded, so we need to wait for it to be ready.
+      // We should find a better way to do this.
+      await setTimeout(3000);
+
+      const data = await w.webContents.printToPDF({});
+      const doc = await pdfjs.getDocument(data).promise;
+      expect(doc.numPages).to.equal(2);
+
+      const page = await doc.getPage(1);
+
+      const { items } = await page.getTextContent();
+      expect(containsText(items, /Cat: The Ideal Pet/)).to.be.true();
     });
   });
 
