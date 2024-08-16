@@ -521,7 +521,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 588aa93863516e230e03e7c45f5c2c4e75ba7f81..53f2ab48523e3bfecc5c90933701ae18463a882c 100644
+index ca00f3b9dff68830c825310f91aaa7032dc2b3f1..f79267bd482b052ab6dbb578810441640cfcf608 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -584,10 +584,10 @@ index ec35a93769ad9d5d494849bb3e1ff6e1a73ca4be..5632ec461bbd044a3008cc5fc721027a
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index ccd10adec50100bf5a58f766edeb3671af38d12e..13ce386b6a3b420a99ed3c039d0b99f0cacb37eb 100644
+index 7d19b6be8bb0e0269c381cf6efdf79eaeff1e935..b8ec06ade095df99c024396a601dbf1abb97cc00 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -114,7 +114,6 @@ interface DisplayClient {
+@@ -117,7 +117,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -619,7 +619,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index adb90506e6df9b934b824169cd7d9ea3f00328ce..7d529e1af98d8392a98a7dbf9f3faff90f02c8bd 100644
+index c6a8d74b2b317472ccf4fdd82f9fdc5b1941696d..e0231f6336f5930061e4bbb4323ff9184798a7f7 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ namespace mojom {
@@ -657,7 +657,7 @@ index adb90506e6df9b934b824169cd7d9ea3f00328ce..7d529e1af98d8392a98a7dbf9f3faff9
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -548,6 +562,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -554,6 +568,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  

@@ -590,7 +590,7 @@ index 1917f8b94962d7a4c83f139623a5f5d352011627..47ef610c43c4dcfee0cf528eb2e6075b
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 0e48a7582d86c85a826de08af655b29a3ef74fd2..2e67a73611ca2c55ffc002341b0878de7191c932 100644
+index 402be34ab888cdf834d0fb65de0832e9a8021ced..82ddc92a35d824926c30279e660cc4e86e6f0b09 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -666,7 +666,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index f039e0f694e7db6b14d222b917505ba2c02c7106..6b8493163997718d498e217bcfd261e840d79377 100644
+index cd4a61255d677784f93d831b619c07f2682162ec..49452c0467adb8a086d3d1c3c823cf8b62839358 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -873,10 +873,10 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a4f104cd00ac1b3100bd464545cc59cc5e0dcdcc..e319af849983b8f69d7fb0597c720b380b6a442a 100644
+index 023183b173146264a1c0a602a3f8e64c94f5690f..c98eb3bc508956c9ff01670abb1cf060fe0b254a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3012,8 +3012,9 @@ source_set("browser") {
+@@ -3023,8 +3023,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

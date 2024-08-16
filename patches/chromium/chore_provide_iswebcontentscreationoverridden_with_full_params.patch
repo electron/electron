@@ -141,10 +141,10 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 7350c38fa03a7f3176e0727631863eba470683ca..3792bc743d4eeea5305a69f9a2dab9e29a1d1d5d 100644
+index 04bebdaef96035bddd4f21dc7841316132755de2..51804ef750bca964c17509a9e0c6c968e21c9151 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -75,8 +75,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -92,8 +92,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,7 +218,7 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 28ee370ee79a50b47e508bbbd6c2c3c897fb7211..1dff462c65b67f9d7e466cf8c6b3ed696e5f64c7 100644
+index 05e1ca6579a088faa3fec7666f403ef1365b0e4d..17124e05caf8f428f2b2bece3b3fb85301537081 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4652,8 +4652,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -358,7 +358,7 @@ index 602ce992279f95d9a5926cb7bf5db485215d331f..44cf33b9602581b3b46d54789933b209
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index e1be942c74a4289773b279ee71ac1370600f6529..ace61774dd7bc0a7472cbdf96f4b50aae9f91e1d 100644
+index 18be444bd95de11af0e56074c629e9290fc79640..28f66266db2439d7fca1711505d38eff8172dcba 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -448,8 +448,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(

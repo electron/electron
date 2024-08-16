@@ -159,7 +159,7 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..0d830234edb5621f57e39f4a951d357a
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 4fe7a0bfaa5b3398372f55c6454e738f140efe6b..b1c70281c45aaca4ae483f1f28e9d21929d17815 100644
+index 3b81e00e1535ec729a521b83fe2471985d177e5c..b3706a4a0f77f8e5fbae3df97153b9cbed7d01f0 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -46,6 +46,7 @@ component("os_crypt") {
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4c4d49e93f8ed866ef9f5aab54ae6e30981705bf..a4f104cd00ac1b3100bd464545cc59cc5e0dcdcc 100644
+index a0f17bb4ff8eede75f46bb365aca5cd59a90ebad..023183b173146264a1c0a602a3f8e64c94f5690f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -72,6 +72,7 @@ source_set("browser") {
@@ -480,7 +480,7 @@ index 4c4d49e93f8ed866ef9f5aab54ae6e30981705bf..a4f104cd00ac1b3100bd464545cc59cc
    libs = []
    frameworks = []
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 66aeabc0852b61777dee72dc819cab7fd59b6563..fc09cd942b60a5eea7e35842f031e3259509095d 100644
+index cde2af9e67566aa010cf94b003f4c36ccd887879..88352a659a7aaac708c4e3b23ac888dd7e2abdd2 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -20,7 +20,9 @@
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8fdc5e03b618bbb94d5036322563efee2dbce1cd..b2e111abdf99a0f5f72202b4b1ecc4ed560e83c6 100644
+index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d74d18807b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -503,6 +503,7 @@ static_library("test_support") {
@@ -736,7 +736,7 @@ index 8fdc5e03b618bbb94d5036322563efee2dbce1cd..b2e111abdf99a0f5f72202b4b1ecc4ed
  
    public_deps = [
      ":test_interfaces",
-@@ -2992,6 +2995,7 @@ test("content_unittests") {
+@@ -2986,6 +2989,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1256,7 +1256,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e5ecd99e1f690d2559058aeda76666b321193a07..8c79df3ba29976172f1214c4a65a80d596eada3f 100644
+index 9cb087c578629d872d2a2c12a046471527372c81..2b1aa7a79bcae619c3fe205a64fc1bdae4a4efff 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -332,6 +332,7 @@ component("core") {
@@ -1562,7 +1562,7 @@ index 5255116a8e8f897607e5c5df2875dbaf275ec919..0a28b2832470f3c9d45f70499be29c2b
    if (is_win) {
      sources += [
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index 0ab5fbd2a81d8860c73f29c08896f6755b5ca5fa..9400c6c7698258ff2834c550fb8901b49ced35bd 100644
+index dd1a98234966ba069bb6c7e6ab95f64cae0b0f1f..fa17d4b1974b6844ee11343f652d6896b6f1b1db 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -28,9 +28,11 @@

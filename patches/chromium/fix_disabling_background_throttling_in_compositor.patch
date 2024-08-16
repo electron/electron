@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index f580d434560f90a107bab988f224c48bf591531e..2ee85fb2951c743fd50ae46b56af941b9eae279d 100644
+index 3e16b0ed445bb850d1c91290b8c9f0f1a5bdb11a..ed4ed3285f4dc60afaba6175ad0b2436d50a485c 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -342,7 +342,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -25,7 +25,7 @@ index f580d434560f90a107bab988f224c48bf591531e..2ee85fb2951c743fd50ae46b56af941b
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -554,7 +555,9 @@ void Compositor::SetVisible(bool visible) {
+@@ -552,7 +553,9 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_)
@@ -51,10 +51,10 @@ index f580d434560f90a107bab988f224c48bf591531e..2ee85fb2951c743fd50ae46b56af941b
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 7d529e1af98d8392a98a7dbf9f3faff90f02c8bd..0ca7e3a2d8009f8334caeadf944de5e8e0985be9 100644
+index e0231f6336f5930061e4bbb4323ff9184798a7f7..38989f2b3bafbaa7f083be86c2167fd536dd264d 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -508,6 +508,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -510,6 +510,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -65,7 +65,7 @@ index 7d529e1af98d8392a98a7dbf9f3faff90f02c8bd..0ca7e3a2d8009f8334caeadf944de5e8
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -638,6 +642,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -646,6 +650,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  
