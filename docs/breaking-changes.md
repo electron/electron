@@ -14,6 +14,12 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (33.0)
 
+### Behavior Changed: `webContents` property on `login` on `app`
+
+The `webContents` property in the `login` event from `app` will be `null`
+when the event is triggered for requests from the [utility process](api/utility-process.md)
+created with `respondToAuthRequestsFromMainProcess` option.
+
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
 The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.
