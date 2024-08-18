@@ -1251,7 +1251,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setHiddenInMissionControl",
                  &BaseWindow::SetHiddenInMissionControl)
 #endif
-
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
