@@ -31,48 +31,6 @@ namespace {
 v8::Isolate* g_isolate;
 }
 
-namespace gin {
-
-class ConvertableToTraceFormatWrapper final
-    : public base::trace_event::ConvertableToTraceFormat {
- public:
-  explicit ConvertableToTraceFormatWrapper(
-      std::unique_ptr<v8::ConvertableToTraceFormat> inner)
-      : inner_(std::move(inner)) {}
-  ~ConvertableToTraceFormatWrapper() override = default;
-
-  // disable copy
-  ConvertableToTraceFormatWrapper(const ConvertableToTraceFormatWrapper&) =
-      delete;
-  ConvertableToTraceFormatWrapper& operator=(
-      const ConvertableToTraceFormatWrapper&) = delete;
-
-  void AppendAsTraceFormat(std::string* out) const final {
-    inner_->AppendAsTraceFormat(out);
-  }
-
- private:
-  std::unique_ptr<v8::ConvertableToTraceFormat> inner_;
-};
-
-}  // namespace gin
-
-// Allow std::unique_ptr<v8::ConvertableToTraceFormat> to be a valid
-// initialization value for trace macros.
-template <>
-struct base::trace_event::TraceValue::Helper<
-    std::unique_ptr<v8::ConvertableToTraceFormat>> {
-  static constexpr unsigned char kType = TRACE_VALUE_TYPE_CONVERTABLE;
-  static inline void SetValue(
-      TraceValue* v,
-      std::unique_ptr<v8::ConvertableToTraceFormat> value) {
-    // NOTE: |as_convertable| is an owning pointer, so using new here
-    // is acceptable.
-    v->as_convertable =
-        new gin::ConvertableToTraceFormatWrapper(std::move(value));
-  }
-};
-
 namespace electron {
 
 namespace {
