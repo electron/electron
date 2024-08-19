@@ -23,10 +23,10 @@ public tracking bug for this feature nor the crashes its been causing,
 so we'll have to keep an eye on this for the time being.
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index c35d96502797a3ff9b6c2a9f898c6f0853f7ad46..d8c9d1444d2765b9e62e05094733ebdc42a20581 100644
+index 57a9dca1a84dee95d36c2b296fc170399db3e213..5db78a650068faa0bacf05b13d86860c9616e20e 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -2724,10 +2724,10 @@ void Scope::AllocateScopeInfosRecursively(
+@@ -2731,10 +2731,10 @@ void Scope::AllocateScopeInfosRecursively(
    for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
  #ifdef DEBUG
      if (!scope->is_hidden_catch_scope()) {
@@ -42,10 +42,10 @@ index c35d96502797a3ff9b6c2a9f898c6f0853f7ad46..d8c9d1444d2765b9e62e05094733ebdc
  #endif
      if (!scope->is_function_scope() ||
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 08794fa907ca7a204e4a1422d160af599d9239b8..cdfed6943a8ca224234cc86596091c7ea162cbfb 100644
+index 2c9c12e6cf4a9ebfdc5cb08ef7a53b0ca77222bb..98ce94ec8d3af5afdc3a1308e65f7122e46983f2 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -981,7 +981,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -984,7 +984,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  

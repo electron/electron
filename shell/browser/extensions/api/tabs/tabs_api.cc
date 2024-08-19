@@ -346,6 +346,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   }
 
   tab.active = contents->IsFocused();
+  tab.last_accessed = wc->GetLastActiveTime().InMillisecondsFSinceUnixEpoch();
 
   return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
 }
