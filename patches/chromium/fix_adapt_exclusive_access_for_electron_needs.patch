@@ -109,9 +109,9 @@ index 530199f4d873efdf66c7084cd09651ef85e74ead..6dcefd75a2fc9164eae24de3efaded0f
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER)
-@@ -636,6 +646,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
-   if (chrome::IsRunningInAppMode())
+@@ -637,6 +647,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
+   }
  
 +#if 0
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
