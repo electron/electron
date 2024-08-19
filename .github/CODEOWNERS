@@ -8,10 +8,6 @@
 DEPS                                    @electron/wg-upgrades
 
 # Releases WG
-/.github/actions/                       @electron/wg-releases
-/.github/workflows/*-publish.yml        @electron/wg-releases
-/.github/workflows/build.yml            @electron/wg-releases
-/.github/workflows/pipeline-*.yml       @electron/wg-releases
 /docs/breaking-changes.md               @electron/wg-releases
 /npm/                                   @electron/wg-releases
 /script/release                         @electron/wg-releases
@@ -24,3 +20,9 @@ appveyor-woa.yml                        @electron/wg-releases
 /lib/browser/guest-view-manager.ts      @electron/wg-security
 /lib/browser/rpc-server.ts              @electron/wg-security
 /lib/renderer/security-warnings.ts      @electron/wg-security
+
+# Infra WG
+/.github/actions/                       @electron/wg-infra
+/.github/workflows/*-publish.yml        @electron/wg-infra
+/.github/workflows/build.yml            @electron/wg-infra
+/.github/workflows/pipeline-*.yml       @electron/wg-infra
