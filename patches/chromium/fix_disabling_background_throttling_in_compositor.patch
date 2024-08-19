@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 3e16b0ed445bb850d1c91290b8c9f0f1a5bdb11a..ed4ed3285f4dc60afaba6175ad0b2436d50a485c 100644
+index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232726b405f 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -342,7 +342,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -25,7 +25,7 @@ index 3e16b0ed445bb850d1c91290b8c9f0f1a5bdb11a..ed4ed3285f4dc60afaba6175ad0b2436
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -552,7 +553,9 @@ void Compositor::SetVisible(bool visible) {
+@@ -555,7 +556,9 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_)
@@ -36,7 +36,7 @@ index 3e16b0ed445bb850d1c91290b8c9f0f1a5bdb11a..ed4ed3285f4dc60afaba6175ad0b2436
  
    if (changed) {
      for (auto& observer : observer_list_) {
-@@ -1016,4 +1019,13 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1019,6 +1022,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -49,7 +49,9 @@ index 3e16b0ed445bb850d1c91290b8c9f0f1a5bdb11a..ed4ed3285f4dc60afaba6175ad0b2436
 +  }
 +}
 +
- }  // namespace ui
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+ void Compositor::SetSeamlessRefreshRates(
+     const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
 index e0231f6336f5930061e4bbb4323ff9184798a7f7..38989f2b3bafbaa7f083be86c2167fd536dd264d 100644
 --- a/ui/compositor/compositor.h
