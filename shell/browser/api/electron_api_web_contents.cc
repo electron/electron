@@ -2496,6 +2496,31 @@ content::NavigationEntry* WebContents::GetNavigationEntryAtIndex(
   return web_contents()->GetController().GetEntryAtIndex(index);
 }
 
+bool WebContents::RemoveNavigationEntryAtIndex(int index) {
+  if (!CanGoToIndex(index))
+    return false;
+
+  return web_contents()->GetController().RemoveEntryAtIndex(index);
+}
+
+std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
+  const int history_length = GetHistoryLength();
+  auto& controller = web_contents()->GetController();
+
+  // If the history is empty, it contains only one entry and that is
+  // "InitialEntry"
+  if (history_length == 1 && controller.GetEntryAtIndex(0)->IsInitialEntry())
+    return std::vector<content::NavigationEntry*>();
+
+  std::vector<content::NavigationEntry*> history;
+  history.reserve(history_length);
+
+  for (int i = 0; i < history_length; i++)
+    history.push_back(controller.GetEntryAtIndex(i));
+
+  return history;
+}
+
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4295,6 +4320,9 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_getNavigationEntryAtIndex",
                  &WebContents::GetNavigationEntryAtIndex)
       .SetMethod("_historyLength", &WebContents::GetHistoryLength)
+      .SetMethod("_removeNavigationEntryAtIndex",
+                 &WebContents::RemoveNavigationEntryAtIndex)
+      .SetMethod("_getHistory", &WebContents::GetHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
