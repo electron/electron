@@ -29,4 +29,3 @@ index 18e148022754a1f1de8fd8d866280ec3c9aa69c8..b6129282c6807702cf88e0a3e2ba233e
              stream_config_content_size_ =
                  gfx::Size(display.width, display.height);
              break;
-

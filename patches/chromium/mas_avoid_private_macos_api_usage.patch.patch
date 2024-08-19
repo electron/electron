@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index fdbbfc143e26b174ed2b4e87109f0cf03a3401a5..f35521d057569f310fb8d94da6c80d82ad3f926c 100644
+index 729153db3e9086d259cc087cf861e1f6e79652c3..133f08419189a5a604f5a8047c92e190fbb28341 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1050,6 +1050,7 @@ component("base") {
+@@ -1045,6 +1045,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -617,10 +617,10 @@ index 9f7b35dc9d0fd6190f689c3e7aa9e730a27e8e8c..fd3eeb9f52367e0c0fca33b82036290d
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 0738636a7462fd973c12d0e26e298c3b767f0c53..977e90c5dc3d8ff48ba9674c1c7d5eb6b6bab662 100644
+index 9f48c905f4abbb0f2e184299a915232cf6a0f6b0..f2d36e7b59533d7514a61a931341ef612f12b107 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -200,6 +200,7 @@ source_set("common") {
+@@ -198,6 +198,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -709,10 +709,10 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d74d18807b 100644
+index 440fad4a51fa662518a6fff8f5c4c3e0c4fded11..402708f5bf0613b0c175aa94c2f7bc2a38db573d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -503,6 +503,7 @@ static_library("test_support") {
+@@ -504,6 +504,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -720,7 +720,7 @@ index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d7
    ]
  
    public_deps = [
-@@ -1106,6 +1107,7 @@ static_library("browsertest_support") {
+@@ -1107,6 +1108,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -728,7 +728,7 @@ index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d7
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1720,6 +1722,7 @@ test("content_browsertests") {
+@@ -1721,6 +1723,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -736,7 +736,7 @@ index ee318367c26c3562b8b31596a71ff783f2aa74ff..9822b67b5036c9d1d8eb9678ce3354d7
  
    public_deps = [
      ":test_interfaces",
-@@ -2986,6 +2989,7 @@ test("content_unittests") {
+@@ -2985,6 +2988,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
