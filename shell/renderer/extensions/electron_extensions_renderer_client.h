@@ -31,8 +31,7 @@ class ElectronExtensionsRendererClient
   ElectronExtensionsRendererClient& operator=(
       const ElectronExtensionsRendererClient&) = delete;
 
-  // ExtensionsRendererClient implementation.
-  void RenderThreadStarted() override;
+  // extensions::ExtensionsRendererClient:
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
 

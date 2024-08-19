@@ -16,12 +16,6 @@ namespace electron {
 
 ElectronExtensionsRendererClient::ElectronExtensionsRendererClient() {}
 
-void ElectronExtensionsRendererClient::RenderThreadStarted() {
-  if (!dispatcher()) {
-    CreateDispatcher();
-  }
-}
-
 ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() = default;
 
 bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {

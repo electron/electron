@@ -242,8 +242,6 @@ void RendererClientBase::RenderThreadStarted() {
                                                      true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* thread = content::RenderThread::Get();
-
   extensions_client_.reset(CreateExtensionsClient());
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
@@ -253,10 +251,8 @@ void RendererClientBase::RenderThreadStarted() {
       std::make_unique<extensions::CoreExtensionsRendererAPIProvider>());
   extensions_renderer_client_->AddAPIProvider(
       std::make_unique<ElectronExtensionsRendererAPIProvider>());
-  extensions_renderer_client_->RenderThreadStarted();
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
-
-  thread->AddObserver(extensions_renderer_client_->dispatcher());
+  extensions_renderer_client_->RenderThreadStarted();
 
   WTF::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
