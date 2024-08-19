@@ -18,7 +18,6 @@
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
-#include "base/trace_event/trace_event.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
