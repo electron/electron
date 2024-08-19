@@ -100,6 +100,7 @@ runs:
             echo "There were changes to the patches when applying."
             echo "Check the CI artifacts for a patch you can apply to fix it."
             echo "======================================================================"
+            cat ../../patches/update-patches.patch
             exit 1
           fi
         fi
