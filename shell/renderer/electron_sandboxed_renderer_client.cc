@@ -206,9 +206,9 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     return;
 
   auto* isolate = context->GetIsolate();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, context->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope{
+      isolate, context->GetMicrotaskQueue(), false,
+      v8::MicrotasksScope::kDoNotRunMicrotasks};
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeEmitProcessEvent(context, "exit");
@@ -224,9 +224,9 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, context->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope{
+      isolate, context->GetMicrotaskQueue(), false,
+      v8::MicrotasksScope::kDoNotRunMicrotasks};
   v8::Context::Scope context_scope(context);
 
   InvokeEmitProcessEvent(context, event_name);
