@@ -24,9 +24,9 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index 14748f21df768dbb950029c0b37b251716b3df5d..a7982770e17d53cf227a0fd562524d8bee16b6f0 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4754,6 +4754,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
-   new_contents_impl->is_partitioned_popin_ =
-       params.features->is_partitioned_popin && new_contents_impl->is_popup_;
+@@ -4756,6 +4756,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+     new_contents_impl->partitioned_popin_opener_ = opener->GetWeakPtr();
+   }
  
 +  if (delegate_) {
 +    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
