@@ -16,7 +16,7 @@ Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#95711}
 
 diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
-index ffc8dbb4f99ff8d340efd705f2059e39e046a47f..e1ca02f7adc84ae9e82e9f9b668abde9eb37b94a 100644
+index bee21dfbaaaf45b831b7ee4e70ecf13369c116b7..52e9cfe7c562479ef5310840978cb5d973a09117 100644
 --- a/src/wasm/baseline/liftoff-assembler.cc
 +++ b/src/wasm/baseline/liftoff-assembler.cc
 @@ -424,29 +424,10 @@ void LiftoffAssembler::DropExceptionValueAtOffset(int offset) {
@@ -73,7 +73,7 @@ index ffc8dbb4f99ff8d340efd705f2059e39e046a47f..e1ca02f7adc84ae9e82e9f9b668abde9
      Spill(slot.offset(), slot.reg(), slot.kind());
      slot.MakeStack();
 diff --git a/src/wasm/baseline/liftoff-assembler.h b/src/wasm/baseline/liftoff-assembler.h
-index 2fb62ff39c65ad2a621b51628716265b11cb4bd0..274c78c2ed4b9d8968df19915d33caf96c5017e0 100644
+index 54da02b77918fad52da35d272d16bd699a417133..9b109846b501164250b3e2157bf9afaa93f403ac 100644
 --- a/src/wasm/baseline/liftoff-assembler.h
 +++ b/src/wasm/baseline/liftoff-assembler.h
 @@ -477,9 +477,9 @@ class LiftoffAssembler : public MacroAssembler {
@@ -90,10 +90,10 @@ index 2fb62ff39c65ad2a621b51628716265b11cb4bd0..274c78c2ed4b9d8968df19915d33caf9
    V8_INLINE static int NextSpillOffset(ValueKind kind, int top_spill_offset);
    V8_INLINE int NextSpillOffset(ValueKind kind);
 diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
-index e4a894d2b364c4546d92819ab1ce8fb11eabfaff..71c3ad9aa1742b93bb4bf5fc707077dff7f0e92e 100644
+index 87ddcef9b08616ceec56128cf9f4ec248f069490..250426abf8de4649a71779cdf6d2a572fc595e38 100644
 --- a/src/wasm/baseline/liftoff-compiler.cc
 +++ b/src/wasm/baseline/liftoff-compiler.cc
-@@ -1395,7 +1395,7 @@ class LiftoffCompiler {
+@@ -1392,7 +1392,7 @@ class LiftoffCompiler {
      // pre-analysis of the function.
      __ SpillLocals();
  
