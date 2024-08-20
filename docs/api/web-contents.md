@@ -889,7 +889,7 @@ win.loadURL('https://github.com')
 When using shared texture (set `webPreferences.offscreen.useSharedTexture` to `true`) feature, you can pass the texture handle to external rendering pipeline without the overhead of
 copying data between CPU and GPU memory, with Chromium's hardware acceleration support. This feature is helpful for high-performance rendering scenarios.
 
-Only a limited number of textures can exist at the same time, so it's important that you call `texure.release()` as soon as you're done with the texture.
+Only a limited number of textures can exist at the same time, so it's important that you call `texture.release()` as soon as you're done with the texture.
 By managing the texture lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes through IPC.
 
 ```js
