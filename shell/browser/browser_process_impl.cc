@@ -187,11 +187,6 @@ BrowserProcessPlatformPart* BrowserProcessImpl::platform_part() {
   return nullptr;
 }
 
-extensions::EventRouterForwarder*
-BrowserProcessImpl::extension_event_router_forwarder() {
-  return nullptr;
-}
-
 NotificationUIManager* BrowserProcessImpl::notification_ui_manager() {
   return nullptr;
 }
