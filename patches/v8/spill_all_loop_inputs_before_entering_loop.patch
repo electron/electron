@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Tue, 20 Aug 2024 12:25:40 +0200
+Subject: Spill all loop inputs before entering loop
+
+This avoids having to load the value back into a register if it was
+spilled inside of the loop.
+
+R=jkummerow@chromium.org
+
+Fixed: chromium:360700873
+Change-Id: I24f5deacebc893293e8a3c007e9f070c7fa0ccd2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5797073
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#95711}
+
+diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
+index bee21dfbaaaf45b831b7ee4e70ecf13369c116b7..52e9cfe7c562479ef5310840978cb5d973a09117 100644
+--- a/src/wasm/baseline/liftoff-assembler.cc
++++ b/src/wasm/baseline/liftoff-assembler.cc
+@@ -424,29 +424,10 @@ void LiftoffAssembler::DropExceptionValueAtOffset(int offset) {
+   cache_state_.stack_state.pop_back();
+ }
+ 
+-void LiftoffAssembler::PrepareLoopArgs(int num) {
+-  for (int i = 0; i < num; ++i) {
+-    VarState& slot = cache_state_.stack_state.end()[-1 - i];
+-    if (slot.is_stack()) continue;
+-    RegClass rc = reg_class_for(slot.kind());
+-    if (slot.is_reg()) {
+-      if (cache_state_.get_use_count(slot.reg()) > 1) {
+-        // If the register is used more than once, we cannot use it for the
+-        // merge. Move it to an unused register instead.
+-        LiftoffRegList pinned;
+-        pinned.set(slot.reg());
+-        LiftoffRegister dst_reg = GetUnusedRegister(rc, pinned);
+-        Move(dst_reg, slot.reg(), slot.kind());
+-        cache_state_.dec_used(slot.reg());
+-        cache_state_.inc_used(dst_reg);
+-        slot.MakeRegister(dst_reg);
+-      }
+-      continue;
+-    }
+-    LiftoffRegister reg = GetUnusedRegister(rc, {});
+-    LoadConstant(reg, slot.constant());
+-    slot.MakeRegister(reg);
+-    cache_state_.inc_used(reg);
++void LiftoffAssembler::SpillLoopArgs(int num) {
++  for (VarState& slot :
++       base::VectorOf(cache_state_.stack_state.end() - num, num)) {
++    Spill(&slot);
+   }
+ }
+ 
+@@ -664,14 +645,14 @@ void LiftoffAssembler::Spill(VarState* slot) {
+ }
+ 
+ void LiftoffAssembler::SpillLocals() {
+-  for (uint32_t i = 0; i < num_locals_; ++i) {
+-    Spill(&cache_state_.stack_state[i]);
++  for (VarState& local_slot :
++       base::VectorOf(cache_state_.stack_state.data(), num_locals_)) {
++    Spill(&local_slot);
+   }
+ }
+ 
+ void LiftoffAssembler::SpillAllRegisters() {
+-  for (uint32_t i = 0, e = cache_state_.stack_height(); i < e; ++i) {
+-    auto& slot = cache_state_.stack_state[i];
++  for (VarState& slot : cache_state_.stack_state) {
+     if (!slot.is_reg()) continue;
+     Spill(slot.offset(), slot.reg(), slot.kind());
+     slot.MakeStack();
+diff --git a/src/wasm/baseline/liftoff-assembler.h b/src/wasm/baseline/liftoff-assembler.h
+index 54da02b77918fad52da35d272d16bd699a417133..9b109846b501164250b3e2157bf9afaa93f403ac 100644
+--- a/src/wasm/baseline/liftoff-assembler.h
++++ b/src/wasm/baseline/liftoff-assembler.h
+@@ -477,9 +477,9 @@ class LiftoffAssembler : public MacroAssembler {
+   // the bottom of the stack.
+   void DropExceptionValueAtOffset(int offset);
+ 
+-  // Ensure that the loop inputs are either in a register or spilled to the
+-  // stack, so that we can merge different values on the back-edge.
+-  void PrepareLoopArgs(int num);
++  // Spill all loop inputs to the stack to free registers and to ensure that we
++  // can merge different values on the back-edge.
++  void SpillLoopArgs(int num);
+ 
+   V8_INLINE static int NextSpillOffset(ValueKind kind, int top_spill_offset);
+   V8_INLINE int NextSpillOffset(ValueKind kind);
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index 87ddcef9b08616ceec56128cf9f4ec248f069490..250426abf8de4649a71779cdf6d2a572fc595e38 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -1392,7 +1392,7 @@ class LiftoffCompiler {
+     // pre-analysis of the function.
+     __ SpillLocals();
+ 
+-    __ PrepareLoopArgs(loop->start_merge.arity);
++    __ SpillLoopArgs(loop->start_merge.arity);
+ 
+     // Loop labels bind at the beginning of the block.
+     __ bind(loop->label.get());
