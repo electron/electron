@@ -210,6 +210,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, permissions, std::move(response_callback)));
 
+  details.Set("requestingOrigin", request_description.requesting_origin.spec());
   details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
   details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
   base::Value dict_value(std::move(details));
