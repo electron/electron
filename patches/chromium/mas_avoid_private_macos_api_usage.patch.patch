@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 729153db3e9086d259cc087cf861e1f6e79652c3..133f08419189a5a604f5a8047c92e190fbb28341 100644
+index 2561c2726d27ea2d2175dc52d0906481a231456a..1520bdd11f9770b7937b705f78a0191d934d0c6e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1045,6 +1045,7 @@ component("base") {
+@@ -1046,6 +1046,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 440fad4a51fa662518a6fff8f5c4c3e0c4fded11..402708f5bf0613b0c175aa94c2f7bc2a38db573d 100644
+index 5a094bb42e828ca98b92f07d1a2451ace9766c5e..375472c4d8924397d22fb38662558c81fe8fe389 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -736,7 +736,7 @@ index 440fad4a51fa662518a6fff8f5c4c3e0c4fded11..402708f5bf0613b0c175aa94c2f7bc2a
  
    public_deps = [
      ":test_interfaces",
-@@ -2985,6 +2988,7 @@ test("content_unittests") {
+@@ -2991,6 +2994,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1592,7 +1592,7 @@ index dd1a98234966ba069bb6c7e6ab95f64cae0b0f1f..fa17d4b1974b6844ee11343f652d6896
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index fcb49d6e5b2f3a3926bd939f30e0513e984b3b76..6245fa6660d96caae28418c7d9fe700012c430d2 100644
+index c8b1335d46fc37a9d699f1ef57bdd822ae5d29dd..93a72a8c52f4789f456889d018b3cf5497714760 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -721,6 +721,7 @@ component("views") {
@@ -1603,7 +1603,7 @@ index fcb49d6e5b2f3a3926bd939f30e0513e984b3b76..6245fa6660d96caae28418c7d9fe7000
    }
  
    if (is_win) {
-@@ -1151,6 +1152,8 @@ source_set("test_support") {
+@@ -1153,6 +1154,8 @@ source_set("test_support") {
      "//ui/base/mojom:mojom",
    ]
  
