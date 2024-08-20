@@ -1543,6 +1543,7 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+namespace {
 void BindMimeHandlerService(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<extensions::mime_handler::MimeHandlerService>
@@ -1571,6 +1572,7 @@ void BindBeforeUnloadControl(
     return;
   guest_view->FuseBeforeUnloadControl(std::move(receiver));
 }
+}  // namespace
 #endif
 
 void ElectronBrowserClient::ExposeInterfacesToRenderer(
@@ -1710,6 +1712,8 @@ content::UsbDelegate* ElectronBrowserClient::GetUsbDelegate() {
   return usb_delegate_.get();
 }
 
+namespace {
+
 void BindBadgeServiceForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& info,
     mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
@@ -1723,6 +1727,8 @@ void BindBadgeServiceForServiceWorker(
   badging::BadgeManager::BindServiceWorkerReceiver(
       render_process_host, info.scope, std::move(receiver));
 }
+
+}  // namespace
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
     content::BrowserContext* browser_context,
