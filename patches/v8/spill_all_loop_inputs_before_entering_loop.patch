@@ -16,10 +16,10 @@ Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#95711}
 
 diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
-index ffc8dbb4f99ff8d340efd705f2059e39e046a47f..e1ca02f7adc84ae9e82e9f9b668abde9eb37b94a 100644
+index e1ca7bebdc8408e21715dd0fc9861a474b989bcc..adaa8f9586b76bdb6902dce7ecc64b32dc3f5253 100644
 --- a/src/wasm/baseline/liftoff-assembler.cc
 +++ b/src/wasm/baseline/liftoff-assembler.cc
-@@ -424,29 +424,10 @@ void LiftoffAssembler::DropExceptionValueAtOffset(int offset) {
+@@ -441,29 +441,10 @@ void LiftoffAssembler::DropExceptionValueAtOffset(int offset) {
    cache_state_.stack_state.pop_back();
  }
  
@@ -53,7 +53,7 @@ index ffc8dbb4f99ff8d340efd705f2059e39e046a47f..e1ca02f7adc84ae9e82e9f9b668abde9
    }
  }
  
-@@ -664,14 +645,14 @@ void LiftoffAssembler::Spill(VarState* slot) {
+@@ -684,14 +665,14 @@ void LiftoffAssembler::Spill(VarState* slot) {
  }
  
  void LiftoffAssembler::SpillLocals() {
@@ -73,10 +73,10 @@ index ffc8dbb4f99ff8d340efd705f2059e39e046a47f..e1ca02f7adc84ae9e82e9f9b668abde9
      Spill(slot.offset(), slot.reg(), slot.kind());
      slot.MakeStack();
 diff --git a/src/wasm/baseline/liftoff-assembler.h b/src/wasm/baseline/liftoff-assembler.h
-index 2fb62ff39c65ad2a621b51628716265b11cb4bd0..274c78c2ed4b9d8968df19915d33caf96c5017e0 100644
+index 7cb2f5003735ef826559c247938275f996f61439..5d4ebd7fa30898ec857a92a2f31f18e1ea76905c 100644
 --- a/src/wasm/baseline/liftoff-assembler.h
 +++ b/src/wasm/baseline/liftoff-assembler.h
-@@ -477,9 +477,9 @@ class LiftoffAssembler : public MacroAssembler {
+@@ -542,9 +542,9 @@ class LiftoffAssembler : public MacroAssembler {
    // the bottom of the stack.
    void DropExceptionValueAtOffset(int offset);
  
@@ -90,10 +90,10 @@ index 2fb62ff39c65ad2a621b51628716265b11cb4bd0..274c78c2ed4b9d8968df19915d33caf9
    V8_INLINE static int NextSpillOffset(ValueKind kind, int top_spill_offset);
    V8_INLINE int NextSpillOffset(ValueKind kind);
 diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
-index e4a894d2b364c4546d92819ab1ce8fb11eabfaff..71c3ad9aa1742b93bb4bf5fc707077dff7f0e92e 100644
+index c185d7273629fda3ddf5d756395f2a367cfa5864..c7b9ca92ecd7369ca3a758d1f69a9516063a44aa 100644
 --- a/src/wasm/baseline/liftoff-compiler.cc
 +++ b/src/wasm/baseline/liftoff-compiler.cc
-@@ -1395,7 +1395,7 @@ class LiftoffCompiler {
+@@ -1284,7 +1284,7 @@ class LiftoffCompiler {
      // pre-analysis of the function.
      __ SpillLocals();
  
