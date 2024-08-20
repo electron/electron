@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 525da84ede5f50eb3cc57fd4949f8efb16939ac6..fce0af2ae4f90250376fca109df309dc28f3b61d 100644
+index 9c63417070d5a7a2ce734703990ccff8908abe3c..07a730f626ca1e8b9f360cd706041de98adbc213 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -8870,6 +8870,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -66,7 +66,7 @@ index 37a00f8d520e6043faa9b202e2f7a3d7a0794664..08b56afaa591137aafc4aad38da84361
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 55c7bc676faa6b77200fb4e7507e1d87786e1010..927ab1359fb5de90225bd9a4d1f75adf5bbf9636 100644
+index 79c37e0aeb8aa1cca6db91ab5ac572cde61e65c5..58253590cfacda1684ab968c9dda7a4f39bc774d 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -751,6 +751,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 55c7bc676faa6b77200fb4e7507e1d87786e1010..927ab1359fb5de90225bd9a4d1f75adf
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b9604add606194aa424ae4f50188e0286c547bd5..1c2a96cc187013086132468b3e14928828fd7377 100644
+index ddca696e47412f0a054fd8c305bcca19a225e3e9..e3b8c5ba47193b57124ce743179a1b2009eb3ce7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -190,6 +190,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index b9604add606194aa424ae4f50188e0286c547bd5..1c2a96cc187013086132468b3e149288
  }  // namespace network
  
  namespace sandbox {
-@@ -1287,6 +1288,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1288,6 +1289,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -100,7 +100,7 @@ index b9604add606194aa424ae4f50188e0286c547bd5..1c2a96cc187013086132468b3e149288
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 8b8ad58fede66aa4423fe1b17637bb26f54cd862..4998328a01525a12fa54ca5b9bf85f518c64de83 100644
+index 73e1b40f246e295af0e07ad6b5cb5d7988bb6022..c8074b62c6c323a2c431704bbcc8d03e78c7a6bc 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -30,6 +30,17 @@ namespace content {
@@ -122,7 +122,7 @@ index 8b8ad58fede66aa4423fe1b17637bb26f54cd862..4998328a01525a12fa54ca5b9bf85f51
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 00c51ef739d8b369f67112a341fa8b8947d8aa90..38ab9071bdab02e855f59c93941da1153cd06d88 100644
+index 553a8726a501171a44cbca4d7d8a9e026347f1c8..c4ba5fb97c43609fe570ce3401bb9f07d7a13b1b 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@

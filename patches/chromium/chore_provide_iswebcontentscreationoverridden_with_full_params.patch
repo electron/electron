@@ -80,10 +80,10 @@ index 28cd699814f32a7a569d63936b9544567a66d9c4..fd461fa448d983481dc4c0c7d03b1945
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 2f91614b99d278680bb5dadcf3c7723c5f3209cc..93b24c0b1beddcacdc02ebbbac6dde907f39347a 100644
+index dc07c5029aa49bffa650af0b61ea827c04c0f7a7..3665ed6b475e03ceb52141fbc18c882a50ddeb6c 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2123,12 +2123,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2127,12 +2127,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 2f91614b99d278680bb5dadcf3c7723c5f3209cc..93b24c0b1beddcacdc02ebbbac6dde90
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index c944587773194d22bf7196d324b5ae160ffdb6a7..eeebb773987bdb6b92be572eeb51555d39c990f0 100644
+index 9081a0ed32b64202ead5495f188a97cedf1a6d35..d5735087d26aae5a7a66c12d188a305d89a64a39 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -994,8 +994,7 @@ class Browser : public TabStripModelObserver,
+@@ -954,8 +954,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -155,7 +155,7 @@ index 04bebdaef96035bddd4f21dc7841316132755de2..51804ef750bca964c17509a9e0c6c968
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 9fdb1e276a7712c5cd99829b4e0a6868e6608420..5b42be1a1c61b3ce2557e8e1854642c701381d38 100644
+index 813fc9dfa82fcee8b97b59e82a2a47f5cccd9c17..67bce4e5ae01df607fb11639704ff71dd244787a 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -181,14 +181,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -176,7 +176,7 @@ index 9fdb1e276a7712c5cd99829b4e0a6868e6608420..5b42be1a1c61b3ce2557e8e1854642c7
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 215d105b5f4b19c6f0dc4e15427af07bcf8f009f..f337a2b1774b08ce608dcc9007cca0e6025501ee 100644
+index 927051df7e57ff3c08fa5489f21c248f9eaf87b7..e728f642c8b73c5d740fae6197c1b83c7da95e05 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -81,8 +81,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -232,7 +232,7 @@ index b5887cb0a8312efbaf31c9552a59af65f6f82e07..15d6c1bee20af41785f226b4495cec7a
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 4998328a01525a12fa54ca5b9bf85f518c64de83..7119de8f574e81d90d17a60baec24a6c3137300a 100644
+index c8074b62c6c323a2c431704bbcc8d03e78c7a6bc..d20359e712de66f1a979e7b23691d472c2526141 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -140,8 +140,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index 4998328a01525a12fa54ca5b9bf85f518c64de83..7119de8f574e81d90d17a60baec24a6c
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 38ab9071bdab02e855f59c93941da1153cd06d88..5394297482ab10a9463cb9cc9791a1e71899a459 100644
+index c4ba5fb97c43609fe570ce3401bb9f07d7a13b1b..939602b13adb92109dcb0de789b0618d334c91b4 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -338,8 +338,7 @@ class CONTENT_EXPORT WebContentsDelegate {
