@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2561c2726d27ea2d2175dc52d0906481a231456a..1520bdd11f9770b7937b705f78a0191d934d0c6e 100644
+index d3ba541d8d31bdb7bb2d3453ed5c85a7aab0e433..fbddb16dc4228e5baee3c94f88743c64113e14cb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1046,6 +1046,7 @@ component("base") {
@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a0f17bb4ff8eede75f46bb365aca5cd59a90ebad..023183b173146264a1c0a602a3f8e64c94f5690f 100644
+index 81447acd8daf72136b9bb5688c5d89f3277fe97d..6cc8915935323c1fee2638753ac3c353cbe1be69 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -72,6 +72,7 @@ source_set("browser") {
@@ -552,10 +552,10 @@ index 2285564db47ef15eb9a83affd1e481b5671c3940..bc18a276d3029c3b858cfcb378ae2e42
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9f7b35dc9d0fd6190f689c3e7aa9e730a27e8e8c..fd3eeb9f52367e0c0fca33b82036290d02d4ca0d 100644
+index dc71d54f9be1600e039b0d7361c7a31ee4e20cdb..6a595dfebeeb53706b60429bc904095a2ab4cba9 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -272,8 +272,10 @@
+@@ -273,8 +273,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -566,7 +566,7 @@ index 9f7b35dc9d0fd6190f689c3e7aa9e730a27e8e8c..fd3eeb9f52367e0c0fca33b82036290d
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1636,8 +1638,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1637,8 +1639,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -577,7 +577,7 @@ index 9f7b35dc9d0fd6190f689c3e7aa9e730a27e8e8c..fd3eeb9f52367e0c0fca33b82036290d
    return [GetInProcessNSView() window];
  }
  
-@@ -1686,9 +1690,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1687,9 +1691,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -589,7 +589,7 @@ index 9f7b35dc9d0fd6190f689c3e7aa9e730a27e8e8c..fd3eeb9f52367e0c0fca33b82036290d
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2212,20 +2218,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2213,20 +2219,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -709,7 +709,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5a094bb42e828ca98b92f07d1a2451ace9766c5e..375472c4d8924397d22fb38662558c81fe8fe389 100644
+index 73c16e94f6e8e037f82cfb403e1d60f89be523ed..ae8a3ecc109027b9ab86f970e612360056eacd55 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -736,7 +736,7 @@ index 5a094bb42e828ca98b92f07d1a2451ace9766c5e..375472c4d8924397d22fb38662558c81
  
    public_deps = [
      ":test_interfaces",
-@@ -2991,6 +2994,7 @@ test("content_unittests") {
+@@ -2990,6 +2993,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1413,7 +1413,7 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..7fa66598f2a541600602af47b3e1ed7b
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 1388140fcb81fcd56404aba6dea3ec32911b963c..3a3302bc8039eebc1ebc8094c14e242ed653a6f2 100644
+index 64aca0117cd273bfcec0549e7b5b8ac77f2c91ce..e44c1bd4dd100b6b9b390f1fb07dc8e684182561 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -363,6 +363,7 @@ component("base") {
@@ -1592,10 +1592,10 @@ index dd1a98234966ba069bb6c7e6ab95f64cae0b0f1f..fa17d4b1974b6844ee11343f652d6896
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index c8b1335d46fc37a9d699f1ef57bdd822ae5d29dd..93a72a8c52f4789f456889d018b3cf5497714760 100644
+index b2b1a783ac0c243ef5cf573b2e73af82b432fbf9..1b43204b8ce15b9cc4cbf6c5a3d6853ab5da0858 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -721,6 +721,7 @@ component("views") {
+@@ -722,6 +722,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1603,7 +1603,7 @@ index c8b1335d46fc37a9d699f1ef57bdd822ae5d29dd..93a72a8c52f4789f456889d018b3cf54
    }
  
    if (is_win) {
-@@ -1153,6 +1154,8 @@ source_set("test_support") {
+@@ -1154,6 +1155,8 @@ source_set("test_support") {
      "//ui/base/mojom:mojom",
    ]
  
@@ -1613,10 +1613,10 @@ index c8b1335d46fc37a9d699f1ef57bdd822ae5d29dd..93a72a8c52f4789f456889d018b3cf54
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 4d2776c4a245dc755d4619c8680952cb8290e404..1f5a395de74f5d2d1a18c5f8ca7eeabfc671ede2 100644
+index 9879c3456c12e2b0f0d550df1062da4a50a8e89d..83560d83ee240bb9197476d00578197fd299c12f 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -31,7 +31,9 @@
+@@ -32,7 +32,9 @@
  #include "ui/views/window/dialog_observer.h"
  
  @class NativeWidgetMacNSWindow;
@@ -1640,7 +1640,7 @@ index 4d2776c4a245dc755d4619c8680952cb8290e404..1f5a395de74f5d2d1a18c5f8ca7eeabf
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index c45bb34a05ad4e068f0f9f8bcab1da3dc84306e8..1dac5aef9961651cc1786eca028f2590ad34cfff 100644
+index 8b05cee4302216bf804320abc708d69379ab4a64..ad3b5fe6f39bb21d3b33a8828e7f4de7b04226fa 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -349,7 +349,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -1679,7 +1679,7 @@ index c45bb34a05ad4e068f0f9f8bcab1da3dc84306e8..1dac5aef9961651cc1786eca028f2590
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1498,17 +1508,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1473,17 +1483,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1700,7 +1700,7 @@ index c45bb34a05ad4e068f0f9f8bcab1da3dc84306e8..1dac5aef9961651cc1786eca028f2590
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1521,6 +1534,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1496,6 +1509,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
