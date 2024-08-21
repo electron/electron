@@ -869,6 +869,8 @@ void ElectronBrowserClient::RenderProcessExited(
   }
 }
 
+namespace {
+
 void OnOpenExternal(const GURL& escaped_url, bool allowed) {
   if (allowed) {
     platform_util::OpenExternal(
@@ -904,6 +906,8 @@ void HandleExternalProtocolInUI(
   permission_helper->RequestOpenExternalPermission(rfh, std::move(callback),
                                                    has_user_gesture, url);
 }
+
+}  // namespace
 
 bool ElectronBrowserClient::HandleExternalProtocol(
     const GURL& url,
