@@ -526,7 +526,7 @@ index cde2af9e67566aa010cf94b003f4c36ccd887879..88352a659a7aaac708c4e3b23ac888dd
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index a4f19d10fdcb6cf09272bb7ef4e0290fa2d8239b..19dfbbfea9ace18e53b1de64066ffb161fa845cc 100644
+index 2285564db47ef15eb9a83affd1e481b5671c3940..bc18a276d3029c3b858cfcb378ae2e4255d4d83e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -53,7 +53,9 @@ class CursorManager;
@@ -537,9 +537,9 @@ index a4f19d10fdcb6cf09272bb7ef4e0290fa2d8239b..19dfbbfea9ace18e53b1de64066ffb16
  @class NSAccessibilityRemoteUIElement;
 +#endif
  @class RenderWidgetHostViewCocoa;
- @class CursorAccessibilityScaleFactorObserver;
  
-@@ -685,9 +687,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+ namespace content {
+@@ -684,9 +686,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
