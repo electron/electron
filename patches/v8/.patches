@@ -8,3 +8,4 @@ cherry-pick-70d2fe6b7c47.patch
 cherry-pick-901377bb2f3b.patch
 cherry-pick-bb28367eed73.patch
 cherry-pick-bc545b15a0ee.patch
+spill_all_loop_inputs_before_entering_loop.patch
