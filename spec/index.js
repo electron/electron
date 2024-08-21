@@ -46,7 +46,9 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
   { scheme: 'no-fetch', privileges: { corsEnabled: true } },
   { scheme: 'stream', privileges: { standard: true, stream: true } },
-  { scheme: 'foo', privileges: { standard: true } },
+  { scheme: 'foo', privileges: { standard: true } }
+]);
+protocol.registerSchemesAsPrivileged([
   { scheme: 'bar', privileges: { standard: true } }
 ]);
 
