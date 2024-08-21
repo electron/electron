@@ -468,6 +468,8 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   return RespondNow(NoArguments());
 }
 
+namespace {
+
 bool IsKillURL(const GURL& url) {
 #if DCHECK_IS_ON()
   // Caller should ensure that |url| is already "fixed up" by
@@ -586,6 +588,8 @@ base::expected<GURL, std::string> PrepareURLForNavigation(
 
   return url;
 }
+
+}  // namespace
 
 TabsUpdateFunction::TabsUpdateFunction() : web_contents_(nullptr) {}
 
