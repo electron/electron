@@ -216,7 +216,7 @@ index abb5727537fa14576d49d8afbc78fcffc2b74919..fa3dd9fabcebdc8ea87f398e79847db7
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 740edf24927389194ba8fa0d45c2a3c6b1990170..f4c30ed1f8ea87ca7da5ad7e1eaf53998042841c 100644
+index cff5338a2137a851a2c081e9a444d5cb54eedc96..aa4122b66f3805f49b97427def7eca2543837037 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1098,14 +1098,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
@@ -236,7 +236,7 @@ index 740edf24927389194ba8fa0d45c2a3c6b1990170..f4c30ed1f8ea87ca7da5ad7e1eaf5399
 +      want_result_option, promise_behavior);
  }
  
- v8::MaybeLocal<v8::Value> WebLocalFrameImpl::CallFunctionEvenIfScriptDisabled(
+ bool WebLocalFrameImpl::IsInspectorConnected() {
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 index 08f39d6d29d5e19a6007b8c6d8aa3fec0b85cf32..0f6e41535a73d7051cf52517b225c5bfbac1f1cb 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
