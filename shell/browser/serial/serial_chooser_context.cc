@@ -36,6 +36,8 @@ constexpr char kUsbDriverKey[] = "usb_driver";
 #endif  // BUILDFLAG(IS_MAC)
 #endif  // BUILDFLAG(IS_WIN)
 
+namespace {
+
 std::string EncodeToken(const base::UnguessableToken& token) {
   const uint64_t data[2] = {token.GetHighForSerialization(),
                             token.GetLowForSerialization()};
@@ -79,6 +81,8 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   }
   return base::Value(std::move(value));
 }
+
+}  // namespace
 
 SerialChooserContext::SerialChooserContext(ElectronBrowserContext* context)
     : browser_context_(context) {}
