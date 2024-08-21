@@ -5629,6 +5629,37 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform !== 'darwin')('fullscreen state', () => {
+      it('correctly remembers state prior to HTML fullscreen transition', async () => {
+        const w = new BrowserWindow();
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        const leaveFullScreen = once(w, 'leave-full-screen');
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+      });
+    });
+
     ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
       it('with functions', () => {
         it('can be set with fullscreenable constructor option', () => {
