@@ -1,4 +1,3 @@
 chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 fix_disable_scope_reuse_associated_dchecks.patch
-spill_all_loop_inputs_before_entering_loop.patch
