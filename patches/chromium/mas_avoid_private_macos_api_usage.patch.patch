@@ -468,7 +468,7 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 81447acd8daf72136b9bb5688c5d89f3277fe97d..6cc8915935323c1fee2638753ac3c353cbe1be69 100644
+index 29dc84944dbf42dfdfdc43b8a49913cff374d919..3c3dfc789890eda3007c0723e6730e5fb88c4646 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -72,6 +72,7 @@ source_set("browser") {
@@ -629,10 +629,10 @@ index 9f48c905f4abbb0f2e184299a915232cf6a0f6b0..f2d36e7b59533d7514a61a931341ef61
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 6b6d292cf28c25c5ee903b2833eaf797bcbd8706..cedeb95341224e404372f7e54b8c8b026c6fb926 100644
+index 2ac766d0149f0405b3fcad0ec1b6e0685ed3658c..5554eb0e084becf8100579f1d15e4796345676ba 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -232,6 +232,7 @@ target(link_target_type, "renderer") {
+@@ -230,6 +230,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
