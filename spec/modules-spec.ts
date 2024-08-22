@@ -68,7 +68,7 @@ describe('modules support', () => {
 
     describe('q', () => {
       describe('Q.when', () => {
-        it('emits the fullfil callback', (done) => {
+        it('emits the fulfil callback', (done) => {
           const Q = require('q');
           Q(true).then((val: boolean) => {
             expect(val).to.be.true();
