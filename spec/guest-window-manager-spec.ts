@@ -303,7 +303,7 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(childWindow.title).to.equal(browserWindowTitle);
     });
 
-    it('spawns browser window with overriden options', async () => {
+    it('spawns browser window with overridden options', async () => {
       const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
         browserWindow.webContents.setWindowOpenHandler(() => {
           return {

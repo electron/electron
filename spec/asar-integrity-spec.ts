@@ -88,7 +88,7 @@ describe('fuses', function () {
 
   afterEach(async () => {
     for (let attempt = 0; attempt <= 3; attempt++) {
-      // Somtimes windows holds on to a DLL during the crash for a little bit, so we try a few times to delete it
+      // Sometimes windows holds on to a DLL during the crash for a little bit, so we try a few times to delete it
       if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
       try {
         await originalFs.promises.rm(tmpDir, { recursive: true });
@@ -133,7 +133,7 @@ describe('fuses', function () {
 
       it('fatals if the integrity header does not match', async () => {
         const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header stil starts with the same thing, if build system
+        // Ensure that the header still starts with the same thing, if build system
         // things result in the header changing we should update this test
         expect(asar.toString()).to.contain('{"files":{"default_app.js"');
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"'));
@@ -145,7 +145,7 @@ describe('fuses', function () {
 
       it('fatals if a loaded main process JS file does not match', async () => {
         const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header stil starts with the same thing, if build system
+        // Ensure that the header still starts with the same thing, if build system
         // things result in the header changing we should update this test
         expect(asar.toString()).to.contain('Invalid Usage');
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'Invalid Usage', 'VVValid Usage'));
@@ -158,7 +158,7 @@ describe('fuses', function () {
 
       it('fatals if a renderer content file does not match', async () => {
         const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header stil starts with the same thing, if build system
+        // Ensure that the header still starts with the same thing, if build system
         // things result in the header changing we should update this test
         expect(asar.toString()).to.contain('require-trusted-types-for');
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not'));
@@ -176,7 +176,7 @@ describe('fuses', function () {
 
       it('does nothing if the integrity header does not match', async () => {
         const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header stil starts with the same thing, if build system
+        // Ensure that the header still starts with the same thing, if build system
         // things result in the header changing we should update this test
         expect(asar.toString()).to.contain('{"files":{"default_app.js"');
         await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"'));
