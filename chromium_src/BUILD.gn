@@ -114,6 +114,8 @@ static_library("chrome") {
     "//chrome/browser/ui/view_ids.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
+    "//chrome/browser/ui/views/overlay/back_to_tab_button.cc",
+    "//chrome/browser/ui/views/overlay/back_to_tab_button.h",
     "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.h",
