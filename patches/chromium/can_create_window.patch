@@ -210,15 +210,15 @@ index c576ace24e81cc877aa2595d40e0a13a7af9f6a2..210fb97d44c19c29af424cc7b9cb3169
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index d84f42c122edee47a6804e55b988a82fa2e7abf7..84ae49e85f873ee1d68197268c43090c8691c819 100644
+index 96d7ba915e3d4248ad801237b0b43ff0b55be1a2..33bfb8bcb22063efab8a349086c4e7682291a341 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2246,6 +2246,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2245,6 +2245,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+ 
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
- 
++  
 +  window_features.raw_features = features;
-+
-   // In fenced frames, we should always use `noopener`.
-   if (GetFrame()->IsInFencedFrameTree()) {
-     window_features.noopener = true;
+ 
+   if (window_features.is_partitioned_popin &&
+       !IsFeatureEnabled(
