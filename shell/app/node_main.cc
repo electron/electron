@@ -104,10 +104,6 @@ void SetCrashKeyStub(const std::string& key, const std::string& value) {}
 void ClearCrashKeyStub(const std::string& key) {}
 #endif
 
-}  // namespace
-
-namespace electron {
-
 v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   std::map<std::string, std::string> keys;
 #if !IS_MAS_BUILD()
@@ -115,6 +111,10 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 #endif
   return gin::ConvertToV8(isolate, keys);
 }
+
+}  // namespace
+
+namespace electron {
 
 int NodeMain(int argc, char* argv[]) {
   bool initialized = base::CommandLine::Init(argc, argv);
