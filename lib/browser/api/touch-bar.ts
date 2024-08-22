@@ -284,7 +284,7 @@ const escapeItemSymbol = Symbol('escape item');
 
 class TouchBar extends EventEmitter implements Electron.TouchBar {
   // Bind a touch bar to a window
-  static _setOnWindow (touchBar: TouchBar | Electron.TouchBarConstructorOptions['items'], window: Electron.BrowserWindow) {
+  static _setOnWindow (touchBar: TouchBar | Electron.TouchBarConstructorOptions['items'], window: Electron.BaseWindow) {
     if (window._touchBar != null) {
       window._touchBar._removeFromWindow(window);
     }
@@ -383,7 +383,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     return this[escapeItemSymbol];
   }
 
-  _addToWindow (window: Electron.BrowserWindow) {
+  _addToWindow (window: Electron.BaseWindow) {
     const { id } = window;
 
     // Already added to window
@@ -439,7 +439,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     escapeItemListener(this.escapeItem);
   }
 
-  _removeFromWindow (window: Electron.BrowserWindow) {
+  _removeFromWindow (window: Electron.BaseWindow) {
     const removeListeners = this.windowListeners.get(window.id);
     if (removeListeners != null) removeListeners();
   }
