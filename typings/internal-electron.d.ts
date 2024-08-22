@@ -27,22 +27,23 @@ declare namespace Electron {
 
   interface BaseWindow {
     _init(): void;
-  }
-
-  interface BrowserWindow {
-    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
+    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+  }
+
+  interface BrowserWindow extends BaseWindow {
+    _init(): void;
     _getWindowButtonVisibility: () => boolean;
     _getAlwaysOnTopLevel: () => string;
     devToolsWebContents: WebContents;
     frameName: string;
+    _browserViews: BrowserView[];
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
-
-    _browserViews: BrowserView[];
   }
 
   interface BrowserView {
@@ -65,7 +66,7 @@ declare namespace Electron {
   }
 
   interface TouchBar {
-    _removeFromWindow: (win: BrowserWindow) => void;
+    _removeFromWindow: (win: BaseWindow) => void;
   }
 
   interface WebContents {
