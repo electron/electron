@@ -49,7 +49,7 @@ class ProtocolRegistry {
   bool UninterceptProtocol(const std::string& scheme);
 
   [[nodiscard]] const HandlersMap::mapped_type* FindIntercepted(
-      const std::string& scheme) const;
+      std::string_view scheme) const;
 
  private:
   friend class ElectronBrowserContext;
