@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
@@ -238,6 +239,12 @@ void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
   }
 }
 
+void DesktopCapturer::DesktopListListener::OnSourceAdded(int index) {
+  // TODO: Implement the wrapped DesktopCapturer::RequestUpdate callback
+  // here for native pickers, instead of in the screen/window implementation
+  // below
+}
+
 void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
   if (have_selection_) {
     // This is called every time a thumbnail is refreshed. Reset variable to
@@ -334,11 +341,16 @@ void DesktopCapturer::StartHandling(bool capture_window,
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
             window_capturer_.get());
 
+        // Needed to force a refresh for the native MacOS Picker
+        OnceCallback wrapped_update_callback = base::BindOnce(
+            &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
+            screen_capturer_.get(), std::move(update_callback));
+
         if (window_capturer_->IsSourceListDelegated()) {
           OnceCallback failure_callback = base::BindOnce(
               &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
           window_listener_ = std::make_unique<DesktopListListener>(
-              std::move(update_callback), std::move(failure_callback),
+              std::move(wrapped_update_callback), std::move(failure_callback),
               thumbnail_size.IsEmpty());
           window_capturer_->StartUpdating(window_listener_.get());
         } else {
@@ -354,6 +366,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
         screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
+        screen_capturer_->ShowDelegatedList();
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
             ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
@@ -364,11 +377,16 @@ void DesktopCapturer::StartHandling(bool capture_window,
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
             screen_capturer_.get());
 
+        // Needed to force a refresh for the native MacOS Picker
+        OnceCallback wrapped_update_callback = base::BindOnce(
+            &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
+            screen_capturer_.get(), std::move(update_callback));
+
         if (screen_capturer_->IsSourceListDelegated()) {
           OnceCallback failure_callback = base::BindOnce(
               &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
           screen_listener_ = std::make_unique<DesktopListListener>(
-              std::move(update_callback), std::move(failure_callback),
+              std::move(wrapped_update_callback), std::move(failure_callback),
               thumbnail_size.IsEmpty());
           screen_capturer_->StartUpdating(screen_listener_.get());
         } else {
@@ -378,6 +396,11 @@ void DesktopCapturer::StartHandling(bool capture_window,
       }
     }
   }
+}
+
+void DesktopCapturer::RequestUpdate(DesktopMediaList* list,
+                                    OnceCallback update_callback) {
+  list->Update(std::move(update_callback));
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
@@ -397,6 +420,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_screen_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
     capture_screen_ = false;
+    LOG(ERROR) << "GetSourceCount" << list->GetSourceCount();
     std::vector<DesktopCapturer::Source> screen_sources;
     screen_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
