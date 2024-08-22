@@ -117,9 +117,9 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
 };
 
 // Helper to pass a C++ function to JavaScript.
-using Translater = base::RepeatingCallback<void(gin::Arguments* args)>;
-v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
-                                                  const Translater& translater,
+using Translator = base::RepeatingCallback<void(gin::Arguments* args)>;
+v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
+                                                  const Translator& translator,
                                                   bool one_time);
 v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
@@ -149,9 +149,9 @@ template <typename Sig>
 v8::Local<v8::Value> CallbackToV8Leaked(
     v8::Isolate* isolate,
     const base::RepeatingCallback<Sig>& val) {
-  Translater translater =
+  Translator translator =
       base::BindRepeating(&NativeFunctionInvoker<Sig>::Go, val);
-  return CreateFunctionFromTranslater(isolate, translater, false);
+  return CreateFunctionFromTranslator(isolate, translator, false);
 }
 
 }  // namespace gin_helper
