@@ -3,7 +3,7 @@ From: Marek Rusinowski <marekrusinowski@gmail.com>
 Date: Wed, 23 Mar 2022 21:09:37 +0100
 Subject: introduce OzonePlatform::electron_can_call_x11 property
 
-We expose this additonal property in the OzonePlatform to be able to easily
+We expose this additional property in the OzonePlatform to be able to easily
 determine whatever we can call X11 functions without crashing the application
 at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.

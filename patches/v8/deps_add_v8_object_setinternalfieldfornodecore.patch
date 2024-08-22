@@ -28,17 +28,17 @@ index 71a6c2c9c149116caa410d25aef4087774b81b44..ad8416ea2500f10aad31f25da96b235f
    }
  
 +  /**
-+   * Warning: These are Node.js-specific extentions used to avoid breaking
++   * Warning: These are Node.js-specific extensions used to avoid breaking
 +   * changes in Node.js v20.x. They do not exist in V8 upstream and will
 +   * not exist in Node.js v21.x. Node.js embedders and addon authors should
 +   * not use them from v20.x.
 +   */
 +#ifndef NODE_WANT_INTERNALS
-+  V8_DEPRECATED("This extention should only be used by Node.js core")
++  V8_DEPRECATED("This extension should only be used by Node.js core")
 +#endif
 +  void SetInternalFieldForNodeCore(int index, Local<Module> value);
 +#ifndef NODE_WANT_INTERNALS
-+  V8_DEPRECATED("This extention should only be used by Node.js core")
++  V8_DEPRECATED("This extension should only be used by Node.js core")
 +#endif
 +  void SetInternalFieldForNodeCore(int index, Local<UnboundScript> value);
 +
@@ -69,7 +69,7 @@ index 5ab671c8c4168ac7ccd9d18ea4b9fda16734e4ad..46d56957a5845745fa07ae3db79dd753
 +}
 +
 +/**
-+ * These are Node.js-specific extentions used to avoid breaking changes in
++ * These are Node.js-specific extensions used to avoid breaking changes in
 + * Node.js v20.x.
 + */
 +void v8::Object::SetInternalFieldForNodeCore(int index,

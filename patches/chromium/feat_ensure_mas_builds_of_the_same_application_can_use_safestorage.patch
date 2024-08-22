@@ -3,7 +3,7 @@ From: Samuel Attard <sattard@salesforce.com>
 Date: Thu, 29 Sep 2022 16:58:47 -0700
 Subject: feat: ensure mas builds of the same application can use safestorage
 
-This change ensures that MAS builds of applications with an equivilant darwin build that share the same name do not fight over access to the same Safe Storage account.
+This change ensures that MAS builds of applications with an equivalent darwin build that share the same name do not fight over access to the same Safe Storage account.
 
 Specifically this changes the account name for app "My App" from "My App" to "My App AppStore" if the app is using a MAS build of Electron.
 

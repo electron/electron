@@ -9,7 +9,7 @@ Subject: feat: configure launch options for service process
   Allows configuring base::LaunchOptions::handles_to_inherit, base::LaunchOptions::stdout_handle
   and base::LaunchOptions::stderr_handle when launching the child process.
 - All:
-  Allows configuring base::LauncOptions::current_directory, base::LaunchOptions::enviroment
+  Allows configuring base::LauncOptions::current_directory, base::LaunchOptions::environment
   and base::LaunchOptions::clear_environment.
 
 An example use of this option, UtilityProcess API allows reading the output From
@@ -317,7 +317,7 @@ index 9791ae2f761043b9eecd9064a6fd39a6e2339af4..1083f1683a05825f51f5b2d71f8107d9
 +  // If not empty, change to this directory before executing the new process.
 +  base::FilePath current_directory_;
 +
-+  // Inherit enviroment from parent process.
++  // Inherit environment from parent process.
 +  bool inherit_environment_ = true;
 +
    // Indicates whether the process has been successfully launched yet, or if

@@ -4,7 +4,7 @@ Date: Mon, 24 Jun 2024 21:48:40 -0700
 Subject: fix: add property query interceptors
 
 This commit cherry-picks an upstream interceptor API change
-from node-v8/canary to accomodate V8's upstream changes to old
+from node-v8/canary to accommodate V8's upstream changes to old
 interceptor APIs.
 
 Node PR: https://github.com/nodejs/node-v8/commit/d1f18b0bf16efbc1e54ba04a54735ce4683cb936

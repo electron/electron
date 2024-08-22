@@ -5,7 +5,7 @@ Subject: chore: allow customizing microtask policy per context
 
 With https://github.com/electron/electron/issues/36813, microtask queue associated with a context
 will be used if available, instead of the default associated with an isolate. We need the
-capability to switch the microtask polciy of these per context microtask queue to support
+capability to switch the microtask policy of these per context microtask queue to support
 Node.js integration in the renderer.
 
 diff --git a/include/v8-microtask-queue.h b/include/v8-microtask-queue.h

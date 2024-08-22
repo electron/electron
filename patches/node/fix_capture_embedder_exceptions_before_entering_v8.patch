@@ -3,7 +3,7 @@ From: deepak1556 <hop2deep@gmail.com>
 Date: Tue, 26 Dec 2023 02:10:42 +0900
 Subject: fix: capture embedder exceptions before entering V8
 
-Upstrem bug: https://github.com/nodejs/node-v8/issues/274
+Upstream bug: https://github.com/nodejs/node-v8/issues/274
 
 The patch only addresses the callsites that triggered failing DCHECKS
 in the nodejs test suite. Need to be followed-up with upstream

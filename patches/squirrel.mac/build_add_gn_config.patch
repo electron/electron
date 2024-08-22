@@ -496,7 +496,7 @@ index 0000000000000000000000000000000000000000..bdfaf95f3eca65b3e0831db1b66f651d
 @@ -0,0 +1,18 @@
 +template("xcrun_action") {
 +  assert(defined(invoker.cmd), "Need cmd name to run")
-+  assert(defined(invoker.args), "Need cmd argumets")
++  assert(defined(invoker.args), "Need cmd arguments")
 +  assert(defined(invoker.inputs), "Need inputs")
 +  assert(defined(invoker.outputs), "Need outputs")
 +

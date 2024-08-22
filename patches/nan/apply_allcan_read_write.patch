@@ -8,7 +8,7 @@ Should be upstreamed.
 
 Module version checks are made against 119 since that is the current assigned version
 for Electron 28 in https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json.
-The version should be updateed to the one assinged for Electron 29 when it is available.
+The version should be updated to the one assigned for Electron 29 when it is available.
 
 Steps for upstreaming this patch:
 
