@@ -12,6 +12,7 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -57,9 +58,16 @@ struct Converter<blink::mojom::PageVisibilityState> {
 namespace electron::api {
 
 typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
+typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
+    PinnedWebFrameMainIdMap;
 
 WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
+  return *instance;
+}
+
+PinnedWebFrameMainIdMap& GetPinnedWebFrameMainMap() {
+  static base::NoDestructor<PinnedWebFrameMainIdMap> instance;
   return *instance;
 }
 
@@ -72,25 +80,48 @@ WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
 }
 
 // static
-WebFrameMain* WebFrameMain::FromRenderFrameHost(content::RenderFrameHost* rfh) {
+WebFrameMain* WebFrameMain::FromPinnedFrameToken(
+    content::GlobalRenderFrameHostToken frame_token) {
+  PinnedWebFrameMainIdMap& frame_map = GetPinnedWebFrameMainMap();
+  auto iter = frame_map.find(frame_token);
+  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
+  return web_frame;
+}
+
+// static
+WebFrameMain* WebFrameMain::FromRenderFrameHost(
+    content::RenderFrameHost* rfh,
+    WebFrameMain::FrameType frame_type) {
   if (!rfh)
     return nullptr;
 
-  // TODO(codebytere): remove after refactoring away from FrameTreeNodeId as map
-  // key.
-  auto* ftn =
-      static_cast<content::RenderFrameHostImpl*>(rfh)->frame_tree_node();
-  if (!ftn)
-    return nullptr;
+  if (frame_type == WebFrameMain::FrameType::Normal) {
+    // TODO(codebytere): remove after refactoring away from FrameTreeNodeId as
+    // map key.
+    auto* ftn =
+        static_cast<content::RenderFrameHostImpl*>(rfh)->frame_tree_node();
+    if (!ftn)
+      return nullptr;
 
-  return FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+    return FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+  } else {
+    auto frame_token = rfh->GetGlobalFrameToken();
+    return FromPinnedFrameToken(frame_token);
+  }
 }
 
 gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
-    : frame_tree_node_id_(rfh->GetFrameTreeNodeId()), render_frame_(rfh) {
-  GetWebFrameMainMap().emplace(frame_tree_node_id_, this);
+WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh, FrameType frame_type)
+    : frame_tree_node_id_(rfh->GetFrameTreeNodeId()),
+      frame_token_(rfh->GetGlobalFrameToken()),
+      render_frame_(rfh),
+      render_frame_pinned_(frame_type == FrameType::Pinned) {
+  if (frame_type == FrameType::Pinned) {
+    GetPinnedWebFrameMainMap().emplace(frame_token_, this);
+  } else {
+    GetWebFrameMainMap().emplace(frame_tree_node_id_, this);
+  }
 }
 
 WebFrameMain::~WebFrameMain() {
@@ -99,7 +130,13 @@ WebFrameMain::~WebFrameMain() {
 
 void WebFrameMain::Destroyed() {
   MarkRenderFrameDisposed();
-  GetWebFrameMainMap().erase(frame_tree_node_id_);
+
+  if (render_frame_pinned_) {
+    GetPinnedWebFrameMainMap().erase(frame_token_);
+  } else {
+    GetWebFrameMainMap().erase(frame_tree_node_id_);
+  }
+
   Unpin();
 }
 
@@ -113,6 +150,8 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Should only be called when swapping frames.
   render_frame_disposed_ = false;
   render_frame_ = rfh;
+  if (rfh)
+    frame_token_ = rfh->GetGlobalFrameToken();
   TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }
@@ -270,6 +309,11 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                        std::move(transferable_message));
 }
 
+gin::Handle<WebFrameMain> WebFrameMain::GetPinnedFrame(
+    gin::Arguments* args) const {
+  return From(args->isolate(), render_frame_, FrameType::Pinned);
+}
+
 int WebFrameMain::FrameTreeNodeID() const {
   return frame_tree_node_id_;
 }
@@ -367,16 +411,18 @@ gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
 }
 
 // static
-gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
-                                             content::RenderFrameHost* rfh) {
+gin::Handle<WebFrameMain> WebFrameMain::From(
+    v8::Isolate* isolate,
+    content::RenderFrameHost* rfh,
+    WebFrameMain::FrameType frame_type) {
   if (!rfh)
     return gin::Handle<WebFrameMain>();
 
-  auto* web_frame = FromRenderFrameHost(rfh);
+  auto* web_frame = FromRenderFrameHost(rfh, frame_type);
   if (web_frame)
     return gin::CreateHandle(isolate, web_frame);
 
-  auto handle = gin::CreateHandle(isolate, new WebFrameMain(rfh));
+  auto handle = gin::CreateHandle(isolate, new WebFrameMain(rfh, frame_type));
 
   // Prevent garbage collection of frame until it has been deleted internally.
   handle->Pin(isolate);
@@ -406,6 +452,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
+      .SetMethod("getPinnedFrame", &WebFrameMain::GetPinnedFrame)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)

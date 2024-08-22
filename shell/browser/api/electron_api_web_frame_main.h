@@ -12,6 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "content/public/browser/global_routing_id.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -23,8 +24,9 @@
 class GURL;
 
 namespace content {
+// struct GlobalRenderFrameHostToken;
 class RenderFrameHost;
-}
+}  // namespace content
 
 namespace gin {
 class Arguments;
@@ -43,18 +45,27 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
                      public gin_helper::Pinnable<WebFrameMain>,
                      public gin_helper::Constructible<WebFrameMain> {
  public:
+  enum class FrameType {
+    Normal,  // tracks navigation across RFH swaps
+    Pinned   // pins to lifespan of singular RFH
+  };
+
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
 
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
-      content::RenderFrameHost* render_frame_host);
+      content::RenderFrameHost* render_frame_host,
+      FrameType frame_type = FrameType::Normal);
   static gin::Handle<WebFrameMain> FromOrNull(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
   static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
+  static WebFrameMain* FromPinnedFrameToken(
+      content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromRenderFrameHost(
-      content::RenderFrameHost* render_frame_host);
+      content::RenderFrameHost* render_frame_host,
+      FrameType frame_type = FrameType::Normal);
 
   // gin_helper::Constructible
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
@@ -71,7 +82,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   WebFrameMain& operator=(const WebFrameMain&) = delete;
 
  protected:
-  explicit WebFrameMain(content::RenderFrameHost* render_frame);
+  explicit WebFrameMain(content::RenderFrameHost* render_frame,
+                        FrameType frame_type = FrameType::Normal);
   ~WebFrameMain() override;
 
  private:
@@ -123,18 +135,25 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
+  gin::Handle<WebFrameMain> GetPinnedFrame(gin::Arguments* args) const;
+
   void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
 
   int frame_tree_node_id_;
+  content::GlobalRenderFrameHostToken frame_token_;
 
   raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.
   bool render_frame_disposed_ = false;
+
+  // Whether this instance is pinned to a RenderFrameHost and will not change
+  // during its lifespan.
+  bool render_frame_pinned_ = false;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
 };

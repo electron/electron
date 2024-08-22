@@ -1599,6 +1599,11 @@ void WebContents::HandleNewRenderFrame(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
     web_frame->MaybeSetupMojoConnection();
+
+  auto* pinned_web_frame = WebFrameMain::FromRenderFrameHost(
+      render_frame_host, WebFrameMain::FrameType::Pinned);
+  if (pinned_web_frame)
+    pinned_web_frame->MaybeSetupMojoConnection();
 }
 
 void WebContents::OnBackgroundColorChanged() {
@@ -1654,6 +1659,12 @@ void WebContents::RenderFrameDeleted(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame && web_frame->render_frame_host() == render_frame_host)
     web_frame->MarkRenderFrameDisposed();
+
+  auto* pinned_web_frame = WebFrameMain::FromRenderFrameHost(
+      render_frame_host, WebFrameMain::FrameType::Pinned);
+  if (pinned_web_frame &&
+      pinned_web_frame->render_frame_host() == render_frame_host)
+    pinned_web_frame->MarkRenderFrameDisposed();
 }
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
