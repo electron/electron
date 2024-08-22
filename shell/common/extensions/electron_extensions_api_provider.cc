@@ -28,6 +28,7 @@
 #include "shell/common/extensions/api/permission_features.h"
 
 namespace extensions {
+namespace {
 
 constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
     {mojom::APIPermissionID::kDevtools, "devtools",
@@ -52,6 +53,7 @@ base::span<const Alias> GetPermissionAliases() {
   return base::span<const Alias>();
 }
 
+}  // namespace
 }  // namespace extensions
 
 namespace electron {
