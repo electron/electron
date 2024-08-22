@@ -180,7 +180,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     });
 
     // Ensures that passing in crashpadHandlerPID flag for Linx child processes
-    // does not affect child proocess args.
+    // does not affect child process args.
     ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
       const { port, waitForCrash } = await startServer();
       let exitCode: number | null = null;
