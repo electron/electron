@@ -1,5 +1,5 @@
 import * as roles from '@electron/internal/browser/api/menu-item-roles';
-import { Menu, BrowserWindow, WebContents, KeyboardEvent } from 'electron/main';
+import { Menu, BaseWindow, WebContents, KeyboardEvent } from 'electron/main';
 
 let nextCommandId = 0;
 
@@ -53,7 +53,7 @@ const MenuItem = function (this: any, options: any) {
   });
 
   const click = options.click;
-  this.click = (event: KeyboardEvent, focusedWindow: BrowserWindow, focusedWebContents: WebContents) => {
+  this.click = (event: KeyboardEvent, focusedWindow: BaseWindow, focusedWebContents: WebContents) => {
     // Manually flip the checked flags when clicked.
     if (!roles.shouldOverrideCheckStatus(this.role) &&
         (this.type === 'checkbox' || this.type === 'radio')) {
