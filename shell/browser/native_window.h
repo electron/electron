@@ -448,7 +448,7 @@ class NativeWindow : public base::SupportsUserData,
   // Minimum and maximum size.
   std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
-  // constraints beacause converting between them will cause rounding errors
+  // constraints because converting between them will cause rounding errors
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 

@@ -569,7 +569,7 @@ bool NativeWindowViews::IsVisible() const {
   // current window.
   bool visible =
       ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_VISIBLE;
-  // WS_VISIBLE is true even if a window is miminized - explicitly check that.
+  // WS_VISIBLE is true even if a window is minimized - explicitly check that.
   return visible && !IsMinimized();
 #else
   return widget()->IsVisible();

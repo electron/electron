@@ -261,7 +261,7 @@ class ClearDataTask {
   }
 
  private:
-  // An individiual |content::BrowsingDataRemover::Remove...| operation as part
+  // An individual |content::BrowsingDataRemover::Remove...| operation as part
   // of a full |ClearDataTask|. This class manages its own lifetime, cleaning
   // itself up after the operation completes and notifies the task of the
   // result.
