@@ -58,18 +58,24 @@ index f9d29f0065b1de63a62cfdce74a9705c22dd87d7..3f44160f1bd40fc2d4658f10edf0d0b3
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 28fbd93c5d4a6f379844e10e556920b7614910d8..53cf93719bea001db09697b56f197815549dc953 100644
+index 74955717117001393e8b55809b4e4a1424019dad..409c6e3918e3ef7c9d35f87e093cb965cb889dd7 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1321,6 +1321,11 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
-   Local<Context> context = env->context();
-   Local<Object> ret = Object::New(isolate);
+@@ -1393,14 +1393,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+   }
+   Isolate* isolate = args.GetIsolate();
  
-+  if (ret->Set(context,
-+           FIXED_ONE_BYTE_STRING(env->isolate(), "hasPrepareStackTraceCallback"),
-+           Boolean::New(isolate, !env->prepare_stack_trace_callback().IsEmpty()))
-+      .IsNothing()) return;
-+
-   if (ret->Set(context,
-            FIXED_ONE_BYTE_STRING(env->isolate(), "shouldNotRegisterESMLoader"),
-            Boolean::New(isolate, env->should_not_register_esm_loader()))
+-  constexpr size_t kOptionsSize = 4;
++  constexpr size_t kOptionsSize = 5;
+   std::array<Local<Name>, kOptionsSize> names = {
++      FIXED_ONE_BYTE_STRING(env->isolate(), "hasPrepareStackTraceCallback"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "shouldNotRegisterESMLoader"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "noGlobalSearchPaths"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "noBrowserGlobals"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "hasEmbedderPreload")};
+ 
+   std::array<Local<Value>, kOptionsSize> values = {
++      Boolean::New(isolate, env->prepare_stack_trace_callback().IsEmpty()),
+       Boolean::New(isolate, env->should_not_register_esm_loader()),
+       Boolean::New(isolate, env->no_global_search_paths()),
+       Boolean::New(isolate, env->no_browser_globals()),
