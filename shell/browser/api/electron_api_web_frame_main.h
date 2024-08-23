@@ -140,6 +140,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
                    v8::Local<v8::Value> message_value,
                    std::optional<v8::Local<v8::Value>> transfer);
 
+  bool Pinned() const;
   int FrameTreeNodeID() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
@@ -153,8 +154,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   content::RenderFrameHost* Parent() const;
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
-
-  gin::Handle<WebFrameMain> GetPinnedFrame(gin::Arguments* args) const;
 
   void DOMContentLoaded();
 

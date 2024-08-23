@@ -231,6 +231,12 @@ A `string` representing the [visibility state](https://developer.mozilla.org/en-
 
 See also how the [Page Visibility API](browser-window.md#page-visibility) is affected by other Electron APIs.
 
+#### `frame.pinned` _Readonly_
+
+A `Boolean` representing whether the frame is pinned to its internal values. In the case
+of cross-site navigation, this frame will be disposed and throw upon accessing its
+properties.
+
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
 [`MessagePortMain`]: message-port-main.md

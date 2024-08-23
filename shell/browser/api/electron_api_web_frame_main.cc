@@ -332,9 +332,8 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                        std::move(transferable_message));
 }
 
-gin::Handle<WebFrameMain> WebFrameMain::GetPinnedFrame(
-    gin::Arguments* args) const {
-  return From(args->isolate(), render_frame_, FrameType::Pinned);
+bool WebFrameMain::Pinned() const {
+  return render_frame_pinned_;
 }
 
 int WebFrameMain::FrameTreeNodeID() const {
@@ -475,7 +474,6 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
-      .SetMethod("getPinnedFrame", &WebFrameMain::GetPinnedFrame)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
@@ -488,6 +486,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("parent", &WebFrameMain::Parent)
       .SetProperty("frames", &WebFrameMain::Frames)
       .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
+      .SetProperty("pinned", &WebFrameMain::Pinned)
       .Build();
 }
 
