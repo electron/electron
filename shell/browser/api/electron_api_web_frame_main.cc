@@ -11,6 +11,7 @@
 
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
@@ -528,6 +529,21 @@ v8::Local<v8::Value> FromIDOrNull(gin_helper::ErrorThrower thrower,
   return WebFrameMain::FromOrNull(thrower.isolate(), rfh).ToV8();
 }
 
+v8::Local<v8::Value> FromFrameTreeNodeId(gin_helper::ErrorThrower thrower,
+                                         int frame_tree_node_id) {
+  if (!electron::Browser::Get()->is_ready()) {
+    thrower.ThrowError("WebFrameMain is available only after app ready");
+    return v8::Null(thrower.isolate());
+  }
+
+  content::FrameTreeNode* frame_tree_node =
+      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+  content::RenderFrameHost* rfh =
+      frame_tree_node ? frame_tree_node->current_frame_host() : nullptr;
+
+  return WebFrameMain::From(thrower.isolate(), rfh).ToV8();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -537,6 +553,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set("WebFrameMain", WebFrameMain::GetConstructor(context));
   dict.SetMethod("fromId", &FromID);
   dict.SetMethod("fromIdOrNull", &FromIDOrNull);
+  dict.SetMethod("fromFrameTreeNodeId", &FromFrameTreeNodeId);
 }
 
 }  // namespace

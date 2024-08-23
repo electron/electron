@@ -66,6 +66,13 @@ These methods can be accessed from the `webFrameMain` module:
 Returns `WebFrameMain | undefined` - A frame with the given process and routing IDs,
 or `undefined` if there is no WebFrameMain associated with the given IDs.
 
+### `webFrameMain.fromFrameTreeNodeId(frameTreeNodeId)`
+
+* `frameTreeNodeId` Integer - An `Integer` representing frame tree node ID of the frame. This can be thought of as the ID corresponding to an `<iframe>`.
+
+Returns `WebFrameMain | undefined` - A frame with the frame tree node ID,
+or `undefined` if there is no WebFrameMain associated with the given ID.
+
 ## Class: WebFrameMain
 
 Process: [Main](../glossary.md#main-process)<br />
