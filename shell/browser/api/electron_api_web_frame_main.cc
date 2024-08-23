@@ -65,35 +65,31 @@ PinnedRenderFrameHostRef::PinnedRenderFrameHostRef(
 // Using FrameTreeNode allows us to track frame across navigations. This
 // is most similar to how <iframe> works.
 typedef std::unordered_map<int /* frame_tree_node_id */, WebFrameMain*>
-    WebFrameMainIdMap;
+    FrameTreeNodeIdMap;
 
 // Token -> WebFrameMain*
 // Maps exact RFH to a WebFrameMain instance.
 typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
-    WebFrameMainTokenMap;
+    FrameTokenMap;
 
-// Token -> WebFrameMain*
-// RFH token is specific to the RFH instance. If it's destroyed by
-// navigation, we won't be able to lookup the frame.
-typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
-    PinnedWebFrameMainIdMap;
-
-WebFrameMainIdMap& GetWebFrameMainMap() {
-  static base::NoDestructor<WebFrameMainIdMap> instance;
+WebFrameMainIdMap& GetFrameTreeNodeIdMap() {
+  static base::NoDestructor<FrameTreeNodeIdMap> instance;
   return *instance;
 }
-WebFrameMainTokenMap& GetWebFrameMainTokenMap() {
-  static base::NoDestructor<WebFrameMainTokenMap> instance;
+FrameTokenMap& GetFrameTokenMap() {
+  static base::NoDestructor<FrameTokenMap> instance;
   return *instance;
 }
-PinnedWebFrameMainIdMap& GetPinnedWebFrameMainMap() {
-  static base::NoDestructor<PinnedWebFrameMainIdMap> instance;
+FrameTokenMap& GetPinnedFrameTokenMap() {
+  static base::NoDestructor<FrameTokenMap> instance;
   return *instance;
 }
 
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
-  WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
+  // Pinned frames aren't tracked across navigations so only non-pinned
+  // frames will be retrieved.
+  WebFrameMainIdMap& frame_map = GetFrameTreeNodeIdMap();
   auto iter = frame_map.find(frame_tree_node_id);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
@@ -101,17 +97,11 @@ WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
 
 // static
 WebFrameMain* WebFrameMain::FromFrameToken(
-    content::GlobalRenderFrameHostToken frame_token) {
-  WebFrameMainTokenMap& frame_map = GetWebFrameMainTokenMap();
-  auto iter = frame_map.find(frame_token);
-  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
-  return web_frame;
-}
-
-// static
-WebFrameMain* WebFrameMain::FromPinnedFrameToken(
-    content::GlobalRenderFrameHostToken frame_token) {
-  PinnedWebFrameMainIdMap& frame_map = GetPinnedWebFrameMainMap();
+    content::GlobalRenderFrameHostToken frame_token,
+    WebFrameMain::FrameType frame_type) {
+  FrameTokenMap& frame_map = frame_type == WebFrameMain::FrameType::Pinned
+                                 ? GetPinnedFrameTokenMap()
+                                 : GetFrameTokenMap();
   auto iter = frame_map.find(frame_token);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
@@ -123,11 +113,7 @@ WebFrameMain* WebFrameMain::FromRenderFrameHost(
     WebFrameMain::FrameType frame_type) {
   if (!rfh)
     return nullptr;
-
-  auto frame_token = rfh->GetGlobalFrameToken();
-  return frame_type == WebFrameMain::FrameType::Default
-             ? FromFrameToken(frame_token)
-             : FromPinnedFrameToken(frame_token);
+  return FromFrameToken(rfh->GetGlobalFrameToken(), frame_type);
 }
 
 gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
@@ -138,10 +124,10 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh, FrameType frame_type)
       render_frame_(rfh),
       render_frame_pinned_(frame_type == FrameType::Pinned) {
   if (frame_type == FrameType::Pinned) {
-    GetPinnedWebFrameMainMap().emplace(frame_token_, this);
+    GetPinnedFrameTokenMap().emplace(frame_token_, this);
   } else {
-    GetWebFrameMainMap().emplace(frame_tree_node_id_, this);
-    GetWebFrameMainTokenMap().emplace(frame_token_, this);
+    GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
+    GetFrameTokenMap().emplace(frame_token_, this);
   }
 }
 
@@ -153,10 +139,10 @@ void WebFrameMain::Destroyed() {
   MarkRenderFrameDisposed();
 
   if (render_frame_pinned_) {
-    GetPinnedWebFrameMainMap().erase(frame_token_);
+    GetPinnedFrameTokenMap().erase(frame_token_);
   } else {
-    GetWebFrameMainMap().erase(frame_tree_node_id_);
-    GetWebFrameMainTokenMap().erase(frame_token_);
+    GetFrameTreeNodeIdMap().erase(frame_tree_node_id_);
+    GetFrameTokenMap().erase(frame_token_);
   }
 
   Unpin();
@@ -170,9 +156,9 @@ void WebFrameMain::MarkRenderFrameDisposed() {
 
 // Should only be called when swapping frames.
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
-  GetWebFrameMainTokenMap().erase(frame_token_);
+  GetFrameTokenMap().erase(frame_token_);
   frame_token_ = rfh->GetGlobalFrameToken();
-  GetWebFrameMainTokenMap().emplace(frame_token_, this);
+  GetFrameTokenMap().emplace(frame_token_, this);
 
   render_frame_disposed_ = false;
   render_frame_ = rfh;
