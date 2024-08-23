@@ -92,7 +92,7 @@ bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {
 }
 
 const HandlersMap::mapped_type* ProtocolRegistry::FindIntercepted(
-    const std::string& scheme) const {
+    const std::string_view scheme) const {
   const auto& map = intercept_handlers_;
   const auto iter = map.find(scheme);
   return iter != std::end(map) ? &iter->second : nullptr;
