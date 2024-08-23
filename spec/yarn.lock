@@ -10,6 +10,9 @@
   dependencies:
     nan "2.x"
 
+"@electron-ci/osr-gpu@file:./fixtures/native-addon/osr-gpu":
+  version "0.0.1"
+
 "@electron-ci/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
   version "0.0.1"
 
