@@ -33,7 +33,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index c26c322aafc64ed9ca2a7c1fd703555a251db9de..36065c16602351acc3e518385adad97f33d2c1b9 100644
+index c26c322aafc64ed9ca2a7c1fd703555a251db9de..f94bc5824d6c83fd1feca31c572dcfd3ac130bda 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -10,8 +10,8 @@ const {
@@ -47,7 +47,7 @@ index c26c322aafc64ed9ca2a7c1fd703555a251db9de..36065c16602351acc3e518385adad97f
  } = require('internal/constants');
  
  let utcCache;
-@@ -44,11 +44,13 @@ function isTraceHTTPEnabled() {
+@@ -46,11 +46,13 @@ function isTraceHTTPEnabled() {
  const traceEventCategory = 'node,node.http';
  
  function traceBegin(...args) {
