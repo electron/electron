@@ -33,12 +33,12 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index b20b3cd229efcd9701791309361b7d106f315900..6b2820c9dcce5e658b694f53e75d93707c4320d7 100644
+index c26c322aafc64ed9ca2a7c1fd703555a251db9de..36065c16602351acc3e518385adad97f33d2c1b9 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -10,8 +10,8 @@ const {
  const { setUnrefTimeout } = require('internal/timers');
- const { trace, isTraceCategoryEnabled } = internalBinding('trace_events');
+ const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
  const {
 -  CHAR_LOWERCASE_B,
 -  CHAR_LOWERCASE_E,
