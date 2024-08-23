@@ -456,11 +456,12 @@ gin::Handle<WebFrameMain> WebFrameMain::From(
 // static
 gin::Handle<WebFrameMain> WebFrameMain::FromOrNull(
     v8::Isolate* isolate,
-    content::RenderFrameHost* rfh) {
+    content::RenderFrameHost* rfh,
+    WebFrameMain::FrameType frame_type) {
   if (!rfh)
     return gin::Handle<WebFrameMain>();
 
-  auto* web_frame = FromRenderFrameHost(rfh);
+  auto* web_frame = FromRenderFrameHost(rfh, frame_type);
   if (!web_frame)
     return gin::Handle<WebFrameMain>();
 
@@ -517,7 +518,8 @@ v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
 
 v8::Local<v8::Value> FromIDOrNull(gin_helper::ErrorThrower thrower,
                                   int render_process_id,
-                                  int render_frame_id) {
+                                  int render_frame_id,
+                                  bool pinned) {
   if (!electron::Browser::Get()->is_ready()) {
     thrower.ThrowError("WebFrameMain is available only after app ready");
     return v8::Null(thrower.isolate());
@@ -526,7 +528,10 @@ v8::Local<v8::Value> FromIDOrNull(gin_helper::ErrorThrower thrower,
   auto* rfh =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
 
-  return WebFrameMain::FromOrNull(thrower.isolate(), rfh).ToV8();
+  return WebFrameMain::FromOrNull(thrower.isolate(), rfh,
+                                  pinned ? WebFrameMain::FrameType::Pinned
+                                         : WebFrameMain::FrameType::Default)
+      .ToV8();
 }
 
 v8::Local<v8::Value> FromFrameTreeNodeId(gin_helper::ErrorThrower thrower,
@@ -552,7 +557,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebFrameMain", WebFrameMain::GetConstructor(context));
   dict.SetMethod("fromId", &FromID);
-  dict.SetMethod("fromIdOrNull", &FromIDOrNull);
+  dict.SetMethod("_fromIdOrNull", &FromIDOrNull);
   dict.SetMethod("fromFrameTreeNodeId", &FromFrameTreeNodeId);
 }
 

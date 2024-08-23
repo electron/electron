@@ -495,9 +495,9 @@ const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
   });
 };
 
-const getWebFrameForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+const getWebFrameForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, pinned: boolean) => {
   if (!event.processId || !event.frameId) return null;
-  return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
+  return webFrameMainBinding._fromIdOrNull(event.processId, event.frameId, pinned);
 };
 
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -607,8 +607,10 @@ WebContents.prototype._init = function () {
     } else {
       addReplyToEvent(event);
       this.emit('ipc-message', event, channel, ...args);
-      const maybeWebFrame = getWebFrameForEvent(event);
-      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
+      const maybeWebFrame = getWebFrameForEvent(event, false);
+      maybeWebFrame?.ipc.emit(channel, event, ...args);
+      const maybePinnedWebFrame = getWebFrameForEvent(event, true);
+      maybePinnedWebFrame?.ipc.emit(channel, event, ...args);
       ipc.emit(channel, event, ...args);
       ipcMain.emit(channel, event, ...args);
     }
@@ -621,8 +623,9 @@ WebContents.prototype._init = function () {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event._replyChannel.sendReply({ error: error.toString() });
     };
-    const maybeWebFrame = getWebFrameForEvent(event);
-    const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
+    const maybeWebFrame = getWebFrameForEvent(event, false);
+    const maybePinnedWebFrame = getWebFrameForEvent(event, true);
+    const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, maybePinnedWebFrame?.ipc, ipc, ipcMain];
     const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
     if (target) {
       const handler = (target as any)._invokeHandlers.get(channel);
@@ -643,12 +646,14 @@ WebContents.prototype._init = function () {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
-      const maybeWebFrame = getWebFrameForEvent(event);
+      const maybeWebFrame = getWebFrameForEvent(event, false);
+      const maybePinnedWebFrame = getWebFrameForEvent(event, true);
       if (this.listenerCount('ipc-message-sync') === 0 && ipc.listenerCount(channel) === 0 && ipcMain.listenerCount(channel) === 0 && (!maybeWebFrame || maybeWebFrame.ipc.listenerCount(channel) === 0)) {
         console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
       }
       this.emit('ipc-message-sync', event, channel, ...args);
-      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
+      maybeWebFrame?.ipc.emit(channel, event, ...args);
+      maybePinnedWebFrame?.ipc.emit(channel, event, ...args);
       ipc.emit(channel, event, ...args);
       ipcMain.emit(channel, event, ...args);
     }
@@ -657,8 +662,10 @@ WebContents.prototype._init = function () {
   this.on('-ipc-ports' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     addSenderToEvent(event, this);
     event.ports = ports.map(p => new MessagePortMain(p));
-    const maybeWebFrame = getWebFrameForEvent(event);
-    maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
+    const maybeWebFrame = getWebFrameForEvent(event, false);
+    maybeWebFrame?.ipc.emit(channel, event, message);
+    const maybePinnedWebFrame = getWebFrameForEvent(event, true);
+    maybePinnedWebFrame?.ipc.emit(channel, event, message);
     ipc.emit(channel, event, message);
     ipcMain.emit(channel, event, message);
   });

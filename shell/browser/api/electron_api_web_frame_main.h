@@ -73,9 +73,11 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host,
       FrameType frame_type = FrameType::Default);
+  // Gets WebFrameMain if it exists, without creating a new handle
   static gin::Handle<WebFrameMain> FromOrNull(
       v8::Isolate* isolate,
-      content::RenderFrameHost* render_frame_host);
+      content::RenderFrameHost* render_frame_host,
+      FrameType frame_type);
 
   static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
   static WebFrameMain* FromFrameToken(
