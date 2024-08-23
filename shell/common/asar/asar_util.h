@@ -20,9 +20,6 @@ struct IntegrityPayload;
 // Gets or creates and caches a new Archive from the path.
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path);
 
-// Destroy cached Archive objects.
-void ClearArchives();
-
 // Separates the path to Archive out.
 bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
