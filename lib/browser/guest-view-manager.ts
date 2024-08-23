@@ -167,8 +167,8 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'will-frame-navigate', {
       url: event.url,
       isMainFrame: event.isMainFrame,
-      frameProcessId: event.frame.processId,
-      frameRoutingId: event.frame.routingId
+      frameProcessId: event.processId,
+      frameRoutingId: event.routingId
     });
   });
 

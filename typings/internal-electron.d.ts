@@ -177,10 +177,12 @@ declare namespace Electron {
 
   interface IpcMainEvent {
     _replyChannel: ReplyChannel;
+    frameTreeNodeId?: number;
   }
 
   interface IpcMainInvokeEvent {
     _replyChannel: ReplyChannel;
+    frameTreeNodeId?: number;
   }
 
   // Deprecated / undocumented BrowserWindow methods
@@ -224,6 +226,11 @@ declare namespace Electron {
     removeListener(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
 
     once(event: 'destroyed', listener: (event: Electron.Event) => void): this;
+  }
+
+  interface WebContentsWillFrameNavigateEventParams {
+    processId: number;
+    routingId: number;
   }
 }
 
