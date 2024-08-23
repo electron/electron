@@ -78,13 +78,6 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   return nullptr;
 }
 
-void ClearArchives() {
-  base::AutoLock auto_lock(GetArchiveCacheLock());
-  ArchiveMap& map = GetArchiveCache();
-
-  map.clear();
-}
-
 bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
                         base::FilePath* relative_path,
