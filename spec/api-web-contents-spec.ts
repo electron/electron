@@ -2450,13 +2450,9 @@ describe('webContents module', () => {
 
     it('from an existing pdf document', async () => {
       const pdfPath = path.join(fixturesPath, 'cat.pdf');
+      const readyToPrint = once(w.webContents, '-pdf-ready-to-print');
       await w.loadFile(pdfPath);
-
-      // TODO(codebytere): the PDF plugin is not always ready immediately
-      // after the document is loaded, so we need to wait for it to be ready.
-      // We should find a better way to do this.
-      await setTimeout(3000);
-
+      await readyToPrint;
       const data = await w.webContents.printToPDF({});
       const doc = await pdfjs.getDocument(data).promise;
       expect(doc.numPages).to.equal(2);
