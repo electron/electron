@@ -320,8 +320,7 @@ describe('webFrameMain module', () => {
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
       await w.webContents.loadURL(server.url);
-      // Log just to keep mainFrame in scope.
-      console.log('mainFrame.url', mainFrame.url);
+      console.debug(mainFrame.url); // keep mainFrame in scope
     });
 
     // Fixed by #34411
@@ -338,8 +337,7 @@ describe('webFrameMain module', () => {
       // A short wait seems to be required to reproduce the crash.
       await setTimeout(100);
       await w.webContents.loadURL(crossOriginUrl);
-      // Log just to keep mainFrame in scope.
-      console.log('mainFrame.url', mainFrame.url);
+      console.debug(mainFrame.url); // keep mainFrame in scope
     });
   });
 
@@ -431,8 +429,13 @@ describe('webFrameMain module', () => {
 
   describe('pinned frame', () => {
     let server: Awaited<ReturnType<typeof createServer>>;
+    let secondUrl: string;
     before(async () => {
       server = await createServer();
+
+      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
+      // a separate origin because differing ports aren't enough 🤔
+      secondUrl = server.url.replace('127.0.0.1', 'localhost');
     });
     after(() => {
       server.server.close();
@@ -465,13 +468,30 @@ describe('webFrameMain module', () => {
       const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
       const [{ senderFrame }] = await pongPromise;
-
-      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
-      // a separate origin because differing ports aren't enough 🤔
-      const secondUrl = server.url.replace('127.0.0.1', 'localhost');
       await w.webContents.loadURL(secondUrl);
-
       expect(() => senderFrame.url).to.throw(/Render frame was disposed/);
+    });
+
+    it('can retrieve navigated frame from cached FrameTreeNodeId', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+      await w.webContents.loadURL(server.url);
+      const webFrame = w.webContents.mainFrame;
+      const pongPromise = once(ipcMain, 'preload-pong');
+      webFrame.send('preload-ping');
+      const [{ senderFrame }] = await pongPromise;
+      await w.webContents.loadURL(secondUrl);
+      // Retrieved frame should not be pinned and track navigations
+      const frame = webFrameMain.fromFrameTreeNodeId(senderFrame.frameTreeNodeId);
+      expect(frame).to.not.be.undefined();
+      expect(frame!.pinned).to.be.false();
+      expect(frame!.url).to.equal(secondUrl);
+      await w.webContents.loadURL(server.url);
+      expect(frame!.url).to.equal(server.url); // confirm tracking navigations
     });
   });
 });

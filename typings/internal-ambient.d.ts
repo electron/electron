@@ -125,6 +125,7 @@ declare namespace NodeJS {
   interface WebFrameMainBinding {
     WebFrameMain: typeof Electron.WebFrameMain;
     fromId(processId: number, routingId: number): Electron.WebFrameMain;
+    fromFrameTreeNodeId(frameTreeNodeId: number): Electron.WebFrameMain;
     _fromIdOrNull(processId: number, routingId: number, pinned: boolean): Electron.WebFrameMain | null;
   }
 
