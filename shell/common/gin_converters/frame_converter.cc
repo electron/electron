@@ -101,4 +101,16 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
   return true;
 }
 
+// static
+v8::Local<v8::Value> Converter<electron::api::PinnedRenderFrameHostRef>::ToV8(
+    v8::Isolate* isolate,
+    electron::api::PinnedRenderFrameHostRef val) {
+  auto* rfh = content::RenderFrameHost::FromFrameToken(val.token);
+  if (!rfh)
+    return v8::Null(isolate);
+  return electron::api::WebFrameMain::From(
+             isolate, rfh, electron::api::WebFrameMain::FrameType::Pinned)
+      .ToV8();
+}
+
 }  // namespace gin

@@ -24,7 +24,6 @@
 class GURL;
 
 namespace content {
-// struct GlobalRenderFrameHostToken;
 class RenderFrameHost;
 }  // namespace content
 
@@ -37,6 +36,23 @@ class Handle;
 
 namespace electron::api {
 
+// Helper struct for serializing RenderFrameHosts to binded as a pinned
+// WebFrameMain. This ensures the RenderFrameHost never gets swapped on
+// cross-site navigation, in  the case of race conditions.
+struct PinnedRenderFrameHostRef {
+ private:
+  explicit PinnedRenderFrameHostRef(
+      content::RenderFrameHost* render_frame_host);
+
+ public:
+  static PinnedRenderFrameHostRef Create(
+      content::RenderFrameHost* render_frame_host) {
+    return PinnedRenderFrameHostRef(render_frame_host);
+  }
+
+  content::GlobalRenderFrameHostToken token;
+};
+
 class WebContents;
 
 // Bindings for accessing frames from the main process.
@@ -46,8 +62,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
                      public gin_helper::Constructible<WebFrameMain> {
  public:
   enum class FrameType {
-    Normal,  // tracks navigation across RFH swaps
-    Pinned   // pins to lifespan of singular RFH
+    Default,  // tracks navigation across RFH swaps
+    Pinned    // pins to lifespan of singular RFH
   };
 
   // Create a new WebFrameMain and return the V8 wrapper of it.
@@ -56,16 +72,19 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host,
-      FrameType frame_type = FrameType::Normal);
+      FrameType frame_type = FrameType::Default);
   static gin::Handle<WebFrameMain> FromOrNull(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
+
   static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
+  static WebFrameMain* FromFrameToken(
+      content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromPinnedFrameToken(
       content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromRenderFrameHost(
       content::RenderFrameHost* render_frame_host,
-      FrameType frame_type = FrameType::Normal);
+      FrameType frame_type = FrameType::Default);
 
   // gin_helper::Constructible
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
@@ -83,7 +102,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame,
-                        FrameType frame_type = FrameType::Normal);
+                        FrameType frame_type = FrameType::Default);
   ~WebFrameMain() override;
 
  private:

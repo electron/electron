@@ -12,7 +12,6 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
-#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -57,7 +56,24 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
-typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
+PinnedRenderFrameHostRef::PinnedRenderFrameHostRef(
+    content::RenderFrameHost* render_frame_host)
+    : token(render_frame_host->GetGlobalFrameToken()) {}
+
+// FrameTreeNodeId -> WebFrameMain*
+// Using FrameTreeNode allows us to track frame across navigations. This
+// is most similar to how <iframe> works.
+typedef std::unordered_map<int /* frame_tree_node_id */, WebFrameMain*>
+    WebFrameMainIdMap;
+
+// Token -> WebFrameMain*
+// Maps exact RFH to a WebFrameMain instance.
+typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
+    WebFrameMainTokenMap;
+
+// Token -> WebFrameMain*
+// RFH token is specific to the RFH instance. If it's destroyed by
+// navigation, we won't be able to lookup the frame.
 typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
     PinnedWebFrameMainIdMap;
 
@@ -65,7 +81,10 @@ WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
   return *instance;
 }
-
+WebFrameMainTokenMap& GetWebFrameMainTokenMap() {
+  static base::NoDestructor<WebFrameMainTokenMap> instance;
+  return *instance;
+}
 PinnedWebFrameMainIdMap& GetPinnedWebFrameMainMap() {
   static base::NoDestructor<PinnedWebFrameMainIdMap> instance;
   return *instance;
@@ -75,6 +94,15 @@ PinnedWebFrameMainIdMap& GetPinnedWebFrameMainMap() {
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
   WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
   auto iter = frame_map.find(frame_tree_node_id);
+  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
+  return web_frame;
+}
+
+// static
+WebFrameMain* WebFrameMain::FromFrameToken(
+    content::GlobalRenderFrameHostToken frame_token) {
+  WebFrameMainTokenMap& frame_map = GetWebFrameMainTokenMap();
+  auto iter = frame_map.find(frame_token);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
 }
@@ -95,19 +123,10 @@ WebFrameMain* WebFrameMain::FromRenderFrameHost(
   if (!rfh)
     return nullptr;
 
-  if (frame_type == WebFrameMain::FrameType::Normal) {
-    // TODO(codebytere): remove after refactoring away from FrameTreeNodeId as
-    // map key.
-    auto* ftn =
-        static_cast<content::RenderFrameHostImpl*>(rfh)->frame_tree_node();
-    if (!ftn)
-      return nullptr;
-
-    return FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
-  } else {
-    auto frame_token = rfh->GetGlobalFrameToken();
-    return FromPinnedFrameToken(frame_token);
-  }
+  auto frame_token = rfh->GetGlobalFrameToken();
+  return frame_type == WebFrameMain::FrameType::Default
+             ? FromFrameToken(frame_token)
+             : FromPinnedFrameToken(frame_token);
 }
 
 gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
@@ -121,6 +140,7 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh, FrameType frame_type)
     GetPinnedWebFrameMainMap().emplace(frame_token_, this);
   } else {
     GetWebFrameMainMap().emplace(frame_tree_node_id_, this);
+    GetWebFrameMainTokenMap().emplace(frame_token_, this);
   }
 }
 
@@ -135,6 +155,7 @@ void WebFrameMain::Destroyed() {
     GetPinnedWebFrameMainMap().erase(frame_token_);
   } else {
     GetWebFrameMainMap().erase(frame_tree_node_id_);
+    GetWebFrameMainTokenMap().erase(frame_token_);
   }
 
   Unpin();
@@ -146,12 +167,14 @@ void WebFrameMain::MarkRenderFrameDisposed() {
   TeardownMojoConnection();
 }
 
+// Should only be called when swapping frames.
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
-  // Should only be called when swapping frames.
+  GetWebFrameMainTokenMap().erase(frame_token_);
+  frame_token_ = rfh->GetGlobalFrameToken();
+  GetWebFrameMainTokenMap().emplace(frame_token_, this);
+
   render_frame_disposed_ = false;
   render_frame_ = rfh;
-  if (rfh)
-    frame_token_ = rfh->GetGlobalFrameToken();
   TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }

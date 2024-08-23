@@ -1682,7 +1682,8 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   //
   // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
-  auto* web_frame = WebFrameMain::FromRenderFrameHost(new_host);
+  auto* web_frame =
+      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
   if (web_frame) {
     web_frame->UpdateRenderFrameHost(new_host);
   }
@@ -1975,6 +1976,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
   if (frame) {
     dict.Set("frameId", frame->GetRoutingID());
     dict.Set("processId", frame->GetProcess()->GetID());
+    dict.Set("senderFrame", PinnedRenderFrameHostRef::Create(frame));
   }
   return event;
 }

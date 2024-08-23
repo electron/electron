@@ -486,10 +486,6 @@ const addReplyToEvent = (event: Electron.IpcMainEvent) => {
 
 const addSenderToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, sender: Electron.WebContents) => {
   event.sender = sender;
-  const { processId, frameId } = event;
-  Object.defineProperty(event, 'senderFrame', {
-    get: () => webFrameMain.fromId(processId, frameId)
-  });
 };
 
 const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {

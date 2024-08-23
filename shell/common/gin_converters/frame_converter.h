@@ -12,6 +12,12 @@ namespace content {
 class RenderFrameHost;
 }
 
+namespace electron {
+namespace api {
+struct PinnedRenderFrameHostRef;
+}
+}  // namespace electron
+
 namespace gin {
 
 template <>
@@ -31,6 +37,12 @@ struct Converter<gin_helper::AccessorValue<content::RenderFrameHost*>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gin_helper::AccessorValue<content::RenderFrameHost*>* out);
+};
+
+template <>
+struct Converter<electron::api::PinnedRenderFrameHostRef> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::PinnedRenderFrameHostRef val);
 };
 
 }  // namespace gin
