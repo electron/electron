@@ -25,8 +25,9 @@ ElectronWebUIControllerFactory::~ElectronWebUIControllerFactory() = default;
 content::WebUI::TypeID ElectronWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) {
-  if (url.host() == chrome::kChromeUIDevToolsHost ||
-      url.host() == chrome::kChromeUIAccessibilityHost) {
+  if (const std::string_view host = url.host();
+      host == chrome::kChromeUIDevToolsHost ||
+      host == chrome::kChromeUIAccessibilityHost) {
     return const_cast<ElectronWebUIControllerFactory*>(this);
   }
 
