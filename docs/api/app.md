@@ -1254,7 +1254,7 @@ Returns `boolean` - Whether the current desktop environment is Unity launcher.
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
-  * `type` string (optional) _macOS_ - Can be one of `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. Only available on macOS 13 and up. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows) for more information about each type.
+  * `type` string (optional) _macOS_ - Can be one of `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. Only available on macOS 13 and up. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings) for more information about each type.
   * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default. Only available on macOS 13 and up.
   * `path` string (optional) _Windows_ - The executable path to compare against. Defaults to `process.execPath`.
   * `args` string[] (optional) _Windows_ - The command-line arguments to compare against. Defaults to an empty array.
@@ -1278,7 +1278,7 @@ Returns `Object`:
   * `scope` string _Windows_ - one of `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
   * `enabled` boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
-### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+### `app.setLoginItemSettings(settings)`
 
 * `settings` Object
   * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
@@ -1292,7 +1292,7 @@ Returns `Object`:
   * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default. Only available on macOS 13 and up.
   * `path` string (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
-  * `args` string[] (optional) _Windows_ - The command-line arguments to pass to
+  * `args` string[] (optional) _Windows_ _Linux_ - The command-line arguments to pass to
     the executable. Defaults to an empty array. Take care to wrap paths in
     quotes.
   * `enabled` boolean (optional) _Windows_ - `true` will change the startup approved registry key and `enable / disable` the App in Task Manager and Windows Settings.
@@ -1324,6 +1324,8 @@ app.setLoginItemSettings({
 ```
 
 For more information about setting different services as login items on macOS 13 and up, see [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice?language=objc).
+
+On Linux, this uses the Background XDG desktop portal. For more information, see [`Background Portal`](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Background.html#background)
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 

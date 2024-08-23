@@ -10,6 +10,9 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
+#include "dbus/bus.h"
+#include "dbus/message.h"
+#include "dbus/object_proxy.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
@@ -26,6 +29,10 @@
 namespace electron {
 
 namespace {
+
+const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
+const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
+const char kFreedesktopPortalBackground[] = "org.freedesktop.portal.Background";
 
 const char kXdgSettings[] = "xdg-settings";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
@@ -139,7 +146,55 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   }
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  dbus::Bus::Options options;
+  auto bus = base::MakeRefCounted<dbus::Bus>(options);
+
+  dbus::ObjectProxy* object_proxy = bus->GetObjectProxy(
+      kFreedesktopPortalName, dbus::ObjectPath(kFreedesktopPortalPath));
+  dbus::MethodCall method_call(kFreedesktopPortalBackground,
+                               "RequestBackground");
+  dbus::MessageWriter writer(&method_call);
+  writer.AppendString("");
+
+  dbus::MessageWriter options_writer(nullptr);
+  writer.OpenArray("{sv}", &options_writer);
+
+  // whether to start the app at login, if false this will
+  // remove the app from the autostart list
+  dbus::MessageWriter autostart_writer(nullptr);
+  options_writer.OpenDictEntry(&autostart_writer);
+  autostart_writer.AppendString("autostart");
+  autostart_writer.AppendVariantOfBool(settings.open_at_login);
+  options_writer.CloseContainer(&autostart_writer);
+
+  if (!settings.args.empty()) {
+    // the commandline args to start the app with
+    dbus::MessageWriter commandline_writer(nullptr);
+    options_writer.OpenDictEntry(&commandline_writer);
+    commandline_writer.AppendString("commandline");
+    dbus::MessageWriter commandline_variants_writer(nullptr);
+    commandline_writer.OpenVariant("as", &commandline_variants_writer);
+    dbus::MessageWriter commandline_args_writer(nullptr);
+    commandline_variants_writer.OpenArray("s", &commandline_args_writer);
+    for (const auto& arg : settings.args) {
+      commandline_args_writer.AppendString(base::UTF16ToUTF8(arg));
+    }
+    commandline_variants_writer.CloseContainer(&commandline_args_writer);
+    commandline_writer.CloseContainer(&commandline_variants_writer);
+    options_writer.CloseContainer(&commandline_writer);
+  }
+
+  writer.CloseContainer(&options_writer);
+
+  std::unique_ptr<dbus::Response> response =
+      object_proxy
+          ->CallMethodAndBlock(&method_call,
+                               dbus::ObjectProxy::TIMEOUT_USE_DEFAULT)
+          .value_or(nullptr);
+
+  bus->ShutdownAndBlock();
+}
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
