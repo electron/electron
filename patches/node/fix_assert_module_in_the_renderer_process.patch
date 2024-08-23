@@ -13,7 +13,7 @@ if the override has been disabled.
 This will be upstreamed.
 
 diff --git a/lib/assert.js b/lib/assert.js
-index 9dfcf80a913942c93b206c6f871ac7807c7a7e81..4d25a22aedf7d7182bb709864e29b7e725336323 100644
+index eadc3844c20128bb9f9a269e5d599f8febf17421..e4615e55c0847d969e9c95295ddecfc640019c99 100644
 --- a/lib/assert.js
 +++ b/lib/assert.js
 @@ -66,6 +66,7 @@ const { inspect } = require('internal/util/inspect');
@@ -44,10 +44,10 @@ index 9dfcf80a913942c93b206c6f871ac7807c7a7e81..4d25a22aedf7d7182bb709864e29b7e7
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index f9d29f0065b1de63a62cfdce74a9705c22dd87d7..3f44160f1bd40fc2d4658f10edf0d0b374732ca2 100644
+index fe41619f45913fe31a59771c8d1af6cde3b89f66..bb6c6d51846fed1d160ec9dcd5a5dd67b4fef911 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -277,6 +277,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -244,6 +244,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
          s.prepare_stack_trace_callback : PrepareStackTraceCallback;
      isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
