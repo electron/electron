@@ -22,6 +22,7 @@
 
 #include "base/containers/contains.h"
 #include "base/memory/raw_ref.h"
+#include "base/numerics/ranges.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
@@ -1642,11 +1643,8 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   // we'll have constant false positives when the window is moving but the user
   // hasn't changed its size at all.
   auto areWithinOnePixel = [](gfx::Size old_size, gfx::Size new_size) -> bool {
-    bool within_range_width =
-        std::abs(old_size.width() - new_size.width()) <= 1;
-    bool within_range_height =
-        std::abs(old_size.height() - new_size.height()) <= 1;
-    return within_range_width && within_range_height;
+    return base::IsApproximatelyEqual(old_size.width(), new_size.width(), 1) &&
+           base::IsApproximatelyEqual(old_size.height(), new_size.height(), 1);
   };
 
   // We use |GetBounds| to account for minimized windows on Windows.
