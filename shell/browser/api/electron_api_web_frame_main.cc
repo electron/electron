@@ -72,7 +72,7 @@ typedef std::unordered_map<int /* frame_tree_node_id */, WebFrameMain*>
 typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
     FrameTokenMap;
 
-WebFrameMainIdMap& GetFrameTreeNodeIdMap() {
+FrameTreeNodeIdMap& GetFrameTreeNodeIdMap() {
   static base::NoDestructor<FrameTreeNodeIdMap> instance;
   return *instance;
 }
@@ -89,7 +89,7 @@ FrameTokenMap& GetPinnedFrameTokenMap() {
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
   // Pinned frames aren't tracked across navigations so only non-pinned
   // frames will be retrieved.
-  WebFrameMainIdMap& frame_map = GetFrameTreeNodeIdMap();
+  FrameTreeNodeIdMap& frame_map = GetFrameTreeNodeIdMap();
   auto iter = frame_map.find(frame_tree_node_id);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
@@ -123,7 +123,7 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh, FrameType frame_type)
       frame_token_(rfh->GetGlobalFrameToken()),
       render_frame_(rfh),
       render_frame_pinned_(frame_type == FrameType::Pinned) {
-  if (frame_type == FrameType::Pinned) {
+  if (render_frame_pinned_) {
     GetPinnedFrameTokenMap().emplace(frame_token_, this);
   } else {
     GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
@@ -156,6 +156,8 @@ void WebFrameMain::MarkRenderFrameDisposed() {
 
 // Should only be called when swapping frames.
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
+  DCHECK(!render_frame_pinned_);
+
   GetFrameTokenMap().erase(frame_token_);
   frame_token_ = rfh->GetGlobalFrameToken();
   GetFrameTokenMap().emplace(frame_token_, this);

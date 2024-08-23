@@ -38,7 +38,7 @@ namespace electron::api {
 
 // Helper struct for serializing RenderFrameHosts to binded as a pinned
 // WebFrameMain. This ensures the RenderFrameHost never gets swapped on
-// cross-site navigation, in  the case of race conditions.
+// cross-site navigation, in the case of race conditions.
 struct PinnedRenderFrameHostRef {
  private:
   explicit PinnedRenderFrameHostRef(
@@ -81,7 +81,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
   static WebFrameMain* FromFrameToken(
-      content::GlobalRenderFrameHostToken frame_token);
+      content::GlobalRenderFrameHostToken frame_token,
+      WebFrameMain::FrameType frame_type);
   static WebFrameMain* FromPinnedFrameToken(
       content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromRenderFrameHost(
