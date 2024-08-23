@@ -305,6 +305,7 @@ describe('webFrameMain module', () => {
       await w.loadURL(server.url);
       const { mainFrame } = w.webContents;
       expect(mainFrame.url).to.equal(server.url);
+      expect(mainFrame.pinned).to.be.false();
       await w.loadURL(crossOriginUrl);
       expect(w.webContents.mainFrame).to.equal(mainFrame);
       expect(mainFrame.url).to.equal(crossOriginUrl);
@@ -425,6 +426,52 @@ describe('webFrameMain module', () => {
       });
       w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
       await promise;
+    });
+  });
+
+  describe('pinned frame', () => {
+    let server: Awaited<ReturnType<typeof createServer>>;
+    before(async () => {
+      server = await createServer();
+    });
+    after(() => {
+      server.server.close();
+    });
+
+    it('receives a pinned frame from IPC events', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+      await w.webContents.loadURL(server.url);
+      const webFrame = w.webContents.mainFrame;
+      const pongPromise = once(ipcMain, 'preload-pong');
+      webFrame.send('preload-ping');
+      const [{ senderFrame }] = await pongPromise;
+      expect(senderFrame.pinned).to.be.true();
+    });
+
+    it('disposes pinned frame after cross-origin navigation', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+      await w.webContents.loadURL(server.url);
+      const webFrame = w.webContents.mainFrame;
+      const pongPromise = once(ipcMain, 'preload-pong');
+      webFrame.send('preload-ping');
+      const [{ senderFrame }] = await pongPromise;
+
+      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
+      // a separate origin because differing ports aren't enough 🤔
+      const secondUrl = server.url.replace('127.0.0.1', 'localhost');
+      await w.webContents.loadURL(secondUrl);
+
+      expect(() => senderFrame.url).to.throw(/Render frame was disposed/);
     });
   });
 });
