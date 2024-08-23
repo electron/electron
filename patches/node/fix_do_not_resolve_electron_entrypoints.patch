@@ -19,19 +19,19 @@ index 449131b9af99744c08d62d73f8d124cef5c9cc71..3df06eff63106aece1009d88fd01df2a
        context = { __proto__: context, source };
      }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 5e79fc2c04ffb6006229920cc1ab61b537fed4c0..d62565bf4fe51be41d9ce6ef3ffc04ed34d17e1a 100644
+index f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd..b6f2d7194cb75ecc8c47869761c63184707ade40 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -379,6 +379,9 @@ function cjsPreparseModuleExports(filename, source) {
-     if (cached) {
-       return { module, exportNames: cached.exportNames };
-     }
-+    if (filename === 'electron') {
-+      return { module, exportNames: new SafeSet(['default', ...Object.keys(module.exports)]) };
-+    }
+@@ -375,6 +375,9 @@ function cjsPreparseModuleExports(filename, source) {
+   if (module && module[kModuleExportNames] !== undefined) {
+     return { module, exportNames: module[kModuleExportNames] };
    }
++  if (filename === 'electron') {
++    return { module, exportNames: new SafeSet(['default', ...Object.keys(module.exports)]) };
++  }
    const loaded = Boolean(module);
    if (!loaded) {
+     module = new CJSModule(filename);
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
 index ca401044c0178c46db9b439b27c440a5d7924c84..dc1a682f0a3cf1ba1095c60bf6a6ca992d6043b3 100644
 --- a/lib/internal/modules/run_main.js
