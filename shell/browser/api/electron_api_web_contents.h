@@ -492,6 +492,8 @@ class WebContents : public ExclusiveAccessContext,
 
   void SetBackgroundColor(std::optional<SkColor> color);
 
+  void PDFReadyToPrint();
+
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();
   }

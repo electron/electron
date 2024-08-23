@@ -3784,6 +3784,10 @@ void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
   }
 }
 
+void WebContents::PDFReadyToPrint() {
+  Emit("-pdf-ready-to-print");
+}
+
 void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
   Emit("input-event", event);
 }
