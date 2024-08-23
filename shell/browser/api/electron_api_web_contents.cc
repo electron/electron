@@ -1772,6 +1772,11 @@ void WebContents::DOMContentLoaded(
   if (web_frame)
     web_frame->DOMContentLoaded();
 
+  auto* pinned_web_frame = WebFrameMain::FromRenderFrameHost(
+      render_frame_host, WebFrameMain::FrameType::Pinned);
+  if (pinned_web_frame)
+    pinned_web_frame->DOMContentLoaded();
+
   if (!render_frame_host->GetParent())
     Emit("dom-ready");
 }
