@@ -41,8 +41,8 @@ using ProtocolHandler =
                                  StartLoadingCallback)>;
 
 // scheme => (type, handler).
-using HandlersMap =
-    std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
+using HandlersMap = std::
+    map<std::string, std::pair<ProtocolType, ProtocolHandler>, std::less<>>;
 
 // Implementation of URLLoaderFactory.
 class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
