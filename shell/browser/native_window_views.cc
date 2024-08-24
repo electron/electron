@@ -745,19 +745,12 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
-#else
-  if (IsVisible())
-    widget()->SetFullscreen(fullscreen);
-  else if (fullscreen)
-    widget()->native_widget_private()->Show(ui::SHOW_STATE_FULLSCREEN,
-                                            gfx::Rect());
-#endif
+
   // Auto-hide menubar when in fullscreen.
   if (fullscreen) {
     menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
     SetMenuBarVisibility(false);
   } else {
-#if BUILDFLAG(IS_WIN)
     // No fullscreen -> fullscreen video -> un-fullscreen video results
     // in `NativeWindowViews::SetFullScreen(false)` being called twice.
     // `menu_bar_visible_before_fullscreen_` is always false on the
@@ -765,11 +758,28 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     // matter what. We check `leaving_fullscreen` to avoid this.
     if (!leaving_fullscreen)
       return;
-#endif
+
     SetMenuBarVisibility(!IsMenuBarAutoHide() &&
                          menu_bar_visible_before_fullscreen_);
     menu_bar_visible_before_fullscreen_ = false;
   }
+#else
+  if (IsVisible())
+    widget()->SetFullscreen(fullscreen);
+  else if (fullscreen)
+    widget()->native_widget_private()->Show(ui::SHOW_STATE_FULLSCREEN,
+                                            gfx::Rect());
+
+  // Auto-hide menubar when in fullscreen.
+  if (fullscreen) {
+    menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
+    SetMenuBarVisibility(false);
+  } else {
+    SetMenuBarVisibility(!IsMenuBarAutoHide() &&
+                         menu_bar_visible_before_fullscreen_);
+    menu_bar_visible_before_fullscreen_ = false;
+  }
+#endif
 }
 
 bool NativeWindowViews::IsFullscreen() const {
