@@ -4,6 +4,7 @@
 
 #include "shell/app/command_line_args.h"
 
+#include <algorithm>
 #include <locale>
 
 #include "sandbox/policy/switches.h"
@@ -11,29 +12,20 @@
 
 namespace {
 
-bool IsUrlArg(const base::CommandLine::CharType* arg) {
-  // the first character must be a letter for this to be a URL
-  auto c = *arg;
-  if (std::isalpha(c, std::locale::classic())) {
-    for (auto* p = arg + 1; *p; ++p) {
-      c = *p;
+// we say it's a URL arg if it starts with a URI scheme that:
+// 1. starts with an alpha, and
+// 2. contains no spaces, and
+// 3. is longer than one char (to ensure it's not a Windows drive path)
+bool IsUrlArg(const base::CommandLine::StringViewType arg) {
+  const auto scheme_end = arg.find(':');
+  if (scheme_end == base::CommandLine::StringViewType::npos)
+    return false;
 
-      // colon indicates that the argument starts with a URI scheme
-      if (c == ':') {
-        // it could also be a Windows filesystem path
-        if (p == arg + 1)
-          break;
-
-        return true;
-      }
-
-      // white-space before a colon means it's not a URL
-      if (std::isspace(c, std::locale::classic()))
-        break;
-    }
-  }
-
-  return false;
+  const auto& c_locale = std::locale::classic();
+  const auto isspace = [&](auto ch) { return std::isspace(ch, c_locale); };
+  const auto scheme = arg.substr(0U, scheme_end);
+  return std::size(scheme) > 1U && std::isalpha(scheme.front(), c_locale) &&
+         std::ranges::none_of(scheme, isspace);
 }
 
 }  // namespace
