@@ -16,21 +16,6 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skbitmap_operations.h"
 
-namespace {
-
-bool IsValidMinAndMaxFrameSize(gfx::Size min_frame_size,
-                               gfx::Size max_frame_size) {
-  // Returns true if
-  // 0 < |min_frame_size| <= |max_frame_size| <= media::limits::kMaxDimension.
-  return 0 < min_frame_size.width() && 0 < min_frame_size.height() &&
-         min_frame_size.width() <= max_frame_size.width() &&
-         min_frame_size.height() <= max_frame_size.height() &&
-         max_frame_size.width() <= media::limits::kMaxDimension &&
-         max_frame_size.height() <= media::limits::kMaxDimension;
-}
-
-}  // namespace
-
 namespace electron {
 
 OffScreenVideoConsumer::OffScreenVideoConsumer(
@@ -43,7 +28,23 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
 
-  SizeChanged(view_->SizeInPixels());
+  // Previous design of OSR try to set the resolution constraint to match the
+  // view's size. It is actually not necessary and creates faulty textures
+  // when the window/view's size changes frequently. The constraint may not
+  // take effect before the internal frame size changes, and makes the capturer
+  // try to resize the new frame size to the old constraint size, which makes
+  // the output image blurry. (For example, small window suddenly expands to
+  // maximum size, will actually produce a small output image with maximized
+  // window resized to fit the small image, however, the expected output is
+  // a maximized image without resizing).
+  // So, we just set the constraint to no limit (1x1 to max). When the window
+  // size changed, a new frame with new size will be automatically generated.
+  // There's no need to manually set the constraint and request a new frame.
+  video_capturer_->SetResolutionConstraints(
+      gfx::Size(1, 1),
+      gfx::Size(media::limits::kMaxDimension, media::limits::kMaxDimension),
+      false);
+
   SetFrameRate(view_->frame_rate());
 }
 
@@ -51,7 +52,10 @@ OffScreenVideoConsumer::~OffScreenVideoConsumer() = default;
 
 void OffScreenVideoConsumer::SetActive(bool active) {
   if (active) {
-    video_capturer_->Start(this, viz::mojom::BufferFormatPreference::kDefault);
+    video_capturer_->Start(
+        this, view_->offscreen_use_shared_texture()
+                  ? viz::mojom::BufferFormatPreference::kPreferGpuMemoryBuffer
+                  : viz::mojom::BufferFormatPreference::kDefault);
   } else {
     video_capturer_->Stop();
   }
@@ -61,43 +65,77 @@ void OffScreenVideoConsumer::SetFrameRate(int frame_rate) {
   video_capturer_->SetMinCapturePeriod(base::Seconds(1) / frame_rate);
 }
 
-void OffScreenVideoConsumer::SizeChanged(const gfx::Size& size_in_pixels) {
-  DCHECK(IsValidMinAndMaxFrameSize(size_in_pixels, size_in_pixels));
-  video_capturer_->SetResolutionConstraints(size_in_pixels, size_in_pixels,
-                                            true);
-  video_capturer_->RequestRefreshFrame();
-}
-
 void OffScreenVideoConsumer::OnFrameCaptured(
     ::media::mojom::VideoBufferHandlePtr data,
     ::media::mojom::VideoFrameInfoPtr info,
     const gfx::Rect& content_rect,
     mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
         callbacks) {
-  auto& data_region = data->get_read_only_shmem_region();
+  // Since we don't call ProvideFeedback, just need Done to release the frame,
+  // there's no need to call the callbacks, see in_flight_frame_delivery.cc
+  // The destructor will call Done for us once the pipe closed.
 
-  if (!CheckContentRect(content_rect)) {
-    SizeChanged(view_->SizeInPixels());
+  // Offscreen using GPU shared texture
+  if (view_->offscreen_use_shared_texture()) {
+    CHECK(data->is_gpu_memory_buffer_handle());
+
+    auto& orig_handle = data->get_gpu_memory_buffer_handle();
+    CHECK(!orig_handle.is_null());
+
+    // Clone the handle to support keep the handle alive after the callback
+    auto gmb_handle = orig_handle.Clone();
+
+    OffscreenSharedTextureValue texture;
+    texture.pixel_format = info->pixel_format;
+    texture.coded_size = info->coded_size;
+    texture.visible_rect = info->visible_rect;
+    texture.content_rect = content_rect;
+    texture.timestamp = info->timestamp.InMicroseconds();
+    texture.frame_count = info->metadata.capture_counter.value_or(0);
+    texture.capture_update_rect = info->metadata.capture_update_rect;
+    texture.source_size = info->metadata.source_size;
+    texture.region_capture_rect = info->metadata.region_capture_rect;
+    texture.widget_type = view_->GetWidgetType();
+
+#if BUILDFLAG(IS_WIN)
+    texture.shared_texture_handle =
+        reinterpret_cast<uintptr_t>(gmb_handle.dxgi_handle.Get());
+#elif BUILDFLAG(IS_APPLE)
+    texture.shared_texture_handle =
+        reinterpret_cast<uintptr_t>(gmb_handle.io_surface.get());
+#elif BUILDFLAG(IS_LINUX)
+    const auto& native_pixmap = gmb_handle.native_pixmap_handle;
+    texture.modifier = native_pixmap.modifier;
+    for (const auto& plane : native_pixmap.planes) {
+      texture.planes.emplace_back(plane.stride, plane.offset, plane.size,
+                                  plane.fd.get());
+    }
+#endif
+
+    // The release holder will be released from JS side when `release` called
+    texture.releaser_holder = new OffscreenReleaserHolder(std::move(gmb_handle),
+                                                          std::move(callbacks));
+
+    callback_.Run(content_rect, {}, std::move(texture));
     return;
   }
 
-  mojo::Remote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
-      callbacks_remote(std::move(callbacks));
+  // Regular shared texture capture using shared memory
+  const auto& data_region = data->get_read_only_shmem_region();
 
   if (!data_region.IsValid()) {
-    callbacks_remote->Done();
     return;
   }
+
   base::ReadOnlySharedMemoryMapping mapping = data_region.Map();
   if (!mapping.IsValid()) {
     DLOG(ERROR) << "Shared memory mapping failed.";
-    callbacks_remote->Done();
     return;
   }
+
   if (mapping.size() <
       media::VideoFrame::AllocationSize(info->pixel_format, info->coded_size)) {
     DLOG(ERROR) << "Shared memory size was less than expected.";
-    callbacks_remote->Done();
     return;
   }
 
@@ -127,30 +165,17 @@ void OffScreenVideoConsumer::OnFrameCaptured(
       [](void* addr, void* context) {
         delete static_cast<FramePinner*>(context);
       },
-      new FramePinner{std::move(mapping), callbacks_remote.Unbind()});
+      new FramePinner{std::move(mapping), std::move(callbacks)});
   bitmap.setImmutable();
 
+  // Since update_rect is already offset-ed with same origin of content_rect,
+  // there's nothing more to do with the imported bitmap.
   std::optional<gfx::Rect> update_rect = info->metadata.capture_update_rect;
   if (!update_rect.has_value() || update_rect->IsEmpty()) {
     update_rect = content_rect;
   }
 
-  callback_.Run(*update_rect, bitmap);
-}
-
-bool OffScreenVideoConsumer::CheckContentRect(const gfx::Rect& content_rect) {
-  gfx::Size view_size = view_->SizeInPixels();
-  gfx::Size content_size = content_rect.size();
-
-  if (std::abs(view_size.width() - content_size.width()) > 2) {
-    return false;
-  }
-
-  if (std::abs(view_size.height() - content_size.height()) > 2) {
-    return false;
-  }
-
-  return true;
+  callback_.Run(*update_rect, bitmap, {});
 }
 
 }  // namespace electron

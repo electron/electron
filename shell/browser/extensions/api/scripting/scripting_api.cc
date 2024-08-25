@@ -519,7 +519,7 @@ api::scripting::RegisteredContentScript CreateRegisteredContentScriptInfo(
         converted.reserve(sources.size());
         for (auto& source : sources) {
           CHECK(source.file)
-              << "Content scripts don't allow arbtirary code strings";
+              << "Content scripts don't allow arbitrary code strings";
           converted.push_back(std::move(*source.file));
         }
         return converted;

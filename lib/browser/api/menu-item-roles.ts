@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, webContents, WebContents, MenuItemConstructorOptions } from 'electron/main';
+import { app, BaseWindow, BrowserWindow, session, webContents, WebContents, MenuItemConstructorOptions } from 'electron/main';
 
 const isMac = process.platform === 'darwin';
 const isWindows = process.platform === 'win32';
@@ -13,7 +13,7 @@ interface Role {
   label: string;
   accelerator?: string;
   checked?: boolean;
-  windowMethod?: ((window: BrowserWindow) => void);
+  windowMethod?: ((window: BaseWindow) => void);
   webContentsMethod?: ((webContents: WebContents) => void);
   appMethod?: () => void;
   registerAccelerator?: boolean;
@@ -53,8 +53,10 @@ export const roleList: Record<RoleId, Role> = {
     label: 'Force Reload',
     accelerator: 'Shift+CmdOrCtrl+R',
     nonNativeMacOSRole: true,
-    windowMethod: (window: BrowserWindow) => {
-      window.webContents.reloadIgnoringCache();
+    windowMethod: (window: BaseWindow) => {
+      if (window instanceof BrowserWindow) {
+        window.webContents.reloadIgnoringCache();
+      }
     }
   },
   front: {
@@ -110,7 +112,11 @@ export const roleList: Record<RoleId, Role> = {
     label: 'Reload',
     accelerator: 'CmdOrCtrl+R',
     nonNativeMacOSRole: true,
-    windowMethod: w => w.reload()
+    windowMethod: (w: BaseWindow) => {
+      if (w instanceof BrowserWindow) {
+        w.reload();
+      }
+    }
   },
   resetzoom: {
     label: 'Actual Size',
@@ -164,7 +170,7 @@ export const roleList: Record<RoleId, Role> = {
   togglefullscreen: {
     label: 'Toggle Full Screen',
     accelerator: isMac ? 'Control+Command+F' : 'F11',
-    windowMethod: (window: BrowserWindow) => {
+    windowMethod: (window: BaseWindow) => {
       window.setFullScreen(!window.isFullScreen());
     }
   },
@@ -361,7 +367,7 @@ export function getDefaultSubmenu (role: RoleId) {
   return submenu;
 }
 
-export function execute (role: RoleId, focusedWindow: BrowserWindow, focusedWebContents: WebContents) {
+export function execute (role: RoleId, focusedWindow: BaseWindow, focusedWebContents: WebContents) {
   if (!canExecuteRole(role)) return false;
 
   const { appMethod, webContentsMethod, windowMethod } = roleList[role];

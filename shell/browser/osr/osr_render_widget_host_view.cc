@@ -177,6 +177,7 @@ class ElectronDelegatedFrameHostClient
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
+    bool offscreen_use_shared_texture,
     bool painting,
     int frame_rate,
     const OnPaintCallback& callback,
@@ -187,6 +188,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       parent_host_view_(parent_host_view),
       transparent_(transparent),
+      offscreen_use_shared_texture_(offscreen_use_shared_texture),
       callback_(callback),
       frame_rate_(frame_rate),
       size_(initial_size),
@@ -544,8 +546,9 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, true, embedder_host_view->frame_rate(), callback_,
-      render_widget_host, embedder_host_view, size());
+      transparent_, offscreen_use_shared_texture_, true,
+      embedder_host_view->frame_rate(), callback_, render_widget_host,
+      embedder_host_view, size());
 }
 
 const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
@@ -654,8 +657,15 @@ uint64_t OffScreenRenderWidgetHostView::GetNSViewId() const {
 }
 #endif
 
-void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
-                                            const SkBitmap& bitmap) {
+void OffScreenRenderWidgetHostView::OnPaint(
+    const gfx::Rect& damage_rect,
+    const SkBitmap& bitmap,
+    const OffscreenSharedTexture& texture) {
+  if (texture.has_value()) {
+    callback_.Run(damage_rect, {}, texture);
+    return;
+  }
+
   backing_ = std::make_unique<SkBitmap>();
   backing_->allocN32Pixels(bitmap.width(), bitmap.height(), !transparent_);
   bitmap.readPixels(backing_->pixmap());
@@ -711,7 +721,7 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
   }
 
   callback_.Run(gfx::IntersectRects(gfx::Rect(size_in_pixels), damage_rect),
-                frame);
+                frame, {});
 
   ReleaseResize();
 }

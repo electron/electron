@@ -50,7 +50,7 @@ function getPixelColor (
   return `#${formatHexByte(r)}${formatHexByte(g)}${formatHexByte(b)}`;
 }
 
-/** Calculate euclidian distance between colors. */
+/** Calculate euclidean distance between colors. */
 function colorDistance (hexColorA: string, hexColorB: string): number {
   const colorA = hexToRgba(hexColorA);
   const colorB = hexToRgba(hexColorB);

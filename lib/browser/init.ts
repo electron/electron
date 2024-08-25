@@ -212,7 +212,7 @@ if (packagePath) {
       }
     });
   } else {
-    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is syncronous
+    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is synchronous
     appCodeLoaded!();
     process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
     Module._load(path.join(packagePath, mainStartupScript), Module, true);
