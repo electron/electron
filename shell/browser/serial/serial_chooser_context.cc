@@ -5,9 +5,9 @@
 #include "shell/browser/serial/serial_chooser_context.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 
-#include <string_view>
 #include "base/base64.h"
 #include "base/containers/contains.h"
 #include "base/values.h"

@@ -4,10 +4,10 @@
 
 #include "shell/browser/usb/usb_chooser_context.h"
 
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#include <string_view>
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/task/sequenced_task_runner.h"

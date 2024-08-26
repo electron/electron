@@ -5,9 +5,9 @@
 #include "shell/browser/api/electron_api_debugger.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 
-#include <string_view>
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
