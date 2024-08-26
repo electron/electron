@@ -455,8 +455,7 @@ struct Converter<network::mojom::SSLConfigPtr> {
         !options.Get("disabledCipherSuites", &(*out)->disabled_cipher_suites)) {
       return false;
     }
-    std::sort((*out)->disabled_cipher_suites.begin(),
-              (*out)->disabled_cipher_suites.end());
+    std::ranges::sort((*out)->disabled_cipher_suites);
 
     // TODO(nornagon): also support other SSLConfig properties?
     return true;

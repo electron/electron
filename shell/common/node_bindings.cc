@@ -800,8 +800,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 #if BUILDFLAG(IS_WIN)
   auto& electron_args = ElectronCommandLine::argv();
   std::vector<std::string> args(electron_args.size());
-  std::transform(electron_args.cbegin(), electron_args.cend(), args.begin(),
-                 [](auto& a) { return base::WideToUTF8(a); });
+  std::ranges::transform(electron_args, args.begin(),
+                         [](auto& a) { return base::WideToUTF8(a); });
 #else
   auto args = ElectronCommandLine::argv();
 #endif

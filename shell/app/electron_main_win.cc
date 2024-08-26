@@ -165,7 +165,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     auto ret = electron::NodeMain(argv.size(), argv.data());
-    std::for_each(argv.begin(), argv.end(), free);
+    std::ranges::for_each(argv, free);
     return ret;
   }
 
