@@ -210,7 +210,7 @@ index c576ace24e81cc877aa2595d40e0a13a7af9f6a2..210fb97d44c19c29af424cc7b9cb3169
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 96d7ba915e3d4248ad801237b0b43ff0b55be1a2..8da4acbde65e933740a53de1dc45e7c779a688fb 100644
+index 9597da6cfd6143a67941cf11877d30747ed2b743..22135fa00f071163d5fc801d2711ccdbed27cc74 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2246,6 +2246,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
@@ -219,6 +219,6 @@ index 96d7ba915e3d4248ad801237b0b43ff0b55be1a2..8da4acbde65e933740a53de1dc45e7c7
  
 +  window_features.raw_features = features;
 +
-   if (window_features.is_partitioned_popin &&
-       !IsFeatureEnabled(
-           mojom::blink::PermissionsPolicyFeature::kPartitionedPopins,
+   if (window_features.is_partitioned_popin) {
+     UseCounter::Count(*entered_window,
+                       WebFeature::kPartitionedPopin_OpenAttempt);
