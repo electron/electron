@@ -15,10 +15,10 @@ This patch is expected to be deleted once we catch up with a Node.js
 upgrade that includes the original Node.js commit above.
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 9ad67e0993da4c3e3f8a14681edbf941cf14e2e6..29ed378d32d452518dc929e60e6038ba4ca38a5c 100644
+index ff658ec88e5161cd66536ee6e95dba675b16eccc..9bbb8ab908d8d992abb43254860d51f57f56387b 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -186,8 +186,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+@@ -202,8 +202,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
        }
  
        Local<String> source_text = args[2].As<String>();
@@ -28,7 +28,7 @@ index 9ad67e0993da4c3e3f8a14681edbf941cf14e2e6..29ed378d32d452518dc929e60e6038ba
                            line_offset,
                            column_offset,
                            true,                             // is cross origin
-@@ -394,7 +393,6 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
+@@ -464,7 +463,6 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
  
    ShouldNotAbortOnUncaughtScope no_abort_scope(realm->env());
    TryCatchScope try_catch(realm->env());
@@ -37,7 +37,7 @@ index 9ad67e0993da4c3e3f8a14681edbf941cf14e2e6..29ed378d32d452518dc929e60e6038ba
    bool timed_out = false;
    bool received_signal = false;
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index f9a090f5c3e04403602ba383032e7f3230669a92..3f82db324d406e342abee23ab0d7f7c9807ff652 100644
+index 4bf80aa6cc6385dc376fd0a3538efc27fe5bd0a2..3e37aa8b0c9696cceb3f3cfab9721f38c74a2fba 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -267,7 +267,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileInternal(

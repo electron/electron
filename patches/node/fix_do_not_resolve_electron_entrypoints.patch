@@ -6,7 +6,7 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 449131b9af99744c08d62d73f8d124cef5c9cc71..3df06eff63106aece1009d88fd01df2abdf6d943 100644
+index 22248b753c14960122f1d6b9bfe6b89fdb8d2010..9d245a04fbcb98dcd1c61e60f7cfe528bd1c8af0 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -132,7 +132,7 @@ async function defaultLoad(url, context = kEmptyObject) {

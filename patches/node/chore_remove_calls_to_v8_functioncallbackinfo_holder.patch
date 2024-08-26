@@ -10,7 +10,7 @@ https://issues.chromium.org/issues/333672197
 This patch can be removed once Node addresses this change.
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 6b4ec38bd092358a9433a1179dbe1e71f56aa387..0a9eaba5c71f711c58799d77a9de6072304deb9a 100644
+index 5dff80ee287256ba40bfa496df6db60a18fbb9d7..a9162b4e2ee48dbebec8dc52b6990369be15fe4a 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -67,7 +67,7 @@ template <typename T, int (*F)(const typename T::HandleType*, sockaddr*, int*)>

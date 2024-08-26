@@ -8,10 +8,10 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 155485dbab0d46bb225fa40e99f555d805659c4f..8183cffe9d7060571c08f696abb7c090e6df3be8 100644
+index 364469160af5e348f8890417de16a63c0d1dca67..75d5f58fe02fa8cfa7716ffaf761d567ab403a2c 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1331,6 +1331,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1441,6 +1441,13 @@ Module.prototype._compile = function(content, filename, loadAsESM = false) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -26,10 +26,10 @@ index 155485dbab0d46bb225fa40e99f555d805659c4f..8183cffe9d7060571c08f696abb7c090
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 8fad2fe617e4f8d2364b8c9d3cfb27c265f08b5b..710af646aaf97f88ac2ee003d8f83388ccf9a84f 100644
+index 59308ab817fb864a7b84ecf349c9e08d1c710342..8398657065b28a4451b8fe3996e63838a1645314 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -244,12 +244,14 @@ function patchProcessObject(expandArgv1) {
+@@ -245,12 +245,14 @@ function patchProcessObject(expandArgv1) {
    if (expandArgv1 && process.argv[1] &&
        !StringPrototypeStartsWith(process.argv[1], '-')) {
      // Expand process.argv[1] into a full path.

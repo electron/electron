@@ -2223,10 +2223,10 @@ index 909fd14345fcd988c381e640280f4b33f2e0c351..800431e6659f95f0495cb90b8fa2cccb
 +  args = rebase_path(inputs + outputs, root_build_dir)
  }
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index bbb63df7899d4b9bf80e13eee78453352dd5c75b..804296db12f7864f72648f5f36834a924503e4a6 100644
+index 706ea4f5cb90525c8ea56f794320a733c45a193f..c7ae7759595bfc7fdc31dab174a7514ddd8345e7 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -765,6 +765,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -773,6 +773,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -2235,7 +2235,7 @@ index bbb63df7899d4b9bf80e13eee78453352dd5c75b..804296db12f7864f72648f5f36834a92
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 75a7f3dd89e096d13ad7d70ed29d301cd56315b5..9a20a275fbe5df9f384b7b1d1d26806e7cd05384 100644
+index 1cb85b9058d06555382e565dc32192a9fa48ed9f..cec9be01abd107e8612f70daf19b4834e118ffcf 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -74,6 +74,8 @@ using BuiltinCodeCacheMap =
