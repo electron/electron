@@ -1,4 +1,4 @@
-# Debugging the Main Process
+ # Debugging the Main Process
 
 The DevTools in an Electron browser window can only debug JavaScript that's
 executed in that window (i.e. the web pages). To debug JavaScript that's
