@@ -204,7 +204,7 @@ index 0f03e7eaa757b5445cdf4995d15085894d183259..722ae09871b40e765e738201259c49f0
    return true;
  }
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.h b/components/offline_pages/content/background_loader/background_loader_contents.h
-index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6da639647 100644
+index c6838c83ef971b88769b1f3fba8095025ae25464..464dcfb50deb72ccd1a83385c3d3fd9a89617c26 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.h
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.h
 @@ -66,8 +66,7 @@ class BackgroundLoaderContents : public content::WebContentsDelegate {
@@ -215,8 +215,9 @@ index c5b0d3b23b8da318ae55fcac2515a1187f261469..16ed1f46c9afde0ff25750128b4fcff6
 -      const GURL& target_url) override;
 +      const content::mojom::CreateNewWindowParams& params) override;
  
-   void AddNewContents(content::WebContents* source,
-                       std::unique_ptr<content::WebContents> new_contents,
+   content::WebContents* AddNewContents(
+       content::WebContents* source,
+
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
 index 5bcf895fbcc395ab664e208772e0fe5a9f99e153..e3246011d776a8242530b117a55d0c909277a6d5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
