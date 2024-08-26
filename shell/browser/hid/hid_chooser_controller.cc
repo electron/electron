@@ -49,11 +49,11 @@ bool FilterMatch(const blink::mojom::HidDeviceFilterPtr& filter,
   if (filter->usage) {
     if (filter->usage->is_page()) {
       const uint16_t usage_page = filter->usage->get_page();
-      auto find_it =
-          std::find_if(device.collections.begin(), device.collections.end(),
-                       [=](const device::mojom::HidCollectionInfoPtr& c) {
-                         return usage_page == c->usage->usage_page;
-                       });
+      auto find_it = std::ranges::find_if(
+          device.collections,
+          [=](const device::mojom::HidCollectionInfoPtr& c) {
+            return usage_page == c->usage->usage_page;
+          });
       if (find_it == device.collections.end())
         return false;
     } else if (filter->usage->is_usage_and_page()) {
