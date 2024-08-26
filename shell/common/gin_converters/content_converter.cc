@@ -164,6 +164,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-sanitized-write");
     case blink::PermissionType::LOCAL_FONTS:
       return StringToV8(isolate, "local-fonts");
+    case blink::PermissionType::HAND_TRACKING:
+      return StringToV8(isolate, "hand-tracking");
     case blink::PermissionType::IDLE_DETECTION:
       return StringToV8(isolate, "idle-detection");
     case blink::PermissionType::KEYBOARD_LOCK:
@@ -217,7 +219,7 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
     case blink::PermissionType::SPEAKER_SELECTION:
       return StringToV8(isolate, "speaker-selection");
     case blink::PermissionType::WEB_APP_INSTALLATION:
-      return StringToV8(isolate, "webAppInstallation");
+      return StringToV8(isolate, "web-app-installation");
     case blink::PermissionType::NUM:
       break;
   }
