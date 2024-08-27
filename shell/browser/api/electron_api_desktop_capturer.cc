@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
-#include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
@@ -421,7 +420,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_screen_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
     capture_screen_ = false;
-    base::debug::StackTrace().Print();
     std::vector<DesktopCapturer::Source> screen_sources;
     screen_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
