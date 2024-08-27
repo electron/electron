@@ -78,7 +78,7 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
     ~DesktopListListener() override;
 
    protected:
-    void OnSourceAdded(int index) override;
+    void OnSourceAdded(int index) override {}
     void OnSourceRemoved(int index) override {}
     void OnSourceMoved(int old_index, int new_index) override {}
     void OnSourceNameChanged(int index) override {}
