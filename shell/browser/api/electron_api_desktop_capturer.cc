@@ -348,7 +348,6 @@ void DesktopCapturer::StartHandling(bool capture_window,
             window_capturer_.get(), std::move(update_callback));
 
         if (window_capturer_->IsSourceListDelegated()) {
-          LOG(INFO) << "IsSourceListDelegated";
           OnceCallback failure_callback = base::BindOnce(
               &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
           window_listener_ = std::make_unique<DesktopListListener>(
@@ -356,7 +355,6 @@ void DesktopCapturer::StartHandling(bool capture_window,
               thumbnail_size.IsEmpty());
           window_capturer_->StartUpdating(window_listener_.get());
         } else {
-          LOG(INFO) << "Inside the else block";
           window_capturer_->Update(std::move(update_callback),
                                    /* refresh_thumbnails = */ true);
         }
@@ -403,7 +401,6 @@ void DesktopCapturer::StartHandling(bool capture_window,
 
 void DesktopCapturer::RequestUpdate(DesktopMediaList* list,
                                     OnceCallback update_callback) {
-  LOG(ERROR) << "Inside RequestUpdate";
   list->Update(std::move(update_callback));
 }
 
@@ -411,8 +408,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_window_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kWindow) {
     capture_window_ = false;
-    base::debug::StackTrace().Print();
-    LOG(ERROR) << "GetSourceCount (windows): " << list->GetSourceCount();
     std::vector<DesktopCapturer::Source> window_sources;
     window_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
@@ -427,7 +422,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
     capture_screen_ = false;
     base::debug::StackTrace().Print();
-    LOG(ERROR) << "GetSourceCount (screens): " << list->GetSourceCount();
     std::vector<DesktopCapturer::Source> screen_sources;
     screen_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
