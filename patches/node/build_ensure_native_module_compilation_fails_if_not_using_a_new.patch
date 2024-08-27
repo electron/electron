@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 9a27610992612b59eadcc8e481683cf1e6a5dbb6..1fad20645d059ad5f3efaa9279f582f99cb1006b 100644
+index 689e7fb2339253d0f2be3ccf33ecd76660ccf176..8736ad12eec294070a5160a64248044cd16347c9 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -87,6 +87,8 @@
@@ -19,7 +19,7 @@ index 9a27610992612b59eadcc8e481683cf1e6a5dbb6..1fad20645d059ad5f3efaa9279f582f9
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -286,6 +288,7 @@
+@@ -287,6 +289,7 @@
      # Defines these mostly for node-gyp to pickup.
      'defines': [
        '_GLIBCXX_USE_CXX11_ABI=1',
@@ -27,7 +27,7 @@ index 9a27610992612b59eadcc8e481683cf1e6a5dbb6..1fad20645d059ad5f3efaa9279f582f9
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -415,6 +418,11 @@
+@@ -416,6 +419,11 @@
            }],
          ],
        }],
@@ -40,7 +40,7 @@ index 9a27610992612b59eadcc8e481683cf1e6a5dbb6..1fad20645d059ad5f3efaa9279f582f9
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index f189ba2bf09fc248b3c1ce3c3535b939a4160ad2..2c24db93618f88f5f07e95a3edf63fb7942ac009 100755
+index 3084cc964cbe6d02f98d08cd6f847ea7f4a3d0db..5b6a3b62082985debf6ebc4bc09a7d056f58514a 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1559,6 +1559,7 @@ def configure_library(lib, output, pkgname=None):
@@ -52,7 +52,7 @@ index f189ba2bf09fc248b3c1ce3c3535b939a4160ad2..2c24db93618f88f5f07e95a3edf63fb7
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index c267ed1eeaa2d8b6ecd5a1563a4e9440bf0cca00..e55256996f2c85b0ae3854cbd1b83ca88a3e22cb 100644
+index 4f2eb9d0aab88b70c86339e750799080e980d7da..df3fb3372d6357b5d77b4f683e309b8483998128 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

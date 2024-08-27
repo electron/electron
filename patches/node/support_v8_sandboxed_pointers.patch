@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 12414204361e7227f7f7736a07388ade3f093e00..f9d29f0065b1de63a62cfdce74a9705c22dd87d7 100644
+index 60be2353cf0e77287dfda965c820cf36655a7ce5..fe41619f45913fe31a59771c8d1af6cde3b89f66 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -26,7 +26,7 @@ index 12414204361e7227f7f7736a07388ade3f093e00..f9d29f0065b1de63a62cfdce74a9705c
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 3034b114e081e2b32dd5b71653927a41af7d48df..49b0175c219d75dd3a038687f353b2428fbdf62b 100644
+index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1b9e970ca 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -348,10 +348,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
@@ -79,7 +79,7 @@ index 3034b114e081e2b32dd5b71653927a41af7d48df..49b0175c219d75dd3a038687f353b242
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -702,6 +728,16 @@ namespace {
+@@ -703,6 +729,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -96,7 +96,7 @@ index 3034b114e081e2b32dd5b71653927a41af7d48df..49b0175c219d75dd3a038687f353b242
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
-@@ -723,6 +759,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -724,6 +760,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -131,7 +131,7 @@ index d45325954d980724f80d49298bbe837197237a9b..ccea18080142bd9cba3765dbbec61c2a
      return ret;
  
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 5f0adcf8aaba93f8fc2874b863acfc96e30cb2b7..6b4ec38bd092358a9433a1179dbe1e71f56aa387 100644
+index e04fadd7f83e52fe965d8c73916a56f60425ba3d..5dff80ee287256ba40bfa496df6db60a18fbb9d7 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -118,7 +118,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
@@ -145,7 +145,7 @@ index 5f0adcf8aaba93f8fc2874b863acfc96e30cb2b7..6b4ec38bd092358a9433a1179dbe1e71
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -137,7 +139,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -136,7 +138,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:
@@ -237,3 +237,37 @@ index 6698a1df81cb4e0947c86fb30c2d77fca8e2d9d1..dad297652b347819805b09fbfd869f1d
  
    if (!buf.IsEmpty()) {
      args.GetReturnValue().Set(buf.ToLocalChecked());
+diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
+index c4960ee1427e3b29b873135a815a7a09bedcfb73..2c6d8cdeb37f7dce9f29b8f3b260036ae23e6fb5 100644
+--- a/src/node_trace_events.cc
++++ b/src/node_trace_events.cc
+@@ -132,12 +132,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+   const uint8_t* enabled_pointer =
+       TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_name.out());
+   uint8_t* enabled_pointer_cast = const_cast<uint8_t*>(enabled_pointer);
++  uint8_t size = sizeof(*enabled_pointer_cast);
+ 
++#if defined(V8_ENABLE_SANDBOX)
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(size);
++  CHECK(v8_data);
++  memcpy(v8_data, enabled_pointer_cast, size);
++  std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++      v8_data,
++      size,
++      [](void* data, size_t length, void*) {
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
++#else
+   std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
+       enabled_pointer_cast,
+-      sizeof(*enabled_pointer_cast),
++      size,
+       [](void*, size_t, void*) {},
+       nullptr);
++#endif
++
+   auto ab = ArrayBuffer::New(isolate, std::move(bs));
+   v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
+ 

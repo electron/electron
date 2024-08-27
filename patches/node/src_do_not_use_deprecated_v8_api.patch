@@ -60,7 +60,7 @@ index 5968694e8393d8434fb2ffee411dfac4c93aff29..5c16d0d1b32e2d056f4fcfa0e0178129
                                 const v8::PropertyCallbackInfo<void>& info);
  
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 3f82db324d406e342abee23ab0d7f7c9807ff652..91ee97c0d1308e650730b9977facb924ab361bf5 100644
+index 3e37aa8b0c9696cceb3f3cfab9721f38c74a2fba..78f20de6b127961e9de7b5caaeca702ed7a36e01 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -11,7 +11,6 @@ namespace node {
@@ -71,7 +71,7 @@ index 3f82db324d406e342abee23ab0d7f7c9807ff652..91ee97c0d1308e650730b9977facb924
  using v8::EscapableHandleScope;
  using v8::Function;
  using v8::FunctionCallbackInfo;
-@@ -724,7 +723,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -720,7 +719,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
                                  nullptr,
                                  Local<Value>(),
                                  None,
@@ -79,7 +79,7 @@ index 3f82db324d406e342abee23ab0d7f7c9807ff652..91ee97c0d1308e650730b9977facb924
                                  SideEffectType::kHasNoSideEffect);
  
    target->SetNativeDataProperty(FIXED_ONE_BYTE_STRING(isolate, "builtinIds"),
-@@ -732,7 +730,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -728,7 +726,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
                                  nullptr,
                                  Local<Value>(),
                                  None,
@@ -87,7 +87,7 @@ index 3f82db324d406e342abee23ab0d7f7c9807ff652..91ee97c0d1308e650730b9977facb924
                                  SideEffectType::kHasNoSideEffect);
  
    target->SetNativeDataProperty(
-@@ -741,7 +738,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -737,7 +734,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
        nullptr,
        Local<Value>(),
        None,
@@ -95,7 +95,7 @@ index 3f82db324d406e342abee23ab0d7f7c9807ff652..91ee97c0d1308e650730b9977facb924
        SideEffectType::kHasNoSideEffect);
  
    target->SetNativeDataProperty(FIXED_ONE_BYTE_STRING(isolate, "natives"),
-@@ -749,7 +745,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -745,7 +741,6 @@ void BuiltinLoader::CreatePerIsolateProperties(IsolateData* isolate_data,
                                  nullptr,
                                  Local<Value>(),
                                  None,
