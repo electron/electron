@@ -41,9 +41,11 @@ std::string EnablePlatformSpecificFeatures() {
     // kUseSCContentSharingPicker,
     // chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 #if DCHECK_IS_ON()
-    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma";
+    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma,"
+           "UseSCContentSharingPicker";
 #else
-    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma,UseSCContentSharingPicker,"
+    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma,"
+           "UseSCContentSharingPicker,"
            "ThumbnailCapturerMac:capture_mode/sc_screenshot_manager";
 #endif
   }
