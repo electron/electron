@@ -15,6 +15,27 @@ function isValid (options: Electron.SourcesOptions) {
 
 export { isDisplayMediaSystemPickerAvailable };
 
+export async function getNativePickerSource () {
+  if (process.platform !== 'darwin') {
+    console.error('Native system picker option is currently only supported on MacOS');
+  }
+
+  if (!isDisplayMediaSystemPickerAvailable) {
+    console.error(`Native system picker unavailable. 
+      Note: This is an experimental API; please check the API documentation for updated restrictions`);
+  }
+
+  // Pass in the needed options for a more native experience
+  // screen & windows by default, no thumbnails, since the native picker doesn't return them
+  const options: Electron.SourcesOptions = {
+    types: ['screen', 'window'],
+    thumbnailSize: { width: 0, height: 0 },
+    fetchWindowIcons: false
+  };
+
+  return await getSources(options);
+}
+
 export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
