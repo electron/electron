@@ -284,7 +284,7 @@ const { URL } = require('url')
 
 app.whenReady().then(() => { 
   // Your function responsible for creating the BrowserWindow and loading your web application
-  createWindow();
+  createWindow()
 }).then(() => {
   session.defaultSession.webRequest
     .setPermissionRequestHandler((webContents, permission, callback) => {
@@ -305,7 +305,7 @@ app.whenReady().then(() => {
 
       // Default is deny
     })
-})  
+})
 ```
 
 ### 6. Do not disable `webSecurity`
@@ -390,7 +390,7 @@ const { app, session } = require('electron')
 
 app.whenReady().then(() => {
   // Your function responsible for creating the BrowserWindow and loading your web application
-  createWindow();
+  createWindow()
 }).then(() => {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
