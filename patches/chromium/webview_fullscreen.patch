@@ -15,7 +15,7 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 8d142e0621a34677acb023434d0617936154aa33..55dc46396d5eff8c3f6f1153e319b3d89c8f6e8e 100644
+index 38dde9018b4c617d33046362ca979181e017066c..7970517245f97788c952586e2f722b8457875e11 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -8036,6 +8036,17 @@ void RenderFrameHostImpl::EnterFullscreen(
@@ -37,10 +37,10 @@ index 8d142e0621a34677acb023434d0617936154aa33..55dc46396d5eff8c3f6f1153e319b3d8
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 764caff7ae7c8876ee1b02afd332361b3111159b..b1a650bede896fd9cee3bbcca4d1c2e78d2e9169 100644
+index 02762c71b91b1393822dc19fc0617521432e704d..8f7024fceba20c4c2e64be52bb649ed331eb5935 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3895,21 +3895,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -3899,21 +3899,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -78,7 +78,7 @@ index 764caff7ae7c8876ee1b02afd332361b3111159b..b1a650bede896fd9cee3bbcca4d1c2e7
  }
  
  bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
-@@ -4068,7 +4072,7 @@ void WebContentsImpl::EnterFullscreenMode(
+@@ -4072,7 +4076,7 @@ void WebContentsImpl::EnterFullscreenMode(
    OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
    DCHECK(CanEnterFullscreenMode(requesting_frame));
    DCHECK(requesting_frame->IsActive());
