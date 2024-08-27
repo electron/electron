@@ -238,12 +238,6 @@ void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
   }
 }
 
-void DesktopCapturer::DesktopListListener::OnSourceAdded(int index) {
-  // TODO: Implement the wrapped DesktopCapturer::RequestUpdate callback
-  // here for native pickers, instead of in the screen/window implementation
-  // below
-}
-
 void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
   if (have_selection_) {
     // This is called every time a thumbnail is refreshed. Reset variable to
