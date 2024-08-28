@@ -12,6 +12,12 @@
 
 namespace {
 
+#if BUILDFLAG(IS_WIN)
+constexpr auto DashDash = base::CommandLine::StringViewType{L"--"};
+#else
+constexpr auto DashDash = base::CommandLine::StringViewType{"--"};
+#endif
+
 // we say it's a URL arg if it starts with a URI scheme that:
 // 1. starts with an alpha, and
 // 2. contains no spaces, and
@@ -27,23 +33,26 @@ bool IsUrlArg(const base::CommandLine::StringViewType arg) {
   return std::size(scheme) > 1U && std::isalpha(scheme.front(), c_locale) &&
          std::ranges::none_of(scheme, isspace);
 }
-
 }  // namespace
 
 namespace electron {
 
-bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
-  const base::CommandLine::StringType dashdash(2, '-');
+// Check for CVE-2018-1000006 issues. Return true iff argv looks safe.
+// Sample exploit: 'exodus://aaaaaaaaa" --gpu-launcher="cmd" --aaaaa='
+// Prevent it by returning false if any arg except '--' follows a URL arg.
+// More info at https://www.electronjs.org/blog/protocol-handler-fix
+bool CheckCommandLineArguments(const base::CommandLine::StringVector& argv) {
   bool block_args = false;
-  for (int i = 0; i < argc; ++i) {
-    if (argv[i] == dashdash)
+
+  for (const auto& arg : argv) {
+    if (arg == DashDash)
       break;
-    if (block_args) {
+    if (block_args)
       return false;
-    } else if (IsUrlArg(argv[i])) {
+    if (IsUrl(arg))
       block_args = true;
-    }
   }
+
   return true;
 }
 
