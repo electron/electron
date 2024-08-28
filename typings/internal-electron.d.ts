@@ -127,6 +127,14 @@ declare namespace Electron {
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
+  interface Session {
+    _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
+  }
+
+  interface DisplayMediaRequestHandlerOpts {
+    userSystemPicker: boolean,
+  }
+
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   interface Menu {

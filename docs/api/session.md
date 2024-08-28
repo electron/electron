@@ -953,7 +953,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
-#### `ses.setDisplayMediaRequestHandler(handler)`
+#### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
 * `handler` Function | null
   * `request` Object
@@ -980,6 +980,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
+* `opts` Object (optional)
+  * `useSystemPicker` Boolean - true if a user wants to use the native system picker
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the

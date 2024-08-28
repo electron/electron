@@ -16,19 +16,12 @@ app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    // If we should use the system picker
-    // Note: this is currently experimental
-    if (desktopCapturer.isDisplayMediaSystemPickerAvailable()) {
-      desktopCapturer.getNativePickerSource().then((source) => {
-        callback({ video: source })
-        return
-      })
-    }
     desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // Grant access to the first screen found.
+      // Your app shows some UI, but in this exampe
+      // grant access to the first screen found.
       callback({ video: sources[0], audio: 'loopback' })
     })
-  })
+  }, { useSystemPicker: true })
 
   mainWindow.loadFile('index.html')
 })
@@ -46,7 +39,8 @@ startButton.addEventListener('click', () => {
     video: {
       width: 320,
       height: 240,
-      frameRate: 30
+      frameRate: 30,
+      displaySurface: 'monitor'
     }
   }).then(stream => {
     video.srcObject = stream
@@ -102,7 +96,7 @@ which can detected by [`systemPreferences.getMediaAccessStatus`][].
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
-### `desktopCapturer.isDisplayMediaSystemPickerAvailable()` _Experimental_ _MacOS_
+### `desktopCapturer.isDisplayMediaSystemPickerAvailable()` _Experimental_ _macOS_
 
 Returns `Boolean`, whether or not requesting desktop content via
 the system picker is supported on this platform.
@@ -111,12 +105,6 @@ Currently this will only return `true` on macOS 14.4 and higher. When
 true, use the `getNativePickerSource` method to return the system picker's
 selected media stream. Not doing so may cause a warning dialog to your users
 on macOS 15 and higher.
-
-### `desktopCapturer.getNativePickerSource` _Experimental_ _Readonly_ _MacOS_
-
-A `DesktopCapturerSource` property that should be used in conjunction with
-[`session.setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler) to use the system picker instead
-of providing a specific video source from `getSources`.
 
 ## Caveats
 
