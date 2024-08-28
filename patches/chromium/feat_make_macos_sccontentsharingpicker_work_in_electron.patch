@@ -110,10 +110,10 @@ index 2215bf4589342fa4619fb58ec3e21ff5ef3ed3b4..3e52ce331b80cf97fd7b9bcbf7dd4311
    // There was a bug in ScreenCaptureKit that was fixed in 14.4,
    // see b/40076027.
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index b5a776f37b4bb667bc1aa62a08102b67a12f5b64..36b1508f0a8bd17bec0e49bf797a64c2fcc38bc2 100644
+index b34d8402c213329620683e41588c0411d45124fb..1b8e95f476a032f60ea7e578fac480344924ab50 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-@@ -117,8 +117,11 @@ void Open(DesktopMediaID::Type type,
+@@ -132,8 +132,11 @@ void Open(DesktopMediaID::Type type,
      base::OnceCallback<void()> cancel_callback,
      base::OnceCallback<void()> error_callback) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -126,14 +126,13 @@ index b5a776f37b4bb667bc1aa62a08102b67a12f5b64..36b1508f0a8bd17bec0e49bf797a64c2
    if (@available(macOS 14.0, *)) {
      NSNumber* source_id = @(next_id_);
      auto picker_observer = [[PickerObserver alloc]
-@@ -135,20 +138,14 @@ void Open(DesktopMediaID::Type type,
+@@ -150,19 +153,13 @@ void Open(DesktopMediaID::Type type,
      // TODO(https://crbug.com/360781940): Add support for changing selected
      // content. The problem to solve is how this should interact with stream
      // restart.
 -    config.allowsChangingSelectedContent = false;
 +    config.allowsChangingSelectedContent = true;
-     // Limits the maximum number of screen/window capture to 5.
-     NSNumber* max_stream_count = @5;
+     NSNumber* max_stream_count = @(kMaxContentShareCountValue.Get());
 -    if (type == DesktopMediaID::Type::TYPE_SCREEN) {
 -      config.allowedPickerModes = SCContentSharingPickerModeSingleDisplay;
 -      picker.defaultConfiguration = config;
