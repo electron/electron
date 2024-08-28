@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 676458e107ee011e13eda52f8f4cfc1bff152504..ea56b3cb43fc36d5b1314338cda73ad48a19dba6 100644
+index f5755baa6f74e5676171523b6c8317a3cb6ca474..515a784e85cb9beb6e371caa1d9bc31918d68aeb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1029,6 +1029,7 @@ component("base") {
@@ -362,10 +362,10 @@ index 2aa2bd8d68c08359461254875f02fc37f8693058..6ba759f96ffff4d31509248bb7add047
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index f511bdc7fab3eb36b4a3590922c20212cf6aad34..d5f934512f3acd5a323f8838844a6bb7f3e64ace 100644
+index 285a406e8cec06bf3beeca81b32e6561528279f9..0a08dc58852bc16edd3144e819276a0dc28a2580 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -637,10 +637,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -643,10 +643,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -663,7 +663,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 91f43d07215cda1d9381399b6130d8f25e3fac59..10d9b76506532f130c8bbb3012aa2725c7be247d 100644
+index 654e1d4aa25af680fcffc1dda1bd25ee73e9e0ee..d79330645cc4f4315914a3d330ffc949bfcc71dd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -682,7 +682,7 @@ index 91f43d07215cda1d9381399b6130d8f25e3fac59..10d9b76506532f130c8bbb3012aa2725
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1721,6 +1723,7 @@ test("content_browsertests") {
+@@ -1722,6 +1724,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -690,7 +690,7 @@ index 91f43d07215cda1d9381399b6130d8f25e3fac59..10d9b76506532f130c8bbb3012aa2725
  
    public_deps = [
      ":test_interfaces",
-@@ -2976,6 +2979,7 @@ test("content_unittests") {
+@@ -2977,6 +2980,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
