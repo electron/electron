@@ -131,6 +131,10 @@ declare namespace Electron {
     _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
   }
 
+  interface DisplayMediaRequestHandlerOpts {
+    userSystemPicker: boolean,
+  }
+
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   interface Menu {
