@@ -492,7 +492,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
-    const std::string_view scheme = url.scheme_piece();
+    const auto scheme = url.scheme();
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
