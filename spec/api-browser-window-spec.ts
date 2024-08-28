@@ -291,6 +291,7 @@ describe('BrowserWindow module', () => {
     const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
     before(() => {
       protocol.registerFileProtocol(scheme, (request, callback) => {
+        console.log({ srcPath, scheme, request });
         callback(srcPath);
       });
     });
@@ -486,8 +487,10 @@ describe('BrowserWindow module', () => {
     });
 
     it('should support base url for data urls', async () => {
+      const options = { baseURLForDataURL: `other://${path.join(fixtures, 'api')}${path.sep}` };
+      console.log({ options });
       await w
-        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `other://${path.join(fixtures, 'api')}${path.sep}` })
+        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', options)
         .catch((e) => console.log(e));
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
