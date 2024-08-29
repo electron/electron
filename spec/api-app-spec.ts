@@ -16,6 +16,7 @@ import * as semver from 'semver';
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('electron module', () => {
+  console.log('HI THERE!');
   it('does not expose internal modules to require', () => {
     expect(() => {
       require('clipboard');
