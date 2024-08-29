@@ -18,7 +18,7 @@ index 9056030523807b8023493c0be9c9675da792852e..a1b949528e0a164c1bad98dbfbef282f
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index d4d130dc0f9405cd163b341077f4d0f87a73fa0f..61d07ff4e314c9876cc020c76b26915a7f3723b5 100644
+index fa70895cd23383ef99b2ee6851e346985fa950f0..dd7eede0be4c7779a58292f109718aadeb7a5455 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -43,7 +43,9 @@
@@ -39,7 +39,7 @@ index d4d130dc0f9405cd163b341077f4d0f87a73fa0f..61d07ff4e314c9876cc020c76b26915a
  /ninja
  /node/*.tar.gz
  /node/linux/
-@@ -139,6 +142,7 @@
+@@ -137,6 +140,7 @@
  /spirv-headers/src
  /spirv-tools/src
  /sqlite4java/lib/

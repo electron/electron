@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f5755baa6f74e5676171523b6c8317a3cb6ca474..515a784e85cb9beb6e371caa1d9bc31918d68aeb 100644
+index 38a4417fe8c887b988691e5eaec891b5326567b4..48241ee265462195ca57f2bd57b9c03411a40432 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1026,6 +1026,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -768,7 +768,7 @@ index fa86583a2d82c4076cfcf64cdc3f6bbb533b95d7..71b731e2e25ba876639d169c2242087d
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index a4f541e3f4095a0f537137ae371555adc80c0023..f93f0b5bf8c47efbc67039d50e3bcd29e099459c 100644
+index 973cd337f2781271b4ca3e29db07939ec6917327..fda1b6535cd64a11369796d283b89e6a83449055 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -135,6 +135,7 @@ component("service") {
