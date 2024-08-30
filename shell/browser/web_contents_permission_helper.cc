@@ -57,7 +57,7 @@ namespace {
 
 #if BUILDFLAG(IS_MAC)
 bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
-  if (request.audio_type != MediaStreamType::NO_SERVICE) {
+  if (request.audio_type == MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     const auto system_audio_permission =
         system_media_permissions::CheckSystemAudioCapturePermission();
     return system_audio_permission ==
@@ -65,7 +65,7 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
            system_audio_permission ==
                system_media_permissions::SystemPermission::kDenied;
   }
-  if (request.video_type != MediaStreamType::NO_SERVICE) {
+  if (request.video_type != MediaStreamType::DEVICE_VIDEO_CAPTURE) {
     const auto system_video_permission =
         system_media_permissions::CheckSystemVideoCapturePermission();
     return system_video_permission ==
@@ -73,7 +73,7 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
            system_video_permission ==
                system_media_permissions::SystemPermission::kDenied;
   }
-  return false;
+  return true;
 }
 #endif
 
