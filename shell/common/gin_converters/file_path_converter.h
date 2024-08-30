@@ -23,9 +23,11 @@ struct Converter<base::FilePath> {
     if (val->IsNull())
       return true;
 
-    v8::String::Value str(isolate, val);
-    if (str.length() == 0) {
-      *out = base::FilePath();
+    // if the `val` is an empty string, set `out` to an empty FilePath
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::String> str;
+    if (!val->ToString(context).ToLocal(&str) || str->Length() == 0) {
+      *out = {};
       return true;
     }
 
