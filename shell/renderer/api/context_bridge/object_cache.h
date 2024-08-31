@@ -7,7 +7,8 @@
 
 #include <unordered_map>
 
-#include "v8/include/v8-forward.h"
+#include "v8/include/v8-local-handle.h"
+#include "v8/include/v8-object.h"
 
 namespace electron::api::context_bridge {
 
@@ -27,8 +28,15 @@ class ObjectCache final {
       v8::Local<v8::Value> from) const;
 
  private:
+  struct Hash {
+    std::size_t operator()(const v8::Local<v8::Object>& obj) const {
+      return obj->GetIdentityHash();
+    }
+  };
+
   // from_object ==> proxy_value
-  std::unordered_map<const v8::Object*, v8::Local<v8::Value>> proxy_map_;
+  std::unordered_map<v8::Local<v8::Object>, v8::Local<v8::Value>, Hash>
+      proxy_map_;
 };
 
 }  // namespace electron::api::context_bridge
