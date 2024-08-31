@@ -212,13 +212,15 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
   base::Value dict_value(std::move(details));
 
+  url::Origin origin =
+      url::Origin::Create(request_description.requesting_origin);
+
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
-    // TODO: Fix origin
-    on_request_handler_.Run(nullptr, permission, callback, dict_value, render_frame_host->GetLastCommittedOrigin());
+    on_request_handler_.Run(nullptr, permission, callback, dict_value, origin);
   }
 }
 
@@ -264,8 +266,8 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     const GURL& embedding_origin) {
   base::Value::Dict details;
   details.Set("embeddingOrigin", embedding_origin.spec());
-  return CheckPermissionWithDetails(permission, url::Origin::Create(effective_origin),
-                                            std::move(details));
+  return CheckPermissionWithDetails(
+      permission, url::Origin::Create(effective_origin), std::move(details));
 }
 
 content::PermissionResult
@@ -291,7 +293,8 @@ void ElectronPermissionManager::CheckBluetoothDevicePair(
   }
 }
 
-blink::mojom::PermissionStatus ElectronPermissionManager::CheckPermissionWithDetails(
+blink::mojom::PermissionStatus
+ElectronPermissionManager::CheckPermissionWithDetails(
     blink::PermissionType permission,
     const url::Origin& effective_origin,
     base::Value::Dict details) const {
@@ -308,20 +311,25 @@ blink::mojom::PermissionStatus ElectronPermissionManager::CheckPermissionWithDet
     default:
       break;
   }
-  return is_granted_handler_.Run(nullptr, permission, effective_origin,
-                            base::Value(std::move(details))).value_or(blink::mojom::PermissionStatus::DENIED);
+  return is_granted_handler_
+      .Run(nullptr, permission, effective_origin,
+           base::Value(std::move(details)))
+      .value_or(blink::mojom::PermissionStatus::DENIED);
 }
 
-blink::mojom::PermissionStatus ElectronPermissionManager::CheckPermissionWithDetailsAndFrame(blink::PermissionType permission,
-                                          const url::Origin& effective_origin,
-                                          content::RenderFrameHost* requesting_frame,
-                                          base::Value::Dict details) const {
+blink::mojom::PermissionStatus
+ElectronPermissionManager::CheckPermissionWithDetailsAndFrame(
+    blink::PermissionType permission,
+    const url::Origin& effective_origin,
+    content::RenderFrameHost* requesting_frame,
+    base::Value::Dict details) const {
   details.Set("isMainFrame", requesting_frame->GetParent() == nullptr);
   details.Set("embeddingOrigin",
               content::PermissionUtil::GetLastCommittedOriginAsURL(
                   requesting_frame->GetMainFrame())
                   .spec());
-  return CheckPermissionWithDetails(permission, effective_origin, std::move(details));
+  return CheckPermissionWithDetails(permission, effective_origin,
+                                    std::move(details));
 }
 
 bool ElectronPermissionManager::CheckDevicePermission(
@@ -383,8 +391,8 @@ ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
 
   base::Value::Dict details;
   return CheckPermissionWithDetailsAndFrame(
-      permission,
-      render_frame_host->GetLastCommittedOrigin(), render_frame_host, std::move(details));
+      permission, render_frame_host->GetLastCommittedOrigin(),
+      render_frame_host, std::move(details));
 }
 
 blink::mojom::PermissionStatus
@@ -405,8 +413,7 @@ ElectronPermissionManager::GetPermissionStatusForEmbeddedRequester(
 
   base::Value::Dict details;
   return CheckPermissionWithDetailsAndFrame(
-      permission, overridden_origin,
-      render_frame_host, std::move(details));
+      permission, overridden_origin, render_frame_host, std::move(details));
 }
 
 ElectronPermissionManager::SubscriptionId
