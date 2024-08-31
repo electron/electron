@@ -35,7 +35,7 @@ Session.prototype.setPermissionHandlers = function (handlers) {
   });
 
   this._setPermissionRequestHandler((_, permission, callback, details, effectiveOrigin) => {
-    handlers.onRequest(permission, effectiveOrigin, details)
+    Promise.resolve(handlers.onRequest(permission, effectiveOrigin, details))
       .then((result) => callback(result.status === 'granted'))
       .catch((err) => {
         this.emit('error', err);
