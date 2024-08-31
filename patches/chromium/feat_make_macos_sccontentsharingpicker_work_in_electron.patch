@@ -8,15 +8,28 @@ This patch is a work in progress that contains assorted changes to make the MacO
 This patch can be removed after our desktopCapturer is refactored.
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 6599311831b638f49658e768fe35e19e9961ef1d..f49519a6cc52d6e90ff07b64e5a71010094f9c5d 100644
+index 6599311831b638f49658e768fe35e19e9961ef1d..9979651fc2bafa1f363a34b2cd60d4d7219711f0 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -77,7 +77,7 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -15,6 +15,7 @@
+ #include "base/functional/bind.h"
+ #include "base/hash/hash.h"
+ #include "chrome/browser/media/webrtc/desktop_media_list.h"
++#include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
+@@ -77,7 +78,13 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
  void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(sources_.empty());
--  DCHECK(!refresh_callback_);
-+  // DCHECK(!refresh_callback_);
++#if BUILDFLAG(IS_MAC)
++  if (!ShouldUseSCContentSharingPicker()) {
++    DCHECK(!refresh_callback_);
++  };
++#else
+   DCHECK(!refresh_callback_);
++#endif
    refresh_callback_ = std::move(callback);
    Refresh(refresh_thumbnails);
  }
@@ -71,26 +84,9 @@ index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b32609628942
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type);
  
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-index 2215bf4589342fa4619fb58ec3e21ff5ef3ed3b4..3e52ce331b80cf97fd7b9bcbf7dd4311bacf07f2 100644
+index 2215bf4589342fa4619fb58ec3e21ff5ef3ed3b4..f674a907a96a7a76a514d798779aa726441cebc9 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 +++ b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-@@ -40,14 +40,14 @@
- // is required to avoid recurring permission dialogs.
- BASE_FEATURE(kUseSCContentSharingPicker,
-              "UseSCContentSharingPicker",
--             base::FEATURE_DISABLED_BY_DEFAULT);
-+             base::FEATURE_ENABLED_BY_DEFAULT);
- 
- // Use the built-in MacOS screen-sharing picker (SCContentSharingPicker) on
- // MacOS 14 Sonoma and later. This flag will use the built-in picker for all
- // MacOS versions where it is supported.
- BASE_FEATURE(kUseSCContentSharingPickerSonoma,
-              "UseSCContentSharingPickerSonoma",
--             base::FEATURE_DISABLED_BY_DEFAULT);
-+             base::FEATURE_ENABLED_BY_DEFAULT);
- #endif
- 
- using SampleCallback =
 @@ -1006,6 +1006,8 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
                                        source_id);
  }
