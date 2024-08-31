@@ -17,7 +17,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/common/context_menu_data/untrustworthy_context_menu_params.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -127,6 +127,20 @@ bool Converter<blink::mojom::PermissionStatus>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     blink::mojom::PermissionStatus* out) {
+  std::string str_result;
+  if (ConvertFromV8(isolate, val, &str_result)) {
+    if (str_result == "granted") {
+      *out = blink::mojom::PermissionStatus::GRANTED;
+    } else if (str_result == "denied") {
+      *out = blink::mojom::PermissionStatus::DENIED;
+    } else if (str_result == "ask") {
+      *out = blink::mojom::PermissionStatus::ASK;
+    } else {
+      return false;
+    }
+    return true;
+  }
+
   bool result;
   if (!ConvertFromV8(isolate, val, &result))
     return false;

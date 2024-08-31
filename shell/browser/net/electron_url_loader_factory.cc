@@ -30,7 +30,7 @@
 #include "shell/browser/net/url_pipe_loader.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"

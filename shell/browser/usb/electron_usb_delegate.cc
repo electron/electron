@@ -175,17 +175,10 @@ std::unique_ptr<content::UsbChooser> ElectronUsbDelegate::RunChooser(
 bool ElectronUsbDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
-  if (!browser_context)
-    return false;
-
-  base::Value::Dict details;
-  details.Set("securityOrigin", origin.GetURL().spec());
-  auto* permission_manager = static_cast<ElectronPermissionManager*>(
-      browser_context->GetPermissionControllerDelegate());
-  return permission_manager->CheckPermissionWithDetails(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::USB),
-      nullptr, origin.GetURL(), std::move(details));
+  // Returning true here does not grant the permission, rather it indicates
+  // that the given session is _allowed_ to _request_ the permission.
+  // This will then later hit the session permission request handler.
+  return true;
 }
 
 void ElectronUsbDelegate::RevokeDevicePermissionWebInitiated(

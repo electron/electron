@@ -119,7 +119,7 @@ class Session : public gin::Wrappable<Session>,
   void SetCertVerifyProc(v8::Local<v8::Value> proc, gin::Arguments* args);
   void SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                    gin::Arguments* args);
-  void SetPermissionCheckHandler(v8::Local<v8::Value> val,
+  void SetPermissionIsGrantedHandler(v8::Local<v8::Value> val,
                                  gin::Arguments* args);
   void SetDevicePermissionHandler(v8::Local<v8::Value> val,
                                   gin::Arguments* args);

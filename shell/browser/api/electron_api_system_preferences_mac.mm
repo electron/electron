@@ -22,7 +22,7 @@
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"

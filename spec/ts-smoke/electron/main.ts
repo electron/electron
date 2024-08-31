@@ -1243,15 +1243,24 @@ session.defaultSession.setCertificateVerifyProc((request, callback) => {
   }
 });
 
-session.defaultSession.setPermissionRequestHandler(function (webContents, permission, callback) {
-  if (webContents.getURL() === 'github.com') {
-    if (permission === 'notifications') {
-      callback(false);
-      return;
+session.defaultSession.setPermissionHandlers({
+  isGranted (permission, effectiveOrigin) {
+    if (effectiveOrigin === 'https://github.com') {
+      if (permission === 'notifications') {
+        return { status: 'granted' };
+      }
     }
-  }
+    return { status: 'denied' };
+  },
+  onRequest: async function (permission, effectiveOrigin) {
+    if (effectiveOrigin === 'https://github.com') {
+      if (permission === 'notifications') {
+        return { status: 'denied' };
+      }
+    }
 
-  callback(true);
+    return { status: 'granted' };
+  }
 });
 
 // consider any url ending with `example.com`, `foobar.com`, `baz`

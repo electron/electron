@@ -67,6 +67,11 @@ declare namespace Electron {
     }
   }
 
+  interface Session {
+    _setPermissionRequestHandler: (...args: Parameters<Electron.Session['setPermissionRequestHandler']>) => void;
+    _setPermissionCheckHandler: (fn: ((...args: Parameters<NonNullable<Parameters<Electron.Session['setPermissionCheckHandler']>[0]>>) => Electron.PermissionCheckResult['status']) | null) => void;
+  }
+
   interface TouchBar {
     _removeFromWindow: (win: BaseWindow) => void;
   }

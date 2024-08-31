@@ -16,7 +16,7 @@
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
 #include "shell/common/gin_converters/gfx_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"

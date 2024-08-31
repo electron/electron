@@ -276,7 +276,7 @@ Emitted when a HID device needs to be selected when a call to
 `navigator.hid.requestDevice` is made. `callback` should be called with
 `deviceId` to be selected; passing no arguments to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.hid` can
-be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
+be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler-deprecated)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
 ```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
@@ -382,7 +382,7 @@ Emitted when a serial port needs to be selected when a call to
 `navigator.serial.requestPort` is made. `callback` should be called with
 `portId` to be selected, passing an empty string to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.serial` can
-be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
+be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler-deprecated)
 with the `serial` permission.
 
 ```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
@@ -525,7 +525,7 @@ Emitted when a USB device needs to be selected when a call to
 `navigator.usb.requestDevice` is made. `callback` should be called with
 `deviceId` to be selected; passing no arguments to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.usb` can
-be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
+be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler-deprecated)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
 ```js @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)} @ts-type={updateGrantedDevices:(devices:Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)=>void}
@@ -858,10 +858,107 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 > **NOTE:** The result of this procedure is cached by the network service.
 
-#### `ses.setPermissionRequestHandler(handler)`
+#### `ses.setPermissionHandlers(permissionHandlers)`
+
+* `permissionHandlers` Object | null
+  * `isGranted` Function\<[PermissionCheckResult](structures/permission-check-result.md)>
+    * `permission` string - Type of permission check.
+      * `clipboard-read` - Request access to read from the clipboard.
+      * `clipboard-sanitized-write` - Request access to write to the clipboard.
+      * `geolocation` - Access the user's geolocation data via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+      * `fullscreen` - Control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
+      * `hid` - Access the HID protocol to manipulate HID devices via the [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API).
+      * `idle-detection` - Access the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
+      * `media` - Access to media devices such as camera, microphone and speakers.
+      * `mediaKeySystem` - Access to DRM protected content.
+      * `midi` - Enable MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+      * `midiSysex` - Use system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+      * `notifications` - Configure and display desktop notifications to the user with the [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/notification).
+      * `openExternal` - Open links in external applications.
+      * `pointerLock` - Directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
+      * `serial` - Read from and write to serial devices with the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
+      * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+      * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+      * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `effectiveOrigin` string - The origin of the URL of the permission check, you should use this origin to perform security checks on whether to accept or deny this permission check. You may augment checks with additional information, but this is the primary source of truth you should rely on.
+    * `permissionCheckDetails` Object - Some properties are only available on certain permission types.
+      * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
+      * `securityOrigin` string (optional) _Deprecated_ - The security origin of the `media` check. This value is identical to `effectiveOrigin`, use that value instead.
+      * `mediaType` string (optional) - The type of media access being requested, can be `video`, `audio` or `unknown`
+      * `isMainFrame` boolean (optional) - Whether the frame making the request is the main frame. This value is `undefined` in cases where the request is coming from a background worker and therefore is not related to a specific frame.
+  * `onRequest` Function\<Promise\<[PermissionRequestResponse](structures/permission-request-response.md)\>\>
+    * `permission` string - The type of requested permission.
+      * `clipboard-read` - Request access to read from the clipboard.
+      * `clipboard-sanitized-write` - Request access to write to the clipboard.
+      * `display-capture` - Request access to capture the screen via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API).
+      * `fullscreen` - Request control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
+      * `geolocation` - Request access to the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+      * `idle-detection` - Request access to the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
+      * `media` -  Request access to media devices such as camera, microphone and speakers.
+      * `mediaKeySystem` - Request access to DRM protected content.
+      * `midi` - Request MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+      * `midiSysex` - Request the use of system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+      * `notifications` - Request notification creation and the ability to display them in the user's system tray using the [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/notification)
+      * `pointerLock` - Request to directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
+      * `keyboardLock` - Request capture of keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock). These requests always appear to originate from the main frame.
+      * `openExternal` - Request to open links in external applications.
+      * `speaker-selection` - Request to enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
+      * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+      * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+      * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
+      * `unknown` - An unrecognized permission request.
+      * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+    * `effectiveOrigin` String - The origin of the URL of the permission check, you should use this origin to perform security checks on whether to accept or deny this permission check. You may augment checks with additional information, but this is the primary source of truth you should rely on.
+    * `permissionRequestDetails` [PermissionRequest](structures/permission-request.md)  | [FilesystemPermissionRequest](structures/filesystem-permission-request.md) | [MediaAccessPermissionRequest](structures/media-access-permission-request.md) | [OpenExternalPermissionRequest](structures/open-external-permission-request.md) - Additional information about the permission being requested.
+
+<!--
+STUFF
+
+Sets the handler which can be used to respond to permission requests for the `session`.
+Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
+To clear the handler, call `setPermissionRequestHandler(null)`.  Please note that
+you must also implement `setPermissionCheckHandler` to get complete permission handling.
+Most web APIs do a permission check and then make a permission request if the check is denied.
+
+```js
+const { session } = require('electron')
+session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return callback(false) // denied.
+  }
+
+  callback(true)
+})
+```
+
+#### `ses.setPermissionCheckHandler(handler)`
+
+* `handler` 
+
+Sets the handler which can be used to respond to permission checks for the `session`.
+Returning `true` will allow the permission and `false` will reject it.  Please note that
+you must also implement `setPermissionRequestHandler` to get complete permission handling.
+Most web APIs do a permission check and then make a permission request if the check is denied.
+To clear the handler, call `setPermissionCheckHandler(null)`.
+
+```js
+const { session } = require('electron')
+const url = require('url')
+session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+  if (new URL(requestingOrigin).hostname === 'some-host' && permission === 'notifications') {
+    return true // granted
+  }
+
+  return false // denied
+})
+```
+
+-->
+
+#### `ses.setPermissionRequestHandler(handler)` _Deprecated_
 
 * `handler` Function | null
-  * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
+  * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `effectiveOrigin` to check the request origin.
   * `permission` string - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
@@ -886,6 +983,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
   * `details` [PermissionRequest](structures/permission-request.md)  | [FilesystemPermissionRequest](structures/filesystem-permission-request.md) | [MediaAccessPermissionRequest](structures/media-access-permission-request.md) | [OpenExternalPermissionRequest](structures/open-external-permission-request.md) - Additional information about the permission being requested.
+  * `effectiveOrigin` string - The origin of the URL of the permission check, you should use this origin to perform security checks on whether to accept or deny this permission check. You may augment checks with additional information, but this is the primary source of truth you should rely on.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
@@ -904,10 +1002,10 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 })
 ```
 
-#### `ses.setPermissionCheckHandler(handler)`
+#### `ses.setPermissionCheckHandler(handler)` _Deprecated_
 
 * `handler` Function\<boolean> | null
-  * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `effectiveOrigin` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `effectiveOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
   * `permission` string - Type of permission check.
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
@@ -926,7 +1024,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
-  * `requestingOrigin` string - The origin URL of the permission check
+  * `effectiveOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
     * `securityOrigin` string (optional) - The security origin of the `media` check.

@@ -48,11 +48,10 @@ std::unique_ptr<content::SerialChooser> ElectronSerialDelegate::RunChooser(
 
 bool ElectronSerialDelegate::CanRequestPortPermission(
     content::RenderFrameHost* frame) {
-  auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
-  auto* permission_helper =
-      WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckSerialAccessPermission(
-      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin());
+  // Returning true here does not grant the permission, rather it indicates
+  // that the given session is _allowed_ to _request_ the permission.
+  // This will then later hit the session permission request handler.
+  return true;
 }
 
 bool ElectronSerialDelegate::HasPortPermission(

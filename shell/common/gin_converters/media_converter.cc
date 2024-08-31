@@ -8,7 +8,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "gin/data_object_builder.h"
 #include "shell/common/gin_converters/frame_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 namespace gin {

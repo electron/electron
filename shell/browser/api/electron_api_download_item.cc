@@ -12,7 +12,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/gin_converters/file_dialog_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"

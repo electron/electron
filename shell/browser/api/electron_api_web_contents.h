@@ -614,6 +614,7 @@ class WebContents : public ExclusiveAccessContext,
                             bool last_unlocked_by_target,
                             bool allowed);
   void RequestPointerLock(content::WebContents* web_contents,
+                          content::RenderFrameHost* requesting_frame,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
   void LostPointerLock() override;
@@ -621,6 +622,7 @@ class WebContents : public ExclusiveAccessContext,
                              bool esc_key_locked,
                              bool allowed);
   void RequestKeyboardLock(content::WebContents* web_contents,
+                           content::RenderFrameHost* requesting_frame,
                            bool esc_key_locked) override;
   void CancelKeyboardLockRequest(content::WebContents* web_contents) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,

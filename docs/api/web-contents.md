@@ -2034,9 +2034,9 @@ ipcRenderer.on('port', (e, msg) => {
 })
 ```
 
-#### `contents.enableDeviceEmulation(parameters)`
+#### `contents.enableDeviceEmulation(deviceEmulationParameters)`
 
-* `parameters` Object
+* `deviceEmulationParameters` Object
   * `screenPosition` string - Specify the screen type to emulate
       (default: `desktop`):
     * `desktop` - Desktop screen type.

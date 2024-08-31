@@ -52,7 +52,7 @@ the WebHID API:
   needed, a developer can store granted device permissions (eg when handling
   the `select-hid-device` event) and then read from that storage with
   `setDevicePermissionHandler`.
-* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
+* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler-deprecated)
   can be used to disable HID access for specific origins.
 
 ### Blocklist
@@ -101,7 +101,7 @@ There are several additional APIs for working with the Web Serial API:
   needed, a developer can store granted device permissions (eg when handling
   the `select-serial-port` event) and then read from that storage with
   `setDevicePermissionHandler`.
-* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
+* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler-deprecated)
   can be used to disable serial access for specific origins.
 
 ### Example
@@ -140,7 +140,7 @@ Electron provides several APIs for working with the WebUSB API:
   needed, a developer can store granted device permissions (eg when handling
   the `select-usb-device` event) and then read from that storage with
   `setDevicePermissionHandler`.
-* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
+* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler-deprecated)
   can be used to disable USB access for specific origins.
 * [`ses.setUSBProtectedClassesHandler](../api/session.md#sessetusbprotectedclasseshandlerhandler)
   can be used to allow usage of [protected USB classes](https://wicg.github.io/webusb/#usbinterface-interface) that are not available by default.

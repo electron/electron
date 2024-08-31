@@ -117,7 +117,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
@@ -1466,12 +1466,13 @@ void WebContents::OnRequestPointerLock(content::WebContents* web_contents,
 }
 
 void WebContents::RequestPointerLock(content::WebContents* web_contents,
+                                     content::RenderFrameHost* frame,
                                      bool user_gesture,
                                      bool last_unlocked_by_target) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
-      user_gesture, last_unlocked_by_target,
+      frame, user_gesture, last_unlocked_by_target,
       base::BindOnce(&WebContents::OnRequestPointerLock,
                      base::Unretained(this)));
 }
@@ -1493,11 +1494,12 @@ void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
 }
 
 void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
+                                      content::RenderFrameHost* frame,
                                       bool esc_key_locked) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestKeyboardLockPermission(
-      esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
+      frame, esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
                                      base::Unretained(this)));
 }
 
@@ -1515,7 +1517,7 @@ bool WebContents::CheckMediaAccessPermission(
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckMediaAccessPermission(security_origin, type);
+  return permission_helper->CheckMediaAccessPermission(render_frame_host, security_origin, type);
 }
 
 void WebContents::RequestMediaAccessPermission(

@@ -7,7 +7,7 @@
 #include "extensions/common/extension.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/value_converter.h"
 
 namespace gin {

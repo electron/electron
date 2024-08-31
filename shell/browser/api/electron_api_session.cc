@@ -77,9 +77,10 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -846,36 +847,37 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
       browser_context()->GetPermissionControllerDelegate());
   if (val->IsNull()) {
     permission_manager->SetPermissionRequestHandler(
-        ElectronPermissionManager::RequestHandler());
+        ElectronPermissionManager::OnRequestHandler());
     return;
   }
-  auto handler = std::make_unique<ElectronPermissionManager::RequestHandler>();
+  auto handler = std::make_unique<ElectronPermissionManager::OnRequestHandler>();
   if (!gin::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowTypeError("Must pass null or function");
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](ElectronPermissionManager::RequestHandler* handler,
+      [](ElectronPermissionManager::OnRequestHandler* handler,
          content::WebContents* web_contents,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
-         const base::Value& details) {
+         const base::Value& details,
+         const url::Origin& effective_origin) {
         handler->Run(web_contents, permission_type, std::move(callback),
-                     details);
+                     details, effective_origin);
       },
       base::Owned(std::move(handler))));
 }
 
-void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
+void Session::SetPermissionIsGrantedHandler(v8::Local<v8::Value> val,
                                         gin::Arguments* args) {
-  ElectronPermissionManager::CheckHandler handler;
+  ElectronPermissionManager::IsGrantedHandler handler;
   if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
     args->ThrowTypeError("Must pass null or function");
     return;
   }
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
-  permission_manager->SetPermissionCheckHandler(handler);
+  permission_manager->SetPermissionIsGrantedHandler(handler);
 }
 
 void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
@@ -1603,10 +1605,10 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
       .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
-      .SetMethod("setPermissionRequestHandler",
+      .SetMethod("_setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
-      .SetMethod("setPermissionCheckHandler",
-                 &Session::SetPermissionCheckHandler)
+      .SetMethod("_setPermissionCheckHandler",
+                 &Session::SetPermissionIsGrantedHandler)
       .SetMethod("setDisplayMediaRequestHandler",
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",

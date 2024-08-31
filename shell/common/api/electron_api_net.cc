@@ -13,7 +13,7 @@
 #include "shell/browser/net/resolve_host_function.h"
 #include "shell/common/api/electron_api_url_loader.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/url_converters.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"

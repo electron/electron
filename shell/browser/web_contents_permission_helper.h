@@ -41,11 +41,13 @@ class WebContentsPermissionHelper
   void RequestMediaAccessPermission(const content::MediaStreamRequest& request,
                                     content::MediaResponseCallback callback);
   void RequestPointerLockPermission(
+      content::RenderFrameHost* frame,
       bool user_gesture,
       bool last_unlocked_by_target,
       base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
           callback);
   void RequestKeyboardLockPermission(
+      content::RenderFrameHost* requesting_frame,
       bool esc_key_locked,
       base::OnceCallback<void(content::WebContents*, bool, bool)> callback);
   void RequestWebNotificationPermission(
@@ -57,22 +59,20 @@ class WebContentsPermissionHelper
                                      const GURL& url);
 
   // Synchronous Checks
-  bool CheckMediaAccessPermission(const url::Origin& security_origin,
+  bool CheckMediaAccessPermission(content::RenderFrameHost* requesting_frame,
+                                  const url::Origin& security_origin,
                                   blink::mojom::MediaStreamType type) const;
-  bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
   void RequestPermission(content::RenderFrameHost* requesting_frame,
+                         const url::Origin& origin,
                          blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
                          base::Value::Dict details = {});
-
-  bool CheckPermission(blink::PermissionType permission,
-                       base::Value::Dict details) const;
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref

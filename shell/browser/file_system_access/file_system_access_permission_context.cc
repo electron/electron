@@ -295,8 +295,8 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    auto origin = rfh->GetLastCommittedOrigin().GetURL();
-    if (url::Origin::Create(origin) != origin_) {
+    auto origin = rfh->GetLastCommittedOrigin();
+    if (origin != origin_) {
       // Third party iframes are not allowed to request more permissions.
       std::move(callback).Run(PermissionRequestOutcome::kThirdPartyContext);
       return;

@@ -9,6 +9,7 @@
 
 #include "gin/converter.h"
 #include "url/gurl.h"
+#include "url/origin.h"
 
 namespace gin {
 
@@ -27,6 +28,13 @@ struct Converter<GURL> {
     } else {
       return false;
     }
+  }
+};
+
+template <>
+struct Converter<url::Origin> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const url::Origin& val) {
+    return ConvertToV8(isolate, val.Serialize());
   }
 };
 
