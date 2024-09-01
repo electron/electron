@@ -1771,10 +1771,10 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* new_parent,
   RemoveChildFromParentWindow();
 
   // Set new parent window.
-  if (new_parent) {
-    new_parent->add_child_window(this);
+  if (auto* new_parent_mac = static_cast<NativeWindowMac*>(new_parent)) {
+    new_parent_mac->add_child_window(this);
     if (attach)
-      new_parent->AttachChildren();
+      new_parent_mac->AttachChildren();
   }
 
   NativeWindow::SetParentWindow(new_parent);

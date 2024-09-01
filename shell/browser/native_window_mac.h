@@ -7,6 +7,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -234,6 +235,10 @@ class NativeWindowMac : public NativeWindow,
                                uint32_t changed_metrics) override;
 
  private:
+  void add_child_window(NativeWindow* child) {
+    child_windows_.push_back(child);
+  }
+
   // Add custom layers to the content view.
   void AddContentViewLayers();
 
@@ -307,6 +312,8 @@ class NativeWindowMac : public NativeWindow,
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
+
+  std::list<NativeWindow*> child_windows_;
 };
 
 }  // namespace electron
