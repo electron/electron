@@ -21,9 +21,9 @@ class Handle;
 
 namespace electron::api {
 
-class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
-                        public gin_helper::Pinnable<DesktopCapturer>,
-                        private DesktopMediaListObserver {
+class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
+                              public gin_helper::Pinnable<DesktopCapturer>,
+                              private DesktopMediaListObserver {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;

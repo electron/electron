@@ -30,11 +30,11 @@ class ErrorThrower;
 
 namespace electron::api {
 
-class Notification : public gin::Wrappable<Notification>,
-                     public gin_helper::EventEmitterMixin<Notification>,
-                     public gin_helper::Constructible<Notification>,
-                     public gin_helper::CleanedUpAtExit,
-                     public NotificationDelegate {
+class Notification final : public gin::Wrappable<Notification>,
+                           public gin_helper::EventEmitterMixin<Notification>,
+                           public gin_helper::Constructible<Notification>,
+                           public gin_helper::CleanedUpAtExit,
+                           public NotificationDelegate {
  public:
   static bool IsSupported();
 

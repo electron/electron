@@ -21,7 +21,7 @@ class Handle;
 
 namespace electron::api {
 
-class PushNotifications
+class PushNotifications final
     : public ElectronBrowserClient::Delegate,
       public gin::Wrappable<PushNotifications>,
       public gin_helper::EventEmitterMixin<PushNotifications>,

@@ -19,10 +19,10 @@ class Handle;
 
 namespace electron::api {
 
-class AutoUpdater : public gin::Wrappable<AutoUpdater>,
-                    public gin_helper::EventEmitterMixin<AutoUpdater>,
-                    public auto_updater::Delegate,
-                    private WindowListObserver {
+class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
+                          public gin_helper::EventEmitterMixin<AutoUpdater>,
+                          public auto_updater::Delegate,
+                          private WindowListObserver {
  public:
   static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
