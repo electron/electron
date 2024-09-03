@@ -80,10 +80,10 @@ index b078a4a06c7b3f767e2e01f0bef2ba440f729620..0459568581a3073333ae6afabd3680f2
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 0507577166a08ac43d600d757ccb9755f61811c9..3d9f968cc02b516049db507fc5748060d4a64c6b 100644
+index bc5f4a7cc5f2c985c99adb8b7931dac1468432ac..b066f50592d91ac9b6c1962d062d672cd03e2703 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2084,12 +2084,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2089,12 +2089,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 0507577166a08ac43d600d757ccb9755f61811c9..3d9f968cc02b516049db507fc5748060
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 1ebaa1a5b2938bea407b37c1d5efd8a67380b966..ab1fd6f5254de6e109ddadee3436122a491b99b9 100644
+index 46a9b7a21adba4c026a79d3c29e4d882156ad49d..08ccfa073460505b9388e6970936ebab83f63d46 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -959,8 +959,7 @@ class Browser : public TabStripModelObserver,
+@@ -963,8 +963,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -155,10 +155,10 @@ index 5a108924282d5b0d1fd07be54fcfbfac66ef4ac5..988da4fa08083e264f1fe840d47113f1
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 813fc9dfa82fcee8b97b59e82a2a47f5cccd9c17..67bce4e5ae01df607fb11639704ff71dd244787a 100644
+index e0f1e382cac773b9ad10bac1166eeea29aa57ffc..d54b9d27802a0f2f6fe269a0c8184b846b01df0d 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -181,14 +181,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -183,14 +183,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -176,10 +176,10 @@ index 813fc9dfa82fcee8b97b59e82a2a47f5cccd9c17..67bce4e5ae01df607fb11639704ff71d
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 927051df7e57ff3c08fa5489f21c248f9eaf87b7..e728f642c8b73c5d740fae6197c1b83c7da95e05 100644
+index 704317b01ca869211b3da5e148b7445a39c10384..06f81b78911d8f3176bf0bede20bd287a8bed7a4 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-@@ -81,8 +81,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
+@@ -82,8 +82,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -190,7 +190,7 @@ index 927051df7e57ff3c08fa5489f21c248f9eaf87b7..e728f642c8b73c5d740fae6197c1b83c
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 7727ec0ea9255a6c1576562afe9f474d296f2b8f..3656b2ce626f08c617b9d3adcd11ee300841f1e9 100644
+index 9a9189517762d3fe1273dd49a9fbf66be7bce61b..b5015fa8de8dd3cbf8e366326575c7e8268e384c 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
 @@ -85,8 +85,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4b9aa9f410bbe94a7ccfbb91c950e05b9e052beb..7f22f9c2ae91d54b28623799848cbafbb80a9558 100644
+index c7faa33b382594ab28e30918021670c7d12f6cc5..44cc8ca844e1534eb1563ce94d32b7277741c1cc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4660,8 +4660,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4678,8 +4678,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

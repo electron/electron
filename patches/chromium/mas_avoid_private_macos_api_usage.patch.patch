@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 38a4417fe8c887b988691e5eaec891b5326567b4..48241ee265462195ca57f2bd57b9c03411a40432 100644
+index 3466b284fdfde67ad3370f25b90c7af981725ec5..28bec2f028c2580757ff32a144b6ae532d66decf 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1026,6 +1026,7 @@ component("base") {
@@ -379,7 +379,7 @@ index 285a406e8cec06bf3beeca81b32e6561528279f9..0a08dc58852bc16edd3144e819276a0d
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d854bec506e286a40bd0fb5200e1c48a5906f7b7..2c4ea71c3160c8fbb03da33ae1ca47e35faaed30 100644
+index 853a95c65674b1011898c64445024bdc30c9709b..8d048719e1b062b3115d185a47cd4c92e318a145 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -371,6 +371,7 @@ viz_component("service") {
@@ -468,7 +468,7 @@ index 7b306925815201084a92db192d623b7d2f4d2691..79b647b03826aadde3b58b448192943c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7ad8a26e7889dc04c084184d4f327d64747131f2..cc8624f4cf3171b2aba4681bd4ae5986f785da2d 100644
+index 4502ba5b27ebd7d5d97ba10d8da4844eb9a0f777..03c0043af5c5f553db64b6b58f24ec40b5abebfa 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -72,6 +72,7 @@ source_set("browser") {
@@ -663,7 +663,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 654e1d4aa25af680fcffc1dda1bd25ee73e9e0ee..d79330645cc4f4315914a3d330ffc949bfcc71dd 100644
+index 41fc6a51fbc9eb66e153c4f80b189932c8380086..e89776fcc7a542bbfc271604b9743725e9d54185 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -682,7 +682,7 @@ index 654e1d4aa25af680fcffc1dda1bd25ee73e9e0ee..d79330645cc4f4315914a3d330ffc949
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1722,6 +1724,7 @@ test("content_browsertests") {
+@@ -1748,6 +1750,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -690,7 +690,7 @@ index 654e1d4aa25af680fcffc1dda1bd25ee73e9e0ee..d79330645cc4f4315914a3d330ffc949
  
    public_deps = [
      ":test_interfaces",
-@@ -2977,6 +2980,7 @@ test("content_unittests") {
+@@ -3003,6 +3006,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -1210,7 +1210,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 9cb087c578629d872d2a2c12a046471527372c81..2b1aa7a79bcae619c3fe205a64fc1bdae4a4efff 100644
+index 95cd6ecd6cfe070d9f0a4bbc299ca82872fddc9c..db96f1b73c7b9362b8bdc1924ccf64113bf0722b 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -332,6 +332,7 @@ component("core") {
