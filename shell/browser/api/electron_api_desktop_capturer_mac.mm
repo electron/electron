@@ -8,7 +8,7 @@ namespace electron::api {
 
 // static
 bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
-  if (@available(macOS 14.4, *)) {
+  if (@available(macOS 15.0, *)) {
     return true;
   }
   return false;

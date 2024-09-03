@@ -13,18 +13,7 @@ function isValid (options: Electron.SourcesOptions) {
   return Array.isArray(options?.types);
 }
 
-// Magic video source that activates the native system picker
-let fakeVideoSourceId = -1;
-const systemPickerVideoSource = Object.create(null);
-Object.defineProperty(systemPickerVideoSource, 'id', {
-  get () {
-    return `window:${fakeVideoSourceId--}:0`;
-  }
-});
-systemPickerVideoSource.name = '';
-Object.freeze(systemPickerVideoSource);
-
-export { isDisplayMediaSystemPickerAvailable, systemPickerVideoSource };
+export { isDisplayMediaSystemPickerAvailable };
 
 export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
