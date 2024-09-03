@@ -266,7 +266,7 @@ declare namespace Electron {
 
 declare namespace ElectronInternal {
   interface DesktopCapturer {
-    startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
+    startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean, useSystemPicker: boolean): void;
     _onerror?: (error: string) => void;
     _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
   }

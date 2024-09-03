@@ -41,7 +41,8 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size,
-                     bool fetch_window_icons);
+                     bool fetch_window_icons,
+                     bool use_system_picker);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
