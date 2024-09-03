@@ -687,6 +687,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
     case extensions::mojom::ViewType::kOffscreenDocument:
     case extensions::mojom::ViewType::kExtensionSidePanel:
     case extensions::mojom::ViewType::kInvalid:
+    case extensions::mojom::ViewType::kDeveloperTools:
       return WebContents::Type::kRemote;
   }
 }
