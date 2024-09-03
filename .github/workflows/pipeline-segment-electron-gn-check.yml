@@ -54,6 +54,23 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Cleanup disk space on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      shell: bash
+      run: |   
+        sudo mkdir -p $TMPDIR/del-target
+
+        tmpify() {
+          if [ -d "$1" ]; then
+            sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
+          fi
+        }   
+        tmpify /Library/Developer/CoreSimulator
+        tmpify ~/Library/Developer/CoreSimulator
+        sudo rm -rf $TMPDIR/del-target
+    - name: Check disk space after freeing up space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: df -h        
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
