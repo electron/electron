@@ -1222,10 +1222,10 @@ index 95cd6ecd6cfe070d9f0a4bbc299ca82872fddc9c..db96f1b73c7b9362b8bdc1924ccf6411
    public_deps = [
      ":buildflags",
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index f12dd0a759fd8a79e648e14711274ccc40642a3d..63ae0ca4f63e68913c809b9440a922a95e914dcd 100644
+index 44e437c91135ec09c588a46e032bd6d3a12bab04..963e263a81b4eb9b3c53bebdcab1d1064b6113db 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -354,10 +354,14 @@ blink_core_sources_editing = [
+@@ -356,10 +356,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
