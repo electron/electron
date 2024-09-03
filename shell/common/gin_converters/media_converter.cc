@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_converters/media_converter.h"
 
+#include "shell/common/gin_converters/display_surface_converter.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/render_frame_host.h"
 #include "gin/data_object_builder.h"
@@ -22,6 +23,7 @@ v8::Local<v8::Value> Converter<content::MediaStreamRequest>::ToV8(
       .Set("frame", rfh)
       .Set("securityOrigin", request.security_origin)
       .Set("userGesture", request.user_gesture)
+      .Set("preferredDisplaySurface", request.preferred_display_surface)
       .Set("videoRequested",
            request.video_type != blink::mojom::MediaStreamType::NO_SERVICE)
       .Set("audioRequested",

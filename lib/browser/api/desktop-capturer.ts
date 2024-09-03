@@ -15,7 +15,7 @@ function isValid (options: Electron.SourcesOptions) {
 
 export { isDisplayMediaSystemPickerAvailable };
 
-export async function getSources (args: Electron.SourcesOptions) {
+export async function getSources (args: Electron.SourcesOptions, useSystemPicker: boolean = false) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
@@ -38,7 +38,8 @@ export async function getSources (args: Electron.SourcesOptions) {
     captureWindow,
     captureScreen,
     thumbnailSize,
-    fetchWindowIcons
+    fetchWindowIcons,
+    useSystemPicker,
   };
 
   for (const running of currentlyRunning) {
@@ -80,7 +81,7 @@ export async function getSources (args: Electron.SourcesOptions) {
       resolve(sources);
     };
 
-    capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
+    capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons, useSystemPicker);
   });
 
   currentlyRunning.push({

@@ -962,6 +962,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+    * `preferredDisplaySurface` String - The preferred display used for sharing screen in this request.
   * `callback` Function
     * `streams` Object
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
