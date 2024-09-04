@@ -109,19 +109,19 @@ class BaseWindow;
 class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
-class WebContents : public ExclusiveAccessContext,
-                    public gin::Wrappable<WebContents>,
-                    public gin_helper::EventEmitterMixin<WebContents>,
-                    public gin_helper::Constructible<WebContents>,
-                    public gin_helper::Pinnable<WebContents>,
-                    public gin_helper::CleanedUpAtExit,
-                    public content::WebContentsObserver,
-                    public content::WebContentsDelegate,
-                    private content::RenderWidgetHost::InputEventObserver,
-                    public content::JavaScriptDialogManager,
-                    public InspectableWebContentsDelegate,
-                    public InspectableWebContentsViewDelegate,
-                    public BackgroundThrottlingSource {
+class WebContents final : public ExclusiveAccessContext,
+                          public gin::Wrappable<WebContents>,
+                          public gin_helper::EventEmitterMixin<WebContents>,
+                          public gin_helper::Constructible<WebContents>,
+                          public gin_helper::Pinnable<WebContents>,
+                          public gin_helper::CleanedUpAtExit,
+                          public content::WebContentsObserver,
+                          public content::WebContentsDelegate,
+                          private content::RenderWidgetHost::InputEventObserver,
+                          public content::JavaScriptDialogManager,
+                          public InspectableWebContentsDelegate,
+                          public InspectableWebContentsViewDelegate,
+                          public BackgroundThrottlingSource {
  public:
   enum class Type {
     kBackgroundPage,  // An extension background page.
