@@ -43,7 +43,7 @@ class Arguments;
 
 namespace electron::api {
 
-class NativeImage : public gin::Wrappable<NativeImage> {
+class NativeImage final : public gin::Wrappable<NativeImage> {
  public:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
 #if BUILDFLAG(IS_WIN)

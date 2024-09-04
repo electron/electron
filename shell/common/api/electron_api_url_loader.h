@@ -43,7 +43,7 @@ class ElectronBrowserContext;
 namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
-class SimpleURLLoaderWrapper
+class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       public network::SimpleURLLoaderStreamConsumer,

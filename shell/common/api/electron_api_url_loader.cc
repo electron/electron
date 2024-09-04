@@ -160,8 +160,9 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
   std::vector<char> buffer_;
 };
 
-class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
-                                public network::mojom::ChunkedDataPipeGetter {
+class JSChunkedDataPipeGetter final
+    : public gin::Wrappable<JSChunkedDataPipeGetter>,
+      public network::mojom::ChunkedDataPipeGetter {
  public:
   static gin::Handle<JSChunkedDataPipeGetter> Create(
       v8::Isolate* isolate,

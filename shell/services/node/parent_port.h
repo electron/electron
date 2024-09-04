@@ -30,8 +30,8 @@ namespace electron {
 // There is only a single instance of this class
 // for the lifetime of a Utility Process which
 // also means that GC lifecycle is ignored by this class.
-class ParentPort : public gin::Wrappable<ParentPort>,
-                   public mojo::MessageReceiver {
+class ParentPort final : public gin::Wrappable<ParentPort>,
+                         public mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
   static gin::Handle<ParentPort> Create(v8::Isolate* isolate);

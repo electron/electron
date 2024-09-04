@@ -14,7 +14,7 @@
 
 namespace electron::api {
 
-class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
+class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
  public:
   static gin::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 

@@ -34,12 +34,12 @@ namespace electron::api {
 
 class Menu;
 
-class Tray : public gin::Wrappable<Tray>,
-             public gin_helper::EventEmitterMixin<Tray>,
-             public gin_helper::Constructible<Tray>,
-             public gin_helper::CleanedUpAtExit,
-             public gin_helper::Pinnable<Tray>,
-             public TrayIconObserver {
+class Tray final : public gin::Wrappable<Tray>,
+                   public gin_helper::EventEmitterMixin<Tray>,
+                   public gin_helper::Constructible<Tray>,
+                   public gin_helper::CleanedUpAtExit,
+                   public gin_helper::Pinnable<Tray>,
+                   public TrayIconObserver {
  public:
   // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
