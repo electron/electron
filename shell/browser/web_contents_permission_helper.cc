@@ -66,22 +66,12 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
                system_media_permissions::SystemPermission::kDenied;
   }
   if (request.video_type != MediaStreamType::NO_SERVICE) {
-    if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE ||
-        request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
-          const auto system_screen_permission =
-            system_media_permissions::CheckSystemScreenCapturePermission();
-      return system_screen_permission ==
-                system_media_permissions::SystemPermission::kRestricted ||
-              system_screen_permission ==
-                system_media_permissions::SystemPermission::kDenied;
-    } else {
-        const auto system_video_permission =
-          system_media_permissions::CheckSystemVideoCapturePermission();
-        return system_video_permission ==
-                  system_media_permissions::SystemPermission::kRestricted ||
-              system_video_permission ==
-                  system_media_permissions::SystemPermission::kDenied;
-    }
+    const auto system_video_permission =
+        system_media_permissions::CheckSystemVideoCapturePermission();
+    return system_video_permission ==
+               system_media_permissions::SystemPermission::kRestricted ||
+           system_video_permission ==
+               system_media_permissions::SystemPermission::kDenied;
   }
   return false;
 }
