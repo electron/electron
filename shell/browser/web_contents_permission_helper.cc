@@ -72,7 +72,8 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
            system_video_permission ==
                system_media_permissions::SystemPermission::kDenied;
   }
-  return true;
+
+  return false;
 }
 #endif
 
