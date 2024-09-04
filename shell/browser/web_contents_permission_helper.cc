@@ -64,7 +64,7 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
            system_audio_permission ==
                system_media_permissions::SystemPermission::kDenied;
   }
-  if (request.video_type != MediaStreamType::DEVICE_VIDEO_CAPTURE) {
+  if (request.video_type == MediaStreamType::DEVICE_VIDEO_CAPTURE) {
     const auto system_video_permission =
         system_media_permissions::CheckSystemVideoCapturePermission();
     return system_video_permission ==
