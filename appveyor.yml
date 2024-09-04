@@ -170,8 +170,8 @@ for:
           if ($env:GN_CONFIG -eq 'release') {
             # Needed for msdia140.dll on 64-bit windows
             $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
-            autoninja -C out/Default electron:electron_symbols
           }
+      - if "%GN_CONFIG%"=="release" ( autoninja -C out/Default electron:electron_symbols )
       - ps: >-
           if ($env:GN_CONFIG -eq 'release') {
             python3 electron\script\zip-symbols.py
