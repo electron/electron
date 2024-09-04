@@ -48,7 +48,7 @@ bool CheckCommandLineArguments(const base::CommandLine::StringVector& argv) {
       break;
     if (block_args)
       return false;
-    if (IsUrl(arg))
+    if (IsUrlArg(arg))
       block_args = true;
   }
   return true;
