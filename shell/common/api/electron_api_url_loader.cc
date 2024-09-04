@@ -675,6 +675,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
                               .ToV8();
       request->request_body =
           base::MakeRefCounted<network::ResourceRequestBody>();
+      request->request_body->SetAllowHTTP1ForStreamingUpload(true);
       request->request_body->SetToChunkedDataPipe(
           std::move(data_pipe_getter),
           network::ResourceRequestBody::ReadOnlyOnce(false));
