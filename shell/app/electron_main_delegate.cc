@@ -409,6 +409,11 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
+#if BUILDFLAG(IS_LINUX)
+  // Set the global activation token sent as an environment variable.
+  auto env = base::Environment::Create();
+  base::nix::ExtractXdgActivationTokenFromEnv(*env);
+#endif
   return std::nullopt;
 }
 
