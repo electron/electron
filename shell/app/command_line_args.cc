@@ -13,18 +13,18 @@
 namespace {
 
 #if BUILDFLAG(IS_WIN)
-constexpr auto DashDash = base::CommandLine::StringViewType{L"--"};
+constexpr auto DashDash = base::CommandLine::StringPieceType{L"--"};
 #else
-constexpr auto DashDash = base::CommandLine::StringViewType{"--"};
+constexpr auto DashDash = base::CommandLine::StringPieceType{"--"};
 #endif
 
 // we say it's a URL arg if it starts with a URI scheme that:
 // 1. starts with an alpha, and
 // 2. contains no spaces, and
 // 3. is longer than one char (to ensure it's not a Windows drive path)
-bool IsUrlArg(const base::CommandLine::StringViewType arg) {
+bool IsUrlArg(const base::CommandLine::StringPieceType arg) {
   const auto scheme_end = arg.find(':');
-  if (scheme_end == base::CommandLine::StringViewType::npos)
+  if (scheme_end == base::CommandLine::StringPieceType::npos)
     return false;
 
   const auto& c_locale = std::locale::classic();
