@@ -23,11 +23,7 @@ struct Converter<base::FilePath> {
     if (val->IsNull())
       return true;
 
-    if (!val->IsString())
-      return true;
-    // if the `val` is an empty string, set `out` to an empty FilePath
-    v8::Local<v8::String> str = v8::Local<v8::String>::Cast(val);
-    if (str->Length() == 0) {
+    if (val->IsString() && v8::Local<v8::String>::Cast(val)->Length() == 0) {
       *out = {};
       return true;
     }
