@@ -43,7 +43,6 @@ namespace electron {
 // More info at https://www.electronjs.org/blog/protocol-handler-fix
 bool CheckCommandLineArguments(const base::CommandLine::StringVector& argv) {
   bool block_args = false;
-
   for (const auto& arg : argv) {
     if (arg == DashDash)
       break;
@@ -52,7 +51,6 @@ bool CheckCommandLineArguments(const base::CommandLine::StringVector& argv) {
     if (IsUrl(arg))
       block_args = true;
   }
-
   return true;
 }
 
