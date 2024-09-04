@@ -47,12 +47,12 @@ enum class JumpListResult : int;
 
 namespace api {
 
-class App : public ElectronBrowserClient::Delegate,
-            public gin::Wrappable<App>,
-            public gin_helper::EventEmitterMixin<App>,
-            private BrowserObserver,
-            private content::GpuDataManagerObserver,
-            private content::BrowserChildProcessObserver {
+class App final : public ElectronBrowserClient::Delegate,
+                  public gin::Wrappable<App>,
+                  public gin_helper::EventEmitterMixin<App>,
+                  private BrowserObserver,
+                  private content::GpuDataManagerObserver,
+                  private content::BrowserChildProcessObserver {
  public:
   using FileIconCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
