@@ -132,25 +132,17 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
   }
 
-  if (info.integrity.has_value()) {
-    ValidateIntegrityOrDie(contents->data(), contents->size(),
-                           info.integrity.value());
-  }
+  if (info.integrity)
+    ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity);
 
   return true;
 }
 
-void ValidateIntegrityOrDie(const char* data,
-                            size_t size,
+void ValidateIntegrityOrDie(base::span<const uint8_t> input,
                             const IntegrityPayload& integrity) {
   if (integrity.algorithm == HashAlgorithm::kSHA256) {
-    uint8_t hash[crypto::kSHA256Length];
-    auto hasher = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
-    hasher->Update(data, size);
-    hasher->Finish(hash, sizeof(hash));
     const std::string hex_hash =
-        base::ToLowerASCII(base::HexEncode(hash, sizeof(hash)));
-
+        base::ToLowerASCII(base::HexEncode(crypto::SHA256Hash(input)));
     if (integrity.hash != hex_hash) {
       LOG(FATAL) << "Integrity check failed for asar archive ("
                  << integrity.hash << " vs " << hex_hash << ")";
