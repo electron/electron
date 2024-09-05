@@ -37,7 +37,7 @@ enum class NotificationCenterKind {
 };
 #endif
 
-class SystemPreferences
+class SystemPreferences final
     : public gin::Wrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)

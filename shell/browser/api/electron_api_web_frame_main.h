@@ -38,10 +38,10 @@ namespace electron::api {
 class WebContents;
 
 // Bindings for accessing frames from the main process.
-class WebFrameMain : public gin::Wrappable<WebFrameMain>,
-                     public gin_helper::EventEmitterMixin<WebFrameMain>,
-                     public gin_helper::Pinnable<WebFrameMain>,
-                     public gin_helper::Constructible<WebFrameMain> {
+class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
+                           public gin_helper::EventEmitterMixin<WebFrameMain>,
+                           public gin_helper::Pinnable<WebFrameMain>,
+                           public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
