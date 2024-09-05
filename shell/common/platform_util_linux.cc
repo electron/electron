@@ -22,6 +22,7 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "base/run_loop.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
@@ -271,6 +272,16 @@ bool XDGUtil(const std::vector<std::string>& argv,
              const bool wait_for_exit,
              platform_util::OpenCallback callback) {
   base::LaunchOptions options;
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  base::RepeatingClosure quit_loop = run_loop.QuitClosure();
+  base::nix::CreateLaunchOptionsWithXdgActivation(base::BindOnce(
+      [](base::RepeatingClosure quit_loop, base::LaunchOptions* options_out,
+         base::LaunchOptions options) {
+        *options_out = std::move(options);
+        std::move(quit_loop).Run();
+      },
+      std::move(quit_loop), &options));
+  run_loop.Run();
   options.current_directory = working_directory;
   options.allow_new_privs = true;
   // xdg-open can fall back on mailcap which eventually might plumb through
