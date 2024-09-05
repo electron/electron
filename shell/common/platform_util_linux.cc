@@ -270,18 +270,21 @@ std::string GetErrorDescription(int error_code) {
 bool XDGUtil(const std::vector<std::string>& argv,
              const base::FilePath& working_directory,
              const bool wait_for_exit,
+             const bool focus_launched_process,
              platform_util::OpenCallback callback) {
   base::LaunchOptions options;
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  base::RepeatingClosure quit_loop = run_loop.QuitClosure();
-  base::nix::CreateLaunchOptionsWithXdgActivation(base::BindOnce(
-      [](base::RepeatingClosure quit_loop, base::LaunchOptions* options_out,
-         base::LaunchOptions options) {
-        *options_out = std::move(options);
-        std::move(quit_loop).Run();
-      },
-      std::move(quit_loop), &options));
-  run_loop.Run();
+  if (focus_launched_process) {
+    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+    base::RepeatingClosure quit_loop = run_loop.QuitClosure();
+    base::nix::CreateLaunchOptionsWithXdgActivation(base::BindOnce(
+        [](base::RepeatingClosure quit_loop, base::LaunchOptions* options_out,
+           base::LaunchOptions options) {
+          *options_out = std::move(options);
+          std::move(quit_loop).Run();
+        },
+        std::move(quit_loop), &options));
+    run_loop.Run();
+  }
   options.current_directory = working_directory;
   options.allow_new_privs = true;
   // xdg-open can fall back on mailcap which eventually might plumb through
@@ -313,11 +316,12 @@ bool XDGOpen(const base::FilePath& working_directory,
              const bool wait_for_exit,
              platform_util::OpenCallback callback) {
   return XDGUtil({"xdg-open", path}, working_directory, wait_for_exit,
-                 std::move(callback));
+                 /*focus_launched_process=*/true, std::move(callback));
 }
 
 bool XDGEmail(const std::string& email, const bool wait_for_exit) {
   return XDGUtil({"xdg-email", email}, base::FilePath(), wait_for_exit,
+                 /*focus_launched_process=*/true,
                  platform_util::OpenCallback());
 }
 
@@ -386,7 +390,8 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
     argv = {"gio", "trash", filename};
   }
 
-  return XDGUtil(argv, base::FilePath(), true, platform_util::OpenCallback());
+  return XDGUtil(argv, base::FilePath(), true, /*focus_launched_process=*/false,
+                 platform_util::OpenCallback());
 }
 
 namespace internal {
