@@ -25,10 +25,10 @@ class WebContents;
 
 namespace electron::api {
 
-class Debugger : public gin::Wrappable<Debugger>,
-                 public gin_helper::EventEmitterMixin<Debugger>,
-                 public content::DevToolsAgentHostClient,
-                 private content::WebContentsObserver {
+class Debugger final : public gin::Wrappable<Debugger>,
+                       public gin_helper::EventEmitterMixin<Debugger>,
+                       public content::DevToolsAgentHostClient,
+                       private content::WebContentsObserver {
  public:
   static gin::Handle<Debugger> Create(v8::Isolate* isolate,
                                       content::WebContents* web_contents);

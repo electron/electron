@@ -18,7 +18,7 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class ServiceWorkerContext
+class ServiceWorkerContext final
     : public gin::Wrappable<ServiceWorkerContext>,
       public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       private content::ServiceWorkerContextObserver {
