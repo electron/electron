@@ -163,7 +163,7 @@ contextBridge.exposeInMainWorld('electron', {
 
 ```js @ts-nocheck
 // Renderer (Main World)
-window.electron.onEvent(data => { /* ... */ })
+window.electron.onMyEventName(data => { /* ... */ })
 ```
 
 ### Exposing Node Global Symbols
