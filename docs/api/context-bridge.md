@@ -158,7 +158,7 @@ contextBridge.exposeInMainWorld('electron', {
 })
 ```
 
-```js
+```js @ts-nocheck
 // Renderer (Main World)
 window.electron.onEvent(data => { /* ... */ })
 ```
