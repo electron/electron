@@ -69,7 +69,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -81,7 +81,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
@@ -104,7 +104,7 @@ runs:
           fi
         fi
 
-        e build electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
@@ -130,24 +130,24 @@ runs:
       shell: bash
       run: |
         cd src
-        e build electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-        e build electron:electron_chromedriver_zip
+        e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_chromedriver_zip
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
-        e build electron:node_headers
+        e build --target electron:node_headers
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
         # Generate breakpad symbols on release builds
         if [ "${{ inputs.generate-symbols }}" = "true" ]; then
-          e build electron:electron_symbols
+          e build --target electron:electron_symbols
         fi
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
-        e build electron:licenses
-        e build electron:electron_version_file
+        e build --target electron:licenses
+        e build --target electron:electron_version_file
         if [ "${{ inputs.is-release }}" = "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
