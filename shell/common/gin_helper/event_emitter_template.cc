@@ -32,7 +32,7 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
               .ToLocal(&func_prototype));
 
     CHECK(func_prototype.As<v8::Object>()
-              ->SetPrototype(context, eventemitter_prototype)
+              ->SetPrototypeV2(context, eventemitter_prototype)
               .ToChecked());
 
     data->SetFunctionTemplate(&kWrapperInfo, tmpl);
