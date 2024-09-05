@@ -154,7 +154,6 @@ contextBridge.exposeInMainWorld('electron', {
 window.electron.onEvent(data => { /* ... */ })
 ```
 
-
 ### Exposing Node Global Symbols
 
 The `contextBridge` can be used by the preload script to give your renderer access to Node APIs.
