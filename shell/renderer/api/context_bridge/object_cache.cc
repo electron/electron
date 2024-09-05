@@ -14,10 +14,8 @@ ObjectCache::~ObjectCache() = default;
 
 void ObjectCache::CacheProxiedObject(const v8::Local<v8::Value> from,
                                      v8::Local<v8::Value> proxy_value) {
-  if (from->IsObject() && !from->IsNullOrUndefined()) {
-    const v8::Object* from_obj = v8::Object::Cast(*from);
-    proxy_map_.insert_or_assign(from_obj, proxy_value);
-  }
+  if (from->IsObject() && !from->IsNullOrUndefined())
+    proxy_map_.insert_or_assign(from.As<v8::Object>(), proxy_value);
 }
 
 v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
@@ -25,12 +23,11 @@ v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
   if (!from->IsObject() || from->IsNullOrUndefined())
     return {};
 
-  const v8::Object* from_obj = v8::Object::Cast(*from);
-  auto iter = proxy_map_.find(from_obj);
-  if (iter != proxy_map_.end() && !iter->second.IsEmpty())
-    return iter->second;
+  const auto iter = proxy_map_.find(from.As<v8::Object>());
+  if (iter == proxy_map_.end() || iter->second.IsEmpty())
+    return {};
 
-  return {};
+  return iter->second;
 }
 
 }  // namespace electron::api::context_bridge
