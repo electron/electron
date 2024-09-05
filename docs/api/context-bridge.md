@@ -140,7 +140,7 @@ If the type you care about is not in the above table, it is probably not support
 
 ### Exposing ipcRenderer
 
-Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will result in an empty object on the receiving side of the bridge. Sending over `ipcRenderer` in full can let any code send any message To use ipcRenderer, which is a security footgun. To interact through `ipcRenderer, provide a safe wrapper like below:
+Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will result in an empty object on the receiving side of the bridge. Sending over `ipcRenderer` in full can let any code send any message, which is a security footgun. To interact through `ipcRenderer, provide a safe wrapper like below:
 
 ```js
 // Preload (Isolated World)
