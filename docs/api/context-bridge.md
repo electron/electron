@@ -160,7 +160,7 @@ contextBridge.exposeInMainWorld('electron', {
 
 ```js
 // Renderer (Main World)
-window.electron.onEvent(data => { ... });
+window.electron.onEvent(data => { /* ... */ });
 ```
 
 
