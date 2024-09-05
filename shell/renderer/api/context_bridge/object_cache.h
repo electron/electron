@@ -5,19 +5,17 @@
 #ifndef ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 #define ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
-#include <forward_list>
 #include <unordered_map>
-#include <utility>
 
-#include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
-#include "shell/renderer/electron_render_frame_observer.h"
-#include "third_party/blink/public/web/web_local_frame.h"
+#include "v8/include/v8-forward.h"
 
 namespace electron::api::context_bridge {
 
-using ObjectCachePair = std::pair<v8::Local<v8::Value>, v8::Local<v8::Value>>;
-
+/**
+ * NB: This is designed for context_bridge. Beware using it elsewhere!
+ * Since it's a v8::Local-to-v8::Local cache, be careful to destroy it
+ * before destroying the HandleScope that keeps the locals alive.
+ */
 class ObjectCache final {
  public:
   ObjectCache();
@@ -29,8 +27,8 @@ class ObjectCache final {
       v8::Local<v8::Value> from) const;
 
  private:
-  // object_identity ==> [from_value, proxy_value]
-  std::unordered_map<int, std::forward_list<ObjectCachePair>> proxy_map_;
+  // from_object ==> proxy_value
+  std::unordered_map<const v8::Object*, v8::Local<v8::Value>> proxy_map_;
 };
 
 }  // namespace electron::api::context_bridge
