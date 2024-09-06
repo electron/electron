@@ -1,14 +1,15 @@
 import { expect } from 'chai';
 import { AddressInfo } from 'node:net';
+import * as cp from 'node:child_process';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as os from 'node:os';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
-import * as pdfjs from 'pdfjs-dist';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
@@ -2253,6 +2254,34 @@ describe('webContents module', () => {
   });
 
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
+    const readPDF = async (data: any) => {
+      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
+      const pdfPath = path.resolve(tmpDir, 'test.pdf');
+      await fs.promises.writeFile(pdfPath, data);
+      const pdfReaderPath = path.resolve(fixturesPath, 'api', 'pdf-reader.mjs');
+
+      const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath], {
+        stdio: 'pipe'
+      });
+
+      const stdout: Buffer[] = [];
+      const stderr: Buffer[] = [];
+      result.stdout.on('data', (chunk) => stdout.push(chunk));
+      result.stderr.on('data', (chunk) => stderr.push(chunk));
+
+      const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
+        result.on('close', (code, signal) => {
+          resolve([code, signal]);
+        });
+      });
+      await fs.promises.rm(tmpDir, { force: true, recursive: true });
+      if (code !== 0) {
+        const errMsg = Buffer.concat(stderr).toString().trim();
+        console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
+      }
+      return JSON.parse(Buffer.concat(stdout).toString().trim());
+    };
+
     let w: BrowserWindow;
 
     const containsText = (items: any[], text: RegExp) => {
@@ -2366,12 +2395,11 @@ describe('webContents module', () => {
       for (const format of Object.keys(paperFormats) as PageSizeString[]) {
         const data = await w.webContents.printToPDF({ pageSize: format });
 
-        const doc = await pdfjs.getDocument(data).promise;
-        const page = await doc.getPage(1);
+        const pdfInfo = await readPDF(data);
 
         // page.view is [top, left, width, height].
-        const width = page.view[2] / 72;
-        const height = page.view[3] / 72;
+        const width = pdfInfo.view[2] / 72;
+        const height = pdfInfo.view[3] / 72;
 
         const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
 
@@ -2389,25 +2417,21 @@ describe('webContents module', () => {
         footerTemplate: '<div>I\'m a PDF footer</div>'
       });
 
-      const doc = await pdfjs.getDocument(data).promise;
-      const page = await doc.getPage(1);
+      const pdfInfo = await readPDF(data);
 
-      const { items } = await page.getTextContent();
-
-      expect(containsText(items, /I'm a PDF header/)).to.be.true();
-      expect(containsText(items, /I'm a PDF footer/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /I'm a PDF header/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /I'm a PDF footer/)).to.be.true();
     });
 
     it('in landscape mode', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({ landscape: true });
-      const doc = await pdfjs.getDocument(data).promise;
-      const page = await doc.getPage(1);
+      const pdfInfo = await readPDF(data);
 
       // page.view is [top, left, width, height].
-      const width = page.view[2];
-      const height = page.view[3];
+      const width = pdfInfo.view[2];
+      const height = pdfInfo.view[3];
 
       expect(width).to.be.greaterThan(height);
     });
@@ -2420,28 +2444,26 @@ describe('webContents module', () => {
         landscape: true
       });
 
-      const doc = await pdfjs.getDocument(data).promise;
+      const pdfInfo = await readPDF(data);
 
       // Check that correct # of pages are rendered.
-      expect(doc.numPages).to.equal(3);
+      expect(pdfInfo.numPages).to.equal(3);
     });
 
     it('does not tag PDFs by default', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({});
-      const doc = await pdfjs.getDocument(data).promise;
-      const markInfo = await doc.getMarkInfo();
-      expect(markInfo).to.be.null();
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.markInfo).to.be.null();
     });
 
     it('can generate tag data for PDFs', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({ generateTaggedPDF: true });
-      const doc = await pdfjs.getDocument(data).promise;
-      const markInfo = await doc.getMarkInfo();
-      expect(markInfo).to.deep.equal({
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.markInfo).to.deep.equal({
         Marked: true,
         UserProperties: false,
         Suspects: false
@@ -2454,13 +2476,9 @@ describe('webContents module', () => {
       await w.loadFile(pdfPath);
       await readyToPrint;
       const data = await w.webContents.printToPDF({});
-      const doc = await pdfjs.getDocument(data).promise;
-      expect(doc.numPages).to.equal(2);
-
-      const page = await doc.getPage(1);
-
-      const { items } = await page.getTextContent();
-      expect(containsText(items, /Cat: The Ideal Pet/)).to.be.true();
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.numPages).to.equal(2);
+      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
     });
   });
 
