@@ -29,14 +29,8 @@ PromiseBase::~PromiseBase() = default;
 PromiseBase& PromiseBase::operator=(PromiseBase&&) = default;
 
 v8::Maybe<bool> PromiseBase::Reject() {
-  v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Context> context = GetContext();
-  gin_helper::MicrotasksScope microtasks_scope{
-      isolate(), context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kRunMicrotasks};
-  v8::Context::Scope context_scope{context};
-
-  return GetInner()->Reject(context, v8::Undefined(isolate()));
+  v8::HandleScope handle_scope{isolate()};
+  return Reject(v8::Undefined(isolate()));
 }
 
 v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
@@ -50,18 +44,9 @@ v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
   return GetInner()->Reject(context, except);
 }
 
-v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(
-    const std::string_view message) {
-  v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Context> context = GetContext();
-  gin_helper::MicrotasksScope microtasks_scope{
-      isolate(), context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kRunMicrotasks};
-  v8::Context::Scope context_scope{context};
-
-  v8::Local<v8::Value> error =
-      v8::Exception::Error(gin::StringToV8(isolate(), message));
-  return GetInner()->Reject(context, (error));
+v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(std::string_view msg) {
+  v8::HandleScope handle_scope{isolate()};
+  return Reject(v8::Exception::Error(gin::StringToV8(isolate(), msg)));
 }
 
 v8::Local<v8::Context> PromiseBase::GetContext() const {
