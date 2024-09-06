@@ -96,8 +96,8 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   }
 
   // Creates NativeWindow.
-  window_.reset(NativeWindow::Create(
-      options, parent.IsEmpty() ? nullptr : parent->window_.get()));
+  window_ = NativeWindow::Create(
+      options, parent.IsEmpty() ? nullptr : parent->window_.get());
   window_->AddObserver(this);
 
   SetContentView(View::Create(isolate));
