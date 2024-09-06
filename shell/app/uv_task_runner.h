@@ -40,7 +40,6 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
  private:
   ~UvTaskRunner() override;
   static void OnTimeout(uv_timer_t* timer);
-  static void OnClose(uv_handle_t* handle);
 
   raw_ptr<uv_loop_t> loop_;
 
