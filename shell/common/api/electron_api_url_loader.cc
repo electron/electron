@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
@@ -131,12 +132,21 @@ namespace electron::api {
 
 namespace {
 
+template <typename T>
+auto ToVec(v8::Local<v8::ArrayBufferView> view) {
+  const size_t n_wanted = view->ByteLength();
+  std::vector<T> buf(n_wanted);
+  [[maybe_unused]] const auto n_got = view->CopyContents(buf.data(), n_wanted);
+  DCHECK_EQ(n_wanted, n_got);
+  DCHECK_EQ(n_wanted, std::size(buf));
+  return buf;
+}
+
 class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  public:
-  explicit BufferDataSource(base::span<char> buffer) {
-    buffer_.resize(buffer.size());
-    memcpy(buffer_.data(), buffer.data(), buffer_.size());
-  }
+  explicit BufferDataSource(v8::Local<v8::ArrayBufferView> buffer)
+      : buffer_{ToVec<char>(buffer)} {}
+
   ~BufferDataSource() override = default;
 
  private:
@@ -247,13 +257,8 @@ class JSChunkedDataPipeGetter final
     auto buffer = buffer_val.As<v8::ArrayBufferView>();
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
-    auto backing_store = buffer->Buffer()->GetBackingStore();
-    auto buffer_span = base::make_span(
-        static_cast<char*>(backing_store->Data()) + buffer->ByteOffset(),
-        buffer->ByteLength());
-    auto buffer_source = std::make_unique<BufferDataSource>(buffer_span);
     data_producer_->Write(
-        std::move(buffer_source),
+        std::make_unique<BufferDataSource>(buffer),
         base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
                        // We're OK to use Unretained here because we own
                        // |data_producer_|.
@@ -660,11 +665,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   v8::Local<v8::Value> chunk_pipe_getter;
   if (opts.Get("body", &body)) {
     if (body->IsArrayBufferView()) {
-      auto buffer_body = body.As<v8::ArrayBufferView>();
-      auto backing_store = buffer_body->Buffer()->GetBackingStore();
-      request->request_body = network::ResourceRequestBody::CreateFromBytes(
-          static_cast<char*>(backing_store->Data()) + buffer_body->ByteOffset(),
-          buffer_body->ByteLength());
+      auto request_body = base::MakeRefCounted<network::ResourceRequestBody>();
+      request_body->AppendBytes(ToVec<uint8_t>(body.As<v8::ArrayBufferView>()));
+      request->request_body = std::move(request_body);
     } else if (body->IsFunction()) {
       auto body_func = body.As<v8::Function>();
 
