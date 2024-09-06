@@ -30,11 +30,11 @@ namespace electron {
 
 namespace {
 
-bool IsValidWrappable(const v8::Local<v8::Value>& obj) {
-  v8::Local<v8::Object> port = v8::Local<v8::Object>::Cast(obj);
-
-  if (!port->IsObject())
+bool IsValidWrappable(const v8::Local<v8::Value>& val) {
+  if (!val->IsObject())
     return false;
+
+  v8::Local<v8::Object> port = val.As<v8::Object>();
 
   if (port->InternalFieldCount() != gin::kNumberOfInternalFields)
     return false;
