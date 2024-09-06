@@ -423,18 +423,19 @@ index 368fb567e46a55bdc44820d5b7a2a08ac6cc4ffd..57c0d369e7373f755391da3fafbdaea8
  }  // namespace content
  
 diff --git a/content/common/sandbox_init_win.cc b/content/common/sandbox_init_win.cc
-index 38733269e53b9874305942809373004f305ffdec..9b4b8ad85270f1cbea451f354ca9bcb39da5aa20 100644
+index 38733269e53b9874305942809373004f305ffdec..9f4f5f7dd7f2704e363f43c31ac930aeaabc2b45 100644
 --- a/content/common/sandbox_init_win.cc
 +++ b/content/common/sandbox_init_win.cc
-@@ -23,6 +23,7 @@ namespace content {
+@@ -23,7 +23,7 @@ namespace content {
  sandbox::ResultCode StartSandboxedProcess(
      SandboxedProcessLauncherDelegate* delegate,
      const base::CommandLine& target_command_line,
+-    const base::HandlesToInheritVector& handles_to_inherit,
 +    const base::LaunchOptions* options,
-     const base::HandlesToInheritVector& handles_to_inherit,
      sandbox::StartSandboxedProcessCallback result_callback) {
    std::string type_str =
-@@ -45,7 +46,7 @@ sandbox::ResultCode StartSandboxedProcess(
+       target_command_line.GetSwitchValueASCII(switches::kProcessType);
+@@ -45,7 +45,7 @@ sandbox::ResultCode StartSandboxedProcess(
    }
  
    return sandbox::policy::SandboxWin::StartSandboxedProcess(
