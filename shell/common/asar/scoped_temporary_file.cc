@@ -68,9 +68,8 @@ bool ScopedTemporaryFile::InitFromFile(
   if (len != static_cast<int>(size))
     return false;
 
-  if (integrity.has_value()) {
-    ValidateIntegrityOrDie(buf.data(), buf.size(), integrity.value());
-  }
+  if (integrity)
+    ValidateIntegrityOrDie(base::as_byte_span(buf), *integrity);
 
   base::File dest(path_, base::File::FLAG_OPEN | base::File::FLAG_WRITE);
   if (!dest.IsValid())
