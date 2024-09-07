@@ -251,9 +251,8 @@ bool Archive::Init() {
     // Currently we only support the sha256 algorithm, we can add support for
     // more below ensure we read them in preference order from most secure to
     // least
-    if (integrity.value().algorithm != HashAlgorithm::kNone) {
-      ValidateIntegrityOrDie(header.c_str(), header.length(),
-                             integrity.value());
+    if (integrity->algorithm != HashAlgorithm::kNone) {
+      ValidateIntegrityOrDie(base::as_byte_span(header), *integrity);
     } else {
       LOG(FATAL) << "No eligible hash for validatable asar archive: "
                  << RelativePath().value();
