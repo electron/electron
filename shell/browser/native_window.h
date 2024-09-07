@@ -72,8 +72,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(const gin_helper::Dictionary& options,
-                              NativeWindow* parent = nullptr);
+  static std::unique_ptr<NativeWindow> Create(
+      const gin_helper::Dictionary& options,
+      NativeWindow* parent = nullptr);
 
   void InitFromOptions(const gin_helper::Dictionary& options);
 
