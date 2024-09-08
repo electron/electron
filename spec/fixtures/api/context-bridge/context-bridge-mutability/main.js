@@ -12,8 +12,8 @@ app.whenReady().then(function () {
 
   win.loadFile('index.html');
 
-  win.webContents.on('console-message', (event, level, message) => {
-    console.log(message);
+  win.webContents.on('console-message', (event) => {
+    console.log(event.message);
   });
 
   win.webContents.on('did-finish-load', () => app.quit());

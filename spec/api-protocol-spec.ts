@@ -974,7 +974,7 @@ describe('protocol module', () => {
         contextIsolation: false
       });
       const consoleMessages: string[] = [];
-      newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
+      newContents.on('console-message', (e) => consoleMessages.push(e.message));
       try {
         newContents.loadURL(standardScheme + '://fake-host');
         const [, response] = await once(ipcMain, 'response');
@@ -1628,7 +1628,7 @@ describe('protocol module', () => {
       defer(() => { protocol.unhandle('cors'); });
 
       await contents.loadFile(path.resolve(fixturesPath, 'pages', 'base-page.html'));
-      contents.on('console-message', (e, level, message) => console.log(message));
+      contents.on('console-message', (e) => console.log(e.message));
       const ok = await contents.executeJavaScript(`(async () => {
         function wait(milliseconds) {
           return new Promise((resolve) => setTimeout(resolve, milliseconds));

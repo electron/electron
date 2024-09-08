@@ -1946,9 +1946,9 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('is triggered with correct log message', (done) => {
       const w = new BrowserWindow({ show: true });
-      w.webContents.on('console-message', (e, level, message) => {
+      w.webContents.on('console-message', (e) => {
         // Don't just assert as Chromium might emit other logs that we should ignore.
-        if (message === 'a') {
+        if (e.message === 'a') {
           done();
         }
       });

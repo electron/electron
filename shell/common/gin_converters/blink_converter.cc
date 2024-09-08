@@ -28,6 +28,7 @@
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/loader/referrer.mojom.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/blink/blink_event_util.h"
@@ -703,6 +704,20 @@ bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 blink::CloneableMessage* out) {
   return electron::SerializeV8Value(isolate, val, out);
+}
+
+// static
+v8::Local<v8::Value> Converter<blink::mojom::ConsoleMessageLevel>::ToV8(
+    v8::Isolate* isolate,
+    const blink::mojom::ConsoleMessageLevel& in) {
+  using Val = blink::mojom::ConsoleMessageLevel;
+  static constexpr auto Lookup = base::MakeFixedFlatMap<Val, std::string_view>({
+      {Val::kVerbose, "debug"},
+      {Val::kInfo, "info"},
+      {Val::kWarning, "warning"},
+      {Val::kError, "error"},
+  });
+  return StringToV8(isolate, Lookup.at(in));
 }
 
 }  // namespace gin
