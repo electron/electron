@@ -122,13 +122,13 @@ class Promise : public PromiseBase {
   v8::Maybe<bool> Resolve(const RT& value) {
     gin_helper::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
+    v8::Local<v8::Context> context = GetContext();
     gin_helper::MicrotasksScope microtasks_scope{
-        isolate(), GetContext()->GetMicrotaskQueue(), false,
+        isolate(), context->GetMicrotaskQueue(), false,
         v8::MicrotasksScope::kRunMicrotasks};
-    v8::Context::Scope context_scope(GetContext());
+    v8::Context::Scope context_scope(context);
 
-    return GetInner()->Resolve(GetContext(),
-                               gin::ConvertToV8(isolate(), value));
+    return GetInner()->Resolve(context, gin::ConvertToV8(isolate(), value));
   }
 
   template <typename... ResolveType>
@@ -143,12 +143,13 @@ class Promise : public PromiseBase {
         "promises resolve type");
     gin_helper::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
-    v8::Context::Scope context_scope(GetContext());
+    v8::Local<v8::Context> context = GetContext();
+    v8::Context::Scope context_scope(context);
 
     v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
     v8::Local<v8::Function> handler = value.As<v8::Function>();
 
-    return GetHandle()->Then(GetContext(), handler);
+    return GetHandle()->Then(context, handler);
   }
 };
 
