@@ -58,8 +58,17 @@ class UvHandle {
   UvHandle() : t_{new T} {}
   ~UvHandle() { reset(); }
 
-  UvHandle(UvHandle&&) = default;
-  UvHandle& operator=(UvHandle&&) = default;
+  explicit UvHandle(UvHandle&& that) {
+    t_ = that.t_;
+    that.t_ = nullptr;
+  }
+
+  UvHandle& operator=(UvHandle&& that) {
+    reset();
+    t_ = that.t_;
+    that.t_ = nullptr;
+    return *this;
+  }
 
   UvHandle(const UvHandle&) = delete;
   UvHandle& operator=(const UvHandle&) = delete;
