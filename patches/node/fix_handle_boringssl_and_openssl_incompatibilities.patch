@@ -48,7 +48,7 @@ index 67cd4f2adf15e7d8511f561c54163b1842e971af..7e0e1a62289289b8362870ba4869c974
  
    const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 962018583360a137639682d4aec8b0ebad2f3070..f8ec40885905abbbe0da0f285ff9e83694c2b620 100644
+index 85d48dfd2c15c453707bf6eb94e22f89b4f856b2..a68488a1b2bfb099ff9e14c038aea2cbd7765e1b 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -158,7 +158,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -86,7 +86,7 @@ index 962018583360a137639682d4aec8b0ebad2f3070..f8ec40885905abbbe0da0f285ff9e836
  }
  
  const char* GetServerName(SSL* ssl) {
-@@ -214,7 +218,10 @@ const char* GetServerName(SSL* ssl) {
+@@ -206,7 +210,10 @@ const char* GetServerName(SSL* ssl) {
  }
  
  bool SetGroups(SecureContext* sc, const char* groups) {
@@ -97,7 +97,7 @@ index 962018583360a137639682d4aec8b0ebad2f3070..f8ec40885905abbbe0da0f285ff9e836
  }
  
  // When adding or removing errors below, please also update the list in the API
-@@ -1044,14 +1051,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1036,14 +1043,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -116,7 +116,7 @@ index 962018583360a137639682d4aec8b0ebad2f3070..f8ec40885905abbbe0da0f285ff9e836
      Local<Object> obj = Object::New(env->isolate());
      if (!Set(env->context(),
               obj,
-@@ -1104,8 +1111,11 @@ MaybeLocal<Object> GetEphemeralKey(Environment* env, const SSLPointer& ssl) {
+@@ -1096,8 +1103,11 @@ MaybeLocal<Object> GetEphemeralKey(Environment* env, const SSLPointer& ssl) {
  
    EscapableHandleScope scope(env->isolate());
    Local<Object> info = Object::New(env->isolate());
