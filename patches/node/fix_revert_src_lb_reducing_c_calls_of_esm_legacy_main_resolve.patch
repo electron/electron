@@ -142,7 +142,7 @@ index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf35760163 100644
+index 80ff36f2463035ed32cb8b7b826bfe94c339dbe2..cca6c6775bc8dd35b897498c7dd65b2e3957ee40 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -19,14 +19,11 @@
@@ -160,7 +160,7 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
  #include "node_process-inl.h"
  #include "node_stat_watcher.h"
  #include "node_url.h"
-@@ -3116,134 +3113,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
+@@ -3127,135 +3124,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
  
  }  // namespace
  
@@ -179,6 +179,8 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
 -    THROW_ERR_INVALID_URL(isolate, "Invalid URL");
 -    return;
 -  }
+-
+-  std::string package_initial_file = "";
 -
 -  ada::result<ada::url_aggregator> file_path_url;
 -  std::optional<std::string> initial_file_path;
@@ -201,6 +203,8 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
 -    }
 -
 -    node::url::FromNamespacedPath(&initial_file_path.value());
+-
+-    package_initial_file = *initial_file_path;
 -
 -    for (int i = 0; i < legacy_main_extensions_with_main_end; i++) {
 -      file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
@@ -257,13 +261,10 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
 -    }
 -  }
 -
--  std::optional<std::string> module_path =
--      node::url::FileURLToPath(env, *package_json_url);
--  std::optional<std::string> module_base;
+-  if (package_initial_file == "")
+-    package_initial_file = *initial_file_path + ".js";
 -
--  if (!module_path.has_value()) {
--    return;
--  }
+-  std::optional<std::string> module_base;
 -
 -  if (args.Length() >= 3 && args[2]->IsString()) {
 -    Utf8Value utf8_base_path(isolate, args[2]);
@@ -288,14 +289,14 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
 -
 -  THROW_ERR_MODULE_NOT_FOUND(isolate,
 -                             "Cannot find package '%s' imported from %s",
--                             *module_path,
+-                             package_initial_file,
 -                             *module_base);
 -}
 -
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("stats_field_array", stats_field_array);
    tracker->TrackField("stats_field_bigint_array", stats_field_bigint_array);
-@@ -3343,19 +3212,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+@@ -3355,19 +3223,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
    return info;
  }
  
@@ -315,7 +316,7 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
  static void CreatePerIsolateProperties(IsolateData* isolate_data,
                                         Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-@@ -3410,7 +3266,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -3422,7 +3277,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
    SetMethod(isolate, target, "mkdtemp", Mkdtemp);
  
    StatWatcher::CreatePerIsolateProperties(isolate_data, target);
@@ -323,7 +324,7 @@ index b0aa53420c4efb45ccb129cd4db5579de9f3e401..3e3aa383f54f45ab6dd134be29a2dbcf
  
    target->Set(
        FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3483,7 +3338,6 @@ BindingData* FSReqBase::binding_data() {
+@@ -3495,7 +3349,6 @@ BindingData* FSReqBase::binding_data() {
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(Access);
    StatWatcher::RegisterExternalReferences(registry);
@@ -350,7 +351,7 @@ index 6f1b55284db0f4f8c70081b4834a074c717f3cc9..a969fff32bd156aa9393c1db9eec474e
    SET_SELF_SIZE(BindingData)
    SET_MEMORY_INFO_NAME(BindingData)
 diff --git a/test/es-module/test-cjs-legacyMainResolve.js b/test/es-module/test-cjs-legacyMainResolve.js
-index 1dc7d8faafe6eb5cea7e43e9783041f2a994be0d..d86d501689b2b72f2b964d6e2a91c5d36b6b62f5 100644
+index 0bfeb567a22b1f9d9116b749d6cb3a8fda6bcc6a..17f137c595a9fef5f051fafc4682f206034c214c 100644
 --- a/test/es-module/test-cjs-legacyMainResolve.js
 +++ b/test/es-module/test-cjs-legacyMainResolve.js
 @@ -82,7 +82,7 @@ describe('legacyMainResolve', () => {
@@ -366,7 +367,7 @@ index 1dc7d8faafe6eb5cea7e43e9783041f2a994be0d..d86d501689b2b72f2b964d6e2a91c5d3
      );
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
--      { code: 'ERR_MODULE_NOT_FOUND' },
+-      { message: /index\.js/, code: 'ERR_MODULE_NOT_FOUND' },
 +      { code: 'ERR_INTERNAL_ASSERTION' },
      );
    });
@@ -375,12 +376,21 @@ index 1dc7d8faafe6eb5cea7e43e9783041f2a994be0d..d86d501689b2b72f2b964d6e2a91c5d3
      const packageJsonUrl = pathToFileURL('/c/file%20with%20percents/package.json');
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
--      { code: 'ERR_MODULE_NOT_FOUND' },
+-      { message: /index\.js/, code: 'ERR_MODULE_NOT_FOUND' },
 +      { code: 'ERR_INTERNAL_ASSERTION' },
      );
    });
  
 @@ -150,7 +150,7 @@ describe('legacyMainResolve', () => {
+     );
+     assert.throws(
+       () => legacyMainResolve(packageJsonUrl, { main: './index.node' }, packageJsonUrl),
+-      { message: /index\.node/, code: 'ERR_MODULE_NOT_FOUND' },
++      { code: 'ERR_INTERNAL_ASSERTION' },
+     );
+   });
+ 
+@@ -163,7 +163,7 @@ describe('legacyMainResolve', () => {
      );
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, undefined),
