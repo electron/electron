@@ -115,6 +115,7 @@ jobs:
         - /var/run/sas:/var/run/sas
     env:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
