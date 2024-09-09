@@ -744,6 +744,7 @@ source_set("electron_lib") {
       "//components/pdf/common:util",
       "//components/pdf/renderer",
       "//pdf",
+      "//pdf:content_restriction",
     ]
     sources += [
       "shell/browser/electron_pdf_document_helper_client.cc",
