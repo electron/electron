@@ -8,13 +8,13 @@ which causes the `ELECTRON_RUN_AS_NODE` variable to be lost. This patch
 re-injects it.
 
 diff --git a/test/common/assertSnapshot.js b/test/common/assertSnapshot.js
-index 88f40281e069b77ac071ac872c4491f749b64e21..0fa102da111fa370406ca74069316fa7a7a3a050 100644
+index a22455160bd9f71b42c7c9e09939781b2528dceb..233a0c8fb89df91890237e4e7f53b51f245ff64a 100644
 --- a/test/common/assertSnapshot.js
 +++ b/test/common/assertSnapshot.js
-@@ -80,6 +80,7 @@ async function spawnAndAssert(filename, transform = (x) => x, { tty = false, ...
-   const flags = common.parseTestFlags(filename);
-   const executable = tty ? 'tools/pseudo-tty.py' : process.execPath;
-   const args = tty ? [process.execPath, ...flags, filename] : [...flags, filename];
+@@ -83,6 +83,7 @@ async function spawnAndAssert(filename, transform = (x) => x, { tty = false, ...
+     tty ?
+       [path.join(__dirname, '../..', 'tools/pseudo-tty.py'), process.execPath, ...flags, filename] :
+       [...flags, filename];
 +  if (options && options.env) options.env.ELECTRON_RUN_AS_NODE = 1;
    const { stdout, stderr } = await common.spawnPromisified(executable, args, options);
    await assertSnapshot(transform(`${stdout}${stderr}`), filename);
