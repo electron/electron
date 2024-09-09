@@ -145,6 +145,12 @@ export default class BrowserView {
     if (this.#autoHorizontalProportion || this.#autoVerticalProportion) {
       this.#webContentsView.setBounds(newViewBounds);
     }
+
+    // Update #lastWindowSize value after browser windows resize
+    this.#lastWindowSize = {
+      width: newBounds.width,
+      height: newBounds.height
+    };
   }
 
   get webContentsView () {
