@@ -199,9 +199,18 @@ index 58985ce62dc569256bad5e94de9c0d125fc470d0..33436784b691c860d58f8b4dfcc6718e
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..9a892a2d1ac1480d3af7968c9dcaa7c69806fd0e 100644
+index d94540d0a7bf90f57acdaf8ca6665cf283a646bf..7a99193c3ed192fc80f929dfabdc95d2c308a87e 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
+@@ -39,7 +39,7 @@ constexpr char kMethodStartServiceByName[] = "StartServiceByName";
+ constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
+ constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
+ 
+-constexpr int kXdgPortalRequiredVersion = 3;
++constexpr int kXdgPortalRequiredVersion = 4;
+ 
+ constexpr char kXdgPortalRequestInterfaceName[] =
+     "org.freedesktop.portal.Request";
 @@ -216,6 +216,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
                       weak_factory_.GetWeakPtr()));
    info_->type = type;
