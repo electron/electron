@@ -51,6 +51,7 @@ entries.forEach((entry) => {
 ```
 
 Each navigation entry corresponds to a specific page. The indexing system follows a sequential order:
+
 - Index 0: Represents the earliest visited page.
 - Index N: Represents the most recent page visited.
 
