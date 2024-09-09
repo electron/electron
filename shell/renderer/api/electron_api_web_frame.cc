@@ -326,8 +326,8 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 };
 
-class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
-                         private content::RenderFrameObserver {
+class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
+                               private content::RenderFrameObserver {
  public:
   static gin::WrapperInfo kWrapperInfo;
 

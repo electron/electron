@@ -82,6 +82,12 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Free up space (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/free-space-macos
+    - name: Check disk space after freeing up space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: df -h
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
       uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b

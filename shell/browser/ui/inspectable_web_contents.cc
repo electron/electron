@@ -10,7 +10,6 @@
 #include <string_view>
 #include <utility>
 
-#include <string_view>
 #include "base/base64.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
@@ -551,7 +550,7 @@ void InspectableWebContents::LoadCompleted() {
           prefs.FindString("currentDockState");
       base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
-#if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
     auto* api_web_contents = api::WebContents::From(GetWebContents());
     if (api_web_contents) {
       auto* win =

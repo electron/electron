@@ -7,9 +7,9 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <string_view>
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
@@ -47,7 +47,7 @@ class ElectronBrowserContext;
 namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
-class SimpleURLLoaderWrapper
+class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       private network::SimpleURLLoaderStreamConsumer,

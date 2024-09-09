@@ -62,21 +62,15 @@ bool ScopedTemporaryFile::InitFromFile(
     return false;
 
   electron::ScopedAllowBlockingForElectron allow_blocking;
-  std::vector<char> buf(size);
-  int len = src->Read(offset, buf.data(), buf.size());
-  if (len != static_cast<int>(size))
+  std::vector<uint8_t> buf(size);
+  if (!src->ReadAndCheck(offset, buf))
     return false;
 
-  if (integrity.has_value()) {
-    ValidateIntegrityOrDie(buf.data(), buf.size(), integrity.value());
-  }
+  if (integrity)
+    ValidateIntegrityOrDie(buf, *integrity);
 
   base::File dest(path_, base::File::FLAG_OPEN | base::File::FLAG_WRITE);
-  if (!dest.IsValid())
-    return false;
-
-  return dest.WriteAtCurrentPos(buf.data(), buf.size()) ==
-         static_cast<int>(size);
+  return dest.IsValid() && dest.WriteAtCurrentPosAndCheck(buf);
 }
 
 }  // namespace asar

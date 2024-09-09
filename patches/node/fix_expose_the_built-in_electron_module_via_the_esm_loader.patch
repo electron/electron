@@ -18,7 +18,7 @@ index 1931688e85d05ee2da4f88efb05d635cb43be233..afccc24392abff9eef2b9953fcffeb79
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbcd9feec9d 100644
+index 7b77af35a1dfebf6ad45ace521f1a55b5fa18293..ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -142,7 +142,7 @@ async function defaultLoad(url, context = kEmptyObject) {
@@ -30,7 +30,7 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbc
          // For backward compatibility reasons, we need to discard the source in
          // order for the CJS loader to re-fetch it.
          source = null;
-@@ -224,6 +224,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -234,6 +234,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
@@ -38,7 +38,7 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbc
      (
        !experimentalNetworkImports ||
        (
-@@ -232,7 +233,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -242,7 +243,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
        )
      )
    ) {
@@ -73,10 +73,10 @@ index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf4
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c15334858038b0525c 100644
+index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f7a8b49d0 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -283,7 +283,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -272,7 +272,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -85,7 +85,7 @@ index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c153348580
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -305,8 +305,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -294,8 +294,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -96,7 +96,7 @@ index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c153348580
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -331,6 +331,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -329,6 +329,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source);
  });
  
@@ -108,7 +108,7 @@ index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c153348580
  // or as the initial entry point when the ESM loader handles a CommonJS entry.
  translators.set('commonjs', async function commonjsStrategy(url, source,
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 34fb672ecb62b83cfb6a3a7484354165f4b02a85..679cb1302dfeb4a50d34219efccc73b518587066 100644
+index 4103775560644e4f1a78bf11da6cc07d5dc4cda2..474cf3b44d680c4c897553d5e98c3c43699e6592 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -1459,6 +1459,8 @@ function fileURLToPath(path, options = kEmptyObject) {

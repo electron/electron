@@ -7,9 +7,9 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <string_view>
 #include "base/values.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"

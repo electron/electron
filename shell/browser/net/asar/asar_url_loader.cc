@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#include <string_view>
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"

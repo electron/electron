@@ -67,7 +67,7 @@ void SetCrashKey(const std::string& key, const std::string& value) {
 
   auto& crash_key_names = GetExtraCrashKeyNames();
 
-  auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);
+  auto iter = std::ranges::find(crash_key_names, key);
   if (iter == crash_key_names.end()) {
     crash_key_names.emplace_back(key);
     GetExtraCrashKeys().emplace_back(crash_key_names.back().c_str());
@@ -79,7 +79,7 @@ void SetCrashKey(const std::string& key, const std::string& value) {
 void ClearCrashKey(const std::string& key) {
   const auto& crash_key_names = GetExtraCrashKeyNames();
 
-  auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);
+  auto iter = std::ranges::find(crash_key_names, key);
   if (iter != crash_key_names.end()) {
     GetExtraCrashKeys()[iter - crash_key_names.begin()].Clear();
   }

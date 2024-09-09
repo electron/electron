@@ -201,22 +201,19 @@ bool Archive::Init() {
     return false;
   }
 
-  std::vector<char> buf;
-  int len;
+  std::vector<uint8_t> buf;
 
   buf.resize(8);
   {
     electron::ScopedAllowBlockingForElectron allow_blocking;
-    len = file_.ReadAtCurrentPos(buf.data(), buf.size());
-  }
-  if (len != static_cast<int>(buf.size())) {
-    PLOG(ERROR) << "Failed to read header size from " << path_.value();
-    return false;
+    if (!file_.ReadAtCurrentPosAndCheck(buf)) {
+      PLOG(ERROR) << "Failed to read header size from " << path_.value();
+      return false;
+    }
   }
 
   uint32_t size;
-  if (!base::PickleIterator(base::Pickle::WithData(base::as_byte_span(buf)))
-           .ReadUInt32(&size)) {
+  if (!base::PickleIterator(base::Pickle::WithData(buf)).ReadUInt32(&size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -224,16 +221,14 @@ bool Archive::Init() {
   buf.resize(size);
   {
     electron::ScopedAllowBlockingForElectron allow_blocking;
-    len = file_.ReadAtCurrentPos(buf.data(), buf.size());
-  }
-  if (len != static_cast<int>(buf.size())) {
-    PLOG(ERROR) << "Failed to read header from " << path_.value();
-    return false;
+    if (!file_.ReadAtCurrentPosAndCheck(buf)) {
+      PLOG(ERROR) << "Failed to read header from " << path_.value();
+      return false;
+    }
   }
 
   std::string header;
-  if (!base::PickleIterator(base::Pickle::WithData(base::as_byte_span(buf)))
-           .ReadString(&header)) {
+  if (!base::PickleIterator(base::Pickle::WithData(buf)).ReadString(&header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }
@@ -251,9 +246,8 @@ bool Archive::Init() {
     // Currently we only support the sha256 algorithm, we can add support for
     // more below ensure we read them in preference order from most secure to
     // least
-    if (integrity.value().algorithm != HashAlgorithm::kNone) {
-      ValidateIntegrityOrDie(header.c_str(), header.length(),
-                             integrity.value());
+    if (integrity->algorithm != HashAlgorithm::kNone) {
+      ValidateIntegrityOrDie(base::as_byte_span(header), *integrity);
     } else {
       LOG(FATAL) << "No eligible hash for validatable asar archive: "
                  << RelativePath().value();

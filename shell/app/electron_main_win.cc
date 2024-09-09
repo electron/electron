@@ -165,7 +165,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     auto ret = electron::NodeMain(argv.size(), argv.data());
-    std::for_each(argv.begin(), argv.end(), free);
+    std::ranges::for_each(argv, free);
     return ret;
   }
 
@@ -224,7 +224,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   CHECK_EQ(fiber_status, FiberStatus::kSuccess);
 #endif  // defined(ARCH_CPU_32_BITS)
 
-  if (!electron::CheckCommandLineArguments(arguments.argc, arguments.argv))
+  if (!electron::CheckCommandLineArguments(command_line->argv()))
     return -1;
 
   sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};

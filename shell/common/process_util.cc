@@ -4,7 +4,9 @@
 
 #include "shell/common/process_util.h"
 
+#include <string>
 #include <string_view>
+
 #include "base/command_line.h"
 #include "content/public/common/content_switches.h"
 #include "gin/dictionary.h"

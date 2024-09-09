@@ -147,6 +147,25 @@ has been included below for completeness:
 
 If the type you care about is not in the above table, it is probably not supported.
 
+### Exposing ipcRenderer
+
+Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will result in
+an empty object on the receiving side of the bridge. Sending over `ipcRenderer` in full can let any
+code send any message, which is a security footgun. To interact through `ipcRenderer`, provide a safe wrapper
+like below:
+
+```js
+// Preload (Isolated World)
+contextBridge.exposeInMainWorld('electron', {
+  onMyEventName: (callback) => ipcRenderer.on('MyEventName', (e, ...args) => callback(args))
+})
+```
+
+```js @ts-nocheck
+// Renderer (Main World)
+window.electron.onMyEventName(data => { /* ... */ })
+```
+
 ### Exposing Node Global Symbols
 
 The `contextBridge` can be used by the preload script to give your renderer access to Node APIs.

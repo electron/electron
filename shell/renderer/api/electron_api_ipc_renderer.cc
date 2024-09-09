@@ -40,8 +40,8 @@ RenderFrame* GetCurrentRenderFrame() {
   return RenderFrame::FromWebFrame(frame);
 }
 
-class IPCRenderer : public gin::Wrappable<IPCRenderer>,
-                    private content::RenderFrameObserver {
+class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
+                          private content::RenderFrameObserver {
  public:
   static gin::WrapperInfo kWrapperInfo;
 
