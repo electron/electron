@@ -272,9 +272,18 @@ index 302147116649575649e44c0fc87e2b0a915db5db..49a4ee5d2a3552b1352c28344e409130
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent, params));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 9e4cc2a3fa2db0397655550a2c6209543f32cbd7..756fe722f802d14edf13fe342479554f5bad2da9 100644
+index 9e4cc2a3fa2db0397655550a2c6209543f32cbd7..8ce7393cd1fcc3782dbefa76d938ee48cd03be7e 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
+@@ -39,7 +39,7 @@ constexpr char kMethodStartServiceByName[] = "StartServiceByName";
+ constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
+ constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
+ 
+-constexpr int kXdgPortalRequiredVersion = 3;
++constexpr int kXdgPortalRequiredVersion = 4;
+ 
+ constexpr char kXdgPortalRequestInterfaceName[] =
+     "org.freedesktop.portal.Request";
 @@ -219,6 +219,10 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
    info_->main_task_runner = base::SequencedTaskRunner::GetCurrentDefault();
    listener_params_ = params;
