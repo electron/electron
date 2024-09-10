@@ -70,7 +70,7 @@
     "ts-node": "6.2.0",
     "typescript": "^5.1.2",
     "url": "^0.11.0",
-    "webpack": "^5.76.0",
+    "webpack": "^5.94.0",
     "webpack-cli": "^4.10.0",
     "wrapper-webpack-plugin": "^2.2.0"
   },
