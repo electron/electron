@@ -46,7 +46,7 @@ index 8ac12480f663a74dfbdcf7128a582a81b4474d25..db6802a2603e1d3c3039e49737438124
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index b6129282c6807702cf88e0a3e2ba233e41a20960..d45ec9e89420c2b5ab2d8d37e4685fabedcb1b7c 100644
+index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1dc2f7b82 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -25,6 +25,57 @@
@@ -184,7 +184,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d45ec9e89420c2b5ab2d8d37e4685fab
      } else {
        client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
                          FROM_HERE, "Stream delegate called didStopWithError");
-@@ -418,23 +492,38 @@ void OnUpdateConfigurationError() {
+@@ -418,23 +492,39 @@ void OnUpdateConfigurationError() {
    }
  
    // IOSurfaceCaptureDeviceBase:
@@ -207,7 +207,8 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d45ec9e89420c2b5ab2d8d37e4685fab
 -      [SCShareableContent getShareableContentWithCompletionHandler:handler];
 +
 +    if (@available(macOS 15.0, *)) {
-+      if (use_native_picker && source_.id < 0 && source_.window_id == 0) {
++      constexpr bool DefaultUseNativePicker = true;
++      if (use_native_picker.value_or(DefaultUseNativePicker) && source_.id < 0 && source_.window_id == 0) {
 +        auto* picker = [SCContentSharingPicker sharedPicker];
 +        ScreenCaptureKitDeviceMac::active_streams_++;
 +        picker.maximumStreamCount = @(ScreenCaptureKitDeviceMac::active_streams_);
@@ -238,7 +239,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d45ec9e89420c2b5ab2d8d37e4685fab
    }
    void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -492,6 +581,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -492,6 +582,8 @@ void ResetStreamTo(SCWindow* window) override {
    }
  
   private:
@@ -247,7 +248,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d45ec9e89420c2b5ab2d8d37e4685fab
    const DesktopMediaID source_;
    SCContentFilter* const filter_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
-@@ -521,6 +612,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -521,6 +613,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
