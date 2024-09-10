@@ -49,7 +49,7 @@
 * `show` boolean (optional) - Whether window should be shown when created. Default is
   `true`.
 * `frame` boolean (optional) - Specify `false` to create a
-  [frameless window](../../tutorial/window-customization.md#create-frameless-windows). Default is `true`.
+  [frameless window](../../tutorial/window-customization.md#frameless-windows). Default is `true`.
 * `parent` BaseWindow (optional) - Specify parent window. Default is `null`.
 * `modal` boolean (optional) - Whether this is a modal window. This only works when the
   window is a child window. Default is `false`.
@@ -70,7 +70,7 @@
   is only implemented on Windows and macOS.
 * `darkTheme` boolean (optional) - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments. Default is `false`.
-* `transparent` boolean (optional) - Makes the window [transparent](../../tutorial/window-customization.md#create-transparent-windows).
+* `transparent` boolean (optional) - Makes the window [transparent](../../tutorial/window-customization.md#transparent-windows).
   Default is `false`. On Windows, does not work unless the window is frameless.
 * `type` string (optional) - The type of window, default is normal window. See more about
   this below.
