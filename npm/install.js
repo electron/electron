@@ -92,7 +92,7 @@ function getPlatformPath () {
   const platform = process.env.npm_config_platform || os.platform();
 
   switch (platform) {
-    case 'mas':
+    case 'mac':
     case 'darwin':
       return 'Electron.app/Contents/MacOS/Electron';
     case 'freebsd':
