@@ -7,14 +7,14 @@ This is implemented as a magic "window id" that instead of pulling an SCStream m
 instead farms out to the screen picker.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index b6129282c6807702cf88e0a3e2ba233e41a20960..1439cf41e2945017027a15c690fcf56856b6655a 100644
+index b6129282c6807702cf88e0a3e2ba233e41a20960..ec968d20f13b27c4451a9c535298fe806eba7733 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -25,6 +25,57 @@
                                                      std::optional<gfx::Rect>)>;
  using ErrorCallback = base::RepeatingClosure;
  
-+API_AVAILABLE(macos(14.0))
++API_AVAILABLE(macos(15.0))
 +@interface ScreenCaptureKitPickerHelper
 +    : NSObject <SCContentSharingPickerObserver>
 +
@@ -83,7 +83,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..1439cf41e2945017027a15c690fcf568
          initWithSampleCallback:sample_callback
                   errorCallback:error_callback];
 +
-+    if (@available(macOS 14.0, *)) {
++    if (@available(macOS 15.0, *)) {
 +      auto picker_callback = base::BindPostTask(
 +        device_task_runner_,
 +        base::BindRepeating(&ScreenCaptureKitDeviceMac::OnContentFilterReady, weak_factory_.GetWeakPtr())
@@ -97,7 +97,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..1439cf41e2945017027a15c690fcf568
        delete;
 -  ~ScreenCaptureKitDeviceMac() override = default;
 +  ~ScreenCaptureKitDeviceMac() override {
-+    if (@available(macOS 14.0, *)) {
++    if (@available(macOS 15.0, *)) {
 +      auto* picker = [SCContentSharingPicker sharedPicker];
 +      ScreenCaptureKitDeviceMac::active_streams_--;
 +      picker.maximumStreamCount = @(ScreenCaptureKitDeviceMac::active_streams_);
@@ -109,6 +109,15 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..1439cf41e2945017027a15c690fcf568
  
    void OnShareableContentCreated(SCShareableContent* content) {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+@@ -232,7 +302,7 @@ void CreateStream(SCContentFilter* filter) {
+       return;
+     }
+ 
+-    if (@available(macOS 14.0, *)) {
++    if (@available(macOS 15.0, *)) {
+       // Update the content size. This step is neccessary when used together
+       // with SCContentSharingPicker. If the Chrome picker is used, it will
+       // change to retina resolution if applicable.
 @@ -241,6 +311,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
@@ -146,7 +155,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..1439cf41e2945017027a15c690fcf568
 -      };
 -      [SCShareableContent getShareableContentWithCompletionHandler:handler];
 +
-+    if (@available(macOS 14.0, *)) {
++    if (@available(macOS 15.0, *)) {
 +      if (source_.id < 0 && source_.window_id == 0) {
 +        auto* picker = [SCContentSharingPicker sharedPicker];
 +        ScreenCaptureKitDeviceMac::active_streams_++;
