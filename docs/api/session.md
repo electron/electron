@@ -980,8 +980,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
-* `opts` Object (optional)
-  * `useSystemPicker` Boolean - true if a user wants to use the native system picker _Experimental_
+* `opts` Object (optional) _macOS_ _Experimental_
+  * `useSystemPicker` Boolean - true if a user wants to use the native system picker _macOS_ _Experimental_
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
@@ -999,7 +999,7 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
     // Grant access to the first screen found.
     callback({ video: sources[0] })
   })
-})
+}, { useSystemPicker: true })
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
