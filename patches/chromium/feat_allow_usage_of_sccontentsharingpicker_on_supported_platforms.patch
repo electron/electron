@@ -7,7 +7,7 @@ This is implemented as a magic "window id" that instead of pulling an SCStream m
 instead farms out to the screen picker.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc217804e9e 100644
+index b6129282c6807702cf88e0a3e2ba233e41a20960..1439cf41e2945017027a15c690fcf56856b6655a 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -25,6 +25,57 @@
@@ -76,9 +76,9 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc2
 +      public ScreenCaptureKitResetStreamInterface
 +       {
   public:
-   explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
-       : source_(source),
-@@ -157,11 +209,29 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
+   explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source,
+                                      SCContentFilter* filter)
+@@ -159,11 +211,29 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source,
      helper_ = [[ScreenCaptureKitDeviceHelper alloc]
          initWithSampleCallback:sample_callback
                   errorCallback:error_callback];
@@ -109,8 +109,8 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc2
  
    void OnShareableContentCreated(SCShareableContent* content) {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -225,6 +295,9 @@ void OnShareableContentCreated(SCShareableContent* content) {
-       return;
+@@ -241,6 +311,9 @@ void CreateStream(SCContentFilter* filter) {
+                     filter.contentRect.size.height * filter.pointPixelScale);
      }
  
 +    OnContentFilterReady(filter);
@@ -119,7 +119,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc2
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -238,6 +311,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -254,6 +327,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -127,10 +127,25 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc2
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -405,6 +479,26 @@ void OnUpdateConfigurationError() {
+@@ -420,21 +494,36 @@ void OnUpdateConfigurationError() {
+   // IOSurfaceCaptureDeviceBase:
    void OnStart() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
- 
+-    if (filter_) {
+-      // SCContentSharingPicker is used where filter_ is set on creation.
+-      CreateStream(filter_);
+-    } else {
+-      // Chrome picker is used.
+-      auto content_callback = base::BindPostTask(
+-          device_task_runner_,
+-          base::BindRepeating(
+-              &ScreenCaptureKitDeviceMac::OnShareableContentCreated,
+-              weak_factory_.GetWeakPtr()));
+-      auto handler = ^(SCShareableContent* content, NSError* error) {
+-        content_callback.Run(content);
+-      };
+-      [SCShareableContent getShareableContentWithCompletionHandler:handler];
++
 +    if (@available(macOS 14.0, *)) {
 +      if (source_.id < 0 && source_.window_id == 0) {
 +        auto* picker = [SCContentSharingPicker sharedPicker];
@@ -149,21 +164,30 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc2
 +        [picker present];
 +        return;
 +      }
-+    }
+     }
 +
-     auto content_callback = base::BindPostTask(
-         device_task_runner_,
-         base::BindRepeating(
-@@ -470,6 +564,8 @@ void ResetStreamTo(SCWindow* window) override {
++    auto content_callback = base::BindPostTask(
++        device_task_runner_,
++        base::BindRepeating(
++            &ScreenCaptureKitDeviceMac::OnShareableContentCreated,
++            weak_factory_.GetWeakPtr()));
++    auto handler = ^(SCShareableContent* content, NSError* error) {
++      content_callback.Run(content);
++    };
++    [SCShareableContent getShareableContentWithCompletionHandler:handler];
+   }
+   void OnStop() override {
+     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+@@ -492,6 +581,8 @@ void ResetStreamTo(SCWindow* window) override {
    }
  
   private:
 +  static int active_streams_;
 +
    const DesktopMediaID source_;
+   SCContentFilter* const filter_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
- 
-@@ -498,6 +594,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -521,6 +612,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
@@ -171,4 +195,4 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..1bafa222164041b011eb0f70d72e0dc2
 +
  }  // namespace
  
- std::unique_ptr<media::VideoCaptureDevice> CreateScreenCaptureKitDeviceMac(
+ // Although ScreenCaptureKit is available in 12.3 there were some bugs that
