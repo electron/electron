@@ -953,7 +953,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
-#### `ses.setDisplayMediaRequestHandler(handler)`
+#### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
 * `handler` Function | null
   * `request` Object
@@ -980,11 +980,16 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
+* `opts` Object (optional)
+  * `useSystemPicker` Boolean - true if a user wants to use the native system picker _Experimental_
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 [desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
+
+`useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
+This option is experimental, and currently available for MacOS 15+ only.
 
 ```js
 const { session, desktopCapturer } = require('electron')

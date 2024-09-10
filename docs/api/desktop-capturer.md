@@ -16,17 +16,14 @@ app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    // If we should use the system picker
-    // Note: this is currently experimental
-    if (desktopCapturer.isDisplayMediaSystemPickerAvailable()) {
-      callback({ video: desktopCapturer.systemPickerVideoSource })
-      return
-    }
     desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
       // Grant access to the first screen found.
       callback({ video: sources[0], audio: 'loopback' })
     })
-  })
+    // If we should use the system picker
+    // Note: this is currently experimental, and does not respect
+    // getSources screen/window source selections.
+  }, { useSystemPicker: true })
 
   mainWindow.loadFile('index.html')
 })
@@ -99,23 +96,6 @@ which can detected by [`systemPreferences.getMediaAccessStatus`][].
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
-
-### `desktopCapturer.isDisplayMediaSystemPickerAvailable()` _Experimental_
-
-Returns `Boolean`, whether or not requesting desktop content via
-the system picker is supported on this platform.
-
-Currently this will only return `true` on macOS 14.4 and higher. When
-true you should respect this value and use `systemPickerVideoSource` as
-otherwise the OS may present scary warning dialogs to your users.
-
-## Properties
-
-### `desktopCapturer.systemPickerVideoSource` _Experimental_ _Readonly_
-
-A `DesktopCapturerSource` property that should be used in conjunction with
-[`session.setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler) to use the system picker instead
-of providing a specific video source from `getSources`.
 
 ## Caveats
 
