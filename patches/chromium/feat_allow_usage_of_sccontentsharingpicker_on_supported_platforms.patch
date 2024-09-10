@@ -7,10 +7,10 @@ This is implemented as a magic "window id" that instead of pulling an SCStream m
 instead farms out to the screen picker.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031c524158b 100644
+index 5c09b98b0c0ade9197a73186809ae4da28a12506..1843d76f4498a2ed233e4164475342680efa1f59 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -25,6 +25,52 @@
+@@ -25,6 +25,55 @@
                                                      std::optional<gfx::Rect>)>;
  using ErrorCallback = base::RepeatingClosure;
  
@@ -43,6 +43,9 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
 +         didUpdateWithFilter:(SCContentFilter *)filter
 +                   forStream:(SCStream *)stream {
 +  _pickerCallback.Run(filter);
++  if (@available(macOS 14.0, *)) {
++    [picker removeObserver:self];
++  }
 +}
 +
 +- (void)contentSharingPickerStartDidFailWithError:(NSError *)error {
@@ -63,7 +66,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
  API_AVAILABLE(macos(12.3))
  @interface ScreenCaptureKitDeviceHelper
      : NSObject <SCStreamDelegate, SCStreamOutput>
-@@ -141,7 +187,8 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+@@ -141,7 +190,8 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
  
  class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
      : public IOSurfaceCaptureDeviceBase,
@@ -73,7 +76,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
   public:
    explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
        : source_(source),
-@@ -157,11 +204,28 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
+@@ -157,11 +207,28 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source)
      helper_ = [[ScreenCaptureKitDeviceHelper alloc]
          initWithSampleCallback:sample_callback
                   errorCallback:error_callback];
@@ -103,7 +106,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
  
    void OnShareableContentCreated(SCShareableContent* content) {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -225,6 +289,9 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -225,6 +292,9 @@ void OnShareableContentCreated(SCShareableContent* content) {
        return;
      }
  
@@ -113,7 +116,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -238,6 +305,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -238,6 +308,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -121,13 +124,14 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -405,6 +473,25 @@ void OnUpdateConfigurationError() {
+@@ -405,6 +476,26 @@ void OnUpdateConfigurationError() {
    void OnStart() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
  
 +    if (@available(macOS 14.0, *)) {
-+      if (source_.id == 0 && source_.window_id == 0) {
++      if (source_.id < 0 && source_.window_id == 0) {
 +        auto* picker = [SCContentSharingPicker sharedPicker];
++        picker.maximumStreamCount = @(std::numeric_limits<unsigned>::max());
 +        ScreenCaptureKitDeviceMac::active_streams_++;
 +        if (!picker.active) {
 +          picker.active = true;
@@ -147,7 +151,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
      auto content_callback = base::BindPostTask(
          device_task_runner_,
          base::BindRepeating(
-@@ -470,6 +557,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -470,6 +561,8 @@ void ResetStreamTo(SCWindow* window) override {
    }
  
   private:
@@ -156,7 +160,7 @@ index 5c09b98b0c0ade9197a73186809ae4da28a12506..c17a2543a15916ee5d44480434c8c031
    const DesktopMediaID source_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-@@ -498,6 +587,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -498,6 +591,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
