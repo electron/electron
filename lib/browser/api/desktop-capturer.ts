@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron/main';
-const { createDesktopCapturer } = process._linkedBinding('electron_browser_desktop_capturer');
+const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
 const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -13,7 +13,9 @@ function isValid (options: Electron.SourcesOptions) {
   return Array.isArray(options?.types);
 }
 
-export async function getSources (args: Electron.SourcesOptions) {
+export { isDisplayMediaSystemPickerAvailable };
+
+export async function getSources (args: Electron.SourcesOptions, useSystemPicker: boolean = false) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
@@ -36,7 +38,8 @@ export async function getSources (args: Electron.SourcesOptions) {
     captureWindow,
     captureScreen,
     thumbnailSize,
-    fetchWindowIcons
+    fetchWindowIcons,
+    useSystemPicker,
   };
 
   for (const running of currentlyRunning) {
@@ -78,7 +81,7 @@ export async function getSources (args: Electron.SourcesOptions) {
       resolve(sources);
     };
 
-    capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
+    capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons, useSystemPicker);
   });
 
   currentlyRunning.push({

@@ -127,6 +127,14 @@ declare namespace Electron {
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
+  interface Session {
+    _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
+  }
+
+  interface DisplayMediaRequestHandlerOpts {
+    userSystemPicker: boolean,
+  }
+
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   interface Menu {
@@ -203,7 +211,7 @@ declare namespace Electron {
 
 declare namespace ElectronInternal {
   interface DesktopCapturer {
-    startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
+    startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean, useSystemPicker: boolean): void;
     _onerror?: (error: string) => void;
     _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
   }

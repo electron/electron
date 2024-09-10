@@ -36,10 +36,13 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
 
   static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
+  static bool IsDisplayMediaSystemPickerAvailable();
+
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size,
-                     bool fetch_window_icons);
+                     bool fetch_window_icons,
+                     bool use_system_picker);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -92,6 +95,7 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
     bool have_thumbnail_ = false;
   };
 
+  void RequestUpdate(DesktopMediaList* list, OnceCallback update_callback);
   void UpdateSourcesList(DesktopMediaList* list);
   void HandleFailure();
   void HandleSuccess();

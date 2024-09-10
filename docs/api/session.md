@@ -953,7 +953,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
-#### `ses.setDisplayMediaRequestHandler(handler)`
+#### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
 * `handler` Function | null
   * `request` Object
@@ -962,6 +962,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+    * `preferredDisplaySurface` String - The preferred display used for sharing screen in this request.
   * `callback` Function
     * `streams` Object
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
@@ -980,6 +981,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
+* `opts` Object (optional)
+  * `useSystemPicker` Boolean - true if a user wants to use the native system picker
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
