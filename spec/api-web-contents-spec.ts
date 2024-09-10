@@ -2496,6 +2496,39 @@ describe('webContents module', () => {
       expect(pdfInfo.numPages).to.equal(2);
       expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
     });
+
+    it('from an existing pdf document in a WebView', async () => {
+      const pdfPath = `file://${path.join(fixturesPath, 'cat.pdf')}`;
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+
+      await win.loadURL('about:blank');
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+
+      await win.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const webview = new WebView()
+          webview.setAttribute('src', '${pdfPath}')
+          document.body.appendChild(webview)
+          webview.addEventListener('did-finish-load', () => {
+            resolve()
+          })
+        })
+      `);
+
+      const [, webContents] = await webContentsCreated;
+
+      await once(webContents, '-pdf-ready-to-print');
+
+      const data = await webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.numPages).to.equal(2);
+      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
+    });
   });
 
   describe('PictureInPicture video', () => {
