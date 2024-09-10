@@ -46,13 +46,15 @@ index 8ac12480f663a74dfbdcf7128a582a81b4474d25..db6802a2603e1d3c3039e49737438124
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1dc2f7b82 100644
+index b6129282c6807702cf88e0a3e2ba233e41a20960..1c2d0c6dd4101fe0bac69e3018bbbedadce224cc 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -25,6 +25,57 @@
+@@ -24,24 +24,83 @@
+                                                     std::optional<gfx::Size>,
                                                      std::optional<gfx::Rect>)>;
  using ErrorCallback = base::RepeatingClosure;
- 
++using CancelCallback = base::RepeatingClosure;
++
 +API_AVAILABLE(macos(15.0))
 +@interface ScreenCaptureKitPickerHelper
 +    : NSObject <SCContentSharingPickerObserver>
@@ -71,13 +73,14 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
 +@implementation ScreenCaptureKitPickerHelper {
 +  base::RepeatingCallback<void(SCContentFilter *)> _pickerCallback;
 +  ErrorCallback _errorCallback;
++  CancelCallback _cancelCallback;
 +}
 +
 +- (void)contentSharingPicker:(SCContentSharingPicker *)picker
 +          didCancelForStream:(SCStream *)stream {
-+  // TODO: This doesn't appear to be called, we probably need
-+  // to wait for apple to fix a thing before we can correctly
-+  // handle cancel events
++  // TODO: This doesn't appear to be called on Apple's side;
++  // implement this logic
++  _cancelCallback.Run();
 +}
 +
 +- (void)contentSharingPicker:(SCContentSharingPicker *)picker
@@ -94,20 +97,43 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
 +}
 +
 +- (instancetype)initWithStreamPickCallback:(base::RepeatingCallback<void(SCContentFilter *)>)pickerCallback
++                             cancelCallback:(CancelCallback)cancelCallback
 +                             errorCallback:(ErrorCallback)errorCallback {
 +  if (self = [super init]) {
 +    _pickerCallback = pickerCallback;
++    _cancelCallback = cancelCallback;
 +    _errorCallback = errorCallback;
 +  }
 +  return self;
 +}
 +
 +@end
-+
+ 
  API_AVAILABLE(macos(12.3))
  @interface ScreenCaptureKitDeviceHelper
      : NSObject <SCStreamDelegate, SCStreamOutput>
-@@ -141,7 +192,8 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+ 
+ - (instancetype)initWithSampleCallback:(SampleCallback)sampleCallback
++                         cancelCallback:(CancelCallback)cancelCallback
+                          errorCallback:(ErrorCallback)errorCallback;
+ @end
+ 
+ @implementation ScreenCaptureKitDeviceHelper {
+   SampleCallback _sampleCallback;
++  CancelCallback _cancelCallback;
+   ErrorCallback _errorCallback;
+ }
+ 
+ - (instancetype)initWithSampleCallback:(SampleCallback)sampleCallback
++                         cancelCallback:(CancelCallback)cancelCallback
+                          errorCallback:(ErrorCallback)errorCallback {
+   if (self = [super init]) {
+     _sampleCallback = sampleCallback;
++    _cancelCallback = cancelCallback;
+     _errorCallback = errorCallback;
+   }
+   return self;
+@@ -141,7 +200,8 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
  
  class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
      : public IOSurfaceCaptureDeviceBase,
@@ -117,9 +143,21 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
   public:
    explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source,
                                       SCContentFilter* filter)
-@@ -159,11 +211,29 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source,
+@@ -152,18 +212,41 @@ explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source,
+         device_task_runner_,
+         base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamSample,
+                             weak_factory_.GetWeakPtr()));
++    CancelCallback cancel_callback = base::BindPostTask(
++        device_task_runner_,
++        base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamError,
++                            weak_factory_.GetWeakPtr()));
+     ErrorCallback error_callback = base::BindPostTask(
+         device_task_runner_,
+         base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamError,
+                             weak_factory_.GetWeakPtr()));
      helper_ = [[ScreenCaptureKitDeviceHelper alloc]
          initWithSampleCallback:sample_callback
++                 cancelCallback:cancel_callback
                   errorCallback:error_callback];
 +
 +    if (@available(macOS 15.0, *)) {
@@ -127,7 +165,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
 +        device_task_runner_,
 +        base::BindRepeating(&ScreenCaptureKitDeviceMac::OnContentFilterReady, weak_factory_.GetWeakPtr())
 +      );
-+      auto* picker_observer = [[ScreenCaptureKitPickerHelper alloc] initWithStreamPickCallback:picker_callback errorCallback:error_callback];
++      auto* picker_observer = [[ScreenCaptureKitPickerHelper alloc] initWithStreamPickCallback:picker_callback cancelCallback:cancel_callback errorCallback:error_callback];
 +      [[SCContentSharingPicker sharedPicker] addObserver:picker_observer];
 +    }
    }
@@ -148,7 +186,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
  
    void OnShareableContentCreated(SCShareableContent* content) {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -232,7 +302,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -232,7 +315,7 @@ void CreateStream(SCContentFilter* filter) {
        return;
      }
  
@@ -157,7 +195,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
        // Update the content size. This step is neccessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
-@@ -241,6 +311,9 @@ void CreateStream(SCContentFilter* filter) {
+@@ -241,6 +324,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
  
@@ -167,7 +205,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -254,6 +327,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -254,6 +340,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -175,7 +213,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -395,7 +469,7 @@ void OnStreamError() {
+@@ -395,7 +482,7 @@ void OnStreamError() {
        if (fullscreen_module_) {
          fullscreen_module_->Reset();
        }
@@ -184,7 +222,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
      } else {
        client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
                          FROM_HERE, "Stream delegate called didStopWithError");
-@@ -418,23 +492,39 @@ void OnUpdateConfigurationError() {
+@@ -418,23 +505,39 @@ void OnUpdateConfigurationError() {
    }
  
    // IOSurfaceCaptureDeviceBase:
@@ -239,7 +277,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
    }
    void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -492,6 +582,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -492,6 +595,8 @@ void ResetStreamTo(SCWindow* window) override {
    }
  
   private:
@@ -248,7 +286,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..d76a03a743b2efc3728ce71072d05ea1
    const DesktopMediaID source_;
    SCContentFilter* const filter_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
-@@ -521,6 +613,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -521,6 +626,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
