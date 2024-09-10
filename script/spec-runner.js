@@ -186,14 +186,9 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
-  // v8 headers use c++20 so override the gyp default of -std=c++14.
-  const gccVersion = childProcess.execSync('g++ -dumpversion').toString();
-  const cppFlag = parseFloat(gccVersion) <= 9 ? '-std=gnu++2a' : '-std=c++20';
-  const CXXFLAGS = [cppFlag, process.env.CXXFLAGS].filter(x => !!x).join(' ');
-
   const env = {
     ...process.env,
-    CXXFLAGS,
+    CXXFLAGS: process.env.CXXFLAGS,
     npm_config_msvs_version: '2019',
     npm_config_yes: 'true'
   };
