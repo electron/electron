@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 6a15fcae677b3bda58fc85f705862bbcd9feec9d..449131b9af99744c08d62d73f8d124cef5c9cc71 100644
+index ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7..22248b753c14960122f1d6b9bfe6b89fdb8d2010 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const { kEmptyObject } = require('internal/util');
@@ -78,7 +78,7 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
      // Check for !stat.isDirectory()
      if (stat !== 1) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 232cf43c500056896eb754c15334858038b0525c..5e79fc2c04ffb6006229920cc1ab61b537fed4c0 100644
+index 89ca269294ee1afa7f5aeb0ac6b8958f7a8b49d0..f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -36,7 +36,7 @@ const {
@@ -90,7 +90,7 @@ index 232cf43c500056896eb754c15334858038b0525c..5e79fc2c04ffb6006229920cc1ab61b5
  const { dirname, extname, isAbsolute } = require('path');
  const {
    loadBuiltinModule,
-@@ -358,7 +358,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -356,7 +356,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
  
    try {
      // We still need to read the FS to detect the exports.
@@ -99,7 +99,7 @@ index 232cf43c500056896eb754c15334858038b0525c..5e79fc2c04ffb6006229920cc1ab61b5
    } catch {
      // Continue regardless of error.
    }
-@@ -427,7 +427,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -424,7 +424,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).

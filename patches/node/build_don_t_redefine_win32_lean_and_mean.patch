@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 23 Aug 2024 16:50:19 +0200
+Subject: build: don't redefine WIN32_LEAN_AND_MEAN
+
+https://github.com/nodejs/node/pull/53722 added a new define for WIN32_LEAN_AND_MEAN
+without first checking to see if it was defined - other areas in c-ares do this so
+we should here as well. Compilation errors occur otherwise:
+
+../../third_party/electron_node/deps/cares/include\ares_build.h(168,11): error: 'WIN32_LEAN_AND_MEAN' macro redefined [-Werror,-Wmacro-redefined]
+  168 | #  define WIN32_LEAN_AND_MEAN
+      |           ^
+<command line>(25,9): note: previous definition is here
+   25 | #define WIN32_LEAN_AND_MEAN 1
+      |         ^
+1 error generated.
+[287 processes, 49437/51449 @ 48.5/s : 1018.562s] CC obj/third_party/electron_node/deps/cares/cares/ares__socket.obj
+FAILED: obj/third_party/electron_node/deps/cares/cares/ares__socket.obj
+
+This should be upstreamed.
+
+diff --git a/deps/cares/include/ares_build.h b/deps/cares/include/ares_build.h
+index 18a92606a817145302c73b5081b4c989799bc620..bafd26d9210d2347fec41f028e9e65088b83c48c 100644
+--- a/deps/cares/include/ares_build.h
++++ b/deps/cares/include/ares_build.h
+@@ -165,7 +165,9 @@
+ #  define CARES_TYPEOF_ARES_SOCKLEN_T int
+ 
+ #elif defined(_WIN32)
+-#  define WIN32_LEAN_AND_MEAN
++#  ifndef WIN32_LEAN_AND_MEAN
++#    define WIN32_LEAN_AND_MEAN
++#  endif
+ #  define CARES_TYPEOF_ARES_SOCKLEN_T int
+ #  define CARES_HAVE_WINDOWS_H          1
+ #  define CARES_HAVE_SYS_TYPES_H        1
