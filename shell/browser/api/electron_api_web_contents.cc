@@ -3726,6 +3726,10 @@ void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
   Emit("input-event", event);
 }
 
+void WebContents::PDFReadyToPrint() {
+  Emit("-pdf-ready-to-print");
+}
+
 void WebContents::RunJavaScriptDialog(content::WebContents* web_contents,
                                       content::RenderFrameHost* rfh,
                                       content::JavaScriptDialogType dialog_type,
