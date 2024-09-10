@@ -6,8 +6,47 @@ Subject: feat: allow usage of SCContentSharingPicker on supported platforms
 This is implemented as a magic "window id" that instead of pulling an SCStream manually
 instead farms out to the screen picker.
 
+diff --git a/content/browser/media/capture/desktop_capture_device_mac.cc b/content/browser/media/capture/desktop_capture_device_mac.cc
+index 88c56f4dfcc1f8517ef1e8b6f1d37f5ba4d0b2c7..a75493a6d4d8ce8340a2d820eff5eed4e6a95109 100644
+--- a/content/browser/media/capture/desktop_capture_device_mac.cc
++++ b/content/browser/media/capture/desktop_capture_device_mac.cc
+@@ -28,7 +28,7 @@ class DesktopCaptureDeviceMac : public IOSurfaceCaptureDeviceBase {
+   ~DesktopCaptureDeviceMac() override = default;
+ 
+   // IOSurfaceCaptureDeviceBase:
+-  void OnStart() override {
++  void OnStart(std::optional<bool> use_native_picker) override {
+     requested_format_ = capture_params().requested_format;
+     requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
+     DCHECK_GT(requested_format_.frame_size.GetArea(), 0);
+diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
+index 8a774911ce0f610b2c993976d108f840696c1d02..5ead7287e2d765d043f8b9c0229a2ee825d9f544 100644
+--- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
++++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
+@@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
+   client_ = std::move(client);
+   capture_params_ = params;
+ 
+-  OnStart();
++  OnStart(params.use_native_picker);
+ }
+ 
+ void IOSurfaceCaptureDeviceBase::StopAndDeAllocate() {
+diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.h b/content/browser/media/capture/io_surface_capture_device_base_mac.h
+index 8ac12480f663a74dfbdcf7128a582a81b4474d25..db6802a2603e1d3c3039e49737438124bf2ee1f1 100644
+--- a/content/browser/media/capture/io_surface_capture_device_base_mac.h
++++ b/content/browser/media/capture/io_surface_capture_device_base_mac.h
+@@ -25,7 +25,7 @@ class CONTENT_EXPORT IOSurfaceCaptureDeviceBase
+   ~IOSurfaceCaptureDeviceBase() override;
+ 
+   // OnStart is called by AllocateAndStart.
+-  virtual void OnStart() = 0;
++  virtual void OnStart(std::optional<bool> use_native_picker) = 0;
+ 
+   // OnStop is called by StopAndDeAllocate.
+   virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index b6129282c6807702cf88e0a3e2ba233e41a20960..ec968d20f13b27c4451a9c535298fe806eba7733 100644
+index b6129282c6807702cf88e0a3e2ba233e41a20960..d45ec9e89420c2b5ab2d8d37e4685fabedcb1b7c 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -25,6 +25,57 @@
@@ -136,9 +175,21 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..ec968d20f13b27c4451a9c535298fe80
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -420,21 +494,36 @@ void OnUpdateConfigurationError() {
+@@ -395,7 +469,7 @@ void OnStreamError() {
+       if (fullscreen_module_) {
+         fullscreen_module_->Reset();
+       }
+-      OnStart();
++      OnStart(std::nullopt);
+     } else {
+       client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
+                         FROM_HERE, "Stream delegate called didStopWithError");
+@@ -418,23 +492,38 @@ void OnUpdateConfigurationError() {
+   }
+ 
    // IOSurfaceCaptureDeviceBase:
-   void OnStart() override {
+-  void OnStart() override {
++  void OnStart(std::optional<bool> use_native_picker) override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
 -    if (filter_) {
 -      // SCContentSharingPicker is used where filter_ is set on creation.
@@ -156,7 +207,7 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..ec968d20f13b27c4451a9c535298fe80
 -      [SCShareableContent getShareableContentWithCompletionHandler:handler];
 +
 +    if (@available(macOS 15.0, *)) {
-+      if (source_.id < 0 && source_.window_id == 0) {
++      if (use_native_picker && source_.id < 0 && source_.window_id == 0) {
 +        auto* picker = [SCContentSharingPicker sharedPicker];
 +        ScreenCaptureKitDeviceMac::active_streams_++;
 +        picker.maximumStreamCount = @(ScreenCaptureKitDeviceMac::active_streams_);
@@ -205,3 +256,37 @@ index b6129282c6807702cf88e0a3e2ba233e41a20960..ec968d20f13b27c4451a9c535298fe80
  }  // namespace
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
+diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+index 7adf8264cfa9980c4a8414bf0f8bfa9ad70ec0b3..d162612dc70a2b57190aaf558aca8f46cbdedcad 100644
+--- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
++++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+@@ -360,13 +360,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+           std::move(after_start_capture_callback));
+       break;
+ #else
++      media::VideoCaptureParams updated_params = params;
++      updated_params.use_native_picker = stream_type != blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE;
+       // All cases other than tab capture or Aura desktop/window capture.
+       TRACE_EVENT_INSTANT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
+                            "UsingDesktopCapturer", TRACE_EVENT_SCOPE_THREAD);
+       start_capture_closure = base::BindOnce(
+           &InProcessVideoCaptureDeviceLauncher::
+               DoStartDesktopCaptureOnDeviceThread,
+-          base::Unretained(this), desktop_id, params,
++          base::Unretained(this), desktop_id, updated_params,
+           CreateDeviceClient(media::VideoCaptureBufferType::kSharedMemory,
+                              kMaxNumberOfBuffers, std::move(receiver),
+                              std::move(receiver_on_io_thread)),
+diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
+index f2b75f5b2f547ad135c1288bf3639b26dedc8053..ef18724d9f2ea68a47b66fc3981f58a73ac1b51d 100644
+--- a/media/capture/video_capture_types.h
++++ b/media/capture/video_capture_types.h
+@@ -355,6 +355,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+   // Flag indicating whether HiDPI mode should be enabled for tab capture
+   // sessions.
+   bool is_high_dpi_enabled = true;
++
++  std::optional<bool> use_native_picker;
+ };
+ 
+ CAPTURE_EXPORT std::ostream& operator<<(
