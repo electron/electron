@@ -103,7 +103,7 @@ which can detected by [`systemPreferences.getMediaAccessStatus`][].
 ### `desktopCapturer.isDisplayMediaSystemPickerAvailable()` _Experimental_
 
 Returns `Boolean`, whether or not requesting desktop content via
-the system picker is supporter on this platform.
+the system picker is supported on this platform.
 
 Currently this will only return `true` on macOS 14.4 and higher. When
 true you should respect this value and use `systemPickerVideoSource` as
@@ -114,7 +114,7 @@ otherwise the OS may present scary warning dialogs to your users.
 ### `desktopCapturer.systemPickerVideoSource` _Experimental_ _Readonly_
 
 A `DesktopCapturerSource` property that should be used in conjunction with
-`sesssion.setDisplayMediaRequestHandler` to use the system picker instead
+[`session.setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler) to use the system picker instead
 of providing a specific video source from `getSources`.
 
 ## Caveats
