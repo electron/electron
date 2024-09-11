@@ -14,6 +14,7 @@
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 
 namespace gin {
 
@@ -40,6 +41,33 @@ std::string OsrWidgetTypeToString(content::WidgetType type) {
   }
 }
 
+struct OffscreenReleaseHolderMonitor {
+  explicit OffscreenReleaseHolderMonitor(
+      electron::OffscreenReleaserHolder* holder)
+      : holder_(holder) {
+    CHECK(holder);
+  }
+
+  void ReleaseTexture() {
+    delete holder_;
+    holder_ = nullptr;
+  }
+
+  bool IsTextureReleased() const { return holder_ == nullptr; }
+
+  v8::Persistent<v8::Value>* CreatePersistent(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> value) {
+    persistent_ = std::make_unique<v8::Persistent<v8::Value>>(isolate, value);
+    return persistent_.get();
+  }
+
+  void ResetPersistent() { persistent_->Reset(); }
+
+ private:
+  raw_ptr<electron::OffscreenReleaserHolder> holder_;
+  std::unique_ptr<v8::Persistent<v8::Value>> persistent_;
+};
+
 }  // namespace
 
 // static
@@ -48,11 +76,17 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
     const electron::OffscreenSharedTextureValue& val) {
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
-  auto releaserHolder = v8::External::New(isolate, val.releaser_holder);
+  // Create a monitor to hold the releaser holder, which enables us to
+  // monitor whether the user explicitly released the texture before
+  // GC collects the object.
+  auto* monitor = new OffscreenReleaseHolderMonitor(val.releaser_holder);
+
+  auto releaserHolder = v8::External::New(isolate, monitor);
   auto releaserFunc = [](const v8::FunctionCallbackInfo<v8::Value>& info) {
-    // Delete the holder to release the shared texture.
-    delete static_cast<electron::OffscreenReleaserHolder*>(
+    auto* holder = static_cast<OffscreenReleaseHolderMonitor*>(
         info.Data().As<v8::External>()->Value());
+    // Release the shared texture, so that future frames can be generated.
+    holder->ReleaseTexture();
   };
   auto releaser = v8::Function::New(isolate->GetCurrentContext(), releaserFunc,
                                     releaserHolder)
@@ -98,7 +132,46 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
 #endif
 
   root.Set("textureInfo", ConvertToV8(isolate, dict));
-  return ConvertToV8(isolate, root);
+  auto root_local = ConvertToV8(isolate, root);
+
+  // Create a persistent reference of the object, so that we can check the
+  // monitor again when GC collects this object.
+  auto* tex_persistent = monitor->CreatePersistent(isolate, root_local);
+  tex_persistent->SetWeak(
+      monitor,
+      [](const v8::WeakCallbackInfo<OffscreenReleaseHolderMonitor>& data) {
+        auto* monitor = data.GetParameter();
+        if (!monitor->IsTextureReleased()) {
+          // Emit a warning when user didn't properly manually release the
+          // texture, output it in second pass callback.
+          data.SetSecondPassCallback([](const v8::WeakCallbackInfo<
+                                         OffscreenReleaseHolderMonitor>& data) {
+            auto* iso = data.GetIsolate();
+            node::Environment* env = node::Environment::GetCurrent(iso);
+
+            // Emit warning only once
+            static std::once_flag flag;
+            std::call_once(flag, [=] {
+              electron::EmitWarning(
+                  env,
+                  "[OSR TEXTURE LEAKED] When using OSR with "
+                  "`useSharedTexture`, `texture.release()` "
+                  "must be called explicitly as soon as the texture is "
+                  "copied to your rendering system. "
+                  "Otherwise, it will soon drain the underlying "
+                  "framebuffer and prevent future frames from being generated.",
+                  "SharedTextureOSRNotReleased");
+            });
+          });
+        }
+        // We are responsible for resetting the persistent handle.
+        monitor->ResetPersistent();
+        // Finally, release the holder monitor.
+        delete monitor;
+      },
+      v8::WeakCallbackType::kParameter);
+
+  return root_local;
 }
 
 }  // namespace gin
