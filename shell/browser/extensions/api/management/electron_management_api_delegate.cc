@@ -9,7 +9,6 @@
 #include <string>
 #include <utility>
 
-#include "base/functional/bind.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/extensions/extension_metrics.h"

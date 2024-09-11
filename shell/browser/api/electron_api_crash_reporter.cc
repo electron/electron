@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
