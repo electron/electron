@@ -63,6 +63,7 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   dict.Set("pixelFormat", OsrVideoPixelFormatToString(val.pixel_format));
   dict.Set("codedSize", val.coded_size);
   dict.Set("visibleRect", val.visible_rect);
+  dict.Set("contentRect", val.content_rect);
   dict.Set("timestamp", val.timestamp);
   dict.Set("frameCount", val.frame_count);
   dict.Set("widgetType", OsrWidgetTypeToString(val.widget_type));
