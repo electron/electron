@@ -39,7 +39,7 @@ index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c9
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..9f40a09020f2f33457d37176790480cb5493bbbc 100644
+index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..c8c8c32cd44a96dc6a476b8bc02bb13b02f86300 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 @@ -205,7 +205,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
@@ -51,27 +51,33 @@ index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..9f40a09020f2f33457d37176790480cb
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -225,12 +225,29 @@ bool FrameResources::Initialize() {
-   const bool is_mappable_si_enabled = base::FeatureList::IsEnabled(
-       kUseMappableSIForRenderableGpuMemoryBufferVideoFramePool);
-   if (!is_mappable_si_enabled) {
+@@ -219,6 +219,23 @@ bool FrameResources::Initialize() {
+   const gfx::Size buffer_size_in_pixels =
+       GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
+ 
 +#if BUILDFLAG(IS_WIN)
-+    // For CEF OSR feature, currently there's no other place in chromium use RGBA.
-+    // If the format is RGBA, currently CEF do not write to the texture anymore
-+    // once the GMB is returned from CopyRequest. So there will be no race
-+    // condition on that texture. We can request a GMB without a keyed mutex to
-+    // accelerate and probably prevent some driver deadlock.
-+    if (format_ == PIXEL_FORMAT_ARGB || format_ == PIXEL_FORMAT_ABGR) {
-+      // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
-+      // cause there's no real SCANOUT on Windows. We simply use this enum as a
-+      // flag to disable mutex in the GMBFactoryDXGI because this enum is also
-+      // used above in macOS and CrOS for similar usage (claim no other one will
-+      // concurrently use the resource).
-+      // https://chromium-review.googlesource.com/c/chromium/src/+/5302103
-+      buffer_usage = gfx::BufferUsage::SCANOUT_VEA_CPU_READ;
-+    }
++  // For CEF OSR feature, currently there's no other place in chromium use RGBA.
++  // If the format is RGBA, currently CEF do not write to the texture anymore
++  // once the GMB is returned from CopyRequest. So there will be no race
++  // condition on that texture. We can request a GMB without a keyed mutex to
++  // accelerate and probably prevent some driver deadlock.
++  if (format_ == PIXEL_FORMAT_ARGB || format_ == PIXEL_FORMAT_ABGR) {
++    // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
++    // cause there's no real SCANOUT on Windows. We simply use this enum as a
++    // flag to disable mutex in the GMBFactoryDXGI because this enum is also
++    // used above in macOS and CrOS for similar usage (claim no other one will
++    // concurrently use the resource).
++    // https://chromium-review.googlesource.com/c/chromium/src/+/5302103
++    buffer_usage = gfx::BufferUsage::SCANOUT_VEA_CPU_READ;
++  }
 +#endif
 +
+   // Create the GpuMemoryBuffer if MappableSharedImages is not enabled. When its
+   // enabled, clients only create a mappable shared image directly without
+   // needing to create a GMB.
+@@ -226,11 +243,11 @@ bool FrameResources::Initialize() {
+       kUseMappableSIForRenderableGpuMemoryBufferVideoFramePool);
+   if (!is_mappable_si_enabled) {
      gpu_memory_buffer_ = context->CreateGpuMemoryBuffer(
 -        buffer_size_in_pixels, buffer_format, kBufferUsage);
 +        buffer_size_in_pixels, buffer_format, buffer_usage);
