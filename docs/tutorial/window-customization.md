@@ -284,16 +284,6 @@ window.addEventListener('DOMContentLoaded', () => {
 This makes the web page click-through when over the `#clickThroughElement` element,
 and returns to normal outside it.
 
-## Panel windows *macOS*
-
-To achieve a floating panel that doesn't steal focus from a normal window,
-similar to how Spotlight or Alfred behave in macOS, set the [`BaseWindowContructorOptions`][] `type` param in the `BrowserWindow` constructor to `'panel'`.
-
-```js title='main.js'
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow({ type: 'panel' })
-```
-
 [`BaseWindowContructorOptions`]: ../api/structures/base-window-options.md
 [`BrowserWindow`]: ../api/browser-window.md
 [`blur()`]: https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function/blur()
