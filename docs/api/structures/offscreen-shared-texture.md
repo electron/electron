@@ -20,4 +20,5 @@
     * `fd` number - File descriptor for the underlying memory object (usually dmabuf).
   * `modifier` string _Linux_ - The modifier is retrieved from GBM library and passed to EGL driver.
 * `release` Function - Release the resources. The `texture` cannot be directly passed to another process, users need to maintain texture lifecycles in
-  main process, but it is safe to pass the `textureInfo` to another process.
+  main process, but it is safe to pass the `textureInfo` to another process. Only a limited number of textures can exist at the same time, so it's important
+  that you call `texture.release()` as soon as you're done with the texture.

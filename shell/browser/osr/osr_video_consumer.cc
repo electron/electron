@@ -28,11 +28,18 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
 
-  // Disable any constraint to make the capture_size keep same with source_size,
-  // which will not have a letterbox no matter how size changed. It can also
-  // prevent the delay that caused by comparing content_rect with view's size
-  // when received a new frame and reset the resolution change then request a
-  // new frame.
+  // Previous design of OSR try to set the resolution constraint to match the
+  // view's size. It is actually not necessary and creates faulty textures
+  // when the window/view's size changes frequently. The constraint may not
+  // take effect before the internal frame size changes, and makes the capturer
+  // try to resize the new frame size to the old constraint size, which makes
+  // the output image blurry. (For example, small window suddenly expands to
+  // maximum size, will actually produce a small output image with maximized
+  // window resized to fit the small image, however, the expected output is
+  // a maximized image without resizing).
+  // So, we just set the constraint to no limit (1x1 to max). When the window
+  // size changed, a new frame with new size will be automatically generated.
+  // There's no need to manually set the constraint and request a new frame.
   video_capturer_->SetResolutionConstraints(
       gfx::Size(1, 1),
       gfx::Size(media::limits::kMaxDimension, media::limits::kMaxDimension),
@@ -109,7 +116,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.releaser_holder = new OffscreenReleaserHolder(std::move(gmb_handle),
                                                           std::move(callbacks));
 
-    callback_.Run(content_rect, {}, texture);
+    callback_.Run(content_rect, {}, std::move(texture));
     return;
   }
 

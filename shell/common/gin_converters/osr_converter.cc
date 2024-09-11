@@ -11,6 +11,7 @@
 
 #include <string>
 
+#include "base/containers/to_vector.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/node_includes.h"
@@ -117,7 +118,7 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
       sizeof(val.shared_texture_handle));
   dict.Set("sharedTextureHandle", handle_buf.ToLocalChecked());
 #elif BUILDFLAG(IS_LINUX)
-  auto v8_planes = base::ToVector(val.planes, [isolate](const auto& plane){
+  auto v8_planes = base::ToVector(val.planes, [isolate](const auto& plane) {
     gin::Dictionary v8_plane(isolate, v8::Object::New(isolate));
     v8_plane.Set("stride", plane.stride);
     v8_plane.Set("offset", plane.offset);
