@@ -26,10 +26,12 @@ losses with no benefits.
 
 GPU accelerated rendering means that the GPU is used for composition. The benefit
 of this mode is that WebGL and 3D CSS animations are supported. There are two
-different approaches depending on whether `webPreferences.offscreen.useSharedTexture`
-is set to true.
+different approaches depending on the `webPreferences.offscreen.useSharedTexture`
+setting.
 
 1. Use GPU shared texture
+
+    Used when `webPreferences.offscreen.useSharedTexture` is set to `true`.
 
     This is an advanced feature requiring a native node module to work with your own code.
     The frames are directly copied in GPU textures, thus this mode is very fast because
@@ -37,6 +39,8 @@ is set to true.
     texture to your own rendering program.
 
 2. Use CPU shared memory bitmap
+
+    Used when `webPreferences.offscreen.useSharedTexture` is set to `false` (default behavior).
 
     The texture is accessible using the `NativeImage` API at the cost of performance.
     The frame has to be copied from the GPU to the CPU bitmap which requires more system
