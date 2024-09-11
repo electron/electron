@@ -14,7 +14,7 @@ For reason please see: https://crrev.com/c/5465148
 Change-Id: Id90acd587f17acd228ae7cb5ef93005eb8388b80
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index 58df3e9ad67b2b7835fe64835f9e589a563ee073..d08d4611361fc1387e94f553ba88c20a8cd87741 100644
+index 9cac49288f3b141cf843e06780e72303be71286b..38d1b820109ff2e888cd0f7f1a564f4ace81ca8a 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 @@ -180,7 +180,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
@@ -39,10 +39,10 @@ index 58df3e9ad67b2b7835fe64835f9e589a563ee073..d08d4611361fc1387e94f553ba88c20a
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index c007238f1c7392042ae91a82f3d70751ba258422..0a65f20f65ed1d7cc140d0a54042fc4a41138774 100644
+index b420e7f14165f738844878d0ff9e2373c2906f8a..83f09abff7173de4690a99620ab4a0ca634784b4 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -198,7 +198,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
+@@ -195,7 +195,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
  bool FrameResources::Initialize() {
    auto* context = pool_->GetContext();
  
@@ -51,7 +51,7 @@ index c007238f1c7392042ae91a82f3d70751ba258422..0a65f20f65ed1d7cc140d0a54042fc4a
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -212,13 +212,30 @@ bool FrameResources::Initialize() {
+@@ -209,13 +209,30 @@ bool FrameResources::Initialize() {
    const gfx::Size buffer_size_in_pixels =
        GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
  
