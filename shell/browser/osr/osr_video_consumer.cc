@@ -85,6 +85,9 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.content_rect = content_rect;
     texture.timestamp = info->timestamp.InMicroseconds();
     texture.frame_count = info->metadata.capture_counter.value_or(0);
+    texture.capture_update_rect = info->metadata.capture_update_rect;
+    texture.source_size = info->metadata.source_size;
+    texture.region_capture_rect = info->metadata.region_capture_rect;
     texture.widget_type = view_->GetWidgetType();
 
 #if BUILDFLAG(IS_WIN)

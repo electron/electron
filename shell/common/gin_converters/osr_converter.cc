@@ -12,6 +12,7 @@
 #include <string>
 
 #include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -65,8 +66,15 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   dict.Set("visibleRect", val.visible_rect);
   dict.Set("contentRect", val.content_rect);
   dict.Set("timestamp", val.timestamp);
-  dict.Set("frameCount", val.frame_count);
   dict.Set("widgetType", OsrWidgetTypeToString(val.widget_type));
+
+  gin::Dictionary metadata(isolate, v8::Object::New(isolate));
+  metadata.Set("captureUpdateRect", val.capture_update_rect);
+  metadata.Set("regionCaptureRect", val.region_capture_rect);
+  metadata.Set("sourceSize", val.source_size);
+  metadata.Set("frameCount", val.frame_count);
+  dict.Set("metadata", ConvertToV8(isolate, metadata));
+
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   auto handle_buf = node::Buffer::Copy(
       isolate,

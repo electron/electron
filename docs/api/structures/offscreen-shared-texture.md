@@ -7,7 +7,11 @@
   * `visibleRect` [Rectangle](rectangle.md) - A subsection of [0, 0, coded_size().width(), coded_size.height()]. In OSR case, it is expected to have the full section area.
   * `contentRect` [Rectangle](rectangle.md) - The region of the video frame that capturer would like to populate. In OSR case, it is the same with `dirtyRect` that needs to be painted.
   * `timestamp` number - The time in microseconds since the capture start.
-  * `frameCount` number - The count of captured frame.
+  * `metadata` Object - Extra metadata. See comments in src\media\base\video_frame_metadata.h for accurate details.
+    * `captureUpdateRect` [Rectangle](rectangle.md) (optional) - Updated area of frame, can be considered as the `dirty` area.
+    * `regionCaptureRect` [Rectangle](rectangle.md) (optional) - May reflects where the frame's contents originate from if region capture is used internally.
+    * `sourceSize` [Rectangle](rectangle.md) (optional) - Full size of the source frame.
+    * `frameCount` number (optional) - The increasing count of captured frame. May contain gaps if frames are dropped between two consecutively received frames.
   * `sharedTextureHandle` Buffer _Windows_ _macOS_ - The handle to the shared texture.
   * `planes` Object[] _Linux_ - Each plane's info of the shared texture.
     * `stride` number - The strides and offsets in bytes to be used when accessing the buffers via a memory mapping. One per plane per entry.

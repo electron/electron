@@ -77,6 +77,12 @@ struct OffscreenSharedTextureValue {
   // In OSR case, it is the same with `dirtyRect` that needs to be painted.
   gfx::Rect content_rect;
 
+  // Extra metadata for the video frame.
+  // See comments in src\media\base\video_frame_metadata.h for more details.
+  std::optional<gfx::Rect> capture_update_rect;
+  std::optional<gfx::Size> source_size;
+  std::optional<gfx::Rect> region_capture_rect;
+
   // The capture timestamp, microseconds since capture start
   int64_t timestamp;
 
