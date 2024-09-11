@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 4 Sep 2024 16:39:23 +0200
+Subject: build: compile with C++20 support
+
+Refs https://github.com/nodejs/node/pull/45427
+
+V8 requires C++20 support as of https://chromium-review.googlesource.com/c/v8/v8/+/5587859.
+
+This can be removed when Electron upgrades to a version of Node.js containing the required V8 version.
+
+diff --git a/common.gypi b/common.gypi
+index 8736ad12eec294070a5160a64248044cd16347c9..216200c279c599f6dee228120ff5f3943fa52ffd 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -307,7 +307,7 @@
+       'VCCLCompilerTool': {
+         'AdditionalOptions': [
+           '/Zc:__cplusplus',
+-          '-std:c++17'
++          '-std:c++20'
+         ],
+         'BufferSecurityCheck': 'true',
+         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
+@@ -489,7 +489,7 @@
+       }],
+       [ 'OS in "linux freebsd openbsd solaris android aix os400 cloudabi"', {
+         'cflags': [ '-Wall', '-Wextra', '-Wno-unused-parameter', ],
+-        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++17' ],
++        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++20' ],
+         'defines': [ '__STDC_FORMAT_MACROS' ],
+         'ldflags': [ '-rdynamic' ],
+         'target_conditions': [
+@@ -660,7 +660,7 @@
+           ['clang==1', {
+             'xcode_settings': {
+               'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
+-              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++17',  # -std=gnu++17
++              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++20',  # -std=gnu++20
+               'CLANG_CXX_LIBRARY': 'libc++',
+             },
+           }],
