@@ -5,9 +5,9 @@ function createWindow () {
     // remove the default titlebar
     titleBarStyle: 'hidden',
     // expose window controlls in Windows/Linux
-    titleBarOverlay: true
+    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {})
   })
-  win.loadURL('https://electronjs.org')
+  win.loadURL('https://example.com')
 }
 
 app.whenReady().then(() => {

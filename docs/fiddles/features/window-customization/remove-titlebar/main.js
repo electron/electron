@@ -5,7 +5,7 @@ function createWindow () {
     // remove the default titlebar
     titleBarStyle: 'hidden'
   })
-  win.loadURL('https://electronjs.org')
+  win.loadURL('https://example.com')
 }
 
 app.whenReady().then(() => {

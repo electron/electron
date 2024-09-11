@@ -1,12 +1,12 @@
 # Window Customization
 
-The `BrowserWindow` module is the foundation of your Electron application, and it exposes many APIs that let you customize the look and behavior of your app’s windows. This tutorial covers how to implement various use-cases for window customization on macOS, Windows, and Linux.
+The [`BrowserWindow`][] module is the foundation of your Electron application, and it exposes many APIs that let you customize the look and behavior of your app’s windows. This tutorial covers how to implement various use-cases for window customization on macOS, Windows, and Linux.
 
 ## Custom Titlebars
 
 ### Basic Tutorial
 
-Application windows have a default [chrome][] applied by the OS. Not to be confused with the Google Chrome browser, window *chrome* refers to the parts of the window (e.g. titlebar, toolbars, controls) that are not a part of the main web content. While the default titlebar is useful for handing common window behaviors, many modern applications opt to remove it in favor of building a fully customized title bar.
+Application windows have a default [chrome][] applied by the OS. Not to be confused with the Google Chrome browser, window *chrome* refers to the parts of the window (e.g. titlebar, toolbars, controls) that are not a part of the main web content. While the default titlebar provided by the OS chrome is sufficent for simple usecases, many applications opt to remove it. Implementing a custom titlebar can help your application feel more modern and consistent across platforms.
 
 You can follow along with this tutorial by opening Fiddle with the following starter code.
 
@@ -16,7 +16,7 @@ You can follow along with this tutorial by opening Fiddle with the following sta
 
 #### Removing the default titlebar
 
-Let’s start by configuring a window with a hidden titlebar and native window controls. To do this, we will first remove the default titlebar by setting the `titleBarStyle` option in the `BrowserWindow` constructor.
+Let’s start by configuring a window with native window controls and a hidden titlebar. To remove the default titlebar, set the [`BaseWindowContructorOptions`][] `titleBarStyle` param in the `BrowserWindow` constructor to `'hidden'`.
 
 ```fiddle docs/fiddles/features/window-customization/remove-titlebar
 
@@ -24,17 +24,17 @@ Let’s start by configuring a window with a hidden titlebar and native window c
 
 #### Adding native window controls *Windows* *Linux*
 
-On macOS, you should see that setting `titleBarStyle: 'hidden'` removed the titlebar while keeping the window’s traffic light controls available in the upper left hand corner. However, on Windows and Linux, you’ll need to add window controls back into your `BrowserWindow` by setting the `titleBarOverlay` option in the `BrowserWindow` constructor.
+On macOS, setting `titleBarStyle: 'hidden'` removes the titlebar while keeping the window’s traffic light controls available in the upper left hand corner. However on Windows and Linux, you’ll need to add window controls back into your `BrowserWindow` by setting the [`BaseWindowContructorOptions`][] `titleBarOverlay` param in the `BrowserWindow` constructor.
 
 ```fiddle docs/fiddles/features/window-customization/native-window-controls
 
 ```
 
-Setting `titleBarOverlay` to `true` is the simplest way to expose window controls back into your `BrowserWindow`. If you’re interested in customizing the window controls further, check out the sections Customizing traffic lights and Customizing window controls that cover this in more detail.
+Setting `titleBarOverlay: true` is the simplest way to expose window controls back into your `BrowserWindow`. If you’re interested in customizing the window controls further, check out the sections [Customizing traffic lights][] and [Customizing window controls][] that cover this in more detail.
 
 #### Create a custom titlebar
 
-Now, let’s implement a simple custom color titlebar within the webContents of our BrowserWindow. There’s nothing fancy here, just HTML and CSS!
+Now, let’s implement a simple custom titlebar in the `webContents` of our `BrowserWindow`. There’s nothing fancy here, just HTML and CSS!
 
 ```fiddle docs/fiddles/features/window-customization/custom-titlebar
 
@@ -42,13 +42,15 @@ Now, let’s implement a simple custom color titlebar within the webContents of 
 
 #### Setting a custom drag region
 
-Currently our application window can’t be moved. Since we’ve removed the default titlebar, the application needs to tell Electron which regions are draggable. We’ll do this by adding the CSS style `app-region: drag` to the custom titlebar. Now we’ll be able drag the custom titlebar to reposition our app window!
+Currently our application window can’t be moved. Since we’ve removed the default titlebar, the application needs to tell Electron which regions are draggable. We’ll do this by adding the CSS style `app-region: drag` to the custom titlebar. Now we can drag the custom titlebar to reposition our app window!
 
 ```fiddle docs/fiddles/features/window-customization/custom-drag-region
 
 ```
 
-For more information around how to manage drag regions defined by your electron application, see the Custom draggable regions section below.
+For more information around how to manage drag regions defined by your electron application, see the [Custom draggable regions][] section below.
+
+Congratulations, you've just implemented a basic custom titlebar!
 
 ### Customizing traffic lights *macOS*
 
@@ -150,11 +152,7 @@ const win = new BrowserWindow({
 
 ## Custom draggable regions
 
-By default, the frameless window is non-draggable. Apps need to specify
-`app-region: drag` in CSS to tell Electron which regions are draggable
-(like the OS's standard titlebar), and apps can also use
-`app-region: no-drag` to exclude the non-draggable area from the
- draggable region. Note that only rectangular shapes are currently supported.
+By default, windows are dragged using the titlebar provided by the OS chrome. Apps that remove the default titlebar need to use the `app-region` CSS property to define specific areas that can be used to drag the window. Setting `app-region: drag` marks an area as draggable. Setting `app-region: no-drag` excludes an area from dragging. Note that only rectangular shapes are currently supported.
 
 To make the whole window draggable, you can add `app-region: drag` as
 `body`'s style:
@@ -286,8 +284,13 @@ window.addEventListener('DOMContentLoaded', () => {
 This makes the web page click-through when over the `#clickThroughElement` element,
 and returns to normal outside it.
 
+[`BaseWindowContructorOptions`]: ../api/structures/base-window-options.md
+[`BrowserWindow`]: ../api/browser-window.md
 [`blur()`]: https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function/blur()
 [chrome]: https://developer.mozilla.org/en-US/docs/Glossary/Chrome
+[Custom draggable regions]: #custom-draggable-regions
+[Customizing traffic lights]: #customizing-traffic-lights-macos
+[Customizing window controls]: #customizing-window-controls
 [ignore-mouse-events]: ../api/browser-window.md#winsetignoremouseeventsignore-options
 [overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
 [overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
