@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/media/webrtc/desktop_capturer_wrapper.h"
@@ -43,6 +42,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/strings/string_number_conversions.h"
 #include "ui/base/cocoa/permissions_utils.h"
 #endif
 
