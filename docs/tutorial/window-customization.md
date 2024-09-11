@@ -200,7 +200,7 @@ draggable areas.
 
 A frameless window removes all [chrome](https://developer.mozilla.org/en-US/docs/Glossary/Chrome) applied by the OS, including window controls.
 
-To create a frameless window, set `frame` to `false` in the `BrowserWindow` constructor.
+To create a frameless window, set the [`BaseWindowContructorOptions`][] `frame` param in the `BrowserWindow` constructor to `false`.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
@@ -209,7 +209,7 @@ const win = new BrowserWindow({ frame: false })
 
 ## Transparent windows
 
-By setting the `transparent` option to `true`, you can make a fully transparent window.
+To create a fully transparent window, set the [`BaseWindowContructorOptions`][] `transparent` param in the `BrowserWindow` constructor to `true`.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
@@ -283,6 +283,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
 This makes the web page click-through when over the `#clickThroughElement` element,
 and returns to normal outside it.
+
+## Panel windows *macOS*
+
+To achieve a floating panel that doesn't steal focus from a normal window,
+similar to how Spotlight or Alfred behave in macOS, set the [`BaseWindowContructorOptions`][] `type` param in the `BrowserWindow` constructor to `'panel'`.
+
+```js title='main.js'
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow({ type: 'panel' })
+```
 
 [`BaseWindowContructorOptions`]: ../api/structures/base-window-options.md
 [`BrowserWindow`]: ../api/browser-window.md
