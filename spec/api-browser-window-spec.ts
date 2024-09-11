@@ -6500,6 +6500,8 @@ describe('BrowserWindow module', () => {
   describe('offscreen rendering image', () => {
     afterEach(closeAllWindows);
 
+    const imagePath = path.join(fixtures, 'assets', 'osr.png');
+    const targetImage = nativeImage.createFromPath(imagePath);
     const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
     ifit(nativeModulesEnabled && ['win32'].includes(process.platform))('use shared texture, hardware acceleration enabled', (done) => {
       const { ExtractPixels, InitializeGpu } = require('@electron-ci/osr-gpu');
@@ -6521,23 +6523,22 @@ describe('BrowserWindow module', () => {
         },
         transparent: true,
         frame: false,
-        width: 100,
-        height: 100
+        width: 128,
+        height: 128
       });
 
       w.webContents.once('paint', async (e, dirtyRect) => {
         try {
           expect(e.texture).to.be.not.null();
           const pixels = ExtractPixels(e.texture!.textureInfo);
-          const target = await w.webContents.capturePage();
           const img = nativeImage.createFromBitmap(pixels, { width: dirtyRect.width, height: dirtyRect.height, scaleFactor: 1 });
-          expect(img.toBitmap().equals(target.toBitmap())).to.equal(true);
+          expect(img.toBitmap().equals(targetImage.toBitmap())).to.equal(true);
           done();
         } catch (e) {
           done(e);
         }
       });
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering-image.html'));
+      w.loadFile(imagePath);
     });
 
     it('use shared memory, hardware acceleration enabled', (done) => {
@@ -6549,20 +6550,19 @@ describe('BrowserWindow module', () => {
         },
         transparent: true,
         frame: false,
-        width: 100,
-        height: 100
+        width: 128,
+        height: 128
       });
 
       w.webContents.once('paint', async (e, dirtyRect, image) => {
         try {
-          const target = await w.webContents.capturePage();
-          expect(image.toBitmap().equals(target.toBitmap())).to.equal(true);
+          expect(image.toBitmap().equals(targetImage.toBitmap())).to.equal(true);
           done();
         } catch (e) {
           done(e);
         }
       });
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering-image.html'));
+      w.loadFile(imagePath);
     });
   });
 
