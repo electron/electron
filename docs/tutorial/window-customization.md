@@ -6,7 +6,7 @@ The [`BrowserWindow`][] module is the foundation of your Electron application,
 
 ### Basic Tutorial
 
-Application windows have a default [chrome][] applied by the OS. Not to be confused with the Google Chrome browser, window *chrome* refers to the parts of the window (e.g. titlebar, toolbars, controls) that are not a part of the main web content. While the default titlebar provided by the OS chrome is sufficent for simple usecases, many applications opt to remove it. Implementing a custom titlebar can help your application feel more modern and consistent across platforms.
+Application windows have a default [chrome][] applied by the OS. Not to be confused with the Google Chrome browser, window _chrome_ refers to the parts of the window (e.g. titlebar, toolbars, controls) that are not a part of the main web content. While the default titlebar provided by the OS chrome is sufficent for simple usecases, many applications opt to remove it. Implementing a custom titlebar can help your application feel more modern and consistent across platforms.
 
 You can follow along with this tutorial by opening Fiddle with the following starter code.
 
@@ -22,7 +22,7 @@ Let’s start by configuring a window with native window controls and a hidden t
 
 ```
 
-#### Adding native window controls *Windows* *Linux*
+#### Adding native window controls _Windows_ _Linux_
 
 On macOS, setting `titleBarStyle: 'hidden'` removes the titlebar while keeping the window’s traffic light controls available in the upper left hand corner. However on Windows and Linux, you’ll need to add window controls back into your `BrowserWindow` by setting the [`BaseWindowContructorOptions`][] `titleBarOverlay` param in the `BrowserWindow` constructor.
 
@@ -52,9 +52,9 @@ For more information around how to manage drag regions defined by your electron 
 
 Congratulations, you've just implemented a basic custom titlebar!
 
-### Customizing traffic lights *macOS*
+### Customizing traffic lights _macOS_
 
-#### Customize the look of your traffic lights *macOS*
+#### Customize the look of your traffic lights _macOS_
 
 The `customButtonsOnHover` title bar style will hide the traffic lights until you hover
 over them. This is useful if you want to create custom traffic lights in your HTML but still
@@ -65,7 +65,7 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover' })
 ```
 
-#### Customize the traffic light position *macOS*
+#### Customize the traffic light position _macOS_
 
 To modify the position of the traffic light window controls, there are two configuration
 options available.
@@ -90,7 +90,7 @@ const win = new BrowserWindow({
 })
 ```
 
-#### Show and hide the traffic lights programmatically *macOS*
+#### Show and hide the traffic lights programmatically _macOS_
 
 You can also show and hide the traffic lights programmatically from the main process.
 The `win.setWindowButtonVisibility` forces traffic lights to be show or hidden depending
@@ -226,12 +226,12 @@ const win = new BrowserWindow({ transparent: true })
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
 * The window will not be transparent when DevTools is opened.
-* On *Windows*:
+* On _Windows_:
   * Transparent windows will not work when DWM is disabled.
   * Transparent windows can not be maximized using the Windows system menu or by double
   clicking the title bar. The reasoning behind this can be seen on
   PR [#28207](https://github.com/electron/electron/pull/28207).
-* On *macOS*:
+* On _macOS_:
   * The native window shadow will not be shown on a transparent window.
 
 ## Click-through windows
@@ -246,7 +246,7 @@ const win = new BrowserWindow()
 win.setIgnoreMouseEvents(true)
 ```
 
-### Forward mouse events *macOS* *Windows*
+### Forward mouse events _macOS_ _Windows_
 
 Ignoring mouse messages makes the web contents oblivious to mouse movement,
 meaning that mouse movement events will not be emitted. On Windows and macOS, an
