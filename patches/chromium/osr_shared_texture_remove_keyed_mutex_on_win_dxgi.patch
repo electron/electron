@@ -1,17 +1,14 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Reito <carolwolfking@gmail.com>
-Date: Fri, 19 Apr 2024 11:46:47 +0800
+From: reito <cnschwarzer@qq.com>
+Date: Thu, 15 Aug 2024 14:05:52 +0800
 Subject: Remove DXGI GMB keyed-mutex
 
-This CL is only for reference for a vendor specific change. It is kept for rebasing.
+This patch removes the keyed mutex of the d3d11 texture only when the texture is requested by offscreen rendering and on Windows.
 
-On CEF/electron, FrameSinkVideoCapturer is used in GPU accelerated OSR, and it can be faster
-if we remove the mutex on the shared resource for Windows. This patch is not mandatory, but
-will be nice to be patched for performance gain with no cost.
+The keyed mutex introduce extra performance cost and spikes. However, at offscreen rendering scenario, the shared resources will not be simultaneously read from & written to, typically just one reader, so it doesn't need such exclusive guarantee, and it's safe to remove this mutex for extra performance gain.
 
-For reason please see: https://crrev.com/c/5465148
-
-Change-Id: Id90acd587f17acd228ae7cb5ef93005eb8388b80
+For resolving complex conflict please pin @reitowo
+For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c99a576620 100644
