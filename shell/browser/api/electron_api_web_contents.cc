@@ -761,12 +761,23 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get transparent for guest view
   options.Get("transparent", &guest_transparent_);
 
-  bool b = false;
-  if (options.Get(options::kOffscreen, &b) && b)
-    type_ = Type::kOffScreen;
-
-  if (options.Get(options::kOffscreenUseSharedTexture, &b))
-    offscreen_use_shared_texture_ = b;
+  // Offscreen rendering
+  v8::Local<v8::Value> use_offscreen;
+  if (options.Get(options::kOffscreen, &use_offscreen)) {
+    if (use_offscreen->IsBoolean()) {
+      bool b = false;
+      if (options.Get(options::kOffscreen, &b) && b) {
+        type_ = Type::kOffScreen;
+      }
+    } else if (use_offscreen->IsObject()) {
+      type_ = Type::kOffScreen;
+      auto use_offscreen_dict =
+          gin_helper::Dictionary::CreateEmpty(options.isolate());
+      options.Get(options::kOffscreen, &use_offscreen_dict);
+      use_offscreen_dict.Get(options::kUseSharedTexture,
+                             &offscreen_use_shared_texture_);
+    }
+  }
 
   // Init embedder earlier
   options.Get("embedder", &embedder_);
