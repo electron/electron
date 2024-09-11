@@ -61,7 +61,7 @@ struct OffscreenReleaseHolderMonitor {
     return persistent_.get();
   }
 
-  void ResetPersistent() { persistent_->Reset(); }
+  void ResetPersistent() const { persistent_->Reset(); }
 
  private:
   raw_ptr<electron::OffscreenReleaserHolder> holder_;
