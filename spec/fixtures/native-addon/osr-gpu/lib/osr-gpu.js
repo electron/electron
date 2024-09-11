@@ -1,1 +1,1 @@
-module.exports = require('../build/Release/osr-gpu.node').ExtractPixels;
+module.exports = require('../build/Release/osr-gpu.node');
