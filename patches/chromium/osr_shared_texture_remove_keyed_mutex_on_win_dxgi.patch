@@ -14,10 +14,10 @@ For reason please see: https://crrev.com/c/5465148
 Change-Id: Id90acd587f17acd228ae7cb5ef93005eb8388b80
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index 9cac49288f3b141cf843e06780e72303be71286b..38d1b820109ff2e888cd0f7f1a564f4ace81ca8a 100644
+index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c99a576620 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -180,7 +180,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -179,7 +179,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -27,7 +27,7 @@ index 9cac49288f3b141cf843e06780e72303be71286b..38d1b820109ff2e888cd0f7f1a564f4a
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -194,7 +195,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -193,7 +194,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
@@ -39,10 +39,10 @@ index 9cac49288f3b141cf843e06780e72303be71286b..38d1b820109ff2e888cd0f7f1a564f4a
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index b420e7f14165f738844878d0ff9e2373c2906f8a..83f09abff7173de4690a99620ab4a0ca634784b4 100644
+index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..9f40a09020f2f33457d37176790480cb5493bbbc 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -195,7 +195,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
+@@ -205,7 +205,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
  bool FrameResources::Initialize() {
    auto* context = pool_->GetContext();
  
@@ -51,36 +51,44 @@ index b420e7f14165f738844878d0ff9e2373c2906f8a..83f09abff7173de4690a99620ab4a0ca
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -209,13 +209,30 @@ bool FrameResources::Initialize() {
-   const gfx::Size buffer_size_in_pixels =
-       GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
- 
+@@ -225,12 +225,29 @@ bool FrameResources::Initialize() {
+   const bool is_mappable_si_enabled = base::FeatureList::IsEnabled(
+       kUseMappableSIForRenderableGpuMemoryBufferVideoFramePool);
+   if (!is_mappable_si_enabled) {
 +#if BUILDFLAG(IS_WIN)
-+  // For CEF OSR feature, currently there's no other place in chromium use RGBA.
-+  // If the format is RGBA, currently CEF do not write to the texture anymore
-+  // once the GMB is returned from CopyRequest. So there will be no race
-+  // condition on that texture. We can request a GMB without a keyed mutex to
-+  // accelerate and probably prevent some driver deadlock.
-+  if (format_ == PIXEL_FORMAT_ARGB || format_ == PIXEL_FORMAT_ABGR) {
-+    // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
-+    // cause there's no real SCANOUT on Windows. We simply use this enum as a
-+    // flag to disable mutex in the GMBFactoryDXGI because this enum is also
-+    // used above in macOS and CrOS for similar usage (claim no other one will
-+    // concurrently use the resource).
-+    // https://chromium-review.googlesource.com/c/chromium/src/+/5302103
-+    buffer_usage = gfx::BufferUsage::SCANOUT_VEA_CPU_READ;
-+  }
++    // For CEF OSR feature, currently there's no other place in chromium use RGBA.
++    // If the format is RGBA, currently CEF do not write to the texture anymore
++    // once the GMB is returned from CopyRequest. So there will be no race
++    // condition on that texture. We can request a GMB without a keyed mutex to
++    // accelerate and probably prevent some driver deadlock.
++    if (format_ == PIXEL_FORMAT_ARGB || format_ == PIXEL_FORMAT_ABGR) {
++      // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
++      // cause there's no real SCANOUT on Windows. We simply use this enum as a
++      // flag to disable mutex in the GMBFactoryDXGI because this enum is also
++      // used above in macOS and CrOS for similar usage (claim no other one will
++      // concurrently use the resource).
++      // https://chromium-review.googlesource.com/c/chromium/src/+/5302103
++      buffer_usage = gfx::BufferUsage::SCANOUT_VEA_CPU_READ;
++    }
 +#endif
 +
-   // Create the GpuMemoryBuffer.
-   gpu_memory_buffer_ = context->CreateGpuMemoryBuffer(
--      buffer_size_in_pixels, buffer_format, kBufferUsage);
-+      buffer_size_in_pixels, buffer_format, buffer_usage);
-   if (!gpu_memory_buffer_) {
-     DLOG(ERROR) << "Failed to allocate GpuMemoryBuffer for frame: coded_size="
-                 << coded_size_.ToString()
--                << ", usage=" << static_cast<int>(kBufferUsage);
-+                << ", usage=" << static_cast<int>(buffer_usage);
-     return false;
-   }
+     gpu_memory_buffer_ = context->CreateGpuMemoryBuffer(
+-        buffer_size_in_pixels, buffer_format, kBufferUsage);
++        buffer_size_in_pixels, buffer_format, buffer_usage);
+     if (!gpu_memory_buffer_) {
+       LOG(ERROR) << "Failed to allocate GpuMemoryBuffer for frame: coded_size="
+                  << coded_size_.ToString()
+-                 << ", usage=" << static_cast<int>(kBufferUsage);
++                 << ", usage=" << static_cast<int>(buffer_usage);
+       return false;
+     }
  
+@@ -264,7 +281,7 @@ bool FrameResources::Initialize() {
+ 
+   if (is_mappable_si_enabled) {
+     shared_image_ = context->CreateSharedImage(
+-        buffer_size_in_pixels, kBufferUsage, si_format, color_space_,
++        buffer_size_in_pixels, buffer_usage, si_format, color_space_,
+         kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType, kSharedImageUsage,
+         sync_token_);
+   } else {
