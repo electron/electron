@@ -1,0 +1,15 @@
+name: Archaeologist Dig
+
+on:
+  check_run:
+    types: [created]
+
+jobs:
+  dig:    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test check run info
+        run: |
+          echo "NAME: ${{ github.event.check_run.name }}"
+          echo "EXT ID: ${{ github.event.check_run.external_id }}"
+          echo "CHECK RUN ID: ${{ github.event.check_run.id }}"
