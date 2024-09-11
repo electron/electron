@@ -117,18 +117,16 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
       sizeof(val.shared_texture_handle));
   dict.Set("sharedTextureHandle", handle_buf.ToLocalChecked());
 #elif BUILDFLAG(IS_LINUX)
-  std::vector<gin::Dictionary> v8_planes;
-  for (size_t i = 0; i < val.planes.size(); ++i) {
-    auto plane = val.planes[i];
+  auto v8_planes = base::ToVector(val.planes, [isolate](const auto& plane){
     gin::Dictionary v8_plane(isolate, v8::Object::New(isolate));
     v8_plane.Set("stride", plane.stride);
     v8_plane.Set("offset", plane.offset);
     v8_plane.Set("size", plane.size);
     v8_plane.Set("fd", plane.fd);
-    v8_planes.push_back(v8_plane);
-  }
+    return v8_plane;
+  });
   dict.Set("planes", v8_planes);
-  dict.Set("modifier", std::to_string(val.modifier));
+  dict.Set("modifier", base::NumberToString(val.modifier));
 #endif
 
   root.Set("textureInfo", ConvertToV8(isolate, dict));
