@@ -83,6 +83,10 @@
   window. Defaults to `false`. See the
   [offscreen rendering tutorial](../../tutorial/offscreen-rendering.md) for
   more details.
+* `offscreenUseSharedTexture` boolean (optional) _Experimental_ - Whether to use GPU shared texture for accelerated
+   paint event. Defaults to `false`. See the
+  [offscreen rendering tutorial](../../tutorial/offscreen-rendering.md) for
+  more details.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have
