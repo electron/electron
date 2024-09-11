@@ -6518,8 +6518,9 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          offscreen: true,
-          offscreenUseSharedTexture: true
+          offscreen: {
+            useSharedTexture: true
+          }
         },
         transparent: true,
         frame: false,
