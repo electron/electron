@@ -199,7 +199,7 @@ index 58985ce62dc569256bad5e94de9c0d125fc470d0..33436784b691c860d58f8b4dfcc6718e
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..b2d2e11f72dcca5b3791a6dd3e9e5ae930a1f701 100644
+index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..920d0610943091f850e44e3e0481abd7fe08f881 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -44,7 +44,9 @@ constexpr char kMethodStartServiceByName[] = "StartServiceByName";
