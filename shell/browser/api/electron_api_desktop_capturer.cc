@@ -502,6 +502,13 @@ gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
   return handle;
 }
 
+// static
+#if !BUILDFLAG(IS_MAC)
+bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
+  return false;
+}
+#endif
+
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate)
@@ -523,6 +530,9 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
+  dict.SetMethod(
+      "isDisplayMediaSystemPickerAvailable",
+      &electron::api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable);
 }
 
 }  // namespace
