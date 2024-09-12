@@ -36,6 +36,18 @@ describe('View', () => {
     expect(w.contentView.children).to.have.lengthOf(1);
   });
 
+  it('can be added as a child of another View', async () => {
+    const w = new BaseWindow();
+    const v1 = new View();
+    const v2 = new View();
+
+    v1.addChildView(v2);
+    w.contentView.addChildView(v1);
+
+    expect(w.contentView.children).to.deep.equal([v1]);
+    expect(v1.children).to.deep.equal([v2]);
+  });
+
   it('correctly reorders children', () => {
     w = new BaseWindow({ show: false });
     const cv = new View();
