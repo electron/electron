@@ -289,6 +289,8 @@ int NodeMain(int argc, char* argv[]) {
     // is stopping, or the user hooks process.emit('exit').
     exit_code = node::SpinEventLoop(env).FromMaybe(1);
 
+    uv_task_runner->Shutdown();
+
     node::ResetStdio();
 
     node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
