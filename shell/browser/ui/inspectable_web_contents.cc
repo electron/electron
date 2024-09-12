@@ -797,6 +797,7 @@ void InspectableWebContents::SetEyeDropperActive(bool active) {
   if (delegate_)
     delegate_->DevToolsSetEyeDropperActive(active);
 }
+
 void InspectableWebContents::ShowCertificateViewer(
     const std::string& cert_chain) {}
 
@@ -998,6 +999,13 @@ bool InspectableWebContents::HandleKeyboardEvent(
 void InspectableWebContents::CloseContents(content::WebContents* source) {
   // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
+}
+
+std::unique_ptr<content::EyeDropper> InspectableWebContents::OpenEyeDropper(
+    content::RenderFrameHost* frame,
+    content::EyeDropperListener* listener) {
+  auto* delegate = web_contents_->GetDelegate();
+  return delegate ? delegate->OpenEyeDropper(frame, listener) : nullptr;
 }
 
 void InspectableWebContents::RunFileChooser(
