@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
@@ -39,7 +38,6 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/containers/span.h"
 #include "base/files/file_util.h"
 #include "base/uuid.h"
 #include "components/crash/core/common/crash_keys.h"

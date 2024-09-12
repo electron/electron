@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/functional/bind.h"
 #include "base/memory/weak_ptr.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/event_emitter.h"

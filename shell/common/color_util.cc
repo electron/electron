@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/common/color_parser.h"
 

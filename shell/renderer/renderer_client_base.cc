@@ -56,10 +56,6 @@
 #include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-#if BUILDFLAG(IS_MAC)
-#include "base/strings/sys_string_conversions.h"
-#endif
-
 #if BUILDFLAG(IS_WIN)
 #include <shlobj.h>
 #endif
