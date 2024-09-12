@@ -135,6 +135,20 @@ describe('WebContentsView', () => {
     expect(w.isFullScreen()).to.be.true('isFullScreen');
   });
 
+  it('can be added as a child of another View', async () => {
+    const w = new BaseWindow();
+    const v = new View();
+    const wcv = new WebContentsView();
+
+    await wcv.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+
+    v.addChildView(wcv);
+    w.contentView.addChildView(v);
+
+    expect(w.contentView.children).to.deep.equal([v]);
+    expect(v.children).to.deep.equal([wcv]);
+  });
+
   describe('visibilityState', () => {
     it('is initially hidden', async () => {
       const v = new WebContentsView();
