@@ -14,6 +14,10 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (33.0)
 
+### Behavior Changed: menu bar will be hidden during fullscreen on Windows
+
+This brings the behavior to parity with Linux. Prior behavior: Menu bar is still visible during fullscreen on Windows. New behavior: Menu bar is hidden during fullscreen on Windows.
+
 ### Behavior Changed: `webContents` property on `login` on `app`
 
 The `webContents` property in the `login` event from `app` will be `null`
