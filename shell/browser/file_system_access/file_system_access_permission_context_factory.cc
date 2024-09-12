@@ -35,15 +35,9 @@ FileSystemAccessPermissionContextFactory::
 FileSystemAccessPermissionContextFactory::
     ~FileSystemAccessPermissionContextFactory() = default;
 
-// static
-KeyedService* FileSystemAccessPermissionContextFactory::BuildServiceInstanceFor(
-    content::BrowserContext* context) const {
-  return BuildInstanceFor(context).release();
-}
-
 std::unique_ptr<KeyedService>
-FileSystemAccessPermissionContextFactory::BuildInstanceFor(
-    content::BrowserContext* context) {
+FileSystemAccessPermissionContextFactory::BuildServiceInstanceForBrowserContext(
+    content::BrowserContext* context) const {
   return std::make_unique<FileSystemAccessPermissionContext>(context);
 }
 
