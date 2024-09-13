@@ -33,7 +33,7 @@ On macOS, setting `titleBarStyle: 'hidden'` removes the title bar while keeping 
 
 ```
 
-Setting `titleBarOverlay: true` is the simplest way to expose window controls back into your `BrowserWindow`. If you’re interested in customizing the window controls further, check out the sections [Customizing traffic lights][] and [Customizing window controls][] that cover this in more detail.
+Setting `titleBarOverlay: true` is the simplest way to expose window controls back into your `BrowserWindow`. If you’re interested in customizing the window controls further, check out the sections [Custom traffic lights][] and [Custom window controls][] that cover this in more detail.
 
 #### Create a custom title bar
 
@@ -287,8 +287,8 @@ const win = new BrowserWindow({ transparent: true })
 [`blur()`]: https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function/blur()
 [chrome]: https://developer.mozilla.org/en-US/docs/Glossary/Chrome
 [Custom draggable regions]: #custom-draggable-regions
-[Customizing traffic lights]: #custom-traffic-lights-macos
-[Customizing window controls]: #custom-window-controls
+[Custom traffic lights]: #custom-traffic-lights-macos
+[Custom window controls]: #custom-window-controls
 [ignore-mouse-events]: ../api/browser-window.md#winsetignoremouseeventsignore-options
 [overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
 [overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
