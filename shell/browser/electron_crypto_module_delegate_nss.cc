@@ -4,6 +4,7 @@
 
 #include "shell/browser/electron_crypto_module_delegate_nss.h"
 
+#include "content/public/browser/browser_thread.h"
 #include "crypto/nss_crypto_module_delegate.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/javascript_environment.h"
