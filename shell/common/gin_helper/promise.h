@@ -44,26 +44,7 @@ class PromiseBase {
   PromiseBase& operator=(PromiseBase&&);
 
   // Helper for rejecting promise with error message.
-  //
-  // Note: The parameter type is PromiseBase&& so it can take the instances of
-  // Promise<T> type.
-  static void RejectPromise(PromiseBase&& promise,
-                            const std::string_view errmsg) {
-    if (auto task_runner = GetTaskRunner()) {
-      task_runner->PostTask(
-          FROM_HERE,
-          base::BindOnce(
-              // Note that this callback can not take std::string_view,
-              // as StringPiece only references string internally and
-              // will blow when a temporary string is passed.
-              [](PromiseBase&& promise, std::string str) {
-                promise.RejectWithErrorMessage(str);
-              },
-              std::move(promise), std::string{errmsg}));
-    } else {
-      promise.RejectWithErrorMessage(errmsg);
-    }
-  }
+  static void RejectPromise(PromiseBase&& promise, std::string_view errmsg);
 
   v8::Maybe<bool> Reject();
   v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
