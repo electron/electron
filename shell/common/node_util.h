@@ -16,10 +16,6 @@ class Environment;
 
 namespace electron::util {
 
-void EmitWarning(node::Environment* env,
-                 std::string_view warning_msg,
-                 std::string_view warning_type);
-
 void EmitWarning(v8::Isolate* isolate,
                  std::string_view warning_msg,
                  std::string_view warning_type);

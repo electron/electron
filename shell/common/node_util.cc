@@ -55,15 +55,9 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  EmitWarning(node::Environment::GetCurrent(isolate), warning_msg,
-              warning_type);
-}
-
-void EmitWarning(node::Environment* env,
-                 const std::string_view warning_msg,
-                 const std::string_view warning_type) {
-  v8::HandleScope scope{env->isolate()};
-  gin::Dictionary process{env->isolate(), env->process_object()};
+  v8::HandleScope scope{isolate};
+  gin::Dictionary process{
+      isolate, node::Environment::GetCurrent(isolate)->process_object()};
   base::RepeatingCallback<void(std::string_view, std::string_view,
                                std::string_view)>
       emit_warning;
