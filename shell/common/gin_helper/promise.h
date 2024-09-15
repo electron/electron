@@ -15,7 +15,6 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "v8/include/v8-context.h"
 
