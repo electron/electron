@@ -256,12 +256,11 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
 
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
                                                    gin::Arguments* args) {
-  util::EmitWarning(
-      args->isolate(),
-      "The protocol.isProtocolHandled API is deprecated, use "
-      "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
-      "instead.",
-      "ProtocolDeprecateIsProtocolHandled");
+  util::EmitWarning(args->isolate(),
+                    "The protocol.isProtocolHandled API is deprecated, "
+                    "use protocol.isProtocolRegistered "
+                    "or protocol.isProtocolIntercepted instead.",
+                    "ProtocolDeprecateIsProtocolHandled");
   return gin_helper::Promise<bool>::ResolvedPromise(
       args->isolate(),
       IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||

@@ -148,7 +148,7 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
             auto* iso = data.GetIsolate();
             // Emit warning only once
             static std::once_flag flag;
-            std::call_once(flag, [iso] {
+            std::call_once(flag, [=] {
               electron::util::EmitWarning(
                   iso,
                   "[OSR TEXTURE LEAKED] When using OSR with "
