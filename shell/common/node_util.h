@@ -16,10 +16,13 @@ class Environment;
 
 namespace electron::util {
 
+// Emit a warning via node's process.emitWarning()
 void EmitWarning(v8::Isolate* isolate,
                  std::string_view warning_msg,
                  std::string_view warning_type);
 
+// Emit a warning via node's process.emitWarning(),
+// using JavscriptEnvironment's isolate
 void EmitWarning(std::string_view warning_msg, std::string_view warning_type);
 
 // Run a script with JS source bundled inside the binary as if it's wrapped
