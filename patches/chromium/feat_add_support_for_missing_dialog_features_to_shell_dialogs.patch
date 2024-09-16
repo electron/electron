@@ -199,10 +199,21 @@ index 58985ce62dc569256bad5e94de9c0d125fc470d0..33436784b691c860d58f8b4dfcc6718e
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..8c3f4058ad7e9f6460c8d0516a150db612e8f574 100644
+index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..920d0610943091f850e44e3e0481abd7fe08f881 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -221,6 +221,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -44,7 +44,9 @@ constexpr char kMethodStartServiceByName[] = "StartServiceByName";
+ constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
+ constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
+ 
+-constexpr int kXdgPortalRequiredVersion = 3;
++// Version 4 includes support for current_folder option to the OpenFile method via
++// https://github.com/flatpak/xdg-desktop-portal/commit/71165a5.
++constexpr int kXdgPortalRequiredVersion = 4;
+ 
+ constexpr char kXdgPortalRequestInterfaceName[] =
+     "org.freedesktop.portal.Request";
+@@ -221,6 +223,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
                       weak_factory_.GetWeakPtr()));
    info_->type = type;
    info_->main_task_runner = base::SequencedTaskRunner::GetCurrentDefault();
@@ -211,7 +222,7 @@ index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..8c3f4058ad7e9f6460c8d0516a150db6
  
    if (owning_window) {
      if (auto* root = owning_window->GetRootWindow()) {
-@@ -557,7 +559,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -557,7 +561,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
                       response_handle_token);
  
    if (type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER) {
@@ -222,7 +233,7 @@ index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..8c3f4058ad7e9f6460c8d0516a150db6
                         l10n_util::GetStringUTF8(
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
-@@ -566,6 +570,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -566,6 +572,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);

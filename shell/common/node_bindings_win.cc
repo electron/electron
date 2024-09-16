@@ -6,7 +6,6 @@
 
 #include <windows.h>
 
-#include "base/logging.h"
 #include "base/system/sys_info.h"
 
 namespace electron {

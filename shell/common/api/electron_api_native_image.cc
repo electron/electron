@@ -374,18 +374,15 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
   else if (quality && *quality == "better")
     method = skia::ImageOperations::ResizeMethod::RESIZE_BETTER;
 
-  gfx::ImageSkia resized = gfx::ImageSkiaOperations::CreateResizedImage(
-      image_.AsImageSkia(), method, size);
-  return gin::CreateHandle(
-      args->isolate(), new NativeImage(args->isolate(), gfx::Image(resized)));
+  return Create(args->isolate(),
+                gfx::Image{gfx::ImageSkiaOperations::CreateResizedImage(
+                    image_.AsImageSkia(), method, size)});
 }
 
 gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
                                            const gfx::Rect& rect) {
-  gfx::ImageSkia cropped =
-      gfx::ImageSkiaOperations::ExtractSubset(image_.AsImageSkia(), rect);
-  return gin::CreateHandle(isolate,
-                           new NativeImage(isolate, gfx::Image(cropped)));
+  return Create(isolate, gfx::Image{gfx::ImageSkiaOperations::ExtractSubset(
+                             image_.AsImageSkia(), rect)});
 }
 
 void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
@@ -437,7 +434,7 @@ bool NativeImage::IsTemplateImage() {
 
 // static
 gin::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new NativeImage(isolate, gfx::Image()));
+  return Create(isolate, gfx::Image{});
 }
 
 // static

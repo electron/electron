@@ -31,8 +31,8 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Cookies : public gin::Wrappable<Cookies>,
-                public gin_helper::EventEmitterMixin<Cookies> {
+class Cookies final : public gin::Wrappable<Cookies>,
+                      public gin_helper::EventEmitterMixin<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      ElectronBrowserContext* browser_context);

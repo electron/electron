@@ -93,6 +93,8 @@ for:
       - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
       - ps: New-Item -Name depot_tools\.disable_auto_update -ItemType File
       - depot_tools\bootstrap\win_tools.bat
+      - ps: |
+          Set-Content -Path $pwd\depot_tools\build_telemetry.cfg -Value '{"user": "info@electronjs.org", "status": "opt-out", "countdown": 10, "version": 1}'
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {
@@ -113,6 +115,13 @@ for:
           $env:RBE_experimental_credentials_helper = $env:RECLIENT_HELPER
       - ps: >-
           $env:RBE_experimental_credentials_helper_args = "print"
+      - ps: >-
+          if ($env:ELECTRON_RBE_JWT -eq '') {
+            $env:RBE_fail_early_min_action_count = "0"
+            $env:RBE_fail_early_min_fallback_ratio = "0"
+            $env:RBE_exec_strategy = "local"
+            $env:RBE_remote_update_cache= "false"
+          }
       - cd ..\..
       - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
       - ps: >-
@@ -164,8 +173,8 @@ for:
           if ($env:GN_CONFIG -eq 'release') {
             # Needed for msdia140.dll on 64-bit windows
             $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
-            autoninja -C out/Default electron:electron_symbols
           }
+      - if "%GN_CONFIG%"=="release" ( autoninja -C out/Default electron:electron_symbols )
       - ps: >-
           if ($env:GN_CONFIG -eq 'release') {
             python3 electron\script\zip-symbols.py

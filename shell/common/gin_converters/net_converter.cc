@@ -11,7 +11,6 @@
 
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "gin/converter.h"
@@ -253,7 +252,7 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 
 namespace {
 
-class ChunkedDataPipeReadableStream
+class ChunkedDataPipeReadableStream final
     : public gin::Wrappable<ChunkedDataPipeReadableStream> {
  public:
   static gin::Handle<ChunkedDataPipeReadableStream> Create(

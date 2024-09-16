@@ -1607,7 +1607,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
-      .SetMethod("setDisplayMediaRequestHandler",
+      .SetMethod("_setDisplayMediaRequestHandler",
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)

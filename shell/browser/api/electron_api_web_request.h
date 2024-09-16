@@ -31,7 +31,8 @@ class Handle;
 
 namespace electron::api {
 
-class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
+class WebRequest final : public gin::Wrappable<WebRequest>,
+                         public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
   // is no one.

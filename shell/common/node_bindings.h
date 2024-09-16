@@ -15,6 +15,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
+#include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
 #include "uv.h"  // NOLINT(build/include_directory)
@@ -58,10 +59,33 @@ template <typename T,
               std::is_same<T, uv_udp_t>::value>::type* = nullptr>
 class UvHandle {
  public:
-  UvHandle() : t_(new T) {}
+  UvHandle() : t_{new T} {}
   ~UvHandle() { reset(); }
+
+  explicit UvHandle(UvHandle&& that) {
+    t_ = that.t_;
+    that.t_ = nullptr;
+  }
+
+  UvHandle& operator=(UvHandle&& that) {
+    reset();
+    t_ = that.t_;
+    that.t_ = nullptr;
+    return *this;
+  }
+
+  UvHandle(const UvHandle&) = delete;
+  UvHandle& operator=(const UvHandle&) = delete;
+
   T* get() { return t_; }
+  T* operator->() { return t_; }
+  const T* get() const { return t_; }
+  const T* operator->() const { return t_; }
+
   uv_handle_t* handle() { return reinterpret_cast<uv_handle_t*>(t_); }
+
+  // compare by handle pointer address
+  auto operator<=>(const UvHandle& that) const = default;
 
   void reset() {
     auto* h = handle();
@@ -78,6 +102,16 @@ class UvHandle {
   }
 
   RAW_PTR_EXCLUSION T* t_ = {};
+};
+
+// Helper for comparing UvHandles and raw uv pointers, e.g. as map keys
+struct UvHandleCompare {
+  using is_transparent = void;
+
+  template <typename U, typename V>
+  bool operator()(U const& u, V const& v) const {
+    return base::to_address(u) < base::to_address(v);
+  }
 };
 
 class NodeBindings {

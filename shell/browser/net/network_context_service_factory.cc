@@ -29,9 +29,10 @@ NetworkContextServiceFactory::NetworkContextServiceFactory()
 
 NetworkContextServiceFactory::~NetworkContextServiceFactory() = default;
 
-KeyedService* NetworkContextServiceFactory::BuildServiceInstanceFor(
+std::unique_ptr<KeyedService>
+NetworkContextServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  return new NetworkContextService(
+  return std::make_unique<NetworkContextService>(
       static_cast<ElectronBrowserContext*>(context));
 }
 

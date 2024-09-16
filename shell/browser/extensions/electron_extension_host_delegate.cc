@@ -8,7 +8,6 @@
 #include <string>
 #include <utility>
 
-#include "base/logging.h"
 #include "extensions/browser/media_capture_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
