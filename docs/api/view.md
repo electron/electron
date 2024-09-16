@@ -55,6 +55,8 @@ it becomes the topmost view.
 
 * `view` View - Child view to remove.
 
+If the view passed as a parameter is not a child of this view, this method is a no-op.
+
 #### `view.setBounds(bounds)`
 
 * `bounds` [Rectangle](structures/rectangle.md) - New bounds of the View.
