@@ -18,7 +18,6 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
 
 namespace electron::api {
 

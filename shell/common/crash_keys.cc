@@ -12,14 +12,14 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/no_destructor.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_constants.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
@@ -54,13 +54,10 @@ void SetCrashKey(const std::string& key, const std::string& value) {
   // Chrome DCHECK()s if we try to set an annotation with a name longer than
   // the max.
   if (key.size() >= kMaxCrashKeyNameLength) {
-    node::Environment* env =
-        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-    EmitWarning(
-        env,
-        base::StringPrintf("The crash key name, \"%s\", is longer than %" PRIu32
-                           " bytes, ignoring it.",
-                           key.c_str(), kMaxCrashKeyNameLength),
+    util::EmitWarning(
+        base::StrCat({"The crash key name, '", key, "', is longer than ",
+                      base::NumberToString(kMaxCrashKeyNameLength),
+                      " bytes, ignoring it."}),
         "electron");
     return;
   }
