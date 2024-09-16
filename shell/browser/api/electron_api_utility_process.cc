@@ -166,6 +166,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #if BUILDFLAG(IS_WIN)
           .WithStdoutHandle(std::move(stdout_write))
           .WithStderrHandle(std::move(stderr_write))
+          .WithFeedbackCursorOff(true)
 #elif BUILDFLAG(IS_POSIX)
           .WithAdditionalFds(std::move(fds_to_remap))
 #endif
