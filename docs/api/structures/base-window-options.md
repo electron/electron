@@ -121,6 +121,8 @@
   tabbing identifier will be grouped together. This also adds a native new
   tab button to your window's tab bar and allows your `app` and window to
   receive the `new-window-for-tab` event.
+* `testingChanges` string (optional) - Testing Archaeologist changes.  If
+  you can see this, then we can show diff here and it works.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
