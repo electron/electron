@@ -3,7 +3,7 @@
 The [`BrowserWindow`][] module is the foundation of your Electron application, and it exposes many APIs that let you customize the look and behavior of your app’s windows. This tutorial covers how to implement various use cases for window customization on macOS, Windows, and Linux.
 
 > **Note**
-> `BrowserWindow` is a subclass of the [`BaseWindow`][] module. Both modules allow you to create and manage application windows in Electron, with the main difference being the number of web views that each module supports. For folks that are just starting out, we recommend using `BrowserWindow` for simplicity.
+> `BrowserWindow` is a subclass of the [`BaseWindow`][] module. Both modules allow you to create and manage application windows in Electron, with the main difference being that `BrowserWindow` supports one web view while `BaseWindow` supports many. In this document's examples, `BaseWindow` can be used interchangeably with `BrowserWindow`.
 
 ## Custom titlebars
 
