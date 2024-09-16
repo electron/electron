@@ -25,6 +25,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/electron_version.h"
 #include "electron/fuses.h"
+#include "electron/mas.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"

@@ -14,6 +14,7 @@
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
 #include "base/system/sys_info.h"
+#include "electron/mas.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "shell/browser/browser.h"
