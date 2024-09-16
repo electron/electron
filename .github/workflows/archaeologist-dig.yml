@@ -26,11 +26,13 @@ jobs:
           echo  ${{ github.event.pull_request.head.sha }} > .dig-new
           cp .dig-old artifacts
 
-      - uses: ./.github/actions/generate-types
+      - name: Generating Types for SHA in .dig-new
+        uses: ./.github/actions/generate-types
         with:
           sha-file: .dig-new
           filename: electron.new.d.ts
-      - uses: ./.github/actions/generate-types
+      - name: Generating Types for SHA in .dig-old
+        uses: ./.github/actions/generate-types
         with:
           sha-file: .dig-old
           filename: electron.old.d.ts
