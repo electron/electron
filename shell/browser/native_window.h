@@ -18,7 +18,6 @@
 #include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "ui/views/widget/widget_delegate.h"

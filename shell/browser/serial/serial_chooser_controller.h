@@ -15,7 +15,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
 #include "shell/browser/serial/serial_chooser_context.h"
-#include "third_party/blink/public/mojom/serial/serial.mojom.h"
+#include "third_party/blink/public/mojom/serial/serial.mojom-forward.h"
 
 namespace content {
 class RenderFrameHost;

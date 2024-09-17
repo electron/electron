@@ -68,6 +68,7 @@
 #include "ui/base/ui_base_switches.h"
 #include "ui/color/color_provider_manager.h"
 #include "ui/display/screen.h"
+#include "ui/views/layout/layout_provider.h"
 #include "url/url_util.h"
 
 #if defined(USE_AURA)
