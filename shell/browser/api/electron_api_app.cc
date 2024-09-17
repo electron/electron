@@ -39,6 +39,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "crypto/crypto_buildflags.h"
+#include "electron/mas.h"
 #include "gin/handle.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
