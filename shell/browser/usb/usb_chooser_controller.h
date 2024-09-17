@@ -10,7 +10,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "services/device/public/mojom/usb_device.mojom.h"
+#include "services/device/public/mojom/usb_device.mojom-forward.h"
 #include "shell/browser/usb/usb_chooser_context.h"
 #include "third_party/blink/public/mojom/usb/web_usb_service.mojom.h"
 #include "url/origin.h"
