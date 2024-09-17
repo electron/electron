@@ -401,7 +401,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
       throwHttpErrors: false
     });
 
-    if (response.statusCode !== 200) {
+    if (response.statusCode !== 302 && response.statusCode !== 301) {
       console.error('Failed to HEAD github asset: ' + url);
       throw new Error('Unexpected status HEAD\'ing github asset: ' + response.statusCode);
     }
