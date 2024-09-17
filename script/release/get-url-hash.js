@@ -15,8 +15,13 @@ module.exports = async function getUrlHash (targetUrl, algorithm = 'sha256', att
     search: search.toString()
   });
   try {
-    const resp = await got(functionUrl);
-    if (resp.statusCode !== 200) throw new Error('non-200 status code received from hasher function');
+    const resp = await got(functionUrl, {
+      throwHttpErrors: false
+    });
+    if (resp.statusCode !== 200) {
+      console.error('bad hasher function response:', resp.body.trim());
+      throw new Error('non-200 status code received from hasher function');
+    }
     if (!resp.body) throw new Error('Successful lambda call but failed to get valid hash');
 
     return resp.body.trim();
