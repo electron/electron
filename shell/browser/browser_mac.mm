@@ -18,6 +18,7 @@
 #include "base/mac/mac_util.mm"
 #include "base/strings/sys_string_conversions.h"
 #include "chrome/browser/browser_process.h"
+#include "electron/mas.h"
 #include "net/base/apple/url_conversions.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/browser_observer.h"

@@ -23,7 +23,6 @@
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/usb_device_info_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
