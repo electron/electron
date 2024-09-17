@@ -7,7 +7,6 @@
 
 #include <array>
 #include <utility>
-#include <vector>
 
 #include "base/containers/span.h"
 #include "gin/converter.h"
@@ -23,20 +22,6 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         base::span<v8::Local<v8::Value>> args);
 
 }  // namespace internal
-
-// obj.emit.apply(obj, name, args...);
-// The caller is responsible of allocating a HandleScope.
-template <typename StringType>
-v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
-                               v8::Local<v8::Object> obj,
-                               const StringType& name,
-                               const base::span<v8::Local<v8::Value>> args) {
-  std::vector<v8::Local<v8::Value>> concatenated_args;
-  concatenated_args.reserve(1 + args.size());
-  concatenated_args.emplace_back(gin::StringToV8(isolate, name));
-  concatenated_args.insert(concatenated_args.end(), args.begin(), args.end());
-  return internal::CallMethodWithArgs(isolate, obj, "emit", concatenated_args);
-}
 
 // obj.emit(name, args...);
 // The caller is responsible of allocating a HandleScope.
