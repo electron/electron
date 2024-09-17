@@ -135,6 +135,11 @@ gfx::Rect OpaqueFrameView::GetWindowBoundsForClientBounds(
 
 int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
   if (window()->IsWindowControlsOverlayEnabled()) {
+    // Ensure support for resizing frameless window with border drag.
+    int frame_component = ResizingBorderHitTest(point);
+    if (frame_component != HTNOWHERE)
+      return frame_component;
+
     if (HitTestCaptionButton(close_button_, point))
       return HTCLOSE;
     if (HitTestCaptionButton(restore_button_, point))
