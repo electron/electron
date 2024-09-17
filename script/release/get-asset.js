@@ -26,9 +26,9 @@ async function getAssetContents (repo, assetId) {
     throwHttpErrors: false
   });
 
-  if (response.status !== 302 && response.status !== 301) {
+  if (response.statusCode !== 302 && response.statusCode !== 301) {
     console.error('Failed to HEAD github asset contents for redirect: ' + url);
-    throw new Error('Unexpected status HEAD\'ing github asset: ' + response.status);
+    throw new Error('Unexpected status HEAD\'ing github asset for redirect: ' + response.statusCode);
   }
 
   if (!response.headers.location) {
@@ -40,14 +40,9 @@ async function getAssetContents (repo, assetId) {
     throwHttpErrors: false
   });
 
-  if (fileResponse.status !== 200) {
-    fileResponse.error(`Failed to download github asset contents: ${url} (via: ${response.headers.location})`);
-    throw new Error('Unexpected status fetching github asset: ' + fileResponse.status);
-  }
-
   if (fileResponse.statusCode !== 200) {
     console.error(fileResponse.headers, `${fileResponse.body}`.slice(0, 300));
-    throw new Error(`cannot download asset[${assetId}] from ${response.headers.location}, got status: ${fileResponse.status}`);
+    throw new Error(`cannot download asset[${assetId}] from ${response.headers.location}, got status: ${fileResponse.statusCode}`);
   }
 
   return fileResponse.body;

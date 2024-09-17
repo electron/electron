@@ -401,9 +401,9 @@ async function verifyDraftGitHubReleaseAssets (release) {
       throwHttpErrors: false
     });
 
-    if (response.status !== 200) {
+    if (response.statusCode !== 200) {
       console.error('Failed to HEAD github asset: ' + url);
-      throw new Error('Unexpected status HEAD\'ing github asset: ' + response.status);
+      throw new Error('Unexpected status HEAD\'ing github asset: ' + response.statusCode);
     }
 
     return { url: response.headers.location, file: asset.name };
@@ -420,10 +420,10 @@ async function getShaSumMappingFromUrl (shaSumFileUrl, fileNamePrefix) {
     throwHttpErrors: false
   });
 
-  if (response.status !== 200) {
+  if (response.statusCode !== 200) {
     console.error('Failed to fetch SHASUM mapping: ' + shaSumFileUrl);
     console.error('Bad SHASUM mapping response: ' + response.body.trim());
-    throw new Error('Unexpected status fetching SHASUM mapping: ' + response.status);
+    throw new Error('Unexpected status fetching SHASUM mapping: ' + response.statusCode);
   }
 
   const raw = response.body;
