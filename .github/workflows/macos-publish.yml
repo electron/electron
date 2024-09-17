@@ -40,7 +40,7 @@ jobs:
       with:
         generate-sas-token: 'true'
 
-  publish-x64:
+  publish-x64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
@@ -48,13 +48,29 @@ jobs:
       build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: x64
+      target-variant: darwin
       is-release: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
-  publish-arm64:
+  publish-x64-mas:
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-macos
+    with:
+      environment: production-release
+      build-runs-on: macos-14-xlarge
+      target-platform: macos
+      target-arch: x64
+      target-variant: mas
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: ${{ inputs.upload-to-storage }}
+    secrets: inherit
+
+  publish-arm64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
@@ -62,6 +78,22 @@ jobs:
       build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: arm64
+      target-variant: darwin
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: ${{ inputs.upload-to-storage }}
+    secrets: inherit
+
+  publish-arm64-mas:
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-macos
+    with:
+      environment: production-release
+      build-runs-on: macos-14-xlarge
+      target-platform: macos
+      target-arch: arm64
+      target-variant: mas
       is-release: true
       gn-build-type: release
       generate-symbols: true
