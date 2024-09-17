@@ -13,6 +13,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/file_info.h"

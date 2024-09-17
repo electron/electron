@@ -20,6 +20,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
