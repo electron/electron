@@ -10,8 +10,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include "shell/common/node_includes.h"
-
 namespace electron {
 
 NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
