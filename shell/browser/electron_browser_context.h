@@ -21,8 +21,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/browser/media/media_device_id_salt.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "services/network/public/mojom/network_context.mojom.h"
-#include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "services/network/public/mojom/ssl_config.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
 class PrefService;

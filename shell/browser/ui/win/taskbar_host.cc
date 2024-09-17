@@ -13,6 +13,7 @@
 #include "skia/ext/image_operations.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
+#include "third_party/skia/include/core/SkImage.h"
 #include "third_party/skia/include/core/SkRRect.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"

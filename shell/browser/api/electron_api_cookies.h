@@ -12,6 +12,8 @@
 #include "base/values.h"
 #include "shell/browser/event_emitter_mixin.h"
 
+class GURL;
+
 namespace gin {
 template <typename T>
 class Handle;

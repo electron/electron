@@ -15,6 +15,8 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
+#include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"

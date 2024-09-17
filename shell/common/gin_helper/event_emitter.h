@@ -8,7 +8,6 @@
 #include <string_view>
 #include <utility>
 
-#include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
