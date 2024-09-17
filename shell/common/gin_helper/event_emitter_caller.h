@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
 
+#include <array>
 #include <utility>
 #include <vector>
 
@@ -15,8 +16,6 @@
 namespace gin_helper {
 
 namespace internal {
-
-using ValueVector = std::vector<v8::Local<v8::Value>>;
 
 v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
@@ -32,8 +31,9 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                v8::Local<v8::Object> obj,
                                const StringType& name,
                                const base::span<v8::Local<v8::Value>> args) {
-  internal::ValueVector concatenated_args = {gin::StringToV8(isolate, name)};
+  std::vector<v8::Local<v8::Value>> concatenated_args;
   concatenated_args.reserve(1 + args.size());
+  concatenated_args.emplace_back(gin::StringToV8(isolate, name));
   concatenated_args.insert(concatenated_args.end(), args.begin(), args.end());
   return internal::CallMethodWithArgs(isolate, obj, "emit", concatenated_args);
 }
@@ -46,7 +46,7 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                const StringType& name,
                                Args&&... args) {
   v8::EscapableHandleScope scope{isolate};
-  internal::ValueVector converted_args = {
+  std::array<v8::Local<v8::Value>, 1U + sizeof...(args)> converted_args = {
       gin::StringToV8(isolate, name),
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
@@ -61,7 +61,7 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
                                 const char* custom_emit,
                                 Args&&... args) {
   v8::EscapableHandleScope scope{isolate};
-  internal::ValueVector converted_args = {
+  std::array<v8::Local<v8::Value>, sizeof...(args)> converted_args = {
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
   return scope.Escape(internal::CallMethodWithArgs(isolate, object, custom_emit,
