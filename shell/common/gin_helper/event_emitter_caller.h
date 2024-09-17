@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "gin/converter.h"
 #include "gin/wrappable.h"
 
@@ -20,7 +21,7 @@ using ValueVector = std::vector<v8::Local<v8::Value>>;
 v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
                                         const char* method,
-                                        ValueVector* args);
+                                        base::span<v8::Local<v8::Value>> args);
 
 }  // namespace internal
 
@@ -30,11 +31,11 @@ template <typename StringType>
 v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                v8::Local<v8::Object> obj,
                                const StringType& name,
-                               const internal::ValueVector& args) {
+                               const base::span<v8::Local<v8::Value>> args) {
   internal::ValueVector concatenated_args = {gin::StringToV8(isolate, name)};
   concatenated_args.reserve(1 + args.size());
   concatenated_args.insert(concatenated_args.end(), args.begin(), args.end());
-  return internal::CallMethodWithArgs(isolate, obj, "emit", &concatenated_args);
+  return internal::CallMethodWithArgs(isolate, obj, "emit", concatenated_args);
 }
 
 // obj.emit(name, args...);
@@ -50,7 +51,7 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
   return scope.Escape(
-      internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args));
+      internal::CallMethodWithArgs(isolate, obj, "emit", converted_args));
 }
 
 // obj.custom_emit(args...)
@@ -64,7 +65,7 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
   return scope.Escape(internal::CallMethodWithArgs(isolate, object, custom_emit,
-                                                   &converted_args));
+                                                   converted_args));
 }
 
 template <typename T, typename... Args>
