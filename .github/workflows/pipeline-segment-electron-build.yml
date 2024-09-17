@@ -15,6 +15,10 @@ on:
         type: string
         description: 'Arch to build for, can be x64, arm64 or arm'
         required: true
+      target-variant:
+        type: string
+        description: 'Variant to build for, no effect on non-macOS target platforms. Can be darwin, mas or all.'
+        default: all
       build-runs-on:
         type: string
         description: 'What host to run the build'
@@ -188,6 +192,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
     - name: Build Electron
+      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
       uses: ./src/electron/.github/actions/build-electron
       with:
         target-arch: ${{ inputs.target-arch }}
@@ -199,13 +204,13 @@ jobs:
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       run: |
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         GN_EXTRA_ARGS='is_mas_build=true'
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Build Electron (MAS)
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       uses: ./src/electron/.github/actions/build-electron
       with:
         target-arch: ${{ inputs.target-arch }}
