@@ -1,7 +1,7 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 0139616097859b369120628ea843598550929526 Mon Sep 17 00:00:00 2001
 From: John Stiles <johnstiles@google.com>
 Date: Thu, 28 Mar 2024 00:51:13 +0000
-Subject: Detect overflow in JPEG image size calculations.
+Subject: [PATCH] Detect overflow in JPEG image size calculations.
 
 Bug: 330756841
 Change-Id: Ib30493152e08fd2347f76de276c5805d6fef9a7d
@@ -9,9 +9,10 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5402199
 Commit-Queue: John Stiles <johnstiles@google.com>
 Reviewed-by: Daniel Cheng <dcheng@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1279376}
+---
 
 diff --git a/ui/gfx/codec/jpeg_codec.cc b/ui/gfx/codec/jpeg_codec.cc
-index a4de17094e69b36bb2c34b3b4f70eece9c088cc3..595966d724146df33701b1225e659ec085ca115b 100644
+index a4de170..595966d 100644
 --- a/ui/gfx/codec/jpeg_codec.cc
 +++ b/ui/gfx/codec/jpeg_codec.cc
 @@ -6,10 +6,12 @@
@@ -27,7 +28,7 @@ index a4de17094e69b36bb2c34b3b4f70eece9c088cc3..595966d724146df33701b1225e659ec0
  #include "third_party/skia/include/core/SkBitmap.h"
  #include "third_party/skia/include/core/SkColorPriv.h"
  #include "ui/gfx/codec/vector_wstream.h"
-@@ -244,16 +246,27 @@ bool JPEGCodec::Decode(const unsigned char* input, size_t input_size,
+@@ -244,16 +246,27 @@
  
    jpeg_start_decompress(cinfo.get());
  
@@ -64,10 +65,10 @@ index a4de17094e69b36bb2c34b3b4f70eece9c088cc3..595966d724146df33701b1225e659ec0
      if (!jpeg_read_scanlines(cinfo.get(), &rowptr, 1))
        return false;
 diff --git a/ui/gfx/codec/jpeg_codec_unittest.cc b/ui/gfx/codec/jpeg_codec_unittest.cc
-index 9f1bee95e0e476b34382aceffbf6df3bdde095ea..b446fe77896e254820db77afe7ed4e48b8525c79 100644
+index 9f1bee9..b446fe7 100644
 --- a/ui/gfx/codec/jpeg_codec_unittest.cc
 +++ b/ui/gfx/codec/jpeg_codec_unittest.cc
-@@ -61,6 +61,53 @@ const uint8_t kTopSitesMigrationTestImage[] =
+@@ -61,6 +61,53 @@
      "\xfa\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00\xf9"
      "\xd2\x8a\x28\xaf\xc3\x0f\xf5\x4c\xff\xd9";
  
@@ -121,7 +122,7 @@ index 9f1bee95e0e476b34382aceffbf6df3bdde095ea..b446fe77896e254820db77afe7ed4e48
  }  // namespace
  
  namespace gfx {
-@@ -211,4 +258,15 @@ TEST(JPEGCodec, ParallelEncoding) {
+@@ -211,4 +258,15 @@
    encode_loop.Run();
  }
  
