@@ -231,6 +231,10 @@ describe('webContents.setWindowOpenHandler', () => {
             response.statusCode = 200;
             response.end('<title>Child page</title>');
             break;
+          case '/test':
+            response.statusCode = 200;
+            response.end('<title>Test page</title>');
+            break;
           default:
             throw new Error(`Unsupported endpoint: ${request.url}`);
         }
@@ -314,12 +318,19 @@ describe('webContents.setWindowOpenHandler', () => {
         };
       });
 
-      const title = await browserWindow.webContents.executeJavaScript(`
-        const win = window.open('about:blank', '', 'show=no');
-        win.document.title = 'child-win-title';
-        win.document.title;
+      const aboutBlankTitle = await browserWindow.webContents.executeJavaScript(`
+        const win1 = window.open('about:blank', '', 'show=no');
+        win1.document.title = 'about-blank-title';
+        win1.document.title;
       `);
-      expect(title).to.equal('child-win-title');
+      expect(aboutBlankTitle).to.equal('about-blank-title');
+
+      const serverPageTitle = await browserWindow.webContents.executeJavaScript(`
+        const win2 = window.open('${url}/child', '', 'show=no');
+        win2.document.title = 'server-page-title';
+        win2.document.title;
+      `);
+      expect(serverPageTitle).to.equal('server-page-title');
     });
 
     it('spawns browser window with overridden options', async () => {
