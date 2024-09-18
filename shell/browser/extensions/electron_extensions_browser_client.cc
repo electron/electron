@@ -373,6 +373,12 @@ void ElectronExtensionsBrowserClient::SetAPIClientForTest(
   api_client_.reset(api_client);
 }
 
+void ElectronExtensionsBrowserClient::CreateExtensionWebContentsObserver(
+    content::WebContents* web_contents) {
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
+      web_contents);
+}
+
 extensions::ExtensionWebContentsObserver*
 ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
     content::WebContents* web_contents) {
