@@ -223,7 +223,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   params->use_network_observer_from_url_loader_factory =
       create_network_observer;
 
-  node_service_remote_->Initialize(std::move(params));
+  node_service_remote_->Initialize(std::move(params),
+                                   receiver_.BindNewPipeAndPassRemote());
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -258,8 +259,9 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
     uint32_t exit_code,
     const std::string& description) {
-  if (description == "process_exit_termination")
+  if (description == "process_exit_termination") {
     HandleTermination(exit_code);
+  }
 }
 
 void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
@@ -370,6 +372,11 @@ bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
       electron::DeserializeV8Value(isolate, message);
   EmitWithoutEvent("message", message_value);
   return true;
+}
+
+void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
+                                           const std::string& report) {
+  EmitWithoutEvent("error", "FatalError", location, report);
 }
 
 // static

@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 18 Sep 2024 22:27:07 +0900
+Subject: feat: expose report writing entrypoint to embedders
+
+Allows creating Node.js diagnostic reports from Electron signal handlers.
+Currently used by Utility process to support error event.
+
+diff --git a/src/node_report.cc b/src/node_report.cc
+index 5368d8eef2fac006bd855dc5e0e1545c90a18cc8..80e3f93a4d96d3f23622eaccc5955f7d63d2e466 100644
+--- a/src/node_report.cc
++++ b/src/node_report.cc
+@@ -54,15 +54,6 @@ using v8::Value;
+ 
+ namespace report {
+ // Internal/static function declarations
+-static void WriteNodeReport(Isolate* isolate,
+-                            Environment* env,
+-                            const char* message,
+-                            const char* trigger,
+-                            const std::string& filename,
+-                            std::ostream& out,
+-                            Local<Value> error,
+-                            bool compact,
+-                            bool exclude_network = false);
+ static void PrintVersionInformation(JSONWriter* writer,
+                                     bool exclude_network = false);
+ static void PrintJavaScriptErrorStack(JSONWriter* writer,
+@@ -88,15 +79,15 @@ static void PrintNetworkInterfaceInfo(JSONWriter* writer);
+ 
+ // Internal function to coordinate and write the various
+ // sections of the report to the supplied stream
+-static void WriteNodeReport(Isolate* isolate,
+-                            Environment* env,
+-                            const char* message,
+-                            const char* trigger,
+-                            const std::string& filename,
+-                            std::ostream& out,
+-                            Local<Value> error,
+-                            bool compact,
+-                            bool exclude_network) {
++void WriteNodeReport(Isolate* isolate,
++                     Environment* env,
++                     const char* message,
++                     const char* trigger,
++                     const std::string& filename,
++                     std::ostream& out,
++                     Local<Value> error,
++                     bool compact,
++                     bool exclude_network) {
+   // Obtain the current time and the pid.
+   TIME_TYPE tm_struct;
+   DiagnosticFilename::LocalTime(&tm_struct);
+diff --git a/src/node_report.h b/src/node_report.h
+index 7a2e817ac82f6beb859f52ade9edd0eadefb5097..e1a89e5d90912f25de79d0c9ff5b04f94e139de7 100644
+--- a/src/node_report.h
++++ b/src/node_report.h
+@@ -34,6 +34,15 @@ std::string ValueToHexString(T value) {
+ void WriteReport(const v8::FunctionCallbackInfo<v8::Value>& info);
+ void GetReport(const v8::FunctionCallbackInfo<v8::Value>& info);
+ 
++void WriteNodeReport(v8::Isolate* isolate,
++                     Environment* env,
++                     const char* message,
++                     const char* trigger,
++                     const std::string& filename,
++                     std::ostream& out,
++                     v8::Local<v8::Value> error,
++                     bool compact,
++                     bool exclude_network = false);
+ }  // namespace report
+ }  // namespace node
+ 
