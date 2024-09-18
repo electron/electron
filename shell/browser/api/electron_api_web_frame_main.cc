@@ -12,6 +12,7 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
+#include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -56,7 +57,10 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
-typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
+typedef std::unordered_map<content::FrameTreeNodeId,
+                           WebFrameMain*,
+                           content::FrameTreeNodeId::Hasher>
+    WebFrameMainIdMap;
 
 WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
@@ -64,7 +68,8 @@ WebFrameMainIdMap& GetWebFrameMainMap() {
 }
 
 // static
-WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
+WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
+    content::FrameTreeNodeId frame_tree_node_id) {
   WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
   auto iter = frame_map.find(frame_tree_node_id);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
@@ -270,7 +275,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                        std::move(transferable_message));
 }
 
-int WebFrameMain::FrameTreeNodeID() const {
+content::FrameTreeNodeId WebFrameMain::FrameTreeNodeID() const {
   return frame_tree_node_id_;
 }
 
