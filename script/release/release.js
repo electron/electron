@@ -393,8 +393,14 @@ async function verifyDraftGitHubReleaseAssets (release) {
     const response = await got(url, {
       followRedirect: false,
       method: 'HEAD',
-      headers
+      headers,
+      throwHttpErrors: false
     });
+
+    if (response.statusCode !== 302 && response.statusCode !== 301) {
+      console.error('Failed to HEAD github asset: ' + url);
+      throw new Error('Unexpected status HEAD\'ing github asset: ' + response.statusCode);
+    }
 
     return { url: response.headers.location, file: asset.name };
   })).catch(err => {
@@ -406,7 +412,16 @@ async function verifyDraftGitHubReleaseAssets (release) {
 }
 
 async function getShaSumMappingFromUrl (shaSumFileUrl, fileNamePrefix) {
-  const response = await got(shaSumFileUrl);
+  const response = await got(shaSumFileUrl, {
+    throwHttpErrors: false
+  });
+
+  if (response.statusCode !== 200) {
+    console.error('Failed to fetch SHASUM mapping: ' + shaSumFileUrl);
+    console.error('Bad SHASUM mapping response: ' + response.body.trim());
+    throw new Error('Unexpected status fetching SHASUM mapping: ' + response.statusCode);
+  }
+
   const raw = response.body;
   return raw.split('\n').map(line => line.trim()).filter(Boolean).reduce((map, line) => {
     const [sha, file] = line.replace('  ', ' ').split(' ');
