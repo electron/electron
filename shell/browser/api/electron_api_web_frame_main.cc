@@ -275,8 +275,8 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                        std::move(transferable_message));
 }
 
-content::FrameTreeNodeId WebFrameMain::FrameTreeNodeID() const {
-  return frame_tree_node_id_;
+int WebFrameMain::FrameTreeNodeIDAsInt() const {
+  return frame_tree_node_id_.value();
 }
 
 std::string WebFrameMain::Name() const {
@@ -411,7 +411,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
-      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
+      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeIDAsInt)
       .SetProperty("name", &WebFrameMain::Name)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
       .SetProperty("processId", &WebFrameMain::ProcessID)
