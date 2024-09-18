@@ -379,7 +379,7 @@ index 285a406e8cec06bf3beeca81b32e6561528279f9..0a08dc58852bc16edd3144e819276a0d
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 853a95c65674b1011898c64445024bdc30c9709b..76fd57dd5547b86f150ac821d02311cca4df49e4 100644
+index 853a95c65674b1011898c64445024bdc30c9709b..8d048719e1b062b3115d185a47cd4c92e318a145 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -371,6 +371,7 @@ viz_component("service") {
@@ -394,7 +394,7 @@ index 853a95c65674b1011898c64445024bdc30c9709b..76fd57dd5547b86f150ac821d02311cc
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
-+    configs += ["//electron/build/config:mas_build"]
++    configs = ["//electron/build/config:mas_build"]
    }
  
    if (is_win) {
