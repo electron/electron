@@ -42,17 +42,17 @@ bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
 }  // namespace
 
 // static
-NotificationPresenter* NotificationPresenter::Create() {
+std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
   if (!WindowsToastNotification::Initialize())
-    return nullptr;
+    return {};
   auto presenter = std::make_unique<NotificationPresenterWin>();
   if (!presenter->Init())
-    return nullptr;
+    return {};
 
   if (IsDebuggingNotifications())
     LOG(INFO) << "Successfully created Windows notifications presenter";
 
-  return presenter.release();
+  return presenter;
 }
 
 NotificationPresenterWin::NotificationPresenterWin() = default;
