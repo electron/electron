@@ -42,10 +42,10 @@ index 57a9dca1a84dee95d36c2b296fc170399db3e213..5db78a650068faa0bacf05b13d86860c
  #endif
      if (!scope->is_function_scope() ||
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 5a1bcd5303f042884201d14aab707f9e63ba398d..de472bced64eb25ea2aeb5ba7a203b5972a67850 100644
+index 69946faf5ed74c19122d6cf92112eb32329d2e6e..6f91778ee8a89f1efec365053bdf3e3c27690de1 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -964,7 +964,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
+@@ -963,7 +963,12 @@ DEFINE_BOOL(trace_track_allocation_sites, false,
  DEFINE_BOOL(trace_migration, false, "trace object migration")
  DEFINE_BOOL(trace_generalization, false, "trace map generalization")
  

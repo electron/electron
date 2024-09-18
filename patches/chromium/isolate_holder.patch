@@ -15,40 +15,40 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 61d35042fcd0aa7b632c34253bce42a00c8d732d..db074920753e6a7aec4ffad82f8f4296f6ab854b 100644
+index 38cedeac0ab48d0cc4f7b331c6ecfbbf1d4d00ed..e5ee2c6b3cb787ff9f8272d4344a1e18c44971e2 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -75,7 +75,8 @@ IsolateHolder::IsolateHolder(
-     IsolateCreationMode isolate_creation_mode,
+@@ -76,7 +76,8 @@ IsolateHolder::IsolateHolder(
      v8::CreateHistogramCallback create_histogram_callback,
      v8::AddHistogramSampleCallback add_histogram_sample_callback,
--    scoped_refptr<base::SingleThreadTaskRunner> low_priority_task_runner)
-+    scoped_refptr<base::SingleThreadTaskRunner> low_priority_task_runner,
+     scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner,
+-    scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner)
++    scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner,
 +    v8::Isolate* isolate)
      : IsolateHolder(std::move(task_runner),
                      access_mode,
                      isolate_type,
-@@ -84,7 +85,8 @@ IsolateHolder::IsolateHolder(
-                                              create_histogram_callback,
+@@ -86,7 +87,8 @@ IsolateHolder::IsolateHolder(
                                               add_histogram_sample_callback),
                      isolate_creation_mode,
--                    std::move(low_priority_task_runner)) {}
-+                    std::move(low_priority_task_runner),
+                     std::move(user_visible_task_runner),
+-                    std::move(best_effort_task_runner)) {}
++                    std::move(best_effort_task_runner),
 +                    isolate) {}
  
  IsolateHolder::IsolateHolder(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-@@ -92,7 +94,8 @@ IsolateHolder::IsolateHolder(
-     IsolateType isolate_type,
+@@ -95,7 +97,8 @@ IsolateHolder::IsolateHolder(
      std::unique_ptr<v8::Isolate::CreateParams> params,
      IsolateCreationMode isolate_creation_mode,
--    scoped_refptr<base::SingleThreadTaskRunner> low_priority_task_runner)
-+    scoped_refptr<base::SingleThreadTaskRunner> low_priority_task_runner,
+     scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner,
+-    scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner)
++    scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner,
 +    v8::Isolate* isolate)
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
        << "You need to invoke gin::IsolateHolder::Initialize first";
-@@ -103,7 +106,7 @@ IsolateHolder::IsolateHolder(
+@@ -106,7 +109,7 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
    DCHECK(allocator);
  
@@ -56,25 +56,25 @@ index 61d35042fcd0aa7b632c34253bce42a00c8d732d..db074920753e6a7aec4ffad82f8f4296
 +  isolate_ = isolate ? isolate : v8::Isolate::Allocate();
    isolate_data_ = std::make_unique<PerIsolateData>(
        isolate_, allocator, access_mode_, task_runner,
-       std::move(low_priority_task_runner));
+       std::move(user_visible_task_runner), std::move(best_effort_task_runner));
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index a5db8841773618814ac90f740201d4d7e9057b3c..1368ab8bfbf9e69437b394a8376bf7c956ca13ce 100644
+index 89bbc161b99846c1f9e9585e98dd90568187f902..c22b0a7f9af621573e888a518ccdc22293ce07ef 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -85,7 +85,8 @@ class GIN_EXPORT IsolateHolder {
-       v8::CreateHistogramCallback create_histogram_callback = nullptr,
-       v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr,
-       scoped_refptr<base::SingleThreadTaskRunner> low_priority_task_runner =
+@@ -87,7 +87,8 @@ class GIN_EXPORT IsolateHolder {
+       scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner =
+           nullptr,
+       scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner =
 -          nullptr);
 +          nullptr,
 +      v8::Isolate* isolate = nullptr);
    IsolateHolder(
        scoped_refptr<base::SingleThreadTaskRunner> task_runner,
        AccessMode access_mode,
-@@ -93,7 +94,8 @@ class GIN_EXPORT IsolateHolder {
-       std::unique_ptr<v8::Isolate::CreateParams> params,
-       IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
-       scoped_refptr<base::SingleThreadTaskRunner> low_priority_task_runner =
+@@ -97,7 +98,8 @@ class GIN_EXPORT IsolateHolder {
+       scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner =
+           nullptr,
+       scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner =
 -          nullptr);
 +          nullptr,
 +      v8::Isolate* isolate = nullptr);
