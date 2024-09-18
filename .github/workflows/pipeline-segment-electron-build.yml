@@ -61,7 +61,7 @@ on:
 
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 env:
