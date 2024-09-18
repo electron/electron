@@ -89,11 +89,19 @@ bool PowerMonitor::ShouldShutdown() {
   return !Emit("shutdown");
 }
 
-void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
-  if (on_battery_power)
-    Emit("on-battery");
-  else
-    Emit("on-ac");
+void PowerMonitor::OnBatteryPowerStatusChange(
+    BatteryPowerStatus battery_power_status) {
+  switch (battery_power_status) {
+    case BatteryPowerStatus::kBatteryPower:
+      Emit("on-battery");
+      break;
+    case BatteryPowerStatus::kExternalPower:
+      Emit("on-ac");
+      break;
+    case BatteryPowerStatus::kUnknown:
+      // Ignored
+      break;
+  }
 }
 
 void PowerMonitor::OnSuspend() {
