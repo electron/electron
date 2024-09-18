@@ -112,7 +112,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
                    v8::Local<v8::Value> message_value,
                    std::optional<v8::Local<v8::Value>> transfer);
 
-  content::FrameTreeNodeId FrameTreeNodeID() const;
+  int FrameTreeNodeIDAsInt() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
   int ProcessID() const;
