@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "content/public/browser/frame_tree_node_id.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/kiosk/kiosk_delegate.h"
 #include "services/network/public/cpp/resource_request.h"
@@ -111,7 +112,7 @@ class ElectronExtensionsBrowserClient
   mojo::PendingRemote<network::mojom::URLLoaderFactory>
   GetControlledFrameEmbedderURLLoader(
       const url::Origin& app_origin,
-      int frame_tree_node_id,
+      content::FrameTreeNodeId frame_tree_node_id,
       content::BrowserContext* browser_context) override;
   std::unique_ptr<extensions::ExtensionHostDelegate>
   CreateExtensionHostDelegate() override;
