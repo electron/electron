@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 239fdc5a9ffef56f3b2c6667b1324c9f0a75c58e..dc3bf4440470da55193897aee6b431a475cffc84 100644
+index 2f36496cf77258fe7e7b5eb7c93c6c53ff55abd0..0808df2627a4630c9e573fdb4f620ef601252026 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -172,6 +172,8 @@ viz_component("service") {
@@ -521,7 +521,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 03790c67247044236ac0948b10763d7eeba26389..2544644da43ecc2cac5c39e11d4764b9b881d249 100644
+index 463a0f71f75884b78ff33fc459891fbf31a44422..96a74c4b8be58fa7cc5b5066e22c836423ac2a41 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -596,10 +596,10 @@ index 7d19b6be8bb0e0269c381cf6efdf79eaeff1e935..b8ec06ade095df99c024396a601dbf1a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index adcbd1bae0af1142fc2152f9a4148b499934180f..6556352329a9f485059360187abda12d7d431dff 100644
+index d83d19eb1f715a48e12750d9045feb21b00d802c..e080ebadf49153e69975628fc0354b58e4031352 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -38,6 +38,7 @@ struct RootCompositorFrameSinkParams {
+@@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
@@ -619,7 +619,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index b6c784c612bcf183f3174ce25736a57fd8803f22..823bce55000d0f2242eb58f22ec62fa3464fcd98 100644
+index 15a3f61cdc5864e3041104f52cd581ed04f0d133..56c341713ad24958c237399f9c06e049d7c44d73 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ namespace mojom {
@@ -657,7 +657,7 @@ index b6c784c612bcf183f3174ce25736a57fd8803f22..823bce55000d0f2242eb58f22ec62fa3
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -563,6 +577,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -564,6 +578,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  

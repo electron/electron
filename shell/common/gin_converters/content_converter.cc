@@ -165,8 +165,12 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-sanitized-write");
     case blink::PermissionType::LOCAL_FONTS:
       return StringToV8(isolate, "local-fonts");
+    case blink::PermissionType::HAND_TRACKING:
+      return StringToV8(isolate, "hand-tracking");
     case blink::PermissionType::IDLE_DETECTION:
       return StringToV8(isolate, "idle-detection");
+    case blink::PermissionType::KEYBOARD_LOCK:
+      return StringToV8(isolate, "keyboardLock");
     case blink::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
     case blink::PermissionType::NFC:
@@ -185,6 +189,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
     case blink::PermissionType::AUDIO_CAPTURE:
     case blink::PermissionType::VIDEO_CAPTURE:
       return StringToV8(isolate, "media");
+    case blink::PermissionType::POINTER_LOCK:
+      return StringToV8(isolate, "pointerLock");
     case blink::PermissionType::PROTECTED_MEDIA_IDENTIFIER:
       return StringToV8(isolate, "mediaKeySystem");
     case blink::PermissionType::MIDI:
@@ -213,10 +219,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "web-printing");
     case blink::PermissionType::SPEAKER_SELECTION:
       return StringToV8(isolate, "speaker-selection");
-    case blink::PermissionType::POINTER_LOCK:
-      return StringToV8(isolate, "pointerLock");
-    case blink::PermissionType::KEYBOARD_LOCK:
-      return StringToV8(isolate, "keyboardLock");
+    case blink::PermissionType::WEB_APP_INSTALLATION:
+      return StringToV8(isolate, "web-app-installation");
     case blink::PermissionType::NUM:
       break;
   }
