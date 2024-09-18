@@ -10,29 +10,6 @@ majority of changes originally come from these PRs:
 
 This patch also fixes callback for manual user cancellation and success.
 
-diff --git a/BUILD.gn b/BUILD.gn
-index accd220843277bd44ac59bd2ac0be1197887a71c..8484c3cd629d2552eee1aa99b63caf049fa8f369 100644
---- a/BUILD.gn
-+++ b/BUILD.gn
-@@ -987,7 +987,6 @@ if (is_win) {
-       "//media:media_unittests",
-       "//media/midi:midi_unittests",
-       "//net:net_unittests",
--      "//printing:printing_unittests",
-       "//sql:sql_unittests",
-       "//third_party/breakpad:symupload",
-       "//ui/base:ui_base_unittests",
-@@ -996,6 +995,10 @@ if (is_win) {
-       "//ui/views:views_unittests",
-       "//url:url_unittests",
-     ]
-+
-+    if (enable_printing) {
-+      deps += [ "//printing:printing_unittests" ]
-+    }
-   }
- }
- 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
 index 163eacc8bb6654880d37111923a87ea5a6134485..565258e9bd4cc52e347e1f4a72ee29ec4a847690 100644
 --- a/chrome/browser/printing/print_job.cc
@@ -883,10 +860,10 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 1d4c8a5cc261e8dbd8547c20989491129655f902..aeef0014980b0e38e0be173d48212f9b66a3cd80 100644
+index 015bc46e90a0e14e33d4ea65c37767a7f8d5681c..c6f9a35dff7c29df69fc54df41117bfcd5f0ad0e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3002,8 +3002,9 @@ source_set("browser") {
+@@ -3011,8 +3011,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -935,7 +912,7 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    virtual mojom::ResultCode OnError();
  
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 8bb26f3212d406419d957250adbaf4cb682df801..2345917c71ddf7fda171672b736724087fc873e8 100644
+index 7a65f7f2d68edb74fbaf74fe41949ed9cc198b25..4d7c59e93d71b624d4e93e643932c8167536ec6b 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
 @@ -35,6 +35,10 @@

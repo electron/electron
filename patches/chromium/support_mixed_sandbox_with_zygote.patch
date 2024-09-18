@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 4d3e038b4ebf53726c96f8de9898c14169199366..a4b16c2a9c4cff157c0a0f9ee686659e07937e27 100644
+index 7c04b3d49f1d3c200e13c2e68c86f5dde3308b40..0dd113f8295225c393c951a4fcb9a6220f017ed7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1695,6 +1695,10 @@ bool RenderProcessHostImpl::Init() {
+@@ -1758,6 +1758,10 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              *cmd_line, IsPdf(), IsJitDisabled());
@@ -37,7 +37,7 @@ index 4d3e038b4ebf53726c96f8de9898c14169199366..a4b16c2a9c4cff157c0a0f9ee686659e
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 2c724b73a55fa21154ff8cedd41d3ca5738dfa76..b3f5973a4b686542d46d8338722f5fe42c86c529 100644
+index 9f66bec84f6284d3f20e59342d3e0a7b2917f836..affaca4776178365fe5d3024d2f733c01da07e09 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -35,6 +35,9 @@ namespace content {
@@ -61,7 +61,7 @@ index 2c724b73a55fa21154ff8cedd41d3ca5738dfa76..b3f5973a4b686542d46d8338722f5fe4
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 00038da2c15696b361aea1469ccf73307e44963e..7ccfbf11ecfd56fd165915baa85919eaf2e923b9 100644
+index e77326f149febfb1e236f221757fe24b989e01c0..4f621d8c36706557151560b2a6e0821a46f39c7f 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate

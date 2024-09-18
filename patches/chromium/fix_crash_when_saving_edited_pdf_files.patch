@@ -13,10 +13,10 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index 967c7dd25e5b292bc56b18153b5fee38b3179398..3ee540ea53ab7b36c8b33f4394afc2039d6c4240 100644
+index f291ca720095ad1d079135539fb0a7421cae0be9..b967868063402572d9410c1725188e9c9caa5455 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -998,7 +998,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1010,7 +1010,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -32,7 +32,7 @@ index 967c7dd25e5b292bc56b18153b5fee38b3179398..3ee540ea53ab7b36c8b33f4394afc203
      const fileName = this.attachments_[index].name;
      chrome.fileSystem.chooseEntry(
          {type: 'saveFile', suggestedName: fileName},
-@@ -1020,6 +1028,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1032,6 +1040,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
              // </if>
            });
          });
@@ -40,7 +40,7 @@ index 967c7dd25e5b292bc56b18153b5fee38b3179398..3ee540ea53ab7b36c8b33f4394afc203
    }
  
    /**
-@@ -1148,7 +1157,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1160,7 +1169,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
      }
  
      // Create blob before callback to avoid race condition.
@@ -56,7 +56,7 @@ index 967c7dd25e5b292bc56b18153b5fee38b3179398..3ee540ea53ab7b36c8b33f4394afc203
      chrome.fileSystem.chooseEntry(
          {
            type: 'saveFile',
-@@ -1177,6 +1194,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1189,6 +1206,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
              // </if>
            });
          });
