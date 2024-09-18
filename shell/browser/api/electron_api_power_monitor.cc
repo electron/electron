@@ -68,9 +68,10 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
 
-  base::PowerMonitor::AddPowerStateObserver(this);
-  base::PowerMonitor::AddPowerSuspendObserver(this);
-  base::PowerMonitor::AddPowerThermalObserver(this);
+  auto* power_monitor = base::PowerMonitor::GetInstance();
+  power_monitor->AddPowerStateObserver(this);
+  power_monitor->AddPowerSuspendObserver(this);
+  power_monitor->AddPowerThermalObserver(this);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   InitPlatformSpecificMonitors();
@@ -78,9 +79,10 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
-  base::PowerMonitor::RemovePowerStateObserver(this);
-  base::PowerMonitor::RemovePowerSuspendObserver(this);
-  base::PowerMonitor::RemovePowerThermalObserver(this);
+  auto* power_monitor = base::PowerMonitor::GetInstance();
+  power_monitor->RemovePowerStateObserver(this);
+  power_monitor->RemovePowerSuspendObserver(this);
+  power_monitor->RemovePowerThermalObserver(this);
 }
 
 bool PowerMonitor::ShouldShutdown() {
@@ -175,11 +177,11 @@ int GetSystemIdleTime() {
 }
 
 bool IsOnBatteryPower() {
-  return base::PowerMonitor::IsOnBatteryPower();
+  return base::PowerMonitor::GetInstance()->IsOnBatteryPower();
 }
 
 base::PowerThermalObserver::DeviceThermalState GetCurrentThermalState() {
-  return base::PowerMonitor::GetCurrentThermalState();
+  return base::PowerMonitor::GetInstance()->GetCurrentThermalState();
 }
 
 void Initialize(v8::Local<v8::Object> exports,
