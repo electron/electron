@@ -114,6 +114,10 @@ void ElectronBluetoothDelegate::RevokeDevicePermissionWebInitiated(
   NOTIMPLEMENTED();
 }
 
+bool ElectronBluetoothDelegate::MayUseBluetooth(RenderFrameHost* frame) {
+  return true;
+}
+
 bool ElectronBluetoothDelegate::IsAllowedToAccessService(
     RenderFrameHost* frame,
     const WebBluetoothDeviceId& device_id,
