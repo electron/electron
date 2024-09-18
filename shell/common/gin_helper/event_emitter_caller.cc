@@ -9,10 +9,11 @@
 
 namespace gin_helper::internal {
 
-v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
-                                        v8::Local<v8::Object> obj,
-                                        const char* method,
-                                        ValueVector* args) {
+v8::Local<v8::Value> CallMethodWithArgs(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> obj,
+    const char* method,
+    const base::span<v8::Local<v8::Value>> args) {
   v8::EscapableHandleScope handle_scope{isolate};
 
   // CallbackScope and MakeCallback both require an active node::Environment
@@ -29,7 +30,7 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
 
   // node::MakeCallback will also run pending tasks in Node.js.
   v8::MaybeLocal<v8::Value> ret = node::MakeCallback(
-      isolate, obj, method, args->size(), args->data(), {0, 0});
+      isolate, obj, method, args.size(), args.data(), {0, 0});
 
   // If the JS function throws an exception (doesn't return a value) the result
   // of MakeCallback will be empty and therefore ToLocal will be false, in this
