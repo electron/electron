@@ -688,6 +688,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
     case extensions::mojom::ViewType::kOffscreenDocument:
     case extensions::mojom::ViewType::kExtensionSidePanel:
     case extensions::mojom::ViewType::kInvalid:
+    case extensions::mojom::ViewType::kDeveloperTools:
       return WebContents::Type::kRemote;
   }
 }
@@ -1139,7 +1140,7 @@ content::WebContents* WebContents::CreateCustomWebContents(
   return nullptr;
 }
 
-void WebContents::AddNewContents(
+content::WebContents* WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
     const GURL& target_url,
@@ -1172,6 +1173,8 @@ void WebContents::AddNewContents(
            tracker->raw_features, tracker->body)) {
     api_web_contents->Destroy();
   }
+
+  return nullptr;
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
