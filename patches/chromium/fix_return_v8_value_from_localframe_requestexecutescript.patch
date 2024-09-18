@@ -64,10 +64,10 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ab71d6d99bfefc8d16ad6f94c3ef4e81e9b4f730..d542b5b326d511dcabc660ff5b9b16dc0e4285b9 100644
+index 6de9408ba1b92349195ea2d477e4b8617bbae38c..2b725da66529c798abfc66f75b9dc15d56283340 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -3116,6 +3116,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3124,6 +3124,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -75,7 +75,7 @@ index ab71d6d99bfefc8d16ad6f94c3ef4e81e9b4f730..d542b5b326d511dcabc660ff5b9b16dc
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -3148,7 +3149,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3156,7 +3157,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -85,7 +85,7 @@ index ab71d6d99bfefc8d16ad6f94c3ef4e81e9b4f730..d542b5b326d511dcabc660ff5b9b16dc
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 4edbfb6173bfaedfd6b84ca3fe7663df4f797a44..78ca4aa1d4a1d5894eabba0f3a75e28d9126da7a 100644
+index 72722ddbecb7a006ec407b374c8d75c5054f9574..cb4c93a8356f35e5766e843006161143e539666f 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -818,6 +818,7 @@ class CORE_EXPORT LocalFrame final
@@ -97,10 +97,10 @@ index 4edbfb6173bfaedfd6b84ca3fe7663df4f797a44..78ca4aa1d4a1d5894eabba0f3a75e28d
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index c165c05ce686730aa4dd35124adccfa48245c845..5fdf937991ca533c102372d305058891f46e1da3 100644
+index e4902e71bdf72c140463a2d73db67dcc8e165062..25e91d0bca2d164afa1b563ef2596010c64887a8 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -968,6 +968,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -973,6 +973,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -204,10 +204,10 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index abb5727537fa14576d49d8afbc78fcffc2b74919..fa3dd9fabcebdc8ea87f398e79847db76668f990 100644
+index af0e4a591b1615706513dafc4fd2484efc038c90..cf53383c583e3a7044c737b6c12100e14c736513 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
-@@ -294,6 +294,7 @@ void ExecuteScriptsInMainWorld(
+@@ -295,6 +295,7 @@ void ExecuteScriptsInMainWorld(
        DOMWrapperWorld::kMainWorldId, sources, user_gesture,
        mojom::blink::EvaluationTiming::kSynchronous,
        mojom::blink::LoadEventBlockingOption::kDoNotBlock, std::move(callback),

@@ -22,25 +22,20 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index fd695ec92ca4ff87aaa08c09aea4d1e2b36dddf9..e17653460749d455b4732d63195395fe3ea1d864 100644
+index 4d3e038b4ebf53726c96f8de9898c14169199366..a4b16c2a9c4cff157c0a0f9ee686659e07937e27 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1698,9 +1698,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1695,6 +1695,10 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
-             *cmd_line, IsPdf(), /*is_jit_disabled=*/IsPdf());
-+#else
-+#if BUILDFLAG(USE_ZYGOTE)
+             *cmd_line, IsPdf(), IsJitDisabled());
++#elif BUILDFLAG(USE_ZYGOTE)
 +    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);
 +    std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
 +        std::make_unique<RendererSandboxedProcessLauncherDelegate>(use_zygote);
  #else
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
-+#endif
- #endif
- 
-     auto tracing_config_memory_region =
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 index 2c724b73a55fa21154ff8cedd41d3ca5738dfa76..b3f5973a4b686542d46d8338722f5fe42c86c529 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc

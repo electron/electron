@@ -156,7 +156,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   static_cast<content::RenderFrameHostImpl*>(render_frame_)
       ->ExecuteJavaScriptForTests(
           code, user_gesture, true /* resolve_promises */,
-          content::ISOLATED_WORLD_ID_GLOBAL,
+          /*honor_js_content_settings=*/true, content::ISOLATED_WORLD_ID_GLOBAL,
           base::BindOnce(
               [](gin_helper::Promise<base::Value> promise,
                  blink::mojom::JavaScriptExecutionResultType type,
