@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "base/files/file_path.h"
+#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/browser/web_contents.h"
