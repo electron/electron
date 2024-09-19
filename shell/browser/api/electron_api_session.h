@@ -60,18 +60,18 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Session : public gin::Wrappable<Session>,
-                public gin_helper::Pinnable<Session>,
-                public gin_helper::Constructible<Session>,
-                public gin_helper::EventEmitterMixin<Session>,
-                public gin_helper::CleanedUpAtExit,
+class Session final : public gin::Wrappable<Session>,
+                      public gin_helper::Pinnable<Session>,
+                      public gin_helper::Constructible<Session>,
+                      public gin_helper::EventEmitterMixin<Session>,
+                      public gin_helper::CleanedUpAtExit,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-                public SpellcheckHunspellDictionary::Observer,
+                      public SpellcheckHunspellDictionary::Observer,
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-                public extensions::ExtensionRegistryObserver,
+                      public extensions::ExtensionRegistryObserver,
 #endif
-                public content::DownloadManager::Observer {
+                      public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static gin::Handle<Session> CreateFrom(

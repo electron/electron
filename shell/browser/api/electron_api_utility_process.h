@@ -36,7 +36,7 @@ class Process;
 
 namespace electron::api {
 
-class UtilityProcessWrapper
+class UtilityProcessWrapper final
     : public gin::Wrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,

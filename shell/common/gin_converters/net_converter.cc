@@ -252,7 +252,7 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-class ChunkedDataPipeReadableStream
+class ChunkedDataPipeReadableStream final
     : public gin::Wrappable<ChunkedDataPipeReadableStream> {
  public:
   static gin::Handle<ChunkedDataPipeReadableStream> Create(
