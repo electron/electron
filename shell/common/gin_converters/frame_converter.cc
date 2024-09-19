@@ -8,8 +8,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/common/gin_helper/accessor.h"
-#include "shell/common/node_includes.h"
-#include "shell/common/process_util.h"
+#include "shell/common/node_util.h"
 
 namespace gin {
 
@@ -101,9 +100,8 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
     // Lazily evaluted property accessed after RFH has been destroyed.
     // Continue to return nullptr, but emit warning to inform developers
     // what occurred.
-    node::Environment* env = node::Environment::GetCurrent(isolate);
-    ::electron::EmitWarning(
-        env,
+    electron::util::EmitWarning(
+        isolate,
         "Frame property was accessed after it navigated or was destroyed. "
         "Avoid asynchronous tasks prior to indexing.",
         "electron");
