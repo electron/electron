@@ -186,13 +186,9 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
-  // v8 headers use c++17 so override the gyp default of -std=c++14,
-  // but don't clobber any other CXXFLAGS that were passed into spec-runner.js
-  const CXXFLAGS = ['-std=c++17', process.env.CXXFLAGS].filter(x => !!x).join(' ');
-
   const env = {
     ...process.env,
-    CXXFLAGS,
+    CXXFLAGS: process.env.CXXFLAGS,
     npm_config_msvs_version: '2019',
     npm_config_yes: 'true'
   };
