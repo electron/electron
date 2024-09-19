@@ -199,6 +199,7 @@ static_library("chrome") {
     "//chrome/browser/web_applications/mojom:mojom_web_apps_enum",
     "//components/enterprise/buildflags",
     "//components/enterprise/common/proto:connectors_proto",
+    "//components/enterprise/obfuscation/core:enterprise_obfuscation",
     "//components/safe_browsing/core/browser/db:safebrowsing_proto",
     "//components/vector_icons:vector_icons",
     "//ui/snapshot",
