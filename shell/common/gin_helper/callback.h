@@ -5,8 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_
 
+#include <array>
 #include <utility>
-#include <vector>
 
 #include "base/functional/bind.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -54,7 +54,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
         isolate, context->GetMicrotaskQueue(), true,
         v8::MicrotasksScope::kRunMicrotasks};
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{
+    std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     v8::MaybeLocal<v8::Value> ret = holder->Call(
         context, holder, args.size(), args.empty() ? nullptr : &args.front());
@@ -80,7 +80,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
         isolate, context->GetMicrotaskQueue(), true,
         v8::MicrotasksScope::kRunMicrotasks};
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{
+    std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     holder
         ->Call(context, holder, args.size(),
@@ -105,7 +105,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
         isolate, context->GetMicrotaskQueue(), true,
         v8::MicrotasksScope::kRunMicrotasks};
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{
+    std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     v8::Local<v8::Value> result;
     auto maybe_result = holder->Call(context, holder, args.size(),

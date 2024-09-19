@@ -20,6 +20,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/common/context_menu_data/untrustworthy_context_menu_params.h"
+#include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
