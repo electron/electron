@@ -22,7 +22,8 @@
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
-#include "content/common/frame.mojom.h"
+#include "content/common/frame.mojom-forward.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
@@ -49,7 +50,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/common/mojom/view_type.mojom.h"
+#include "extensions/common/mojom/view_type.mojom-forward.h"
 
 namespace extensions {
 class ScriptExecutor;

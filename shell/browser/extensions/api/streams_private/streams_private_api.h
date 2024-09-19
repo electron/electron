@@ -7,7 +7,9 @@
 
 #include <string>
 
-#include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom.h"
+#include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom-forward.h"
+
+class GURL;
 
 namespace extensions {
 

@@ -25,6 +25,8 @@
 #include "shell/common/gin_converters/hid_device_info_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_util.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {

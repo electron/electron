@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 
-#include "electron/shell/common/api/api.mojom.h"
 #include "third_party/blink/public/mojom/page/draggable_region.mojom-forward.h"
 #include "ui/gfx/native_widget_types.h"
 
