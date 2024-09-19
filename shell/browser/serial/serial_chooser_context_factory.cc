@@ -18,11 +18,11 @@ SerialChooserContextFactory::SerialChooserContextFactory()
 
 SerialChooserContextFactory::~SerialChooserContextFactory() = default;
 
-KeyedService* SerialChooserContextFactory::BuildServiceInstanceFor(
+std::unique_ptr<KeyedService>
+SerialChooserContextFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  auto* browser_context =
-      static_cast<electron::ElectronBrowserContext*>(context);
-  return new SerialChooserContext(browser_context);
+  return std::make_unique<SerialChooserContext>(
+      static_cast<electron::ElectronBrowserContext*>(context));
 }
 
 // static
