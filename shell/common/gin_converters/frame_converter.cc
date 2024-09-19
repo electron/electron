@@ -102,7 +102,7 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
     // Continue to return nullptr, but emit warning to inform developers
     // what occurred.
     node::Environment* env = node::Environment::GetCurrent(isolate);
-    electron::EmitWarning(
+    ::electron::EmitWarning(
         env,
         "Frame property was accessed after it navigated or was destroyed. "
         "Avoid asynchronous tasks prior to indexing.",
