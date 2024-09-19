@@ -760,7 +760,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 14731a0b1d157a4c15a87dbcc6342d69de84a881..4c69b8b31526aee6ec7cba321e9ba3852031403d 100644
+index 075b7804d631a2107de59f310169353e6da5fffe..6a40b5bd8dae7af5ef231757fd384e4be0508669 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -638,6 +638,7 @@ static_library("test_support") {
@@ -787,7 +787,7 @@ index 14731a0b1d157a4c15a87dbcc6342d69de84a881..4c69b8b31526aee6ec7cba321e9ba385
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3208,6 +3211,7 @@ test("content_unittests") {
+@@ -3209,6 +3212,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",

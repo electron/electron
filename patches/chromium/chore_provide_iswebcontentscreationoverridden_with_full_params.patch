@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ad521301a73cd3221145525b23fcc89a91e82a1d..40f1a4227a79376232417b86d38c25a48c5df95b 100644
+index 362b94678c1add8d3d3baeb6dd1caec0dab87f16..2101c84a1af87ad01825fa0f683647363ae02e18 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4691,8 +4691,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -260,10 +260,10 @@ index 4826eea9747c4860d7f5b4b8d478e62cb48a675b..4bd15ce68cbf3c393b2b51883f19835f
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index cd248085caf2fd155a812f9500612feb2f97a810..4794dd8b3da398a476949367e1e70be00c9c37f0 100644
+index c9492327c30d41eab2425c037d23cae5b50d24eb..f7627e2fd5b2e419a3d00f6966535bd5f1fe94f6 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-@@ -219,8 +219,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
+@@ -221,8 +221,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

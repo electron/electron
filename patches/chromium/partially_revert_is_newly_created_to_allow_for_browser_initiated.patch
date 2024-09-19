@@ -10,7 +10,7 @@ an about:blank check to this area.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/5403876
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 0920a9a9a584b630bb87fa5bdda009e1cdfa636c..76d1d1b59d5e66775c2498781334b720c1f18efb 100644
+index 45d65895548c4b4c6b00ea1a0a0f37e8df0e9988..ba7fe530cf77c76935cd62a74d1316a241c992b4 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -778,8 +778,8 @@ void VerifyThatBrowserAndRendererCalculatedOriginsToCommitMatch(
