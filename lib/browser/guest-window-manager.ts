@@ -71,14 +71,6 @@ export function openGuestWindow ({ embedder, guest, referrer, disposition, postD
         throw new Error('Invalid webContents. Created window should be connected to webContents passed with options object.');
       }
 
-      webContents.loadURL(url, {
-        httpReferrer: referrer,
-        ...(postData && {
-          postData,
-          extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
-        })
-      });
-
       handleWindowLifecycleEvents({ embedder, frameName, guest, outlivesOpener });
     }
 
