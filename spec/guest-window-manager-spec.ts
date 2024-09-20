@@ -303,6 +303,25 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(childWindow.title).to.equal(browserWindowTitle);
     });
 
+    it('should be able to access the child window document when createWindow is provided', async () => {
+      browserWindow.webContents.setWindowOpenHandler(() => {
+        return {
+          action: 'allow',
+          createWindow: (options) => {
+            const child = new BrowserWindow(options);
+            return child.webContents;
+          }
+        };
+      });
+
+      const title = await browserWindow.webContents.executeJavaScript(`
+        const win = window.open('about:blank', '', 'show=no');
+        win.document.title = 'child-win-title';
+        win.document.title;
+      `);
+      expect(title).to.equal('child-win-title');
+    });
+
     it('spawns browser window with overridden options', async () => {
       const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
         browserWindow.webContents.setWindowOpenHandler(() => {
