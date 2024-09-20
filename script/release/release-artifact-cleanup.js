@@ -6,9 +6,10 @@ const args = require('minimist')(process.argv.slice(2), {
   default: { releaseID: '' }
 });
 const { Octokit } = require('@octokit/rest');
+const { getGitHubToken } = require('./github-token');
 
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: getGitHubToken
 });
 
 require('colors');
