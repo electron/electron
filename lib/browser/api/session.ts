@@ -3,14 +3,16 @@ import { net } from 'electron/main';
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
 const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
-// Fake video source that activates the native system picker
+// Fake video window that activates the native system picker
 // This is used to get around the need for a screen/window
 // id in Chrome's desktopCapturer.
-let fakeVideoSourceId = -1;
+let fakeVideoWindowId = -1;
+// See content/public/browser/desktop_media_id.h
+const kMacOsNativePickerId = -4;
 const systemPickerVideoSource = Object.create(null);
 Object.defineProperty(systemPickerVideoSource, 'id', {
   get () {
-    return `window:${fakeVideoSourceId--}:0`;
+    return `window:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
   }
 });
 systemPickerVideoSource.name = '';
