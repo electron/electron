@@ -962,9 +962,8 @@ ElectronBrowserClient::CreateDevToolsManagerDelegate() {
 }
 
 NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
-  if (!notification_presenter_) {
-    notification_presenter_.reset(NotificationPresenter::Create());
-  }
+  if (!notification_presenter_)
+    notification_presenter_ = NotificationPresenter::Create();
   return notification_presenter_.get();
 }
 
