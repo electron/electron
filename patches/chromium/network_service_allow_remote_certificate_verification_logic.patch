@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ed0b648197ca72bd7f679b0fe3eb9f65787bd289..c5f785116282be005174ff6169e2ad9a2183fd0c 100644
+index de7b1e410f6e037957570992d6ea063d85c11ec2..22053316efe25101295d9e670c95680a21379dec 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -155,6 +155,11 @@
@@ -147,10 +147,10 @@ index ed0b648197ca72bd7f679b0fe3eb9f65787bd289..c5f785116282be005174ff6169e2ad9a
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index d588c312ab2ed0068df49cdacfe3247345b0dbcb..78a76afc774a1a4c61d3010d6b03fd2879ccd39a 100644
+index 256de870d2c6defd3f0b389ee5f596c01051533f..a898e09ac0c989952fe2032ca4ea6ddfdacc59e6 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -115,6 +115,7 @@ class URLMatcher;
+@@ -114,6 +114,7 @@ class URLMatcher;
  }
  
  namespace network {
@@ -158,7 +158,7 @@ index d588c312ab2ed0068df49cdacfe3247345b0dbcb..78a76afc774a1a4c61d3010d6b03fd28
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -246,6 +247,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -245,6 +246,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -167,7 +167,7 @@ index d588c312ab2ed0068df49cdacfe3247345b0dbcb..78a76afc774a1a4c61d3010d6b03fd28
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -926,6 +929,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -925,6 +928,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  

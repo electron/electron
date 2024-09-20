@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index acd9e3490fb4d5d0df31dfa7a0866b9162ad60de..cb1cc225feb4e50de0faafde572c960ff92e8f80 100644
+index 39f6bfe3cab60ea9576e7760bfc6693408d1a4b9..24ef8a380ca12f36fade75c51e4849d0915a2a3d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1041,6 +1041,7 @@ component("base") {
@@ -593,7 +593,7 @@ index 2285564db47ef15eb9a83affd1e481b5671c3940..cf5e79a5540d8208c34579d7e8b5a571
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 951de86fb7b173e0357ed2cdc8673e2668dafe17..323ca46260273ee3a8d081c141bb479fe76bcd22 100644
+index 4a6a4da32e4effbad8bff85220edf0b34685f274..e3c4075e4aa4a2bf854f5308f25775bd10ce32dc 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -48,6 +48,7 @@
@@ -615,7 +615,7 @@ index 951de86fb7b173e0357ed2cdc8673e2668dafe17..323ca46260273ee3a8d081c141bb479f
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1637,8 +1640,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1639,8 +1642,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -626,7 +626,7 @@ index 951de86fb7b173e0357ed2cdc8673e2668dafe17..323ca46260273ee3a8d081c141bb479f
    return [GetInProcessNSView() window];
  }
  
-@@ -1687,9 +1692,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1689,9 +1694,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -638,7 +638,7 @@ index 951de86fb7b173e0357ed2cdc8673e2668dafe17..323ca46260273ee3a8d081c141bb479f
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2213,20 +2220,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2215,20 +2222,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();

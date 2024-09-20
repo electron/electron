@@ -14,7 +14,7 @@ This patch likely can't be upstreamed as-is, as Chromium doesn't have
 this use case in mind currently.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 72fa8b61c41e54b06b87f2b6750021fb99e65fea..b6c9210890d88d21b1aeb5ee2b513d1efd29b4b3 100644
+index bd552e874fbc452aecac3540fdb4e24540a04d49..42483b9196563394ed87579bd82764cce441f44f 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -907,13 +907,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -33,7 +33,7 @@ index 72fa8b61c41e54b06b87f2b6750021fb99e65fea..b6c9210890d88d21b1aeb5ee2b513d1e
  }
  
  void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
-@@ -2252,17 +2252,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2258,17 +2258,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
    if (IsVisible())
      delegate_->SchedulePaint();
  
