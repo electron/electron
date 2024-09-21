@@ -1,13 +1,13 @@
 const { Octokit } = require('@octokit/rest');
 const got = require('got');
-const { getGitHubToken } = require('./github-token');
-
-const octokit = new Octokit({
-  userAgent: 'electron-asset-fetcher',
-  authStrategy: getGitHubToken
-});
+const { createGitHubTokenStrategy } = require('./github-token');
 
 async function getAssetContents (repo, assetId) {
+  const octokit = new Octokit({
+    userAgent: 'electron-asset-fetcher',
+    authStrategy: createGitHubTokenStrategy(repo)
+  });
+
   const requestOptions = octokit.repos.getReleaseAsset.endpoint({
     owner: 'electron',
     repo,
@@ -18,7 +18,7 @@ async function getAssetContents (repo, assetId) {
   });
 
   const { url, headers } = requestOptions;
-  headers.authorization = `token ${await getGitHubToken()}`;
+  headers.authorization = `token ${(await octokit.auth()).token}`;
 
   const response = await got(url, {
     followRedirect: false,
