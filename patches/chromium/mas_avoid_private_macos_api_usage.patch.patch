@@ -1826,7 +1826,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index b2b1a783ac0c243ef5cf573b2e73af82b432fbf9..60aee1fd81e31b2ba43ec344990588921c9393a4 100644
+index d681326d57ab7753eee9bb8c57fa69404dcf5685..900e8d532a6fb5184efdc59909d674ff0dd66201 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -722,6 +722,7 @@ component("views") {

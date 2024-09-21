@@ -876,7 +876,7 @@ index 015bc46e90a0e14e33d4ea65c37767a7f8d5681c..c6f9a35dff7c29df69fc54df41117bfc
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index e9d9b148387313d8f6dd399d69a69272a511e6b4..a97983e9736daffdfeb713ae7b263f146f79ad0b 100644
+index 0bb34c4715224a0cef10465778db946f299ac513..c70803a5737676eec498dd18074a47ffabac62c0 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -154,7 +154,6 @@ void PrintingContext::UsePdfSettings() {

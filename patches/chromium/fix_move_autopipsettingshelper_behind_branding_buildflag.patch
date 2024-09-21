@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index ed5a9d7cd4593384a80388e6ef1b2d6cc3ba6c57..ca6c772e24b8cd88b6b371b0f904703e4adc2a4e 100644
+index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05ce2ed5464 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -57,7 +57,7 @@ index ed5a9d7cd4593384a80388e6ef1b2d6cc3ba6c57..ca6c772e24b8cd88b6b371b0f904703e
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -475,6 +478,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -474,6 +477,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -65,7 +65,7 @@ index ed5a9d7cd4593384a80388e6ef1b2d6cc3ba6c57..ca6c772e24b8cd88b6b371b0f904703e
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -513,6 +517,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -512,6 +516,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -75,7 +75,7 @@ index ed5a9d7cd4593384a80388e6ef1b2d6cc3ba6c57..ca6c772e24b8cd88b6b371b0f904703e
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 3617f1f8090b1980c3e010a7502cdf010df41529..9f6dd3d7ddd21e6c0c3f972a70ae46c22162c31d 100644
+index cb9e61a104f4cbf89d268502ce653aef96c94392..f9e9dcb19362e58eeffe2e9ef1105c6e88bd3118 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -357,11 +357,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
