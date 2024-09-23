@@ -6,17 +6,17 @@ const args = require('minimist')(process.argv.slice(2), {
   default: { releaseID: '' }
 });
 const { Octokit } = require('@octokit/rest');
-const { getGitHubToken } = require('./github-token');
-
-const octokit = new Octokit({
-  authStrategy: getGitHubToken
-});
+const { createGitHubTokenStrategy } = require('./github-token');
 
 require('colors');
 const pass = '✓'.green;
 const fail = '✗'.red;
 
 async function deleteDraft (releaseId, targetRepo) {
+  const octokit = new Octokit({
+    authStrategy: createGitHubTokenStrategy(targetRepo)
+  });
+
   try {
     const result = await octokit.repos.getRelease({
       owner: 'electron',
@@ -42,6 +42,10 @@ async function deleteDraft (releaseId, targetRepo) {
 }
 
 async function deleteTag (tag, targetRepo) {
+  const octokit = new Octokit({
+    authStrategy: createGitHubTokenStrategy(targetRepo)
+  });
+
   try {
     await octokit.git.deleteRef({
       owner: 'electron',
