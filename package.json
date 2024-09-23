@@ -5,7 +5,7 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@azure/storage-blob": "^12.9.0",
-    "@electron/asar": "^3.2.1",
+    "@electron/asar": "^3.2.13",
     "@electron/docs-parser": "^1.2.0",
     "@electron/fiddle-core": "^1.0.4",
     "@electron/github-app-auth": "^2.0.0",
