@@ -57,7 +57,7 @@ jobs:
         rm appveyor-woa2.yml appveyor-woa.diff
     - name: (Optionally) Commit and Pull Request
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
-      uses: peter-evans/create-pull-request@b1ddad2c994a25fbc81a28b3ec0e368bb2021c50 # v6.0.0
+      uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: 'build: update appveyor image to latest version'
