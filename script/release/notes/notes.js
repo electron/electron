@@ -8,11 +8,13 @@ const path = require('node:path');
 const { GitProcess } = require('dugite');
 
 const { Octokit } = require('@octokit/rest');
-const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
-});
 
 const { ELECTRON_DIR } = require('../../lib/utils');
+const { createGitHubTokenStrategy } = require('../github-token');
+
+const octokit = new Octokit({
+  authStrategy: createGitHubTokenStrategy('electron')
+});
 
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
