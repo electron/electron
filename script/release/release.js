@@ -25,11 +25,12 @@ const fail = '✗'.red;
 const { ELECTRON_DIR } = require('../lib/utils');
 const { getElectronVersion } = require('../lib/get-version');
 const getUrlHash = require('./get-url-hash');
+const { getGitHubToken } = require('./github-token');
 
 const pkgVersion = `v${getElectronVersion()}`;
 
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: getGitHubToken
 });
 
 function getRepo () {
@@ -392,7 +393,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
     });
 
     const { url, headers } = requestOptions;
-    headers.authorization = `token ${process.env.ELECTRON_GITHUB_TOKEN}`;
+    headers.authorization = `token ${await getGitHubToken()}`;
 
     const response = await got(url, {
       followRedirect: false,

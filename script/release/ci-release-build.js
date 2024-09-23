@@ -4,8 +4,9 @@ const assert = require('node:assert');
 const got = require('got');
 
 const { Octokit } = require('@octokit/rest');
+const { getGitHubToken } = require('./github-token');
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: getGitHubToken
 });
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';

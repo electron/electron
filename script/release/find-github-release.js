@@ -1,8 +1,9 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
 const { Octokit } = require('@octokit/rest');
+const { getGitHubToken } = require('./github-token');
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: getGitHubToken
 });
 
 if (process.argv.length < 3) {

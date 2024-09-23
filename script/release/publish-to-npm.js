@@ -10,9 +10,10 @@ const rootPackageJson = require('../../package.json');
 
 const { Octokit } = require('@octokit/rest');
 const { getAssetContents } = require('./get-asset');
+const { getGitHubToken } = require('./github-token');
 const octokit = new Octokit({
   userAgent: 'electron-npm-publisher',
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: getGitHubToken
 });
 
 if (!process.env.ELECTRON_NPM_OTP) {
