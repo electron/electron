@@ -1,5 +1,5 @@
 const { createTokenAuth } = require('@octokit/auth-token');
-const got = require('got');
+const got = require('got').default;
 
 const cachedTokens = Object.create(null);
 
@@ -12,7 +12,7 @@ async function ensureToken (repo) {
       }
 
       if (SUDOWOODO_EXCHANGE_URL && SUDOWOODO_EXCHANGE_TOKEN) {
-        const resp = await got(SUDOWOODO_EXCHANGE_URL + '?repo=' + repo, {
+        const resp = await got.post(SUDOWOODO_EXCHANGE_URL + '?repo=' + repo, {
           headers: {
             Authorization: SUDOWOODO_EXCHANGE_TOKEN
           },
