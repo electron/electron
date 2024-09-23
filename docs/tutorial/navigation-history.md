@@ -9,7 +9,7 @@ hide_title: false
 
 ## Overview
 
-The [NavigationHistory](latest/api/navigation-history.md) API allows you to manage and interact with the browsing history of your Electron application. This powerful feature enables you to create intuitive navigation experiences for your users.
+The [NavigationHistory](../api/navigation-history.md) API allows you to manage and interact with the browsing history of your Electron application. This powerful feature enables you to create intuitive navigation experiences for your users.
 
 ### Accessing NavigationHistory
 
