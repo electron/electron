@@ -20,7 +20,7 @@ async function updateURL () {
   urlInput.value = await window.electronAPI.getCurrentURL()
 }
 
-function transformUrl (url) {
+function transformURL (url) {
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     const updatedUrl = 'https://' + url
     return updatedUrl
@@ -29,14 +29,14 @@ function transformUrl (url) {
 }
 
 async function navigate (url) {
-  const urlInput = transformUrl(url)
+  const urlInput = transformURL(url)
 
   await window.electronAPI.loadURL(urlInput)
 }
 
 async function showHistory (forward = false) {
   const history = await window.electronAPI.getHistory()
-  const currentIndex = history.findIndex(entry => entry.url === transformUrl(urlInput.value))
+  const currentIndex = history.findIndex(entry => entry.url === transformURL(urlInput.value))
 
   if (!currentIndex) {
     return
