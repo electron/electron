@@ -14,7 +14,7 @@
     "@octokit/rest": "^19.0.7",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
-    "@types/busboy": "^1.5.0",
+    "@types/busboy": "^1.5.4",
     "@types/chai": "^4.2.12",
     "@types/chai-as-promised": "^7.1.3",
     "@types/dirty-chai": "^2.0.2",
