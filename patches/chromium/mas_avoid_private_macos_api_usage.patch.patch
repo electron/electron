@@ -1826,19 +1826,20 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index d681326d57ab7753eee9bb8c57fa69404dcf5685..900e8d532a6fb5184efdc59909d674ff0dd66201 100644
+index 4ba2f9a9ed0aa26cc54f0fbaa70eb280b1dd3a69..f7cf6cdb3038d962d7a2ce2be02c75a502ff7766 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -722,6 +722,7 @@ component("views") {
+@@ -722,6 +722,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
++
 +    deps += ["//electron/build/config:generate_mas_config"]
    }
  
    if (is_win) {
-@@ -1154,6 +1155,8 @@ source_set("test_support") {
-     "//ui/base/mojom:mojom",
+@@ -1155,6 +1157,8 @@ source_set("test_support") {
+     "//ui/base/mojom:ui_base_types",
    ]
  
 +  deps += ["//electron/build/config:generate_mas_config"]
