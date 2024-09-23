@@ -52,7 +52,7 @@ updates:
       interval: daily
     labels:
       - "no-backport"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     target-branch: 33-x-y
   - package-ecosystem: npm
     directories:
@@ -63,7 +63,7 @@ updates:
       interval: daily
     labels:
       - "no-backport"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     target-branch: main
   - package-ecosystem: npm
     directories:
@@ -74,7 +74,7 @@ updates:
       interval: daily
     labels:
       - "no-backport"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     target-branch: 32-x-y
   - package-ecosystem: npm
     directories:
@@ -85,7 +85,7 @@ updates:
       interval: daily
     labels:
       - "no-backport"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     target-branch: 31-x-y
   - package-ecosystem: npm
     directories:
@@ -96,5 +96,5 @@ updates:
       interval: daily
     labels:
       - "no-backport"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     target-branch: 30-x-y
