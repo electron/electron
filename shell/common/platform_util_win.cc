@@ -47,11 +47,11 @@ class DeleteFileProgressSink : public IFileOperationProgressSink {
 
  private:
   // IFileOperationProgressSink
-  ULONG STDMETHODCALLTYPE AddRef(void) override;
-  ULONG STDMETHODCALLTYPE Release(void) override;
+  ULONG STDMETHODCALLTYPE AddRef() override;
+  ULONG STDMETHODCALLTYPE Release() override;
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid,
                                            LPVOID* ppvObj) override;
-  HRESULT STDMETHODCALLTYPE StartOperations(void) override;
+  HRESULT STDMETHODCALLTYPE StartOperations() override;
   HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT) override;
   HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem*, LPCWSTR) override;
   HRESULT STDMETHODCALLTYPE
@@ -90,9 +90,9 @@ class DeleteFileProgressSink : public IFileOperationProgressSink {
                                         HRESULT,
                                         IShellItem*) override;
   HRESULT STDMETHODCALLTYPE UpdateProgress(UINT, UINT) override;
-  HRESULT STDMETHODCALLTYPE ResetTimer(void) override;
-  HRESULT STDMETHODCALLTYPE PauseTimer(void) override;
-  HRESULT STDMETHODCALLTYPE ResumeTimer(void) override;
+  HRESULT STDMETHODCALLTYPE ResetTimer() override;
+  HRESULT STDMETHODCALLTYPE PauseTimer() override;
+  HRESULT STDMETHODCALLTYPE ResumeTimer() override;
 
   ULONG m_cRef;
 };
