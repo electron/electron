@@ -16,7 +16,7 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - "no-backport"
+      - "backport-check-skip"
       - "semver/none"
     target-branch: 33-x-y
   - package-ecosystem: github-actions
@@ -24,7 +24,7 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - "no-backport"
+      - "backport-check-skip"
       - "semver/none"
     target-branch: 32-x-y
   - package-ecosystem: github-actions
@@ -32,7 +32,7 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - "no-backport"
+      - "backport-check-skip"
       - "semver/none"
     target-branch: 31-x-y
   - package-ecosystem: github-actions
@@ -40,7 +40,7 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - "no-backport"
+      - "backport-check-skip"
       - "semver/none"
     target-branch: 30-x-y
   - package-ecosystem: npm
@@ -53,17 +53,6 @@ updates:
     labels:
       - "no-backport"
     open-pull-requests-limit: 2
-    target-branch: 33-x-y
-  - package-ecosystem: npm
-    directories:
-      - /
-      - /spec
-      - /npm
-    schedule:
-      interval: daily
-    labels:
-      - "no-backport"
-    open-pull-requests-limit: 0
     target-branch: main
   - package-ecosystem: npm
     directories:
@@ -73,7 +62,18 @@ updates:
     schedule:
       interval: daily
     labels:
-      - "no-backport"
+      - "backport-check-skip"
+    open-pull-requests-limit: 0
+    target-branch: 33-x-y
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /spec
+      - /npm
+    schedule:
+      interval: daily
+    labels:
+      - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 32-x-y
   - package-ecosystem: npm
@@ -84,7 +84,7 @@ updates:
     schedule:
       interval: daily
     labels:
-      - "no-backport"
+      - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 31-x-y
   - package-ecosystem: npm
@@ -95,6 +95,6 @@ updates:
     schedule:
       interval: daily
     labels:
-      - "no-backport"
+      - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 30-x-y
