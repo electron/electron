@@ -56,11 +56,14 @@ REM Install Windows SDK
 choco install windows-sdk-11-version-22h2-all
 
 REM Install nodejs python git and yarn needed dependencies
-choco install -y --force nodejs --version=18.12.1
+choco install -y --force nodejs --version=20.9.0
 choco install -y python2 git yarn
 choco install python --version 3.7.9
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH%
+if not exist "C:\Users\appveyor\AppData\Roaming\npm" (
+  mkdir "C:\Users\appveyor\AppData\Roaming\npm"
+)
 
 REM Setup Depot Tools
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools
