@@ -52,7 +52,7 @@
     "got": "^11.8.5",
     "husky": "^8.0.1",
     "lint": "^1.1.2",
-    "lint-staged": "^10.2.11",
+    "lint-staged": "^15.2.10",
     "markdownlint-cli2": "^0.13.0",
     "minimist": "^1.2.6",
     "null-loader": "^4.0.0",
