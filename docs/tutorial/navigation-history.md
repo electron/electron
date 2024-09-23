@@ -9,20 +9,20 @@ hide_title: false
 
 ## Overview
 
-The [NavigationHistory](../api/navigation-history.md) API allows you to manage and interact with the browsing history of your Electron application. This powerful feature enables you to create intuitive navigation experiences for your users.
+The [NavigationHistory](../api/navigation-history.md) class allows you to manage and interact with the browsing history of your Electron application. This powerful feature enables you to create intuitive navigation experiences for your users.
 
-### Accessing NavigationHistory
+## Accessing NavigationHistory
 
-To use NavigationHistory, access it through the [webContents](../api/web-contents.md) of your [BrowserWindow](../api/browser-window.md):
+Navigation history is stored per [`WebContents`](../api/web-contents.md) instance. To access a specific instance of the NavigationHistory class, use the WebContents class's [`contents.navigationHistory` instance property](https://www.electronjs.org/docs/latest/api/web-contents#contentsnavigationhistory-readonly).
 
 ```js
 const { BrowserWindow } = require('electron')
 
-const mainWindow = new BrowserWindow({ width: 800, height: 600 })
-const navigationHistory = mainWindow.webContents.navigationHistory
+const mainWindow = new BrowserWindow()
+const { navigationHistory } = mainWindow.webContents
 ```
 
-#### Navigating through history
+## Navigating through history
 
 Easily implement back and forward navigation:
 
@@ -38,27 +38,34 @@ if (navigationHistory.canGoForward()) {
 }
 ```
 
-#### Accessing history entries
+## Accessing history entries
 
 Retrieve and display the user's browsing history:
 
 ```js @ts-type={navigationHistory:Electron.NavigationHistory}
 const entries = navigationHistory.getAllEntries()
+
 entries.forEach((entry) => {
   console.log(`${entry.title}: ${entry.url}`)
 })
 ```
 
-#### Navigating to specific entries
+Each navigation entry corresponds to a specific page. The indexing system follows a sequential order:
+- Index 0: Represents the earliest visited page.
+- Index N: Represents the most recent page visited.
+
+## Navigating to specific entries
 
 Allow users to jump to any point in their browsing history:
 
 ```js @ts-type={navigationHistory:Electron.NavigationHistory}
-// Navigate to the 5th entry in the history
+// Navigate to the 5th entry in the history, if the index is valid
 navigationHistory.goToIndex(4)
 
-// Navigate to the 2nd entry from the current position
-navigationHistory.goToOffset(2)
+// Navigate to the 2nd entry forward from the current position
+if (navigationHistory.canGoToOffset(2)) {
+  navigationHistory.goToOffset(2)
+}
 ```
 
 Here's a full example that you can open with Electron Fiddle:
