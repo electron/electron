@@ -9,8 +9,9 @@ const { ELECTRON_DIR } = require('../../lib/utils');
 const notesGenerator = require('./notes.js');
 
 const { Octokit } = require('@octokit/rest');
+const { createGitHubTokenStrategy } = require('../github-token');
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: createGitHubTokenStrategy('electron')
 });
 
 const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');

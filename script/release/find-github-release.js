@@ -1,9 +1,7 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
 const { Octokit } = require('@octokit/rest');
-const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
-});
+const { createGitHubTokenStrategy } = require('./github-token');
 
 if (process.argv.length < 3) {
   console.log('Usage: find-release version');
@@ -12,6 +10,10 @@ if (process.argv.length < 3) {
 
 const version = process.argv[2];
 const targetRepo = findRepo();
+
+const octokit = new Octokit({
+  authStrategy: createGitHubTokenStrategy(targetRepo)
+});
 
 function findRepo () {
   return version.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
