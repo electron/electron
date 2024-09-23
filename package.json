@@ -50,7 +50,7 @@
     "express": "^4.20.0",
     "folder-hash": "^2.1.1",
     "got": "^11.8.5",
-    "husky": "^8.0.1",
+    "husky": "^9.1.6",
     "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
     "markdownlint-cli2": "^0.13.0",
