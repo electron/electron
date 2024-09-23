@@ -2951,6 +2951,29 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
                                std::move(print_callback));
 }
 
+void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                  print_to_pdf::PdfPrintResult print_result,
+                  scoped_refptr<base::RefCountedMemory> data) {
+  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
+    promise.RejectWithErrorMessage(
+        "Failed to generate PDF: " +
+        print_to_pdf::PdfPrintResultToString(print_result));
+    return;
+  }
+
+  v8::Isolate* isolate = promise.isolate();
+  gin_helper::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(
+      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
+
+  v8::Local<v8::Value> buffer =
+      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
+                         data->size())
+          .ToLocalChecked();
+
+  promise.Resolve(buffer);
+}
 }  // namespace
 
 void WebContents::Print(gin::Arguments* args) {
@@ -3171,35 +3194,9 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   params->params->document_cookie = unique_id.value_or(0);
 
   manager->PrintToPdf(rfh, page_ranges, std::move(params),
-                      base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
-                                     std::move(promise)));
+                      base::BindOnce(&OnPDFCreated, std::move(promise)));
 
   return handle;
-}
-
-void WebContents::OnPDFCreated(
-    gin_helper::Promise<v8::Local<v8::Value>> promise,
-    print_to_pdf::PdfPrintResult print_result,
-    scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
-    promise.RejectWithErrorMessage(
-        "Failed to generate PDF: " +
-        print_to_pdf::PdfPrintResultToString(print_result));
-    return;
-  }
-
-  v8::Isolate* isolate = promise.isolate();
-  gin_helper::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
-
-  v8::Local<v8::Value> buffer =
-      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
-                         data->size())
-          .ToLocalChecked();
-
-  promise.Resolve(buffer);
 }
 #endif
 
