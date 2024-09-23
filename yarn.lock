@@ -146,10 +146,10 @@
   optionalDependencies:
     "@types/glob" "^7.1.1"
 
-"@electron/docs-parser@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.2.1.tgz#ee0b4e686c1117605aa3c22bd0e1786f2f19d8aa"
-  integrity sha512-kgYcZS/OkfB+2+v4e72wknJ/Eo0UJIaxMTkCshTFRjuGTLIp/J1ZFNxHOWJHp7InJD6mc/VjjIc6bMCoxtA1Rw==
+"@electron/docs-parser@^1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.2.2.tgz#50f80c5b732567280448843caf1d30168cd02c37"
+  integrity sha512-Af+BRVydwqXq0vAB2ZFIdK2vX28dhFSG4ClYeNe663tULiRVLVoVMoGpEP2ASU/coEJ8Vh5b/VRscM8igYEWyw==
   dependencies:
     "@types/markdown-it" "^12.0.0"
     chai "^4.2.0"
@@ -4802,12 +4802,7 @@ minimatch@^9.0.1, minimatch@~9.0.4:
   dependencies:
     brace-expansion "^2.0.1"
 
-minimist@^1.0.0, minimist@^1.2.5, minimist@^1.2.6, minimist@~1.2.0:
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
-  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
-
-minimist@^1.2.0, minimist@^1.2.8:
+minimist@^1.0.0, minimist@^1.2.0, minimist@^1.2.5, minimist@^1.2.6, minimist@^1.2.8, minimist@~1.2.0:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
@@ -5346,14 +5341,7 @@ prelude-ls@^1.2.1:
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.2.1.tgz#debc6489d7a6e6b0e7611888cec880337d316396"
   integrity sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==
 
-pretty-ms@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/pretty-ms/-/pretty-ms-5.0.0.tgz#6133a8f55804b208e4728f6aa7bf01085e951e24"
-  integrity sha512-94VRYjL9k33RzfKiGokPBPpsmloBYSf5Ri+Pq19zlsEcUKFob+admeXr5eFDRuPjFmEOcjJvPGdillYOJyvZ7Q==
-  dependencies:
-    parse-ms "^2.1.0"
-
-pretty-ms@^5.1.0:
+pretty-ms@^5.0.0, pretty-ms@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/pretty-ms/-/pretty-ms-5.1.0.tgz#b906bdd1ec9e9799995c372e2b1c34f073f95384"
   integrity sha512-4gaK1skD2gwscCfkswYQRmddUb2GJZtzDGRjHWadVHtK/DIKFufa12MvES6/xu1tVbUYeia5bmLcwJtZJQUqnw==
