@@ -403,7 +403,7 @@ WebContents.prototype.loadURL = function (url, options) {
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
       if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: url };
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url };
       }
       finishListener();
     };
@@ -695,10 +695,12 @@ WebContents.prototype._init = function () {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
       rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -736,10 +738,12 @@ WebContents.prototype._init = function () {
     let createWindow: Electron.CreateWindowFunction | undefined;
 
     this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -761,14 +765,16 @@ WebContents.prototype._init = function () {
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       createWindow = result.createWindow;
       if (!event.defaultPrevented) {
-        const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
-          // Allow setting of backgroundColor as a webPreference even though
-          // it's technically a BrowserWindowConstructorOptions option because
-          // we need to access it in the renderer at init time.
-          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
-          transparent: windowOpenOverriddenOptions.transparent,
-          ...windowOpenOverriddenOptions.webPreferences
-        } : undefined;
+        const secureOverrideWebPreferences = windowOpenOverriddenOptions
+          ? {
+              // Allow setting of backgroundColor as a webPreference even though
+            // it's technically a BrowserWindowConstructorOptions option because
+            // we need to access it in the renderer at init time.
+              backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+              transparent: windowOpenOverriddenOptions.transparent,
+              ...windowOpenOverriddenOptions.webPreferences
+            }
+          : undefined;
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         const webPreferences = makeWebPreferences({
           embedder: this,
@@ -864,15 +870,17 @@ WebContents.prototype._init = function () {
       message: info.messageText,
       checkboxLabel: checkbox,
       signal: abortController.signal,
-      ...(info.dialogType === 'confirm') ? {
-        buttons: ['OK', 'Cancel'],
-        defaultId: 0,
-        cancelId: 1
-      } : {
-        buttons: ['OK'],
-        defaultId: -1, // No default button
-        cancelId: 0
-      }
+      ...(info.dialogType === 'confirm')
+        ? {
+            buttons: ['OK', 'Cancel'],
+            defaultId: 0,
+            cancelId: 1
+          }
+        : {
+            buttons: ['OK'],
+            defaultId: -1, // No default button
+            cancelId: 0
+          }
     };
     openDialogs.add(abortController);
     const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);

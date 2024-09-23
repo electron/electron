@@ -649,7 +649,7 @@ describe('protocol module', () => {
       const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
-          url: url,
+          url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
@@ -910,7 +910,7 @@ describe('protocol module', () => {
     });
 
     it('allows CORS requests by default', async () => {
-      await allowsCORSRequests('cors', 200, new RegExp(''), () => {
+      await allowsCORSRequests('cors', 200, /(?:)/, () => {
         const { ipcRenderer } = require('electron');
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status);
