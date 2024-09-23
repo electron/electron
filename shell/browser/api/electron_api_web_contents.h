@@ -46,10 +46,6 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
 
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_view_manager_electron.h"
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
 
