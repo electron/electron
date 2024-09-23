@@ -4,7 +4,7 @@
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
-    "@azure/storage-blob": "^12.9.0",
+    "@azure/storage-blob": "^12.24.0",
     "@electron/asar": "^3.2.1",
     "@electron/docs-parser": "^1.2.1",
     "@electron/fiddle-core": "^1.0.4",
