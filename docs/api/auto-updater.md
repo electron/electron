@@ -32,10 +32,14 @@ This is a requirement of `Squirrel.Mac`.
 ### Windows
 
 On Windows, you have to install your app into a user's machine before you can
-use the `autoUpdater`, so it is recommended that you use the
-[electron-winstaller][installer-lib], [Electron Forge][electron-forge-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
+use the `autoUpdater`, so it is recommended that you use
+[electron-winstaller][installer-lib] or [Electron Forge][electron-forge-lib] to generate a Windows installer.
 
-When using [electron-winstaller][installer-lib] or [Electron Forge][electron-forge-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
+When using [electron-winstaller][installer-lib] or [Electron Forge][electron-forge-lib] make sure you do not try to update your app
+[the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events)
+(Also see [this issue for more info](https://github.com/electron/electron/issues/7155)).
+It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup)
+to get desktop shortcuts for your app.
 
 The installer generated with Squirrel will create a shortcut icon with an
 [Application User Model ID][app-user-model-id] in the format of
@@ -43,10 +47,6 @@ The installer generated with Squirrel will create a shortcut icon with an
 `com.squirrel.slack.Slack` and `com.squirrel.code.Code`. You have to use the
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
-
-Like Squirrel.Mac, Windows can host updates on S3 or any other static file host.
-You can read the documents of [Squirrel.Windows][squirrel-windows] to get more details
-about how Squirrel.Windows works.
 
 ## Events
 
@@ -137,8 +137,6 @@ application starts.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
-[squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
-[installer]: https://github.com/electron-archive/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
 [electron-forge-lib]: https://github.com/electron/forge
 [app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
