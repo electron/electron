@@ -36,9 +36,8 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
@@ -183,11 +182,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   if (windowType == "textured" || transparent() || !has_frame()) {
-    node::Environment* env =
-        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-    EmitWarning(env,
-                "The 'textured' window type is deprecated and will be removed",
-                "DeprecationWarning");
+    util::EmitWarning(
+        "The 'textured' window type is deprecated and will be removed",
+        "DeprecationWarning");
     styleMask |= NSWindowStyleMaskTexturedBackground;
   }
 #pragma clang diagnostic pop
@@ -1814,9 +1811,10 @@ std::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const gin_helper::Dictionary& options,
-                                   NativeWindow* parent) {
-  return new NativeWindowMac(options, parent);
+std::unique_ptr<NativeWindow> NativeWindow::Create(
+    const gin_helper::Dictionary& options,
+    NativeWindow* parent) {
+  return std::make_unique<NativeWindowMac>(options, parent);
 }
 
 }  // namespace electron

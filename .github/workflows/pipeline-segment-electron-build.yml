@@ -15,6 +15,10 @@ on:
         type: string
         description: 'Arch to build for, can be x64, arm64 or arm'
         required: true
+      target-variant:
+        type: string
+        description: 'Variant to build for, no effect on non-macOS target platforms. Can be darwin, mas or all.'
+        default: all
       build-runs-on:
         type: string
         description: 'What host to run the build'
@@ -57,13 +61,14 @@ on:
 
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
 
 env:
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  ELECTRON_GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+  SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
+  SUDOWOODO_EXCHANGE_TOKEN: ${{ secrets.SUDOWOODO_EXCHANGE_TOKEN }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
 
@@ -82,9 +87,15 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Free up space (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/free-space-macos
+    - name: Check disk space after freeing up space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: df -h
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
-      uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
+      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
       with:
         node-version: 20.11.x
         cache: yarn
@@ -182,6 +193,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
     - name: Build Electron
+      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
       uses: ./src/electron/.github/actions/build-electron
       with:
         target-arch: ${{ inputs.target-arch }}
@@ -193,13 +205,13 @@ jobs:
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       run: |
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         GN_EXTRA_ARGS='is_mas_build=true'
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Build Electron (MAS)
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       uses: ./src/electron/.github/actions/build-electron
       with:
         target-arch: ${{ inputs.target-arch }}

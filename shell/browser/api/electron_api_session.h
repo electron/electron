@@ -16,8 +16,8 @@
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/wrappable.h"
-#include "services/network/public/mojom/host_resolver.mojom.h"
-#include "services/network/public/mojom/ssl_config.mojom.h"
+#include "services/network/public/mojom/host_resolver.mojom-forward.h"
+#include "services/network/public/mojom/ssl_config.mojom-forward.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -60,18 +60,18 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Session : public gin::Wrappable<Session>,
-                public gin_helper::Pinnable<Session>,
-                public gin_helper::Constructible<Session>,
-                public gin_helper::EventEmitterMixin<Session>,
-                public gin_helper::CleanedUpAtExit,
+class Session final : public gin::Wrappable<Session>,
+                      public gin_helper::Pinnable<Session>,
+                      public gin_helper::Constructible<Session>,
+                      public gin_helper::EventEmitterMixin<Session>,
+                      public gin_helper::CleanedUpAtExit,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-                private SpellcheckHunspellDictionary::Observer,
+                      private SpellcheckHunspellDictionary::Observer,
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-                private extensions::ExtensionRegistryObserver,
+                      private extensions::ExtensionRegistryObserver,
 #endif
-                private content::DownloadManager::Observer {
+                      private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static gin::Handle<Session> CreateFrom(

@@ -16,6 +16,7 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
@@ -38,10 +39,10 @@ namespace electron::api {
 class WebContents;
 
 // Bindings for accessing frames from the main process.
-class WebFrameMain : public gin::Wrappable<WebFrameMain>,
-                     public gin_helper::EventEmitterMixin<WebFrameMain>,
-                     public gin_helper::Pinnable<WebFrameMain>,
-                     public gin_helper::Constructible<WebFrameMain> {
+class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
+                           public gin_helper::EventEmitterMixin<WebFrameMain>,
+                           public gin_helper::Pinnable<WebFrameMain>,
+                           public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);

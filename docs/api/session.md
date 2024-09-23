@@ -963,7 +963,7 @@ For more context, refer to the [Web API Permissions](../tutorial/web-api-permiss
 
 :::
 
-#### `ses.setDisplayMediaRequestHandler(handler)`
+#### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
 * `handler` Function | null
   * `request` Object
@@ -990,11 +990,17 @@ For more context, refer to the [Web API Permissions](../tutorial/web-api-permiss
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
+* `opts` Object (optional) _macOS_ _Experimental_
+  * `useSystemPicker` Boolean - true if the available native system picker should be used. Default is `false`. _macOS_ _Experimental_
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 [desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
+
+`useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
+This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
+is set to `true`, the handler will not be invoked.
 
 ```js
 const { session, desktopCapturer } = require('electron')
@@ -1004,7 +1010,11 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
     // Grant access to the first screen found.
     callback({ video: sources[0] })
   })
-})
+  // Use the system picker if available.
+  // Note: this is currently experimental. If the system picker
+  // is available, it will be used and the media request handler
+  // will not be invoked.
+}, { useSystemPicker: true })
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
@@ -1521,7 +1531,7 @@ Returns `Promise<void>` - resolves when all data has been cleared.
 
 Clears various different types of data.
 
-This method clears more types of data and is more thourough than the
+This method clears more types of data and is more thorough than the
 `clearStorageData` method.
 
 **Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.

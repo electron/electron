@@ -29,22 +29,23 @@ declare namespace Electron {
 
   interface BaseWindow {
     _init(): void;
-  }
-
-  interface BrowserWindow {
-    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
+    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+  }
+
+  interface BrowserWindow extends BaseWindow {
+    _init(): void;
     _getWindowButtonVisibility: () => boolean;
     _getAlwaysOnTopLevel: () => string;
     devToolsWebContents: WebContents;
     frameName: string;
+    _browserViews: BrowserView[];
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
-
-    _browserViews: BrowserView[];
   }
 
   interface BrowserView {
@@ -67,7 +68,7 @@ declare namespace Electron {
   }
 
   interface TouchBar {
-    _removeFromWindow: (win: BrowserWindow) => void;
+    _removeFromWindow: (win: BaseWindow) => void;
   }
 
   interface WebContents {
@@ -87,7 +88,7 @@ declare namespace Electron {
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
-    _getNavigationEntryAtIndex(index: number): Electron.EntryAtIndex | null;
+    _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
     _historyLength(): number;
     _canGoBack(): boolean;
@@ -97,6 +98,8 @@ declare namespace Electron {
     _goForward(): void;
     _goToOffset(index: number): void;
     _goToIndex(index: number): void;
+    _removeNavigationEntryAtIndex(index: number): boolean;
+    _getHistory(): Electron.NavigationEntry[];
     _clearHistory():void
     canGoToIndex(index: number): boolean;
     destroy(): void;
@@ -122,6 +125,10 @@ declare namespace Electron {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
+  }
+
+  interface Session {
+    _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
   }
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;

@@ -27,7 +27,7 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "services/network/public/mojom/url_response_head.mojom.h"
+#include "services/network/public/mojom/url_response_head.mojom-forward.h"
 #include "services/network/url_loader_factory.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/browser/net/web_request_api_interface.h"
@@ -35,7 +35,7 @@
 
 namespace mojo {
 template <typename T>
-class PendingReciever;
+class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo

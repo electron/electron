@@ -5,9 +5,9 @@
 #include "shell/browser/serial/serial_chooser_context.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 
-#include <string_view>
 #include "base/base64.h"
 #include "base/containers/contains.h"
 #include "base/values.h"
@@ -36,6 +36,8 @@ constexpr char kSerialNumberKey[] = "serial_number";
 constexpr char kUsbDriverKey[] = "usb_driver";
 #endif  // BUILDFLAG(IS_MAC)
 #endif  // BUILDFLAG(IS_WIN)
+
+namespace {
 
 std::string EncodeToken(const base::UnguessableToken& token) {
   const uint64_t data[2] = {token.GetHighForSerialization(),
@@ -80,6 +82,8 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   }
   return base::Value(std::move(value));
 }
+
+}  // namespace
 
 SerialChooserContext::SerialChooserContext(ElectronBrowserContext* context)
     : browser_context_(context) {}

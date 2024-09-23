@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
@@ -18,6 +17,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "components/upload_list/crash_upload_list.h"
 #include "components/upload_list/text_log_upload_list.h"
+#include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "shell/common/electron_paths.h"
@@ -39,7 +39,6 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/containers/span.h"
 #include "base/files/file_util.h"
 #include "base/uuid.h"
 #include "components/crash/core/common/crash_keys.h"
@@ -81,6 +80,8 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys() {
   return GetGlobalCrashKeysMutable();
 }
 
+namespace {
+
 bool GetClientIdPath(base::FilePath* path) {
   if (base::PathService::Get(electron::DIR_CRASH_DUMPS, path)) {
     *path = path->Append("client_id");
@@ -108,6 +109,8 @@ void WriteClientId(const std::string& client_id) {
   if (GetClientIdPath(&client_id_path))
     base::WriteFile(client_id_path, client_id);
 }
+
+}  // namespace
 
 std::string GetClientId() {
   static base::NoDestructor<std::string> client_id;

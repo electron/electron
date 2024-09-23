@@ -869,12 +869,12 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `texture` [OffscreenSharedTexture](structures/offscreen-shared-texture.md) (optional) _Experimental_ - The GPU shared texture of the frame, when `webPreferences.offscreen.useSharedTexture` is `true`.
 * `dirtyRect` [Rectangle](structures/rectangle.md)
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
-Emitted when a new frame is generated. Only the dirty area is passed in the
-buffer.
+Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -882,6 +882,33 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
   // updateBitmap(dirty, image.getBitmap())
+})
+win.loadURL('https://github.com')
+```
+
+When using shared texture (set `webPreferences.offscreen.useSharedTexture` to `true`) feature, you can pass the texture handle to external rendering pipeline without the overhead of
+copying data between CPU and GPU memory, with Chromium's hardware acceleration support. This feature is helpful for high-performance rendering scenarios.
+
+Only a limited number of textures can exist at the same time, so it's important that you call `texture.release()` as soon as you're done with the texture.
+By managing the texture lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes through IPC.
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({ webPreferences: { offscreen: { useSharedTexture: true } } })
+win.webContents.on('paint', async (e, dirty, image) => {
+  if (e.texture) {
+    // By managing lifecycle yourself, you can handle the event in async handler or pass the `e.texture.textureInfo`
+    // to other processes (not `e.texture`, the `e.texture.release` function is not passable through IPC).
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // You can send the native texture handle to native code for importing into your rendering pipeline.
+    // For example: https://github.com/electron/electron/tree/main/spec/fixtures/native-addon/osr-gpu
+    // importTextureHandle(dirty, e.texture.textureInfo)
+
+    // You must call `e.texture.release()` as soon as possible, before the underlying frame pool is drained.
+    e.texture.release()
+  }
 })
 win.loadURL('https://github.com')
 ```
@@ -1126,17 +1153,41 @@ Reloads current page and ignores cache.
 
 #### `contents.canGoBack()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Returns `boolean` - Whether the browser can go back to previous web page.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.canGoBack`](navigation-history.md#navigationhistorycangoback) API.
 
 #### `contents.canGoForward()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Returns `boolean` - Whether the browser can go forward to next web page.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.canGoForward`](navigation-history.md#navigationhistorycangoforward) API.
 
 #### `contents.canGoToOffset(offset)` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 * `offset` Integer
 
@@ -1146,11 +1197,27 @@ Returns `boolean` - Whether the web page can go to `offset`.
 
 #### `contents.clearHistory()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Clears the navigation history.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.clear`](navigation-history.md#navigationhistoryclear) API.
 
 #### `contents.goBack()` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 Makes the browser go back a web page.
 
@@ -1158,11 +1225,27 @@ Makes the browser go back a web page.
 
 #### `contents.goForward()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Makes the browser go forward a web page.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.goForward`](navigation-history.md#navigationhistorygoforward) API.
 
 #### `contents.goToIndex(index)` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 * `index` Integer
 
@@ -1171,6 +1254,14 @@ Navigates browser to the specified absolute web page index.
 **Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindexindex) API.
 
 #### `contents.goToOffset(offset)` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 * `offset` Integer
 
@@ -2148,6 +2239,15 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 #### `contents.setBackgroundThrottling(allowed)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/38924
+    description: "`WebContents.backgroundThrottling` set to false affects all `WebContents` in the host `BrowserWindow`"
+    breaking-changes-header: behavior-changed-webcontentsbackgroundthrottling-set-to-false-affects-all-webcontents-in-the-host-browserwindow
+```
+-->
+
 * `allowed` boolean
 
 Controls whether or not this WebContents will throttle animations and timers
@@ -2257,6 +2357,15 @@ when the DevTools has been closed.
 A [`Debugger`](debugger.md) instance for this webContents.
 
 #### `contents.backgroundThrottling`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/38924
+    description: "`WebContents.backgroundThrottling` set to false affects all `WebContents` in the host `BrowserWindow`"
+    breaking-changes-header: behavior-changed-webcontentsbackgroundthrottling-set-to-false-affects-all-webcontents-in-the-host-browserwindow
+```
+-->
 
 A `boolean` property that determines whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.

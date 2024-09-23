@@ -22,7 +22,8 @@
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
-#include "content/common/frame.mojom.h"
+#include "content/common/frame.mojom-forward.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
@@ -37,6 +38,7 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -49,7 +51,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/common/mojom/view_type.mojom.h"
+#include "extensions/common/mojom/view_type.mojom-forward.h"
 
 namespace extensions {
 class ScriptExecutor;
@@ -109,19 +111,19 @@ class BaseWindow;
 class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
-class WebContents : public ExclusiveAccessContext,
-                    public gin::Wrappable<WebContents>,
-                    public gin_helper::EventEmitterMixin<WebContents>,
-                    public gin_helper::Constructible<WebContents>,
-                    public gin_helper::Pinnable<WebContents>,
-                    public gin_helper::CleanedUpAtExit,
-                    public content::WebContentsObserver,
-                    public content::WebContentsDelegate,
-                    private content::RenderWidgetHost::InputEventObserver,
-                    public content::JavaScriptDialogManager,
-                    public InspectableWebContentsDelegate,
-                    public InspectableWebContentsViewDelegate,
-                    public BackgroundThrottlingSource {
+class WebContents final : public ExclusiveAccessContext,
+                          public gin::Wrappable<WebContents>,
+                          public gin_helper::EventEmitterMixin<WebContents>,
+                          public gin_helper::Constructible<WebContents>,
+                          public gin_helper::Pinnable<WebContents>,
+                          public gin_helper::CleanedUpAtExit,
+                          public content::WebContentsObserver,
+                          public content::WebContentsDelegate,
+                          private content::RenderWidgetHost::InputEventObserver,
+                          public content::JavaScriptDialogManager,
+                          public InspectableWebContentsDelegate,
+                          public InspectableWebContentsViewDelegate,
+                          public BackgroundThrottlingSource {
  public:
   enum class Type {
     kBackgroundPage,  // An extension background page.
@@ -204,6 +206,8 @@ class WebContents : public ExclusiveAccessContext,
   void GoToIndex(int index);
   int GetActiveIndex() const;
   content::NavigationEntry* GetNavigationEntryAtIndex(int index) const;
+  bool RemoveNavigationEntryAtIndex(int index);
+  std::vector<content::NavigationEntry*> GetHistory() const;
   void ClearHistory();
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
@@ -308,7 +312,9 @@ class WebContents : public ExclusiveAccessContext,
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
-  void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
+  void OnPaint(const gfx::Rect& dirty_rect,
+               const SkBitmap& bitmap,
+               const OffscreenSharedTexture& info);
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
@@ -487,6 +493,8 @@ class WebContents : public ExclusiveAccessContext,
 
   void SetBackgroundColor(std::optional<SkColor> color);
 
+  void PDFReadyToPrint();
+
   SkRegion* draggable_region() {
     return force_non_draggable_ ? nullptr : draggable_region_.get();
   }
@@ -557,13 +565,14 @@ class WebContents : public ExclusiveAccessContext,
       int opener_render_frame_id,
       const content::mojom::CreateNewWindowParams& params,
       content::WebContents* new_contents) override;
-  void AddNewContents(content::WebContents* source,
-                      std::unique_ptr<content::WebContents> new_contents,
-                      const GURL& target_url,
-                      WindowOpenDisposition disposition,
-                      const blink::mojom::WindowFeatures& window_features,
-                      bool user_gesture,
-                      bool* was_blocked) override;
+  content::WebContents* AddNewContents(
+      content::WebContents* source,
+      std::unique_ptr<content::WebContents> new_contents,
+      const GURL& target_url,
+      WindowOpenDisposition disposition,
+      const blink::mojom::WindowFeatures& window_features,
+      bool user_gesture,
+      bool* was_blocked) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params,
@@ -837,6 +846,9 @@ class WebContents : public ExclusiveAccessContext,
   base::WeakPtr<NativeWindow> owner_window_;
 
   bool offscreen_ = false;
+
+  // Whether offscreen rendering use gpu shared texture
+  bool offscreen_use_shared_texture_ = false;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;

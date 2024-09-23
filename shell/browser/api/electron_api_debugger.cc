@@ -5,9 +5,9 @@
 #include "shell/browser/api/electron_api_debugger.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 
-#include <string_view>
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -18,7 +18,6 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/node_includes.h"
 
 using content::DevToolsAgentHost;
 

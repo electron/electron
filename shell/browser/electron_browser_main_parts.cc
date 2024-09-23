@@ -68,6 +68,7 @@
 #include "ui/base/ui_base_switches.h"
 #include "ui/color/color_provider_manager.h"
 #include "ui/display/screen.h"
+#include "ui/views/layout/layout_provider.h"
 #include "url/url_util.h"
 
 #if defined(USE_AURA)
@@ -143,11 +144,6 @@ class LinuxUiGetterImpl : public ui::LinuxUiGetter {
   }
 };
 #endif
-
-template <typename T>
-void Erase(T* container, typename T::iterator iter) {
-  container->erase(iter);
-}
 
 #if BUILDFLAG(IS_WIN)
 int GetMinimumFontSize() {

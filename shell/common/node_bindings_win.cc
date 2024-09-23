@@ -6,7 +6,6 @@
 
 #include <windows.h>
 
-#include "base/logging.h"
 #include "base/system/sys_info.h"
 
 namespace electron {
@@ -50,8 +49,8 @@ void NodeBindingsWin::PollEvents() {
 }
 
 // static
-NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
-  return new NodeBindingsWin(browser_env);
+std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env) {
+  return std::make_unique<NodeBindingsWin>(env);
 }
 
 }  // namespace electron

@@ -18,7 +18,6 @@
 #include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "ui/views/widget/widget_delegate.h"
@@ -71,8 +70,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(const gin_helper::Dictionary& options,
-                              NativeWindow* parent = nullptr);
+  static std::unique_ptr<NativeWindow> Create(
+      const gin_helper::Dictionary& options,
+      NativeWindow* parent = nullptr);
 
   void InitFromOptions(const gin_helper::Dictionary& options);
 
@@ -448,7 +448,7 @@ class NativeWindow : public base::SupportsUserData,
   // Minimum and maximum size.
   std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
-  // constraints beacause converting between them will cause rounding errors
+  // constraints because converting between them will cause rounding errors
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 

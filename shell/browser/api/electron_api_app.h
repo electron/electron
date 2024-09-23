@@ -17,6 +17,7 @@
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
 #include "crypto/crypto_buildflags.h"
+#include "electron/mas.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
@@ -57,12 +58,12 @@ enum class JumpListResult : int;
 
 namespace api {
 
-class App : public ElectronBrowserClient::Delegate,
-            public gin::Wrappable<App>,
-            public gin_helper::EventEmitterMixin<App>,
-            private BrowserObserver,
-            private content::GpuDataManagerObserver,
-            private content::BrowserChildProcessObserver {
+class App final : public ElectronBrowserClient::Delegate,
+                  public gin::Wrappable<App>,
+                  public gin_helper::EventEmitterMixin<App>,
+                  private BrowserObserver,
+                  private content::GpuDataManagerObserver,
+                  private content::BrowserChildProcessObserver {
  public:
   using FileIconCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;

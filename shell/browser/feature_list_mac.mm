@@ -31,4 +31,13 @@ std::string EnablePlatformSpecificFeatures() {
   return "";
 }
 
+std::string DisablePlatformSpecificFeatures() {
+  if (@available(macOS 14.4, *)) {
+    // Required to stop timing out getDisplayMedia while waiting for
+    // the user to select a window with the picker
+    return "TimeoutHangingVideoCaptureStarts";
+  }
+  return "";
+}
+
 }  // namespace electron

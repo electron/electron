@@ -10,7 +10,6 @@
 #include "base/strings/string_util.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"

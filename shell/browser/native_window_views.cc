@@ -22,6 +22,7 @@
 
 #include "base/containers/contains.h"
 #include "base/memory/raw_ref.h"
+#include "base/numerics/ranges.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
@@ -569,7 +570,7 @@ bool NativeWindowViews::IsVisible() const {
   // current window.
   bool visible =
       ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_VISIBLE;
-  // WS_VISIBLE is true even if a window is miminized - explicitly check that.
+  // WS_VISIBLE is true even if a window is minimized - explicitly check that.
   return visible && !IsMinimized();
 #else
   return widget()->IsVisible();
@@ -745,6 +746,24 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
+
+  // Auto-hide menubar when in fullscreen.
+  if (fullscreen) {
+    menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
+    SetMenuBarVisibility(false);
+  } else {
+    // No fullscreen -> fullscreen video -> un-fullscreen video results
+    // in `NativeWindowViews::SetFullScreen(false)` being called twice.
+    // `menu_bar_visible_before_fullscreen_` is always false on the
+    //  second call which results in `SetMenuBarVisibility(false)` no
+    // matter what. We check `leaving_fullscreen` to avoid this.
+    if (!leaving_fullscreen)
+      return;
+
+    SetMenuBarVisibility(!IsMenuBarAutoHide() &&
+                         menu_bar_visible_before_fullscreen_);
+    menu_bar_visible_before_fullscreen_ = false;
+  }
 #else
   if (IsVisible())
     widget()->SetFullscreen(fullscreen);
@@ -1637,10 +1656,18 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   if (changed_widget != widget())
     return;
 
-  // Note: We intentionally use `GetBounds()` instead of `bounds` to properly
-  // handle minimized windows on Windows.
+  // |GetWindowBoundsInScreen| has a ~1 pixel margin of error, so if we check
+  // existing bounds directly against the new bounds without accounting for that
+  // we'll have constant false positives when the window is moving but the user
+  // hasn't changed its size at all.
+  auto areWithinOnePixel = [](gfx::Size old_size, gfx::Size new_size) -> bool {
+    return base::IsApproximatelyEqual(old_size.width(), new_size.width(), 1) &&
+           base::IsApproximatelyEqual(old_size.height(), new_size.height(), 1);
+  };
+
+  // We use |GetBounds| to account for minimized windows on Windows.
   const auto new_bounds = GetBounds();
-  if (widget_size_ != new_bounds.size()) {
+  if (!areWithinOnePixel(widget_size_, new_bounds.size())) {
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
   }
@@ -1780,9 +1807,10 @@ void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const gin_helper::Dictionary& options,
-                                   NativeWindow* parent) {
-  return new NativeWindowViews(options, parent);
+std::unique_ptr<NativeWindow> NativeWindow::Create(
+    const gin_helper::Dictionary& options,
+    NativeWindow* parent) {
+  return std::make_unique<NativeWindowViews>(options, parent);
 }
 
 }  // namespace electron

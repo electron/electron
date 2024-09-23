@@ -25,6 +25,7 @@
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
+#include "electron/mas.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
@@ -406,6 +407,11 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   content::InitializeMojoCore();
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
+#endif
+#if BUILDFLAG(IS_LINUX)
+  // Set the global activation token sent as an environment variable.
+  auto env = base::Environment::Create();
+  base::nix::ExtractXdgActivationTokenFromEnv(*env);
 #endif
   return std::nullopt;
 }

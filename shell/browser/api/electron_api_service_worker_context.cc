@@ -7,7 +7,6 @@
 #include <string_view>
 #include <utility>
 
-#include "base/strings/string_number_conversions.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/storage_partition.h"
@@ -19,7 +18,6 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
 
 namespace electron::api {
 

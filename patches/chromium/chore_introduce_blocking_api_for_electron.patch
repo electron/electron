@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 646e1ff2f16e1aa402831b617536220837aaf7c8..481cae08c973a822ee35124ec4864b91009f9584 100644
+index b40103dc69aa8b6e17a48bc5cc0389592986cca2..4687d607ab791f51323c9879e22e1989efda98e8 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -136,6 +136,7 @@ class KeyStorageLinux;

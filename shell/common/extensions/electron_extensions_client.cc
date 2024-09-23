@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "components/version_info/version_info.h"
 #include "content/public/common/user_agent.h"

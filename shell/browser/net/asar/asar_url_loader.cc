@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#include <string_view>
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -180,14 +180,14 @@ class AsarURLLoader : public network::mojom::URLLoader {
       return;
     }
 
-    std::string range_header;
+    auto range_header =
+        request.headers.GetHeader(net::HttpRequestHeaders::kRange);
     net::HttpByteRange byte_range;
-    if (request.headers.GetHeader(net::HttpRequestHeaders::kRange,
-                                  &range_header)) {
+    if (range_header) {
       // Handle a simple Range header for a single range.
       std::vector<net::HttpByteRange> ranges;
       bool fail = false;
-      if (net::HttpUtil::ParseRangeHeader(range_header, &ranges) &&
+      if (net::HttpUtil::ParseRangeHeader(range_header.value(), &ranges) &&
           ranges.size() == 1) {
         byte_range = ranges[0];
         if (!byte_range.ComputeBounds(info.size))

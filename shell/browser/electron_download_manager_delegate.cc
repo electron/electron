@@ -5,10 +5,10 @@
 #include "shell/browser/electron_download_manager_delegate.h"
 
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 
-#include <string_view>
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/task/thread_pool.h"

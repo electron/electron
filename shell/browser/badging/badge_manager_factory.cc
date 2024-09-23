@@ -4,7 +4,6 @@
 
 #include "shell/browser/badging/badge_manager_factory.h"
 
-#include "base/functional/bind.h"
 #include "base/memory/ptr_util.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "shell/browser/badging/badge_manager.h"
@@ -31,9 +30,10 @@ BadgeManagerFactory::BadgeManagerFactory()
 
 BadgeManagerFactory::~BadgeManagerFactory() = default;
 
-KeyedService* BadgeManagerFactory::BuildServiceInstanceFor(
+std::unique_ptr<KeyedService>
+BadgeManagerFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  return new BadgeManager();
+  return std::make_unique<BadgeManager>();
 }
 
 }  // namespace badging

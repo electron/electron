@@ -11,7 +11,6 @@
 
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "gin/converter.h"
@@ -27,6 +26,8 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
+#include "services/network/public/mojom/fetch_api.mojom.h"
+#include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -253,7 +254,7 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 
 namespace {
 
-class ChunkedDataPipeReadableStream
+class ChunkedDataPipeReadableStream final
     : public gin::Wrappable<ChunkedDataPipeReadableStream> {
  public:
   static gin::Handle<ChunkedDataPipeReadableStream> Create(

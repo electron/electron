@@ -87,8 +87,8 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -261,7 +261,7 @@ class ClearDataTask {
   }
 
  private:
-  // An individiual |content::BrowsingDataRemover::Remove...| operation as part
+  // An individual |content::BrowsingDataRemover::Remove...| operation as part
   // of a full |ClearDataTask|. This class manages its own lifetime, cleaning
   // itself up after the operation completes and notifies the task of the
   // result.
@@ -455,8 +455,7 @@ struct Converter<network::mojom::SSLConfigPtr> {
         !options.Get("disabledCipherSuites", &(*out)->disabled_cipher_suites)) {
       return false;
     }
-    std::sort((*out)->disabled_cipher_suites.begin(),
-              (*out)->disabled_cipher_suites.end());
+    std::ranges::sort((*out)->disabled_cipher_suites);
 
     // TODO(nornagon): also support other SSLConfig properties?
     return true;
@@ -1112,11 +1111,9 @@ v8::Local<v8::Promise> Session::LoadExtension(
              const extensions::Extension* extension,
              const std::string& error_msg) {
             if (extension) {
-              if (!error_msg.empty()) {
-                node::Environment* env =
-                    node::Environment::GetCurrent(promise.isolate());
-                EmitWarning(env, error_msg, "ExtensionLoadWarning");
-              }
+              if (!error_msg.empty())
+                util::EmitWarning(promise.isolate(), error_msg,
+                                  "ExtensionLoadWarning");
               promise.Resolve(extension);
             } else {
               promise.RejectWithErrorMessage(error_msg);
@@ -1608,7 +1605,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
-      .SetMethod("setDisplayMediaRequestHandler",
+      .SetMethod("_setDisplayMediaRequestHandler",
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)

@@ -38,7 +38,6 @@ permissions:
 env:
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  ELECTRON_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   test:
@@ -188,7 +187,7 @@ jobs:
         fi
     - name: Upload Test Artifacts
       if: always() && !cancelled()
-      uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a
+      uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}
         path: src/electron/spec/artifacts

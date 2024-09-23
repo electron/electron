@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "base/files/file_path.h"
+#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/browser/web_contents.h"
@@ -177,10 +177,9 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
   if (port_id.empty()) {
     RunCallback(/*port=*/nullptr);
   } else {
-    const auto it =
-        std::find_if(ports_.begin(), ports_.end(), [&port_id](const auto& ptr) {
-          return ptr->token.ToString() == port_id;
-        });
+    const auto it = std::ranges::find_if(ports_, [&port_id](const auto& ptr) {
+      return ptr->token.ToString() == port_id;
+    });
     if (it != ports_.end()) {
       auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
       chooser_context_->GrantPortPermission(origin_, *it->get(), rfh);
@@ -194,10 +193,9 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
 void SerialChooserController::OnGetDevices(
     std::vector<device::mojom::SerialPortInfoPtr> ports) {
   // Sort ports by file paths.
-  std::sort(ports.begin(), ports.end(),
-            [](const auto& port1, const auto& port2) {
-              return port1->path.BaseName() < port2->path.BaseName();
-            });
+  std::ranges::sort(ports, [](const auto& port1, const auto& port2) {
+    return port1->path.BaseName() < port2->path.BaseName();
+  });
 
   for (auto& port : ports) {
     if (DisplayDevice(*port))

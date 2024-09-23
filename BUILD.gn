@@ -532,7 +532,7 @@ source_set("electron_lib") {
     ]
   }
 
-  configs += [ "//electron/build/config:mas_build" ]
+  deps += [ "//electron/build/config:generate_mas_config" ]
 
   sources = filenames.lib_sources
   if (is_win) {
@@ -733,6 +733,7 @@ source_set("electron_lib") {
       "//components/pdf/common:util",
       "//components/pdf/renderer",
       "//pdf",
+      "//pdf:content_restriction",
     ]
     sources += [
       "shell/browser/electron_pdf_document_helper_client.cc",
@@ -905,12 +906,14 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [ ":electron_framework+link" ]
+      deps = [
+        ":electron_framework+link",
+        "//electron/build/config:generate_mas_config",
+      ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
-      configs += [ "//electron/build/config:mas_build" ]
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
@@ -1066,6 +1069,7 @@ if (is_mac) {
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
+      "//electron/build/config:generate_mas_config",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
@@ -1080,7 +1084,6 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
-    configs += [ "//electron/build/config:mas_build" ]
   }
 
   if (enable_dsyms) {

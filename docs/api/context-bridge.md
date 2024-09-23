@@ -1,5 +1,14 @@
 # contextBridge
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/40330
+    description: "`ipcRenderer` can no longer be sent over the `contextBridge`"
+    breaking-changes-header: behavior-changed-ipcrenderer-can-no-longer-be-sent-over-the-contextbridge
+```
+-->
+
 > Create a safe, bi-directional, synchronous bridge across isolated contexts
 
 Process: [Renderer](../glossary.md#renderer-process)
@@ -137,6 +146,25 @@ has been included below for completeness:
 | `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 If the type you care about is not in the above table, it is probably not supported.
+
+### Exposing ipcRenderer
+
+Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will result in
+an empty object on the receiving side of the bridge. Sending over `ipcRenderer` in full can let any
+code send any message, which is a security footgun. To interact through `ipcRenderer`, provide a safe wrapper
+like below:
+
+```js
+// Preload (Isolated World)
+contextBridge.exposeInMainWorld('electron', {
+  onMyEventName: (callback) => ipcRenderer.on('MyEventName', (e, ...args) => callback(args))
+})
+```
+
+```js @ts-nocheck
+// Renderer (Main World)
+window.electron.onMyEventName(data => { /* ... */ })
+```
 
 ### Exposing Node Global Symbols
 

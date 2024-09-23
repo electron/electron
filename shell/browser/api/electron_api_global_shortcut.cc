@@ -34,11 +34,9 @@ bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
 
 bool MapHasMediaKeys(
     const std::map<ui::Accelerator, base::RepeatingClosure>& accelerator_map) {
-  auto media_key = std::find_if(
-      accelerator_map.begin(), accelerator_map.end(),
-      [](const auto& ac) { return Command::IsMediaKey(ac.first); });
-
-  return media_key != accelerator_map.end();
+  return std::ranges::any_of(accelerator_map, [](const auto& ac) {
+    return Command::IsMediaKey(ac.first);
+  });
 }
 #endif
 

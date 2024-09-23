@@ -123,7 +123,7 @@ class BundledDataSource : public content::URLDataSource {
 DevToolsUI::DevToolsUI(content::BrowserContext* browser_context,
                        content::WebUI* web_ui)
     : WebUIController(web_ui) {
-  web_ui->SetBindings(0);
+  web_ui->SetBindings(content::BindingsPolicySet());
   content::URLDataSource::Add(browser_context,
                               std::make_unique<BundledDataSource>());
 }

@@ -15,7 +15,7 @@
 #include "extensions/browser/extension_function.h"
 #include "extensions/browser/script_executor.h"
 #include "extensions/browser/scripting_utils.h"
-#include "extensions/common/mojom/code_injection.mojom.h"
+#include "extensions/common/mojom/code_injection.mojom-forward.h"
 #include "extensions/common/user_script.h"
 
 namespace extensions {

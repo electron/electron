@@ -11,12 +11,11 @@
 #include <utility>
 #include <vector>
 
+#include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
-#include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
-#include "base/strings/string_number_conversions.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -131,12 +130,21 @@ namespace electron::api {
 
 namespace {
 
+template <typename T>
+auto ToVec(v8::Local<v8::ArrayBufferView> view) {
+  const size_t n_wanted = view->ByteLength();
+  std::vector<T> buf(n_wanted);
+  [[maybe_unused]] const auto n_got = view->CopyContents(buf.data(), n_wanted);
+  DCHECK_EQ(n_wanted, n_got);
+  DCHECK_EQ(n_wanted, std::size(buf));
+  return buf;
+}
+
 class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  public:
-  explicit BufferDataSource(base::span<char> buffer) {
-    buffer_.resize(buffer.size());
-    memcpy(buffer_.data(), buffer.data(), buffer_.size());
-  }
+  explicit BufferDataSource(v8::Local<v8::ArrayBufferView> buffer)
+      : buffer_{ToVec<char>(buffer)} {}
+
   ~BufferDataSource() override = default;
 
  private:
@@ -162,8 +170,9 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
   std::vector<char> buffer_;
 };
 
-class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
-                                public network::mojom::ChunkedDataPipeGetter {
+class JSChunkedDataPipeGetter final
+    : public gin::Wrappable<JSChunkedDataPipeGetter>,
+      public network::mojom::ChunkedDataPipeGetter {
  public:
   static gin::Handle<JSChunkedDataPipeGetter> Create(
       v8::Isolate* isolate,
@@ -246,13 +255,8 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     auto buffer = buffer_val.As<v8::ArrayBufferView>();
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
-    auto backing_store = buffer->Buffer()->GetBackingStore();
-    auto buffer_span = base::make_span(
-        static_cast<char*>(backing_store->Data()) + buffer->ByteOffset(),
-        buffer->ByteLength());
-    auto buffer_source = std::make_unique<BufferDataSource>(buffer_span);
     data_producer_->Write(
-        std::move(buffer_source),
+        std::make_unique<BufferDataSource>(buffer),
         base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
                        // We're OK to use Unretained here because we own
                        // |data_producer_|.
@@ -335,13 +339,21 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   DETACH_FROM_SEQUENCE(sequence_checker_);
   if (!request_->trusted_params)
     request_->trusted_params = network::ResourceRequest::TrustedParams();
-  mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
-      url_loader_network_observer_remote;
-  url_loader_network_observer_receivers_.Add(
-      this,
-      url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
-  request_->trusted_params->url_loader_network_observer =
-      std::move(url_loader_network_observer_remote);
+  bool create_network_observer = true;
+  if (electron::IsUtilityProcess()) {
+    create_network_observer =
+        !URLLoaderBundle::GetInstance()
+             ->ShouldUseNetworkObserverfromURLLoaderFactory();
+  }
+  if (create_network_observer) {
+    mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
+        url_loader_network_observer_remote;
+    url_loader_network_observer_receivers_.Add(
+        this,
+        url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
+    request_->trusted_params->url_loader_network_observer =
+        std::move(url_loader_network_observer_remote);
+  }
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
   // raw headers in the URLLoader.
@@ -484,7 +496,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
-    const auto scheme = url.scheme();
+    const std::string_view scheme = url.scheme_piece();
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
@@ -651,11 +663,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   v8::Local<v8::Value> chunk_pipe_getter;
   if (opts.Get("body", &body)) {
     if (body->IsArrayBufferView()) {
-      auto buffer_body = body.As<v8::ArrayBufferView>();
-      auto backing_store = buffer_body->Buffer()->GetBackingStore();
-      request->request_body = network::ResourceRequestBody::CreateFromBytes(
-          static_cast<char*>(backing_store->Data()) + buffer_body->ByteOffset(),
-          buffer_body->ByteLength());
+      auto request_body = base::MakeRefCounted<network::ResourceRequestBody>();
+      request_body->AppendBytes(ToVec<uint8_t>(body.As<v8::ArrayBufferView>()));
+      request->request_body = std::move(request_body);
     } else if (body->IsFunction()) {
       auto body_func = body.As<v8::Function>();
 
@@ -667,6 +677,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
                               .ToV8();
       request->request_body =
           base::MakeRefCounted<network::ResourceRequestBody>();
+      request->request_body->SetAllowHTTP1ForStreamingUpload(true);
       request->request_body->SetToChunkedDataPipe(
           std::move(data_pipe_getter),
           network::ResourceRequestBody::ReadOnlyOnce(false));
