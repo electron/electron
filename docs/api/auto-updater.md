@@ -32,21 +32,27 @@ This is a requirement of `Squirrel.Mac`.
 ### Windows
 
 On Windows, you have to install your app into a user's machine before you can
-use the `autoUpdater`, so it is recommended that you use the
-[electron-winstaller][installer-lib], [Electron Forge][electron-forge-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
+use the `autoUpdater`, so it is recommended that you use
+[electron-winstaller][installer-lib] or [Electron Forge's Squirrel.Windows maker][electron-forge-lib] to generate a Windows installer.
 
-When using [electron-winstaller][installer-lib] or [Electron Forge][electron-forge-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
+Apps built with Squirrel.Windows will trigger [custom launch events](https://github.com/Squirrel/Squirrel.Windows/blob/51f5e2cb01add79280a53d51e8d0cfa20f8c9f9f/docs/using/custom-squirrel-events-non-cs.md#application-startup-commands)
+that must be handled by your Electron application to ensure proper setup and teardown.
 
-The installer generated with Squirrel will create a shortcut icon with an
+Squirrel.Windows apps will launch with the `--squirrel-firstrun` argument immediately
+after installation. During this time, Squirrel.Windows will obtain a file lock on
+your app, and `autoUpdater` requests will fail until the lock is released. In practice,
+this means that you won't be able to check for updates on first launch for the first
+few seconds. You can work around this by not checking for updates when `process.argv`
+contains the `--squirrel-firstrun` flag or by setting a 10-second timeout on your
+update checks (see [electron/electron#7155](https://github.com/electron/electron/issues/7155)
+for more information).
+
+The installer generated with Squirrel.Windows will create a shortcut icon with an
 [Application User Model ID][app-user-model-id] in the format of
 `com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`, examples are
 `com.squirrel.slack.Slack` and `com.squirrel.code.Code`. You have to use the
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
-
-Like Squirrel.Mac, Windows can host updates on S3 or any other static file host.
-You can read the documents of [Squirrel.Windows][squirrel-windows] to get more details
-about how Squirrel.Windows works.
 
 ## Events
 
@@ -137,9 +143,7 @@ application starts.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
-[squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
-[installer]: https://github.com/electron-archive/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
-[electron-forge-lib]: https://github.com/electron/forge
+[electron-forge-lib]: https://www.electronforge.io/config/makers/squirrel.windows
 [app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
