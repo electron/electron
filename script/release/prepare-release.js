@@ -8,6 +8,7 @@ const ciReleaseBuild = require('./ci-release-build');
 const { Octokit } = require('@octokit/rest');
 const { execSync } = require('node:child_process');
 const { GitProcess } = require('dugite');
+const chalk = require('chalk');
 
 const path = require('node:path');
 const readline = require('node:readline');
@@ -24,9 +25,8 @@ const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 if (!bumpType && !args.notesOnly) {
   console.log('Usage: prepare-release [stable | minor | beta | alpha | nightly]' +
