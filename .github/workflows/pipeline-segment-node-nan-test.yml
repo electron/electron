@@ -71,12 +71,12 @@ jobs:
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
@@ -135,12 +135,12 @@ jobs:
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
