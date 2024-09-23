@@ -7,8 +7,13 @@ const goBtn = document.getElementById('goBtn')
 const historyPanel = document.getElementById('historyPanel')
 
 async function updateButtons () {
-  backBtn.disabled = !(await window.electronAPI.canGoBack())
-  forwardBtn.disabled = !(await window.electronAPI.canGoForward())
+  const canGoBack = await window.electronAPI.canGoBack()
+  const canGoForward = await window.electronAPI.canGoForward()
+  backBtn.disabled = !canGoBack
+  backHistoryBtn.disabled = !canGoBack
+
+  forwardBtn.disabled = !canGoForward
+  forwardHistoryBtn.disabled = !canGoForward
 }
 
 async function updateURL () {
@@ -66,7 +71,7 @@ urlInput.addEventListener('keypress', (e) => {
 
 document.addEventListener('click', (e) => {
   if (e.target !== historyPanel && !historyPanel.contains(e.target) &&
-      e.target !== backHistoryBtn && e.target !== forwardHistoryBtn) {
+    e.target !== backHistoryBtn && e.target !== forwardHistoryBtn) {
     historyPanel.style.display = 'none'
   }
 })

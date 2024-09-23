@@ -16,7 +16,7 @@ function createWindow () {
 
   const view = new BrowserView()
   mainWindow.setBrowserView(view)
-  view.setBounds({ x: 0, y: 200, width: 1000, height: 600 })
+  view.setBounds({ x: 0, y: 100, width: 1000, height: 800 })
   view.setAutoResize({ width: true, height: true })
 
   const navigationHistory = view.webContents.navigationHistory
