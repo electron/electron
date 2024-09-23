@@ -27,7 +27,7 @@
     "@types/split": "^1.0.0",
     "@types/stream-json": "^1.5.1",
     "@types/temp": "^0.8.34",
-    "@types/uuid": "^3.4.6",
+    "@types/uuid": "^10.0.0",
     "@types/w3c-web-serial": "^1.0.3",
     "@types/webpack": "^5.28.0",
     "@types/webpack-env": "^1.17.0",
