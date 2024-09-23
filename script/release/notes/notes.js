@@ -10,10 +10,10 @@ const { GitProcess } = require('dugite');
 const { Octokit } = require('@octokit/rest');
 
 const { ELECTRON_DIR } = require('../../lib/utils');
-const { getGitHubToken } = require('../github-token');
+const { createGitHubTokenStrategy } = require('../github-token');
 
 const octokit = new Octokit({
-  authStrategy: getGitHubToken
+  authStrategy: createGitHubTokenStrategy('electron')
 });
 
 const MAX_FAIL_COUNT = 3;

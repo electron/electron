@@ -13,7 +13,7 @@ const path = require('node:path');
 const readline = require('node:readline');
 const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
-const { getGitHubToken } = require('./github-token');
+const { createGitHubTokenStrategy } = require('./github-token');
 const bumpType = args._[0];
 const targetRepo = getRepo();
 
@@ -22,7 +22,7 @@ function getRepo () {
 }
 
 const octokit = new Octokit({
-  authStrategy: getGitHubToken
+  authStrategy: createGitHubTokenStrategy(getRepo())
 });
 
 require('colors');

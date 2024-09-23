@@ -10,11 +10,7 @@ const rootPackageJson = require('../../package.json');
 
 const { Octokit } = require('@octokit/rest');
 const { getAssetContents } = require('./get-asset');
-const { getGitHubToken } = require('./github-token');
-const octokit = new Octokit({
-  userAgent: 'electron-npm-publisher',
-  authStrategy: getGitHubToken
-});
+const { createGitHubTokenStrategy } = require('./github-token');
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP');
@@ -47,6 +43,11 @@ let npmTag = '';
 const currentElectronVersion = getElectronVersion();
 const isNightlyElectronVersion = currentElectronVersion.includes('nightly');
 const targetRepo = getRepo();
+
+const octokit = new Octokit({
+  userAgent: 'electron-npm-publisher',
+  authStrategy: createGitHubTokenStrategy(targetRepo)
+});
 
 function getRepo () {
   return isNightlyElectronVersion ? 'nightlies' : 'electron';

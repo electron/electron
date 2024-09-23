@@ -25,13 +25,9 @@ const fail = '✗'.red;
 const { ELECTRON_DIR } = require('../lib/utils');
 const { getElectronVersion } = require('../lib/get-version');
 const getUrlHash = require('./get-url-hash');
-const { getGitHubToken } = require('./github-token');
+const { createGitHubTokenStrategy } = require('./github-token');
 
 const pkgVersion = `v${getElectronVersion()}`;
-
-const octokit = new Octokit({
-  authStrategy: getGitHubToken
-});
 
 function getRepo () {
   return pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
@@ -39,6 +35,10 @@ function getRepo () {
 
 const targetRepo = getRepo();
 let failureCount = 0;
+
+const octokit = new Octokit({
+  authStrategy: createGitHubTokenStrategy(targetRepo)
+});
 
 async function getDraftRelease (version, skipValidation) {
   const releaseInfo = await octokit.repos.listReleases({
@@ -393,7 +393,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
     });
 
     const { url, headers } = requestOptions;
-    headers.authorization = `token ${await getGitHubToken()}`;
+    headers.authorization = `token ${(await octokit.auth()).token}`;
 
     const response = await got(url, {
       followRedirect: false,

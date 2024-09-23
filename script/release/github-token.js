@@ -1,18 +1,18 @@
 const { createTokenAuth } = require('@octokit/auth-token');
 const got = require('got');
 
-let cachedToken = null;
+const cachedTokens = Object.create(null);
 
-async function ensureToken () {
-  if (!cachedToken) {
-    cachedToken = await (async () => {
+async function ensureToken (repo) {
+  if (!cachedTokens[repo]) {
+    cachedTokens[repo] = await (async () => {
       const { ELECTRON_GITHUB_TOKEN, SUDOWOODO_EXCHANGE_URL, SUDOWOODO_EXCHANGE_TOKEN } = process.env;
       if (ELECTRON_GITHUB_TOKEN) {
         return ELECTRON_GITHUB_TOKEN;
       }
 
       if (SUDOWOODO_EXCHANGE_URL && SUDOWOODO_EXCHANGE_TOKEN) {
-        const resp = await got(SUDOWOODO_EXCHANGE_URL, {
+        const resp = await got(SUDOWOODO_EXCHANGE_URL + '?repo=' + repo, {
           headers: {
             Authorization: SUDOWOODO_EXCHANGE_TOKEN
           },
@@ -35,13 +35,13 @@ async function ensureToken () {
   }
 }
 
-module.exports.getGitHubToken = () => {
+module.exports.createGitHubTokenStrategy = (repo) => () => {
   let tokenAuth = null;
 
   async function ensureTokenAuth () {
     if (!tokenAuth) {
-      await ensureToken();
-      tokenAuth = createTokenAuth(cachedToken);
+      await ensureToken(repo);
+      tokenAuth = createTokenAuth(cachedTokens[repo]);
     }
   }
 
