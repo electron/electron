@@ -28,7 +28,7 @@
     "@types/stream-json": "^1.5.1",
     "@types/temp": "^0.8.34",
     "@types/uuid": "^3.4.6",
-    "@types/w3c-web-serial": "^1.0.3",
+    "@types/w3c-web-serial": "^1.0.7",
     "@types/webpack": "^5.28.0",
     "@types/webpack-env": "^1.17.0",
     "@typescript-eslint/eslint-plugin": "^5.59.7",
