@@ -31,9 +31,9 @@ struct IntegrityPayload {
   IntegrityPayload();
   ~IntegrityPayload();
   IntegrityPayload(const IntegrityPayload& other);
-  HashAlgorithm algorithm;
+  HashAlgorithm algorithm = HashAlgorithm::kNone;
   std::string hash;
-  uint32_t block_size;
+  uint32_t block_size = 0U;
   std::vector<std::string> blocks;
 };
 
@@ -44,10 +44,10 @@ class Archive {
   struct FileInfo {
     FileInfo();
     ~FileInfo();
-    bool unpacked;
-    bool executable;
-    uint32_t size;
-    uint64_t offset;
+    bool unpacked = false;
+    bool executable = false;
+    uint32_t size = 0U;
+    uint64_t offset = 0U;
     std::optional<IntegrityPayload> integrity;
   };
 
@@ -100,10 +100,10 @@ class Archive {
   base::FilePath path() const { return path_; }
 
  private:
-  bool initialized_;
+  bool initialized_ = false;
   bool header_validated_ = false;
   const base::FilePath path_;
-  base::File file_;
+  base::File file_{base::File::FILE_OK};
   int fd_ = -1;
   uint32_t header_size_ = 0;
   std::optional<base::Value::Dict> header_;
