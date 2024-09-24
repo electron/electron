@@ -2892,14 +2892,16 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
-void WebContents::OnGetDeviceNameToUse(
-    base::Value::Dict print_settings,
-    printing::CompletionCallback print_callback,
-    // <error, device_name>
-    std::pair<std::string, std::u16string> info) {
+namespace {
+
+void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
+                          base::Value::Dict print_settings,
+                          printing::CompletionCallback print_callback,
+                          // <error, device_name>
+                          std::pair<std::string, std::u16string> info) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerElectron class does not do null check.
-  if (!web_contents()) {
+  if (!web_contents) {
     if (print_callback)
       std::move(print_callback).Run(false, "failed");
     return;
@@ -2921,14 +2923,16 @@ void WebContents::OnGetDeviceNameToUse(
   }
 
   auto* print_view_manager =
-      PrintViewManagerElectron::FromWebContents(web_contents());
+      PrintViewManagerElectron::FromWebContents(web_contents.get());
   if (!print_view_manager)
     return;
 
-  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
+  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   print_view_manager->PrintNow(rfh, std::move(print_settings),
                                std::move(print_callback));
 }
+
+}  // namespace
 
 void WebContents::Print(gin::Arguments* args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
@@ -3089,9 +3093,8 @@ void WebContents::Print(gin::Arguments* args) {
 
   print_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(&GetDeviceNameToUse, device_name),
-      base::BindOnce(&WebContents::OnGetDeviceNameToUse,
-                     weak_factory_.GetWeakPtr(), std::move(settings),
-                     std::move(callback)));
+      base::BindOnce(&OnGetDeviceNameToUse, web_contents()->GetWeakPtr(),
+                     std::move(settings), std::move(callback)));
 }
 
 // Partially duplicated and modified from

@@ -246,10 +246,6 @@ class WebContents final : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDeviceNameToUse(base::Value::Dict print_settings,
-                            printing::CompletionCallback print_callback,
-                            // <error, device_name>
-                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
