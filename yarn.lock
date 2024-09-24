@@ -689,26 +689,14 @@
     "@types/node" "*"
     "@types/responselike" "*"
 
-"@types/chai-as-promised@*":
-  version "7.1.1"
-  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.1.tgz#004c27a4ac640e9590e25d8b0980cb0a6609bfd8"
-  integrity sha512-dberBxQW/XWv6BMj0su1lV9/C9AUx5Hqu2pisuS6S4YK/Qt6vurcj/BmcbEsobIWWCQzhesNY8k73kIxx4X7Mg==
+"@types/chai-as-promised@*", "@types/chai-as-promised@^8.0.1":
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-8.0.1.tgz#afd958500955a79053ef6531d677b4edd5c25925"
+  integrity sha512-dAlDhLjJlABwAVYObo9TPWYTRg9NaQM5CXeaeJYcYAkvzUf0JRLIiog88ao2Wqy/20WUnhbbUZcgvngEbJ3YXQ==
   dependencies:
     "@types/chai" "*"
 
-"@types/chai-as-promised@^7.1.3":
-  version "7.1.3"
-  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.3.tgz#779166b90fda611963a3adbfd00b339d03b747bd"
-  integrity sha512-FQnh1ohPXJELpKhzjuDkPLR2BZCAqed+a6xV4MI/T3XzHfd2FlarfUGUdZYgqYe8oxkYn0fchHEeHfHqdZ96sg==
-  dependencies:
-    "@types/chai" "*"
-
-"@types/chai@*":
-  version "4.1.7"
-  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.1.7.tgz#1b8e33b61a8c09cbe1f85133071baa0dbf9fa71a"
-  integrity sha512-2Y8uPt0/jwjhQ6EiluT0XCri1Dbplr0ZxfFXUz+ye13gaqE8u5gL5ppao1JrUYr9cIip5S6MvQzBS7Kke7U9VA==
-
-"@types/chai@^4.2.12":
+"@types/chai@*", "@types/chai@^4.2.12":
   version "4.2.12"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.12.tgz#6160ae454cd89dae05adc3bb97997f488b608201"
   integrity sha512-aN5IAC8QNtSUdQzxu7lGBgYAOuU1tmRU4c9dIq5OKGf/SBVjXo+ffM2wEjudAWbgpOhy60nLoAGH1xm8fpCKFQ==
