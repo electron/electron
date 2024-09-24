@@ -27,7 +27,7 @@ describe('security warnings', () => {
   before(async () => {
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
-      const uri = new URL(request.url!).pathname!;
+      const uri = new URL(request.url!, `http://${request.headers.host}`).pathname!;
       let filename = path.join(__dirname, 'fixtures', 'pages', uri);
 
       try {
