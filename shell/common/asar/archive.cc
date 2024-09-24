@@ -156,17 +156,14 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
 }  // namespace
 
-IntegrityPayload::IntegrityPayload()
-    : algorithm(HashAlgorithm::kNone), block_size(0) {}
+IntegrityPayload::IntegrityPayload() = default;
 IntegrityPayload::~IntegrityPayload() = default;
 IntegrityPayload::IntegrityPayload(const IntegrityPayload& other) = default;
 
-Archive::FileInfo::FileInfo()
-    : unpacked(false), executable(false), size(0), offset(0) {}
+Archive::FileInfo::FileInfo() = default;
 Archive::FileInfo::~FileInfo() = default;
 
-Archive::Archive(const base::FilePath& path)
-    : initialized_(false), path_(path), file_(base::File::FILE_OK) {
+Archive::Archive(const base::FilePath& path) : path_{path} {
   electron::ScopedAllowBlockingForElectron allow_blocking;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if BUILDFLAG(IS_WIN)
