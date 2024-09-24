@@ -3305,6 +3305,12 @@ void WebContents::Focus() {
   if (owner_window())
     owner_window()->Focus(true);
 #endif
+
+  // WebView uses WebContentsViewChildFrame, which doesn't have a Focus impl
+  // and triggers a fatal NOTREACHED.
+  if (is_guest())
+    return;
+
   web_contents()->Focus();
 }
 
@@ -3733,7 +3739,8 @@ void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
 
   content::RenderWidgetHostView* rwhv = rfh->GetView();
   if (rwhv) {
-    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or 255.
+    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or
+    // 255.
     rwhv->SetBackgroundColor(is_opaque ? color : SK_ColorTRANSPARENT);
     static_cast<content::RenderWidgetHostViewBase*>(rwhv)
         ->SetContentBackgroundColor(color);
