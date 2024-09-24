@@ -6,6 +6,6 @@ runs:
   - name: Install Build Tools
     shell: bash
     run: |
-      export BUILD_TOOLS_SHA=f7823abb17572e64307fd08bb8587bdc5ca57a09
+      export BUILD_TOOLS_SHA=33dc5186556bfbf7b0121a00cdd89ed3802e47da
       npm i -g @electron/build-tools
       e auto-update disable
