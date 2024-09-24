@@ -1695,7 +1695,7 @@ describe('protocol module', () => {
       const filePath = path.join(fixturesPath, 'pages', 'form-with-data.html');
       await contents.loadFile(filePath);
 
-      const loadPromise = new Promise((resolve, reject) => {
+      const loadPromise = new Promise<void>((resolve, reject) => {
         contents.once('did-finish-load', resolve);
         contents.once('did-fail-load', (_, errorCode, errorDescription) =>
           reject(new Error(`did-fail-load: ${errorCode} ${errorDescription}. See AssertionError for details.`))

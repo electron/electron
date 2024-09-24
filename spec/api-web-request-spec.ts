@@ -600,7 +600,7 @@ describe('webRequest module', () => {
         });
       });
       server.on('upgrade', function upgrade (request, socket, head) {
-        const pathname = new URL(request.url!).pathname;
+        const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
         if (pathname === '/websocket') {
           reqHeaders[request.url!] = request.headers;
           wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
