@@ -46,10 +46,6 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
 
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_view_manager_electron.h"
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
 
@@ -247,16 +243,9 @@ class WebContents final : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDeviceNameToUse(base::Value::Dict print_settings,
-                            printing::CompletionCallback print_callback,
-                            // <error, device_name>
-                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-  void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
-                    print_to_pdf::PdfPrintResult print_result,
-                    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
