@@ -55,7 +55,7 @@
     "lint-staged": "^10.2.11",
     "markdownlint-cli2": "^0.13.0",
     "minimist": "^1.2.6",
-    "null-loader": "^4.0.0",
+    "null-loader": "^4.0.1",
     "pre-flight": "^1.1.0",
     "process": "^0.11.10",
     "remark-cli": "^10.0.0",
