@@ -89,17 +89,17 @@ class OffScreenRenderWidgetHostView
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
   void SetBounds(const gfx::Rect&) override;
-  gfx::NativeView GetNativeView(void) override;
-  gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
+  gfx::NativeView GetNativeView() override;
+  gfx::NativeViewAccessible GetNativeViewAccessible() override;
   ui::TextInputClient* GetTextInputClient() override;
   void Focus() override {}
   bool HasFocus() override;
   uint32_t GetCaptureSequenceNumber() const override;
-  bool IsSurfaceAvailableForCopy(void) override;
-  void Hide(void) override;
-  bool IsShowing(void) override;
+  bool IsSurfaceAvailableForCopy() override;
+  void Hide() override;
+  bool IsShowing() override;
   void EnsureSurfaceSynchronizedForWebTest() override;
-  gfx::Rect GetViewBounds(void) override;
+  gfx::Rect GetViewBounds() override;
   gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override {}
   void SetBackgroundColor(SkColor color) override;
@@ -109,7 +109,7 @@ class OffScreenRenderWidgetHostView
       bool request_unadjusted_movement) override;
   blink::mojom::PointerLockResult ChangePointerLock(
       bool request_unadjusted_movement) override;
-  void UnlockPointer(void) override {}
+  void UnlockPointer() override {}
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
 #if BUILDFLAG(IS_MAC)
   void SetActive(bool active) override {}
@@ -137,10 +137,10 @@ class OffScreenRenderWidgetHostView
   void SetIsLoading(bool is_loading) override {}
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override {
   }
-  void ImeCancelComposition(void) override {}
+  void ImeCancelComposition() override {}
   void RenderProcessGone() override;
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
-  void Destroy(void) override;
+  void Destroy() override;
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
   input::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
@@ -149,7 +149,7 @@ class OffScreenRenderWidgetHostView
       base::OnceCallback<void(const SkBitmap&)> callback) override;
   display::ScreenInfo GetScreenInfo() const override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
-  gfx::Rect GetBoundsInRootWindow(void) override;
+  gfx::Rect GetBoundsInRootWindow() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
   void SetDisplayFeatureForTesting(
       const content::DisplayFeature* display_feature) override {}
