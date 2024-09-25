@@ -1077,6 +1077,22 @@ describe('webContents module', () => {
         expect(currentFocused).to.be.true();
         expect(childFocused).to.be.false();
       });
+
+      it('does not crash when focusing a WebView webContents', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            webviewTag: true
+          }
+        });
+
+        w.show();
+        await w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+
+        const wc = webContents.getAllWebContents().find((wc) => wc.getType() === 'webview')!;
+        expect(() => wc.focus()).to.not.throw();
+      });
     });
 
     const moveFocusToDevTools = async (win: BrowserWindow) => {
