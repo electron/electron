@@ -1,0 +1,66 @@
+From d224d038eba7d355009c24bf485141321583307a Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Tue, 10 Sep 2024 10:52:38 +0200
+Subject: [PATCH] [M126-LTS][wasm][jspi] Fix JSPI + lazy deopt
+
+With JSPI, the stack frame iterator stops at the end of the current
+stack segment. Follow the chain of stacks to find all frames marked for
+deoptimization.
+
+R=mliedtke@chromium.org
+
+Fixed: 365376497
+Change-Id: Iff1112dbd2a86a014c8de6d844f585fd568ad552
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5850428
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96028}
+(cherry picked from commit 906e41b88fa5b79d2afc699f8c4da87c4eb9c7e5)
+---
+
+diff --git a/src/deoptimizer/deoptimizer.cc b/src/deoptimizer/deoptimizer.cc
+index c09e825..8786ce6 100644
+--- a/src/deoptimizer/deoptimizer.cc
++++ b/src/deoptimizer/deoptimizer.cc
+@@ -336,6 +336,21 @@
+   // for the trampoline to the deoptimizer call respective to each code, and use
+   // it to replace the current pc on the stack.
+   void VisitThread(Isolate* isolate, ThreadLocalTop* top) override {
++#if V8_ENABLE_WEBASSEMBLY
++    // Also visit the ancestors of the active stack for wasm stack switching.
++    // We don't need to visit suspended stacks at the moment, because 1) they
++    // only contain wasm frames and 2) wasm does not do lazy deopt. Revisit this
++    // if one of these assumptions changes.
++    Tagged<WasmContinuationObject> continuation;
++    if (top == isolate->thread_local_top()) {
++      Tagged<Object> maybe_continuation =
++          isolate->root(RootIndex::kActiveContinuation);
++      if (!IsUndefined(maybe_continuation)) {
++        continuation = Cast<WasmContinuationObject>(maybe_continuation);
++      }
++    }
++#endif
++
+     for (StackFrameIterator it(isolate, top); !it.done(); it.Advance()) {
+       if (it.frame()->is_optimized()) {
+         Tagged<GcSafeCode> code = it.frame()->GcSafeLookupCode();
+@@ -369,6 +384,19 @@
+           }
+         }
+       }
++
++#if V8_ENABLE_WEBASSEMBLY
++      // We reached the base of the wasm stack. Follow the chain of
++      // continuations to find the parent stack and reset the iterator.
++      if (it.frame()->type() == StackFrame::STACK_SWITCH) {
++        CHECK_EQ(top, isolate->thread_local_top());
++        DCHECK(!continuation.is_null());
++        continuation = Cast<WasmContinuationObject>(continuation->parent());
++        wasm::StackMemory* parent =
++            reinterpret_cast<wasm::StackMemory*>(continuation->stack());
++        it.Reset(top, parent);
++      }
++#endif
+     }
+   }
+ 

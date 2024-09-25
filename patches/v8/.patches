@@ -3,3 +3,5 @@ deps_add_v8_object_setinternalfieldfornodecore.patch
 revert_heap_add_checks_position_info.patch
 revert_api_cleanup_remove_setaccessor_and_setnativedataproperty.patch
 spill_all_loop_inputs_before_entering_loop.patch
+cherry-pick-d224d038eba7.patch
+cherry-pick-50645cf964ba.patch
