@@ -5,6 +5,8 @@
 
 #include "shell/browser/ui/inspectable_web_contents.h"
 
+#include <algorithm>
+#include <array>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -74,10 +76,6 @@ namespace electron {
 
 namespace {
 
-const double kPresetZoomFactors[] = {0.25, 0.333, 0.5,  0.666, 0.75, 0.9,
-                                     1.0,  1.1,   1.25, 1.5,   1.75, 2.0,
-                                     2.5,  3.0,   4.0,  5.0};
-
 const char kChromeUIDevToolsURL[] =
     "devtools://devtools/bundled/devtools_app.html?"
     "remoteBase=%s&"
@@ -126,16 +124,22 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
   content::HostZoomMap::SetZoomLevel(web_contents, level);
 }
 
-double GetNextZoomLevel(double level, bool out) {
-  double factor = blink::PageZoomLevelToZoomFactor(level);
-  size_t size = std::size(kPresetZoomFactors);
-  for (size_t i = 0; i < size; ++i) {
-    if (!blink::PageZoomValuesEqual(kPresetZoomFactors[i], factor))
-      continue;
-    if (out && i > 0)
-      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
-    if (!out && i != size - 1)
-      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
+double GetNextZoomLevel(const double level, const bool out) {
+  static constexpr std::array<double, 16U> kPresetFactors{
+      0.25, 0.333, 0.5,  0.666, 0.75, 0.9, 1.0, 1.1,
+      1.25, 1.5,   1.75, 2.0,   2.5,  3.0, 4.0, 5.0};
+  static constexpr auto kBegin = kPresetFactors.begin();
+  static constexpr auto kEnd = kPresetFactors.end();
+
+  const double factor = blink::PageZoomLevelToZoomFactor(level);
+  auto matches = [=](auto val) {
+    return blink::PageZoomValuesEqual(factor, val);
+  };
+  if (auto iter = std::find_if(kBegin, kEnd, matches); iter != kEnd) {
+    if (out && iter != kBegin)
+      return blink::PageZoomFactorToZoomLevel(*--iter);
+    if (!out && ++iter != kEnd)
+      return blink::PageZoomFactorToZoomLevel(*iter);
   }
   return level;
 }
