@@ -10,6 +10,7 @@
 #include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/ui/gtk_util.h"
@@ -144,6 +145,10 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
     libnotify_loader_.notify_notification_set_hint_string(
         notification_, "desktop-entry", desktop_id.c_str());
   }
+
+  libnotify_loader_.notify_notification_set_hint(
+      notification_, "sender-pid",
+      g_variant_new_int64(base::GetCurrentProcId()));
 
   GError* error = nullptr;
   libnotify_loader_.notify_notification_show(notification_, &error);

@@ -118,6 +118,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
         hints: {
           append: 'true',
           'desktop-entry': appName,
+          'sender-pid': process.pid,
           urgency: 1
         }
       });
