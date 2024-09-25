@@ -346,8 +346,11 @@ void NativeWindowMac::Close() {
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
   // Ensure it's closed before calling [window_ performClose:nil].
-  if ([window_ attachedSheet])
+  // If multiple sheets are open, they must all be closed.
+  while ([window_ attachedSheet]) {
     [window_ endSheet:[window_ attachedSheet]];
+  }
+  DCHECK_EQ([[window_ sheets] count], 0UL);
 
   // window_ could be nil after performClose.
   bool should_notify = is_modal() && parent() && IsVisible();
