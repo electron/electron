@@ -71,11 +71,8 @@ GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   if (bitmap.isNull())
     return {};
 
-  const auto [width, height] = bitmap.dimensions();
-  if (width < 1 || height < 1)
-    return {};
-
   constexpr int kBytesPerPixel = 4;
+  const auto [width, height] = bitmap.dimensions();
   std::vector<uint8_t> bytes;
   bytes.reserve(width * height * kBytesPerPixel);
   for (int y = 0; y < height; ++y) {
