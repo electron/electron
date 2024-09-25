@@ -904,7 +904,7 @@ describe('<webview> tag', function () {
       const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midi');
       const [, error] = await errorFromRenderer;
-      expect(error).to.equal('SecurityError');
+      expect(error).to.equal('NotAllowedError');
     });
 
     it('emits when using navigator.requestMIDIAccess with sysex api', async () => {
@@ -918,7 +918,7 @@ describe('<webview> tag', function () {
       const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midiSysex');
       const [, error] = await errorFromRenderer;
-      expect(error).to.equal('SecurityError');
+      expect(error).to.equal('NotAllowedError');
     });
 
     it('emits when accessing external protocol', async () => {
