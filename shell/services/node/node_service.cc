@@ -34,9 +34,8 @@ void V8FatalErrorCallback(const char* location, const char* message) {
   if (g_client_remote.is_bound() && g_client_remote.is_connected()) {
     auto* isolate = v8::Isolate::TryGetCurrent();
     std::ostringstream outstream;
-    node::report::WriteNodeReport(
-        isolate, message, location,
-        v8::Local<v8::Object>() /* error */, outstream);
+    node::GetNodeReport(isolate, message, location,
+                        v8::Local<v8::Object>() /* error */, outstream);
     g_client_remote->OnV8FatalError(location, outstream.str());
   }
 
