@@ -124,6 +124,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
           append: 'true',
           image_data: [3, 3, 12, true, 8, 4, Buffer.from([255, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 76, 255, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 38, 255, 255, 0, 0, 0, 255, 0, 0, 0, 0])],
           'desktop-entry': appName,
+          'sender-pid': process.pid,
           urgency: 1
         }
       });
