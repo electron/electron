@@ -33,15 +33,10 @@ mojo::Remote<node::mojom::NodeServiceClient> g_client_remote;
 void V8FatalErrorCallback(const char* location, const char* message) {
   if (g_client_remote.is_bound() && g_client_remote.is_connected()) {
     auto* isolate = v8::Isolate::TryGetCurrent();
-    node::Environment* env = nullptr;
-    if (isolate != nullptr) {
-      env = node::Environment::GetCurrent(isolate);
-    }
     std::ostringstream outstream;
     node::report::WriteNodeReport(
-        isolate, env, message, location, "" /* filename */, outstream,
-        v8::Local<v8::Object>() /* error */, true /* compact */,
-        true /* exclude_network */);
+        isolate, message, location,
+        v8::Local<v8::Object>() /* error */, outstream);
     g_client_remote->OnV8FatalError(location, outstream.str());
   }
 
