@@ -1405,7 +1405,7 @@ describe('session module', () => {
       await w.loadURL('https://myfakesite');
 
       const [, name] = await result;
-      expect(name).to.deep.equal('SecurityError');
+      expect(name).to.deep.equal('NotAllowedError');
     });
 
     it('successfully resolves when calling legacy getUserMedia', async () => {

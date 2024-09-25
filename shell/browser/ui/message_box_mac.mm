@@ -63,7 +63,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
     [button setTag:i];
   }
 
-  NSArray* ns_buttons = [alert buttons];
+  NSArray<NSButton*>* ns_buttons = [alert buttons];
   int button_count = static_cast<int>([ns_buttons count]);
 
   if (settings.default_id >= 0 && settings.default_id < button_count) {

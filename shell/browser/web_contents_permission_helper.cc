@@ -61,19 +61,19 @@ namespace {
 bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
   if (request.audio_type == MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     const auto system_audio_permission =
-        system_media_permissions::CheckSystemAudioCapturePermission();
+        system_permission_settings::CheckSystemAudioCapturePermission();
     return system_audio_permission ==
-               system_media_permissions::SystemPermission::kRestricted ||
+               system_permission_settings::SystemPermission::kRestricted ||
            system_audio_permission ==
-               system_media_permissions::SystemPermission::kDenied;
+               system_permission_settings::SystemPermission::kDenied;
   }
   if (request.video_type == MediaStreamType::DEVICE_VIDEO_CAPTURE) {
     const auto system_video_permission =
-        system_media_permissions::CheckSystemVideoCapturePermission();
+        system_permission_settings::CheckSystemVideoCapturePermission();
     return system_video_permission ==
-               system_media_permissions::SystemPermission::kRestricted ||
+               system_permission_settings::SystemPermission::kRestricted ||
            system_video_permission ==
-               system_media_permissions::SystemPermission::kDenied;
+               system_permission_settings::SystemPermission::kDenied;
   }
 
   return false;

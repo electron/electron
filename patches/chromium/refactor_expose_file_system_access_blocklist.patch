@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index f217aab18bf4df6f4e7a2bce046aea548e4f5413..d2b473d158e227122a3f32639db428468740ae9f 100644
+index cb355631515e91e5f18fc64cd008b9302846bbd2..7578943359ec068bcdd3d5c645f7c7528f699b27 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -42,7 +42,6 @@
@@ -19,7 +19,7 @@ index f217aab18bf4df6f4e7a2bce046aea548e4f5413..d2b473d158e227122a3f32639db42846
  #include "chrome/grit/generated_resources.h"
  #include "components/content_settings/core/browser/host_content_settings_map.h"
  #include "components/content_settings/core/common/content_settings.h"
-@@ -228,118 +227,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -234,122 +233,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -116,7 +116,7 @@ index f217aab18bf4df6f4e7a2bce046aea548e4f5413..d2b473d158e227122a3f32639db42846
 -     FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
 -     kDontBlockChildren},
 -#endif
--#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 -    // On Linux also block access to devices via /dev.
 -    {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), kBlockAllChildren},
 -    // And security sensitive data in /proc and /sys.
@@ -132,6 +132,10 @@ index f217aab18bf4df6f4e7a2bce046aea548e4f5413..d2b473d158e227122a3f32639db42846
 -    // website can do with access to that directory and its contents.
 -    {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), kBlockAllChildren},
 -#endif
+-#if BUILDFLAG(IS_ANDROID)
+-    {base::DIR_ANDROID_APP_DATA, nullptr, kBlockAllChildren},
+-    {base::DIR_CACHE, nullptr, kBlockAllChildren},
+-#endif
 -    // TODO(crbug.com/40095723): Refine this list, for example add
 -    // XDG_CONFIG_HOME when it is not set ~/.config?
 -};
@@ -143,7 +147,7 @@ index f217aab18bf4df6f4e7a2bce046aea548e4f5413..d2b473d158e227122a3f32639db42846
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..1ac631bacf574f0ce491aa75d40d74006da55321 100644
+index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..4bad4240e784b8fa06205014063020736074d001 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -17,12 +17,13 @@
@@ -170,7 +174,7 @@ index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..1ac631bacf574f0ce491aa75d40d7400
  #include "components/enterprise/common/files_scan_data.h"
  #endif
  
-@@ -336,6 +337,119 @@ class ChromeFileSystemAccessPermissionContext
+@@ -336,6 +337,123 @@ class ChromeFileSystemAccessPermissionContext
    // KeyedService:
    void Shutdown() override;
  
@@ -267,7 +271,7 @@ index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..1ac631bacf574f0ce491aa75d40d7400
 +      FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
 +      kDontBlockChildren},
 +  #endif
-+  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
++  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 +      // On Linux also block access to devices via /dev.
 +      {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), kBlockAllChildren},
 +      // And security sensitive data in /proc and /sys.
@@ -283,6 +287,10 @@ index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..1ac631bacf574f0ce491aa75d40d7400
 +      // website can do with access to that directory and its contents.
 +      {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), kBlockAllChildren},
 +  #endif
++  #if BUILDFLAG(IS_ANDROID)
++      {base::DIR_ANDROID_APP_DATA, nullptr, kBlockAllChildren},
++      {base::DIR_CACHE, nullptr, kBlockAllChildren},
++  #endif
 +      // TODO(crbug.com/40095723): Refine this list, for example add
 +      // XDG_CONFIG_HOME when it is not set ~/.config?
 +  };
@@ -290,7 +298,7 @@ index f6d36e2068fbe3681dba7b2c84bc7e81c7da6541..1ac631bacf574f0ce491aa75d40d7400
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -355,7 +469,7 @@ class ChromeFileSystemAccessPermissionContext
+@@ -355,7 +473,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  

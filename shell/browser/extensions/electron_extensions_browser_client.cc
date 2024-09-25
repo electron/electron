@@ -17,6 +17,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/user_agent.h"
 #include "extensions/browser/api/core_extensions_browser_api_provider.h"
@@ -271,7 +272,7 @@ ElectronExtensionsBrowserClient::GetProcessManagerDelegate() const {
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
 ElectronExtensionsBrowserClient::GetControlledFrameEmbedderURLLoader(
     const url::Origin& app_origin,
-    int frame_tree_node_id,
+    content::FrameTreeNodeId frame_tree_node_id,
     content::BrowserContext* browser_context) {
   return mojo::PendingRemote<network::mojom::URLLoaderFactory>();
 }
@@ -370,6 +371,12 @@ bool ElectronExtensionsBrowserClient::IsMinBrowserVersionSupported(
 void ElectronExtensionsBrowserClient::SetAPIClientForTest(
     extensions::ExtensionsAPIClient* api_client) {
   api_client_.reset(api_client);
+}
+
+void ElectronExtensionsBrowserClient::CreateExtensionWebContentsObserver(
+    content::WebContents* web_contents) {
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
+      web_contents);
 }
 
 extensions::ExtensionWebContentsObserver*

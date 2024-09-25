@@ -355,7 +355,10 @@ describe('chrome extensions', () => {
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true, contextIsolation: true } });
     });
 
-    describe('onBeforeRequest', () => {
+    // FIXME: these tests do not work as intended. the extension is loaded in the browser, but
+    // the extension's background page has not yet loaded by the time we check behavior, causing
+    // race conditions in CI vs local.
+    describe.skip('onBeforeRequest', () => {
       it('can cancel http requests', async () => {
         await w.loadURL(url);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));

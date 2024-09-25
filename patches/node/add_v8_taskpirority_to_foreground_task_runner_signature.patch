@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Wed, 18 Sep 2024 16:25:05 -0600
+Subject: add v8::TaskPirority to foreground task runner signature
+
+For now, we ignore the priority parameter. We expect this will be fixed
+naturally upstream, and we will be able to remove this patch in a future
+Node.js upgrade.
+
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 65a9b79ae6ac8b7589e8f8109a709acb41d12b97..743ac069ad579a208a632ef5096ae46c8a0dfd74 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -556,8 +556,8 @@ bool NodePlatform::IdleTasksEnabled(Isolate* isolate) {
+   return ForIsolate(isolate)->IdleTasksEnabled();
+ }
+ 
+-std::shared_ptr<v8::TaskRunner>
+-NodePlatform::GetForegroundTaskRunner(Isolate* isolate) {
++std::shared_ptr<v8::TaskRunner> NodePlatform::GetForegroundTaskRunner(
++    Isolate* isolate, v8::TaskPriority priority) {
+   return ForIsolate(isolate)->GetForegroundTaskRunner();
+ }
+ 
+diff --git a/src/node_platform.h b/src/node_platform.h
+index dde2d1b5687a5b52a4f09183bb4ff88d7d3e4d01..0a99f5b4b5eeb221ef3a34db7a50955c32d3c163 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -177,7 +177,7 @@ class NodePlatform : public MultiIsolatePlatform {
+                                   void (*callback)(void*), void* data) override;
+ 
+   std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(
+-      v8::Isolate* isolate) override;
++      v8::Isolate* isolate, v8::TaskPriority priority) override;
+ 
+   Platform::StackTracePrinter GetStackTracePrinter() override;
+   v8::PageAllocator* GetPageAllocator() override;
