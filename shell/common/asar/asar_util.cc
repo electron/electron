@@ -127,11 +127,8 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   contents->resize(info.size);
-  if (static_cast<int>(info.size) !=
-      src.Read(info.offset, const_cast<char*>(contents->data()),
-               contents->size())) {
+  if (!src.ReadAndCheck(info.offset, base::as_writable_byte_span(*contents)))
     return false;
-  }
 
   if (info.integrity)
     ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity);
