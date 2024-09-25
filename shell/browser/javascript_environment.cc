@@ -40,11 +40,12 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
 
-  return gin::IsolateHolder(
-      base::SingleThreadTaskRunner::GetCurrentDefault(),
-      gin::IsolateHolder::kSingleThread,
-      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
-      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, isolate);
+  return gin::IsolateHolder(base::SingleThreadTaskRunner::GetCurrentDefault(),
+                            gin::IsolateHolder::kSingleThread,
+                            gin::IsolateHolder::IsolateType::kUtility,
+                            std::move(create_params),
+                            gin::IsolateHolder::IsolateCreationMode::kNormal,
+                            nullptr, nullptr, isolate);
 }
 
 }  // namespace

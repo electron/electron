@@ -658,7 +658,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 content::RenderFrameHost* GetRenderFrameHost(
     content::NavigationHandle* navigation_handle) {
-  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNodeId frame_tree_node_id =
+      navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
       content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
   content::RenderFrameHostManager* render_manager =
@@ -1698,7 +1699,7 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   }
 }
 
-void WebContents::FrameDeleted(int frame_tree_node_id) {
+void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
   auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
   if (web_frame)
     web_frame->Destroyed();
@@ -3339,6 +3340,12 @@ void WebContents::Focus() {
   if (owner_window())
     owner_window()->Focus(true);
 #endif
+
+  // WebView uses WebContentsViewChildFrame, which doesn't have a Focus impl
+  // and triggers a fatal NOTREACHED.
+  if (is_guest())
+    return;
+
   web_contents()->Focus();
 }
 
@@ -3782,7 +3789,8 @@ void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
 
   content::RenderWidgetHostView* rwhv = rfh->GetView();
   if (rwhv) {
-    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or 255.
+    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or
+    // 255.
     rwhv->SetBackgroundColor(is_opaque ? color : SK_ColorTRANSPARENT);
     static_cast<content::RenderWidgetHostViewBase*>(rwhv)
         ->SetContentBackgroundColor(color);

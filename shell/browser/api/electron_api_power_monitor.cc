@@ -68,9 +68,10 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
 
-  base::PowerMonitor::AddPowerStateObserver(this);
-  base::PowerMonitor::AddPowerSuspendObserver(this);
-  base::PowerMonitor::AddPowerThermalObserver(this);
+  auto* power_monitor = base::PowerMonitor::GetInstance();
+  power_monitor->AddPowerStateObserver(this);
+  power_monitor->AddPowerSuspendObserver(this);
+  power_monitor->AddPowerThermalObserver(this);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   InitPlatformSpecificMonitors();
@@ -78,20 +79,29 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
-  base::PowerMonitor::RemovePowerStateObserver(this);
-  base::PowerMonitor::RemovePowerSuspendObserver(this);
-  base::PowerMonitor::RemovePowerThermalObserver(this);
+  auto* power_monitor = base::PowerMonitor::GetInstance();
+  power_monitor->RemovePowerStateObserver(this);
+  power_monitor->RemovePowerSuspendObserver(this);
+  power_monitor->RemovePowerThermalObserver(this);
 }
 
 bool PowerMonitor::ShouldShutdown() {
   return !Emit("shutdown");
 }
 
-void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
-  if (on_battery_power)
-    Emit("on-battery");
-  else
-    Emit("on-ac");
+void PowerMonitor::OnBatteryPowerStatusChange(
+    BatteryPowerStatus battery_power_status) {
+  switch (battery_power_status) {
+    case BatteryPowerStatus::kBatteryPower:
+      Emit("on-battery");
+      break;
+    case BatteryPowerStatus::kExternalPower:
+      Emit("on-ac");
+      break;
+    case BatteryPowerStatus::kUnknown:
+      // Ignored
+      break;
+  }
 }
 
 void PowerMonitor::OnSuspend() {
@@ -175,11 +185,11 @@ int GetSystemIdleTime() {
 }
 
 bool IsOnBatteryPower() {
-  return base::PowerMonitor::IsOnBatteryPower();
+  return base::PowerMonitor::GetInstance()->IsOnBatteryPower();
 }
 
 base::PowerThermalObserver::DeviceThermalState GetCurrentThermalState() {
-  return base::PowerMonitor::GetCurrentThermalState();
+  return base::PowerMonitor::GetInstance()->GetCurrentThermalState();
 }
 
 void Initialize(v8::Local<v8::Object> exports,
