@@ -658,7 +658,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 content::RenderFrameHost* GetRenderFrameHost(
     content::NavigationHandle* navigation_handle) {
-  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNodeId frame_tree_node_id =
+      navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
       content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
   content::RenderFrameHostManager* render_manager =
@@ -1698,7 +1699,7 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   }
 }
 
-void WebContents::FrameDeleted(int frame_tree_node_id) {
+void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
   auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
   if (web_frame)
     web_frame->Destroyed();
@@ -2911,14 +2912,16 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
-void WebContents::OnGetDeviceNameToUse(
-    base::Value::Dict print_settings,
-    printing::CompletionCallback print_callback,
-    // <error, device_name>
-    std::pair<std::string, std::u16string> info) {
+namespace {
+
+void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
+                          base::Value::Dict print_settings,
+                          printing::CompletionCallback print_callback,
+                          // <error, device_name>
+                          std::pair<std::string, std::u16string> info) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerElectron class does not do null check.
-  if (!web_contents()) {
+  if (!web_contents) {
     if (print_callback)
       std::move(print_callback).Run(false, "failed");
     return;
@@ -2940,14 +2943,39 @@ void WebContents::OnGetDeviceNameToUse(
   }
 
   auto* print_view_manager =
-      PrintViewManagerElectron::FromWebContents(web_contents());
+      PrintViewManagerElectron::FromWebContents(web_contents.get());
   if (!print_view_manager)
     return;
 
-  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
+  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   print_view_manager->PrintNow(rfh, std::move(print_settings),
                                std::move(print_callback));
 }
+
+void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                  print_to_pdf::PdfPrintResult print_result,
+                  scoped_refptr<base::RefCountedMemory> data) {
+  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
+    promise.RejectWithErrorMessage(
+        "Failed to generate PDF: " +
+        print_to_pdf::PdfPrintResultToString(print_result));
+    return;
+  }
+
+  v8::Isolate* isolate = promise.isolate();
+  gin_helper::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(
+      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
+
+  v8::Local<v8::Value> buffer =
+      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
+                         data->size())
+          .ToLocalChecked();
+
+  promise.Resolve(buffer);
+}
+}  // namespace
 
 void WebContents::Print(gin::Arguments* args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
@@ -3108,9 +3136,8 @@ void WebContents::Print(gin::Arguments* args) {
 
   print_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(&GetDeviceNameToUse, device_name),
-      base::BindOnce(&WebContents::OnGetDeviceNameToUse,
-                     weak_factory_.GetWeakPtr(), std::move(settings),
-                     std::move(callback)));
+      base::BindOnce(&OnGetDeviceNameToUse, web_contents()->GetWeakPtr(),
+                     std::move(settings), std::move(callback)));
 }
 
 // Partially duplicated and modified from
@@ -3168,35 +3195,9 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   params->params->document_cookie = unique_id.value_or(0);
 
   manager->PrintToPdf(rfh, page_ranges, std::move(params),
-                      base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
-                                     std::move(promise)));
+                      base::BindOnce(&OnPDFCreated, std::move(promise)));
 
   return handle;
-}
-
-void WebContents::OnPDFCreated(
-    gin_helper::Promise<v8::Local<v8::Value>> promise,
-    print_to_pdf::PdfPrintResult print_result,
-    scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
-    promise.RejectWithErrorMessage(
-        "Failed to generate PDF: " +
-        print_to_pdf::PdfPrintResultToString(print_result));
-    return;
-  }
-
-  v8::Isolate* isolate = promise.isolate();
-  gin_helper::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
-
-  v8::Local<v8::Value> buffer =
-      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
-                         data->size())
-          .ToLocalChecked();
-
-  promise.Resolve(buffer);
 }
 #endif
 
@@ -3339,6 +3340,12 @@ void WebContents::Focus() {
   if (owner_window())
     owner_window()->Focus(true);
 #endif
+
+  // WebView uses WebContentsViewChildFrame, which doesn't have a Focus impl
+  // and triggers a fatal NOTREACHED.
+  if (is_guest())
+    return;
+
   web_contents()->Focus();
 }
 
@@ -3782,7 +3789,8 @@ void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
 
   content::RenderWidgetHostView* rwhv = rfh->GetView();
   if (rwhv) {
-    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or 255.
+    // RenderWidgetHostView doesn't allow setting an alpha that's not 0 or
+    // 255.
     rwhv->SetBackgroundColor(is_opaque ? color : SK_ColorTRANSPARENT);
     static_cast<content::RenderWidgetHostViewBase*>(rwhv)
         ->SetContentBackgroundColor(color);

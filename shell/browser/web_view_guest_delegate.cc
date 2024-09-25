@@ -46,8 +46,6 @@ void WebViewGuestDelegate::AttachToIframe(
   embedder_web_contents_->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
       embedder_frame,
-      /*remote_frame=*/mojo::NullAssociatedRemote(),
-      /*remote_frame_host_receiver=*/mojo::NullAssociatedReceiver(),
       /*is_full_page=*/false);
 
   ResetZoomController();

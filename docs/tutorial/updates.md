@@ -261,7 +261,59 @@ server-communication aspect of the process by loading your update from a local d
 
 ## Update server specification
 
-A Squirrel-compatible update server has different
+For advanced deployment needs, you can also roll out your own Squirrel-compatible update server.
+For example, you may want to have percentage-based rollouts, distribute your app through separate
+release channels, or put your update server behind an authentication check.
+
+Squirrel.Windows and Squirrel.Mac clients require different response formats,
+but you can use a single server for both platforms by sending requests to
+different endpoints depending on the value of `process.platform`.
+
+```js title='main.js'
+const { app, autoUpdater } = require('electron')
+
+const server = 'https://your-deployment-url.com'
+// e.g. for Windows and app version 1.2.3
+// https://your-deployment-url.com/update/win32/1.2.3
+const url = `${server}/update/${process.platform}/${app.getVersion()}`
+
+autoUpdater.setFeedURL({ url })
+```
+
+### Windows
+
+A Squirrel.Windows client expects the update server to return the `RELEASES` artifact
+of the latest available build at the `/RELEASES` subpath of your endpoint.
+
+For example, if your feed URL is `https://your-deployment-url.com/update/win32/1.2.3`,
+then the `https://your-deployment-url.com/update/win32/1.2.3/RELEASES` endpoint
+should return the contents of the `RELEASES` artifact of the version you want to serve.
+
+```plaintext title='https://your-deployment-url.com/update/win32/1.2.3/RELEASES'
+B0892F3C7AC91D72A6271FF36905FEF8FE993520 https://your-static.storage/your-app-1.2.3-full.nupkg 103298365
+```
+
+Squirrel.Windows does the comparison check to see if the current app should update to
+the version returned in `RELEASES`, so you should return a response even when no update
+is available.
+
+### macOS
+
+When an update is available, the Squirrel.Mac client expects a JSON response at the feed URL's endpoint.
+This object has a mandatory `url` property that maps to a ZIP archive of the
+app update. All other properties in the object are optional.
+
+```json title='https://your-deployment-url.com/update/darwin/0.31.0'
+{
+    "url": "https://your-static.storage/your-app-1.2.3-darwin.zip",
+    "name": "1.2.3",
+    "notes": "Theses are some release notes innit",
+    "pub_date": "2024-09-18T12:29:53+01:00"
+}
+```
+
+If no update is available, the server should return a [`204 No Content`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)
+HTTP response.
 
 [vercel]: https://vercel.com
 [hazel]: https://github.com/vercel/hazel

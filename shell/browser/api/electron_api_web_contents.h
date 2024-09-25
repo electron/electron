@@ -25,6 +25,7 @@
 #include "content/common/frame.mojom-forward.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -45,10 +46,6 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
-
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_view_manager_electron.h"
-#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
@@ -247,16 +244,9 @@ class WebContents final : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDeviceNameToUse(base::Value::Dict print_settings,
-                            printing::CompletionCallback print_callback,
-                            // <error, device_name>
-                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-  void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
-                    print_to_pdf::PdfPrintResult print_result,
-                    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
@@ -648,7 +638,7 @@ class WebContents final : public ExclusiveAccessContext,
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
-  void FrameDeleted(int frame_tree_node_id) override;
+  void FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void PrimaryMainFrameRenderProcessGone(
       base::TerminationStatus status) override;
