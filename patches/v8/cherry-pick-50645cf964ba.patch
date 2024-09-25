@@ -1,0 +1,113 @@
+From 50645cf964ba96cf44c75fed9790d981a5dd9010 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Fri, 20 Sep 2024 15:17:52 +0200
+Subject: [PATCH] [wasm] Add some regression tests
+
+R=clemensb@chromium.org
+
+Bug: 361123483,361717714,362539773
+Change-Id: Ie212596f88d0dfa46269bfcdfc2ca24e9570fb76
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5876288
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96227}
+---
+
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 1cb75ef..f8ef70d 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -2185,7 +2185,9 @@
+   'regress/wasm/regress-336358915': [SKIP],
+   'regress/wasm/regress-342522151': [SKIP],
+   'regress/wasm/regress-349640002': [SKIP],
+-  'regress/wasm/regress-364667545': [SKIP]
++  'regress/wasm/regress-364667545': [SKIP],
++  'regress/wasm/regress-361123483': [SKIP],
++  'regress/wasm/regress-361717714': [SKIP]
+ }],  # (arch != x64 and arch != arm64 and arch != ia32 and arch != arm and arch != riscv64 and arch != loong64)
+ 
+ ##############################################################################
+diff --git a/test/mjsunit/regress/wasm/regress-361123483.js b/test/mjsunit/regress/wasm/regress-361123483.js
+new file mode 100644
+index 0000000..547405e
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-361123483.js
+@@ -0,0 +1,21 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --experimental-wasm-jspi --turboshaft-wasm
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++let builder = new WasmModuleBuilder();
++let import_index = builder.addImport('m', 'i', kSig_i_v);
++builder.addFunction('main', kSig_v_v).addBody([
++    kExprCallFunction, import_index,
++    kExprDrop,
++    kExprCallFunction, import_index,
++    kExprDrop,
++]).exportFunc();
++let instance = builder.instantiate({m: {
++  i: new WebAssembly.Suspending(() => 0)
++}});
++let async_main = WebAssembly.promising(instance.exports.main);
++async_main();
+diff --git a/test/mjsunit/regress/wasm/regress-361717714.js b/test/mjsunit/regress/wasm/regress-361717714.js
+new file mode 100644
+index 0000000..3cd8fd7
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-361717714.js
+@@ -0,0 +1,26 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --experimental-wasm-jspi
++
++function f0() {
++  d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++  let builder = new WasmModuleBuilder();
++  builder.addFunction("w0", kSig_v_v).addBody([
++      kExprLoop, kWasmVoid,
++      kExprBr, 0,
++      kExprEnd
++  ]).exportFunc();
++  const v6 = builder.instantiate();
++  const v7 = v6.exports;
++  let v9 = WebAssembly.promising(v7.w0);
++  postMessage("start");
++  v9();
++}
++const o13 = {
++    "type": "function",
++};
++let worker = new Worker(f0, o13);
++assertEquals("start", worker.getMessage());
++worker.terminateAndWait();
+diff --git a/test/mjsunit/regress/wasm/regress-362539773.js b/test/mjsunit/regress/wasm/regress-362539773.js
+new file mode 100644
+index 0000000..662d53a
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-362539773.js
+@@ -0,0 +1,18 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --wasm-wrapper-tiering-budget=1
++// Flags: --experimental-wasm-type-reflection
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++const builder = new WasmModuleBuilder();
++const _type = builder.addType(kSig_v_v);
++const _import = builder.addImport('m', 'foo', _type);
++builder.addExportOfKind(_type, builder, _import);
++builder.addFunction('main', _type).addBody([]).exportFunc();
++const func = new WebAssembly.Function(
++  { parameters: [], results: [] },
++  () => {});
++const instance = builder.instantiate({ 'm': { 'foo': func } });
++instance.exports.main();
