@@ -116,6 +116,14 @@ describe('BrowserWindow module', () => {
       await closed;
     });
 
+    it('should work if called when multiple messageBoxes are showing', async () => {
+      const closed = once(w, 'closed');
+      dialog.showMessageBox(w, { message: 'Hello Error' });
+      dialog.showMessageBox(w, { message: 'Hello Error' });
+      w.close();
+      await closed;
+    });
+
     it('closes window without rounded corners', async () => {
       await closeWindow(w);
       w = new BrowserWindow({ show: false, frame: false, roundedCorners: false });
