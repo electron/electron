@@ -2437,11 +2437,6 @@ es6-error@^4.1.1:
   resolved "https://registry.yarnpkg.com/es6-error/-/es6-error-4.1.1.tgz#9e3af407459deed47e9a91f9b885a84eb05c561d"
   integrity sha512-Um/+FxMr9CISWh0bi5Zv0iOD+4cFh5qLeks1qhAopKVAJw3drgKbKySikp7wGhDL0HPeaja0P5ULZrxLkniUVg==
 
-es6-object-assign@^1.0.3:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/es6-object-assign/-/es6-object-assign-1.1.0.tgz#c2c3582656247c39ea107cb1e6652b6f9f24523c"
-  integrity sha1-wsNYJlYkfDnqEHyx5mUrb58kUjw=
-
 escalade@^3.1.2:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/escalade/-/escalade-3.2.0.tgz#011a3f69856ba189dffa7dc8fcce99d2a87903e5"
@@ -4735,12 +4730,7 @@ minimatch@~3.0.4:
   dependencies:
     brace-expansion "^1.1.7"
 
-minimist@^1.0.0, minimist@^1.2.5, minimist@^1.2.6, minimist@~1.2.0:
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
-  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
-
-minimist@^1.2.0, minimist@^1.2.8:
+minimist@^1.0.0, minimist@^1.2.0, minimist@^1.2.3, minimist@^1.2.5, minimist@^1.2.6, minimist@^1.2.8, minimist@~1.2.0:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
@@ -6361,7 +6351,7 @@ shebang-regex@^3.0.0:
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
 
-shelljs@^0.8.1:
+shelljs@^0.8.5:
   version "0.8.5"
   resolved "https://registry.yarnpkg.com/shelljs/-/shelljs-0.8.5.tgz#de055408d8361bed66c669d2f000538ced8ee20c"
   integrity sha512-TiwcRcrkhHvbrZbnRcFYMLl30Dfov3HKqzp5tO5b4pt6G/SezKcYhmDg15zXVBswHmctSAQKznqNW2LO5tTDow==
@@ -6370,14 +6360,13 @@ shelljs@^0.8.1:
     interpret "^1.0.0"
     rechoir "^0.6.2"
 
-shx@^0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/shx/-/shx-0.3.2.tgz#40501ce14eb5e0cbcac7ddbd4b325563aad8c123"
-  integrity sha512-aS0mWtW3T2sHAenrSrip2XGv39O9dXIFUqxAEWHEOS1ePtGIBavdPJY1kE2IHl14V/4iCbUiNDPGdyYTtmhSoA==
+shx@^0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/shx/-/shx-0.3.4.tgz#74289230b4b663979167f94e1935901406e40f02"
+  integrity sha512-N6A9MLVqjxZYcVn8hLmtneQWIJtp8IKzMP4eMnx+nqkvXoqinUPCbUFLp2UcWTEIUONhlk0ewxr/jaVGlc+J+g==
   dependencies:
-    es6-object-assign "^1.0.3"
-    minimist "^1.2.0"
-    shelljs "^0.8.1"
+    minimist "^1.2.3"
+    shelljs "^0.8.5"
 
 side-channel@^1.0.4:
   version "1.0.4"
