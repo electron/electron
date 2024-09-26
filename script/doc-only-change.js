@@ -26,6 +26,7 @@ async function checkIfDocOnlyChange () {
       const nonDocChange = filesChanged.length === 0 || filesChanged.find(({ filename }) => {
         const fileDirs = filename.split('/');
         if (fileDirs[0] !== 'docs') return true;
+        return false;
       });
 
       process.exit(nonDocChange ? 1 : 0);
