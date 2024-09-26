@@ -27,13 +27,23 @@ void ElectronPDFDocumentHelperClient::UpdateContentRestrictions(
   // allowed there won't be a printing restriction passed, so we can use this
   // second call to notify that the pdf document is ready to print.
   if (!(content_restrictions & chrome_pdf::kContentRestrictionPrint)) {
-    content::WebContents* web_contents =
-        content::WebContents::FromRenderFrameHost(render_frame_host);
-    electron::api::WebContents* api_web_contents =
-        electron::api::WebContents::From(
-            web_contents->GetOutermostWebContents());
-    if (api_web_contents) {
-      api_web_contents->PDFReadyToPrint();
+    // It's a WebView - emit the event on the WebView webContents.
+    auto* guest_view = extensions::MimeHandlerViewGuest::FromRenderFrameHost(
+        render_frame_host);
+    if (guest_view) {
+      auto* gv_api_wc =
+          electron::api::WebContents::From(guest_view->embedder_web_contents());
+      if (gv_api_wc)
+        gv_api_wc->PDFReadyToPrint();
+      return;
+    }
+
+    auto* wc = content::WebContents::FromRenderFrameHost(render_frame_host);
+    if (wc) {
+      auto* api_wc =
+          electron::api::WebContents::From(wc->GetOuterWebContents());
+      if (api_wc)
+        api_wc->PDFReadyToPrint();
     }
   }
 }
