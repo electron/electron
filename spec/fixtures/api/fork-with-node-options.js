@@ -19,7 +19,7 @@ try {
     ['--require', path.join(fixtures, 'module', 'noop.js')],
     { env, stdio: 'inherit' });
   process.exit(0);
-} catch (error) {
+} catch {
   console.log('NODE_OPTIONS passed to child');
   process.exit(1);
 }

@@ -1,5 +1,5 @@
 import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
-import type { BrowserWindowConstructorOptions, LoadURLOptions, MessageBoxOptions, WebFrameMain } from 'electron/main';
+import type { BrowserWindowConstructorOptions, MessageBoxOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
@@ -23,8 +23,6 @@ let nextId = 0;
 const getNextId = function () {
   return ++nextId;
 };
-
-type PostData = LoadURLOptions['postData']
 
 // Stock page sizes
 const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
@@ -403,7 +401,7 @@ WebContents.prototype.loadURL = function (url, options) {
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
       if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: url };
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url };
       }
       finishListener();
     };
@@ -604,7 +602,7 @@ WebContents.prototype._init = function () {
   });
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message', function (this: Electron.WebContents, event, internal, channel, args) {
     addSenderToEvent(event, this);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
@@ -618,7 +616,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke' as any, async function (this: Electron.WebContents, event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-invoke', async function (this: Electron.WebContents, event, internal, channel, args) {
     addSenderToEvent(event, this);
     const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
     const replyWithError = (error: Error) => {
@@ -640,7 +638,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync', function (this: Electron.WebContents, event, internal, channel, args) {
     addSenderToEvent(event, this);
     addReturnValueToEvent(event);
     if (internal) {
@@ -658,7 +656,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-ports' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
+  this.on('-ipc-ports', function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     addSenderToEvent(event, this);
     event.ports = ports.map(p => new MessagePortMain(p));
     const maybeWebFrame = getWebFrameForEvent(event);
@@ -676,7 +674,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-before-unload-fired' as any, function (this: Electron.WebContents, event: Electron.Event, proceed: boolean) {
+  this.on('-before-unload-fired', function (this: Electron.WebContents, event, proceed) {
     const type = this.getType();
     // These are the "interactive" types, i.e. ones a user might be looking at.
     // All other types should ignore the "proceed" signal and unload
@@ -693,12 +691,13 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window' as any, (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
-      rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData) => {
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -735,11 +734,13 @@ WebContents.prototype._init = function () {
     let windowOpenOutlivesOpenerOption: boolean = false;
     let createWindow: Electron.CreateWindowFunction | undefined;
 
-    this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+    this.on('-will-add-new-contents', (event, url, frameName, rawFeatures, disposition, referrer, postData) => {
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -761,14 +762,16 @@ WebContents.prototype._init = function () {
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       createWindow = result.createWindow;
       if (!event.defaultPrevented) {
-        const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
-          // Allow setting of backgroundColor as a webPreference even though
-          // it's technically a BrowserWindowConstructorOptions option because
-          // we need to access it in the renderer at init time.
-          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
-          transparent: windowOpenOverriddenOptions.transparent,
-          ...windowOpenOverriddenOptions.webPreferences
-        } : undefined;
+        const secureOverrideWebPreferences = windowOpenOverriddenOptions
+          ? {
+              // Allow setting of backgroundColor as a webPreference even though
+            // it's technically a BrowserWindowConstructorOptions option because
+            // we need to access it in the renderer at init time.
+              backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+              transparent: windowOpenOverriddenOptions.transparent,
+              ...windowOpenOverriddenOptions.webPreferences
+            }
+          : undefined;
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         const webPreferences = makeWebPreferences({
           embedder: this,
@@ -784,9 +787,7 @@ WebContents.prototype._init = function () {
     });
 
     // Create a new browser window for "window.open"
-    this.on('-add-new-contents' as any, (event: Electron.Event, webContents: Electron.WebContents, disposition: string,
-      _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
-      referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
+    this.on('-add-new-contents', (event, webContents, disposition, _userGesture, _left, _top, _width, _height, url, frameName, referrer, rawFeatures, postData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
       const outlivesOpener = windowOpenOutlivesOpenerOption;
       const windowOpenFunction = createWindow;
@@ -824,7 +825,7 @@ WebContents.prototype._init = function () {
     app.emit('login', event, this, ...args);
   });
 
-  this.on('ready-to-show' as any, () => {
+  this.on('ready-to-show', () => {
     const owner = this.getOwnerBrowserWindow();
     if (owner && !owner.isDestroyed()) {
       process.nextTick(() => {
@@ -843,7 +844,7 @@ WebContents.prototype._init = function () {
 
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
-  this.on('-run-dialog' as any, async (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => {
+  this.on('-run-dialog', async (info, callback) => {
     const originUrl = new URL(info.frame.url);
     const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
     if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
@@ -864,15 +865,17 @@ WebContents.prototype._init = function () {
       message: info.messageText,
       checkboxLabel: checkbox,
       signal: abortController.signal,
-      ...(info.dialogType === 'confirm') ? {
-        buttons: ['OK', 'Cancel'],
-        defaultId: 0,
-        cancelId: 1
-      } : {
-        buttons: ['OK'],
-        defaultId: -1, // No default button
-        cancelId: 0
-      }
+      ...(info.dialogType === 'confirm')
+        ? {
+            buttons: ['OK', 'Cancel'],
+            defaultId: 0,
+            cancelId: 1
+          }
+        : {
+            buttons: ['OK'],
+            defaultId: -1, // No default button
+            cancelId: 0
+          }
     };
     openDialogs.add(abortController);
     const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
@@ -886,7 +889,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-cancel-dialogs' as any, () => {
+  this.on('-cancel-dialogs', () => {
     for (const controller of openDialogs) { controller.abort(); }
     openDialogs.clear();
   });
