@@ -8,16 +8,12 @@
 #include <gtk/gtk.h>
 #include <stdint.h>
 
-#include <string>
-#include <vector>
-
-#include "base/no_destructor.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/macros/remove_parens.h"
+#include "base/strings/stringize_macros.h"
 #include "electron/electron_gtk_stubs.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "third_party/skia/include/core/SkUnPreMultiply.h"
-#include "ui/gtk/gtk_compat.h"  // nogncheck
 
 // The following utilities are pulled from
 // https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_linux_gtk.cc;l=44-75;drc=a03ba4ca94f75531207c3ea832d6a605cde77394
@@ -25,14 +21,12 @@ namespace gtk_util {
 
 namespace {
 
-const char* GettextPackage() {
-  static base::NoDestructor<std::string> gettext_package(
-      "gtk" + base::NumberToString(gtk::GtkVersion().components()[0]) + "0");
-  return gettext_package->c_str();
-}
-
 const char* GtkGettext(const char* str) {
-  return g_dgettext(GettextPackage(), str);
+  // ex: "gtk30". GTK_MAJOR_VERSION is #defined as an int in parenthesis,
+  // like (3), so use base macros to remove parenthesis and stringize it
+  static const char kGettextDomain[] =
+      "gtk" STRINGIZE(BASE_REMOVE_PARENS(GTK_MAJOR_VERSION)) "0";
+  return g_dgettext(kGettextDomain, str);
 }
 
 }  // namespace
