@@ -116,7 +116,7 @@ When the child process exits, then the value is `null` after the `exit` event is
 
 Emitted once the child process has spawned successfully.
 
-#### Event: 'error'
+#### Event: 'error' _Experimental_
 
 Returns:
 
