@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import { net, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import * as url from 'node:url';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
@@ -934,7 +933,7 @@ describe('net module', () => {
           response.statusMessage = 'OK';
           response.end();
         });
-        const serverUrl = url.parse(serverUrlUnparsed);
+        const serverUrl = new URL(serverUrlUnparsed);
         const urlRequest = net.request({
           port: serverUrl.port ? parseInt(serverUrl.port, 10) : undefined,
           hostname: '127.0.0.1',
@@ -1307,10 +1306,10 @@ describe('net module', () => {
         ]);
         const netRequest = net.request(netServerUrl);
         const netResponse = await getResponse(netRequest);
-        const serverUrl = url.parse(nodeServerUrl);
+        const serverUrl = new URL(nodeServerUrl);
         const nodeOptions = {
           method: 'POST',
-          path: serverUrl.path,
+          path: serverUrl.pathname,
           port: serverUrl.port
         };
         const nodeRequest = http.request(nodeOptions);

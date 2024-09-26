@@ -19,7 +19,7 @@
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
-    "standard/no-callback-literal": "off"
+    "n/no-callback-literal": "off"
   },
   "parserOptions": {
     "ecmaVersion": 6,

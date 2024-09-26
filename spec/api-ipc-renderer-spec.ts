@@ -88,8 +88,8 @@ describe('ipcRenderer module', () => {
       }`);
 
       const child = { hello: 'world' };
-      const foo = { name: 'foo', child: child };
-      const bar = { name: 'bar', child: child };
+      const foo = { name: 'foo', child };
+      const bar = { name: 'bar', child };
       const array = [foo, bar];
 
       const [, arrayValue, fooValue, barValue, childValue] = await once(ipcMain, 'message');

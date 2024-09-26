@@ -2,6 +2,7 @@
 
 if (!process.env.CI) require('dotenv-safe').load();
 
+const chalk = require('chalk');
 const args = require('minimist')(process.argv.slice(2), {
   boolean: [
     'validateRelease',
@@ -18,9 +19,8 @@ const temp = require('temp').track();
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Octokit } = require('@octokit/rest');
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 const { ELECTRON_DIR } = require('../lib/utils');
 const { getElectronVersion } = require('../lib/get-version');

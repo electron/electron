@@ -597,7 +597,7 @@ describe('chrome extensions', () => {
 
     const addExtension = (name: string) => session.defaultSession.loadExtension(path.resolve(extensionPath, name));
     const removeAllExtensions = () => {
-      Object.keys(session.defaultSession.getAllExtensions()).map(extName => {
+      Object.keys(session.defaultSession.getAllExtensions()).forEach(extName => {
         session.defaultSession.removeExtension(extName);
       });
     };

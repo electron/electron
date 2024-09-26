@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import * as http from 'node:http';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as url from 'node:url';
 
 import { BrowserWindow, WebPreferences } from 'electron/main';
 
@@ -28,7 +27,7 @@ describe('security warnings', () => {
   before(async () => {
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
-      const uri = url.parse(request.url!).pathname!;
+      const uri = new URL(request.url!, `http://${request.headers.host}`).pathname!;
       let filename = path.join(__dirname, 'fixtures', 'pages', uri);
 
       try {

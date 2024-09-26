@@ -203,6 +203,28 @@ declare namespace Electron {
     registerProtocol(scheme: string, handler: any): boolean;
     interceptProtocol(scheme: string, handler: any): boolean;
   }
+
+  interface WebContents {
+    on(event: '-new-window', listener: (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
+      rawFeatures: string, referrer: Electron.Referrer, postData: LoadURLOptions['postData']) => void): this;
+    on(event: '-add-new-contents', listener: (event: Event, webContents: Electron.WebContents, disposition: string,
+      _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
+      referrer: Electron.Referrer, rawFeatures: string, postData: LoadURLOptions['postData']) => void): this;
+    on(event: '-will-add-new-contents', listener: (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: LoadURLOptions['postData']) => void): this;
+    on(event: '-ipc-message', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void): this;
+    on(event: '-ipc-message-sync', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void): this;
+    on(event: '-ipc-invoke', listener: (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) => void): this;
+    on(event: '-ipc-ports', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) => void): this;
+    on(event: '-run-dialog', listener: (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => void): this;
+    on(event: '-cancel-dialogs', listener: () => void): this;
+    on(event: 'ready-to-show', listener: () => void): this;
+    on(event: '-before-unload-fired', listener: (event: Electron.Event, proceed: boolean) => void): this;
+
+    on(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
+    removeListener(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
+
+    once(event: 'destroyed', listener: (event: Electron.Event) => void): this;
+  }
 }
 
 declare namespace ElectronInternal {

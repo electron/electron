@@ -117,10 +117,12 @@ class TouchBarColorPicker extends TouchBarItem<Electron.TouchBarColorPickerConst
   @LiveProperty<TouchBarColorPicker>(config => config.selectedColor)
     selectedColor!: string;
 
-  @ImmutableProperty<TouchBarColorPicker>(({ change: onChange }, setInternalProp) => typeof onChange === 'function' ? (details: { color: string }) => {
-    setInternalProp('selectedColor', details.color);
-    onChange(details.color);
-  } : null)
+  @ImmutableProperty<TouchBarColorPicker>(({ change: onChange }, setInternalProp) => typeof onChange === 'function'
+    ? (details: { color: string }) => {
+        setInternalProp('selectedColor', details.color);
+        onChange(details.color);
+      }
+    : null)
     onInteraction!: Function | null;
 }
 
@@ -203,10 +205,12 @@ class TouchBarSlider extends TouchBarItem<Electron.TouchBarSliderConstructorOpti
   @LiveProperty<TouchBarSlider>(config => config.value)
     value!: number;
 
-  @ImmutableProperty<TouchBarSlider>(({ change: onChange }, setInternalProp) => typeof onChange === 'function' ? (details: { value: number }) => {
-    setInternalProp('value', details.value);
-    onChange(details.value);
-  } : null)
+  @ImmutableProperty<TouchBarSlider>(({ change: onChange }, setInternalProp) => typeof onChange === 'function'
+    ? (details: { value: number }) => {
+        setInternalProp('value', details.value);
+        onChange(details.value);
+      }
+    : null)
     onInteraction!: Function | null;
 }
 
@@ -236,10 +240,12 @@ class TouchBarSegmentedControl extends TouchBarItem<Electron.TouchBarSegmentedCo
   @LiveProperty<TouchBarSegmentedControl>(config => config.mode)
     mode!: Electron.TouchBarSegmentedControl['mode'];
 
-  @ImmutableProperty<TouchBarSegmentedControl>(({ change: onChange }, setInternalProp) => typeof onChange === 'function' ? (details: { selectedIndex: number, isSelected: boolean }) => {
-    setInternalProp('selectedIndex', details.selectedIndex);
-    onChange(details.selectedIndex, details.isSelected);
-  } : null)
+  @ImmutableProperty<TouchBarSegmentedControl>(({ change: onChange }, setInternalProp) => typeof onChange === 'function'
+    ? (details: { selectedIndex: number, isSelected: boolean }) => {
+        setInternalProp('selectedIndex', details.selectedIndex);
+        onChange(details.selectedIndex, details.isSelected);
+      }
+    : null)
     onInteraction!: Function | null;
 }
 
@@ -265,13 +271,15 @@ class TouchBarScrubber extends TouchBarItem<Electron.TouchBarScrubberConstructor
   @LiveProperty<TouchBarScrubber>(config => typeof config.continuous === 'undefined' ? true : config.continuous)
     continuous!: boolean;
 
-  @ImmutableProperty<TouchBarScrubber>(({ select: onSelect, highlight: onHighlight }) => typeof onSelect === 'function' || typeof onHighlight === 'function' ? (details: { type: 'select'; selectedIndex: number } | { type: 'highlight'; highlightedIndex: number }) => {
-    if (details.type === 'select') {
-      if (onSelect) onSelect(details.selectedIndex);
-    } else {
-      if (onHighlight) onHighlight(details.highlightedIndex);
-    }
-  } : null)
+  @ImmutableProperty<TouchBarScrubber>(({ select: onSelect, highlight: onHighlight }) => typeof onSelect === 'function' || typeof onHighlight === 'function'
+    ? (details: { type: 'select'; selectedIndex: number } | { type: 'highlight'; highlightedIndex: number }) => {
+        if (details.type === 'select') {
+          if (onSelect) onSelect(details.selectedIndex);
+        } else {
+          if (onHighlight) onHighlight(details.highlightedIndex);
+        }
+      }
+    : null)
     onInteraction!: Function | null;
 }
 
