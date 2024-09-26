@@ -30,6 +30,11 @@ on:
   pull_request:
       
 jobs:
+  win-thing:
+    runs-on: electron-arc-windows-amd64-16core
+    steps:
+      - name: Hello World
+        run: echo hello
   setup:
     runs-on: ubuntu-latest
     permissions:
