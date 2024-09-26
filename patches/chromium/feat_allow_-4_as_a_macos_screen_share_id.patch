@@ -12,10 +12,10 @@ Where the last digit represents the window id and decrements with each
 requested screen share.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 27b7edd2e99f36ebf3381781f2d2b3e7aff3eca1..30b3c896d5d6f12d63a7e12df0c90c767a5d5a71 100644
+index 1c2d0c6dd4101fe0bac69e3018bbbedadce224cc..e407382a3463374fd57a83d70c5f96dca5825faf 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -503,7 +503,9 @@ void OnStart(std::optional<bool> use_native_picker) override {
+@@ -510,7 +510,9 @@ void OnStart(std::optional<bool> use_native_picker) override {
  
      if (@available(macOS 15.0, *)) {
        constexpr bool DefaultUseNativePicker = true;
@@ -27,10 +27,10 @@ index 27b7edd2e99f36ebf3381781f2d2b3e7aff3eca1..30b3c896d5d6f12d63a7e12df0c90c76
          ScreenCaptureKitDeviceMac::active_streams_++;
          picker.maximumStreamCount = @(ScreenCaptureKitDeviceMac::active_streams_);
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index f38ea5df3b6c694aed3a54486733130a2bec606b..f34ea831e3f0988b85940b11ca5484069f3013cb 100644
+index d162612dc70a2b57190aaf558aca8f46cbdedcad..bab2f0282b191a4263fc964125e199e52c62554b 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -316,8 +316,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -332,8 +332,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
