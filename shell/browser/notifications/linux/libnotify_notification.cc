@@ -131,19 +131,20 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // Always try to append notifications.
   // Unique tags can be used to prevent this.
   if (HasCapability("append")) {
-    libnotify_loader_.notify_notification_set_hint_string(notification_,
-                                                          "append", "true");
+    libnotify_loader_.notify_notification_set_hint(
+        notification_, "append", g_variant_new_string("true"));
   } else if (HasCapability("x-canonical-append")) {
-    libnotify_loader_.notify_notification_set_hint_string(
-        notification_, "x-canonical-append", "true");
+    libnotify_loader_.notify_notification_set_hint(
+        notification_, "x-canonical-append", g_variant_new_string("true"));
   }
 
   // Send the desktop name to identify the application
   // The desktop-entry is the part before the .desktop
   std::string desktop_id = platform_util::GetXdgAppId();
   if (!desktop_id.empty()) {
-    libnotify_loader_.notify_notification_set_hint_string(
-        notification_, "desktop-entry", desktop_id.c_str());
+    libnotify_loader_.notify_notification_set_hint(
+        notification_, "desktop-entry",
+        g_variant_new_string(desktop_id.c_str()));
   }
 
   libnotify_loader_.notify_notification_set_hint(
