@@ -12,7 +12,7 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (33.0)
+## Planned Breaking API Changes (34.0)
 
 ### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
@@ -28,6 +28,8 @@ webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame
 ```
 
 Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
+
+## Planned Breaking API Changes (33.0)
 
 ### Behavior Changed: custom protocol URL handling on Windows
 
