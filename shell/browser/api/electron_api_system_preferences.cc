@@ -14,7 +14,8 @@
 
 namespace electron::api {
 
-gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                    "SystemPreferences"};
 
 #if BUILDFLAG(IS_WIN)
 SystemPreferences::SystemPreferences() {

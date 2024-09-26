@@ -67,7 +67,8 @@ v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
 
 }  // namespace
 
-gin::WrapperInfo ServiceWorkerContext::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo ServiceWorkerContext::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                       "ServiceWorkerContext"};
 
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,

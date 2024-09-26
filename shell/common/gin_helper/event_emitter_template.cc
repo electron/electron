@@ -12,7 +12,7 @@
 
 namespace gin_helper::internal {
 
-gin::WrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin, "EventEmitter"};
 
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);

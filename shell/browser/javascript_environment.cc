@@ -20,7 +20,6 @@
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
@@ -135,10 +134,6 @@ void JavascriptEnvironment::CreateMicrotasksRunner() {
 
 void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
-  {
-    v8::HandleScope scope(isolate_);
-    gin_helper::CleanedUpAtExit::DoCleanup();
-  }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
 }
 

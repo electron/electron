@@ -91,7 +91,8 @@ WebFrameMain* WebFrameMain::FromRenderFrameHost(content::RenderFrameHost* rfh) {
   return FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
 }
 
-gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                               "WebFrameMain"};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     : frame_tree_node_id_(rfh->GetFrameTreeNodeId()), render_frame_(rfh) {

@@ -18,7 +18,8 @@
 
 namespace electron::api {
 
-gin::WrapperInfo AutoUpdater::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo AutoUpdater::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                              "AutoUpdater"};
 
 AutoUpdater::AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(this);

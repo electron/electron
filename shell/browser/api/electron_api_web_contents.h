@@ -42,7 +42,6 @@
 #include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
@@ -113,7 +112,6 @@ class WebContents final : public ExclusiveAccessContext,
                           public gin_helper::EventEmitterMixin<WebContents>,
                           public gin_helper::Constructible<WebContents>,
                           public gin_helper::Pinnable<WebContents>,
-                          public gin_helper::CleanedUpAtExit,
                           public content::WebContentsObserver,
                           public content::WebContentsDelegate,
                           private content::RenderWidgetHost::InputEventObserver,

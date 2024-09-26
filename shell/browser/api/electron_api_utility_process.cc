@@ -54,8 +54,8 @@ GetAllUtilityProcessWrappers() {
 
 namespace api {
 
-gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                        "UtilityProcess"};
 
 UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,

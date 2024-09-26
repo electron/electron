@@ -361,7 +361,7 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin, "App"};
 
 namespace {
 

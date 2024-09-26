@@ -208,7 +208,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 
 }  // namespace
 
-gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                             "WebRequest"};
 
 WebRequest::RequestFilter::RequestFilter(
     std::set<URLPattern> url_patterns,

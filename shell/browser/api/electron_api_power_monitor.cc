@@ -60,7 +60,8 @@ struct Converter<base::PowerThermalObserver::DeviceThermalState> {
 
 namespace electron::api {
 
-gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                               "PowerMonitor"};
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if BUILDFLAG(IS_MAC)

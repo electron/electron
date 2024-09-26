@@ -68,7 +68,8 @@ const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 
 }  // namespace
 
-gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                               "DownloadItem"};
 
 // static
 DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {

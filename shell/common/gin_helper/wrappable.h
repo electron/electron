@@ -71,7 +71,8 @@ class Wrappable : public WrappableBase {
 
 // static
 template <typename T>
-gin::WrapperInfo Wrappable<T>::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Wrappable<T>::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                               "gin_helper::Wrappable"};
 
 }  // namespace gin_helper
 

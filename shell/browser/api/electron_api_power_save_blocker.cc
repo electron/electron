@@ -41,7 +41,8 @@ struct Converter<device::mojom::WakeLockType> {
 
 namespace electron::api {
 
-gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                   "PowerSaveBlocker"};
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}

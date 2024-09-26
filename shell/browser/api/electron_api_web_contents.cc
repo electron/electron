@@ -1960,7 +1960,8 @@ class ReplyChannel final : public gin::Wrappable<ReplyChannel> {
   InvokeCallback callback_;
 };
 
-gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                               "ReplyChannel"};
 
 }  // namespace
 
@@ -4582,7 +4583,8 @@ std::list<WebContents*> WebContents::GetWebContentsList() {
 }
 
 // static
-gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                              "WebContents"};
 
 }  // namespace electron::api
 

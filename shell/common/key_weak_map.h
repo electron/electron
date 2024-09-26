@@ -65,7 +65,9 @@ class KeyWeakMap {
 
   static void OnObjectGC(const v8::WeakCallbackInfo<Mapped>& data) {
     auto* mapped = data.GetParameter();
-    mapped->self->Remove(mapped->key);
+    if (mapped) {
+      mapped->self->Remove(mapped->key);
+    }
   }
 
   // Map of stored objects.

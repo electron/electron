@@ -20,7 +20,6 @@
 #include "services/network/public/mojom/ssl_config.mojom-forward.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 
@@ -64,7 +63,6 @@ class Session final : public gin::Wrappable<Session>,
                       public gin_helper::Pinnable<Session>,
                       public gin_helper::Constructible<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
-                      public gin_helper::CleanedUpAtExit,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                       private SpellcheckHunspellDictionary::Observer,
 #endif

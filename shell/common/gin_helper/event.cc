@@ -27,7 +27,7 @@ Event::Event() = default;
 
 Event::~Event() = default;
 
-gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin, "Event"};
 
 const char* Event::GetTypeName() {
   return GetClassName();

@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
 
 #include "base/memory/raw_ptr.h"
+#include "gin/per_isolate_data.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
@@ -55,12 +56,26 @@ class WrappableBase {
   v8::Global<v8::Object> wrapper_;  // Weak
 
  private:
+  class DisposeObserver : gin::PerIsolateData::DisposeObserver {
+   public:
+    DisposeObserver(gin::PerIsolateData* per_isolate_data,
+                    WrappableBase* wrappable);
+    ~DisposeObserver() override;
+    void OnBeforeDispose(v8::Isolate* isolate) override;
+    void OnDisposed() override;
+
+   private:
+    const raw_ref<gin::PerIsolateData> per_isolate_data_;
+    const raw_ref<WrappableBase> wrappable_;
+  };
+
   static void FirstWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
   static void SecondWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
 
   raw_ptr<v8::Isolate> isolate_ = nullptr;
+  std::unique_ptr<DisposeObserver> dispose_observer_;
 };
 
 }  // namespace gin_helper

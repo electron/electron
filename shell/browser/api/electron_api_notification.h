@@ -14,7 +14,6 @@
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "ui/gfx/image/image.h"
 
@@ -33,7 +32,6 @@ namespace electron::api {
 class Notification final : public gin::Wrappable<Notification>,
                            public gin_helper::EventEmitterMixin<Notification>,
                            public gin_helper::Constructible<Notification>,
-                           public gin_helper::CleanedUpAtExit,
                            public NotificationDelegate {
  public:
   static bool IsSupported();

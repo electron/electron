@@ -628,8 +628,6 @@ filenames = {
     "shell/common/gin_helper/arguments.h",
     "shell/common/gin_helper/callback.cc",
     "shell/common/gin_helper/callback.h",
-    "shell/common/gin_helper/cleaned_up_at_exit.cc",
-    "shell/common/gin_helper/cleaned_up_at_exit.h",
     "shell/common/gin_helper/constructible.h",
     "shell/common/gin_helper/constructor.h",
     "shell/common/gin_helper/destroyable.cc",

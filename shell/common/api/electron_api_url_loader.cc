@@ -305,7 +305,7 @@ class JSChunkedDataPipeGetter final
 };
 
 gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+    gin::kEmbedderNativeGin, "JSChunkedDataPipeGetter"};
 
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
     net::DefineNetworkTrafficAnnotation("electron_net_module", R"(
@@ -327,7 +327,7 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 }  // namespace
 
 gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+    gin::kEmbedderNativeGin, "SimpleURLLoaderWrapper"};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     ElectronBrowserContext* browser_context,

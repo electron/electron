@@ -497,7 +497,7 @@ class ChunkedDataPipeReadableStream final
 };
 
 gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+    gin::kEmbedderNativeGin, "ChunkedDataPipeReadableStream"};
 
 }  // namespace
 

@@ -20,7 +20,8 @@
 
 namespace electron {
 
-gin::WrapperInfo ParentPort::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo ParentPort::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                             "ParentPort"};
 
 ParentPort* ParentPort::GetInstance() {
   static base::NoDestructor<ParentPort> instance;

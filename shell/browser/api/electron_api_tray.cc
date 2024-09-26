@@ -48,7 +48,7 @@ struct Converter<electron::TrayIcon::IconType> {
 
 namespace electron::api {
 
-gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin, "Tray"};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,

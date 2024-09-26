@@ -46,7 +46,8 @@ bool IsValidWrappable(const v8::Local<v8::Value>& val) {
 
 }  // namespace
 
-gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                              "MessagePort"};
 
 MessagePort::MessagePort() = default;
 MessagePort::~MessagePort() {

@@ -80,7 +80,7 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin, "NetLog"};
 
 NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {

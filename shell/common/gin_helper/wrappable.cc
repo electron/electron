@@ -9,6 +9,31 @@
 
 namespace gin_helper {
 
+WrappableBase::DisposeObserver::DisposeObserver(
+    gin::PerIsolateData* per_isolate_data,
+    WrappableBase* wrappable)
+    : per_isolate_data_(*per_isolate_data), wrappable_(*wrappable) {
+  per_isolate_data_->AddDisposeObserver(this);
+}
+
+WrappableBase::DisposeObserver::~DisposeObserver() {
+  per_isolate_data_->RemoveDisposeObserver(this);
+}
+
+void WrappableBase::DisposeObserver::OnBeforeDispose(v8::Isolate* isolate) {
+  if (!wrappable_->wrapper_.IsEmpty()) {
+    v8::HandleScope scope(isolate);
+    wrappable_->GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+    wrappable_->wrapper_.ClearWeak();
+    wrappable_->wrapper_.Reset();
+  }
+}
+
+void WrappableBase::DisposeObserver::OnDisposed() {
+  // The holder contains the observer, so the observer is destroyed here also.
+  delete &wrappable_.get();
+}
+
 WrappableBase::WrappableBase() = default;
 
 WrappableBase::~WrappableBase() {
@@ -49,6 +74,8 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   isolate_ = isolate;
   wrapper->SetAlignedPointerInInternalField(0, this);
   wrapper_.Reset(isolate, wrapper);
+  dispose_observer_ = std::make_unique<DisposeObserver>(
+      gin::PerIsolateData::From(isolate), this);
   wrapper_.SetWeak(this, FirstWeakCallback,
                    v8::WeakCallbackType::kInternalFields);
 

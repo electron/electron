@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/key_weak_map.h"
 
@@ -19,7 +18,7 @@ class SupportsUserData;
 namespace gin_helper {
 
 // Users should use TrackableObject instead.
-class TrackableObjectBase : public CleanedUpAtExit {
+class TrackableObjectBase {
  public:
   TrackableObjectBase();
 
@@ -37,7 +36,7 @@ class TrackableObjectBase : public CleanedUpAtExit {
   static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
 
  protected:
-  ~TrackableObjectBase() override;
+  virtual ~TrackableObjectBase();
 
   // Returns a closure that can destroy the native class.
   base::OnceClosure GetDestroyClosure();

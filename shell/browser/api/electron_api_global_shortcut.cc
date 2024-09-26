@@ -44,7 +44,8 @@ bool MapHasMediaKeys(
 
 namespace electron::api {
 
-gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                 "GlobalShortcut"};
 
 GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {}
 

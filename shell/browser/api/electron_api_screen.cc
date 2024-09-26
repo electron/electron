@@ -31,7 +31,7 @@
 
 namespace electron::api {
 
-gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin, "Screen"};
 
 namespace {
 

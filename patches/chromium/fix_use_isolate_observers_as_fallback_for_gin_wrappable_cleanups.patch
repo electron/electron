@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 26 Sep 2024 21:07:06 +0900
+Subject: fix: use isolate observers as fallback for gin::wrappable cleanups
+
+Refs https://github.com/microsoft/vscode/issues/192119#issuecomment-2375851531
+
+This patch can be removed once gin::wrappable is wired to use
+cppgc https://issues.chromium.org/issues/40210365
+
+diff --git a/gin/public/wrapper_info.h b/gin/public/wrapper_info.h
+index 8a847fadecaf9daa54d09e5bb1064530274b075c..4461c373af81df89d5f6cf6ac8f0995c18df1bad 100644
+--- a/gin/public/wrapper_info.h
++++ b/gin/public/wrapper_info.h
+@@ -25,6 +25,8 @@ enum InternalFields {
+ struct GIN_EXPORT WrapperInfo {
+   static WrapperInfo* From(v8::Local<v8::Object> object);
+   const GinEmbedder embedder;
++  const char* name;
++  bool disposed = false;
+ };
+ 
+ }  // namespace gin
+diff --git a/gin/wrappable.cc b/gin/wrappable.cc
+index 402355cb836cea14e9ee725a142a4bad44fd5bed..f89b0676f3d6ecd808463cfb6d0f550626647743 100644
+--- a/gin/wrappable.cc
++++ b/gin/wrappable.cc
+@@ -10,10 +10,31 @@
+ 
+ namespace gin {
+ 
++WrappableBase::DisposeObserver::DisposeObserver(
++    gin::PerIsolateData* per_isolate_data,
++    WrappableBase* wrappable)
++    : per_isolate_data_(*per_isolate_data), wrappable_(*wrappable) {
++  per_isolate_data_->AddDisposeObserver(this);
++}
++
++WrappableBase::DisposeObserver::~DisposeObserver() {
++  per_isolate_data_->RemoveDisposeObserver(this);
++}
++
++void WrappableBase::DisposeObserver::OnBeforeDispose(
++    v8::Isolate* isolate) {
++  wrappable_->wrapper_.Reset();
++}
++
++void WrappableBase::DisposeObserver::OnDisposed() {
++  // The holder contains the observer, so the observer is destroyed here also.
++  delete &wrappable_.get();
++}
++
+ WrappableBase::WrappableBase() = default;
+ 
+ WrappableBase::~WrappableBase() {
+-  wrapper_.Reset();
++  DCHECK(wrapper_.IsEmpty());
+ }
+ 
+ ObjectTemplateBuilder WrappableBase::GetObjectTemplateBuilder(
+@@ -28,6 +49,13 @@ const char* WrappableBase::GetTypeName() {
+ void WrappableBase::FirstWeakCallback(
+     const v8::WeakCallbackInfo<WrappableBase>& data) {
+   WrappableBase* wrappable = data.GetParameter();
++  WrapperInfo* wrapper_info = static_cast<WrapperInfo*>(data.GetInternalField(0));
++  if (wrapper_info && wrapper_info->disposed) {
++    SCOPED_CRASH_KEY_STRING256("DumpWithoutCrashing", "reason",
++                               "Weak callback in gin::Wrappable called after destruction");
++    SCOPED_CRASH_KEY_STRING256("DumpWithoutCrashing", "WrapperInfo",
++                               wrapper_info->name);
++  }
+   wrappable->dead_ = true;
+   wrappable->wrapper_.Reset();
+   data.SetSecondPassCallback(SecondWeakCallback);
+@@ -36,6 +64,7 @@ void WrappableBase::FirstWeakCallback(
+ void WrappableBase::SecondWeakCallback(
+     const v8::WeakCallbackInfo<WrappableBase>& data) {
+   WrappableBase* wrappable = data.GetParameter();
++  wrappable->second_weak_callback_called_ = true;
+   delete wrappable;
+ }
+ 
+@@ -71,6 +100,8 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate,
+   void* values[] = {info, this};
+   wrapper->SetAlignedPointerInInternalFields(2, indices, values);
+   wrapper_.Reset(isolate, wrapper);
++  dispose_observer_ = std::make_unique<DisposeObserver>(
++      PerIsolateData::From(isolate), this);
+   wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
+   return v8::MaybeLocal<v8::Object>(wrapper);
+ }
+diff --git a/gin/wrappable.h b/gin/wrappable.h
+index 4e7115685a5bf6997e78edcc1851e28bd00b1aa2..09114edfaa7da093ca8c8d500f2c69926ad93ec8 100644
+--- a/gin/wrappable.h
++++ b/gin/wrappable.h
+@@ -7,8 +7,11 @@
+ 
+ #include <type_traits>
+ 
++#include "base/debug/crash_logging.h"
++#include "components/crash/core/app/crashpad.h"
+ #include "gin/converter.h"
+ #include "gin/gin_export.h"
++#include "gin/per_isolate_data.h"
+ #include "gin/public/wrapper_info.h"
+ 
+ namespace gin {
+@@ -81,13 +84,30 @@ class GIN_EXPORT WrappableBase {
+                                             WrapperInfo* wrapper_info);
+ 
+  private:
++  class DisposeObserver : gin::PerIsolateData::DisposeObserver {
++   public:
++    DisposeObserver(gin::PerIsolateData* per_isolate_data,
++                    WrappableBase* wrappable);
++    ~DisposeObserver() override;
++    void OnBeforeDispose(v8::Isolate* isolate) override;
++    void OnDisposed() override;
++
++   private:
++    const raw_ref<gin::PerIsolateData> per_isolate_data_;
++    const raw_ref<WrappableBase> wrappable_;
++  };
++
+   static void FirstWeakCallback(
+       const v8::WeakCallbackInfo<WrappableBase>& data);
+   static void SecondWeakCallback(
+       const v8::WeakCallbackInfo<WrappableBase>& data);
+ 
+-  bool dead_ = false;
+   v8::Global<v8::Object> wrapper_;  // Weak
++  std::unique_ptr<DisposeObserver> dispose_observer_;
++
++ public:
++  bool dead_ = false;
++  bool second_weak_callback_called_ = false;
+ };
+ 
+ 
+@@ -104,7 +124,17 @@ class Wrappable : public WrappableBase {
+ 
+  protected:
+   Wrappable() = default;
+-  ~Wrappable() override = default;
++  ~Wrappable() override {
++    WrapperInfo* wrapper_info = static_cast<WrapperInfo*>(&T::kWrapperInfo);
++    if (dead_ && !second_weak_callback_called_) {
++      SCOPED_CRASH_KEY_STRING256("DumpWithoutCrashing", "reason",
++                                 "gin::Wrappable incorrect dispose!!!");
++      SCOPED_CRASH_KEY_STRING256("DumpWithoutCrashing", "WrapperInfo",
++                                 wrapper_info->name);
++      crash_reporter::DumpWithoutCrashing();
++    }
++    wrapper_info->disposed = true;
++  }
+ };
+ 
+ // This converter handles any subclass of Wrappable.

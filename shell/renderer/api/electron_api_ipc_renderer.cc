@@ -206,7 +206,8 @@ class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
   mojo::AssociatedRemote<electron::mojom::ElectronApiIPC> electron_ipc_remote_;
 };
 
-gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                              "IPCRenderer"};
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

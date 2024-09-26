@@ -13,7 +13,8 @@ namespace electron::api {
 
 PushNotifications* g_push_notifications = nullptr;
 
-gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                    "PushNotifications"};
 
 PushNotifications::PushNotifications() = default;
 

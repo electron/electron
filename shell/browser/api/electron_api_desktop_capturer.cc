@@ -214,7 +214,8 @@ struct Converter<electron::api::DesktopCapturer::Source> {
 
 namespace electron::api {
 
-gin::WrapperInfo DesktopCapturer::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo DesktopCapturer::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                  "DesktopCapturer"};
 
 DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {}
 

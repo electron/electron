@@ -130,7 +130,8 @@ struct Converter<in_app_purchase::Product> {
 
 namespace electron::api {
 
-gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                "InAppPurchase"};
 
 #if BUILDFLAG(IS_MAC)
 // static

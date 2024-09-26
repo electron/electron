@@ -47,7 +47,8 @@ struct Converter<electron::NotificationAction> {
 
 namespace electron::api {
 
-gin::WrapperInfo Notification::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Notification::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                               "Notification"};
 
 Notification::Notification(gin::Arguments* args) {
   presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())

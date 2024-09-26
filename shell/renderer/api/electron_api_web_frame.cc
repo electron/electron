@@ -901,7 +901,8 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
 };
 }  // namespace
 
-gin::WrapperInfo WebFrameRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo WebFrameRenderer::kWrapperInfo = {gin::kEmbedderNativeGin,
+                                                   "WebFrameRenderer"};
 
 // static
 std::set<SpellCheckerHolder*> SpellCheckerHolder::instances_;
