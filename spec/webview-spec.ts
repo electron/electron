@@ -326,8 +326,8 @@ describe('<webview> tag', function () {
 
     before(() => {
       const protocol = webviewSession.protocol;
-      protocol.registerStringProtocol(zoomScheme, (request, callback) => {
-        callback('hello');
+      protocol.registerStringProtocol(zoomScheme, (request, respond) => {
+        respond('hello');
       });
     });
 
@@ -838,13 +838,13 @@ describe('<webview> tag', function () {
 
     function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
       return new Promise<void>((resolve, reject) => {
-        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
+        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, allow) {
           if (webContents.id === webContentsId) {
             // All midi permission requests are blocked or allowed as midiSysex permissions
             // since https://chromium-review.googlesource.com/c/chromium/src/+/5154368
             if (permission === 'midiSysex') {
               const allowed = requestedPermission === 'midi' || requestedPermission === 'midiSysex';
-              return callback(!allowed);
+              return allow(!allowed);
             }
 
             try {
@@ -852,7 +852,7 @@ describe('<webview> tag', function () {
             } catch (e) {
               return reject(e);
             }
-            callback(false);
+            allow(false);
             resolve();
           }
         });
@@ -904,7 +904,7 @@ describe('<webview> tag', function () {
       const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midi');
       const [, error] = await errorFromRenderer;
-      expect(error).to.equal('SecurityError');
+      expect(error).to.equal('NotAllowedError');
     });
 
     it('emits when using navigator.requestMIDIAccess with sysex api', async () => {
@@ -918,7 +918,7 @@ describe('<webview> tag', function () {
       const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midiSysex');
       const [, error] = await errorFromRenderer;
-      expect(error).to.equal('SecurityError');
+      expect(error).to.equal('NotAllowedError');
     });
 
     it('emits when accessing external protocol', async () => {

@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import * as WebSocket from 'ws';
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit, listen } from './lib/spec-helpers';
+import { ifit, listen, waitUntil } from './lib/spec-helpers';
 import { once } from 'node:events';
 
 const uuid = require('uuid');
@@ -356,10 +356,19 @@ describe('chrome extensions', () => {
     });
 
     describe('onBeforeRequest', () => {
+      async function haveRejectedFetch () {
+        try {
+          await fetch(w.webContents, url);
+        } catch (ex: any) {
+          return ex.message === 'Failed to fetch';
+        }
+        return false;
+      }
+
       it('can cancel http requests', async () => {
         await w.loadURL(url);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-        await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith('Failed to fetch');
+        await expect(waitUntil(haveRejectedFetch)).to.eventually.be.fulfilled();
       });
 
       it('does not cancel http requests when no extension loaded', async () => {
@@ -594,7 +603,7 @@ describe('chrome extensions', () => {
 
     const addExtension = (name: string) => session.defaultSession.loadExtension(path.resolve(extensionPath, name));
     const removeAllExtensions = () => {
-      Object.keys(session.defaultSession.getAllExtensions()).map(extName => {
+      Object.keys(session.defaultSession.getAllExtensions()).forEach(extName => {
         session.defaultSession.removeExtension(extName);
       });
     };

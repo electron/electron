@@ -65,6 +65,8 @@ $ git rebase --autosquash -i [COMMIT_SHA]^
 $ ../electron/script/git-export-patches -o ../electron/patches/v8
 ```
 
+Note that the `^` symbol [can cause trouble on Windows](https://stackoverflow.com/questions/14203952/git-reset-asks-more/14204318#14204318). The workaround is to either quote it `"[COMMIT_SHA]^"` or avoid it `[COMMIT_SHA]~1`.
+
 #### Removing a patch
 
 ```bash

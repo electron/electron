@@ -2,6 +2,7 @@
 
 if (!process.env.CI) require('dotenv-safe').load();
 
+const chalk = require('chalk');
 const args = require('minimist')(process.argv.slice(2), {
   boolean: [
     'validateRelease',
@@ -18,19 +19,15 @@ const temp = require('temp').track();
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Octokit } = require('@octokit/rest');
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 const { ELECTRON_DIR } = require('../lib/utils');
 const { getElectronVersion } = require('../lib/get-version');
 const getUrlHash = require('./get-url-hash');
+const { createGitHubTokenStrategy } = require('./github-token');
 
 const pkgVersion = `v${getElectronVersion()}`;
-
-const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
-});
 
 function getRepo () {
   return pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
@@ -38,6 +35,10 @@ function getRepo () {
 
 const targetRepo = getRepo();
 let failureCount = 0;
+
+const octokit = new Octokit({
+  authStrategy: createGitHubTokenStrategy(targetRepo)
+});
 
 async function getDraftRelease (version, skipValidation) {
   const releaseInfo = await octokit.repos.listReleases({
@@ -392,7 +393,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
     });
 
     const { url, headers } = requestOptions;
-    headers.authorization = `token ${process.env.ELECTRON_GITHUB_TOKEN}`;
+    headers.authorization = `token ${(await octokit.auth()).token}`;
 
     const response = await got(url, {
       followRedirect: false,

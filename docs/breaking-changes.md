@@ -29,6 +29,33 @@ webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame
 
 Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
 
+### Behavior Changed: custom protocol URL handling on Windows
+
+Due to changes made in Chromium to support [Non-Special Scheme URLs](http://bit.ly/url-non-special), custom protocol URLs that use Windows file paths will no longer work correctly with the deprecated `protocol.registerFileProtocol` and the `baseURLForDataURL` property on `BrowserWindow.loadURL`, `WebContents.loadURL`, and `<webview>.loadURL`.  `protocol.handle` will also not work with these types of URLs but this is not a change since it has always worked that way.
+
+```js
+// No longer works
+protocol.registerFileProtocol('other', () => {
+  callback({ filePath: '/path/to/my/file' })
+})
+
+const mainWindow = new BrowserWindow()
+mainWindow.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://C:\\myapp' })
+mainWindow.loadURL('other://C:\\myapp\\index.html')
+
+// Replace with
+const path = require('node:path')
+const nodeUrl = require('node:url')
+protocol.handle(other, (req) => {
+  const srcPath = 'C:\\myapp\\'
+  const reqURL = new URL(req.url)
+  return net.fetch(nodeUrl.pathToFileURL(path.join(srcPath, reqURL.pathname)).toString())
+})
+
+mainWindow.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
+mainWindow.loadURL('other://index.html')
+```
+
 ### Behavior Changed: menu bar will be hidden during fullscreen on Windows
 
 This brings the behavior to parity with Linux. Prior behavior: Menu bar is still visible during fullscreen on Windows. New behavior: Menu bar is hidden during fullscreen on Windows.

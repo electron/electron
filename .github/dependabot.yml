@@ -10,3 +10,91 @@ updates:
     labels:
       - "no-backport"
       - "semver/none"
+    target-branch: main
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - "backport-check-skip"
+      - "semver/none"
+    target-branch: 33-x-y
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - "backport-check-skip"
+      - "semver/none"
+    target-branch: 32-x-y
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - "backport-check-skip"
+      - "semver/none"
+    target-branch: 31-x-y
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - "backport-check-skip"
+      - "semver/none"
+    target-branch: 30-x-y
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /spec
+      - /npm
+    schedule:
+      interval: daily
+    labels:
+      - "no-backport"
+    open-pull-requests-limit: 2
+    target-branch: main
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /spec
+      - /npm
+    schedule:
+      interval: daily
+    labels:
+      - "backport-check-skip"
+    open-pull-requests-limit: 0
+    target-branch: 33-x-y
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /spec
+      - /npm
+    schedule:
+      interval: daily
+    labels:
+      - "backport-check-skip"
+    open-pull-requests-limit: 0
+    target-branch: 32-x-y
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /spec
+      - /npm
+    schedule:
+      interval: daily
+    labels:
+      - "backport-check-skip"
+    open-pull-requests-limit: 0
+    target-branch: 31-x-y
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /spec
+      - /npm
+    schedule:
+      interval: daily
+    labels:
+      - "backport-check-skip"
+    open-pull-requests-limit: 0
+    target-branch: 30-x-y

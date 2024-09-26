@@ -1,10 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import * as fs from 'node:fs';
-
-const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN,
-  log: console
-});
+import { createGitHubTokenStrategy } from '../github-token';
 
 if (!process.env.CI) require('dotenv-safe').load();
 
@@ -50,6 +46,11 @@ function getRepo () {
 const targetRepo = getRepo();
 const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
 let retry = 0;
+
+const octokit = new Octokit({
+  authStrategy: createGitHubTokenStrategy(targetRepo),
+  log: console
+});
 
 function uploadToGitHub () {
   console.log(`in uploadToGitHub for ${filePath}, ${fileName}`);

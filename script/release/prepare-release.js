@@ -8,11 +8,13 @@ const ciReleaseBuild = require('./ci-release-build');
 const { Octokit } = require('@octokit/rest');
 const { execSync } = require('node:child_process');
 const { GitProcess } = require('dugite');
+const chalk = require('chalk');
 
 const path = require('node:path');
 const readline = require('node:readline');
 const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
+const { createGitHubTokenStrategy } = require('./github-token');
 const bumpType = args._[0];
 const targetRepo = getRepo();
 
@@ -21,12 +23,11 @@ function getRepo () {
 }
 
 const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
+  authStrategy: createGitHubTokenStrategy(getRepo())
 });
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 if (!bumpType && !args.notesOnly) {
   console.log('Usage: prepare-release [stable | minor | beta | alpha | nightly]' +
