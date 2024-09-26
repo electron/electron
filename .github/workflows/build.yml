@@ -11,30 +11,30 @@ on:
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
-        default: false
+        default: true
         required: false
       skip-linux:
         type: boolean
         description: 'Skip Linux builds'
+        default: true
+        required: false
+      skip-windows:
+        type: boolean
+        description: 'Skip Windows builds'
         default: false
         required: false
       skip-lint:
         type: boolean
         description: 'Skip lint check'
-        default: false
+        default: true
         required: false
   push:
     branches:
       - main
       - '[1-9][0-9]-x-y'
   pull_request:
-      
+
 jobs:
-  win-thing:
-    runs-on: electron-arc-windows-amd64-16core
-    steps:
-      - name: Hello World
-        run: echo hello
   setup:
     runs-on: ubuntu-latest
     permissions:
@@ -131,6 +131,48 @@ jobs:
         fetch-depth: 0
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
+
+  checkout-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    runs-on: electron-arc-linux-amd64-32core
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+
+  windows-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: checkout-windows
+    with:
+      build-runs-on: electron-arc-windows-amd64-16core
+      check-runs-on: electron-arc-windows-amd64-16core
+      test-runs-on: windows-latest
+      target-platform: windows
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
