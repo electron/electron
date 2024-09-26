@@ -268,11 +268,13 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/thumbnail_capturer_mac.h",
       "//chrome/browser/media/webrtc/thumbnail_capturer_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/permissions/system/media_authorization_wrapper_mac.h",
       "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
     ]
+    deps += [ ":system_media_capture_permissions_mac_conflict" ]
   }
 
   if (enable_widevine) {
@@ -491,4 +493,17 @@ source_set("chrome_spellchecker") {
     "//components/spellcheck/common",
     "//components/spellcheck/renderer",
   ]
+}
+
+# These sources create an object file conflict with one in |:chrome|, so they
+# must live in a separate target.
+# Conflicting sources:
+#   //chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm
+#   //chrome/browser/permissions/system/system_media_capture_permissions_mac.mm
+source_set("system_media_capture_permissions_mac_conflict") {
+  sources = [
+    "//chrome/browser/permissions/system/system_media_capture_permissions_mac.h",
+    "//chrome/browser/permissions/system/system_media_capture_permissions_mac.mm",
+  ]
+  deps = [ "//chrome/common" ]
 }

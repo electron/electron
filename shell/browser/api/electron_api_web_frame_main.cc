@@ -12,6 +12,7 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
+#include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -56,7 +57,10 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
-typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
+typedef std::unordered_map<content::FrameTreeNodeId,
+                           WebFrameMain*,
+                           content::FrameTreeNodeId::Hasher>
+    WebFrameMainIdMap;
 
 WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
@@ -64,7 +68,8 @@ WebFrameMainIdMap& GetWebFrameMainMap() {
 }
 
 // static
-WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
+WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
+    content::FrameTreeNodeId frame_tree_node_id) {
   WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
   auto iter = frame_map.find(frame_tree_node_id);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
@@ -156,7 +161,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   static_cast<content::RenderFrameHostImpl*>(render_frame_)
       ->ExecuteJavaScriptForTests(
           code, user_gesture, true /* resolve_promises */,
-          content::ISOLATED_WORLD_ID_GLOBAL,
+          /*honor_js_content_settings=*/true, content::ISOLATED_WORLD_ID_GLOBAL,
           base::BindOnce(
               [](gin_helper::Promise<base::Value> promise,
                  blink::mojom::JavaScriptExecutionResultType type,
@@ -270,8 +275,8 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                        std::move(transferable_message));
 }
 
-int WebFrameMain::FrameTreeNodeID() const {
-  return frame_tree_node_id_;
+int WebFrameMain::FrameTreeNodeIDAsInt() const {
+  return frame_tree_node_id_.value();
 }
 
 std::string WebFrameMain::Name() const {
@@ -406,7 +411,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
-      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
+      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeIDAsInt)
       .SetProperty("name", &WebFrameMain::Name)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
       .SetProperty("processId", &WebFrameMain::ProcessID)

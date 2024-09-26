@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232726b405f 100644
+index f57b0a1be2faab8fb1918b0edf6b470faceeebb1..b56fc755aeb9fd62a2b466d501aa075eae3da2f0 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -342,7 +342,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -345,7 +345,8 @@ void Compositor::SetLayerTreeFrameSink(
    if (display_private_) {
      disabled_swap_until_resize_ = false;
      display_private_->Resize(size());
@@ -25,7 +25,7 @@ index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -555,7 +556,9 @@ void Compositor::SetVisible(bool visible) {
+@@ -558,7 +559,9 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_)
@@ -36,7 +36,7 @@ index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232
  
    if (changed) {
      for (auto& observer : observer_list_) {
-@@ -1019,6 +1022,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1018,6 +1021,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -53,7 +53,7 @@ index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 823bce55000d0f2242eb58f22ec62fa3464fcd98..551b85f0fd90cb4d07d29780b5115c60167b415a 100644
+index 916a33ebd06e6750cef57ff433b1826424482d26..06a9e039beeb9ac6880a06bf15ec5e8bbbdb76f5 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -510,6 +510,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,

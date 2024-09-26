@@ -10,10 +10,10 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest_extra/digest_extra.c b/crypto/digest_extra/digest_extra.c
-index f5750354956ed9fa72d45f60ebcd7784ac0920f8..da9a93725154e661decac174491209baebab8d86 100644
+index 7033d9c9cc2a2e11c5d6b4bc8575b1f6d271170c..97107c022f6997c56581317feee230bd6b1ed542 100644
 --- a/crypto/digest_extra/digest_extra.c
 +++ b/crypto/digest_extra/digest_extra.c
-@@ -85,6 +85,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+@@ -87,6 +87,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
      {NID_sha512_256, EVP_sha512_256, SN_sha512_256, LN_sha512_256},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
@@ -21,20 +21,20 @@ index f5750354956ed9fa72d45f60ebcd7784ac0920f8..da9a93725154e661decac174491209ba
      // As a remnant of signing |EVP_MD|s, OpenSSL returned the corresponding
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
-diff --git a/crypto/fipsmodule/digest/digests.c b/crypto/fipsmodule/digest/digests.c
-index f006ebbc53eea78ce0337a076a05285f22da7a18..7b9309f39a2e5dc6e61bb89e5d32b1766165f5a7 100644
---- a/crypto/fipsmodule/digest/digests.c
-+++ b/crypto/fipsmodule/digest/digests.c
-@@ -63,6 +63,7 @@
- #include <openssl/md5.h>
+diff --git a/crypto/fipsmodule/digest/digests.c.inc b/crypto/fipsmodule/digest/digests.c.inc
+index 216af52f7e7bb8df3bb3e9072b15a3edc15eaaf5..154aec02f93279a7a5dcb49b5410dfee9d4f0656 100644
+--- a/crypto/fipsmodule/digest/digests.c.inc
++++ b/crypto/fipsmodule/digest/digests.c.inc
+@@ -61,6 +61,7 @@
+ 
  #include <openssl/nid.h>
  #include <openssl/sha.h>
 +#include <openssl/ripemd.h>
  
  #include "internal.h"
  #include "../delocate.h"
-@@ -301,4 +302,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_md5_sha1) {
-   out->ctx_size = sizeof(MD5_SHA1_CTX);
+@@ -216,4 +217,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
+   out->ctx_size = sizeof(SHA512_CTX);
  }
  
 +static void ripemd160_init(EVP_MD_CTX *ctx) {

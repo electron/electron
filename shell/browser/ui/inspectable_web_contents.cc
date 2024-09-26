@@ -1040,7 +1040,8 @@ void InspectableWebContents::DidFinishNavigation(
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),
-                                   base::NullCallback());
+                                   base::NullCallback(),
+                                   content::ISOLATED_WORLD_ID_GLOBAL);
 }
 
 void InspectableWebContents::SendMessageAck(int request_id,

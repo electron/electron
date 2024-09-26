@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d3ba541d8d31bdb7bb2d3453ed5c85a7aab0e433..fbddb16dc4228e5baee3c94f88743c64113e14cb 100644
+index d6dbc2c38b40123860654132386da0a2aadeac5a..49d4366523aa635ad1d38dcfe74b05661e5dc5bc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1046,6 +1046,7 @@ component("base") {
+@@ -1027,6 +1027,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -73,7 +73,7 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..57d4756c0d87b9313e8566b3083c0132
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 87e06c32c70f7c9515c93196260bbd6c6268a59a..6d86d0ce1b3a072889797294b461051e8887f412 100644
+index 569c1c83d82517d9cb65282f766368ce3d9d0572..db9e7c7e76337468d9e2eb3fca93752ee2bd8ae1 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,13 +21,18 @@
@@ -95,7 +95,7 @@ index 87e06c32c70f7c9515c93196260bbd6c6268a59a..6d86d0ce1b3a072889797294b461051e
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs,
                                            int disclaim);
-@@ -99,13 +104,27 @@ class PosixSpawnFileActions {
+@@ -104,13 +109,27 @@ class PosixSpawnFileActions {
  
  #if !BUILDFLAG(IS_MAC)
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -123,7 +123,7 @@ index 87e06c32c70f7c9515c93196260bbd6c6268a59a..6d86d0ce1b3a072889797294b461051e
  }
  #endif
  
-@@ -229,7 +248,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -234,7 +253,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
@@ -362,10 +362,10 @@ index 2aa2bd8d68c08359461254875f02fc37f8693058..6ba759f96ffff4d31509248bb7add047
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index f511bdc7fab3eb36b4a3590922c20212cf6aad34..d5f934512f3acd5a323f8838844a6bb7f3e64ace 100644
+index 285a406e8cec06bf3beeca81b32e6561528279f9..0a08dc58852bc16edd3144e819276a0dc28a2580 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -637,10 +637,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -643,10 +643,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -379,10 +379,10 @@ index f511bdc7fab3eb36b4a3590922c20212cf6aad34..d5f934512f3acd5a323f8838844a6bb7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index c72378fbfd823855b41e094e16e4e92d9fbaefcc..f907a3eea3843ccad7b15ca34137f42dbe57baa1 100644
+index 853a95c65674b1011898c64445024bdc30c9709b..8d048719e1b062b3115d185a47cd4c92e318a145 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -368,6 +368,7 @@ viz_component("service") {
+@@ -371,6 +371,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -390,11 +390,11 @@ index c72378fbfd823855b41e094e16e4e92d9fbaefcc..f907a3eea3843ccad7b15ca34137f42d
    }
  
    if (is_android || use_ozone) {
-@@ -640,6 +641,7 @@ viz_source_set("unit_tests") {
+@@ -645,6 +646,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
-+    configs += ["//electron/build/config:mas_build"]
++    configs = ["//electron/build/config:mas_build"]
    }
  
    if (is_win) {
@@ -442,7 +442,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..0cdb0def975e457651771b43fd543261
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06baa52bb7 100644
+index 7b306925815201084a92db192d623b7d2f4d2691..79b647b03826aadde3b58b448192943cabc182dd 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -2062,15 +2062,21 @@ - (NSAccessibilityRole)accessibilityRole {
@@ -468,10 +468,10 @@ index 00493dc6c3f0229438b440a6fb2438ca668aba6b..6ce251058868529551cd6f008f840e06
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 29dc84944dbf42dfdfdc43b8a49913cff374d919..3c3dfc789890eda3007c0723e6730e5fb88c4646 100644
+index 4e163a30b7f987b0127cabf84a4610bfb81b9662..6ca8be361bcae47c7bc3ac606d7e42c5c66a056e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -72,6 +72,7 @@ source_set("browser") {
+@@ -73,6 +73,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -479,52 +479,6 @@ index 29dc84944dbf42dfdfdc43b8a49913cff374d919..3c3dfc789890eda3007c0723e6730e5f
    defines = []
    libs = []
    frameworks = []
-diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index cde2af9e67566aa010cf94b003f4c36ccd887879..88352a659a7aaac708c4e3b23ac888dd7e2abdd2 100644
---- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
-+++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -20,7 +20,9 @@
- #include "ui/accessibility/ax_role_properties.h"
- #include "ui/accessibility/platform/ax_platform_tree_manager_delegate.h"
- #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
-+#if !IS_MAS_BUILD()
- #include "ui/base/cocoa/remote_accessibility_api.h"
-+#endif
- 
- namespace {
- 
-@@ -229,6 +231,7 @@ void PostAnnouncementNotification(NSString* announcement,
-         return;
-       }
- 
-+#if !IS_MAS_BUILD()
-       BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
-       if (root_manager) {
-         BrowserAccessibilityManagerMac* root_manager_mac =
-@@ -251,6 +254,7 @@ void PostAnnouncementNotification(NSString* announcement,
-           return;
-         }
-       }
-+#endif
- 
-       // Use native VoiceOver support for live regions.
-       BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -642,6 +646,7 @@ void PostAnnouncementNotification(NSString* announcement,
-     return window == [NSApp accessibilityFocusedWindow];
-   }
- 
-+#if !IS_MAS_BUILD()
-   // TODO(accessibility): We need a solution to the problem described below.
-   // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
-   // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -670,6 +675,7 @@ void PostAnnouncementNotification(NSString* announcement,
-   if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
-     return true;
-   }
-+#endif
- 
-   return false;
- }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
 index 2285564db47ef15eb9a83affd1e481b5671c3940..bc18a276d3029c3b858cfcb378ae2e4255d4d83e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
@@ -552,7 +506,7 @@ index 2285564db47ef15eb9a83affd1e481b5671c3940..bc18a276d3029c3b858cfcb378ae2e42
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index dc71d54f9be1600e039b0d7361c7a31ee4e20cdb..6a595dfebeeb53706b60429bc904095a2ab4cba9 100644
+index d0dc93a37fec9fc22373a6aa08f03feb2839fde0..803a812ca36a45647bb4379a323adf395cc5bb38 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -273,8 +273,10 @@
@@ -673,10 +627,10 @@ index d4db3b179725cb96bcbd0f73db7d52ef8b7522db..6afbf1defb0591d9fe59a81e6c74746d
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019bdd5280c 100644
+index a1068589ad844518038ee7bc15a3de9bc5cba525..2208a79d44a05d21eba200f94f89aa1bff7da668 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
-@@ -8,10 +8,11 @@
+@@ -8,15 +8,26 @@
  
  #include "base/strings/sys_string_conversions.h"
  
@@ -687,10 +641,6 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
 -
 +#endif
  namespace content {
- 
- void SystemColorsDidChange(int aqua_color_variant) {
-@@ -24,8 +25,18 @@ void SystemColorsDidChange(int aqua_color_variant) {
- }
  
  bool IsSubpixelAntialiasingAvailable() {
 +#if !IS_MAS_BUILD()
@@ -709,7 +659,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 73c16e94f6e8e037f82cfb403e1d60f89be523ed..ae8a3ecc109027b9ab86f970e612360056eacd55 100644
+index 14731a0b1d157a4c15a87dbcc6342d69de84a881..e1eced68e00dddfa74776992a3e4f1bbf557737c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -504,6 +504,7 @@ static_library("test_support") {
@@ -728,7 +678,7 @@ index 73c16e94f6e8e037f82cfb403e1d60f89be523ed..ae8a3ecc109027b9ab86f970e6123600
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1721,6 +1723,7 @@ test("content_browsertests") {
+@@ -1788,6 +1790,7 @@ test("content_browsertests") {
    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -736,7 +686,7 @@ index 73c16e94f6e8e037f82cfb403e1d60f89be523ed..ae8a3ecc109027b9ab86f970e6123600
  
    public_deps = [
      ":test_interfaces",
-@@ -2990,6 +2993,7 @@ test("content_unittests") {
+@@ -3042,6 +3045,7 @@ test("content_unittests") {
    }
  
    configs += [ "//build/config:precompiled_headers" ]
@@ -814,7 +764,7 @@ index fa86583a2d82c4076cfcf64cdc3f6bbb533b95d7..71b731e2e25ba876639d169c2242087d
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index a4f541e3f4095a0f537137ae371555adc80c0023..f93f0b5bf8c47efbc67039d50e3bcd29e099459c 100644
+index 973cd337f2781271b4ca3e29db07939ec6917327..fda1b6535cd64a11369796d283b89e6a83449055 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -135,6 +135,7 @@ component("service") {
@@ -1256,7 +1206,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773a
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 9cb087c578629d872d2a2c12a046471527372c81..2b1aa7a79bcae619c3fe205a64fc1bdae4a4efff 100644
+index d6bdf90cc367cfd2dd8a6bea596593384bcde9d9..39d6bbda37fc62886712a38562ecedfd3904e2ae 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -332,6 +332,7 @@ component("core") {
@@ -1268,10 +1218,10 @@ index 9cb087c578629d872d2a2c12a046471527372c81..2b1aa7a79bcae619c3fe205a64fc1bda
    public_deps = [
      ":buildflags",
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index f12dd0a759fd8a79e648e14711274ccc40642a3d..63ae0ca4f63e68913c809b9440a922a95e914dcd 100644
+index 44e437c91135ec09c588a46e032bd6d3a12bab04..963e263a81b4eb9b3c53bebdcab1d1064b6113db 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -354,10 +354,14 @@ blink_core_sources_editing = [
+@@ -356,10 +356,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
@@ -1381,10 +1331,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..6ffffe8b3946e0427aead8be19878c53
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index ad1807ebfa054c68aead72ac8eb9c7323ca1d9fa..91124462bd61672114479ea9577b3924c89417ac 100644
+index 2e24201fcdc1ec65688e2b08d28a74a218792af2..53b399c13c344b72992b9433add202ed6aa1c558 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -240,6 +240,7 @@ component("platform") {
+@@ -282,6 +282,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
@@ -1392,6 +1342,52 @@ index ad1807ebfa054c68aead72ac8eb9c7323ca1d9fa..91124462bd61672114479ea9577b3924
      }
  
      if (is_ios) {
+diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
+index f9bd6478bea53f2b005c2d57b5f1db5313f77595..41a032e34335c554eca40edd74e8c271b3570a08 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
++++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
+@@ -19,7 +19,9 @@
+ #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
+ #import "ui/accessibility/platform/browser_accessibility_cocoa.h"
+ #import "ui/accessibility/platform/browser_accessibility_mac.h"
++#if !IS_MAS_BUILD()
+ #include "ui/base/cocoa/remote_accessibility_api.h"
++#endif
+ 
+ namespace {
+ 
+@@ -227,6 +229,7 @@ void PostAnnouncementNotification(NSString* announcement,
+         return;
+       }
+ 
++#if !IS_MAS_BUILD()
+       BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
+       if (root_manager) {
+         BrowserAccessibilityManagerMac* root_manager_mac =
+@@ -249,6 +252,7 @@ void PostAnnouncementNotification(NSString* announcement,
+           return;
+         }
+       }
++#endif
+ 
+       // Use native VoiceOver support for live regions.
+       BrowserAccessibilityCocoa* retained_node = native_node;
+@@ -645,6 +649,7 @@ void PostAnnouncementNotification(NSString* announcement,
+     return window == [NSApp accessibilityFocusedWindow];
+   }
+ 
++#if !IS_MAS_BUILD()
+   // TODO(accessibility): We need a solution to the problem described below.
+   // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
+   // 1. NSApp is the browser which spawned the PWA, and what it considers the
+@@ -673,6 +678,7 @@ void PostAnnouncementNotification(NSString* announcement,
+   if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
+     return true;
+   }
++#endif
+ 
+   return false;
+ }
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
 index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..7fa66598f2a541600602af47b3e1ed7b5d4463ee 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
@@ -1413,10 +1409,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..7fa66598f2a541600602af47b3e1ed7b
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 64aca0117cd273bfcec0549e7b5b8ac77f2c91ce..e44c1bd4dd100b6b9b390f1fb07dc8e684182561 100644
+index 79937bebda1b3405a8acbf1559ebd994a3f7bf0b..e2838e81e56988c2c0b66556aa62b585c199618c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -363,6 +363,7 @@ component("base") {
+@@ -367,6 +367,7 @@ component("base") {
        "interaction/element_tracker_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
@@ -1424,7 +1420,7 @@ index 64aca0117cd273bfcec0549e7b5b8ac77f2c91ce..e44c1bd4dd100b6b9b390f1fb07dc8e6
    }
  
    if (is_apple) {
-@@ -380,6 +381,13 @@ component("base") {
+@@ -384,6 +385,13 @@ component("base") {
      sources += [ "resource/resource_bundle_lacros.cc" ]
    }
  
@@ -1513,7 +1509,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 333424e572626bd9c372ed88601a1e80b45fe511..99aa8f04cdc22254eb70b5ab41987a5628841d0b 100644
+index 84afacf999c4905fdbaba332e19058a6471c3436..1c5419258c92454e3637fc2d6f9e443edccf7c03 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -74,6 +74,10 @@ component("display") {
@@ -1550,7 +1546,7 @@ index 35b71abc95f83bb01dba3f69e2d69a026840b7a2..f9d556e6b221d17035cd9e8d1f5620c5
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 5255116a8e8f897607e5c5df2875dbaf275ec919..0a28b2832470f3c9d45f70499be29c2b29cb1b25 100644
+index c0a85b2cfc69a4f358ae03c65e774cdc45085bf6..05d6796e28093d5e970e3edb36fc02d5ceded0f8 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -204,6 +204,7 @@ component("gfx") {
@@ -1562,7 +1558,7 @@ index 5255116a8e8f897607e5c5df2875dbaf275ec919..0a28b2832470f3c9d45f70499be29c2b
    if (is_win) {
      sources += [
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index dd1a98234966ba069bb6c7e6ab95f64cae0b0f1f..fa17d4b1974b6844ee11343f652d6896b6f1b1db 100644
+index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..12d329eb172d4ab5108576460b1d3089249a88dd 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -28,9 +28,11 @@
@@ -1577,7 +1573,7 @@ index dd1a98234966ba069bb6c7e6ab95f64cae0b0f1f..fa17d4b1974b6844ee11343f652d6896
  
  namespace {
  
-@@ -245,7 +247,13 @@ CTFontRef SystemFontForConstructorOfType(PlatformFontMac::SystemFontType type) {
+@@ -250,7 +252,13 @@ CTFontRef SystemFontForConstructorOfType(
    // TODO(avi, etienneb): Figure out this font stuff.
    base::apple::ScopedCFTypeRef<CTFontDescriptorRef> descriptor(
        CTFontCopyFontDescriptor(font));
@@ -1613,7 +1609,7 @@ index b2b1a783ac0c243ef5cf573b2e73af82b432fbf9..1b43204b8ce15b9cc4cbf6c5a3d6853a
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 9879c3456c12e2b0f0d550df1062da4a50a8e89d..83560d83ee240bb9197476d00578197fd299c12f 100644
+index 81979cdb6c5dbad84ea67ef9014ce4027bcdc161..09fedd988397d0825a12b1e0b565d41e466c8e2e 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -32,7 +32,9 @@
@@ -1640,7 +1636,7 @@ index 9879c3456c12e2b0f0d550df1062da4a50a8e89d..83560d83ee240bb9197476d00578197f
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 8b05cee4302216bf804320abc708d69379ab4a64..ad3b5fe6f39bb21d3b33a8828e7f4de7b04226fa 100644
+index 9a915cb0c36b224b8b95fa84bc1909de4283776f..5f84e8a68b8a5cdcebe272a79b96f7641aa8bd57 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -349,7 +349,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -1679,7 +1675,7 @@ index 8b05cee4302216bf804320abc708d69379ab4a64..ad3b5fe6f39bb21d3b33a8828e7f4de7
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder)
-@@ -1473,17 +1483,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1474,17 +1484,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1700,7 +1696,7 @@ index 8b05cee4302216bf804320abc708d69379ab4a64..ad3b5fe6f39bb21d3b33a8828e7f4de7
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1496,6 +1509,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1497,6 +1510,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

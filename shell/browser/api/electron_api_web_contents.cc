@@ -656,7 +656,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 content::RenderFrameHost* GetRenderFrameHost(
     content::NavigationHandle* navigation_handle) {
-  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNodeId frame_tree_node_id =
+      navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
       content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
   content::RenderFrameHostManager* render_manager =
@@ -688,6 +689,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
     case extensions::mojom::ViewType::kOffscreenDocument:
     case extensions::mojom::ViewType::kExtensionSidePanel:
     case extensions::mojom::ViewType::kInvalid:
+    case extensions::mojom::ViewType::kDeveloperTools:
       return WebContents::Type::kRemote;
   }
 }
@@ -1139,7 +1141,7 @@ content::WebContents* WebContents::CreateCustomWebContents(
   return nullptr;
 }
 
-void WebContents::AddNewContents(
+content::WebContents* WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
     const GURL& target_url,
@@ -1172,6 +1174,8 @@ void WebContents::AddNewContents(
            tracker->raw_features, tracker->body)) {
     api_web_contents->Destroy();
   }
+
+  return nullptr;
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -1679,7 +1683,7 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   }
 }
 
-void WebContents::FrameDeleted(int frame_tree_node_id) {
+void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
   auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
   if (web_frame)
     web_frame->Destroyed();

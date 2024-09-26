@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f907a3eea3843ccad7b15ca34137f42dbe57baa1..f3f0812be22067a06fc0afc3e52ffc252cd33f86 100644
+index 8d048719e1b062b3115d185a47cd4c92e318a145..7f33776c64a27282511065199edda760845c82d7 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -172,6 +172,8 @@ viz_component("service") {
@@ -521,7 +521,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 03790c67247044236ac0948b10763d7eeba26389..2544644da43ecc2cac5c39e11d4764b9b881d249 100644
+index 463a0f71f75884b78ff33fc459891fbf31a44422..96a74c4b8be58fa7cc5b5066e22c836423ac2a41 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -596,17 +596,17 @@ index 7d19b6be8bb0e0269c381cf6efdf79eaeff1e935..b8ec06ade095df99c024396a601dbf1a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index adcbd1bae0af1142fc2152f9a4148b499934180f..6556352329a9f485059360187abda12d7d431dff 100644
+index 1197e68e18701bdf01aa61655f953b8e950b5b04..23b38f7e6251cf0edcf1d5e7ebb99984c8ee5409 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -38,6 +38,7 @@ struct RootCompositorFrameSinkParams {
+@@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
 +  bool offscreen = false;
  
+   // Whether to create a surface control input receiver on Viz.
    [EnableIf=is_android]
-   float refresh_rate;
 diff --git a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom b/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
 index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05456071f3 100644
 --- a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
@@ -619,7 +619,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index b6c784c612bcf183f3174ce25736a57fd8803f22..823bce55000d0f2242eb58f22ec62fa3464fcd98 100644
+index 58da7f0697dd2251f45c1e4001584683b7acf8ed..916a33ebd06e6750cef57ff433b1826424482d26 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -90,6 +90,7 @@ namespace mojom {

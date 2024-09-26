@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index b2fae4a95035a0b371288ce9e85bcb83f04d809b..20ac173e49c24fb3e31a6d2e5616c1cc574a06b7 100644
+index 502cd4ac8b0e867959a90a5e323905297b4b66f7..0a3b1be5b1b59aada004cc9754efd28ddb414e08 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -157,6 +157,11 @@
+@@ -155,6 +155,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index b2fae4a95035a0b371288ce9e85bcb83f04d809b..20ac173e49c24fb3e31a6d2e5616c1cc
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -581,6 +586,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
+@@ -579,6 +584,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index b2fae4a95035a0b371288ce9e85bcb83f04d809b..20ac173e49c24fb3e31a6d2e5616c1cc
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -962,6 +1060,13 @@ void NetworkContext::SetClient(
+@@ -960,6 +1058,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  

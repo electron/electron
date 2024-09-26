@@ -187,7 +187,7 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index bb266d4baddd1fa4d49ef7fac1ac8d5d85c934d4..61369ff1ffe9ab511224b7e72b283df9e9262fd6 100644
+index d63bb20c8a4dc09e3df70cf8fe5b454d593ea360..918d1f92476277cd8f463a7aa1ceda008815c1d7 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -179,11 +179,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -237,7 +237,7 @@ index bb266d4baddd1fa4d49ef7fac1ac8d5d85c934d4..61369ff1ffe9ab511224b7e72b283df9
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -437,9 +463,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -435,9 +461,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -347,7 +347,7 @@ index 9791ae2f761043b9eecd9064a6fd39a6e2339af4..c1809298c830b814f886859c2626d6bc
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index ad5ad7b27da8bc1b435bbb91e9e0eaa98aef9612..f72fadc75ecf165fe29ac2f1bd8c63a718a0c610 100644
+index a22e4ed0a2e63732bdfe84482191cabb3db93b83..66f3c581d7bc499a7057b77b4d1d43dd013c1f58 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -34,17 +34,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -374,7 +374,7 @@ index ad5ad7b27da8bc1b435bbb91e9e0eaa98aef9612..f72fadc75ecf165fe29ac2f1bd8c63a7
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -107,11 +109,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -108,11 +110,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -406,7 +406,7 @@ index ad5ad7b27da8bc1b435bbb91e9e0eaa98aef9612..f72fadc75ecf165fe29ac2f1bd8c63a7
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index 368fb567e46a55bdc44820d5b7a2a08ac6cc4ffd..f5238dcd76d74e6705061063ee847f8447650deb 100644
+index 27cef06ded34680c6bfa3e954924de645a1b8217..7c114956a77da7b60526dd93593d84627356bb16 100644
 --- a/content/browser/utility_sandbox_delegate.h
 +++ b/content/browser/utility_sandbox_delegate.h
 @@ -30,7 +30,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
@@ -420,7 +420,7 @@ index 368fb567e46a55bdc44820d5b7a2a08ac6cc4ffd..f5238dcd76d74e6705061063ee847f84
    ~UtilitySandboxedProcessLauncherDelegate() override;
  
    sandbox::mojom::Sandbox GetSandboxType() override;
-@@ -56,18 +58,21 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -55,18 +57,21 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    ZygoteCommunication* GetZygote() override;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -446,7 +446,7 @@ index 368fb567e46a55bdc44820d5b7a2a08ac6cc4ffd..f5238dcd76d74e6705061063ee847f84
  
  #if BUILDFLAG(IS_WIN)
    std::vector<base::FilePath> preload_libraries_;
-@@ -77,12 +82,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -76,12 +81,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -705,10 +705,10 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..276b2a06fabba559eb1caaaa9129b9f7
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index d25dc43074f15d81504dcf062a0284f73c417698..6e764cccfbb69717331d13af60c681a889ade750 100644
+index e6a3cd1e84b3b28c3ba9ef221257dd868f750558..a04a23e7955d6c497801a730b04f4ca0a7888686 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
-@@ -699,11 +699,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
+@@ -704,11 +704,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
  // command line flag.
  ResultCode LaunchWithoutSandbox(
      const base::CommandLine& cmd_line,
