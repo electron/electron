@@ -138,12 +138,14 @@ jobs:
     runs-on: electron-arc-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:

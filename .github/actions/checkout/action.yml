@@ -17,6 +17,8 @@ runs:
     run: |
       cd src/electron
       node script/yarn install --frozen-lockfile
+  - name: Install Build Tools
+    uses: ./src/electron/.github/actions/install-build-tools
   - name: Get Depot Tools
     shell: bash
     run: |
@@ -68,13 +70,17 @@ runs:
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
     run: |
-      gclient config \
+      e d gclient config \
         --name "src/electron" \
         --unmanaged \
         ${GCLIENT_EXTRA_ARGS} \
         "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
-      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
+      if [ "$TARGET_OS" != "" ]; then
+        echo "target_os=['$TARGET_OS']" >> ./.gclient
+      fi
+
+      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vvvvv
       if [ "${{ inputs.is-release }}" != "true" && -n "${{ env.PATCH_UP_APP_CREDS }}" ]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
