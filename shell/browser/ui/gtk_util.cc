@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <string>
+#include <vector>
 
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
@@ -68,42 +69,33 @@ const char* GetYesLabel() {
 
 GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   if (bitmap.isNull())
-    return nullptr;
+    return {};
 
-  int width = bitmap.width();
-  int height = bitmap.height();
+  const auto [width, height] = bitmap.dimensions();
+  if (width < 1 || height < 1)
+    return {};
 
-  GdkPixbuf* pixbuf =
-      gdk_pixbuf_new(GDK_COLORSPACE_RGB,  // The only colorspace gtk supports.
-                     TRUE,                // There is an alpha channel.
-                     8, width, height);
-
-  // SkBitmaps are premultiplied, we need to unpremultiply them.
-  const int kBytesPerPixel = 4;
-  uint8_t* divided = gdk_pixbuf_get_pixels(pixbuf);
-
-  for (int y = 0, i = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      uint32_t pixel = bitmap.getAddr32(0, y)[x];
-
-      int alpha = SkColorGetA(pixel);
-      if (alpha != 0 && alpha != 255) {
-        SkColor unmultiplied = SkUnPreMultiply::PMColorToColor(pixel);
-        divided[i + 0] = SkColorGetR(unmultiplied);
-        divided[i + 1] = SkColorGetG(unmultiplied);
-        divided[i + 2] = SkColorGetB(unmultiplied);
-        divided[i + 3] = alpha;
-      } else {
-        divided[i + 0] = SkColorGetR(pixel);
-        divided[i + 1] = SkColorGetG(pixel);
-        divided[i + 2] = SkColorGetB(pixel);
-        divided[i + 3] = alpha;
-      }
-      i += kBytesPerPixel;
+  constexpr int kBytesPerPixel = 4;
+  std::vector<uint8_t> bytes;
+  bytes.reserve(width * height * kBytesPerPixel);
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      const SkColor pixel = bitmap.getColor(x, y);
+      bytes.emplace_back(SkColorGetR(pixel));
+      bytes.emplace_back(SkColorGetG(pixel));
+      bytes.emplace_back(SkColorGetB(pixel));
+      bytes.emplace_back(SkColorGetA(pixel));
     }
   }
 
-  return pixbuf;
+  constexpr GdkColorspace kColorspace = GDK_COLORSPACE_RGB;
+  constexpr gboolean kHasAlpha = true;
+  constexpr int kBitsPerSample = 8;
+  return gdk_pixbuf_new_from_bytes(
+      g_bytes_new(std::data(bytes), std::size(bytes)), kColorspace, kHasAlpha,
+      kBitsPerSample, width, height,
+      gdk_pixbuf_calculate_rowstride(kColorspace, kHasAlpha, kBitsPerSample,
+                                     width, height));
 }
 
 }  // namespace gtk_util
