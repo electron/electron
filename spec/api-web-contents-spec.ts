@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as os from 'node:os';
+import * as url from 'node:url';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
@@ -12,7 +13,6 @@ import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
-const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
@@ -1185,7 +1185,7 @@ describe('webContents module', () => {
       }).to.throw('\'icon\' parameter is required');
 
       expect(() => {
-        w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
+        w.webContents.startDrag({ file: __filename, icon: path.join(fixturesPath, 'blank.png') });
       }).to.throw(/Failed to load image from path (.+)/);
     });
   });
@@ -2492,6 +2492,43 @@ describe('webContents module', () => {
       await w.loadFile(pdfPath);
       await readyToPrint;
       const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.numPages).to.equal(2);
+      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
+    });
+
+    it('from an existing pdf document in a WebView', async () => {
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+
+      await win.loadURL('about:blank');
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+
+      const src = url.format({
+        pathname: `${fixturesPath.replaceAll('\\', '/')}/cat.pdf`,
+        protocol: 'file',
+        slashes: true
+      });
+      await win.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const webview = new WebView()
+          webview.setAttribute('src', '${src}')
+          document.body.appendChild(webview)
+          webview.addEventListener('did-finish-load', () => {
+            resolve()
+          })
+        })
+      `);
+
+      const [, webContents] = await webContentsCreated;
+
+      await once(webContents, '-pdf-ready-to-print');
+
+      const data = await webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
       expect(pdfInfo.numPages).to.equal(2);
       expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
