@@ -111,7 +111,7 @@ jobs:
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Generate DEPS Hash
       run: |
-        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
+        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash && cat src/electron/.depshash-target
         DEPSHASH=v1-src-cache-$(sha1sum src/electron/.depshash | cut -f1 -d' ')
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
