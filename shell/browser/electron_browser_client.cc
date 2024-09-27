@@ -434,8 +434,10 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
-  if (auto* web_preferences = WebContentsPreferences::From(web_contents))
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  if (web_preferences) {
     web_preferences->OverrideWebkitPrefs(prefs, renderer_prefs);
+  }
 }
 
 void ElectronBrowserClient::RegisterPendingSiteInstance(
