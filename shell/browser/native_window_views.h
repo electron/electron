@@ -231,7 +231,7 @@ class NativeWindowViews : public NativeWindow,
   void OnMouseEvent(ui::MouseEvent* event) override;
 
   // Returns the restore state for the window.
-  ui::WindowShowState GetRestoredState();
+  ui::mojom::WindowShowState GetRestoredState();
 
   // Maintain window placement.
   void MoveBehindTaskBarIfNeeded();
