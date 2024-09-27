@@ -2464,9 +2464,11 @@ describe('webContents module', () => {
       await once(webContents, '-pdf-ready-to-print');
 
       const data = await webContents.printToPDF({});
-      const pdfInfo = await readPDF(data);
-      expect(pdfInfo.numPages).to.equal(2);
-      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
+      const doc = await pdfjs.getDocument(data).promise;
+      expect(doc.numPages).to.equal(2);
+      const page = await doc.getPage(1);
+      const { items } = await page.getTextContent();
+      expect(containsText(items, /Cat: The Ideal Pet/)).to.be.true();
     });
   });
 
