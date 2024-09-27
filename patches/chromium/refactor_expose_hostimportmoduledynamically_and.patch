@@ -7,10 +7,10 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 845c109190013ca3e154d09cbbc217b76c2b6f98..8b5d5adaf3857a329412ffe59023e5b4293df8c8 100644
+index 9d7679d1979b21b58ac08723589a48fbff85c9e0..2647b325aefb15721c098d68ef401957e5f14273 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -642,7 +642,9 @@ bool WasmJSPromiseIntegrationEnabledCallback(v8::Local<v8::Context> context) {
+@@ -638,7 +638,9 @@ bool WasmJSPromiseIntegrationEnabledCallback(v8::Local<v8::Context> context) {
        execution_context);
  }
  
@@ -21,7 +21,7 @@ index 845c109190013ca3e154d09cbbc217b76c2b6f98..8b5d5adaf3857a329412ffe59023e5b4
      v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
-@@ -720,7 +722,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+@@ -716,7 +718,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
  }
  
  // https://html.spec.whatwg.org/C/#hostgetimportmetaproperties
@@ -30,7 +30,7 @@ index 845c109190013ca3e154d09cbbc217b76c2b6f98..8b5d5adaf3857a329412ffe59023e5b4
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    v8::Isolate* isolate = context->GetIsolate();
-@@ -763,9 +765,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
+@@ -759,9 +761,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
    return os;
  }
  
@@ -40,7 +40,7 @@ index 845c109190013ca3e154d09cbbc217b76c2b6f98..8b5d5adaf3857a329412ffe59023e5b4
  void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -785,9 +784,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
+@@ -781,9 +780,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    isolate->SetWasmJSPIEnabledCallback(WasmJSPromiseIntegrationEnabledCallback);
    isolate->SetSharedArrayBufferConstructorEnabledCallback(
        SharedArrayBufferConstructorEnabledCallback);

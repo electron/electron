@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1dee80a053c7554c4a511f5fc040bfff70271187..0b9c1f1c1a9a2b281afabf38e69c8d7f2ac4e8da 100644
+index 9b52a9bd084fff178ef8663fffac0fe207a0ac92..196d01e3f12c310d45b4d1ee0b5259f55d57a01e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1041,6 +1041,7 @@ component("base") {
+@@ -1039,6 +1039,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -417,7 +417,7 @@ index 2aa2bd8d68c08359461254875f02fc37f8693058..5d5584d22ead9730876fae2fc3971982
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 285a406e8cec06bf3beeca81b32e6561528279f9..a82a3653253b8a362d6ae3be41cbaaa017f757ca 100644
+index f71ea08f64ab5cd36f6bd1e2d3d2908d4de80ba6..4b3450b3bd44a35964bd935453861101f999a53a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -41,6 +41,7 @@
@@ -442,10 +442,10 @@ index 285a406e8cec06bf3beeca81b32e6561528279f9..a82a3653253b8a362d6ae3be41cbaaa0
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 853a95c65674b1011898c64445024bdc30c9709b..2f36496cf77258fe7e7b5eb7c93c6c53ff55abd0 100644
+index 83aa52af49bf5cb26de1e3a32cafc1fc50eff191..055c6ee45f7ca482f1a8292c7fb904d17d238651 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -371,6 +371,7 @@ viz_component("service") {
+@@ -372,6 +372,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -453,7 +453,7 @@ index 853a95c65674b1011898c64445024bdc30c9709b..2f36496cf77258fe7e7b5eb7c93c6c53
    }
  
    if (is_android || use_ozone) {
-@@ -645,6 +646,7 @@ viz_source_set("unit_tests") {
+@@ -646,6 +647,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -513,7 +513,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 7b306925815201084a92db192d623b7d2f4d2691..348b538f286443b08bc979feaaa47a41c469cd4b 100644
+index 13c3fe06c417a2565e6af4552930a56c44a01fb3..ef67191f5d010451cde2b084d6165c7dfe3bbee7 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -524,7 +524,7 @@ index 7b306925815201084a92db192d623b7d2f4d2691..348b538f286443b08bc979feaaa47a41
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2062,15 +2063,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2061,15 +2062,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1360,7 +1360,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d6bdf90cc367cfd2dd8a6bea596593384bcde9d9..1e9a25c205fb3f4c9241623b2ba0f8af443fe010 100644
+index f19b4c977e1d8ba14f35496660925f9f03440ad5..dd1661815cff79738b40e3e5543c4f7bcebbd5ac 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -403,6 +403,7 @@ component("core") {
@@ -1520,7 +1520,7 @@ index 2e24201fcdc1ec65688e2b08d28a74a218792af2..6085a8cde3df9a763e0eb63a9620f997
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index f9bd6478bea53f2b005c2d57b5f1db5313f77595..be1581eaf1dd1b6a7d1b44c7df3b16c04b6d19bc 100644
+index be442f6a2a67d07ec78fe00a3e864bf0088fe504..2332199d02b98f53375b4e3e40e25018cb584228 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -13,13 +13,16 @@

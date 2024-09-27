@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 92b79a993917be0c599afa2e47afee16c5c86b91..25b79e0d14a1c1fc5e78d4556520f1b40cd724ca 100644
+index 281aeb74596d8c7bcec6efc2725237ce204effc2..2b93f535d444d5f09e6d9445784f6029d0c3eeb3 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10775,6 +10775,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10779,6 +10779,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
          "blob");
    }
  
@@ -40,7 +40,7 @@ index 92b79a993917be0c599afa2e47afee16c5c86b91..25b79e0d14a1c1fc5e78d4556520f1b4
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 0fb02ada85ed3d4cc113ac7ce18d6efdb7065627..9e78c486fdc9b931dfcbcf40145076a22f221e35 100644
+index 7980748f0259dd9a87aee30c6fec771369b505a8..d435f8cb5d98a056ab05fab23ad4f871419a4e32 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2261,6 +2261,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
@@ -54,10 +54,10 @@ index 0fb02ada85ed3d4cc113ac7ce18d6efdb7065627..9e78c486fdc9b931dfcbcf40145076a2
    StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2313,6 +2317,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
-     debug_info_builder.Append(", url=");
-     debug_info_builder.Append(owner_document->Url().BaseAsString());
-     debug_info_builder.Append(")");
+@@ -2314,6 +2318,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     // the end of this function.
+     origin = origin_to_commit_;
+     debug_info_builder.Append("use_origin_to_commit");
 +  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
 +             !is_standard) {
 +    debug_info_builder.Append("use_url_with_non_standard_scheme");

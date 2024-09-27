@@ -232,7 +232,7 @@ index b90d9fd4fbdf24e4f817c10efe2ca50c24f95227..ae6f1611cb629508a8f123cfe5d44a56
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index dfb3c2401074c95c129290ec68149e1aab81d1cb..f843b336189849bf1a1dbe9b79afeb20cd21b5a6 100644
+index 49bc6ce731ea06cae8281107dbaa527060ffd4ce..b061435dd97fd80e748591390a6d0631eab78c42 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -152,8 +152,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index dfb3c2401074c95c129290ec68149e1aab81d1cb..f843b336189849bf1a1dbe9b79afeb20
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 4826eea9747c4860d7f5b4b8d478e62cb48a675b..4bd15ce68cbf3c393b2b51883f19835f40a6e285 100644
+index 1a58077807de673e1937f3323c8dc37b4c69468e..87f97ef6c2456e7dcc4a46b820ecba58dcf19388 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -345,8 +345,7 @@ class CONTENT_EXPORT WebContentsDelegate {

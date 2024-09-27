@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 8cae575ee2c9a0d959e53dc6f01b4b4f2b2a983d..8bde8983a063c0becbeda89749446940f7053453 100644
+index d77a3ce817ca10d95bdfa32b3e864c1f637df125..96c7f6cb32366c6f91c65e88fddc6c2b2ddc263b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9063,6 +9063,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -100,7 +100,7 @@ index c4d60bf65353ef76caa98d68f32ecb4aad184f68..cce78e21ec703e3cd13ac5185cf8c493
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index d9af18d041a9726862b0b00285ccb55e0756daf0..dfb3c2401074c95c129290ec68149e1aab81d1cb 100644
+index 9d14f11ef397a525633292dbedfed40f38a9ec8f..49bc6ce731ea06cae8281107dbaa527060ffd4ce 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -31,6 +31,17 @@ namespace content {
@@ -122,7 +122,7 @@ index d9af18d041a9726862b0b00285ccb55e0756daf0..dfb3c2401074c95c129290ec68149e1a
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index a080fb57f00c712eb8a3a9be669413e1082ce3b3..4826eea9747c4860d7f5b4b8d478e62cb48a675b 100644
+index 294dc13ec8f27875c28b459b56b166f2c8f4a2ff..1a58077807de673e1937f3323c8dc37b4c69468e 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -148,10 +148,10 @@ index a080fb57f00c712eb8a3a9be669413e1082ce3b3..4826eea9747c4860d7f5b4b8d478e62c
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d5e16b9e780efac46e088b3ef226e4418a90aeaf..724818204a4fa1578102c2fe1a8877735323595a 100644
+index edcc9e240ab6d8660d8bfd873ca89b36219b722d..89f28a5e8351571d15d6de910a014409494eabb7 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6834,6 +6834,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6835,6 +6835,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
