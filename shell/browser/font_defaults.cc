@@ -146,24 +146,24 @@ auto MakeDefaultFontCache() {
 
   // Lambda function that copies all nonempty fonts
   // from `defaults` into `prefs`
-  auto copy_default_fonts_to_wp = [defaults](WP* prefs) {
+  auto copy_default_fonts_to_web_prefs = [defaults](WP* prefs) {
     for (const auto [_, map_ptr] : FamilyMapByName) {
       const auto& src = defaults.*map_ptr;
       auto& tgt = prefs->*map_ptr;
       for (const auto& [key, val] : src)
-        tgt[key] = val;
+        tgt.insert_or_assign(key, val);
     }
   };
 
-  return copy_default_fonts_to_wp;
+  return copy_default_fonts_to_web_prefs;
 }
 }  // namespace
 
 namespace electron {
 
 void SetFontDefaults(blink::web_pref::WebPreferences* prefs) {
-  static const auto copy_default_fonts_to_wp = MakeDefaultFontCache();
-  copy_default_fonts_to_wp(prefs);
+  static const auto copy_default_fonts_to_web_prefs = MakeDefaultFontCache();
+  copy_default_fonts_to_web_prefs(prefs);
 }
 
 }  // namespace electron
