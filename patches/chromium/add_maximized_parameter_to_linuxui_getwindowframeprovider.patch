@@ -8,7 +8,7 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index d215ab072131dcc6ec27e91410d5ac6dda054764..7684edaaf4e6798d18be9bb7e2349961e16c217d 100644
+index c48da1e32fcc08081f7305a9d94b4af52f911da9..eb338cd4b6266f9ca06427626fddc1b880df0473 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
 @@ -582,11 +582,12 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
@@ -201,10 +201,10 @@ index 0800349bc18753e6a41a938c70213dd7dd123d0d..a1553e0cb1fac188fb2c74e10163c52d
   private:
    std::optional<gfx::FontRenderParams> default_font_render_params_;
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index 0a4c394b07a682d55639f37414331d68f175841c..45db96c165d61f551b344c7c852c083546508325 100644
+index 1e59679d206462f72495d587740ac48ba0fa30df..090e770ac2f8e5231f2bdd11247cacaceb0c7ef6 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -307,7 +307,8 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+@@ -306,7 +306,8 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.
    virtual WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,

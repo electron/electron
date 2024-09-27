@@ -297,13 +297,13 @@ index 128bca8bb64113418551a20164f67ef5e5a88253..705ac9d144b092f4b5558e06b3604073
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 7adf8264cfa9980c4a8414bf0f8bfa9ad70ec0b3..d162612dc70a2b57190aaf558aca8f46cbdedcad 100644
+index 01f082fc05e70246a8c0626897df306816d93687..eb694b88442d7076d47c50ec3919661d225621ba 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -360,13 +360,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
-           std::move(after_start_capture_callback));
-       break;
- #else
+@@ -346,13 +346,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+       }
+ #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
+ 
 +      media::VideoCaptureParams updated_params = params;
 +      updated_params.use_native_picker = stream_type != blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE;
        // All cases other than tab capture or Aura desktop/window capture.
