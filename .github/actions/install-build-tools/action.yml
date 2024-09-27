@@ -6,6 +6,11 @@ runs:
   - name: Install Build Tools
     shell: bash
     run: |
+      if [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+        git config --global core.filemode false
+        git config --global core.autocrlf false
+        git config --global branch.autosetuprebase always
+      fi
       export BUILD_TOOLS_SHA=33dc5186556bfbf7b0121a00cdd89ed3802e47da
       npm i -g @electron/build-tools
       e auto-update disable
