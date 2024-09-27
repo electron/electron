@@ -22,18 +22,18 @@ index 7033d9c9cc2a2e11c5d6b4bc8575b1f6d271170c..97107c022f6997c56581317feee230bd
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.c.inc b/crypto/fipsmodule/digest/digests.c.inc
-index 216af52f7e7bb8df3bb3e9072b15a3edc15eaaf5..154aec02f93279a7a5dcb49b5410dfee9d4f0656 100644
+index 9ead2c65c43f6f4899fa84d095c025b2b7c0bedc..1644bba5c1b87037b681372db89d93c2e637ebf2 100644
 --- a/crypto/fipsmodule/digest/digests.c.inc
 +++ b/crypto/fipsmodule/digest/digests.c.inc
-@@ -61,6 +61,7 @@
+@@ -60,6 +60,7 @@
+ #include <string.h>
  
  #include <openssl/nid.h>
- #include <openssl/sha.h>
 +#include <openssl/ripemd.h>
  
  #include "internal.h"
  #include "../delocate.h"
-@@ -216,4 +217,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
+@@ -215,4 +216,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
    out->ctx_size = sizeof(SHA512_CTX);
  }
  
