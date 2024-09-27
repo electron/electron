@@ -56,7 +56,7 @@ REM Install Windows SDK
 choco install windows-sdk-11-version-22h2-all
 
 REM Install nodejs python git and yarn needed dependencies
-choco install -y --force nodejs --version=20.9.0
+choco install -y --force nodejs --version=20.17.0
 choco install -y python2 git yarn
 choco install python --version 3.7.9
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
