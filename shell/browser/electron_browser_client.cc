@@ -1458,6 +1458,7 @@ void ElectronBrowserClient::
                                                       render_frame_host);
           },
           &render_frame_host));
+#if BUILDFLAG(ENABLE_PLUGINS)
   associated_registry.AddInterface<mojom::ElectronPluginInfoHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -1468,6 +1469,7 @@ void ElectronBrowserClient::
                 std::move(receiver));
           },
           &render_frame_host));
+#endif
 #if BUILDFLAG(ENABLE_PRINTING)
   associated_registry.AddInterface<printing::mojom::PrintManagerHost>(
       base::BindRepeating(
