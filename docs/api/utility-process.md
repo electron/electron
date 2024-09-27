@@ -116,6 +116,17 @@ When the child process exits, then the value is `null` after the `exit` event is
 
 Emitted once the child process has spawned successfully.
 
+#### Event: 'error' _Experimental_
+
+Returns:
+
+* `type` string - Type of error. One of the following values:
+  * `FatalError`
+* `location` string - Source location from where the error originated.
+* `report` string - [`Node.js diagnostic report`][].
+
+Emitted when the child process needs to terminate due to non continuable error from V8.
+
 #### Event: 'exit'
 
 Returns:
@@ -138,3 +149,4 @@ Emitted when the child process sends a message using [`process.parentPort.postMe
 [stdio]: https://nodejs.org/dist/latest/docs/api/child_process.html#optionsstdio
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [`MessagePortMain`]: message-port-main.md
+[`Node.js diagnostic report`]: https://nodejs.org/docs/latest/api/report.html#diagnostic-report
