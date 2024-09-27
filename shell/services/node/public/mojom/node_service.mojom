@@ -20,7 +20,12 @@ struct NodeServiceParams {
   bool use_network_observer_from_url_loader_factory = false;
 };
 
+interface NodeServiceClient {
+  OnV8FatalError(string location, string report);
+};
+
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
 interface NodeService {
-  Initialize(NodeServiceParams params);
+  Initialize(NodeServiceParams params,
+             pending_remote<NodeServiceClient> client_remote);
 };
