@@ -10,7 +10,6 @@
 #include "base/command_line.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
-#include "electron/mas.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
