@@ -6,6 +6,7 @@ runs:
   - name: Install Build Tools
     shell: bash
     run: |
+      echo "$(expr substr $(uname -s) 1 10)"
       if [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
         git config --global core.filemode false
         git config --global core.autocrlf false

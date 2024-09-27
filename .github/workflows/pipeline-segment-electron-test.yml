@@ -194,6 +194,7 @@ jobs:
         if-no-files-found: ignore
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do

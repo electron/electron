@@ -74,6 +74,9 @@ env:
 
 jobs:
   build:
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ inputs.build-runs-on }}
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}

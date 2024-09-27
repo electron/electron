@@ -43,6 +43,9 @@ env:
 
 jobs:
   gn-check:
+    defaults:
+      run:
+        shell: bash
     # TODO(codebytere): Change this to medium VM
     runs-on: ${{ inputs.check-runs-on }}
     container: ${{ fromJSON(inputs.check-container) }}
@@ -152,6 +155,7 @@ jobs:
         node electron/script/gen-libc++-filenames.js --check
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do

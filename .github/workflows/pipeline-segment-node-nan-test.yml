@@ -93,6 +93,7 @@ jobs:
         node electron/script/node-spec-runner.js --default --jUnitDir=junit
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do
@@ -155,6 +156,7 @@ jobs:
         cd src
         node electron/script/nan-spec-runner.js
     - name: Wait for active SSH sessions
+      shell: bash
       if: always() && !cancelled()
       run: |
         while [ -f /var/.ssh-lock ]
