@@ -4,11 +4,13 @@
 
 #include "shell/services/node/node_service.h"
 
+#include <sstream>
 #include <utility>
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/mas.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -20,7 +22,31 @@
 #include "shell/common/node_includes.h"
 #include "shell/services/node/parent_port.h"
 
+#if !IS_MAS_BUILD()
+#include "shell/common/crash_keys.h"
+#endif
+
 namespace electron {
+
+mojo::Remote<node::mojom::NodeServiceClient> g_client_remote;
+
+void V8FatalErrorCallback(const char* location, const char* message) {
+  if (g_client_remote.is_bound() && g_client_remote.is_connected()) {
+    auto* isolate = v8::Isolate::TryGetCurrent();
+    std::ostringstream outstream;
+    node::GetNodeReport(isolate, message, location,
+                        v8::Local<v8::Object>() /* error */, outstream);
+    g_client_remote->OnV8FatalError(location, outstream.str());
+  }
+
+#if !IS_MAS_BUILD()
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.message", message);
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+#endif
+
+  volatile int* zero = nullptr;
+  *zero = 0;
+}
 
 URLLoaderBundle::URLLoaderBundle() = default;
 
@@ -73,11 +99,19 @@ NodeService::~NodeService() {
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   }
+  if (g_client_remote.is_bound()) {
+    g_client_remote.reset();
+  }
 }
 
-void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
+void NodeService::Initialize(
+    node::mojom::NodeServiceParamsPtr params,
+    mojo::PendingRemote<node::mojom::NodeServiceClient> client_pending_remote) {
   if (NodeBindings::IsInitialized())
     return;
+
+  g_client_remote.Bind(std::move(client_pending_remote));
+  g_client_remote.reset_on_disconnect();
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
@@ -104,6 +138,9 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   node_env_ = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
       params->args, params->exec_args);
+
+  // Override the default handler set by NodeBindings.
+  node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);
 
   node::SetProcessExitHandler(
       node_env_.get(), [this](node::Environment* env, int exit_code) {
