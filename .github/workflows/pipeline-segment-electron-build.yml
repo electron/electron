@@ -160,7 +160,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform == 'linux' }}
+      if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'windows' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -186,7 +186,7 @@ jobs:
       uses: ./src/electron/.github/actions/fix-sync-macos
     - name: Install build-tools & Setup RBE
       run: |
-        echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform == 'linux' && '300' || '200' }}" >> $GITHUB_ENV
+        echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
         cd ~/.electron_build_tools
         npx yarn --ignore-engines
         # Pull down credential helper and print status
@@ -205,7 +205,7 @@ jobs:
       with:
         target-arch: ${{ inputs.target-arch }}
         target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}
+        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
         strip-binaries: '${{ inputs.strip-binaries }}'
