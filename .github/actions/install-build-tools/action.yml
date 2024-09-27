@@ -14,3 +14,7 @@ runs:
       export BUILD_TOOLS_SHA=33dc5186556bfbf7b0121a00cdd89ed3802e47da
       npm i -g @electron/build-tools
       e auto-update disable
+      if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
+        e d cipd.bat --version
+        cp "C:\Python37\python.exe" cp "C:\Python37\python3.exe"
+      fi
