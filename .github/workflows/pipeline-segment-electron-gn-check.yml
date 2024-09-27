@@ -119,7 +119,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform == 'linux' }}
+      if: ${{ inputs.target-platform != 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Run Electron Only Hooks
       run: |

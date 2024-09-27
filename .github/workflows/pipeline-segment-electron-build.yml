@@ -160,7 +160,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'windows' }}
+      if: ${{ inputs.target-platform != 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -187,7 +187,7 @@ jobs:
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
-        cd ~/.electron_build_tools
+        cd $HOME/.electron_build_tools
         npx yarn --ignore-engines
         # Pull down credential helper and print status
         node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
