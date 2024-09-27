@@ -7,6 +7,9 @@ runs:
     shell: bash
     run: |
       cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+      if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
+        cache_path=/c/cross-instance-cache/$DEPSHASH.tar
+      fi
       echo "Using cache key: $DEPSHASH"
       echo "Checking for cache in: $cache_path"
       if [ ! -f "$cache_path" ]; then

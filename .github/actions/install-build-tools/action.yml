@@ -16,5 +16,5 @@ runs:
       e auto-update disable
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         e d cipd.bat --version
-        cp "C:\Python37\python.exe" cp "C:\Python37\python3.exe"
+        cp "C:\Python37\python.exe" "C:\Python37\python3.exe"
       fi
