@@ -109,7 +109,7 @@ const FontDefault kFontDefaults[] = {
 
 // ^^^^^ DO NOT EDIT ^^^^^
 
-auto MakeDefaultFontCache() {
+auto MakeDefaultFontCopier() {
   using namespace prefs;
   using WP = blink::web_pref::WebPreferences;
   using FamilyMap = blink::web_pref::ScriptFontFamilyMap;
@@ -144,8 +144,7 @@ auto MakeDefaultFontCache() {
     }
   }
 
-  // Lambda function that copies all nonempty fonts
-  // from `defaults` into `prefs`
+  // Lambda that copies all of `default`'s fonts into `prefs`
   auto copy_default_fonts_to_web_prefs = [defaults](WP* prefs) {
     for (const auto [_, map_ptr] : FamilyMapByName) {
       const auto& src = defaults.*map_ptr;
@@ -162,7 +161,7 @@ auto MakeDefaultFontCache() {
 namespace electron {
 
 void SetFontDefaults(blink::web_pref::WebPreferences* prefs) {
-  static const auto copy_default_fonts_to_web_prefs = MakeDefaultFontCache();
+  static const auto copy_default_fonts_to_web_prefs = MakeDefaultFontCopier();
   copy_default_fonts_to_web_prefs(prefs);
 }
 
