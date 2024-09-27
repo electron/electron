@@ -22,10 +22,6 @@
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/browser/pdf_document_helper.h"  // nogncheck
-#endif
-
 namespace extensions {
 
 class ElectronGuestViewManagerDelegate
