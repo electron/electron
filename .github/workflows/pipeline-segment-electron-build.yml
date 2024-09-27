@@ -153,7 +153,7 @@ jobs:
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+        DEPSHASH=v1-src-cache-$(sha1sum src/electron/.depshash | cut -f1 -d' ')
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AZCopy
@@ -178,7 +178,7 @@ jobs:
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+        echo "DEPSHASH=$(sha1sum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Fix Sync (macOS)
