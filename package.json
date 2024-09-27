@@ -55,7 +55,7 @@
     "tap-xunit": "^2.4.1",
     "temp": "^0.9.4",
     "timers-browserify": "1.4.2",
-    "ts-loader": "^8.0.2",
+    "ts-loader": "^9.5.1",
     "ts-node": "6.2.0",
     "typescript": "^5.1.2",
     "url": "^0.11.4",
