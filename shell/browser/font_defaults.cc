@@ -12,7 +12,6 @@
 #include "base/containers/map_util.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_split.h"
-#include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/platform_locale_settings.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -115,7 +114,7 @@ auto MakeDefaultFontCopier() {
   using FamilyMap = blink::web_pref::ScriptFontFamilyMap;
 
   // Map from a family name (e.g. "webkit.webprefs.fonts.fixed") to a
-  // Pointer to Member of the location in WebPreferences of its
+  // Pointer-to-Member of the location in WebPreferences of its
   // ScriptFontFamilyMap (e.g. &WebPreferences::fixed_font_family_map)
   static constexpr auto FamilyMapByName =
       base::MakeFixedFlatMap<std::string_view, FamilyMap WP::*>({
@@ -140,19 +139,17 @@ auto MakeDefaultFontCopier() {
     const auto [family, script] = *base::RSplitStringOnce(pref_name, '.');
     if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family)) {
       FamilyMap& family_map = defaults.**family_map_ptr;
-      family_map.insert_or_assign(
-          std::string{script},
-          base::UTF8ToUTF16(l10n_util::GetStringUTF8(resource_id)));
+      family_map[std::string{script}] = l10n_util::GetStringUTF16(resource_id);
     }
   }
 
   // Lambda that copies all of `default`'s fonts into `prefs`
   auto copy_default_fonts_to_web_prefs = [defaults](WP* prefs) {
-    for (const auto [_, map_ptr] : FamilyMapByName) {
-      const FamilyMap& src = defaults.*map_ptr;
-      FamilyMap& tgt = prefs->*map_ptr;
+    for (const auto [_, family_map_ptr] : FamilyMapByName) {
+      const FamilyMap& src = defaults.*family_map_ptr;
+      FamilyMap& tgt = prefs->*family_map_ptr;
       for (const auto& [key, val] : src)
-        tgt.insert_or_assign(key, val);
+        tgt[key] = val;
     }
   };
 
