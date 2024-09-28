@@ -113,6 +113,21 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(exitCode);
     });
+
+    // 32-bit system will not have V8 Sandbox enabled.
+    // WoA testing does not have VS toolchain configured to build native addons.
+    ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
+      const [type, location, report] = await once(child, 'error');
+      const [code] = await once(child, 'exit');
+      expect(type).to.equal('FatalError');
+      expect(location).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const reportJSON = JSON.parse(report);
+      expect(reportJSON.header.trigger).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const addonPath = path.join(require.resolve('@electron-ci/external-ab'), '..', '..', 'build', 'Release', 'external_ab.node');
+      expect(reportJSON.sharedObjects).to.include(path.toNamespacedPath(addonPath));
+      expect(code).to.not.equal(0);
+    });
   });
 
   describe('app \'child-process-gone\' event', () => {

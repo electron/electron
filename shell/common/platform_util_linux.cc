@@ -33,7 +33,6 @@
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
 #include "shell/common/platform_util_internal.h"
-#include "ui/gtk/gtk_util.h"  // nogncheck
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"

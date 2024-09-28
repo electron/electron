@@ -20,7 +20,7 @@ describe('webFrameMain module', () => {
   /** Creates an HTTP server whose handler embeds the given iframe src. */
   const createServer = async () => {
     const server = http.createServer((req, res) => {
-      const params = new URLSearchParams(url.parse(req.url || '').search || '');
+      const params = new URLSearchParams(new URL(req.url || '', `http://${req.headers.host}`).search || '');
       if (params.has('frameSrc')) {
         res.end(`<iframe src="${params.get('frameSrc')}"></iframe>`);
       } else {
