@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9b52a9bd084fff178ef8663fffac0fe207a0ac92..196d01e3f12c310d45b4d1ee0b5259f55d57a01e 100644
+index 4c7805e58150b1ce61bec0ba116df22298a3e8b4..743d70810423422eba31f7977a6cb5f90d7bc681 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1039,6 +1039,7 @@ component("base") {
@@ -1508,10 +1508,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 2e24201fcdc1ec65688e2b08d28a74a218792af2..6085a8cde3df9a763e0eb63a9620f9971a3f57c8 100644
+index 2b3aad7a639c68c6a131e86352b40128ab6af411..840968e8117dd6657c240fa81f3a42b65a39b733 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -282,6 +282,7 @@ component("platform") {
+@@ -283,6 +283,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]

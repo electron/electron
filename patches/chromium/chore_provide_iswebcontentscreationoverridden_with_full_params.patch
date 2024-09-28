@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b90d9fd4fbdf24e4f817c10efe2ca50c24f95227..ae6f1611cb629508a8f123cfe5d44a569cae4c0a 100644
+index 9e79f504a18e943d56ef02d2424403e0acbe157e..dd2f2912bd76e43a08dd5149c13a1b49b1565290 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4760,8 +4760,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -260,7 +260,7 @@ index 1a58077807de673e1937f3323c8dc37b4c69468e..87f97ef6c2456e7dcc4a46b820ecba58
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index c9492327c30d41eab2425c037d23cae5b50d24eb..f7627e2fd5b2e419a3d00f6966535bd5f1fe94f6 100644
+index 0eb1b7b778c139971601a14cef729be6fdf5c247..3491662f5eb6131e6d4a6cd525e6ba951ac91e00 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 @@ -221,8 +221,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
@@ -288,7 +288,7 @@ index 2ee922084c82edb7e49ec1c894b517b88f56f54d..9c12c8e9bab2ac59b16cb4a638e099ca
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index fad08e33e16e4408a295c3c0b755e9e050f4b48f..23fb05dac66b271ad465d548167fbd6b0bf355d9 100644
+index 6c8040666b5203f9d2cd1f87cb730680483942c3..5a48581859f36a2c2a3925d44fcae0b07096bae4 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -389,8 +389,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
