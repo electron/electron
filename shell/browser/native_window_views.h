@@ -262,7 +262,7 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_WIN)
 
-  ui::WindowShowState last_window_state_;
+  ui::mojom::WindowShowState last_window_state_;
 
   gfx::Rect last_normal_placement_bounds_;
 
