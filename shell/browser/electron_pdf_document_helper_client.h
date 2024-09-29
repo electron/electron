@@ -22,7 +22,7 @@ class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
   void OnPDFHasUnsupportedFeature(content::WebContents* contents) override {}
   void OnSaveURL(content::WebContents* contents) override {}
   void SetPluginCanSave(content::RenderFrameHost* render_frame_host,
-                        bool can_save) override {}
+                        bool can_save) override;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_ELECTRON_PDF_DOCUMENT_HELPER_CLIENT_H_
