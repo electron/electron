@@ -674,6 +674,8 @@ source_set("electron_lib") {
 
   if (enable_plugins) {
     sources += [
+      "shell/browser/electron_plugin_info_host_impl.cc",
+      "shell/browser/electron_plugin_info_host_impl.h",
       "shell/common/plugin_info.cc",
       "shell/common/plugin_info.h",
     ]
