@@ -111,7 +111,8 @@ FrameTokenMap& GetFrameTokenMap() {
 }
 
 // static
-WebFrameMain* WebFrameMain::FromFrameTreeNodeId(content::FrameTreeNodeId frame_tree_node_id) {
+WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
+    content::FrameTreeNodeId frame_tree_node_id) {
   // Pinned frames aren't tracked across navigations so only non-pinned
   // frames will be retrieved.
   FrameTreeNodeIdMap& frame_map = GetFrameTreeNodeIdMap();

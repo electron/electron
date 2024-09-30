@@ -52,7 +52,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
-  static WebFrameMain* FromFrameTreeNodeId(content::FrameTreeNodeId frame_tree_node_id);
+  static WebFrameMain* FromFrameTreeNodeId(
+      content::FrameTreeNodeId frame_tree_node_id);
   static WebFrameMain* FromFrameToken(
       content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromRenderFrameHost(
