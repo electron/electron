@@ -145,6 +145,7 @@ describe('version-bumper', () => {
       it('throws on an invalid bump type', () => {
         const version = 'v2.0.0';
         return expect(
+          // @ts-expect-error 'WRONG' is not a valid bump type
           nextVersion('WRONG', version)
         ).to.be.rejectedWith('Invalid bump type.');
       });
