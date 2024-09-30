@@ -114,9 +114,9 @@ static auto MakeDefaultFontCache() {
   using WP = blink::web_pref::WebPreferences;
   using FamilyMap = blink::web_pref::ScriptFontFamilyMap;
 
-  // Map from a family name (e.g. "webkit.webprefs.fonts.fixed")
-  // to the location in WebPreferences of its ScriptFontFamilyMap
-  // (e.g. &WebPreferences::fixed_font_family_map)
+  // Map from a family name (e.g. "webkit.webprefs.fonts.fixed") to a
+  // Pointer to Member of the location in WebPreferences of its
+  // ScriptFontFamilyMap (e.g. &WebPreferences::fixed_font_family_map)
   static constexpr auto FamilyByName =
       base::MakeFixedFlatMap<std::string_view, FamilyMap WP::*>({
           {kWebKitStandardFontFamilyMap, &WP::standard_font_family_map},
