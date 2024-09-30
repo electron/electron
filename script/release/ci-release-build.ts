@@ -21,10 +21,10 @@ const appVeyorJobs = {
   'electron-woa': 'electron-woa-release'
 };
 
-const ghActionsPublishWorkflows = <const>[
+const ghActionsPublishWorkflows = [
   'linux-publish',
   'macos-publish'
-];
+] as const;
 
 let jobRequestedCount = 0;
 
@@ -206,8 +206,8 @@ async function callAppVeyor (targetBranch: string, job: keyof typeof appVeyorJob
       commitId: options.commit || undefined,
       environmentVariables
     }),
-    method: <const>'POST'
-  };
+    method: 'POST'
+  } as const;
   jobRequestedCount++;
 
   try {
