@@ -50,7 +50,7 @@ jobs:
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       with:
         path: src/electron
         fetch-depth: 0
@@ -128,7 +128,7 @@ jobs:
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       with:
         path: src/electron
         fetch-depth: 0
