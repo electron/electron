@@ -142,12 +142,8 @@ static auto MakeDefaultFontCache() {
     for (const auto [family_name, family_map_ptr] : FamilyMapByName) {
       const auto& src = defaults.*family_map_ptr;
       auto& tgt = prefs->*family_map_ptr;
-      for (const auto& [key, default_val] : src) {
-        auto& cur_val = tgt[key];
-        if (cur_val.empty()) {
-          cur_val = default_val;
-        }
-      }
+      for (const auto& [key, val] : src)
+        tgt[key] = val;
     }
   };
 
