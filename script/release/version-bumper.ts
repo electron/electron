@@ -56,7 +56,7 @@ async function main () {
 }
 
 // get next version for release based on [nightly, alpha, beta, stable]
-async function nextVersion (bumpType: VersionBumpType, version: string) {
+export async function nextVersion (bumpType: VersionBumpType, version: string) {
   if (isNightly(version) || isAlpha(version) || isBeta(version)) {
     switch (bumpType) {
       case 'nightly':
@@ -104,5 +104,3 @@ if (require.main === module) {
     process.exit(1);
   });
 }
-
-export default { nextVersion };
