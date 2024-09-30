@@ -109,7 +109,7 @@ const FontDefault kFontDefaults[] = {
 
 // ^^^^^ DO NOT EDIT ^^^^^
 
-static auto MakeDefaultFontCache() {
+auto MakeDefaultFontCache() {
   using namespace prefs;
   using WP = blink::web_pref::WebPreferences;
   using FamilyMap = blink::web_pref::ScriptFontFamilyMap;
