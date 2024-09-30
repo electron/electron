@@ -339,8 +339,8 @@ bool WebFrameMain::Detached() const {
   return render_frame_detached_;
 }
 
-int WebFrameMain::FrameTreeNodeIDAsInt() const {
-  return frame_tree_node_id_.value();
+content::FrameTreeNodeId WebFrameMain::FrameTreeNodeID() const {
+  return frame_tree_node_id_;
 }
 
 std::string WebFrameMain::Name() const {
@@ -463,7 +463,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
       .SetProperty("detached", &WebFrameMain::Detached)
-      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeIDAsInt)
+      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
       .SetProperty("processId", &WebFrameMain::ProcessID)
@@ -520,14 +520,13 @@ v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
 }
 
 v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
-                                       int frame_tree_node_id_int) {
+                                       int frame_tree_node_id) {
   if (!electron::Browser::Get()->is_ready()) {
     thrower.ThrowError("WebFrameMain is available only after app ready");
     return v8::Null(thrower.isolate());
   }
-  content::FrameTreeNodeId frame_tree_node_id = {frame_tree_node_id_int};
-  WebFrameMain* web_frame =
-      WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
+  WebFrameMain* web_frame = WebFrameMain::FromFrameTreeNodeId(
+      content::FrameTreeNodeId(frame_tree_node_id));
   if (!web_frame)
     return v8::Null(thrower.isolate());
   return gin::CreateHandle(thrower.isolate(), web_frame).ToV8();

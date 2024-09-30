@@ -19,6 +19,13 @@ v8::Persistent<v8::ObjectTemplate> rfh_templ;
 }  // namespace
 
 // static
+v8::Local<v8::Value> Converter<content::FrameTreeNodeId>::ToV8(
+    v8::Isolate* isolate,
+    const content::FrameTreeNodeId& val) {
+  return v8::Number::New(isolate, val.value());
+}
+
+// static
 v8::Local<v8::Value> Converter<content::RenderFrameHost*>::ToV8(
     v8::Isolate* isolate,
     content::RenderFrameHost* val) {
