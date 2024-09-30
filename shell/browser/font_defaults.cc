@@ -117,7 +117,7 @@ auto MakeDefaultFontCache() {
   // Map from a family name (e.g. "webkit.webprefs.fonts.fixed") to a
   // Pointer to Member of the location in WebPreferences of its
   // ScriptFontFamilyMap (e.g. &WebPreferences::fixed_font_family_map)
-  static constexpr auto FamilyByName =
+  static constexpr auto FamilyMapByName =
       base::MakeFixedFlatMap<std::string_view, FamilyMap WP::*>({
           {kWebKitStandardFontFamilyMap, &WP::standard_font_family_map},
           {kWebKitFixedFontFamilyMap, &WP::fixed_font_family_map},
@@ -138,7 +138,7 @@ auto MakeDefaultFontCache() {
   // See pref_font_script_names-inl.h for the full list :)
   for (const auto& [pref_name, resource_id] : kFontDefaults) {
     const auto [family, script] = *base::RSplitStringOnce(pref_name, '.');
-    if (auto* family_map_ptr = base::FindOrNull(FamilyByName, family)) {
+    if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family)) {
       (defaults.**family_map_ptr)[std::string{script}] =
           base::UTF8ToUTF16(l10n_util::GetStringUTF8(resource_id));
     }
@@ -147,7 +147,7 @@ auto MakeDefaultFontCache() {
   // Lambda function that copies all nonempty fonts
   // from `defaults` into `prefs`
   auto copy_default_fonts_to_wp = [defaults](WP* prefs) {
-    for (const auto [_, map_ptr] : FamilyByName) {
+    for (const auto [_, map_ptr] : FamilyMapByName) {
       const auto& src = defaults.*map_ptr;
       auto& tgt = prefs->*map_ptr;
       for (const auto& [key, val] : src)
