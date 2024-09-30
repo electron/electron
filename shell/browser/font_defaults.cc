@@ -9,7 +9,6 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/strings/string_split.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/platform_locale_settings.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -133,8 +132,11 @@ auto MakeDefaultFontCopier() {
   // "webkit.webprefs.fonts.fixed.Zyyy" splits into family name
   // "webkit.webprefs.fonts.fixed" and script "Zyyy". (Yes, "Zyyy" is real.
   // See pref_font_script_names-inl.h for the full list :)
-  for (const auto& [pref_name, resource_id] : kFontDefaults) {
-    const auto [family, script] = *base::RSplitStringOnce(pref_name, '.');
+  for (const auto& [pref_name_cstr, resource_id] : kFontDefaults) {
+    const std::string_view pref_name = pref_name_cstr;
+    const auto pos = pref_name.rfind('.');
+    const auto family = pref_name.substr(0U, pos);
+    const auto script = pref_name.substr(pos + 1U);
     if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family)) {
       FamilyMap& family_map = defaults.**family_map_ptr;
       family_map[std::string{script}] = l10n_util::GetStringUTF16(resource_id);
