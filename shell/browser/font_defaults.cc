@@ -10,7 +10,6 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/logging.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
@@ -126,13 +125,10 @@ static auto MakeDefaultFontCache() {
 
   WP defaults;
   for (const auto& [pref_name, resource_id] : kFontDefaults) {
-    LOG(INFO) << "pref_name [" << pref_name << ']';
     const auto tokens = base::RSplitStringOnce(pref_name, ".");
     if (!tokens)
       continue;
     const auto [family_name, script_name] = *tokens;
-    LOG(INFO) << "family_name [" << family_name << "] script_name ["
-              << script_name << "] resource_id [" << resource_id << ']';
     if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family_name)) {
       (defaults.**family_map_ptr)
           .insert_or_assign(
@@ -143,21 +139,16 @@ static auto MakeDefaultFontCache() {
 
   // lambda function that copies the defaults from `cache` into `prefs`
   auto apply_defaults_to_wp = [defaults](WP* prefs) {
-    LOG(INFO) << "begin";
     for (const auto [family_name, family_map_ptr] : FamilyMapByName) {
       const auto& src = defaults.*family_map_ptr;
       auto& tgt = prefs->*family_map_ptr;
       for (const auto& [key, default_val] : src) {
         auto& cur_val = tgt[key];
-        LOG(INFO) << " family [ " << family_name << "] key [" << key
-                  << "] cur_val [" << base::UTF16ToUTF8(cur_val)
-                  << "] default_val [" << base::UTF16ToUTF8(default_val) << "]";
         if (cur_val.empty()) {
           cur_val = default_val;
         }
       }
     }
-    LOG(INFO) << "end";
   };
 
   return apply_defaults_to_wp;
