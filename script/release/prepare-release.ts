@@ -9,7 +9,7 @@ import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 
 import ciReleaseBuild from './ci-release-build';
-import releaseNotesGenerator from './notes/index.js';
+import releaseNotesGenerator from './notes';
 import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils.js';
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';

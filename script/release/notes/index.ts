@@ -5,7 +5,7 @@ import { basename } from 'node:path';
 import { valid, compare, gte, lte } from 'semver';
 
 import { ELECTRON_DIR } from '../../lib/utils';
-import { get, render } from './notes.js';
+import { get, render } from './notes';
 
 import { Octokit } from '@octokit/rest';
 import { createGitHubTokenStrategy } from '../github-token';
