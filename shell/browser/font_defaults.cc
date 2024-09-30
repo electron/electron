@@ -4,13 +4,11 @@
 
 #include "shell/browser/font_defaults.h"
 
-#include <array>
 #include <string>
 #include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/strings/strcat.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/platform_locale_settings.h"
