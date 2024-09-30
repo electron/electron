@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2f36496cf77258fe7e7b5eb7c93c6c53ff55abd0..0808df2627a4630c9e573fdb4f620ef601252026 100644
+index 055c6ee45f7ca482f1a8292c7fb904d17d238651..d39acbec0b2dd12191e3bc9c18f412310dd1d8a0 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -172,6 +172,8 @@ viz_component("service") {
@@ -117,7 +117,7 @@ index 524df4c2a1382e6d009ab1165305a79894dca15e..a21da0785be3884e5e299643d306d25e
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index bddaacb09fcf9f94594b55bd82b903804c2d6970..3aa4753e4d2dd7b391a1dc4057fce7162ba63110 100644
+index 87722045daafa87f7111df943217ceaa8518e55c..badf8c3dc5fb768388a19814d8428a46d3c5648b 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@

@@ -54,7 +54,7 @@ const expectToHaveCrashed = (res: SpawnResult) => {
     expect(res.signal).to.equal(null);
   } else {
     expect(res.code).to.equal(null);
-    expect(res.signal).to.equal('SIGTRAP');
+    expect(res.signal).to.be.oneOf(['SIGABRT', 'SIGTRAP']);
   }
 };
 
