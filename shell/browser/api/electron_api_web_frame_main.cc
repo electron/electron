@@ -520,11 +520,12 @@ v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
 }
 
 v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
-                                       int frame_tree_node_id) {
+                                       int frame_tree_node_id_int) {
   if (!electron::Browser::Get()->is_ready()) {
     thrower.ThrowError("WebFrameMain is available only after app ready");
     return v8::Null(thrower.isolate());
   }
+  content::FrameTreeNodeId frame_tree_node_id = {frame_tree_node_id_int};
   WebFrameMain* web_frame =
       WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
   if (!web_frame)
