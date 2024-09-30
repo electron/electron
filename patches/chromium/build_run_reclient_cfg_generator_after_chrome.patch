@@ -20,7 +20,7 @@ index 17103061c4752e6fcac07413dbf574e0c6fd6d39..848be71fa6dc81a64b7274b31d461f9d
  /win-cross/
  reproxy.cfg
 diff --git a/buildtools/reclient_cfgs/configure_reclient_cfgs.py b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
-index ba44640480e758d4ed8c9115497a2c09074918b4..837158cbbeb9120b7456aefc516eb3db6a38558c 100755
+index e367bf89e2ebabe731dcf8714ea7a0fa3b15d50d..f5cf97c51b7cc1d07ca4effb04aa6d9a3ee52845 100755
 --- a/buildtools/reclient_cfgs/configure_reclient_cfgs.py
 +++ b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
 @@ -344,4 +344,13 @@ def main():
