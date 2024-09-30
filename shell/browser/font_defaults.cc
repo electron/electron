@@ -113,7 +113,7 @@ static auto MakeDefaultFontCache() {
   using WP = blink::web_pref::WebPreferences;
   using FamilyMap = blink::web_pref::ScriptFontFamilyMap;
 
-  static constexpr auto FamilyMapByName =
+  constexpr auto FamilyByName =
       base::MakeFixedFlatMap<std::string_view, FamilyMap WP::*>({
           {prefs::kWebKitStandardFontFamilyMap, &WP::standard_font_family_map},
           {prefs::kWebKitFixedFontFamilyMap, &WP::fixed_font_family_map},
@@ -129,7 +129,7 @@ static auto MakeDefaultFontCache() {
     if (!tokens)
       continue;
     const auto [family_name, script_name] = *tokens;
-    if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family_name)) {
+    if (auto* family_map_ptr = base::FindOrNull(FamilyByName, family_name)) {
       (defaults.**family_map_ptr)
           .insert_or_assign(
               std::string{script_name},
@@ -139,7 +139,7 @@ static auto MakeDefaultFontCache() {
 
   // lambda function that copies the defaults from `cache` into `prefs`
   auto apply_defaults_to_wp = [defaults](WP* prefs) {
-    for (const auto [family_name, family_map_ptr] : FamilyMapByName) {
+    for (const auto [family_name, family_map_ptr] : FamilyByName) {
       const auto& src = defaults.*family_map_ptr;
       auto& tgt = prefs->*family_map_ptr;
       for (const auto& [key, val] : src)
