@@ -139,16 +139,18 @@ auto MakeDefaultFontCopier() {
   for (const auto& [pref_name, resource_id] : kFontDefaults) {
     const auto [family, script] = *base::RSplitStringOnce(pref_name, '.');
     if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family)) {
-      (defaults.**family_map_ptr)[std::string{script}] =
-          base::UTF8ToUTF16(l10n_util::GetStringUTF8(resource_id));
+      FamilyMap& family_map = defaults.**family_map_ptr;
+      family_map.insert_or_assign(
+          std::string{script},
+          base::UTF8ToUTF16(l10n_util::GetStringUTF8(resource_id)));
     }
   }
 
   // Lambda that copies all of `default`'s fonts into `prefs`
   auto copy_default_fonts_to_web_prefs = [defaults](WP* prefs) {
     for (const auto [_, map_ptr] : FamilyMapByName) {
-      const auto& src = defaults.*map_ptr;
-      auto& tgt = prefs->*map_ptr;
+      const FamilyMap& src = defaults.*map_ptr;
+      FamilyMap& tgt = prefs->*map_ptr;
       for (const auto& [key, val] : src)
         tgt.insert_or_assign(key, val);
     }
