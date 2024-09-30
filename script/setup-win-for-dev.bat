@@ -61,6 +61,10 @@ choco install -y python2 git yarn
 choco install python --version 3.7.9
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH%
+if exist "C:\Users\appveyor\AppData\Roaming\npm" (
+  rm -rf "C:\Users\appveyor\AppData\Roaming\npm"
+  mkdir "C:\Users\appveyor\AppData\Roaming\npm"
+)
 if not exist "C:\Users\appveyor\AppData\Roaming\npm" (
   mkdir "C:\Users\appveyor\AppData\Roaming\npm"
 )
