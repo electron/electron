@@ -1,19 +1,19 @@
-if (!process.env.CI) require('dotenv-safe').load();
+import { Octokit } from '@octokit/rest';
+import got, { OptionsOfTextResponseBody } from 'got';
+import * as assert from 'node:assert';
 
-const assert = require('node:assert');
-const got = require('got');
+import { createGitHubTokenStrategy } from './github-token';
+import { ELECTRON_ORG, ELECTRON_REPO } from './types';
+import { parseArgs } from 'node:util';
 
-const { Octokit } = require('@octokit/rest');
-const { createGitHubTokenStrategy } = require('./github-token');
 const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy('electron')
 });
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
 const GH_ACTIONS_PIPELINE_URL = 'https://github.com/electron/electron/actions';
-const GH_ACTIONS_API_URL = '/repos/electron/electron/actions';
 
-const GH_ACTIONS_WAIT_TIME = process.env.GH_ACTIONS_WAIT_TIME || 30000;
+const GH_ACTIONS_WAIT_TIME = process.env.GH_ACTIONS_WAIT_TIME ? parseInt(process.env.GH_ACTIONS_WAIT_TIME, 10) : 30000;
 
 const appVeyorJobs = {
   'electron-x64': 'electron-x64-release',
@@ -21,14 +21,24 @@ const appVeyorJobs = {
   'electron-woa': 'electron-woa-release'
 };
 
-const ghActionsPublishWorkflows = [
+const ghActionsPublishWorkflows = <const>[
   'linux-publish',
   'macos-publish'
 ];
 
 let jobRequestedCount = 0;
 
-async function makeRequest ({ auth, username, password, url, headers, body, method }) {
+type ReleaseBuildRequestOptions = {
+  auth?: {
+    bearer?: string;
+  };
+  url: string;
+  headers: Record<string, string>;
+  body: string,
+  method: 'GET' | 'POST';
+}
+
+async function makeRequest ({ auth, url, headers, body, method }: ReleaseBuildRequestOptions) {
   const clonedHeaders = {
     ...(headers || {})
   };
@@ -36,16 +46,11 @@ async function makeRequest ({ auth, username, password, url, headers, body, meth
     clonedHeaders.Authorization = `Bearer ${auth.bearer}`;
   }
 
-  const options = {
+  const options: OptionsOfTextResponseBody = {
     headers: clonedHeaders,
     body,
     method
   };
-
-  if (username || password) {
-    options.username = username;
-    options.password = password;
-  }
 
   const response = await got(url, options);
 
@@ -56,11 +61,17 @@ async function makeRequest ({ auth, username, password, url, headers, body, meth
   return JSON.parse(response.body);
 }
 
-async function githubActionsCall (targetBranch, workflowName, options) {
+type GitHubActionsCallOptions = {
+  ghRelease?: boolean;
+  newVersion: string;
+  runningPublishWorkflows?: boolean;
+}
+
+async function githubActionsCall (targetBranch: string, workflowName: string, options: GitHubActionsCallOptions) {
   console.log(`Triggering GitHub Actions to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`);
   const buildRequest = {
     branch: targetBranch,
-    parameters: {}
+    parameters: {} as Record<string, string | boolean>
   };
   if (options.ghRelease) {
     buildRequest.parameters['upload-to-storage'] = '0';
@@ -81,13 +92,13 @@ async function githubActionsCall (targetBranch, workflowName, options) {
       console.error('Could not fetch most recent commits for GitHub Actions, returning early');
     }
 
-    await octokit.request(`POST ${GH_ACTIONS_API_URL}/workflows/${workflowName}.yml/dispatches`, {
+    await octokit.actions.createWorkflowDispatch({
+      repo: ELECTRON_REPO,
+      owner: ELECTRON_ORG,
+      workflow_id: `${workflowName}.yml`,
       ref: `refs/tags/${options.newVersion}`,
       inputs: {
         ...buildRequest.parameters
-      },
-      headers: {
-        'X-GitHub-Api-Version': '2022-11-28'
       }
     });
 
@@ -110,17 +121,18 @@ async function githubActionsCall (targetBranch, workflowName, options) {
   }
 }
 
-async function getGitHubActionsRun (workflowId, headCommit) {
+async function getGitHubActionsRun (workflowName: string, headCommit: string) {
   let runNumber = 0;
   let actionRun;
   while (runNumber === 0) {
-    const actionsRuns = await octokit.request(`GET ${GH_ACTIONS_API_URL}/workflows/${workflowId}.yml/runs`, {
-      headers: {
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
+    const actionsRuns = await octokit.actions.listWorkflowRuns({
+      repo: ELECTRON_REPO,
+      owner: ELECTRON_ORG,
+      workflow_id: `${workflowName}.yml`
     });
+
     if (!actionsRuns.data.workflow_runs.length) {
-      console.log(`No current workflow_runs found for ${workflowId}, response was: ${actionsRuns.data.workflow_runs}`);
+      console.log(`No current workflow_runs found for ${workflowName}, response was: ${actionsRuns.data.workflow_runs}`);
       runNumber = -1;
       break;
     }
@@ -163,9 +175,14 @@ async function getGitHubActionsRun (workflowId, headCommit) {
   return runNumber;
 }
 
-async function callAppVeyor (targetBranch, job, options) {
+type AppVeyorCallOptions = {
+  ghRelease?: boolean;
+  commit?: string;
+}
+
+async function callAppVeyor (targetBranch: string, job: keyof typeof appVeyorJobs, options: AppVeyorCallOptions) {
   console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`);
-  const environmentVariables = {
+  const environmentVariables: Record<string, string | number> = {
     ELECTRON_RELEASE: 1,
     APPVEYOR_BUILD_WORKER_CLOUD: 'electronhq-16-core'
   };
@@ -189,15 +206,15 @@ async function callAppVeyor (targetBranch, job, options) {
       commitId: options.commit || undefined,
       environmentVariables
     }),
-    method: 'POST'
+    method: <const>'POST'
   };
   jobRequestedCount++;
 
   try {
-    const { version } = await makeRequest(requestOpts, true);
+    const { version } = await makeRequest(requestOpts);
     const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
     console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
-  } catch (err) {
+  } catch (err: any) {
     if (err.response?.body) {
       console.error('Could not call AppVeyor: ', {
         statusCode: err.response.statusCode,
@@ -209,67 +226,120 @@ async function callAppVeyor (targetBranch, job, options) {
   }
 }
 
-function buildAppVeyor (targetBranch, options) {
-  const validJobs = Object.keys(appVeyorJobs);
+type BuildAppVeyorOptions = {
+  job?: keyof typeof appVeyorJobs;
+} & AppVeyorCallOptions;
+
+async function buildAppVeyor (targetBranch: string, options: BuildAppVeyorOptions) {
+  const validJobs = Object.keys(appVeyorJobs) as (keyof typeof appVeyorJobs)[];
   if (options.job) {
     assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`);
-    callAppVeyor(targetBranch, options.job, options);
+    await callAppVeyor(targetBranch, options.job, options);
   } else {
     for (const job of validJobs) {
-      callAppVeyor(targetBranch, job, options);
+      await callAppVeyor(targetBranch, job, options);
     }
   }
 }
 
-function buildGHActions (targetBranch, options) {
+type BuildGHActionsOptions = {
+  job?: typeof ghActionsPublishWorkflows[number];
+  arch?: string;
+} & GitHubActionsCallOptions;
+
+async function buildGHActions (targetBranch: string, options: BuildGHActionsOptions) {
   if (options.job) {
     assert(ghActionsPublishWorkflows.includes(options.job), `Unknown GitHub Actions workflow name: ${options.job}. Valid values are: ${ghActionsPublishWorkflows}.`);
-    githubActionsCall(targetBranch, options.job, options);
+    await githubActionsCall(targetBranch, options.job, options);
   } else {
     assert(!options.arch, 'Cannot provide a single architecture while building all workflows, please specify a single workflow via --workflow');
     options.runningPublishWorkflows = true;
     for (const job of ghActionsPublishWorkflows) {
-      githubActionsCall(targetBranch, job, options);
+      await githubActionsCall(targetBranch, job, options);
     }
   }
 }
 
-function runRelease (targetBranch, options) {
+type RunReleaseOptions = ({
+  ci: 'GitHubActions'
+} & BuildGHActionsOptions) | ({
+  ci: 'AppVeyor'
+} & BuildAppVeyorOptions) | ({
+  ci: undefined,
+} & BuildAppVeyorOptions & BuildGHActionsOptions);
+
+async function runRelease (targetBranch: string, options: RunReleaseOptions) {
   if (options.ci) {
     switch (options.ci) {
       case 'GitHubActions': {
-        buildGHActions(targetBranch, options);
+        await buildGHActions(targetBranch, options);
         break;
       }
       case 'AppVeyor': {
-        buildAppVeyor(targetBranch, options);
+        await buildAppVeyor(targetBranch, options);
         break;
       }
       default: {
-        console.log(`Error! Unknown CI: ${options.ci}.`);
+        console.log(`Error! Unknown CI: ${(options as any).ci}.`);
         process.exit(1);
       }
     }
   } else {
-    buildAppVeyor(targetBranch, options);
-    buildGHActions(targetBranch, options);
+    await Promise.all([
+      buildAppVeyor(targetBranch, options),
+      buildGHActions(targetBranch, options)
+    ]);
   }
   console.log(`${jobRequestedCount} jobs were requested.`);
 }
 
-module.exports = runRelease;
+export default runRelease;
 
 if (require.main === module) {
-  const args = require('minimist')(process.argv.slice(2), {
-    boolean: ['ghRelease']
+  const { values: { ghRelease, job, arch, ci, commit, newVersion }, positionals } = parseArgs({
+    options: {
+      ghRelease: {
+        type: 'boolean'
+      },
+      job: {
+        type: 'string'
+      },
+      arch: {
+        type: 'string'
+      },
+      ci: {
+        type: 'string'
+      },
+      commit: {
+        type: 'string'
+      },
+      newVersion: {
+        type: 'string'
+      }
+    },
+    allowPositionals: true
   });
-  const targetBranch = args._[0];
-  if (args._.length < 1) {
+  const targetBranch = positionals[0];
+  if (positionals.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
     Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=AppVeyor|GitHubActions]
-    [--ghRelease] [--appveyorJobId=xxx] [--commit=sha] TARGET_BRANCH
+    [--ghRelease] [--commit=sha] [--newVersion=version_tag] TARGET_BRANCH
     `);
     process.exit(0);
   }
-  runRelease(targetBranch, args);
+  if (ci === 'GitHubActions' || !ci) {
+    if (!newVersion) {
+      console.error('--newVersion is required for GitHubActions');
+      process.exit(1);
+    }
+  }
+
+  runRelease(targetBranch, {
+    ci: ci as 'GitHubActions' | 'AppVeyor',
+    ghRelease,
+    job: job as any,
+    arch,
+    newVersion: newVersion!,
+    commit
+  });
 }
