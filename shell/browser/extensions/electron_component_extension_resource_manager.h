@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 
+#include "base/containers/span.h"
 #include "base/files/file_path.h"
 #include "extensions/browser/component_extension_resource_manager.h"
 #include "ui/base/webui/resource_path.h"
@@ -38,8 +39,8 @@ class ElectronComponentExtensionResourceManager
       const std::string& extension_id) const override;
 
  private:
-  void AddComponentResourceEntries(const webui::ResourcePath* entries,
-                                   size_t size);
+  void AddComponentResourceEntries(
+      base::span<const webui::ResourcePath> entries);
 
   // A map from a resource path to the resource ID.  Used by
   // IsComponentExtensionResource.
