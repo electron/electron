@@ -387,12 +387,12 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
 
 def get_release(version):
   script_path = os.path.join(
-    ELECTRON_DIR, 'script', 'release', 'find-github-release.js')
+    ELECTRON_DIR, 'script', 'release', 'find-github-release.ts')
 
   # Strip warnings from stdout to ensure the only output is the desired object
   release_env = os.environ.copy()
   release_env['NODE_NO_WARNINGS'] = '1'
-  release_info = execute(['node', script_path, version], release_env)
+  release_info = execute([TS_NODE, script_path, version], release_env)
   if is_verbose_mode():
     print('Release info for version: {}:\n'.format(version))
     print(release_info)
