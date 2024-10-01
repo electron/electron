@@ -578,9 +578,7 @@ base::expected<GURL, std::string> PrepareURLForNavigation(
   // Don't let the extension navigate directly to file scheme pages, unless
   // they have file access.
   if (url.SchemeIsFile() &&
-      !AllowFileAccess(extension->id(), browser_context) &&
-      base::FeatureList::IsEnabled(
-          extensions_features::kRestrictFileURLNavigation)) {
+      !AllowFileAccess(extension->id(), browser_context)) {
     const char kFileUrlsNotAllowedInExtensionNavigations[] =
         "Cannot navigate to a file URL without local file access.";
     return base::unexpected(kFileUrlsNotAllowedInExtensionNavigations);
