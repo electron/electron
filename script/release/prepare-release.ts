@@ -218,7 +218,7 @@ async function promptForVersion (version: string) {
       input: process.stdin,
       output: process.stdout
     });
-    rl.question(`Do you want to create the release ${version.green} (y/N)? `, (answer) => {
+    rl.question(`Do you want to create the release ${chalk.green(version)} (y/N)? `, (answer) => {
       rl.close();
       resolve(answer);
     });
