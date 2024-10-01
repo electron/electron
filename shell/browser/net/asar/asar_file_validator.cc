@@ -60,7 +60,7 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
 
     // hash as many bytes as will fit in the current block.
     const auto n_left_in_block = block_size - current_hash_byte_count_;
-    const auto n_now = std::min(n_left_in_block, std::size(hashme));
+    const auto n_now = std::min(n_left_in_block, uint64_t{std::size(hashme)});
     DCHECK_GT(n_now, 0U);
     const auto [hashme_now, hashme_next] = hashme.split_at(n_now);
 
