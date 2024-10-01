@@ -2,29 +2,9 @@
 
 import { Octokit } from '@octokit/rest';
 import * as chalk from 'chalk';
-import { parseArgs } from 'node:util';
 
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
-
-const { values: { tag: _tag, releaseID } } = parseArgs({
-  options: {
-    tag: {
-      type: 'string'
-    },
-    releaseID: {
-      type: 'string',
-      default: ''
-    }
-  }
-});
-
-if (!_tag) {
-  console.error('Missing --tag argument');
-  process.exit(1);
-}
-
-const tag = _tag;
 
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
@@ -75,7 +55,12 @@ async function deleteTag (tag: string, targetRepo: ElectronReleaseRepo) {
   }
 }
 
-async function cleanReleaseArtifacts () {
+type CleanOptions = {
+  releaseID?: string;
+  tag: string;
+}
+
+export async function cleanReleaseArtifacts ({ releaseID, tag }: CleanOptions) {
   const releaseId = releaseID && releaseID.length > 0 ? releaseID : null;
   const isNightly = tag.includes('nightly');
 
@@ -102,9 +87,3 @@ async function cleanReleaseArtifacts () {
 
   console.log(`${pass} failed release artifact cleanup complete`);
 }
-
-cleanReleaseArtifacts()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
