@@ -1,23 +1,25 @@
-const temp = require('temp');
-const fs = require('node:fs');
-const path = require('node:path');
-const childProcess = require('node:child_process');
-const semver = require('semver');
+import { Octokit } from '@octokit/rest';
+import * as childProcess from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as semver from 'semver';
+import * as temp from 'temp';
 
-const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
-const { getElectronVersion } = require('../lib/get-version');
-const rootPackageJson = require('../../package.json');
+import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils';
+import { getElectronVersion } from '../lib/get-version';
 
-const { Octokit } = require('@octokit/rest');
-const { getAssetContents } = require('./get-asset');
-const { createGitHubTokenStrategy } = require('./github-token');
+import { getAssetContents } from './get-asset';
+import { createGitHubTokenStrategy } from './github-token';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+
+const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'));
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP');
   process.exit(1);
 }
 
-let tempDir;
+let tempDir: string;
 temp.track(); // track and cleanup files at exit
 
 const files = [
@@ -49,11 +51,11 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(targetRepo)
 });
 
-function getRepo () {
-  return isNightlyElectronVersion ? 'nightlies' : 'electron';
+function getRepo (): ElectronReleaseRepo {
+  return isNightlyElectronVersion ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
-new Promise((resolve, reject) => {
+new Promise<string>((resolve, reject) => {
   temp.mkdir('electron-npm', (err, dirPath) => {
     if (err) {
       reject(err);
@@ -84,7 +86,7 @@ new Promise((resolve, reject) => {
     );
 
     return octokit.repos.listReleases({
-      owner: 'electron',
+      owner: ELECTRON_ORG,
       repo: targetRepo
     });
   })
@@ -124,7 +126,7 @@ new Promise((resolve, reject) => {
       checksumsAsset.id
     );
 
-    const checksumsObject = {};
+    const checksumsObject: Record<string, string> = Object.create(null);
     for (const line of checksumsContent.trim().split('\n')) {
       const [checksum, file] = line.split(' *');
       checksumsObject[file] = checksum;
@@ -203,7 +205,7 @@ new Promise((resolve, reject) => {
   })
   .then(() => {
     const currentTags = JSON.parse(childProcess.execSync('npm show electron dist-tags --json').toString());
-    const parsedLocalVersion = semver.parse(currentElectronVersion);
+    const parsedLocalVersion = semver.parse(currentElectronVersion)!;
     if (rootPackageJson.name === 'electron') {
       // We should only customly add dist tags for non-nightly releases where the package name is still
       // "electron"

@@ -1,6 +1,6 @@
 import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import { expect } from 'chai';
-import * as notes from '../script/release/notes/notes.js';
+import * as notes from '../script/release/notes/notes';
 import * as path from 'node:path';
 import * as sinon from 'sinon';
 

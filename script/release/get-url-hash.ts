@@ -1,17 +1,20 @@
-const got = require('got');
-const url = require('node:url');
+import got from 'got';
+import * as url from 'node:url';
 
-module.exports = async function getUrlHash (targetUrl, algorithm = 'sha256', attempts = 3) {
+const HASHER_FUNCTION_HOST = 'electron-artifact-hasher.azurewebsites.net';
+const HASHER_FUNCTION_ROUTE = '/api/HashArtifact';
+
+export async function getUrlHash (targetUrl: string, algorithm = 'sha256', attempts = 3) {
   const options = {
-    code: process.env.ELECTRON_ARTIFACT_HASHER_FUNCTION_KEY,
+    code: process.env.ELECTRON_ARTIFACT_HASHER_FUNCTION_KEY!,
     targetUrl,
     algorithm
   };
   const search = new url.URLSearchParams(options);
   const functionUrl = url.format({
     protocol: 'https:',
-    hostname: 'electron-artifact-hasher.azurewebsites.net',
-    pathname: '/api/HashArtifact',
+    hostname: HASHER_FUNCTION_HOST,
+    pathname: HASHER_FUNCTION_ROUTE,
     search: search.toString()
   });
   try {
@@ -27,10 +30,11 @@ module.exports = async function getUrlHash (targetUrl, algorithm = 'sha256', att
     return resp.body.trim();
   } catch (err) {
     if (attempts > 1) {
-      if (err.response?.body) {
+      const { response } = err as any;
+      if (response?.body) {
         console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, {
-          statusCode: err.response.statusCode,
-          body: JSON.parse(err.response.body)
+          statusCode: response.statusCode,
+          body: JSON.parse(response.body)
         });
       } else {
         console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, err);

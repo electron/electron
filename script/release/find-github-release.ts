@@ -1,7 +1,6 @@
-if (!process.env.CI) require('dotenv-safe').load();
-
-const { Octokit } = require('@octokit/rest');
-const { createGitHubTokenStrategy } = require('./github-token');
+import { Octokit } from '@octokit/rest';
+import { createGitHubTokenStrategy } from './github-token';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
 
 if (process.argv.length < 3) {
   console.log('Usage: find-release version');
@@ -15,13 +14,13 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(targetRepo)
 });
 
-function findRepo () {
-  return version.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+function findRepo (): ElectronReleaseRepo {
+  return version.indexOf('nightly') > 0 ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
 async function findRelease () {
   const releases = await octokit.repos.listReleases({
-    owner: 'electron',
+    owner: ELECTRON_ORG,
     repo: targetRepo
   });
 
@@ -43,4 +42,8 @@ async function findRelease () {
   console.log(JSON.stringify(returnObject));
 }
 
-findRelease();
+findRelease()
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

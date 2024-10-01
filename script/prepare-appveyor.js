@@ -1,5 +1,3 @@
-if (!process.env.CI) require('dotenv-safe').load();
-
 const assert = require('node:assert');
 const fs = require('node:fs');
 const got = require('got');

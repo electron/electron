@@ -2,8 +2,6 @@ import { Octokit } from '@octokit/rest';
 import * as fs from 'node:fs';
 import { createGitHubTokenStrategy } from '../github-token';
 
-if (!process.env.CI) require('dotenv-safe').load();
-
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId');
   process.exit(1);
