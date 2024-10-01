@@ -578,9 +578,7 @@ WebContents.prototype._init = function () {
    * 1: WebContents ipc
    * 2: ipcMain
    */
-  const cachedIpcEmitters: (ElectronInternal.IpcMainInternal | undefined)[] = new Array(3);
-  cachedIpcEmitters[1] = ipc;
-  cachedIpcEmitters[2] = ipcMain;
+  const cachedIpcEmitters: (ElectronInternal.IpcMainInternal | undefined)[] = [undefined, ipc, ipcMain];
 
   // Get list of relevant IPC emitters for dispatch.
   const getIpcEmittersForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): (ElectronInternal.IpcMainInternal | undefined)[] => {
