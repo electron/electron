@@ -14,7 +14,7 @@ import { ELECTRON_DIR } from '../lib/utils';
 import { getElectronVersion } from '../lib/get-version';
 import { getUrlHash } from './get-url-hash';
 import { createGitHubTokenStrategy } from './github-token';
-import { ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
 
 const temp = trackTemp();
 
@@ -39,7 +39,7 @@ async function getDraftRelease (
   skipValidation: boolean = false
 ) {
   const releaseInfo = await octokit.repos.listReleases({
-    owner: 'electron',
+    owner: ELECTRON_ORG,
     repo: targetRepo
   });
 
@@ -315,7 +315,7 @@ async function createReleaseShasums (release: MinimalRelease) {
     );
     await octokit.repos
       .deleteReleaseAsset({
-        owner: 'electron',
+        owner: ELECTRON_ORG,
         repo: targetRepo,
         asset_id: existingAssets[0].id
       })
@@ -382,7 +382,7 @@ async function publishRelease (release: MinimalRelease) {
   let makeLatest = false;
   if (!release.prerelease) {
     const currentLatest = await octokit.repos.getLatestRelease({
-      owner: 'electron',
+      owner: ELECTRON_ORG,
       repo: targetRepo
     });
 
@@ -391,7 +391,7 @@ async function publishRelease (release: MinimalRelease) {
 
   return octokit.repos
     .updateRelease({
-      owner: 'electron',
+      owner: ELECTRON_ORG,
       repo: targetRepo,
       release_id: release.id,
       tag_name: release.tag_name,
@@ -440,7 +440,7 @@ async function verifyDraftGitHubReleaseAssets (release: MinimalRelease) {
   const remoteFilesToHash = await Promise.all(
     release.assets.map(async (asset) => {
       const requestOptions = octokit.repos.getReleaseAsset.endpoint({
-        owner: 'electron',
+        owner: ELECTRON_ORG,
         repo: targetRepo,
         asset_id: asset.id,
         headers: {
