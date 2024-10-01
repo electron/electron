@@ -6,7 +6,7 @@ import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from './types';
 
 const octokit = new Octokit({
-  authStrategy: createGitHubTokenStrategy('electron')
+  authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
@@ -82,8 +82,8 @@ async function githubActionsCall (targetBranch: string, workflowName: string, op
   jobRequestedCount++;
   try {
     const commits = await octokit.repos.listCommits({
-      owner: 'electron',
-      repo: 'electron',
+      owner: ELECTRON_ORG,
+      repo: ELECTRON_REPO,
       sha: targetBranch,
       per_page: 5
     });

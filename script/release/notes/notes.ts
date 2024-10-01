@@ -8,9 +8,10 @@ import { GitProcess } from 'dugite';
 
 import { ELECTRON_DIR } from '../../lib/utils';
 import { createGitHubTokenStrategy } from '../github-token';
+import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
 
 const octokit = new Octokit({
-  authStrategy: createGitHubTokenStrategy('electron')
+  authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
 const MAX_FAIL_COUNT = 3;
@@ -520,7 +521,7 @@ const getNotes = async (fromRef: string, toRef: string, newVersion: string) => {
   );
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_DIR };
+  const electron = { owner: ELECTRON_ORG, repo: ELECTRON_REPO, dir: ELECTRON_DIR };
   await addRepoToPool(pool, electron, fromRef, toRef);
 
   // remove any old commits
