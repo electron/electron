@@ -495,7 +495,7 @@ app.whenReady().then(() => {
 })
 ```
 
-```js
+```js @ts-nocheck
 // Renderer Process
 
 const portConnect = async () => {

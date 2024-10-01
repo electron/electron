@@ -126,9 +126,17 @@ or session log off.
 
 #### Event: 'blur'
 
+Returns:
+
+* `event` Event
+
 Emitted when the window loses focus.
 
 #### Event: 'focus'
+
+Returns:
+
+* `event` Event
 
 Emitted when the window gains focus.
 

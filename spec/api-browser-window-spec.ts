@@ -318,7 +318,7 @@ describe('BrowserWindow module', () => {
         },
         {
           type: 'file',
-          filePath: filePath,
+          filePath,
           offset: 0,
           length: fileStats.size,
           modificationTime: fileStats.mtime.getTime() / 1000
@@ -1664,7 +1664,7 @@ describe('BrowserWindow module', () => {
         const backgroundColor = '#BBAAFF';
         w.destroy();
         w = new BrowserWindow({
-          backgroundColor: backgroundColor
+          backgroundColor
         });
         expect(w.getBackgroundColor()).to.equal(backgroundColor);
       });
