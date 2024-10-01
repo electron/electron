@@ -64,8 +64,13 @@ async function getNewVersion (dryRunMode: DryRunMode) {
   if (dryRunMode === DryRunMode.REAL_RUN) {
     console.log(`Bumping for new "${bumpType}" version.`);
   }
-  const bumpScript = join(__dirname, 'version-bumper.js');
-  const scriptArgs = ['node', bumpScript, `--bump=${bumpType}`];
+  const bumpScript = join(__dirname, 'version-bumper.ts');
+  const scriptArgs = [
+    'node',
+    'node_modules/.bin/ts-node',
+    bumpScript,
+    `--bump=${bumpType}`
+  ];
   if (dryRunMode === DryRunMode.DRY_RUN) scriptArgs.push('--dryRun');
   try {
     let bumpVersion = execSync(scriptArgs.join(' '), { encoding: 'utf-8' });
