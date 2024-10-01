@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Octokit } from '@octokit/rest';
+import * as chalk from 'chalk';
 import { parseArgs } from 'node:util';
 
 import { createGitHubTokenStrategy } from './github-token';
@@ -25,9 +26,8 @@ if (!_tag) {
 
 const tag = _tag;
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 async function deleteDraft (releaseId: string, targetRepo: ElectronReleaseRepo) {
   const octokit = new Octokit({
