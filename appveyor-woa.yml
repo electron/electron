@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-126.0.6445.0
+image: e-131.0.6734.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -70,8 +70,9 @@ for:
         - job_name: Build Arm on X64 Windows
 
     build_script:
+      # TODO: Remove --ignore-engines once WOA image is up to node 20
       - ps: |
-          node script/yarn.js install --frozen-lockfile
+          node script/yarn.js install --frozen-lockfile --ignore-engines
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "false"
           if ($LASTEXITCODE -eq 0) {
@@ -263,7 +264,7 @@ for:
 
     build_script:
       - ps: |
-          node script/yarn.js install --frozen-lockfile
+          node script/yarn.js install --frozen-lockfile --ignore-engines
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
             Write-warning "Skipping build for doc only change"

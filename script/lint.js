@@ -144,7 +144,6 @@ const LINTERS = [{
       cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
       extensions: ['.js', '.ts'],
       fix: opts.fix,
-      overrideConfigFile: path.join(ELECTRON_ROOT, '.eslintrc.json'),
       resolvePluginsRelativeTo: ELECTRON_ROOT
     });
     const formatter = await eslint.loadFormatter();
