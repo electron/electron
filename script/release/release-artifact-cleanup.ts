@@ -1,25 +1,42 @@
 #!/usr/bin/env node
 
-if (!process.env.CI) require('dotenv-safe').load();
-const args = require('minimist')(process.argv.slice(2), {
-  string: ['tag', 'releaseID'],
-  default: { releaseID: '' }
+import { Octokit } from '@octokit/rest';
+import { parseArgs } from 'node:util';
+
+import { createGitHubTokenStrategy } from './github-token';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+
+const { values: { tag: _tag, releaseID } } = parseArgs({
+  options: {
+    tag: {
+      type: 'string'
+    },
+    releaseID: {
+      type: 'string',
+      default: ''
+    }
+  }
 });
-const { Octokit } = require('@octokit/rest');
-const { createGitHubTokenStrategy } = require('./github-token');
+
+if (!_tag) {
+  console.error('Missing --tag argument');
+  process.exit(1);
+}
+
+const tag = _tag;
 
 require('colors');
 const pass = '✓'.green;
 const fail = '✗'.red;
 
-async function deleteDraft (releaseId, targetRepo) {
+async function deleteDraft (releaseId: string, targetRepo: ElectronReleaseRepo) {
   const octokit = new Octokit({
     authStrategy: createGitHubTokenStrategy(targetRepo)
   });
 
   try {
     const result = await octokit.repos.getRelease({
-      owner: 'electron',
+      owner: ELECTRON_ORG,
       repo: targetRepo,
       release_id: parseInt(releaseId, 10)
     });
@@ -28,7 +45,7 @@ async function deleteDraft (releaseId, targetRepo) {
       return false;
     } else {
       await octokit.repos.deleteRelease({
-        owner: 'electron',
+        owner: ELECTRON_ORG,
         repo: targetRepo,
         release_id: result.data.id
       });
@@ -41,14 +58,14 @@ async function deleteDraft (releaseId, targetRepo) {
   }
 }
 
-async function deleteTag (tag, targetRepo) {
+async function deleteTag (tag: string, targetRepo: ElectronReleaseRepo) {
   const octokit = new Octokit({
     authStrategy: createGitHubTokenStrategy(targetRepo)
   });
 
   try {
     await octokit.git.deleteRef({
-      owner: 'electron',
+      owner: ELECTRON_ORG,
       repo: targetRepo,
       ref: `tags/${tag}`
     });
@@ -59,31 +76,35 @@ async function deleteTag (tag, targetRepo) {
 }
 
 async function cleanReleaseArtifacts () {
-  const releaseId = args.releaseID.length > 0 ? args.releaseID : null;
-  const isNightly = args.tag.includes('nightly');
+  const releaseId = releaseID && releaseID.length > 0 ? releaseID : null;
+  const isNightly = tag.includes('nightly');
 
   if (releaseId) {
     if (isNightly) {
-      await deleteDraft(releaseId, 'nightlies');
+      await deleteDraft(releaseId, NIGHTLY_REPO);
 
       // We only need to delete the Electron tag since the
       // nightly tag is only created at publish-time.
-      await deleteTag(args.tag, 'electron');
+      await deleteTag(tag, ELECTRON_REPO);
     } else {
-      const deletedElectronDraft = await deleteDraft(releaseId, 'electron');
+      const deletedElectronDraft = await deleteDraft(releaseId, ELECTRON_REPO);
       // don't delete tag unless draft deleted successfully
       if (deletedElectronDraft) {
-        await deleteTag(args.tag, 'electron');
+        await deleteTag(tag, ELECTRON_REPO);
       }
     }
   } else {
     await Promise.all([
-      deleteTag(args.tag, 'electron'),
-      deleteTag(args.tag, 'nightlies')
+      deleteTag(tag, ELECTRON_REPO),
+      deleteTag(tag, NIGHTLY_REPO)
     ]);
   }
 
   console.log(`${pass} failed release artifact cleanup complete`);
 }
 
-cleanReleaseArtifacts();
+cleanReleaseArtifacts()
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

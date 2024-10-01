@@ -1,8 +1,9 @@
-const { Octokit } = require('@octokit/rest');
-const got = require('got');
-const { createGitHubTokenStrategy } = require('./github-token');
+import { Octokit } from '@octokit/rest';
+import got from 'got';
+import { createGitHubTokenStrategy } from './github-token';
+import { ElectronReleaseRepo } from './types';
 
-async function getAssetContents (repo, assetId) {
+export async function getAssetContents (repo: ElectronReleaseRepo, assetId: number) {
   const octokit = new Octokit({
     userAgent: 'electron-asset-fetcher',
     authStrategy: createGitHubTokenStrategy(repo)
@@ -18,12 +19,12 @@ async function getAssetContents (repo, assetId) {
   });
 
   const { url, headers } = requestOptions;
-  headers.authorization = `token ${(await octokit.auth()).token}`;
+  headers.authorization = `token ${(await octokit.auth() as { token: string }).token}`;
 
   const response = await got(url, {
     followRedirect: false,
     method: 'HEAD',
-    headers,
+    headers: headers as Record<string, string>,
     throwHttpErrors: false
   });
 
@@ -48,7 +49,3 @@ async function getAssetContents (repo, assetId) {
 
   return fileResponse.body;
 }
-
-module.exports = {
-  getAssetContents
-};
