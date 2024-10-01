@@ -15,7 +15,6 @@ import { getElectronVersion } from '../lib/get-version';
 import { getUrlHash } from './get-url-hash';
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
-import { parseArgs } from 'node:util';
 
 const temp = trackTemp();
 
@@ -405,36 +404,31 @@ async function publishRelease (release: MinimalRelease) {
     });
 }
 
-async function makeRelease (releaseToValidate: string | boolean) {
-  if (releaseToValidate) {
-    if (releaseToValidate === true) {
-      releaseToValidate = pkgVersion;
-    } else {
-      console.log('Release to validate !=== true');
-    }
-    console.log(`Validating release ${releaseToValidate}`);
-    const release = await getDraftRelease(releaseToValidate);
-    await validateReleaseAssets(release, true);
-  } else {
-    let draftRelease = await getDraftRelease();
-    uploadNodeShasums();
-    await createReleaseShasums(draftRelease);
+export async function validateRelease () {
+  console.log(`Validating release ${pkgVersion}`);
+  const release = await getDraftRelease(pkgVersion);
+  await validateReleaseAssets(release, true);
+}
 
-    // Fetch latest version of release before verifying
-    draftRelease = await getDraftRelease(pkgVersion, true);
-    await validateReleaseAssets(draftRelease);
-    // index.json goes live once uploaded so do these uploads as
-    // late as possible to reduce the chances it contains a release
-    // which fails to publish. It has to be done before the final
-    // publish to ensure there aren't published releases not contained
-    // in index.json, which causes other problems in downstream projects
-    uploadIndexJson();
-    await publishRelease(draftRelease);
-    console.log(
-      `${pass} SUCCESS!!! Release has been published. Please run ` +
-        '"npm run publish-to-npm" to publish release to npm.'
-    );
-  }
+export async function makeRelease () {
+  let draftRelease = await getDraftRelease();
+  uploadNodeShasums();
+  await createReleaseShasums(draftRelease);
+
+  // Fetch latest version of release before verifying
+  draftRelease = await getDraftRelease(pkgVersion, true);
+  await validateReleaseAssets(draftRelease);
+  // index.json goes live once uploaded so do these uploads as
+  // late as possible to reduce the chances it contains a release
+  // which fails to publish. It has to be done before the final
+  // publish to ensure there aren't published releases not contained
+  // in index.json, which causes other problems in downstream projects
+  uploadIndexJson();
+  await publishRelease(draftRelease);
+  console.log(
+    `${pass} SUCCESS!!! Release has been published. Please run ` +
+      '"npm run publish-to-npm" to publish release to npm.'
+  );
 }
 
 const SHASUM_256_FILENAME = 'SHASUMS256.txt';
@@ -591,18 +585,3 @@ async function verifyShasumsForRemoteFiles (
     );
   }
 }
-
-const {
-  values: { validateRelease }
-} = parseArgs({
-  options: {
-    validateRelease: {
-      type: 'boolean'
-    }
-  }
-});
-
-makeRelease(!!validateRelease).catch((err) => {
-  console.error('Error occurred while making release:', err);
-  process.exit(1);
-});
