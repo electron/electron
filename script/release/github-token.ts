@@ -1,9 +1,11 @@
-const { createTokenAuth } = require('@octokit/auth-token');
-const got = require('got').default;
+import { createTokenAuth } from '@octokit/auth-token';
+import got from 'got';
+
+import { ElectronReleaseRepo } from './types';
 
 const cachedTokens = Object.create(null);
 
-async function ensureToken (repo) {
+async function ensureToken (repo: ElectronReleaseRepo) {
   if (!cachedTokens[repo]) {
     cachedTokens[repo] = await (async () => {
       const { ELECTRON_GITHUB_TOKEN, SUDOWOODO_EXCHANGE_URL, SUDOWOODO_EXCHANGE_TOKEN } = process.env;
@@ -35,23 +37,24 @@ async function ensureToken (repo) {
   }
 }
 
-module.exports.createGitHubTokenStrategy = (repo) => () => {
-  let tokenAuth = null;
+export const createGitHubTokenStrategy = (repo: ElectronReleaseRepo) => () => {
+  let tokenAuth: ReturnType<typeof createTokenAuth> | null = null;
 
-  async function ensureTokenAuth () {
+  async function ensureTokenAuth (): Promise<ReturnType<typeof createTokenAuth>> {
     if (!tokenAuth) {
       await ensureToken(repo);
       tokenAuth = createTokenAuth(cachedTokens[repo]);
     }
+    return tokenAuth;
   }
 
   async function auth () {
-    await ensureTokenAuth();
-    return await tokenAuth();
+    return await (await ensureTokenAuth())();
   }
-  auth.hook = async (...args) => {
-    await ensureTokenAuth();
-    return await tokenAuth.hook(...args);
+  const hook: ReturnType<typeof createTokenAuth>['hook'] = async (...args) => {
+    const a = (await ensureTokenAuth());
+    return (a as any).hook(...args);
   };
+  auth.hook = hook;
   return auth;
 };

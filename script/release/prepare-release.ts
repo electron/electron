@@ -1,24 +1,44 @@
 #!/usr/bin/env node
 
-if (!process.env.CI) require('dotenv-safe').load();
-const args = require('minimist')(process.argv.slice(2), {
-  boolean: ['automaticRelease', 'notesOnly', 'stable']
-});
-const ciReleaseBuild = require('./ci-release-build');
-const { Octokit } = require('@octokit/rest');
-const { execSync } = require('node:child_process');
-const { GitProcess } = require('dugite');
+import { Octokit } from '@octokit/rest';
+import { GitProcess } from 'dugite';
+import { execSync } from 'node:child_process';
+import { join } from 'node:path';
+import { createInterface } from 'node:readline';
+import { parseArgs } from 'node:util';
 
-const path = require('node:path');
-const readline = require('node:readline');
-const releaseNotesGenerator = require('./notes/index.js');
-const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
-const { createGitHubTokenStrategy } = require('./github-token');
-const bumpType = args._[0];
+import ciReleaseBuild from './ci-release-build';
+import releaseNotesGenerator from './notes';
+import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils.js';
+import { createGitHubTokenStrategy } from './github-token';
+import { ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+
+const { values: { notesOnly, dryRun: dryRunArg, stable: isStableArg, branch: branchArg, automaticRelease }, positionals } = parseArgs({
+  options: {
+    notesOnly: {
+      type: 'boolean'
+    },
+    dryRun: {
+      type: 'boolean'
+    },
+    stable: {
+      type: 'boolean'
+    },
+    branch: {
+      type: 'string'
+    },
+    automaticRelease: {
+      type: 'boolean'
+    }
+  },
+  allowPositionals: true
+});
+
+const bumpType = positionals[0];
 const targetRepo = getRepo();
 
-function getRepo () {
-  return bumpType === 'nightly' ? 'nightlies' : 'electron';
+function getRepo (): ElectronReleaseRepo {
+  return bumpType === 'nightly' ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
 const octokit = new Octokit({
@@ -29,24 +49,34 @@ require('colors');
 const pass = '✓'.green;
 const fail = '✗'.red;
 
-if (!bumpType && !args.notesOnly) {
+if (!bumpType && !notesOnly) {
   console.log('Usage: prepare-release [stable | minor | beta | alpha | nightly]' +
      ' (--stable) (--notesOnly) (--automaticRelease) (--branch)');
   process.exit(1);
 }
 
-async function getNewVersion (dryRun) {
-  if (!dryRun) {
+enum DryRunMode {
+  DRY_RUN,
+  REAL_RUN,
+}
+
+async function getNewVersion (dryRunMode: DryRunMode) {
+  if (dryRunMode === DryRunMode.REAL_RUN) {
     console.log(`Bumping for new "${bumpType}" version.`);
   }
-  const bumpScript = path.join(__dirname, 'version-bumper.js');
-  const scriptArgs = ['node', bumpScript, `--bump=${bumpType}`];
-  if (dryRun) scriptArgs.push('--dryRun');
+  const bumpScript = join(__dirname, 'version-bumper.ts');
+  const scriptArgs = [
+    'node',
+    'node_modules/.bin/ts-node',
+    bumpScript,
+    `--bump=${bumpType}`
+  ];
+  if (dryRunMode === DryRunMode.DRY_RUN) scriptArgs.push('--dryRun');
   try {
-    let bumpVersion = execSync(scriptArgs.join(' '), { encoding: 'UTF-8' });
+    let bumpVersion = execSync(scriptArgs.join(' '), { encoding: 'utf-8' });
     bumpVersion = bumpVersion.substr(bumpVersion.indexOf(':') + 1).trim();
     const newVersion = `v${bumpVersion}`;
-    if (!dryRun) {
+    if (dryRunMode === DryRunMode.REAL_RUN) {
       console.log(`${pass} Successfully bumped version to ${newVersion}`);
     }
     return newVersion;
@@ -56,7 +86,7 @@ async function getNewVersion (dryRun) {
   }
 }
 
-async function getReleaseNotes (currentBranch, newVersion) {
+async function getReleaseNotes (currentBranch: string, newVersion: string) {
   if (bumpType === 'nightly') {
     return { text: 'Nightlies do not get release notes, please compare tags for info.' };
   }
@@ -68,8 +98,8 @@ async function getReleaseNotes (currentBranch, newVersion) {
   return releaseNotes;
 }
 
-async function createRelease (branchToTarget, isBeta) {
-  const newVersion = await getNewVersion();
+async function createRelease (branchToTarget: string, isPreRelease: boolean) {
+  const newVersion = await getNewVersion(DryRunMode.REAL_RUN);
   const releaseNotes = await getReleaseNotes(branchToTarget, newVersion);
   await tagRelease(newVersion);
 
@@ -79,6 +109,7 @@ async function createRelease (branchToTarget, isBeta) {
     repo: targetRepo
   }).catch(err => {
     console.log(`${fail} Could not get releases. Error was: `, err);
+    throw err;
   });
 
   const drafts = releases.data.filter(release => release.draft &&
@@ -92,7 +123,7 @@ async function createRelease (branchToTarget, isBeta) {
 
   let releaseBody;
   let releaseIsPrelease = false;
-  if (isBeta) {
+  if (isPreRelease) {
     if (newVersion.indexOf('nightly') > 0) {
       releaseBody = 'Note: This is a nightly release.  Please file new issues ' +
         'for any bugs you find in it.\n \n This release is published to npm ' +
@@ -132,7 +163,7 @@ async function createRelease (branchToTarget, isBeta) {
   console.log(`${pass} Draft release for ${newVersion} successful.`);
 }
 
-async function pushRelease (branch) {
+async function pushRelease (branch: string) {
   const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], ELECTRON_DIR);
   if (pushDetails.exitCode === 0) {
     console.log(`${pass} Successfully pushed the release.  Wait for ` +
@@ -143,13 +174,15 @@ async function pushRelease (branch) {
   }
 }
 
-async function runReleaseBuilds (branch) {
+async function runReleaseBuilds (branch: string, newVersion: string) {
   await ciReleaseBuild(branch, {
-    ghRelease: true
+    ci: undefined,
+    ghRelease: true,
+    newVersion
   });
 }
 
-async function tagRelease (version) {
+async function tagRelease (version: string) {
   console.log(`Tagging release ${version}.`);
   const checkoutDetails = await GitProcess.exec(['tag', '-a', '-m', version, version], ELECTRON_DIR);
   if (checkoutDetails.exitCode === 0) {
@@ -162,9 +195,9 @@ async function tagRelease (version) {
 }
 
 async function verifyNewVersion () {
-  const newVersion = await getNewVersion(true);
+  const newVersion = await getNewVersion(DryRunMode.DRY_RUN);
   let response;
-  if (args.automaticRelease) {
+  if (automaticRelease) {
     response = 'y';
   } else {
     response = await promptForVersion(newVersion);
@@ -175,11 +208,13 @@ async function verifyNewVersion () {
     console.log(`${fail} Aborting release of ${newVersion}`);
     process.exit();
   }
+
+  return newVersion;
 }
 
-async function promptForVersion (version) {
-  return new Promise(resolve => {
-    const rl = readline.createInterface({
+async function promptForVersion (version: string) {
+  return new Promise<string>(resolve => {
+    const rl = createInterface({
       input: process.stdin,
       output: process.stdout
     });
@@ -197,23 +232,23 @@ async function changesToRelease () {
   return !lastCommitWasRelease.test(lastCommit.stdout);
 }
 
-async function prepareRelease (isBeta, notesOnly) {
-  if (args.dryRun) {
-    const newVersion = await getNewVersion(true);
+async function prepareRelease (isPreRelease: boolean, dryRunMode: DryRunMode) {
+  if (dryRunMode === DryRunMode.DRY_RUN) {
+    const newVersion = await getNewVersion(DryRunMode.DRY_RUN);
     console.log(newVersion);
   } else {
-    const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(ELECTRON_DIR);
+    const currentBranch = branchArg || await getCurrentBranch(ELECTRON_DIR);
     if (notesOnly) {
-      const newVersion = await getNewVersion(true);
+      const newVersion = await getNewVersion(DryRunMode.DRY_RUN);
       const releaseNotes = await getReleaseNotes(currentBranch, newVersion);
       console.log(`Draft release notes are: \n${releaseNotes.text}`);
     } else {
       const changes = await changesToRelease();
       if (changes) {
-        await verifyNewVersion();
-        await createRelease(currentBranch, isBeta);
+        const newVersion = await verifyNewVersion();
+        await createRelease(currentBranch, isPreRelease);
         await pushRelease(currentBranch);
-        await runReleaseBuilds(currentBranch);
+        await runReleaseBuilds(currentBranch, newVersion);
       } else {
         console.log('There are no new changes to this branch since the last release, aborting release.');
         process.exit(1);
@@ -222,7 +257,7 @@ async function prepareRelease (isBeta, notesOnly) {
   }
 }
 
-prepareRelease(!args.stable, args.notesOnly)
+prepareRelease(!isStableArg, dryRunArg ? DryRunMode.DRY_RUN : DryRunMode.REAL_RUN)
   .catch((err) => {
     console.error(err);
     process.exit(1);
