@@ -5,6 +5,7 @@
 #include "shell/browser/net/asar/asar_file_validator.h"
 
 #include <algorithm>
+#include <array>
 #include <string>
 #include <utility>
 #include <vector>
@@ -88,8 +89,6 @@ bool AsarFileValidator::FinishBlock() {
     current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
   }
 
-  uint8_t actual[crypto::kSHA256Length];
-
   // If the file reader is done we need to make sure we've either read up to the
   // end of the file (the check below) or up to the end of a block_size byte
   // boundary. If the below check fails we compute the next block boundary, how
@@ -110,17 +109,15 @@ bool AsarFileValidator::FinishBlock() {
     current_hash_->Update(&abandoned_buffer.front(), bytes_needed);
   }
 
-  current_hash_->Finish(actual, sizeof(actual));
+  auto actual = std::array<uint8_t, crypto::kSHA256Length>{};
+  current_hash_->Finish(actual);
   current_hash_.reset();
   current_hash_byte_count_ = 0;
 
-  const std::string expected_hash = integrity_.blocks[current_block_];
-  const std::string actual_hex_hash =
-      base::ToLowerASCII(base::HexEncode(actual, sizeof(actual)));
-
-  if (expected_hash != actual_hex_hash) {
+  const auto& expected_hash = integrity_.blocks[current_block_];
+  const auto actual_hex_hash = base::ToLowerASCII(base::HexEncode(actual));
+  if (expected_hash != actual_hex_hash)
     return false;
-  }
 
   current_block_++;
 
