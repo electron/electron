@@ -25,6 +25,21 @@ AsarFileValidator::AsarFileValidator(IntegrityPayload integrity,
 
 AsarFileValidator::~AsarFileValidator() = default;
 
+void AsarFileValidator::EnsureHashExists() {
+  if (current_hash_)
+    return;
+
+  current_hash_byte_count_ = 0U;
+  switch (integrity_.algorithm) {
+    case HashAlgorithm::kSHA256:
+      current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+      break;
+    case HashAlgorithm::kNone:
+      CHECK(false);
+      break;
+  }
+}
+
 void AsarFileValidator::OnRead(base::span<char> buffer,
                                mojo::FileDataSource::ReadResult* result) {
   DCHECK(!done_reading_);
@@ -40,19 +55,7 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
           << "Unexpected number of blocks while validating ASAR file stream";
     }
 
-    // Create a hash if we don't have one yet
-    if (!current_hash_) {
-      current_hash_byte_count_ = 0;
-      switch (integrity_.algorithm) {
-        case HashAlgorithm::kSHA256:
-          current_hash_ =
-              crypto::SecureHash::Create(crypto::SecureHash::SHA256);
-          break;
-        case HashAlgorithm::kNone:
-          CHECK(false);
-          break;
-      }
-    }
+    EnsureHashExists();
 
     // Compute how many bytes we should hash, and add them to the current hash.
     // We need to either add just enough bytes to fill up a block (block_size -

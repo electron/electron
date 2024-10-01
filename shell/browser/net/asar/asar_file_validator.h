@@ -36,6 +36,8 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
   bool FinishBlock();
 
  private:
+  void EnsureHashExists();
+
   base::File file_;
   IntegrityPayload integrity_;
 
