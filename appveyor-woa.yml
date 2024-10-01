@@ -70,8 +70,9 @@ for:
         - job_name: Build Arm on X64 Windows
 
     build_script:
+      # TODO: Remove --ignore-engines once WOA image is up to node 20
       - ps: |
-          node script/yarn.js install --frozen-lockfile
+          node script/yarn.js install --frozen-lockfile --ignore-engines
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "false"
           if ($LASTEXITCODE -eq 0) {
@@ -263,7 +264,7 @@ for:
 
     build_script:
       - ps: |
-          node script/yarn.js install --frozen-lockfile
+          node script/yarn.js install --frozen-lockfile --ignore-engines
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
             Write-warning "Skipping build for doc only change"

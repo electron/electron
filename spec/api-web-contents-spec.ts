@@ -2661,15 +2661,17 @@ describe('webContents module', () => {
       expect({
         width: w.getBounds().width,
         height: w.getBounds().height
-      }).to.deep.equal(process.platform === 'win32' ? {
-        // The width is reported as being larger on Windows? I'm not sure why
-        // this is.
-        width: 136,
-        height: 100
-      } : {
-        width: 100,
-        height: 100
-      });
+      }).to.deep.equal(process.platform === 'win32'
+        ? {
+            // The width is reported as being larger on Windows? I'm not sure why
+            // this is.
+            width: 136,
+            height: 100
+          }
+        : {
+            width: 100,
+            height: 100
+          });
     });
 
     it('does not change window bounds if cancelled', async () => {

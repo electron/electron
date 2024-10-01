@@ -326,8 +326,8 @@ describe('<webview> tag', function () {
 
     before(() => {
       const protocol = webviewSession.protocol;
-      protocol.registerStringProtocol(zoomScheme, (request, callback) => {
-        callback('hello');
+      protocol.registerStringProtocol(zoomScheme, (request, respond) => {
+        respond('hello');
       });
     });
 
@@ -847,12 +847,12 @@ describe('<webview> tag', function () {
 
     function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
       return new Promise<void>((resolve, reject) => {
-        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
+        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, allow) {
           if (webContents.id === webContentsId) {
             // requestMIDIAccess with sysex requests both midi and midiSysex so
             // grant the first midi one and then reject the midiSysex one
             if (requestedPermission === 'midiSysex' && permission === 'midi') {
-              return callback(true);
+              return allow(true);
             }
 
             try {
@@ -860,7 +860,7 @@ describe('<webview> tag', function () {
             } catch (e) {
               return reject(e);
             }
-            callback(false);
+            allow(false);
             resolve();
           }
         });

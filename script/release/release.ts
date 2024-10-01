@@ -2,6 +2,7 @@
 
 import { BlobServiceClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
+import * as chalk from 'chalk';
 import got from 'got';
 import { execSync, ExecSyncOptions } from 'node:child_process';
 import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
@@ -18,9 +19,8 @@ import { parseArgs } from 'node:util';
 
 const temp = trackTemp();
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 const pkgVersion = `v${getElectronVersion()}`;
 

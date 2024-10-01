@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
+const chalk = require('chalk');
 const childProcess = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -9,9 +10,8 @@ const os = require('node:os');
 const path = require('node:path');
 const unknownFlags = [];
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 const args = require('minimist')(process.argv, {
   string: ['runners', 'target', 'electronVersion'],

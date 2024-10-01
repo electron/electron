@@ -237,7 +237,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
       }
     }
   };
-  embedder.on('-window-visibility-change' as any, onVisibilityChange);
+  embedder.on('-window-visibility-change', onVisibilityChange);
 
   embedder.once('will-destroy' as any, () => {
     // Usually the guestInstances is cleared when guest is destroyed, but it
@@ -249,7 +249,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
       }
     }
     // Clear the listeners.
-    embedder.removeListener('-window-visibility-change' as any, onVisibilityChange);
+    embedder.removeListener('-window-visibility-change', onVisibilityChange);
     watchedEmbedders.delete(embedder);
   });
 };
