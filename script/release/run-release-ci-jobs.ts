@@ -4,10 +4,9 @@ import * as assert from 'node:assert';
 
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from './types';
-import { parseArgs } from 'node:util';
 
 const octokit = new Octokit({
-  authStrategy: createGitHubTokenStrategy('electron')
+  authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
@@ -83,8 +82,8 @@ async function githubActionsCall (targetBranch: string, workflowName: string, op
   jobRequestedCount++;
   try {
     const commits = await octokit.repos.listCommits({
-      owner: 'electron',
-      repo: 'electron',
+      owner: ELECTRON_ORG,
+      repo: ELECTRON_REPO,
       sha: targetBranch,
       per_page: 5
     });
@@ -268,7 +267,7 @@ type RunReleaseOptions = ({
   ci: undefined,
 } & BuildAppVeyorOptions & BuildGHActionsOptions);
 
-async function runRelease (targetBranch: string, options: RunReleaseOptions) {
+export async function runReleaseCIJobs (targetBranch: string, options: RunReleaseOptions) {
   if (options.ci) {
     switch (options.ci) {
       case 'GitHubActions': {
@@ -291,55 +290,4 @@ async function runRelease (targetBranch: string, options: RunReleaseOptions) {
     ]);
   }
   console.log(`${jobRequestedCount} jobs were requested.`);
-}
-
-export default runRelease;
-
-if (require.main === module) {
-  const { values: { ghRelease, job, arch, ci, commit, newVersion }, positionals } = parseArgs({
-    options: {
-      ghRelease: {
-        type: 'boolean'
-      },
-      job: {
-        type: 'string'
-      },
-      arch: {
-        type: 'string'
-      },
-      ci: {
-        type: 'string'
-      },
-      commit: {
-        type: 'string'
-      },
-      newVersion: {
-        type: 'string'
-      }
-    },
-    allowPositionals: true
-  });
-  const targetBranch = positionals[0];
-  if (positionals.length < 1) {
-    console.log(`Trigger CI to build release builds of electron.
-    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=AppVeyor|GitHubActions]
-    [--ghRelease] [--commit=sha] [--newVersion=version_tag] TARGET_BRANCH
-    `);
-    process.exit(0);
-  }
-  if (ci === 'GitHubActions' || !ci) {
-    if (!newVersion) {
-      console.error('--newVersion is required for GitHubActions');
-      process.exit(1);
-    }
-  }
-
-  runRelease(targetBranch, {
-    ci: ci as 'GitHubActions' | 'AppVeyor',
-    ghRelease,
-    job: job as any,
-    arch,
-    newVersion: newVersion!,
-    commit
-  });
 }
