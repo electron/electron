@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import * as fs from 'node:fs';
 import { createGitHubTokenStrategy } from '../github-token';
+import { ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId');
@@ -37,7 +38,11 @@ const getHeaders = (filePath: string, fileName: string) => {
   };
 };
 
-const targetRepo = releaseVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+function getRepo (): ElectronReleaseRepo {
+  return releaseVersion.indexOf('nightly') > 0 ? NIGHTLY_REPO : ELECTRON_REPO;
+}
+
+const targetRepo = getRepo();
 const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
 let retry = 0;
 
