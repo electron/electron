@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Octokit } from '@octokit/rest';
+import * as chalk from 'chalk';
 import { GitProcess } from 'dugite';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -45,9 +46,8 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(getRepo())
 });
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 if (!bumpType && !notesOnly) {
   console.log('Usage: prepare-release [stable | minor | beta | alpha | nightly]' +
@@ -218,7 +218,7 @@ async function promptForVersion (version: string) {
       input: process.stdin,
       output: process.stdout
     });
-    rl.question(`Do you want to create the release ${version.green} (y/N)? `, (answer) => {
+    rl.question(`Do you want to create the release ${chalk.green(version)} (y/N)? `, (answer) => {
       rl.close();
       resolve(answer);
     });

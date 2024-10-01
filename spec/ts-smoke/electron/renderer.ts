@@ -1,3 +1,4 @@
+/* eslint-disable */
 
 import { ipcRenderer, webFrame } from 'electron/renderer';
 import { clipboard, crashReporter, shell } from 'electron/common';

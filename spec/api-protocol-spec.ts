@@ -649,7 +649,7 @@ describe('protocol module', () => {
       const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
-          url: url,
+          url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
@@ -910,7 +910,7 @@ describe('protocol module', () => {
     });
 
     it('allows CORS requests by default', async () => {
-      await allowsCORSRequests('cors', 200, new RegExp(''), () => {
+      await allowsCORSRequests('cors', 200, /(?:)/, () => {
         const { ipcRenderer } = require('electron');
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status);
@@ -1695,7 +1695,7 @@ describe('protocol module', () => {
       const filePath = path.join(fixturesPath, 'pages', 'form-with-data.html');
       await contents.loadFile(filePath);
 
-      const loadPromise = new Promise((resolve, reject) => {
+      const loadPromise = new Promise<void>((resolve, reject) => {
         contents.once('did-finish-load', resolve);
         contents.once('did-fail-load', (_, errorCode, errorDescription) =>
           reject(new Error(`did-fail-load: ${errorCode} ${errorDescription}. See AssertionError for details.`))

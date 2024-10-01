@@ -59,7 +59,7 @@ function isInstalled () {
     if (fs.readFileSync(path.join(__dirname, 'path.txt'), 'utf-8') !== platformPath) {
       return false;
     }
-  } catch (ignored) {
+  } catch {
     return false;
   }
 
