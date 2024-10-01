@@ -255,9 +255,7 @@ v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
 
   auto array_buffer =
       v8::ArrayBuffer::New(args->isolate(), info.computeMinByteSize());
-  auto backing_store = array_buffer->GetBackingStore();
-  if (bitmap.readPixels(info, backing_store->Data(), info.minRowBytes(), 0,
-                        0)) {
+  if (bitmap.readPixels(info, array_buffer->Data(), info.minRowBytes(), 0, 0)) {
     return node::Buffer::New(args->isolate(), array_buffer, 0,
                              info.computeMinByteSize())
         .ToLocalChecked();
