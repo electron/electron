@@ -359,8 +359,7 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
 
   // Add required resources.
   html_source->UseStringsJs();
-  html_source->AddResourcePaths(
-      base::make_span(kAccessibilityResources, kAccessibilityResourcesSize));
+  html_source->AddResourcePaths(kAccessibilityResources);
   html_source->SetDefaultResource(IDR_ACCESSIBILITY_ACCESSIBILITY_HTML);
   html_source->SetRequestFilter(
       base::BindRepeating(&ShouldHandleAccessibilityRequestCallback),
