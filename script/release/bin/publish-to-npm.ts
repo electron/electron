@@ -5,12 +5,12 @@ import * as path from 'node:path';
 import * as semver from 'semver';
 import * as temp from 'temp';
 
-import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils';
-import { getElectronVersion } from '../lib/get-version';
+import { getCurrentBranch, ELECTRON_DIR } from '../../lib/utils';
+import { getElectronVersion } from '../../lib/get-version';
 
-import { getAssetContents } from './get-asset';
-import { createGitHubTokenStrategy } from './github-token';
-import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+import { getAssetContents } from '../get-asset';
+import { createGitHubTokenStrategy } from '../github-token';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
 const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'));
 
