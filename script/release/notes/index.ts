@@ -10,8 +10,10 @@ import { get, render } from './notes';
 import { Octokit } from '@octokit/rest';
 import { createGitHubTokenStrategy } from '../github-token';
 import { parseArgs } from 'node:util';
+import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
+
 const octokit = new Octokit({
-  authStrategy: createGitHubTokenStrategy('electron')
+  authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
 const semverify = (version: string) => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
@@ -45,8 +47,8 @@ const getTagsOf = async (point: string) => {
 
 const getTagsOnBranch = async (point: string) => {
   const { data: { default_branch: defaultBranch } } = await octokit.repos.get({
-    owner: 'electron',
-    repo: 'electron'
+    owner: ELECTRON_ORG,
+    repo: ELECTRON_REPO
   });
   const mainTags = await getTagsOf(defaultBranch);
   if (point === defaultBranch) {
