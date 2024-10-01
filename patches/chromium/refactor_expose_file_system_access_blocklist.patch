@@ -8,10 +8,10 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 027b494015450002f676303f54874636e4cc4115..a7540f3e625978792bd0bbcb444b54ab25f8b39b 100644
+index 65e445220e7afcfa6fbec2c482186923822ad0c5..024fd5e77eb5739c4c83f5f2a9620fe4aa1308bf 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -42,7 +42,6 @@
+@@ -43,7 +43,6 @@
  #include "chrome/browser/ui/file_system_access/file_system_access_dangerous_file_dialog.h"
  #include "chrome/browser/ui/file_system_access/file_system_access_dialogs.h"
  #include "chrome/browser/ui/file_system_access/file_system_access_restricted_directory_dialog.h"
@@ -19,7 +19,7 @@ index 027b494015450002f676303f54874636e4cc4115..a7540f3e625978792bd0bbcb444b54ab
  #include "chrome/grit/generated_resources.h"
  #include "components/content_settings/core/browser/host_content_settings_map.h"
  #include "components/content_settings/core/common/content_settings.h"
-@@ -234,122 +233,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -235,122 +234,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  

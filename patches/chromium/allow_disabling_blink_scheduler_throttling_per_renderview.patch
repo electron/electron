@@ -23,10 +23,10 @@ index e392efaf2e1ac3cfbef2d787ba40f0491b67f3cc..d45c7570484a7c1bfca25c860a1ddd2d
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index f130879c92319b525f5a521c3a083f479b485d2e..af42b58b78beff2349deadf68c51a3d4a310ac58 100644
+index 52ce9d2c8c5e29b8dce26116c04dac087b83571d..1c9573708b1b27cffaac175740e1ed826c8115ec 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -753,6 +753,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -746,6 +746,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -39,10 +39,10 @@ index f130879c92319b525f5a521c3a083f479b485d2e..af42b58b78beff2349deadf68c51a3d4
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index fe60e694fa35e5c46ce49dd9617ad33d73708912..df13884877ac87e414749dfec5db8ff83c1640ba 100644
+index 961e55732d9c3aa5437e9cc6eca7a2c8d06bd335..f0fc8d303dc9de2419d5f5d769657faf98caa22a 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -139,6 +139,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    void EnablePreferredSizeMode() override;
    void WriteIntoTrace(perfetto::TracedProto<TraceProto> context) const override;
  
