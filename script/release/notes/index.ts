@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
+import { Octokit } from '@octokit/rest';
 import { GitProcess } from 'dugite';
-import { basename } from 'node:path';
 import { valid, compare, gte, lte } from 'semver';
 
-import { ELECTRON_DIR } from '../../lib/utils';
-import { get, render } from './notes';
-
-import { Octokit } from '@octokit/rest';
-import { createGitHubTokenStrategy } from '../github-token';
+import { basename } from 'node:path';
 import { parseArgs } from 'node:util';
+
+import { get, render } from './notes';
+import { ELECTRON_DIR } from '../../lib/utils';
+import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
 
 const octokit = new Octokit({

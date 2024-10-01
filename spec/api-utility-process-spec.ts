@@ -1,14 +1,17 @@
-import { expect } from 'chai';
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
+import { systemPreferences } from 'electron';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setImmediate } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
+
+import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
 import { ifit, startRemoteControlApp } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { once } from 'node:events';
-import { pathToFileURL } from 'node:url';
-import { setImmediate } from 'node:timers/promises';
-import { systemPreferences } from 'electron';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
