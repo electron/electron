@@ -712,8 +712,7 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
-  auto backing_store = array_buffer->GetBackingStore();
-  memcpy(backing_store->Data(), string_view.data(), string_view.size());
+  memcpy(array_buffer->Data(), string_view.data(), string_view.size());
   Emit("data", array_buffer,
        base::AdaptCallbackForRepeating(std::move(resume)));
 }
