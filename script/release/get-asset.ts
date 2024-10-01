@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import got from 'got';
 import { createGitHubTokenStrategy } from './github-token';
-import { ElectronReleaseRepo } from './types';
+import { ELECTRON_ORG, ElectronReleaseRepo } from './types';
 
 export async function getAssetContents (repo: ElectronReleaseRepo, assetId: number) {
   const octokit = new Octokit({
@@ -10,7 +10,7 @@ export async function getAssetContents (repo: ElectronReleaseRepo, assetId: numb
   });
 
   const requestOptions = octokit.repos.getReleaseAsset.endpoint({
-    owner: 'electron',
+    owner: ELECTRON_ORG,
     repo,
     asset_id: assetId,
     headers: {
