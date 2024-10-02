@@ -189,7 +189,7 @@ async function installSpecModules (dir) {
   const env = {
     ...process.env,
     CXXFLAGS: process.env.CXXFLAGS,
-    npm_config_msvs_version: '2019',
+    npm_config_msvs_version: '2022',
     npm_config_yes: 'true'
   };
   if (args.electronVersion) {

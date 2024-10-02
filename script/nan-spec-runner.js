@@ -31,7 +31,7 @@ async function main () {
   const env = {
     ...process.env,
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2019',
+    npm_config_msvs_version: '2022',
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true'
   };
