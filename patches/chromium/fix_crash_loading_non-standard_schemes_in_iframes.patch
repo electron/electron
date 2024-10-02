@@ -40,10 +40,10 @@ index 6e329572b72d5c76e0c78204c9eb98346626c543..55dde123a54068e6e0ffc5c98f6ae5ce
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 7980748f0259dd9a87aee30c6fec771369b505a8..d435f8cb5d98a056ab05fab23ad4f871419a4e32 100644
+index 37272602835da25fc3b26eedb72d1786af3487fc..6dd8e7f6bd987ecda0d3908e2f66af65f6931682 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2261,6 +2261,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2264,6 +2264,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 7980748f0259dd9a87aee30c6fec771369b505a8..d435f8cb5d98a056ab05fab23ad4f871
    StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2314,6 +2318,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2317,6 +2321,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      // the end of this function.
      origin = origin_to_commit_;
      debug_info_builder.Append("use_origin_to_commit");
