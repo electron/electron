@@ -160,8 +160,13 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform != 'macos' }}
+      if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
+    - name: Checkout the whole damm thing
+      if: ${{ inputs.target-platform == 'win' }}
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        use-cache: 'false'
     - name: Checkout Electron
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       with:

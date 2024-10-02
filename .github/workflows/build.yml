@@ -136,38 +136,12 @@ jobs:
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
-  checkout-windows:
-    needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
-    runs-on: electron-arc-linux-amd64-32core
-    container:
-      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
-      volumes:
-        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
-        - /var/run/sas:/var/run/sas
-    env:
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
-      TARGET_OS: 'win'
-      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
-    outputs:
-      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
-    steps:
-    - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      with:
-        path: src/electron
-        fetch-depth: 0
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-
   windows-x64:
     permissions:
       contents: read
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-windows
     with:
       build-runs-on: electron-arc-windows-amd64-16core
       check-runs-on: electron-arc-windows-amd64-16core

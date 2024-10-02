@@ -5,6 +5,10 @@ inputs:
     description: 'Whether to generate and persist a SAS token for the item in the cache'
     required: false
     default: 'false'
+  use-cache:
+    description: 'Whether to persist the cache to the shared drive'
+    required: false
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -56,15 +60,20 @@ runs:
     id: check-cache
     shell: bash
     run: |
-      cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
-      echo "Using cache key: $DEPSHASH"
-      echo "Checking for cache in: $cache_path"
-      if [ ! -f "$cache_path" ]; then
+      if [[ "${{ inputs.use-cache }}" == "false" ]]; then
+        echo "Not using cache this time..."
         echo "cache_exists=false" >> $GITHUB_OUTPUT
-        echo "Cache Does Not Exist for $DEPSHASH"
       else
-        echo "cache_exists=true" >> $GITHUB_OUTPUT
-        echo "Cache Already Exists for $DEPSHASH, Skipping.."
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ]; then
+          echo "cache_exists=false" >> $GITHUB_OUTPUT
+          echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "cache_exists=true" >> $GITHUB_OUTPUT
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
+        fi
       fi
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
@@ -121,13 +130,13 @@ runs:
   # https://dawn-review.googlesource.com/c/dawn/+/83901
   # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
   - name: Delete .git directories under src to free space
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       cd src
       ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
   - name: Minimize Cache Size for Upload
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       rm -rf src/android_webview
@@ -140,7 +149,7 @@ runs:
       rm -rf src/third_party/swiftshader/tests/regres/testlists
       rm -rf src/electron
   - name: Compress Src Directory
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
@@ -148,7 +157,7 @@ runs:
       echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
       cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
   - name: Persist Src Cache
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       final_cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
