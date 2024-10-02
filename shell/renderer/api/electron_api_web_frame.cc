@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/command_line.h"
+#include "base/containers/span.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/spellcheck/renderer/spellcheck.h"
@@ -656,7 +656,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                                              std::move(completion_callback));
 
     render_frame->GetWebFrame()->RequestExecuteScript(
-        blink::DOMWrapperWorld::kMainWorldId, base::make_span(&source, 1u),
+        blink::DOMWrapperWorld::kMainWorldId, base::span_from_ref(source),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
         blink::mojom::EvaluationTiming::kSynchronous,
