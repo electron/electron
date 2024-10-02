@@ -36,7 +36,7 @@ environment:
   ELECTRON_ENABLE_STACK_DUMPING: 1
   ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
-  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, tap"
+  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
   DEPOT_TOOLS_WIN_TOOLCHAIN: 1
   DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
   GYP_MSVS_HASH_7393122652: 3ba76c5c20
@@ -257,10 +257,14 @@ for:
 
     environment:
         IGNORE_YARN_INSTALL_ERROR: 1
-        ELECTRON_TEST_RESULTS_DIR: junit
-        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        ELECTRON_TEST_RESULTS_DIR: C:\projects\src\electron\junit
+        MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+        DD_ENV: ci
+        DD_SERVICE: electron
+        DD_CIVISIBILITY_LOGS_ENABLED: true
+        DD_GIT_REPOSITORY_URL: "https://github.com/electron/electron.git"
 
     build_script:
       - ps: |
@@ -272,6 +276,7 @@ for:
           } else {
             $global:LASTEXITCODE = 0
           }
+      - ps: Invoke-WebRequest -Uri "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_win-x64" -OutFile "C:\projects\src\electron\datadog-ci.exe"
       - cd ..
       - mkdir out\Default
       - cd ..
@@ -327,3 +332,10 @@ for:
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      - if exist electron\junit\test-results-main.xml ( appveyor-retry appveyor PushArtifact electron\junit\test-results-main.xml )
+      - ps: |
+          $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
+          $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
+          $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
+          C:\projects\src\electron\datadog-ci.exe junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
+

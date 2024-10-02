@@ -146,17 +146,21 @@ jobs:
         sudo security authorizationdb write com.apple.trust-settings.admin allow
         cd src/electron
         ./script/codesign/generate-identity.sh
+    - name: Install Datadog CLI
+      run: |
+        cd src/electron
+        node script/yarn global add @datadog/datadog-ci
     - name: Run Electron Tests
       shell: bash
       env:
         MOCHA_REPORTER: mocha-multi-reporters
-        ELECTRON_TEST_RESULTS_DIR: junit
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
       run: |
         cd src/electron
+        export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
         tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
 
@@ -185,6 +189,15 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
+    - name: Upload Test results to Datadog
+      env:
+        DD_ENV: ci
+        DD_SERVICE: electron
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        DD_CIVISIBILITY_LOGS_ENABLED: true
+        DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
+      run: datadog-ci junit upload src/electron/junit/test-results-main.xml
+      if: always() && !cancelled()
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       run: |
