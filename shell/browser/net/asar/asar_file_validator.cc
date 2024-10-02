@@ -105,8 +105,7 @@ bool AsarFileValidator::FinishBlock() {
     if (!file_.ReadAndCheck(offset, abandoned_buffer)) {
       LOG(FATAL) << "Failed to read required portion of streamed ASAR archive";
     }
-
-    current_hash_->Update(&abandoned_buffer.front(), bytes_needed);
+    current_hash_->Update(abandoned_buffer);
   }
 
   auto actual = std::array<uint8_t, crypto::kSHA256Length>{};
