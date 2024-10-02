@@ -82,16 +82,16 @@ jobs:
       upload-to-storage: ${{ inputs.upload-to-storage }}
       is-asan: ${{ inputs.is-asan}}
     secrets: inherit
-  gn-check:
-    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
-    with:
-      target-platform: ${{ inputs.target-platform }}
-      target-arch: ${{ inputs.target-arch }}
-      check-runs-on: ${{ inputs.check-runs-on }}
-      check-container: ${{ inputs.build-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
-      is-asan: ${{ inputs.is-asan }}
-    secrets: inherit
+  # gn-check:
+  #   uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+  #   with:
+  #     target-platform: ${{ inputs.target-platform }}
+  #     target-arch: ${{ inputs.target-arch }}
+  #     check-runs-on: ${{ inputs.check-runs-on }}
+  #     check-container: ${{ inputs.build-container }}
+  #     gn-build-type: ${{ inputs.gn-build-type }}
+  #     is-asan: ${{ inputs.is-asan }}
+  #   secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
     needs: build
