@@ -172,36 +172,8 @@ class ThemeDataSource : public content::URLDataSource {
       SendColorsCss(url, wc_getter, std::move(callback));
       return;
     }
-    /** TODO(BILL)
-    int resource_id = ResourcesUtil::GetThemeResourceId(parsed_path);
 
-    // Limit the maximum scale we'll respond to.  Very large scale factors can
-    // take significant time to serve or, at worst, crash the browser due to
-    // OOM. We don't want to clamp to the max scale factor, though, for devices
-    // that use 2x scale without 2x data packs, as well as omnibox requests for
-    // larger (but still reasonable) scales (see below).
-    const float max_scale = ui::GetScaleForResourceScaleFactor(
-        ui::ResourceBundle::GetSharedInstance().GetMaxResourceScaleFactor());
-    const float unreasonable_scale = max_scale * 32;
-    // TODO(reveman): Add support frames beyond 0 (crbug.com/750064).
-    if ((resource_id == -1) || (scale >= unreasonable_scale) || (frame > 0)) {
-      // Either we have no data to send back, or the requested scale is
-      // unreasonably large.  This shouldn't happen normally, as chrome://theme/
-      // URLs are only used by WebUI pages and component extensions.  However,
-      // the user can also enter these into the omnibox, so we need to fail
-      // gracefully.
-      std::move(callback).Run(nullptr);
-    } else if ((GetMimeType(url) == "image/png") &&
-               ((scale > max_scale) || (frame != -1))) {
-      // This will extract and scale frame 0 of animated images.
-      // TODO(reveman): Support scaling of animated images and avoid scaling and
-      // re-encode when specific frame is specified (crbug.com/750064).
-      DCHECK_LE(frame, 0);
-      SendThemeImage(std::move(callback), resource_id, scale);
-    } else {
-      SendThemeBitmap(std::move(callback), resource_id, scale);
-    }
-    */
+    std::move(callback).Run(CreateNotFoundResponse());
   }
 
   std::string GetMimeType(const GURL& url) override {
