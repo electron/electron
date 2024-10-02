@@ -12,7 +12,7 @@ import { getAssetContents } from '../get-asset';
 import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
-const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'));
+const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../package.json'), 'utf-8'));
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP');
