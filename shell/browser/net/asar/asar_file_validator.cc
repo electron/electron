@@ -30,10 +30,10 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
                                mojo::FileDataSource::ReadResult* result) {
   DCHECK(!done_reading_);
 
-  uint64_t buffer_size = result->bytes_read;
+  const uint64_t buffer_size = result->bytes_read;
 
   // Compute how many bytes we should hash, and add them to the current hash.
-  uint32_t block_size = integrity_.block_size;
+  const uint32_t block_size = integrity_.block_size;
   uint64_t bytes_added = 0;
   while (bytes_added < buffer_size) {
     if (current_block_ > max_block_) {
