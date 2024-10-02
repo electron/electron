@@ -142,6 +142,8 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-windows-amd64-16core
       check-runs-on: electron-arc-windows-amd64-16core

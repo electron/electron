@@ -192,7 +192,7 @@ jobs:
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
-        cd $HOME/.electron_build_tools
+        cd $(e show depotdir)/../../.electron_build_tools
         npx yarn --ignore-engines
         # Pull down credential helper and print status
         node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
