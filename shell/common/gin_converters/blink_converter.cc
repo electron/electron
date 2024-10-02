@@ -477,9 +477,6 @@ Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
       case blink::mojom::FormControlType::kButtonReset:
         str = "reset-button";
         break;
-      case blink::mojom::FormControlType::kButtonSelectList:
-        str = "select-list";
-        break;
       case blink::mojom::FormControlType::kButtonSubmit:
         str = "submit-button";
         break;
@@ -554,9 +551,6 @@ Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
         break;
       case blink::mojom::FormControlType::kOutput:
         str = "output";
-        break;
-      case blink::mojom::FormControlType::kSelectList:
-        str = "select-list";
         break;
       case blink::mojom::FormControlType::kSelectMultiple:
         str = "select-multiple";
