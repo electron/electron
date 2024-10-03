@@ -71,8 +71,8 @@ void DebugLog(std::string_view log_msg) {
     LOG(INFO) << log_msg;
 }
 
-std::wstring GetTag(const std::string& notification_id) {
-  return base::NumberToWString(base::Hash(notification_id));
+std::wstring GetTag(const std::string_view notification_id) {
+  return base::NumberToWString(base::FastHash(notification_id));
 }
 
 }  // namespace
