@@ -138,6 +138,12 @@ jobs:
           echo "target_os=['win']" >> tmpgclient
         fi
         e d gclient runhooks --gclientfile=tmpgclient
+
+        # Fix VS Toolchain
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          rm -rf src/third_party/depot_tools/win_toolchain/vs_files
+          e d python3 src/build/vs_toolchain.py update --force
+        fi
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
