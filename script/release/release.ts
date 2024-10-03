@@ -4,17 +4,18 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
 import * as chalk from 'chalk';
 import got from 'got';
-import { execSync, ExecSyncOptions } from 'node:child_process';
-import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
-import { join } from 'node:path';
 import { gte } from 'semver';
 import { track as trackTemp } from 'temp';
 
-import { ELECTRON_DIR } from '../lib/utils';
-import { getElectronVersion } from '../lib/get-version';
+import { execSync, ExecSyncOptions } from 'node:child_process';
+import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
+import { join } from 'node:path';
+
 import { getUrlHash } from './get-url-hash';
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+import { getElectronVersion } from '../lib/get-version';
+import { ELECTRON_DIR } from '../lib/utils';
 
 const temp = trackTemp();
 

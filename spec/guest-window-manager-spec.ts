@@ -1,10 +1,13 @@
 import { BrowserWindow, screen } from 'electron';
+
 import { expect, assert } from 'chai';
+
+import { once } from 'node:events';
+import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
+
 import { HexColors, ScreenCapture } from './lib/screen-helpers';
 import { ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
-import { once } from 'node:events';
-import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;

@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/rest';
+
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
 

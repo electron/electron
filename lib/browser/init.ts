@@ -1,8 +1,9 @@
+import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 import type * as url from 'url';
 import type * as v8 from 'v8';
 

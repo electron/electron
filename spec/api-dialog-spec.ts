@@ -1,8 +1,11 @@
-import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
-import { ifit } from './lib/spec-helpers';
+
+import { expect } from 'chai';
+
 import { setTimeout } from 'node:timers/promises';
+
+import { ifit } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
