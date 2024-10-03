@@ -57,9 +57,20 @@ jobs:
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
     steps:
     - name: Fix node20 on arm32 runners
-      if: ${{ inputs.target-arch == 'arm' }}
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Install Git on Windows arm64 runners
+      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        choco install git.install --params "'/GitAndUnixToolsOnPath'" -y
+        choco install -y --no-progress git
+        choco install -y --force nodejs --version=20.11.0
+        echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
