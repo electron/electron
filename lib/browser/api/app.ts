@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-
 import { Menu } from 'electron/main';
+
+import * as fs from 'fs';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');

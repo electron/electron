@@ -1,7 +1,11 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
 import { BrowserWindow } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as path from 'node:path';
+
 import { defer } from './lib/spec-helpers';
+
 // import { once } from 'node:events';
 
 describe('webUtils module', () => {

@@ -1,14 +1,15 @@
 import { Octokit } from '@octokit/rest';
 import * as chalk from 'chalk';
 import { GitProcess } from 'dugite';
+
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 
-import { runReleaseCIJobs } from './run-release-ci-jobs';
-import releaseNotesGenerator from './notes';
-import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils.js';
 import { createGitHubTokenStrategy } from './github-token';
+import releaseNotesGenerator from './notes';
+import { runReleaseCIJobs } from './run-release-ci-jobs';
 import { ELECTRON_ORG, ElectronReleaseRepo, VersionBumpType } from './types';
+import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils.js';
 
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
