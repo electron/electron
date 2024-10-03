@@ -1,6 +1,8 @@
 #!/bin/bash
 
-if [ "`uname`" == "Darwin" ]; then
+if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
+  BUILD_TYPE="windows"
+elif [ "`uname`" == "Darwin" ]; then
   if [ -z "$MAS_BUILD" ]; then
     BUILD_TYPE="darwin"
   else
@@ -46,23 +48,47 @@ cp_if_exist() {
 move_src_dirs_if_exist() {
   mkdir src_artifacts
 
-  for dir in \
-    src/out/Default/gen/node_headers \
-    src/out/Default/overlapped-checker \
-    src/out/Default/ffmpeg \
-    src/out/Default/hunspell_dictionaries \
-    src/third_party/electron_node \
-    src/third_party/nan \
-    src/cross-arch-snapshots \
-    src/third_party/llvm-build \
-    src/build/linux \
-    src/buildtools/mac \
-    src/buildtools/third_party/libc++ \
-    src/buildtools/third_party/libc++abi \
-    src/third_party/libc++ \
-    src/third_party/libc++abi \
-    src/out/Default/obj/buildtools/third_party \
-    src/v8/tools/builtins-pgo
+  dirs=("src/out/Default/gen/node_headers" \
+    "src/out/Default/overlapped-checker" \
+    "src/out/Default/ffmpeg" \
+    "src/out/Default/hunspell_dictionaries" \
+    "src/third_party/electron_node" \
+    "src/third_party/nan" \
+    "src/cross-arch-snapshots" \
+    "src/buildtools/mac" \
+    "src/buildtools/third_party/libc++" \
+    "src/buildtools/third_party/libc++abi" \
+    "src/third_party/libc++" \
+    "src/third_party/libc++abi" \
+    "src/out/Default/obj/buildtools/third_party" \
+    "src/v8/tools/builtins-pgo")
+
+  # Only do this for linux build type, this folder
+  # exists for windows builds on linux hosts but we do
+  # not need it
+  if [ "$BUILD_TYPE" == "linux" ]; then
+    dirs+=('src/build/linux')
+  fi
+
+  # llvm-build is the host toolchain, for windows we need
+  # a different toolchain so no point copying this one
+  if [ "$BUILD_TYPE" != "windows" ]; then
+    dirs+=('src/third_party/llvm-build')
+  fi
+
+    # On windows we should clean up two symlinks that aren't
+  # compatible with the windows test runner
+  if [ "$BUILD_TYPE" == "windows" ]; then
+    rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/eslint
+    rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/.bin/eslint
+    rm -f src/third_party/electron_node/out/tools/bin/python
+
+    # Also need to copy electron.lib to node.lib for native module testing purposes
+    mkdir -p src/out/Default/gen/node_headers/Release
+    cp src/out/Default/electron.lib src/out/Default/gen/node_headers/Release/node.lib
+  fi
+
+  for dir in "${dirs[@]}"
   do
     if [ -d "$dir" ]; then
       mkdir -p src_artifacts/$(dirname $dir)

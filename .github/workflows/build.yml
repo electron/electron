@@ -146,7 +146,7 @@ jobs:
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-windows-amd64-16core
-      check-runs-on: electron-arc-windows-amd64-16core
+      check-runs-on: electron-arc-linux-amd64-8core
       test-runs-on: windows-latest
       target-platform: windows
       target-arch: x64

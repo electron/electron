@@ -8,7 +8,7 @@ inputs:
     description: 'Target platform'
     required: true
   artifact-platform:
-    description: 'Artifact platform, should be linux, darwin or mas'
+    description: 'Artifact platform, should be linux, windows, darwin or mas'
     required: true
   step-suffix:
     description: 'Suffix for build steps'
@@ -71,7 +71,7 @@ runs:
         cd src
         e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
+          target_os=${{ inputs.target-platform == 'linux' && 'linux' || (inputs.target-platform == 'windows' && 'win' || 'mac') }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
@@ -91,7 +91,7 @@ runs:
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
-        if [ "`uname`" = "Linux" ]; then
+        if [ "${{ inputs.target-platform }}" = "linux" ]; then
           if [ "${{ inputs.target-arch }}" = "arm" ]; then
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator

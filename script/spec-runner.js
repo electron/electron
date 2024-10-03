@@ -187,9 +187,9 @@ async function runMainProcessElectronTests () {
 
 async function installSpecModules (dir) {
   const env = {
+    npm_config_msvs_version: '2019',
     ...process.env,
     CXXFLAGS: process.env.CXXFLAGS,
-    npm_config_msvs_version: '2019',
     npm_config_yes: 'true'
   };
   if (args.electronVersion) {
