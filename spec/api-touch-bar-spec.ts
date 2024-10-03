@@ -1,7 +1,10 @@
-import * as path from 'node:path';
 import { BaseWindow, BrowserWindow, TouchBar } from 'electron/main';
-import { closeWindow } from './lib/window-helpers';
+
 import { expect } from 'chai';
+
+import * as path from 'node:path';
+
+import { closeWindow } from './lib/window-helpers';
 
 const { TouchBarButton, TouchBarColorPicker, TouchBarGroup, TouchBarLabel, TouchBarOtherItemsProxy, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer } = TouchBar;
 

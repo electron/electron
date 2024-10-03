@@ -1,10 +1,13 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
-import { closeWindow } from './lib/window-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { ScreenCapture } from './lib/screen-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { ScreenCapture } from './lib/screen-helpers';
+import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

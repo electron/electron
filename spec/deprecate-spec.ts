@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+
 import * as deprecate from '../lib/common/deprecate';
 
 describe('deprecate', () => {

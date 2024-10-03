@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
-import { nextVersion } from '../script/release/version-bumper';
 import * as sinon from 'sinon';
+
 import { ifdescribe } from './lib/spec-helpers';
+import { nextVersion } from '../script/release/version-bumper';
 
 class GitFake {
   branches: {

@@ -1,8 +1,7 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-
-import type * as webViewElementModule from '@electron/internal/renderer/web-view/web-view-element';
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import type * as guestViewInternalModule from '@electron/internal/renderer/web-view/guest-view-internal';
+import type * as webViewElementModule from '@electron/internal/renderer/web-view/web-view-element';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');

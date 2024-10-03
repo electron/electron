@@ -1,7 +1,10 @@
-import { expect } from 'chai';
 import { ipcMain, BrowserWindow } from 'electron/main';
-import { closeWindow } from './lib/window-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+
+import { closeWindow } from './lib/window-helpers';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;
