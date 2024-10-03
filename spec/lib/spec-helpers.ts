@@ -1,15 +1,17 @@
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as http2 from 'node:http2';
-import * as net from 'node:net';
-import * as v8 from 'node:v8';
-import * as url from 'node:url';
-import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
+
 import { AssertionError } from 'chai';
+import { SuiteFunction, TestFunction } from 'mocha';
+
+import * as childProcess from 'node:child_process';
+import * as http from 'node:http';
+import * as http2 from 'node:http2';
+import * as https from 'node:https';
+import * as net from 'node:net';
+import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+import * as v8 from 'node:v8';
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {

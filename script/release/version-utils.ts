@@ -1,5 +1,5 @@
-import * as semver from 'semver';
 import { GitProcess } from 'dugite';
+import * as semver from 'semver';
 
 import { ELECTRON_DIR } from '../lib/utils';
 

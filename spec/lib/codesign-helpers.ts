@@ -1,7 +1,8 @@
+import { expect } from 'chai';
+
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { expect } from 'chai';
 
 const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures');

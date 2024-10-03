@@ -1,20 +1,23 @@
-import { expect } from 'chai';
-import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+import { MediaAccessPermissionRequest } from 'electron';
 import { clipboard } from 'electron/common';
-import { closeAllWindows } from './lib/window-helpers';
-import * as https from 'node:https';
-import * as http from 'node:http';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as url from 'node:url';
+import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+
+import { expect } from 'chai';
+import * as ws from 'ws';
+
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
-import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
-import { PipeTransport } from './pipe-transport';
-import * as ws from 'ws';
-import { setTimeout } from 'node:timers/promises';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
 import { AddressInfo } from 'node:net';
-import { MediaAccessPermissionRequest } from 'electron';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { PipeTransport } from './pipe-transport';
 
 const features = process._linkedBinding('electron_common_features');
 
