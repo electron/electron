@@ -1,5 +1,7 @@
-import { expect } from 'chai';
 import { systemPreferences } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { ifdescribe } from './lib/spec-helpers';
 
 describe('systemPreferences module', () => {

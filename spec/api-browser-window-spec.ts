@@ -1,20 +1,22 @@
-import { expect } from 'chai';
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as qs from 'node:querystring';
-import * as http from 'node:http';
-import * as os from 'node:os';
-import { AddressInfo } from 'node:net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
+import { expect } from 'chai';
+
+import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import { AddressInfo } from 'node:net';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as qs from 'node:querystring';
+import { setTimeout as syncSetTimeout } from 'node:timers';
+import { setTimeout } from 'node:timers/promises';
+
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
-import { setTimeout as syncSetTimeout } from 'node:timers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');

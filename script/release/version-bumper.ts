@@ -2,7 +2,9 @@
 
 import { valid, coerce, inc } from 'semver';
 
-import { getElectronVersion } from '../lib/get-version';
+import { parseArgs } from 'node:util';
+
+import { VersionBumpType } from './types';
 import {
   isNightly,
   isAlpha,
@@ -12,8 +14,7 @@ import {
   nextBeta,
   isStable
 } from './version-utils';
-import { VersionBumpType } from './types';
-import { parseArgs } from 'node:util';
+import { getElectronVersion } from '../lib/get-version';
 
 // run the script
 async function main () {

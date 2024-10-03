@@ -1,12 +1,14 @@
-import { expect } from 'chai';
-import * as cp from 'node:child_process';
 import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, WebContents, WebContentsView } from 'electron/main';
-import * as path from 'node:path';
 
-import { closeWindow } from './lib/window-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { expect } from 'chai';
+
+import * as cp from 'node:child_process';
 import { once } from 'node:events';
+import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+
+import { ifdescribe } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass

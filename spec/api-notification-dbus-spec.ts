@@ -6,11 +6,14 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
+import { app } from 'electron/main';
+
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { app } from 'electron/main';
-import { ifdescribe } from './lib/spec-helpers';
+
 import { promisify } from 'node:util';
+
+import { ifdescribe } from './lib/spec-helpers';
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||

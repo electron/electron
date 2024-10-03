@@ -1,6 +1,7 @@
-import { BaseWindow, MenuItem, webContents, Menu as MenuType, BrowserWindow, MenuItemConstructorOptions } from 'electron/main';
 import { sortMenuItems } from '@electron/internal/browser/api/menu-utils';
 import { setApplicationMenuWasSet } from '@electron/internal/browser/default-menu';
+
+import { BaseWindow, MenuItem, webContents, Menu as MenuType, BrowserWindow, MenuItemConstructorOptions } from 'electron/main';
 
 const bindings = process._linkedBinding('electron_browser_menu');
 

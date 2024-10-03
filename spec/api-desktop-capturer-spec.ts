@@ -1,9 +1,11 @@
-import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
-import { ifdescribe, ifit } from './lib/spec-helpers';
 
+import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {

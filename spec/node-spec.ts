@@ -1,14 +1,17 @@
+import { webContents } from 'electron/main';
+
 import { expect } from 'chai';
+
 import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as util from 'node:util';
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
-import { webContents } from 'electron/main';
 import { EventEmitter } from 'node:stream';
-import { once } from 'node:events';
+import * as util from 'node:util';
+
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
+import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 

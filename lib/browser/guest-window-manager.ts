@@ -5,9 +5,10 @@
  * out-of-process (cross-origin) are created here. "Embedder" roughly means
  * "parent."
  */
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
+
 import { BrowserWindow } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
-import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 
 type PostData = LoadURLOptions['postData']
 export type WindowOpenArgs = {

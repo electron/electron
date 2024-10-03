@@ -1,12 +1,15 @@
+import { BrowserWindow, ipcMain } from 'electron/main';
+
 import { expect } from 'chai';
+
+import { once } from 'node:events';
+import * as importedFs from 'node:fs';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
-import { BrowserWindow, ipcMain } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
+
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import * as importedFs from 'node:fs';
-import { once } from 'node:events';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('asar package', () => {
   const fixtures = path.join(__dirname, 'fixtures');
