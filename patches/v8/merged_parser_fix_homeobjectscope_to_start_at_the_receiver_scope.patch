@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Mon, 29 Jul 2024 09:00:54 -0700
+Subject: Merged: [parser] Fix HomeObjectScope to start at the receiver scope
+
+Bug: 352690885
+(cherry picked from commit af7f8f06b604f007b7bac75365266246d122e28a)
+
+Change-Id: Icabc232c03142d6f4137f6ae5fb8359c7cf1b9ee
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5762851
+Reviewed-by: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
+Commit-Queue: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.6@{#56}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 2aa1bb6c0f8f6e098a3ddf3f54ec2d0d5af9dc24..cfcff4bfd3f7f487300783dfb7325d9512bbacaa 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -1532,26 +1532,22 @@ DeclarationScope* Scope::GetConstructorScope() {
+ }
+ 
+ Scope* Scope::GetHomeObjectScope() {
+-  Scope* scope = this;
+-  while (scope != nullptr && !scope->is_home_object_scope()) {
+-    if (scope->is_function_scope()) {
+-      FunctionKind function_kind = scope->AsDeclarationScope()->function_kind();
+-      // "super" in arrow functions binds outside the arrow function. But if we
+-      // find a function which doesn't bind "super" (is not a method etc.) and
+-      // not an arrow function, we know "super" here doesn't bind anywhere and
+-      // we can return nullptr.
+-      if (!IsArrowFunction(function_kind) && !BindsSuper(function_kind)) {
+-        return nullptr;
+-      }
+-    }
+-    if (scope->private_name_lookup_skips_outer_class()) {
+-      DCHECK(scope->outer_scope()->is_class_scope());
+-      scope = scope->outer_scope()->outer_scope();
+-    } else {
+-      scope = scope->outer_scope();
+-    }
+-  }
+-  return scope;
++  Scope* scope = GetReceiverScope();
++  DCHECK(scope->is_function_scope());
++  FunctionKind kind = scope->AsDeclarationScope()->function_kind();
++  // "super" in arrow functions binds outside the arrow function. Arrow
++  // functions are also never receiver scopes since they close over the
++  // receiver.
++  DCHECK(!IsArrowFunction(kind));
++  // If we find a function which doesn't bind "super" (is not a method etc.), we
++  // know "super" here doesn't bind anywhere and we can return nullptr.
++  if (!BindsSuper(kind)) return nullptr;
++  // Functions that bind "super" can only syntactically occur nested inside home
++  // object scopes (i.e. class scopes and object literal scopes), so directly
++  // return the outer scope.
++  Scope* outer_scope = scope->outer_scope();
++  CHECK(outer_scope->is_home_object_scope());
++  return outer_scope;
+ }
+ 
+ DeclarationScope* Scope::GetScriptScope() {
+@@ -2304,7 +2300,7 @@ void Scope::ResolveVariable(VariableProxy* proxy) {
+     //
+     // Because of the above, start resolving home objects directly at the home
+     // object scope instead of the current scope.
+-    Scope* scope = GetDeclarationScope()->GetHomeObjectScope();
++    Scope* scope = GetHomeObjectScope();
+     DCHECK_NOT_NULL(scope);
+     if (scope->scope_info_.is_null()) {
+       var = Lookup<kParsedScope>(proxy, scope, nullptr);

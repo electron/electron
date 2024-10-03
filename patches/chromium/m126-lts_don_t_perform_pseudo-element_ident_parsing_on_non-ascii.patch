@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 1 Oct 2024 02:11:48 +0000
+Subject: [M126-LTS] Don't perform pseudo-element ident parsing on non-ASCII
+
+ParsePseudoType crashes on ASAN when given non-ASCII characters,
+so returning early if those are present.
+
+(cherry picked from commit f50b84cf5edf9a3ef09ddee9a24aeae5da55c630)
+
+Bug: 350779647
+Change-Id: Ic77351a1c95437a226dce66c7826b7b8481b8d91
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5686295
+Commit-Queue: Noam Rosenthal <nrosenthal@chromium.org>
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1346768}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5872266
+Owners-Override: Victor Gabriel Savu <vsavu@google.com>
+Reviewed-by: Victor Gabriel Savu <vsavu@google.com>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Cr-Commit-Position: refs/branch-heads/6478@{#1974}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/core/css/parser/css_selector_parser.cc b/third_party/blink/renderer/core/css/parser/css_selector_parser.cc
+index 3225dbc52c509be3e720d9b36edee507bec298d7..f6f1c8ab5ac1ff0984745635a1a811f74ff2797d 100644
+--- a/third_party/blink/renderer/core/css/parser/css_selector_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_selector_parser.cc
+@@ -958,7 +958,7 @@ PseudoId CSSSelectorParser::ParsePseudoElement(const String& selector_string,
+ 
+   CSSParserToken selector_name_token = range.Peek(ident_start);
+   if (selector_name_token.GetType() == kIdentToken) {
+-    if (!selector_name_token.Value().Is8Bit()) {
++    if (!selector_name_token.Value().ContainsOnlyASCIIOrEmpty()) {
+       return kPseudoIdInvalid;
+     }
+     if (range.Peek(ident_start + 1).GetType() != kEOFToken) {
+diff --git a/third_party/blink/web_tests/external/wpt/css/cssom/getComputedStyle-special-chars-crash.html b/third_party/blink/web_tests/external/wpt/css/cssom/getComputedStyle-special-chars-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..a9c1dd9976af10efb197bf9bdb0bef47516db7c3
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/cssom/getComputedStyle-special-chars-crash.html
+@@ -0,0 +1,7 @@
++<!DOCTYPE html>
++<body>
++<script>
++    window.getComputedStyle(document.body, String.fromCharCode( 92, 109, 107, 78, 80, 113, 90, 102, 76, 49));
++</script>
++This test shouldn't crash.
++</body>
+\ No newline at end of file

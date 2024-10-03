@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Thu, 25 Jul 2024 11:36:01 +0200
+Subject: Merged: [maglev] Consider WasmStruct in InferHasInPrototypeChain
+
+Fixed: 355256380
+
+(cherry picked from commit 313905c4f2c153be4bf4b09b2b06ffad7106869c)
+
+Change-Id: I5b1ff15b146ac1054dee5f62b59af8337fca5287
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5743766
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.6@{#54}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 78f4dd57d339eaad8b265721ef37137291da7940..1212df233c131fa290ce6361ccdd985e41c8fc0e 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -8447,7 +8447,9 @@ MaglevGraphBuilder::InferHasInPrototypeChain(
+       // might be a different object each time, so it's much simpler to include
+       // {prototype}. That does, however, mean that we must check {prototype}'s
+       // map stability.
+-      if (!prototype.map(broker()).is_stable()) return kMayBeInPrototypeChain;
++      if (!prototype.IsJSObject() || !prototype.map(broker()).is_stable()) {
++        return kMayBeInPrototypeChain;
++      }
+       last_prototype = prototype.AsJSObject();
+     }
+     broker()->dependencies()->DependOnStablePrototypeChains(
+diff --git a/test/mjsunit/maglev/regress-355256380.js b/test/mjsunit/maglev/regress-355256380.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9c95274b2db361f90cb1f840a992cf8214068494
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-355256380.js
+@@ -0,0 +1,19 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --allow-natives-syntax
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++let builder = new WasmModuleBuilder();
++let struct_type = builder.addStruct([makeField(kWasmI32, true)]);
++builder.addFunction('MakeStruct', makeSig([], [kWasmExternRef])).exportFunc().addBody([kExprI32Const, 42, kGCPrefix, kExprStructNew, struct_type, kGCPrefix, kExprExternConvertAny]);
++let instance = builder.instantiate();
++globalThis.struct = instance.exports.MakeStruct();
++function foo(arg) {
++  arg.prototype = globalThis.struct;
++  for (var i = 0; i < 5000; i++) {
++    new arg() instanceof arg;
++  }
++}
++foo(function () {});
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 1b4e980e90e158fd3a078650ef9b02244cc550fe..7747c68ba38c3e3c763f26ea5633d2a361f3ef66 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -455,6 +455,8 @@
+   'asm/*': [SKIP],
+   'wasm/*': [SKIP],
+ 
++  'maglev/regress-355256380': [SKIP],
++
+   # Tests tracing when generating wasm in TurboFan.
+   'tools/compiler-trace-flags-wasm': [SKIP],
+ 

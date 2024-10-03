@@ -14,5 +14,6 @@
   { "patch_dir": "src/electron/patches/reclient-configs", "repo": "src/third_party/engflow-reclient-configs" },
   { "patch_dir": "src/electron/patches/libaom", "repo": "src/third_party/libaom/source/libaom" },
   { "patch_dir": "src/electron/patches/DirectXShaderCompiler", "repo": "src/third_party/dawn/third_party/dxc" },
-  { "patch_dir": "src/electron/patches/dawn", "repo": "src/third_party/dawn" }
+  { "patch_dir": "src/electron/patches/dawn", "repo": "src/third_party/dawn" },
+  { "patch_dir": "src/electron/patches/skia", "repo": "src/third_party/skia" }
 ]

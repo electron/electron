@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 19 Aug 2024 10:12:20 -0400
+Subject: [M126-LTS][ganesh] Fix MeshOp index combination logic
+
+Check total index count in onCombineIfPossible.
+
+Bug: b/360265320
+Change-Id: I02f04593b60dcd2470580110d0a555ed4bf47280
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/890322
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+(cherry picked from commit fdc8c2d593f7dc95b3a98216ec6a4ffa23489516)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/894464
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+
+diff --git a/src/gpu/ganesh/ops/DrawMeshOp.cpp b/src/gpu/ganesh/ops/DrawMeshOp.cpp
+index fe162f20b03a3d472b0f384c555e41ee5ffd6e74..46cf8de9f1c007e4606adbba5de33c61f51e792f 100644
+--- a/src/gpu/ganesh/ops/DrawMeshOp.cpp
++++ b/src/gpu/ganesh/ops/DrawMeshOp.cpp
+@@ -1179,7 +1179,11 @@ GrOp::CombineResult MeshOp::onCombineIfPossible(GrOp* t, SkArenaAlloc*, const Gr
+     if (SkToBool(fIndexCount) != SkToBool(that->fIndexCount)) {
+         return CombineResult::kCannotCombine;
+     }
+-    if (SkToBool(fIndexCount) && fVertexCount > SkToInt(UINT16_MAX) - that->fVertexCount) {
++    if (SkToBool(fIndexCount) &&
++         // Index count would overflow
++        (fIndexCount > INT32_MAX - that->fIndexCount ||
++         // *or* combined vertex count would not be referenceable by uint16 indices
++         fVertexCount > SkToInt(UINT16_MAX) - that->fVertexCount)) {
+         return CombineResult::kCannotCombine;
+     }
+ 

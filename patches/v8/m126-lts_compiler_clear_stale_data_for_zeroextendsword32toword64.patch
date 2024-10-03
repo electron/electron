@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Seth Brenith <seth.brenith@microsoft.com>
+Date: Tue, 6 Aug 2024 23:08:34 -0700
+Subject: [M126-LTS][compiler] Clear stale data for ZeroExtendsWord32ToWord64
+
+The first call to ZeroExtendsWord32ToWord64 produces a correct result,
+but leaves some incorrect values in phi_states_. To avoid incorrect
+behavior, we should clear those values when starting anew.
+
+I think that the performance impact of this change on compilation time
+should be small, because calls to ZeroExtendsWord32ToWord64 are
+infrequent. Here is a histogram showing, per function compiled in
+Octane, how often this new code is run:
+
+0: 74.7%
+1: 13.1%
+2: 6.3%
+3: 2.5%
+4 or 5: 1.7%
+6 to 9: 0.9%
+11 to 33: 0.8%
+
+(cherry picked from commit 780d5608bb8ab63a3cd4b5c4846a3ec41e21c1a8)
+
+Bug: 356196918
+Change-Id: I00a9e74652025bf8a32cb083a6e01c0273e44043
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5766478
+Commit-Queue: Seth Brenith <seth.brenith@microsoft.com>
+Cr-Original-Commit-Position: refs/heads/main@{#95528}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5807474
+Auto-Submit: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Seth Brenith <seth.brenith@microsoft.com>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.6@{#60}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/compiler/backend/instruction-selector.cc b/src/compiler/backend/instruction-selector.cc
+index 87ba3ef5cee6fac6bd6ab8b298f22cde339e4698..430af64601b18ae25d58dbd39c052af33e22014d 100644
+--- a/src/compiler/backend/instruction-selector.cc
++++ b/src/compiler/backend/instruction-selector.cc
+@@ -5499,6 +5499,14 @@ bool InstructionSelectorT<Adapter>::ZeroExtendsWord32ToWord64(
+   const int kMaxRecursionDepth = 100;
+ 
+   if (this->IsPhi(node)) {
++    // Intermediate results from previous calls are not necessarily correct.
++    if (recursion_depth == 0) {
++      static_assert(sizeof(Upper32BitsState) == 1);
++      memset(phi_states_.data(),
++             static_cast<int>(Upper32BitsState::kNotYetChecked),
++             phi_states_.size());
++    }
++
+     Upper32BitsState current = phi_states_[this->id(node)];
+     if (current != Upper32BitsState::kNotYetChecked) {
+       return current == Upper32BitsState::kUpperBitsGuaranteedZero;

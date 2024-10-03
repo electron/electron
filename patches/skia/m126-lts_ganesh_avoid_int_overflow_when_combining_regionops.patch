@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Godfrey-Kittle <jamesgk@google.com>
+Date: Tue, 20 Aug 2024 14:35:00 -0400
+Subject: [M126-LTS][ganesh] Avoid int overflow when combining RegionOps
+
+M126 merge issues:
+  Conflicting includes
+
+Bug: b/360758697
+Change-Id: I46eb92ac6ed71646fb05a910f8d577ec851e3b3f
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/891636
+Commit-Queue: James Godfrey-Kittle <jamesgk@google.com>
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/894463
+Commit-Queue: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Reviewed-by: James Godfrey-Kittle <jamesgk@google.com>
+
+diff --git a/src/gpu/ganesh/ops/RegionOp.cpp b/src/gpu/ganesh/ops/RegionOp.cpp
+index eb4975052aeef3ca1f1f9e2e078b44b44d951e9d..58383775bc8bdd0e98125df01c538e03ef1ebc69 100644
+--- a/src/gpu/ganesh/ops/RegionOp.cpp
++++ b/src/gpu/ganesh/ops/RegionOp.cpp
+@@ -8,6 +8,7 @@
+ #include "src/gpu/ganesh/ops/RegionOp.h"
+ 
+ #include "include/core/SkRegion.h"
++#include "src/base/SkSafeMath.h"
+ #include "src/core/SkMatrixPriv.h"
+ #include "src/gpu/BufferWriter.h"
+ #include "src/gpu/ganesh/GrCaps.h"
+@@ -116,8 +117,14 @@ private:
+ 
+         int numRegions = fRegions.size();
+         int numRects = 0;
++
++        SkSafeMath safeMath;
+         for (int i = 0; i < numRegions; i++) {
+-            numRects += fRegions[i].fRegion.computeRegionComplexity();
++            numRects = safeMath.addInt(numRects, fRegions[i].fRegion.computeRegionComplexity());
++        }
++        if (!safeMath) {
++            // This is a nonsensical draw, so we can just drop it.
++            return;
+         }
+ 
+         if (!numRects) {

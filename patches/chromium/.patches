@@ -145,3 +145,10 @@ cherry-pick-38e4483e47f9.patch
 cherry-pick-1b9040817119.patch
 cherry-pick-99cafbf4b4b9.patch
 cherry-pick-d9f7652c867c.patch
+avoid_accessing_unconnected_outputs_in_audioworklethandler.patch
+m126-lts_fix_a_range_check_for_when_it_overflows.patch
+m126-lts_check_string_range_in_shapesegment.patch
+m126-lts_reland_fix_stringview_to_crash_when_offset_length.patch
+m126-lts_protect_automation_rate_from_non-deterministic_change.patch
+m126-lts_don_t_perform_pseudo-element_ident_parsing_on_non-ascii.patch
+m128_ipcz_validate_link_state_fragment_before_adoption.patch

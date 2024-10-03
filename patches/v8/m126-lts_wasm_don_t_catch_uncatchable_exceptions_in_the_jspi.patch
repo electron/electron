@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Tue, 3 Sep 2024 11:50:45 +0200
+Subject: [M126-LTS][wasm] Don't catch uncatchable exceptions in the JSPI
+ wrapper
+
+M126 merge issues:
+  The HandleStackSwitch function doesn't exist in the LTS branch.
+
+... And forward the exception to the parent stack instead.
+
+R=jkummerow@chromium.org
+
+(cherry picked from commit 9495e79f82f60da191211669e9de1b210d2af1c9)
+
+Fixed: 361717714
+Change-Id: I7c6a75b53bc7732546ec6a7a1425ac50b9b1756b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5817264
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#95847}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5831578
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/12.6@{#62}
+Cr-Branched-From: 3c9fa12db3183a6f4ea53d2675adb66ea1194529-refs/heads/12.6.228@{#2}
+Cr-Branched-From: 981bb15ba4dbf9e2381dfc94ec2c4af0b9c6a0b6-refs/heads/main@{#93835}
+
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index c2cc0458bb644ca362e848a50935c458621475fa..9fc52eeea63f87fede966774007f27d27e3eba34 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -2031,6 +2031,14 @@ Tagged<Object> Isolate::UnwindAndFindHandler() {
+     return exception;
+   };
+ 
++#if V8_ENABLE_WEBASSEMBLY
++  Tagged<Object> maybe_continuation = root(RootIndex::kActiveContinuation);
++  Tagged<WasmContinuationObject> continuation;
++  if (!IsUndefined(maybe_continuation)) {
++    continuation = WasmContinuationObject::cast(maybe_continuation);
++  }
++#endif
++
+   // Special handling of termination exceptions, uncatchable by JavaScript and
+   // Wasm code, we unwind the handlers until the top ENTRY handler is found.
+   bool catchable_by_js = is_catchable_by_javascript(exception);
+@@ -2049,15 +2057,25 @@ Tagged<Object> Isolate::UnwindAndFindHandler() {
+   for (StackFrameIterator iter(this);; iter.Advance(), visited_frames++) {
+ #if V8_ENABLE_WEBASSEMBLY
+     if (iter.frame()->type() == StackFrame::STACK_SWITCH) {
+-      Tagged<Code> code =
+-          builtins()->code(Builtin::kWasmReturnPromiseOnSuspendAsm);
+-      HandlerTable table(code);
+-      Address instruction_start =
+-          code->InstructionStart(this, iter.frame()->pc());
+-      int handler_offset = table.LookupReturn(0);
+-      return FoundHandler(Context(), instruction_start, handler_offset,
+-                          kNullAddress, iter.frame()->sp(), iter.frame()->fp(),
+-                          visited_frames);
++      if (catchable_by_js) {
++        Tagged<Code> code =
++            builtins()->code(Builtin::kWasmReturnPromiseOnSuspendAsm);
++        HandlerTable table(code);
++        Address instruction_start =
++            code->InstructionStart(this, iter.frame()->pc());
++        int handler_offset = table.LookupReturn(0);
++        return FoundHandler(Context(), instruction_start, handler_offset,
++                            kNullAddress, iter.frame()->sp(),
++                            iter.frame()->fp(), visited_frames);
++      } else {
++        // We reached the base of the wasm stack. Follow the chain of
++        // continuations to find the parent stack and reset the iterator.
++        DCHECK(!continuation.is_null());
++        continuation = WasmContinuationObject::cast(continuation->parent());
++        wasm::StackMemory* stack =
++            Managed<wasm::StackMemory>::cast(continuation->stack())->raw();
++        iter.Reset(thread_local_top(), stack);
++      }
+     }
+ #endif
+     // Handler must exist.

@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Mon, 5 Aug 2024 21:00:36 +0000
+Subject: Avoid accessing unconnected outputs in AudioWorkletHandler,
+ AudioHandler
+
+This CL fixes the logic to zero out output buses regardless of the
+outgoing connection status. If an output bus is not connected (or
+disconnected), we should assume that the outgoing connection might
+be stale.
+
+This fix is verified locally by both the author and the reporter.
+
+(cherry picked from commit 52cfa2026953e072539248c4083848740f074afd)
+
+Bug: 354847246
+Change-Id: If10c7bb816e50f7b88252aa9a981b53704724da0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5744142
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1334898}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5762922
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6478@{#1900}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_handler.cc
+index d7dc59a765c566fbbfd94cb3114d4b3611b4bdea..3a49d54dbdc0204b337185678dd5b6aaa31274ae 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_handler.cc
+@@ -398,7 +398,9 @@ bool AudioHandler::InputsAreSilent() {
+ 
+ void AudioHandler::SilenceOutputs() {
+   for (auto& output : outputs_) {
+-    output->Bus()->Zero();
++    if (output->IsConnectedDuringRendering()) {
++      output->Bus()->Zero();
++    }
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
+index 379a964dd281134df70d95a229ceee13f73c76c3..1e723397228fe3ca174b9eeb095fdba04b3172ba 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
+@@ -117,7 +117,9 @@ void AudioWorkletHandler::Process(uint32_t frames_to_process) {
+   // state. If so, silence the connected outputs and return.
+   if (!processor_ || processor_->hasErrorOccurred()) {
+     for (unsigned i = 0; i < NumberOfOutputs(); ++i) {
+-      Output(i).Bus()->Zero();
++      if (Output(i).IsConnectedDuringRendering()) {
++        Output(i).Bus()->Zero();
++      }
+     }
+     return;
+   }
