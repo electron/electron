@@ -95,7 +95,7 @@ index f482ce44b4339e0cf2a57a6a4f9db4d1be5fa178..49604d211b4d406fd59e7da3c4a648dd
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 8e806321258f010d6f084e65b791d725735fb951..ed2dda8326eb3826a068d5268be6d8cfc5a547f6 100644
+index 4805f361cafb7854bd9b4f1c29a15417c88665e4..eb4382c022eb02ee6d73a2712c1b92a66940d593 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -662,8 +662,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
@@ -128,7 +128,7 @@ index 8e806321258f010d6f084e65b791d725735fb951..ed2dda8326eb3826a068d5268be6d8cf
  void V8Initializer::LoadV8SnapshotFromFile(
      base::File snapshot_file,
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index dd9899c3e0dbadfc0074ffce87d51193e1c963cb..cd4bfbbb3b01603220b67dd3201704c5a33d381e 100644
+index cd7b010978f3f595263761e0692945667b9b3f89..328315aaa34fdd24d7b3dfe5373ec366cceaa124 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -7,6 +7,8 @@

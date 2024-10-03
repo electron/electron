@@ -453,10 +453,10 @@ index f71ea08f64ab5cd36f6bd1e2d3d2908d4de80ba6..4b3450b3bd44a35964bd935453861101
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d5fbeedbbafcc5f498229ff465eba300bed69b29..4ba0b6669f76c9b2725e6665f3a8463e02327cc3 100644
+index 050ff22c63d6aba75ef1b41e5ffe3869e016a5a7..c72cff69afab53000392220abc7decde1236e178 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -374,6 +374,7 @@ viz_component("service") {
+@@ -376,6 +376,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -464,7 +464,7 @@ index d5fbeedbbafcc5f498229ff465eba300bed69b29..4ba0b6669f76c9b2725e6665f3a8463e
    }
  
    if (is_android || use_ozone) {
-@@ -648,6 +649,7 @@ viz_source_set("unit_tests") {
+@@ -650,6 +651,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1371,7 +1371,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f19b4c977e1d8ba14f35496660925f9f03440ad5..dd1661815cff79738b40e3e5543c4f7bcebbd5ac 100644
+index 2233bfae37c1339eee79fd3b5636e2e71d3ed2c7..ca2cb6a50970db35c2ac0694d3e165462b3ca6d9 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -403,6 +403,7 @@ component("core") {
