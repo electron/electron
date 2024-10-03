@@ -1,5 +1,6 @@
 import { app, BaseWindow } from 'electron/main';
 import type { OpenDialogOptions, OpenDialogReturnValue, MessageBoxOptions, SaveDialogOptions, SaveDialogReturnValue, MessageBoxReturnValue, CertificateTrustDialogOptions } from 'electron/main';
+
 const dialogBinding = process._linkedBinding('electron_browser_dialog');
 
 enum SaveFileDialogProperties {

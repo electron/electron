@@ -1,9 +1,12 @@
+const { Octokit } = require('@octokit/rest');
+const got = require('got');
+
 const assert = require('node:assert');
 const fs = require('node:fs');
-const got = require('got');
 const path = require('node:path');
+
 const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
-const { Octokit } = require('@octokit/rest');
+
 const octokit = new Octokit();
 
 const APPVEYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds';

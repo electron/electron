@@ -1,4 +1,5 @@
 import got from 'got';
+
 import * as url from 'node:url';
 
 const HASHER_FUNCTION_HOST = 'electron-artifact-hasher.azurewebsites.net';

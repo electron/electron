@@ -1,4 +1,5 @@
 const asar = require('@electron/asar');
+
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 

@@ -1,10 +1,11 @@
-import { closeAllWindows } from './lib/window-helpers';
+import { BaseWindow, BrowserWindow, View, WebContentsView, webContents } from 'electron/main';
+
 import { expect } from 'chai';
 
-import { BaseWindow, View, WebContentsView, webContents } from 'electron/main';
 import { once } from 'node:events';
+
 import { defer } from './lib/spec-helpers';
-import { BrowserWindow } from 'electron';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
