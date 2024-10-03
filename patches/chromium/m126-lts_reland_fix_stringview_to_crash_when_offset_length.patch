@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Thu, 12 Sep 2024 06:17:42 +0000
+Subject: [M126-LTS] Reland "Fix `StringView` to crash when `offset + length`
+ overflows"
+
+This is a reland of commit ba40b993a6b700a2ad0fd092e141783fb1f60e70
+
+The original change failed on mac11-arm64-rel and reverted at
+crrev.com/c/5776005. This is because the unit tests assumed
+that the `SECURITY_DCHECK` is always enabled, but it's
+actually enabled only for DCHECK-enabled builds.
+
+This patch fixes it by wrapping the unit tests by `#if`.
+
+Original change's description:
+> Fix `StringView` to crash when `offset + length` overflows
+>
+> This patch fixes `SECURITY_DCHECK` in `StringView` for when
+> `offset + length` overflows the `unsigned`.
+>
+> Bug: 357622693, 355731798
+> Change-Id: I5a7a7979192fe132496661b1272c5902cdbdb09a
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5775486
+> Auto-Submit: Koji Ishii <kojii@chromium.org>
+> Commit-Queue: Kent Tamura <tkent@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1340005}
+
+(cherry picked from commit 5fe8d13101707cfe668bab004fe705241a12b11d)
+
+Bug: 357622693, 355731798
+Change-Id: I5402234a5fe54bf8dec2c986ab0ab388e1bc783d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5782718
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Kentaro Hara <haraken@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1340817}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5807454
+Auto-Submit: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Fahad Mansoor <fahadmansoor@google.com>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6478@{#1960}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/platform/wtf/text/string_view.h b/third_party/blink/renderer/platform/wtf/text/string_view.h
+index ba3ea1a57f44a51cc3d7b23efc40880e3c421175..96ff7f092c12bceaa8f603fdca10582f988e56d5 100644
+--- a/third_party/blink/renderer/platform/wtf/text/string_view.h
++++ b/third_party/blink/renderer/platform/wtf/text/string_view.h
+@@ -284,7 +284,8 @@ inline StringView::StringView(const StringView& view,
+                               unsigned offset,
+                               unsigned length)
+     : impl_(view.impl_), length_(length) {
+-  SECURITY_DCHECK(offset + length <= view.length());
++  SECURITY_DCHECK(offset <= view.length());
++  SECURITY_DCHECK(length <= view.length() - offset);
+   if (Is8Bit())
+     bytes_ = view.Characters8() + offset;
+   else
+@@ -330,7 +331,8 @@ inline void StringView::Clear() {
+ inline void StringView::Set(const StringImpl& impl,
+                             unsigned offset,
+                             unsigned length) {
+-  SECURITY_DCHECK(offset + length <= impl.length());
++  SECURITY_DCHECK(offset <= impl.length());
++  SECURITY_DCHECK(length <= impl.length() - offset);
+   length_ = length;
+   impl_ = const_cast<StringImpl*>(&impl);
+   if (impl.Is8Bit())
+diff --git a/third_party/blink/renderer/platform/wtf/text/string_view_test.cc b/third_party/blink/renderer/platform/wtf/text/string_view_test.cc
+index d8eb2afaa2ecb8a1fd0fbcc04c4c9b8b3b6cb821..efadac6e98a05ede6270d576dfcdb78dab196431 100644
+--- a/third_party/blink/renderer/platform/wtf/text/string_view_test.cc
++++ b/third_party/blink/renderer/platform/wtf/text/string_view_test.cc
+@@ -374,6 +374,16 @@ TEST(StringViewTest, ConstructionLiteral16) {
+   EXPECT_EQ(String("12"), StringView(kChars16, 2u));
+ }
+ 
++#if ENABLE_SECURITY_ASSERT
++TEST(StringViewTest, OverflowInConstructor) {
++  EXPECT_DEATH_IF_SUPPORTED(StringView(StringView("12"), 2, -1), "");
++}
++
++TEST(StringViewTest, OverflowInSet) {
++  EXPECT_DEATH_IF_SUPPORTED(StringView(String("12"), 2, -1), "");
++}
++#endif  // ENABLE_SECURITY_ASSERT
++
+ TEST(StringViewTest, IsEmpty) {
+   EXPECT_FALSE(StringView(kChars).empty());
+   EXPECT_TRUE(StringView(kChars, 0).empty());

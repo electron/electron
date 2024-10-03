@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Tue, 17 Sep 2024 17:04:42 +0000
+Subject: [M126-LTS] Protect automation_rate_ from non-deterministic change
+
+This CL fixes non-deterministic (racy) data change on
+AudioParamHandler::automation_rate_. It also revises incorrect logic
+in the DelayHandler's process function; the process function
+needs to process all the channels in the delay kernel in the same
+rate. However, the previous code allowed the automation rate to
+change any time even in the middle of processing.
+
+This fix is locally confirmed with the provided repro case,
+and also a test was added to verify other related API surfaces.
+
+(cherry picked from commit ec85a32bb5d736637c934088c14b2b6a42457467)
+
+Bug: 357391257
+Change-Id: I7ce953837edd818e435e3a1b917f6b3c6147d95b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5767447
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1345091}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5854511
+Reviewed-by: Giovanni Pezzino <giovax@google.com>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/6478@{#1962}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param_handler.h b/third_party/blink/renderer/modules/webaudio/audio_param_handler.h
+index 6343c4863b5d325a360489a3f3aab3df860d870c..128f283f8d6150cf8b9062ae034d1112930892fc 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_param_handler.h
+@@ -123,8 +123,12 @@ class AudioParamHandler final : public ThreadSafeRefCounted<AudioParamHandler>,
+   float Value();
+   void SetValue(float);
+ 
+-  AutomationRate GetAutomationRate() const { return automation_rate_; }
++  AutomationRate GetAutomationRate() const {
++    base::AutoLock rate_locker(RateLock());
++    return automation_rate_;
++  }
+   void SetAutomationRate(AutomationRate automation_rate) {
++    base::AutoLock rate_locker(RateLock());
+     automation_rate_ = automation_rate;
+   }
+ 
+@@ -163,6 +167,8 @@ class AudioParamHandler final : public ThreadSafeRefCounted<AudioParamHandler>,
+     return intrinsic_value_.load(std::memory_order_relaxed);
+   }
+ 
++  base::Lock& RateLock() const { return rate_lock_; }
++
+  private:
+   AudioParamHandler(BaseAudioContext&,
+                     AudioParamType,
+@@ -195,8 +201,12 @@ class AudioParamHandler final : public ThreadSafeRefCounted<AudioParamHandler>,
+ 
+   float default_value_;
+ 
++  // Protects `automation_rate_`.
++  mutable base::Lock rate_lock_;
++
+   // The automation rate of the AudioParam (k-rate or a-rate)
+   AutomationRate automation_rate_;
++
+   // `rate_mode_` determines if the user can change the automation rate to a
+   // different value.
+   const AutomationRateMode rate_mode_;
+diff --git a/third_party/blink/renderer/modules/webaudio/delay_handler.cc b/third_party/blink/renderer/modules/webaudio/delay_handler.cc
+index ff3a2ffac5ebeb3841bdbf21bc95981f182358d3..5548e27689acba1c3b301a19567256bf138ebb7f 100644
+--- a/third_party/blink/renderer/modules/webaudio/delay_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/delay_handler.cc
+@@ -59,21 +59,27 @@ void DelayHandler::Process(uint32_t frames_to_process) {
+       source_bus->Zero();
+     }
+ 
+-    base::AutoTryLock try_locker(process_lock_);
+-    if (try_locker.is_acquired()) {
++    base::AutoTryLock process_try_locker(process_lock_);
++    base::AutoTryLock rate_try_locker(delay_time_->RateLock());
++    if (process_try_locker.is_acquired() && rate_try_locker.is_acquired()) {
+       DCHECK_EQ(source_bus->NumberOfChannels(),
+                 destination_bus->NumberOfChannels());
+       DCHECK_EQ(source_bus->NumberOfChannels(), kernels_.size());
+ 
+-      for (unsigned i = 0; i < kernels_.size(); ++i) {
+-        if (delay_time_->HasSampleAccurateValues() &&
+-            delay_time_->IsAudioRate()) {
++      if (delay_time_->IsAudioRate()) {
++        for (unsigned i = 0; i < kernels_.size(); ++i) {
++          // Assumes that the automation rate cannot change in the middle of
++          // the process function. (See crbug.com/357391257)
++          CHECK(delay_time_->IsAudioRate());
+           delay_time_->CalculateSampleAccurateValues(kernels_[i]->DelayTimes(),
+                                                      frames_to_process);
+           kernels_[i]->ProcessARate(source_bus->Channel(i)->Data(),
+                                     destination_bus->Channel(i)->MutableData(),
+                                     frames_to_process);
+-        } else {
++        }
++      } else {
++        for (unsigned i = 0; i < kernels_.size(); ++i) {
++          CHECK(!delay_time_->IsAudioRate());
+           kernels_[i]->SetDelayTime(delay_time_->FinalValue());
+           kernels_[i]->ProcessKRate(source_bus->Channel(i)->Data(),
+                                     destination_bus->Channel(i)->MutableData(),
+diff --git a/third_party/blink/web_tests/webaudio/AudioParam/audioparam-rate-change-357391257.html b/third_party/blink/web_tests/webaudio/AudioParam/audioparam-rate-change-357391257.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e2d8b9aacd25e86a9b0a5f28524777590280c305
+--- /dev/null
++++ b/third_party/blink/web_tests/webaudio/AudioParam/audioparam-rate-change-357391257.html
+@@ -0,0 +1,91 @@
++<!DOCTYPE html>
++<html>
++<head>
++  <meta name="timeout" content="long"/>
++  <title>
++    AudioParam automateRate property change - crbug.com/357391257
++  </title>
++  <script src="../../resources/testharness.js"></script>
++  <script src="../../resources/testharnessreport.js"></script>
++</head>
++<body>
++  <script>
++    const t = async_test('audio-param-rate-change-357391257');
++
++    // The problematic value used in the reproduction code.
++    const testValue = 5;
++
++    // Number of iterations for triggering the issue. A high value can strain
++    // testing resources. Empirically determined: the reported repro case was
++    // aboe to crash in 3 iterations on average.
++    const maxIteration = 3;
++
++    // The original repro only has setValueAtTime() but the fix/test covers
++    // all methods.
++    const subtestTypes = [
++      'setValueAtTime',
++      'linearRampToValueAtTime',
++      'exponentialRampToValueAtTime',
++      'linearRampToValueAtTime',
++      'setTargetAtTime',
++      'setValueCurveAtTime'
++    ];
++
++    let subtestsCompleted = 0;
++
++    const runTest = (iteration, subtestType) => {
++      const context = new AudioContext({sampleRate: 768000});
++      const scriptNode = context.createScriptProcessor();
++      const delayNode = context.createDelay(1);
++
++      scriptNode.onaudioprocess = () => {
++        delayNode.delayTime.automationRate = 'k-rate';
++        delayNode.delayTime.automationRate = 'a-rate';
++      };
++      delayNode.delayTime.linearRampToValueAtTime(1, 2);
++      scriptNode.connect(delayNode).connect(context.destination);
++
++      switch (subtestTypes[subtestType]) {
++        case 'setValueAtTime':
++          delayNode.delayTime.setValueAtTime(testValue, context.currentTime);
++          break;
++        case 'linearRampToValueAtTime':
++          delayNode.delayTime.linearRampToValueAtTime(
++              testValue, context.currentTime);
++          break;
++        case 'exponentialRampToValueAtTime':
++          delayNode.delayTime.exponentialRampToValueAtTime(
++              testValue, context.currentTime);
++          break;
++        case 'setTargetAtTime':
++          delayNode.delayTime.setTargetAtTime(
++              testValue, context.currentTime, 0);
++          break;
++        case 'setValueCurveAtTime':
++          const curve = new Float32Array(2);
++          curve[0] = testValue;
++          curve[1] = 0;
++          // To avoid the schedule overlap with setValueAtTime() above, start
++          // the automation at 2.5s.
++          delayNode.delayTime.setValueCurveAtTime(curve, 2.5, 1);
++          break;
++        defaut:
++          assert_unreached('invalid method test type');
++      }
++
++      if (iteration < maxIteration) {
++        setTimeout(() => runTest(iteration + 1, subtestType), 100);
++      } else {
++        if (++subtestsCompleted === subtestTypes.length) {
++          context.close();
++          t.done();
++        }
++      }
++    };
++
++    window.addEventListener('load', t.step_func(() => {
++      subtestTypes.forEach((_, subtestType) => runTest(0, subtestType));
++    }));
++  </script>
++</body>
++</html>

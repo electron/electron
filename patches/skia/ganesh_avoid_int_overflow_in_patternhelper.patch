@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Godfrey-Kittle <jamesgk@google.com>
+Date: Wed, 28 Aug 2024 10:48:21 -0400
+Subject: [ganesh] Avoid int overflow in PatternHelper
+
+The callers of PatternHelper which are not updated here pass in a TArray
+size as repeatCount, which already prevents overflow:
+https://crsrc.org/c/third_party/skia/include/private/base/SkTArray.h?q=kMaxCapacity
+
+Bug: b/361461526
+Change-Id: I86c494cb00223f0bb8d68540d33d7230b60c9486
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/893916
+Reviewed-by: Brian Osman <brianosman@google.com>
+Commit-Queue: James Godfrey-Kittle <jamesgk@google.com>
+(cherry picked from commit 07fcb9a00233cace0b6cc19ed4bcec6770e0315f)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/896478
+
+diff --git a/src/gpu/ganesh/ops/DashOp.cpp b/src/gpu/ganesh/ops/DashOp.cpp
+index 6f12cc38aa36fb779375b187ea72138397adcf43..56303cd9e87d56973b00dd0c81b803e48a7d8479 100644
+--- a/src/gpu/ganesh/ops/DashOp.cpp
++++ b/src/gpu/ganesh/ops/DashOp.cpp
+@@ -8,6 +8,7 @@
+ #include "src/gpu/ganesh/ops/DashOp.h"
+ 
+ #include "include/gpu/GrRecordingContext.h"
++#include "src/base/SkSafeMath.h"
+ #include "src/core/SkMatrixPriv.h"
+ #include "src/core/SkPointPriv.h"
+ #include "src/gpu/BufferWriter.h"
+@@ -354,6 +355,7 @@ private:
+         STArray<kNumStackDashes, SkRect, true> rects;
+         STArray<kNumStackDashes, DashDraw, true> draws;
+ 
++        SkSafeMath safeMath;
+         int totalRectCount = 0;
+         int rectOffset = 0;
+         rects.push_back_n(3 * instanceCount);
+@@ -520,9 +522,9 @@ private:
+                 devIntervals[0] = lineLength;
+             }
+ 
+-            totalRectCount += !lineDone ? 1 : 0;
+-            totalRectCount += hasStartRect ? 1 : 0;
+-            totalRectCount += hasEndRect ? 1 : 0;
++            totalRectCount = safeMath.addInt(totalRectCount, !lineDone ? 1 : 0);
++            totalRectCount = safeMath.addInt(totalRectCount, hasStartRect ? 1 : 0);
++            totalRectCount = safeMath.addInt(totalRectCount, hasEndRect ? 1 : 0);
+ 
+             if (SkPaint::kRound_Cap == cap && 0 != args.fSrcStrokeWidth) {
+                 // need to adjust this for round caps to correctly set the dashPos attrib on
+@@ -562,7 +564,7 @@ private:
+             draw.fHasEndRect = hasEndRect;
+         }
+ 
+-        if (!totalRectCount) {
++        if (!totalRectCount || !safeMath) {
+             return;
+         }
+ 
+diff --git a/src/gpu/ganesh/ops/DrawAtlasOp.cpp b/src/gpu/ganesh/ops/DrawAtlasOp.cpp
+index 065011699f755b3c87f6cf9a9b19e4d5d42e91df..a3d7e4ddabb1a29ec50b5e1aab88cabcf1445104 100644
+--- a/src/gpu/ganesh/ops/DrawAtlasOp.cpp
++++ b/src/gpu/ganesh/ops/DrawAtlasOp.cpp
+@@ -10,6 +10,7 @@
+ #include "include/core/SkRSXform.h"
+ #include "include/gpu/GrRecordingContext.h"
+ #include "src/base/SkRandom.h"
++#include "src/base/SkSafeMath.h"
+ #include "src/core/SkMatrixPriv.h"
+ #include "src/core/SkRectPriv.h"
+ #include "src/gpu/ganesh/GrCaps.h"
+@@ -280,8 +281,14 @@ GrOp::CombineResult DrawAtlasOpImpl::onCombineIfPossible(GrOp* t,
+         return CombineResult::kCannotCombine;
+     }
+ 
++    SkSafeMath safeMath;
++    int newQuadCount = safeMath.addInt(fQuadCount, that->quadCount());
++    if (!safeMath) {
++        return CombineResult::kCannotCombine;
++    }
++
+     fGeoData.push_back_n(that->fGeoData.size(), that->fGeoData.begin());
+-    fQuadCount += that->quadCount();
++    fQuadCount = newQuadCount;
+ 
+     return CombineResult::kMerged;
+ }
+diff --git a/src/gpu/ganesh/ops/GrMeshDrawOp.cpp b/src/gpu/ganesh/ops/GrMeshDrawOp.cpp
+index 4fdf90b0381996609773e952674aad149b29b98d..5b885f0fd1cae6602d7f0982b91cc2a0af7a8b3b 100644
+--- a/src/gpu/ganesh/ops/GrMeshDrawOp.cpp
++++ b/src/gpu/ganesh/ops/GrMeshDrawOp.cpp
+@@ -7,6 +7,7 @@
+ 
+ #include "src/gpu/ganesh/ops/GrMeshDrawOp.h"
+ 
++#include "include/private/base/SkMath.h"
+ #include "src/gpu/ganesh/GrOpFlushState.h"
+ #include "src/gpu/ganesh/GrOpsRenderPass.h"
+ #include "src/gpu/ganesh/GrRecordingContextPriv.h"
+@@ -81,6 +82,12 @@ void GrMeshDrawOp::PatternHelper::init(GrMeshDrawTarget* target, GrPrimitiveType
+     if (!indexBuffer) {
+         return;
+     }
++
++    // Bail out when we get overflow from really large draws.
++    if (repeatCount < 0 || repeatCount > SK_MaxS32 / verticesPerRepetition) {
++        return;
++    }
++
+     sk_sp<const GrBuffer> vertexBuffer;
+     int firstVertex;
+     int vertexCount = verticesPerRepetition * repeatCount;
+diff --git a/src/gpu/ganesh/ops/LatticeOp.cpp b/src/gpu/ganesh/ops/LatticeOp.cpp
+index d1ae7ad1fa8e06f5fd862867118bd7688ccf209b..ce9d08ac89ee801177fbf7d8fb1466dd68713915 100644
+--- a/src/gpu/ganesh/ops/LatticeOp.cpp
++++ b/src/gpu/ganesh/ops/LatticeOp.cpp
+@@ -9,6 +9,7 @@
+ 
+ #include "include/core/SkBitmap.h"
+ #include "include/core/SkRect.h"
++#include "src/base/SkSafeMath.h"
+ #include "src/core/SkLatticeIter.h"
+ #include "src/core/SkMatrixPriv.h"
+ #include "src/gpu/BufferWriter.h"
+@@ -240,11 +241,13 @@ private:
+ 
+         int patchCnt = fPatches.size();
+         int numRects = 0;
++
++        SkSafeMath safeMath;
+         for (int i = 0; i < patchCnt; i++) {
+-            numRects += fPatches[i].fIter->numRectsToDraw();
++            numRects = safeMath.addInt(numRects, fPatches[i].fIter->numRectsToDraw());
+         }
+ 
+-        if (!numRects) {
++        if (!numRects || !safeMath) {
+             return;
+         }
+ 
+diff --git a/src/gpu/ganesh/ops/RegionOp.cpp b/src/gpu/ganesh/ops/RegionOp.cpp
+index 58383775bc8bdd0e98125df01c538e03ef1ebc69..2ff9d648db32ad9b115c39c7321d3491fb13ae04 100644
+--- a/src/gpu/ganesh/ops/RegionOp.cpp
++++ b/src/gpu/ganesh/ops/RegionOp.cpp
+@@ -122,12 +122,8 @@ private:
+         for (int i = 0; i < numRegions; i++) {
+             numRects = safeMath.addInt(numRects, fRegions[i].fRegion.computeRegionComplexity());
+         }
+-        if (!safeMath) {
+-            // This is a nonsensical draw, so we can just drop it.
+-            return;
+-        }
+ 
+-        if (!numRects) {
++        if (!numRects || !safeMath) {
+             return;
+         }
+ 
