@@ -105,7 +105,13 @@ runs:
         fi
 
         e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          cd out/Default
+          powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
+          powershell Compress-Archive -update gen/v8/embedded.S mksnapshot.zip
+        else
+          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
