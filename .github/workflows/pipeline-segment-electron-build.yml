@@ -9,7 +9,7 @@ on:
         type: string
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, windows or linux'
         required: true
       target-arch:
         type: string
