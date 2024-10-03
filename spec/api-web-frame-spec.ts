@@ -1,8 +1,11 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
-import { defer } from './lib/spec-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { defer } from './lib/spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

@@ -1,10 +1,12 @@
-import { expect } from 'chai';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
 
-import { closeAllWindows } from './lib/window-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
+import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
