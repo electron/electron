@@ -653,7 +653,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index ac1a772808f4755783ac55514ca7b20dbd5dfe8d..177aa0f442446bb079b55c9de2f9dc9f64a4520c 100644
+index 76001bddef2e4662f3f98ecb7439475ea91378aa..06f291bb3ecff3f0948bd671878a4e8d942bbcbb 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -860,10 +860,10 @@ index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d415
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 015bc46e90a0e14e33d4ea65c37767a7f8d5681c..c6f9a35dff7c29df69fc54df41117bfcd5f0ad0e 100644
+index 3ec50c52f1d824c544c77515213f7a50c9870a11..14b84d7fa67796afb390eccd227ba4311f536ffa 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3011,8 +3011,9 @@ source_set("browser") {
+@@ -3001,8 +3001,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -912,10 +912,10 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    virtual mojom::ResultCode OnError();
  
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 7a65f7f2d68edb74fbaf74fe41949ed9cc198b25..4d7c59e93d71b624d4e93e643932c8167536ec6b 100644
+index 1e15568ad872c01c7c588ced81897f8dc229247a..ca528863a2dab2f437bbe95b343ccd334750d410 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -35,6 +35,10 @@
+@@ -36,6 +36,10 @@
  #include "sandbox/policy/mac/utility.sb.h"
  #include "sandbox/policy/mojom/sandbox.mojom.h"
  

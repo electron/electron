@@ -1,6 +1,7 @@
-import { EventEmitter } from 'events';
-import type { BaseWindow as TLWT } from 'electron/main';
 import { TouchBar } from 'electron/main';
+import type { BaseWindow as TLWT } from 'electron/main';
+
+import { EventEmitter } from 'events';
 
 const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as { BaseWindow: typeof TLWT };
 

@@ -5,6 +5,9 @@
 "@electron-ci/echo@file:./fixtures/native-addon/echo":
   version "0.0.1"
 
+"@electron-ci/external-ab@file:./fixtures/native-addon/external-ab":
+  version "0.0.1"
+
 "@electron-ci/is-valid-window@file:./is-valid-window":
   version "0.0.5"
   dependencies:

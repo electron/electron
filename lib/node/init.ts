@@ -1,3 +1,5 @@
+/* eslint-disable import/newline-after-import */
+/* eslint-disable import/order */
 // Initialize ASAR support in fs module.
 import { wrapFsWithAsar } from './asar-fs-wrapper';
 wrapFsWithAsar(require('fs'));

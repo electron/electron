@@ -1,9 +1,10 @@
-import * as url from 'url';
-import { Readable, Writable } from 'stream';
 import type {
   ClientRequestConstructorOptions,
   UploadProgress
 } from 'electron/common';
+
+import { Readable, Writable } from 'stream';
+import * as url from 'url';
 
 const {
   isValidHeaderName,

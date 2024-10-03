@@ -15,10 +15,13 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
-#include "pdf/pdf_features.h"
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/units.h"
 #include "shell/common/thread_restrictions.h"
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf_features.h"
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"

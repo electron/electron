@@ -1,9 +1,12 @@
+import { BrowserWindow } from 'electron';
+import { app } from 'electron/main';
+
+import { expect } from 'chai';
+
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { expect } from 'chai';
-import { BrowserWindow } from 'electron';
+
 import { defer } from './lib/spec-helpers';
-import { app } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('process module', () => {

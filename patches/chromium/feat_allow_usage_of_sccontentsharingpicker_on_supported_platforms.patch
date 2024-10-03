@@ -311,10 +311,10 @@ index 128bca8bb64113418551a20164f67ef5e5a88253..93f86ec79364db1f46c5d2eb015a11cf
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 7adf8264cfa9980c4a8414bf0f8bfa9ad70ec0b3..bab2f0282b191a4263fc964125e199e52c62554b 100644
+index 5b76ef79789414fd1f18b0629873e7722c9fbd1c..fff10d51944ba27556b97abc3222308e440645cd 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -332,8 +332,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -329,8 +329,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -332,10 +332,10 @@ index 7adf8264cfa9980c4a8414bf0f8bfa9ad70ec0b3..bab2f0282b191a4263fc964125e199e5
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -360,13 +368,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
-           std::move(after_start_capture_callback));
-       break;
- #else
+@@ -346,13 +354,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+       }
+ #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
+ 
 +      media::VideoCaptureParams updated_params = params;
 +      updated_params.use_native_picker = stream_type != blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE;
        // All cases other than tab capture or Aura desktop/window capture.

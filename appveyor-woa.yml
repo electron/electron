@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-131.0.6734.0
+image: e-131.0.6734.0-node-20.17-0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -328,4 +328,3 @@ for:
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )

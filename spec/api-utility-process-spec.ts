@@ -1,14 +1,17 @@
-import { expect } from 'chai';
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
+import { systemPreferences } from 'electron';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setImmediate } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
+
+import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
 import { ifit, startRemoteControlApp } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { once } from 'node:events';
-import { pathToFileURL } from 'node:url';
-import { setImmediate } from 'node:timers/promises';
-import { systemPreferences } from 'electron';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -112,6 +115,21 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(exitCode);
+    });
+
+    // 32-bit system will not have V8 Sandbox enabled.
+    // WoA testing does not have VS toolchain configured to build native addons.
+    ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
+      const [type, location, report] = await once(child, 'error');
+      const [code] = await once(child, 'exit');
+      expect(type).to.equal('FatalError');
+      expect(location).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const reportJSON = JSON.parse(report);
+      expect(reportJSON.header.trigger).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const addonPath = path.join(require.resolve('@electron-ci/external-ab'), '..', '..', 'build', 'Release', 'external_ab.node');
+      expect(reportJSON.sharedObjects).to.include(path.toNamespacedPath(addonPath));
+      expect(code).to.not.equal(0);
     });
   });
 
