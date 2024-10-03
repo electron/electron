@@ -82,7 +82,8 @@ std::string GetMimeTypeForUrl(const GURL& url) {
 }
 
 GURL GetThemeUrl(const std::string& path) {
-  return GURL(std::string(content::kChromeUIScheme) + "://" +
+  return GURL(std::string(content::kChromeDevToolsScheme) +
+              url::kStandardSchemeSeparator +
               std::string(chrome::kChromeUIThemeHost) + "/" + path);
 }
 
@@ -177,14 +178,7 @@ class ThemeDataSource : public content::URLDataSource {
   }
 
   std::string GetMimeType(const GURL& url) override {
-    const std::string_view file_path = url.path_piece();
-
-    if (base::EndsWith(file_path, ".css",
-                       base::CompareCase::INSENSITIVE_ASCII)) {
-      return "text/css";
-    }
-
-    return "image/png";
+    return GetMimeTypeForUrl(url);
   }
 
   void SendColorsCss(const GURL& url,
