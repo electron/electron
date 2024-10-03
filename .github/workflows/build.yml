@@ -177,6 +177,44 @@ jobs:
       upload-to-storage: '0'
     secrets: inherit
 
+  windows-x86:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    with:
+      build-runs-on: electron-arc-windows-amd64-16core
+      test-runs-on: windows-latest
+      target-platform: windows
+      target-arch: x86
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  windows-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    with:
+      build-runs-on: electron-arc-windows-amd64-16core
+      test-runs-on: electron-hosted-windows-arm64-4core
+      target-platform: windows
+      target-arch: arm64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
   windows-gn-check:
     strategy:
       matrix:

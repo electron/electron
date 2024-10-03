@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'windows' && fromJSON('["windows"]') || fromJSON('["linux"]')) }}
-        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3]') }}
+        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
