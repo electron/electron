@@ -80,7 +80,7 @@ index b078a4a06c7b3f767e2e01f0bef2ba440f729620..0459568581a3073333ae6afabd3680f2
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 05354407fd600432bae001d1afd66ffae4fe562b..9dd7d8b60b9a13eeffe5355044cd039a56dd8424 100644
+index fb49096b1bd6b54ceaa500db44c38aa47f98cf6c..5b0e28841235ebff05b3c97548f821986baa96ab 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2096,12 +2096,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e67eadd2877ba992c55e7226c9af1e9369d6caa5..86e0677b15bcc855f8376f87618ec557b4ef7b40 100644
+index 71f54a7331e1a297fac194da26337a20fbe69301..ab2d3da2c61d42976b5d6f2460ddf4bea53c9af4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4666,8 +4666,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4667,8 +4667,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
