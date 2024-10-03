@@ -1,3 +1,4 @@
 chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 cherry-pick-81155a8f3b20.patch
+merged_maglev_fix_non-materialized_receiver_closure.patch

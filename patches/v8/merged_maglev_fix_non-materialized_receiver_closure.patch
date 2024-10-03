@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 23 Sep 2024 13:23:59 +0200
+Subject: Merged: [maglev] Fix non-materialized receiver & closure
+
+Stack walks expect the receiver and closure to be materialized.
+
+Bug: 368311899
+
+(cherry picked from commit 6b455eb2c448348b940728241c799c5d7b508c51)
+
+Change-Id: Ib5657712dd49fca6c92d881967228e74a5705a9f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5893176
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.9@{#45}
+Cr-Branched-From: 64a21d7ad7fca1ddc73a9264132f703f35000b69-refs/heads/12.9.202@{#1}
+Cr-Branched-From: da4200b2cfe6eb1ad73c457ed27cf5b7ff32614f-refs/heads/main@{#95679}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index e281e328a8d983a18226ad46b7d17f26ecb964dc..64fc99d3ee8746bcb6403cacd5e86719d45eab07 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -1347,7 +1347,14 @@ DeoptFrame MaglevGraphBuilder::GetDeoptFrameForLazyDeoptHelper(
+           if (result_size == 0 ||
+               !base::IsInRange(reg.index(), result_location.index(),
+                                result_location.index() + result_size - 1)) {
+-            AddDeoptUse(node);
++            // Receiver and closure values have to be materialized, even if
++            // they don't otherwise escape.
++            if (reg == interpreter::Register::receiver() ||
++                reg == interpreter::Register::function_closure()) {
++              node->add_use();
++            } else {
++              AddDeoptUse(node);
++            }
+           }
+         });
+     AddDeoptUse(ret.closure());
