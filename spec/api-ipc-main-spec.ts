@@ -1,10 +1,13 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
-import * as cp from 'node:child_process';
-import { closeAllWindows } from './lib/window-helpers';
-import { defer } from './lib/spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as cp from 'node:child_process';
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { defer } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures');

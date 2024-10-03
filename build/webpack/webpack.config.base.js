@@ -1,8 +1,9 @@
+const TerserPlugin = require('terser-webpack-plugin');
+const webpack = require('webpack');
+const WrapperPlugin = require('wrapper-webpack-plugin');
+
 const fs = require('node:fs');
 const path = require('node:path');
-const webpack = require('webpack');
-const TerserPlugin = require('terser-webpack-plugin');
-const WrapperPlugin = require('wrapper-webpack-plugin');
 
 const electronRoot = path.resolve(__dirname, '../..');
 

@@ -1,5 +1,7 @@
-import { expect } from 'chai';
 import { BrowserWindow } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('process._linkedBinding', () => {

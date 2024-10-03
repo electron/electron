@@ -1,17 +1,20 @@
+import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+
+import * as auth from 'basic-auth';
 import { expect } from 'chai';
+import * as send from 'send';
+
+import * as ChildProcess from 'node:child_process';
 import * as crypto from 'node:crypto';
+import { once } from 'node:events';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as ChildProcess from 'node:child_process';
-import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
-import * as send from 'send';
-import * as auth from 'basic-auth';
-import { closeAllWindows } from './lib/window-helpers';
-import { defer, listen } from './lib/spec-helpers';
-import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+
+import { defer, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

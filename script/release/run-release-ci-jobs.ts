@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import got, { OptionsOfTextResponseBody } from 'got';
+
 import * as assert from 'node:assert';
 
 import { createGitHubTokenStrategy } from './github-token';

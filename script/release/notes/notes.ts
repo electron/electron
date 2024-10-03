@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { resolve as _resolve } from 'node:path';
-
 import { Octokit } from '@octokit/rest';
 import { GitProcess } from 'dugite';
+
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { resolve as _resolve } from 'node:path';
 
 import { ELECTRON_DIR } from '../../lib/utils';
 import { createGitHubTokenStrategy } from '../github-token';

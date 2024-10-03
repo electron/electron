@@ -1,7 +1,8 @@
+import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
+import { ClientRequest } from '@electron/internal/common/api/net-client-request';
+
 import { IncomingMessage } from 'electron/utility';
 import type { ClientRequestConstructorOptions } from 'electron/utility';
-import { ClientRequest } from '@electron/internal/common/api/net-client-request';
-import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
 
 const { isOnline, resolveHost } = process._linkedBinding('electron_common_net');
 

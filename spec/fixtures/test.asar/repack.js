@@ -2,6 +2,7 @@
 // using a new version of the asar package
 
 const asar = require('@electron/asar');
+
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');

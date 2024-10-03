@@ -1,5 +1,7 @@
 import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
+
 import { net } from 'electron/main';
+
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
 const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 

@@ -1,16 +1,17 @@
-import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
-import type { BrowserWindowConstructorOptions, MessageBoxOptions } from 'electron/main';
-
-import * as url from 'url';
-import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
-import { parseFeatures } from '@electron/internal/browser/parse-features-string';
+import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+
+import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
+import type { BrowserWindowConstructorOptions, MessageBoxOptions } from 'electron/main';
+
+import * as path from 'path';
+import * as url from 'url';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.

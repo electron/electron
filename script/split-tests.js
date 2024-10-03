@@ -1,5 +1,6 @@
-const fs = require('node:fs');
 const glob = require('glob');
+
+const fs = require('node:fs');
 
 const currentShard = parseInt(process.argv[2], 10);
 const shardCount = parseInt(process.argv[3], 10);

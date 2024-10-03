@@ -1,6 +1,6 @@
-import path = require('node:path');
-import fs = require('node:fs/promises');
 import { randomBytes } from 'node:crypto';
+import fs = require('node:fs/promises');
+import path = require('node:path');
 
 const IS_CI = !!process.env.CI;
 const ARTIFACT_DIR = path.join(__dirname, '..', 'artifacts');

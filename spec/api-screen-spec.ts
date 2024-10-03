@@ -1,5 +1,6 @@
-import { expect } from 'chai';
 import { Display, screen, desktopCapturer } from 'electron/main';
+
+import { expect } from 'chai';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {

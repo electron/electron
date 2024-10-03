@@ -1,4 +1,5 @@
 const path = require('node:path');
+
 const testLoadLibrary = require('./build/Release/test_module');
 
 const lib = (() => {

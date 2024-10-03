@@ -1,5 +1,5 @@
-const path = require('node:path');
 const childProcess = require('node:child_process');
+const path = require('node:path');
 
 const crashPath = path.join(__dirname, 'node-crash.js');
 const child = childProcess.fork(crashPath, { silent: true });

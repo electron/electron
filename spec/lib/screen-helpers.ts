@@ -1,6 +1,8 @@
 import { screen, desktopCapturer, NativeImage } from 'electron';
-import { createArtifactWithRandomId } from './artifacts';
+
 import { AssertionError } from 'chai';
+
+import { createArtifactWithRandomId } from './artifacts';
 
 export enum HexColors {
   GREEN = '#00b140',
