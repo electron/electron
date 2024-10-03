@@ -1,5 +1,6 @@
-import { once } from 'node:events';
 import * as walkdir from 'walkdir';
+
+import { once } from 'node:events';
 
 export async function getFiles (directoryPath: string, { filter = null }: {filter?: ((file: string) => boolean) | null} = {}) {
   const files: string[] = [];

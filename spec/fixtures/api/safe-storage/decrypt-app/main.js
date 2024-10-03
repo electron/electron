@@ -1,4 +1,5 @@
 const { app, safeStorage } = require('electron');
+
 const { promises: fs } = require('node:fs');
 const path = require('node:path');
 

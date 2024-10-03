@@ -1,4 +1,5 @@
 const { app, BrowserWindow } = require('electron');
+
 const net = require('node:net');
 const path = require('node:path');
 
