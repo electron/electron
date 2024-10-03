@@ -173,6 +173,9 @@ jobs:
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
+          if [ "${{ inputs.target-platform }}" = "windows" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
+            export npm_config_arch="ia32"
+          fi
           node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
