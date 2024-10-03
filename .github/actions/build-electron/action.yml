@@ -75,7 +75,11 @@ runs:
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
-          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
+          target_arch=${{ inputs.target-arch }}
+          if [ "${{ inputs.target-arch }}" = "x86" ]; then
+            target_arch="ia32"
+          fi
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_arch.manifest
         fi
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
