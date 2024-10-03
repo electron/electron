@@ -163,7 +163,7 @@ jobs:
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout the whole damm thing
-      if: ${{ inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-platform == 'windows' }}
       uses: ./src/electron/.github/actions/checkout
       with:
         use-cache: 'false'
