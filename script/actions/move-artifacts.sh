@@ -96,7 +96,7 @@ move_src_dirs_if_exist() {
     fi      
   done
 
-  tar -C src_artifacts -cf src_artifacts.tar ./
+  tar -C src_artifacts -cf src_artifacts.tar .
 
   echo Storing src_artifacts.tar
   mv src_artifacts.tar $SRC_ARTIFACTS
