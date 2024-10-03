@@ -105,17 +105,12 @@ jobs:
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
+        git config --global core.filemode false
+        git config --global core.autocrlf false
+        git config --global branch.autosetuprebase always
         git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
-        if [ "`uname`" = "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
