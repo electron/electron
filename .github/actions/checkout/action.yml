@@ -149,7 +149,10 @@ runs:
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
       rm -rf src/third_party/swift-toolchain
       rm -rf src/third_party/swiftshader/tests/regres/testlists
+      cp src/electron/.github/actions/checkout/action.yml ./
       rm -rf src/electron
+      mkdir -p src/electron/.github/actions/checkout
+      mv action.yml src/electron/.github/actions/checkout
   - name: Compress Src Directory
     if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
