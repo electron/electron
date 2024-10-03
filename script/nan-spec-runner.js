@@ -1,3 +1,5 @@
+const minimist = require('minimist');
+
 const cp = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -13,7 +15,7 @@ if (!require.main) {
   throw new Error('Must call the nan spec runner directly');
 }
 
-const args = require('minimist')(process.argv.slice(2), {
+const args = minimist(process.argv.slice(2), {
   string: ['only']
 });
 

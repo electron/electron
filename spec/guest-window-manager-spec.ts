@@ -1,11 +1,14 @@
 import { BrowserWindow, screen } from 'electron';
+
 import { expect, assert } from 'chai';
+
+import { once } from 'node:events';
+import * as http from 'node:http';
+import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
+
 import { HexColors, ScreenCapture } from './lib/screen-helpers';
 import { ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
-import { once } from 'node:events';
-import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
-import * as http from 'node:http';
 
 describe('webContents.setWindowOpenHandler', () => {
   describe('native window', () => {

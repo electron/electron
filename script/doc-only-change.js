@@ -1,5 +1,8 @@
-const args = require('minimist')(process.argv.slice(2));
 const { Octokit } = require('@octokit/rest');
+const minimist = require('minimist');
+
+const args = minimist(process.argv.slice(2));
+
 const octokit = new Octokit();
 
 async function checkIfDocOnlyChange () {

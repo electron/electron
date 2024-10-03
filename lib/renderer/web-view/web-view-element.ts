@@ -8,9 +8,9 @@
 // which runs in browserify environment instead of Node environment, all native
 // modules must be passed from outside, all included files must be plain JS.
 
+import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { WEB_VIEW_ATTRIBUTES, WEB_VIEW_ERROR_MESSAGES } from '@electron/internal/renderer/web-view/web-view-constants';
 import { WebViewImpl, WebViewImplHooks, setupMethods } from '@electron/internal/renderer/web-view/web-view-impl';
-import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
 const internals = new WeakMap<HTMLElement, WebViewImpl>();
 
