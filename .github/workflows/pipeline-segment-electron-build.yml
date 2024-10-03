@@ -86,9 +86,6 @@ jobs:
     - name: Create src dir
       run: |
         mkdir src
-        if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
-          mkdir -p "C:\Users\ContainerAdministrator\AppData\Roaming\npm"
-        fi
     - name: Checkout Electron
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       with:
