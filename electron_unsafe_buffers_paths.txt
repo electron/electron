@@ -19,6 +19,7 @@
 # These directories are excluded because they come from outside Electron and
 # we don't have control over their contents.
 -base/
+-chrome/
 -components/
 -device/
 -extensions/
