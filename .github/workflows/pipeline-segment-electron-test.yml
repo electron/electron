@@ -71,6 +71,7 @@ jobs:
         choco install -y --no-progress git
         choco install -y --force nodejs --version=20.11.0
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
