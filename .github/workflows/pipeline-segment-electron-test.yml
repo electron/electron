@@ -69,9 +69,13 @@ jobs:
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         choco install git.install --params "'/GitAndUnixToolsOnPath'" -y
         choco install -y --no-progress git
-        choco install -y --force nodejs --version=20.11.0
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Setup Node.js/npm
+      if: ${{ inputs.target-platform == 'windows' }}
+      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
+      with:
+        node-version: 20.11.x
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
