@@ -69,7 +69,7 @@ jobs:
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         choco install git.install --params "'/GitAndUnixToolsOnPath'" -y
         choco install -y --no-progress git
-        choco install python --version 3.7.9
+        choco install -y python --version 3.7.9
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Python37" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -166,6 +166,10 @@ jobs:
         unzip -:o dist.zip
         unzip -:o chromedriver.zip
         unzip -:o mksnapshot.zip
+    - name: Debug
+      run: |
+        ls src/out/Default
+        ls src/out/Default/locales
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
       run: |
