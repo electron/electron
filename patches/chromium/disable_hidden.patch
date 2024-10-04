@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index e309e8b96cd6605fc812fda2ca3c7ece07824e0c..5472056b3731569737df69b62fa7c75c4ffe18a8 100644
+index 5a521aa5a61172954ad09a49c44a22633b1471ac..16d13c2d046523b1bff8369294e0df83aa03b643 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -789,6 +789,9 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -16,14 +16,14 @@ index e309e8b96cd6605fc812fda2ca3c7ece07824e0c..5472056b3731569737df69b62fa7c75c
 +  if (disable_hidden_)
 +    return;
 +
-   RejectPointerLockOrUnlockIfNecessary(
-       blink::mojom::PointerLockResult::kWrongDocument);
- 
+   // Cancel pending pointer lock requests, unless there's an open user prompt.
+   // Prompts should remain open and functional across tab switches.
+   if (!delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 4ce389437e583f3b0beaac78b4935808ee54c98e..e39e793bc2673d438cdf01aa909d72732aa32ae2 100644
+index b8dadc4cca4621e991cdc874e0663cedd3f48d74..34ceb4c605a767e1eaf5434a68132f98b0a4056c 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1017,6 +1017,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1018,6 +1018,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    // Requests a commit and forced redraw in the renderer compositor.
    void ForceRedrawForTesting();
  
