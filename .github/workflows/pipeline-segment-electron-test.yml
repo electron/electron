@@ -173,7 +173,7 @@ jobs:
       run: |
         cd src/electron
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'linux' && 3 || 2 }})
 
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
