@@ -72,7 +72,7 @@ jobs:
         choco install python --version 3.7.9
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo ""C:\Python37" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "C:\Python37" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'windows' }}
       uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
@@ -150,18 +150,22 @@ jobs:
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
-    - name: Unzip Dist, Mksnapshot & Chromedriver
+    - name: Unzip Dist, Mksnapshot & Chromedriver (win)
+      if: ${{ inputs.target-platform == 'windows' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        cd src/out/Default
+        Expand-Archive dist.zip -DestinationPath ./
+        Expand-Archive chromedriver.zip -DestinationPath ./
+        Expand-Archive mksnapshot.zip -DestinationPath ./
+    - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
+      if: ${{ inputs.target-platform != 'windows' }}
       run: |
         cd src/out/Default
-        if [ "${{ inputs.target-platform }}" = "windows" ]; then
-          tar -xf dist.zip
-          tar -xf chromedriver.zip
-          tar -xf mksnapshot.zip
-        else
-          unzip -:o dist.zip
-          unzip -:o chromedriver.zip
-          unzip -:o mksnapshot.zip
-        fi
+        unzip -:o dist.zip
+        unzip -:o chromedriver.zip
+        unzip -:o mksnapshot.zip
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
       run: |
