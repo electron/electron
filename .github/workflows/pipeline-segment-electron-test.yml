@@ -156,9 +156,9 @@ jobs:
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
         cd src/out/Default
-        Expand-Archive dist.zip -DestinationPath ./
-        Expand-Archive chromedriver.zip -DestinationPath ./
-        Expand-Archive mksnapshot.zip -DestinationPath ./
+        Expand-Archive -Force dist.zip -DestinationPath ./
+        Expand-Archive -Force chromedriver.zip -DestinationPath ./
+        Expand-Archive -Force mksnapshot.zip -DestinationPath ./
     - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
       if: ${{ inputs.target-platform != 'windows' }}
       run: |
