@@ -18,12 +18,20 @@ export async function copyApp (targetDir: string): Promise<string> {
   const baseDir = path.dirname(process.execPath);
   const zipManifestPath = path.resolve(__dirname, '..', '..', 'script', 'zip_manifests', `dist_zip.${process.platform === 'win32' ? 'win' : 'linux'}.${process.arch}.manifest`);
   const filesToCopy = (fs.readFileSync(zipManifestPath, 'utf-8')).split('\n').filter(f => f !== 'LICENSE' && f !== 'LICENSES.chromium.html' && f !== 'version' && f.trim());
-  await Promise.all(
-    filesToCopy.map(async rel => {
-      await fs.promises.mkdir(path.dirname(path.resolve(targetDir, rel)), { recursive: true });
-      fs.copyFileSync(path.resolve(baseDir, rel), path.resolve(targetDir, rel));
-    })
-  );
+  const dirsToMake: string[] = [];
+  for (const rel of filesToCopy) {
+    const dir = path.dirname(path.resolve(targetDir, rel));
+    if (!dirsToMake.includes(dir)) {
+      dirsToMake.push(dir);
+    }
+  }
+  for (const dir of dirsToMake) {
+    await fs.promises.mkdir(dir, { recursive: true });
+  }
+
+  for (const rel of filesToCopy) {
+    fs.copyFileSync(path.resolve(baseDir, rel), path.resolve(targetDir, rel));
+  }
 
   return path.resolve(targetDir, path.basename(process.execPath));
 }
