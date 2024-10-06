@@ -3,6 +3,7 @@
 *.patch text eol=lf
 DEPS text eol=lf
 yarn.lock text eol=lf
+script/zip_manifests/*.manifest text eol=lf
 patches/**/.patches merge=union
 
 # Source code and markdown files should always use LF as line ending.
