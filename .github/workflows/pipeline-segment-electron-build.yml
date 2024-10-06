@@ -149,6 +149,10 @@ jobs:
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Generate DEPS Hash
       run: |
+        if ! command -v sha1sum 2>&1 >/dev/null
+        then
+            alias sha1sum=shasum
+        fi
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash && cat src/electron/.depshash-target
         DEPSHASH=v1-src-cache-$(sha1sum src/electron/.depshash | cut -f1 -d' ')
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
@@ -179,6 +183,10 @@ jobs:
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
     - name: Regenerate DEPS Hash
       run: |
+        if ! command -v sha1sum 2>&1 >/dev/null
+        then
+            alias sha1sum=shasum
+        fi
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash && cat src/electron/.depshash-target
         echo "DEPSHASH=$(sha1sum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
@@ -189,7 +197,11 @@ jobs:
     - name: Install build-tools & Setup RBE
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
-        cd $(cygpath -u "$(e show depotdir)")/../..
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          cd $(cygpath -u "$(e show depotdir)")/../..
+        else
+          cd "$(e show depotdir)/../.."
+        fi
         npx yarn --ignore-engines
         # Pull down credential helper and print status
         node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"

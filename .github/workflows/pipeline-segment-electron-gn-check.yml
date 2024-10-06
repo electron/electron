@@ -120,6 +120,10 @@ jobs:
         echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
     - name: Generate DEPS Hash
       run: |
+        if ! command -v sha1sum 2>&1 >/dev/null
+        then
+            alias sha1sum=shasum
+        fi
         node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash && cat src/electron/.depshash-target
         DEPSHASH=v1-src-cache-$(sha1sum src/electron/.depshash | cut -f1 -d' ')
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
@@ -146,6 +150,10 @@ jobs:
         fi
     - name: Regenerate DEPS Hash
       run: |
+        if ! command -v sha1sum 2>&1 >/dev/null
+        then
+            alias sha1sum=shasum
+        fi
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
         echo "DEPSHASH=$(sha1sum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
