@@ -67,10 +67,10 @@ jobs:
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        choco install git.install --params "'/GitAndUnixToolsOnPath'" -y
+        choco install -y --no-progress git.install --params "'/GitAndUnixToolsOnPath'"
         choco install -y --no-progress git
-        choco install -y python --version 3.7.9
-        choco install -y visualstudio2022-workload-vctools
+        choco install -y --no-progress python --version 3.7.9
+        choco install -y --no-progress visualstudio2022-workload-vctools
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Python37" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
