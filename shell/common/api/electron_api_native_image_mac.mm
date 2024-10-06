@@ -148,8 +148,6 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
               .AsNSImage());
     }
 
-    auto span = UNSAFE_BUFFERS(base::span(reinterpret_
-
     return CreateFromPNG(args->isolate(), as_bytes(png_data));
   }
 }
