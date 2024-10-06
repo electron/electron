@@ -26,6 +26,15 @@
 
 namespace electron::api {
 
+namespace {
+
+base::span<const uint8_t> as_bytes(NSData* data) {
+  return UNSAFE_BUFFERS(base::span{
+      reinterpret_cast<const uint8_t*>([data bytes]), [data length]});
+}
+
+}  // namespace
+
 NSData* bufferFromNSImage(NSImage* image) {
   CGImageRef ref = [image CGImageForProposedRect:nil context:nil hints:nil];
   NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithCGImage:ref];
@@ -139,8 +148,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
               .AsNSImage());
     }
 
-    return CreateFromPNG(args->isolate(), (char*)[png_data bytes],
-                         [png_data length]);
+    auto span = UNSAFE_BUFFERS(base::span(reinterpret_
+
+    return CreateFromPNG(args->isolate(), as_bytes(png_data));
   }
 }
 
