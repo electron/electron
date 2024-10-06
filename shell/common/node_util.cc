@@ -4,6 +4,7 @@
 
 #include "shell/common/node_util.h"
 
+#include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
@@ -63,6 +64,12 @@ void EmitWarning(v8::Isolate* isolate,
       emit_warning;
   process.Get("emitWarning", &emit_warning);
   emit_warning.Run(warning_msg, warning_type, "");
+}
+
+base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
+  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
+  const auto size = node::Buffer::Length(node_buffer);
+  return UNSAFE_BUFFERS(base::span{data, size});
 }
 
 }  // namespace electron::util
