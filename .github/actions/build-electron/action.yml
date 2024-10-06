@@ -86,7 +86,7 @@ runs:
       run: |
         cd src
         e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-        e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
         if [ "`uname`" = "Darwin" ]; then

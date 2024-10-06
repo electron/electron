@@ -11,7 +11,7 @@ runs:
         git config --global core.autocrlf false
         git config --global branch.autosetuprebase always
       fi
-      export BUILD_TOOLS_SHA=33dc5186556bfbf7b0121a00cdd89ed3802e47da
+      export BUILD_TOOLS_SHA=c3e81edd054e26ec95167b6d87fe5add11dc79e6
       npm i -g @electron/build-tools
       e auto-update disable
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
