@@ -140,7 +140,7 @@ jobs:
       run: |
         cd src
 
-        for target_cpu in "${{ inputs.target-archs }}"
+        for target_cpu in ${{ inputs.target-archs }}
         do
           export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
           if [ "${{ inputs.target-platform }}" = "linux" ]; then
