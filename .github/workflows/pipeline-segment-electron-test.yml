@@ -167,11 +167,6 @@ jobs:
         unzip -:o dist.zip
         unzip -:o chromedriver.zip
         unzip -:o mksnapshot.zip
-    - name: Debug
-      run: |
-        echo $(pwd)
-        ls src/out/Default
-        ls src/out/Default/locales
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
       run: |
