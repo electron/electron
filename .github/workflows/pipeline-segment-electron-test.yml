@@ -169,6 +169,7 @@ jobs:
         unzip -:o mksnapshot.zip
     - name: Debug
       run: |
+        echo $(pwd)
         ls src/out/Default
         ls src/out/Default/locales
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS

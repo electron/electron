@@ -31,6 +31,10 @@ export async function copyApp (targetDir: string): Promise<string> {
 
   console.log('copying to:', targetDir);
   for (const rel of filesToCopy) {
+    console.log('base:', baseDir);
+    console.log('rel:', rel);
+    console.log('dir:', path.dirname(path.resolve(baseDir, rel)));
+    console.log('exists p:', path.resolve(baseDir, rel));
     console.log('ls base:', fs.readdirSync(baseDir));
     console.log('ls dir:', fs.readdirSync(path.dirname(path.resolve(baseDir, rel))));
     console.log('exists rel:', fs.existsSync(path.resolve(baseDir, rel)));
