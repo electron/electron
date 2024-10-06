@@ -29,7 +29,11 @@ export async function copyApp (targetDir: string): Promise<string> {
     await fs.promises.mkdir(dir, { recursive: true });
   }
 
+  console.log('copying to:', targetDir);
   for (const rel of filesToCopy) {
+    console.log('ls base:', fs.readdirSync(baseDir));
+    console.log('ls dir:', fs.readdirSync(path.dirname(path.resolve(baseDir, rel))));
+    console.log('exists rel:', fs.existsSync(path.resolve(baseDir, rel)));
     fs.copyFileSync(path.resolve(baseDir, rel), path.resolve(targetDir, rel));
   }
 
