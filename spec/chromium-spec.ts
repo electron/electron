@@ -623,7 +623,9 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    it('should lock the keyboard', async () => {
+    // TODO: Re-enable for windows on GitHub Actions,
+    // fullscreen tests seem to hang on GHA specifically
+    ifit(process.platform !== 'win32')('should lock the keyboard', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
@@ -2872,7 +2874,9 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
+  // TODO: Re-enable for windows on GitHub Actions,
+  // fullscreen tests seem to hang on GHA specifically
+  ifit(process.platform !== 'darwin' && process.platform !== 'win32')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
     const html =
       `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
@@ -2924,7 +2928,9 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 
   // TODO(jkleinsc) fix this flaky test on WOA
-  ifit(process.platform !== 'win32' || process.arch !== 'arm64')('can fullscreen from in-process iframes', async () => {
+  // TODO: Re-enable for windows on GitHub Actions,
+  // fullscreen tests seem to hang on GHA specifically
+  ifit(process.platform !== 'win32')('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
