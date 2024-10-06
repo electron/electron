@@ -70,6 +70,7 @@ jobs:
         choco install git.install --params "'/GitAndUnixToolsOnPath'" -y
         choco install -y --no-progress git
         choco install -y python --version 3.7.9
+        choco install -y visualstudio2022-workload-vctools
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Python37" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -187,6 +188,7 @@ jobs:
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
+        ELECTRON_ENABLE_LOGGING: '1'
       run: |
         cd src/electron
         # Get which tests are on this shard
