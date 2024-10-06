@@ -406,10 +406,10 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
     if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
       if (mime_type == "image/png") {
         skia_rep_added = electron::util::AddImageSkiaRepFromPNG(
-            &image_skia, base::as_bytes(base::span(data)), scale_factor);
+            &image_skia, base::as_byte_span(data), scale_factor);
       } else if (mime_type == "image/jpeg") {
         skia_rep_added = electron::util::AddImageSkiaRepFromJPEG(
-            &image_skia, base::as_bytes(base::span(data)), scale_factor);
+            &image_skia, base::as_byte_span(data), scale_factor);
       }
     }
   }
@@ -562,9 +562,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
   std::string mime_type, charset, data;
   if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
     if (mime_type == "image/png")
-      return CreateFromPNG(isolate, base::as_bytes(base::span(data)));
+      return CreateFromPNG(isolate, base::as_byte_span(data));
     if (mime_type == "image/jpeg")
-      return CreateFromJPEG(isolate, base::as_bytes(base::span(data)));
+      return CreateFromJPEG(isolate, base::as_byte_span(data));
   }
 
   return CreateEmpty(isolate);
