@@ -7,9 +7,9 @@ on:
         type: string
         description: 'Platform to run on, can be macos, windows or linux'
         required: true
-      target-arch:
+      target-archs:
         type: string
-        description: 'Arch to build for, can be x64, arm64 or arm'
+        description: 'Archs to check for, can be x64, x86, arm64 or arm space separated'
         required: true
       check-runs-on:
         type: string
@@ -25,32 +25,23 @@ on:
         required: true
         type: string
         default: testing
-      is-asan: 
-        description: 'Building the Address Sanitizer (ASan) Linux build'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
-  group: electron-gn-check-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref }}
+  group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
   ELECTRON_OUT_DIR: Default
-  TARGET_ARCH: ${{ inputs.target-arch }}
 
 jobs:
   gn-check:
     defaults:
       run:
         shell: bash
-    # TODO(codebytere): Change this to medium VM
     runs-on: ${{ inputs.check-runs-on }}
     container: ${{ fromJSON(inputs.check-container) }}
-    env:
-      TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -78,7 +69,7 @@ jobs:
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --only-sdk
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -100,20 +91,6 @@ jobs:
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
-    - name: Set GN_EXTRA_ARGS for Linux
-      if: ${{ inputs.target-platform == 'linux' }}
-      run: |
-        if [ "${{ inputs.target-arch  }}" = "arm" ]; then
-          GN_EXTRA_ARGS='build_tflite_with_xnnpack=false'
-        elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          GN_EXTRA_ARGS='fatal_linker_warnings=false enable_linux_installer=false'
-        fi
-        echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
-    - name: Set GN_EXTRA_ARGS for Win/cross
-      if: ${{ inputs.target-platform == 'windows' }}
-      run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
-        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Enable windows toolchain
       if: ${{ inputs.target-platform == 'windows' }}
       run: |
@@ -159,20 +136,35 @@ jobs:
       run: |
         cd src/electron
         git pack-refs
-        cd ..
-
-        e build --only-gen
-    - name: Run GN Check
+    - name: Run GN Check for ${{ inputs.target-archs }}
       run: |
         cd src
-        e d gn check out/Default //electron:electron_lib
-        e d gn check out/Default //electron:electron_app
-        e d gn check out/Default //electron/shell/common:mojo
-        e d gn check out/Default //electron/shell/common:plugin
 
-        # Check the hunspell filenames
-        node electron/script/gen-hunspell-filenames.js --check
-        node electron/script/gen-libc++-filenames.js --check
+        for target_cpu in "${{ inputs.target-archs }}"
+        do
+          export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
+          if [ "${{ inputs.target-platform }}" = "linux" ]; then
+            if [ "$target_cpu" = "arm" ]; then
+              export GN_EXTRA_ARGS="$GN_EXTRA_ARGS build_tflite_with_xnnpack=false"
+            elif [ "$target_cpu" = "arm64" ]; then
+              export GN_EXTRA_ARGS="$GN_EXTRA_ARGS fatal_linker_warnings=false enable_linux_installer=false"
+            fi
+          fi
+          if [ "${{ inputs.target-platform }}" = "windows" ]; then
+            export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
+          fi
+
+          e build --only-gen
+
+          e d gn check out/Default //electron:electron_lib
+          e d gn check out/Default //electron:electron_app
+          e d gn check out/Default //electron/shell/common:mojo
+          e d gn check out/Default //electron/shell/common:plugin
+
+          # Check the hunspell filenames
+          node electron/script/gen-hunspell-filenames.js --check
+          node electron/script/gen-libc++-filenames.js --check
+        done
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       shell: bash
