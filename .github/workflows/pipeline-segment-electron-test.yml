@@ -159,7 +159,6 @@ jobs:
         Expand-Archive -Force dist.zip -DestinationPath ./
         Expand-Archive -Force chromedriver.zip -DestinationPath ./
         Expand-Archive -Force mksnapshot.zip -DestinationPath ./
-        Set-DisplayResolution -Width 1920 -Height 1080 -Force
     - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
       if: ${{ inputs.target-platform != 'windows' }}
       run: |
