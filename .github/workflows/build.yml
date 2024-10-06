@@ -11,12 +11,12 @@ on:
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
-        default: true
+        default: false
         required: false
       skip-linux:
         type: boolean
         description: 'Skip Linux builds'
-        default: true
+        default: false
         required: false
       skip-windows:
         type: boolean
@@ -26,7 +26,7 @@ on:
       skip-lint:
         type: boolean
         description: 'Skip lint check'
-        default: true
+        default: false
         required: false
   push:
     branches:
