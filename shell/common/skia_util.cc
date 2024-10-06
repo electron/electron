@@ -68,10 +68,9 @@ bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
 }
 
 bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
-                             const unsigned char* data,
-                             size_t size,
+                             const base::span<const uint8_t> data,
                              double scale_factor) {
-  auto bitmap = gfx::JPEGCodec::Decode(data, size);
+  auto bitmap = gfx::JPEGCodec::Decode(data.data(), data.size());
   if (!bitmap)
     return false;
 
@@ -99,7 +98,8 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
     return true;
 
   // Try JPEG second.
-  if (AddImageSkiaRepFromJPEG(image, data, size, scale_factor))
+  if (AddImageSkiaRepFromJPEG(
+          image, base::as_bytes(base::make_span(data, size)), scale_factor))
     return true;
 
   if (width == 0 || height == 0)

@@ -410,7 +410,7 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
             &image_skia, data_ptr, data.size(), scale_factor);
       } else if (mime_type == "image/jpeg") {
         skia_rep_added = electron::util::AddImageSkiaRepFromJPEG(
-            &image_skia, data_ptr, data.size(), scale_factor);
+            &image_skia, base::as_bytes(base::span(data)), scale_factor);
       }
     }
   }
@@ -457,7 +457,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromJPEG(v8::Isolate* isolate,
                                                      size_t length) {
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromJPEG(
-      &image_skia, reinterpret_cast<const unsigned char*>(buffer), length, 1.0);
+      &image_skia, base::as_bytes(base::make_span(buffer, length)), 1.0);
   return Create(isolate, gfx::Image(image_skia));
 }
 
