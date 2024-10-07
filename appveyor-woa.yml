@@ -45,10 +45,16 @@ environment:
   matrix:
 
     - job_name: Build Arm on X64 Windows
-    - job_name: Test On Windows On Arm Hardware
+    - job_name: Test On Windows On Arm Hardware 1
       job_depends_on: Build Arm on X64 Windows
       APPVEYOR_BUILD_WORKER_IMAGE: base-woa
       APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
+      shard: 1
+    - job_name: Test On Windows On Arm Hardware 2
+      job_depends_on: Build Arm on X64 Windows
+      APPVEYOR_BUILD_WORKER_IMAGE: base-woa
+      APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
+      shard: 2
 
 clone_script:
 - ps: git clone -q $("--branch=" + $Env:APPVEYOR_REPO_BRANCH) $("https://github.com/" + $Env:APPVEYOR_REPO_NAME + ".git") $Env:APPVEYOR_BUILD_FOLDER
@@ -254,7 +260,8 @@ for:
           }
   - matrix:
       only:
-        - job_name: Test On Windows On Arm Hardware
+        - job_name: Test On Windows On Arm Hardware 1
+        - job_name: Test On Windows On Arm Hardware 2
 
     environment:
         IGNORE_YARN_INSTALL_ERROR: 1
@@ -321,7 +328,9 @@ for:
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
+      - ps: $env:tests_files=node script\split-tests $env:shard 2
+      - echo "Running shard %shard% specs %tests_files%"
+      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion --files %tests_files%
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
 
