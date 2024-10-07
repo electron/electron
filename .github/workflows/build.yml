@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'cf814a4d2501e8e843caea071a6b70a48e78b855'
+        default: '77262e58c37631ab082482f42c33cdf68c6c394b'
         required: true
       skip-macos:
         type: boolean
