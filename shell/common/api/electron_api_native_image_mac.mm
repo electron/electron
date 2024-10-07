@@ -28,7 +28,7 @@ namespace electron::api {
 
 namespace {
 
-base::span<const uint8_t> as_bytes(NSData* data) {
+base::span<const uint8_t> as_byte_span(NSData* data) {
   return UNSAFE_BUFFERS(base::span{
       reinterpret_cast<const uint8_t*>([data bytes]), [data length]});
 }
@@ -136,9 +136,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
     NSData* png_data = bufferFromNSImage(image);
 
     if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
-      gfx::Image gfx_image = gfx::Image::CreateFrom1xPNGBytes(
-          {reinterpret_cast<const uint8_t*>((char*)[png_data bytes]),
-           [png_data length]});
+      auto gfx_image = gfx::Image::CreateFrom1xPNGBytes(as_byte_span(png_data));
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
                                 safeShift(hsl_shift[1], 0.5),
                                 safeShift(hsl_shift[2], 0.5)};
@@ -148,7 +146,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
               .AsNSImage());
     }
 
-    return CreateFromPNG(args->isolate(), as_bytes(png_data));
+    return CreateFromPNG(args->isolate(), as_byte_span(png_data));
   }
 }
 
