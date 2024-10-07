@@ -653,7 +653,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 76001bddef2e4662f3f98ecb7439475ea91378aa..06f291bb3ecff3f0948bd671878a4e8d942bbcbb 100644
+index e61e108ceefc53f1727102438a0f1b17d4cbbab6..95792ed1398b574faf5f1c24962ee0997074dd1e 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -51,6 +51,7 @@
@@ -817,7 +817,7 @@ index 76001bddef2e4662f3f98ecb7439475ea91378aa..06f291bb3ecff3f0948bd671878a4e8d
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 14de029740ffbebe06d309651c1a2c007d9fb96b..e9bf9c5bef2a9235260e7d6c8d26d41528e38661 100644
+index 9c91fdf50b38ad437279eaada4359a7a95911d07..8eed4887949d0c30f067d86aaa971ee5aaecd2ca 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -251,7 +251,7 @@ class PrintRenderFrameHelper
