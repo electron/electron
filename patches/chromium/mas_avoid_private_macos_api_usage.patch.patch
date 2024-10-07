@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3d88f3d8db0136741c31f9a8922d0535b31a6618..f6c57f5e8efa22206c208cbeeb52a7bb49339249 100644
+index aa1654d428420e99bdce3abf3140f764d73e7c48..3d989d0d38ec85b44f89a525cda922e636aa3ce9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1036,6 +1036,7 @@ component("base") {
@@ -771,7 +771,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2cfb947c33e8479467b4aae213ee58b16fd42326..d235cf3d40a5804b7681160cf0c6ed4c4843c0d3 100644
+index 3788cc19ac4abf84ad856a15b94f88fb4fdec00d..26a601565370e0ae4479eea7207e58dedef38e14 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -638,6 +638,7 @@ static_library("test_support") {
@@ -798,7 +798,7 @@ index 2cfb947c33e8479467b4aae213ee58b16fd42326..d235cf3d40a5804b7681160cf0c6ed4c
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3211,6 +3214,7 @@ test("content_unittests") {
+@@ -3206,6 +3209,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1782,10 +1782,10 @@ index 35b71abc95f83bb01dba3f69e2d69a026840b7a2..6a2ff6768f16e503657cdb7ff6be7587
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c0a85b2cfc69a4f358ae03c65e774cdc45085bf6..27d77dfed33c69ede2b5a0326e763cb6c87200ef 100644
+index c95b3ce1e1e7b87aab25cf596eb34eea6590db68..0336b2332d8274bd5fe71e4506d3de7b15830576 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -333,6 +333,12 @@ component("gfx") {
+@@ -335,6 +335,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
