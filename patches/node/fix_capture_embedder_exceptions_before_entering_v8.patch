@@ -10,7 +10,7 @@ in the nodejs test suite. Need to be followed-up with upstream
 on the broader change as there maybe other callsites.
 
 diff --git a/src/handle_wrap.cc b/src/handle_wrap.cc
-index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c201f6326a 100644
+index be02d4aaa04685cbd6a9ecfe082e38f179129ab5..277748a30bd97ae816d9ba1f2d73851a29b81010 100644
 --- a/src/handle_wrap.cc
 +++ b/src/handle_wrap.cc
 @@ -148,6 +148,9 @@ void HandleWrap::OnClose(uv_handle_t* handle) {
@@ -24,10 +24,10 @@ index 69e2a389f9e1480a1a4ba37f5df5356b42f7d52d..0c29b00298b44b97f88a63aa5b89f1c2
        wrap->object()->Has(env->context(), env->handle_onclose_symbol())
        .FromMaybe(false)) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index d873792ab95e41d54579f552c6c1fa43447ca4cd..708fa03d088e67a50dc4e69bb3f2cc14529dc3f1 100644
+index 8951cd378a9025f58fada47cf96f686d14639f95..6456d87d4202c013aafe071adbac06852b3ae2c1 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -460,6 +460,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
+@@ -487,6 +487,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
  void ContextifyContext::PropertyGetterCallback(
      Local<Name> property,
      const PropertyCallbackInfo<Value>& args) {
@@ -35,7 +35,7 @@ index d873792ab95e41d54579f552c6c1fa43447ca4cd..708fa03d088e67a50dc4e69bb3f2cc14
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -467,6 +468,8 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -494,6 +495,8 @@ void ContextifyContext::PropertyGetterCallback(
  
    Local<Context> context = ctx->context();
    Local<Object> sandbox = ctx->sandbox();
@@ -44,7 +44,7 @@ index d873792ab95e41d54579f552c6c1fa43447ca4cd..708fa03d088e67a50dc4e69bb3f2cc14
    MaybeLocal<Value> maybe_rv =
        sandbox->GetRealNamedProperty(context, property);
    if (maybe_rv.IsEmpty()) {
-@@ -476,6 +479,11 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -503,6 +506,11 @@ void ContextifyContext::PropertyGetterCallback(
  
    Local<Value> rv;
    if (maybe_rv.ToLocal(&rv)) {

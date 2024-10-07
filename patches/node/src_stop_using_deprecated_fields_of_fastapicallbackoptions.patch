@@ -12,7 +12,7 @@ branch of Node.js. This patch can be removed when Electron upgrades to
 a stable Node release that contains the change. -- Charles)
 
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 4f58359fe58529329fca8b13d4d4655d87a097f2..18983209db834d10faad6c2a56658ab060bcd097 100644
+index 4dbdea9be5721486d71a9dda77311b4919d450a3..4aacaa2a5d12533a039b4b96cb7f1fd79063d50f 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
 @@ -193,7 +193,8 @@ void HistogramBase::FastRecord(Local<Value> receiver,
