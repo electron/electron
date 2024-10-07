@@ -542,6 +542,13 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   return existing_grant;
 }
 
+bool FileSystemAccessPermissionContext::IsFileTypeDangerous(
+    const base::FilePath& path,
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  return false;
+}
+
 bool FileSystemAccessPermissionContext::CanObtainReadPermission(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
