@@ -1,0 +1,345 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <cwu631@bloomberg.net>
+Date: Wed, 7 Aug 2024 22:56:59 +0100
+Subject: src: skip inspector wait in internal workers
+
+Internal workers are essential to load user scripts and bootstrapped
+with internal entrypoints. They should not be waiting for inspectors
+even when `--inspect-brk` and `--inspect-wait` were specified, and avoid
+blocking main thread to bootstrap.
+
+IsolateData can be created with a specified PerIsolateOptions instead of
+creating a copy from the per_process namespace. This also avoids
+creating a copy bypassing the parent env's modified options, like
+creating a worker thread from a worker thread.
+
+PR-URL: https://github.com/nodejs/node/pull/54219
+Fixes: https://github.com/nodejs/node/issues/53681
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index bb6c6d51846fed1d160ec9dcd5a5dd67b4fef911..cb9269a31e073caf86164aa39c0640370ade60fd 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -382,9 +382,8 @@ IsolateData* CreateIsolateData(
+     MultiIsolatePlatform* platform,
+     ArrayBufferAllocator* allocator,
+     const EmbedderSnapshotData* embedder_snapshot_data) {
+-  const SnapshotData* snapshot_data =
+-      SnapshotData::FromEmbedderWrapper(embedder_snapshot_data);
+-  return new IsolateData(isolate, loop, platform, allocator, snapshot_data);
++  return IsolateData::CreateIsolateData(
++      isolate, loop, platform, allocator, embedder_snapshot_data);
+ }
+ 
+ void FreeIsolateData(IsolateData* isolate_data) {
+diff --git a/src/env-inl.h b/src/env-inl.h
+index c5973e430debcf354afb9c9288c9ba8cf8f538ee..9fc934975b015b97ddd84bf3eea5d53144130035 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -551,11 +551,6 @@ inline std::shared_ptr<PerIsolateOptions> IsolateData::options() {
+   return options_;
+ }
+ 
+-inline void IsolateData::set_options(
+-    std::shared_ptr<PerIsolateOptions> options) {
+-  options_ = std::move(options);
+-}
+-
+ template <typename Fn>
+ void Environment::SetImmediate(Fn&& cb, CallbackFlags::Flags flags) {
+   auto callback = native_immediates_.CreateCallback(std::move(cb), flags);
+diff --git a/src/env.cc b/src/env.cc
+index 0f9846baeef6fd490cdc43893e29ea2d0a731d1d..2905efe07e7cd73382edfe1121242ff4f4a15aa7 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -543,19 +543,35 @@ Mutex IsolateData::isolate_data_mutex_;
+ std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
+     IsolateData::wrapper_data_map_;
+ 
++IsolateData* IsolateData::CreateIsolateData(
++    Isolate* isolate,
++    uv_loop_t* loop,
++    MultiIsolatePlatform* platform,
++    ArrayBufferAllocator* allocator,
++    const EmbedderSnapshotData* embedder_snapshot_data,
++    std::shared_ptr<PerIsolateOptions> options) {
++  const SnapshotData* snapshot_data =
++      SnapshotData::FromEmbedderWrapper(embedder_snapshot_data);
++  if (options == nullptr) {
++    options = per_process::cli_options->per_isolate->Clone();
++  }
++  return new IsolateData(
++      isolate, loop, platform, allocator, snapshot_data, options);
++}
++
+ IsolateData::IsolateData(Isolate* isolate,
+                          uv_loop_t* event_loop,
+                          MultiIsolatePlatform* platform,
+                          ArrayBufferAllocator* node_allocator,
+-                         const SnapshotData* snapshot_data)
++                         const SnapshotData* snapshot_data,
++                         std::shared_ptr<PerIsolateOptions> options)
+     : isolate_(isolate),
+       event_loop_(event_loop),
+       node_allocator_(node_allocator == nullptr ? nullptr
+                                                 : node_allocator->GetImpl()),
+       platform_(platform),
+-      snapshot_data_(snapshot_data) {
+-  options_.reset(
+-      new PerIsolateOptions(*(per_process::cli_options->per_isolate)));
++      snapshot_data_(snapshot_data),
++      options_(std::move(options)) {
+   v8::CppHeap* cpp_heap = isolate->GetCppHeap();
+ 
+   uint16_t cppgc_id = kDefaultCppGCEmbedderID;
+diff --git a/src/env.h b/src/env.h
+index f378e810e8b48dd07ec25c7eae7923767ef25270..88467089dad8077c2364344f7ac4c0282b9eeace 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -138,12 +138,22 @@ struct PerIsolateWrapperData {
+ };
+ 
+ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+- public:
++ private:
+   IsolateData(v8::Isolate* isolate,
+               uv_loop_t* event_loop,
+-              MultiIsolatePlatform* platform = nullptr,
+-              ArrayBufferAllocator* node_allocator = nullptr,
+-              const SnapshotData* snapshot_data = nullptr);
++              MultiIsolatePlatform* platform,
++              ArrayBufferAllocator* node_allocator,
++              const SnapshotData* snapshot_data,
++              std::shared_ptr<PerIsolateOptions> options);
++
++ public:
++  static IsolateData* CreateIsolateData(
++      v8::Isolate* isolate,
++      uv_loop_t* event_loop,
++      MultiIsolatePlatform* platform = nullptr,
++      ArrayBufferAllocator* node_allocator = nullptr,
++      const EmbedderSnapshotData* embedder_snapshot_data = nullptr,
++      std::shared_ptr<PerIsolateOptions> options = nullptr);
+   ~IsolateData();
+ 
+   SET_MEMORY_INFO_NAME(IsolateData)
+@@ -168,7 +178,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+   inline MultiIsolatePlatform* platform() const;
+   inline const SnapshotData* snapshot_data() const;
+   inline std::shared_ptr<PerIsolateOptions> options();
+-  inline void set_options(std::shared_ptr<PerIsolateOptions> options);
+ 
+   inline NodeArrayBufferAllocator* node_allocator() const;
+ 
+diff --git a/src/node_options-inl.h b/src/node_options-inl.h
+index 4b4b9f9b4af7b227471db4b06712e294c05c1b88..fabf3be149be93db6117ea8d0e67efb2c961923f 100644
+--- a/src/node_options-inl.h
++++ b/src/node_options-inl.h
+@@ -17,6 +17,13 @@ EnvironmentOptions* PerIsolateOptions::get_per_env_options() {
+   return per_env.get();
+ }
+ 
++std::shared_ptr<PerIsolateOptions> PerIsolateOptions::Clone() const {
++  auto options =
++      std::shared_ptr<PerIsolateOptions>(new PerIsolateOptions(*this));
++  options->per_env = std::make_shared<EnvironmentOptions>(*per_env);
++  return options;
++}
++
+ namespace options_parser {
+ 
+ template <typename Options>
+diff --git a/src/node_options.h b/src/node_options.h
+index d13c97e8a0e1ea0212fb34a0178b3a7c74ff43e6..b453c159f4851466b75bc0b55a67ebd24c11e380 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -94,6 +94,11 @@ class DebugOptions : public Options {
+     break_first_line = true;
+   }
+ 
++  void DisableWaitOrBreakFirstLine() {
++    inspect_wait = false;
++    break_first_line = false;
++  }
++
+   bool wait_for_connect() const {
+     return break_first_line || break_node_first_line || inspect_wait;
+   }
+@@ -242,6 +247,9 @@ class EnvironmentOptions : public Options {
+ 
+ class PerIsolateOptions : public Options {
+  public:
++  PerIsolateOptions() = default;
++  PerIsolateOptions(PerIsolateOptions&&) = default;
++
+   std::shared_ptr<EnvironmentOptions> per_env { new EnvironmentOptions() };
+   bool track_heap_objects = false;
+   bool report_uncaught_exception = false;
+@@ -253,6 +261,11 @@ class PerIsolateOptions : public Options {
+   inline EnvironmentOptions* get_per_env_options();
+   void CheckOptions(std::vector<std::string>* errors,
+                     std::vector<std::string>* argv) override;
++
++  inline std::shared_ptr<PerIsolateOptions> Clone() const;
++
++ private:
++  PerIsolateOptions(const PerIsolateOptions&) = default;
+ };
+ 
+ class PerProcessOptions : public Options {
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index baa070145235a01f39c11efc0b6dfcb8a942de16..6d0010556945b95e296ae3471589e48a6878a5d2 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -185,16 +185,15 @@ class WorkerThreadData {
+       isolate->SetStackLimit(w->stack_base_);
+ 
+       HandleScope handle_scope(isolate);
+-      isolate_data_.reset(
+-          CreateIsolateData(isolate,
+-                            &loop_,
+-                            w_->platform_,
+-                            allocator.get(),
+-                            w->snapshot_data()->AsEmbedderWrapper().get()));
++      isolate_data_.reset(IsolateData::CreateIsolateData(
++          isolate,
++          &loop_,
++          w_->platform_,
++          allocator.get(),
++          w->snapshot_data()->AsEmbedderWrapper().get(),
++          std::move(w_->per_isolate_opts_)));
+       CHECK(isolate_data_);
+       CHECK(!isolate_data_->is_building_snapshot());
+-      if (w_->per_isolate_opts_)
+-        isolate_data_->set_options(std::move(w_->per_isolate_opts_));
+       isolate_data_->set_worker_context(w_);
+       isolate_data_->max_young_gen_size =
+           params.constraints.max_young_generation_size_in_bytes();
+@@ -491,9 +490,8 @@ Worker::~Worker() {
+ 
+ void Worker::New(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+-  auto is_internal = args[5];
+-  CHECK(is_internal->IsBoolean());
+-  if (is_internal->IsFalse()) {
++  bool is_internal = args[5]->IsTrue();
++  if (!is_internal) {
+     THROW_IF_INSUFFICIENT_PERMISSIONS(
+         env, permission::PermissionScope::kWorkerThreads, "");
+   }
+@@ -654,7 +652,19 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
+       return;
+     }
+   } else {
++    // Copy the parent's execArgv.
+     exec_argv_out = env->exec_argv();
++    per_isolate_opts = env->isolate_data()->options()->Clone();
++  }
++
++  // Internal workers should not wait for inspector frontend to connect or
++  // break on the first line of internal scripts. Module loader threads are
++  // essential to load user codes and must not be blocked by the inspector
++  // for internal scripts.
++  // Still, `--inspect-node` can break on the first line of internal scripts.
++  if (is_internal) {
++    per_isolate_opts->per_env->get_debug_options()
++        ->DisableWaitOrBreakFirstLine();
+   }
+ 
+   const SnapshotData* snapshot_data = env->isolate_data()->snapshot_data();
+diff --git a/test/common/inspector-helper.js b/test/common/inspector-helper.js
+index 2c4d4af6deb019b275fa958e08a6e3a9edcd00b3..4890fa68c461102556b19f7a0abb660bf6b1bb93 100644
+--- a/test/common/inspector-helper.js
++++ b/test/common/inspector-helper.js
+@@ -309,6 +309,10 @@ class InspectorSession {
+       return notification.method === 'Runtime.executionContextDestroyed' &&
+         notification.params.executionContextId === 1;
+     });
++    await this.waitForDisconnect();
++  }
++
++  async waitForDisconnect() {
+     while ((await this._instance.nextStderrString()) !==
+               'Waiting for the debugger to disconnect...');
+     await this.disconnect();
+diff --git a/test/parallel/test-esm-loader-hooks-inspect-brk.js b/test/parallel/test-esm-loader-hooks-inspect-brk.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..881bdfd2dd101a097f0f0e1e69672ea13e829a70
+--- /dev/null
++++ b/test/parallel/test-esm-loader-hooks-inspect-brk.js
+@@ -0,0 +1,34 @@
++// This tests esm loader's internal worker will not be blocked by --inspect-brk.
++// Regression: https://github.com/nodejs/node/issues/53681
++
++'use strict';
++const common = require('../common');
++
++common.skipIfInspectorDisabled();
++
++const assert = require('assert');
++const fixtures = require('../common/fixtures');
++const { NodeInstance } = require('../common/inspector-helper.js');
++
++async function runIfWaitingForDebugger(session) {
++  const commands = [
++    { 'method': 'Runtime.enable' },
++    { 'method': 'Debugger.enable' },
++    { 'method': 'Runtime.runIfWaitingForDebugger' },
++  ];
++
++  await session.send(commands);
++  await session.waitForNotification('Debugger.paused');
++}
++
++async function runTest() {
++  const main = fixtures.path('es-module-loaders', 'register-loader.mjs');
++  const child = new NodeInstance(['--inspect-brk=0'], '', main);
++
++  const session = await child.connectInspectorSession();
++  await runIfWaitingForDebugger(session);
++  await session.runToCompletion();
++  assert.strictEqual((await child.expectShutdown()).exitCode, 0);
++}
++
++runTest();
+diff --git a/test/parallel/test-esm-loader-hooks-inspect-wait.js b/test/parallel/test-esm-loader-hooks-inspect-wait.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..249b87b9f1ff8c398a3f59bb4d4820da20b48c06
+--- /dev/null
++++ b/test/parallel/test-esm-loader-hooks-inspect-wait.js
+@@ -0,0 +1,33 @@
++// This tests esm loader's internal worker will not be blocked by --inspect-wait.
++// Regression: https://github.com/nodejs/node/issues/53681
++
++'use strict';
++const common = require('../common');
++
++common.skipIfInspectorDisabled();
++
++const assert = require('assert');
++const fixtures = require('../common/fixtures');
++const { NodeInstance } = require('../common/inspector-helper.js');
++
++async function runIfWaitingForDebugger(session) {
++  const commands = [
++    { 'method': 'Runtime.enable' },
++    { 'method': 'Debugger.enable' },
++    { 'method': 'Runtime.runIfWaitingForDebugger' },
++  ];
++
++  await session.send(commands);
++}
++
++async function runTest() {
++  const main = fixtures.path('es-module-loaders', 'register-loader.mjs');
++  const child = new NodeInstance(['--inspect-wait=0'], '', main);
++
++  const session = await child.connectInspectorSession();
++  await runIfWaitingForDebugger(session);
++  await session.waitForDisconnect();
++  assert.strictEqual((await child.expectShutdown()).exitCode, 0);
++}
++
++runTest();
