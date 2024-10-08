@@ -8,11 +8,11 @@ is therefore not a method that will compile given we don't include
 relevant files.
 
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 8444b1666261e46d1509e1941a6ba5cb10c91edd..48165243dfa7adc8d1d1a23ac339dcfd9e394e60 100644
+index 17a24969e3d29080342eff6c288d8e840935b6c0..b703e7069956f8a50f106064c08cb865f676c9a8 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -13,6 +13,7 @@
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+ #endif  // BUILDFLAG(IS_CHROMEOS)
  
  bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
 +#if 0

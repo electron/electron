@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 60be2353cf0e77287dfda965c820cf36655a7ce5..fe41619f45913fe31a59771c8d1af6cde3b89f66 100644
+index e0bf37f09dceb93af58990438ab577a9d4b843e8..b9098d102b40adad7fafcc331ac62870617019b9 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -105,10 +105,10 @@ index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 0ae2946e5e5884d6d095c039a3b4dc537e0f29a2..8c06e81de3ae93d82bf7eaf1bada77164a130695 100644
+index 4ba261014695cf1aa8eb53b21a2873f4c4ea8e43..b695d131bcdc331974f544924138bb5eedc50c9f 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -280,7 +280,7 @@ class ByteSource {
+@@ -285,7 +285,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -118,10 +118,10 @@ index 0ae2946e5e5884d6d095c039a3b4dc537e0f29a2..8c06e81de3ae93d82bf7eaf1bada7716
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index d45325954d980724f80d49298bbe837197237a9b..ccea18080142bd9cba3765dbbec61c2a63406667 100644
+index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e8778cb98623 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
-@@ -105,7 +105,7 @@ namespace {
+@@ -106,7 +106,7 @@ namespace {
  
  template <typename T>
  MaybeLocal<Object> ToBufferEndian(Environment* env, MaybeStackBuffer<T>* buf) {
@@ -130,11 +130,38 @@ index d45325954d980724f80d49298bbe837197237a9b..ccea18080142bd9cba3765dbbec61c2a
    if (ret.IsEmpty())
      return ret;
  
+@@ -183,7 +183,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
+     return {};
+   }
+ 
+-  return Buffer::New(env, &destbuf);
++  return Buffer::Copy(env, reinterpret_cast<char*>(destbuf.out()), destbuf.length() * sizeof(UChar));
+ }
+ 
+ MaybeLocal<Object> TranscodeFromUcs2(Environment* env,
+@@ -228,7 +228,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
+     return {};
+   }
+ 
+-  return Buffer::New(env, &destbuf);
++  return Buffer::Copy(env, reinterpret_cast<char*>(destbuf.out()), destbuf.length() * sizeof(UChar));
+ }
+ 
+ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+@@ -252,7 +252,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+     return {};
+   }
+ 
+-  return Buffer::New(env, &destbuf);
++  return Buffer::Copy(env, reinterpret_cast<char*>(destbuf.out()), destbuf.length() * sizeof(char));
+ }
+ 
+ constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index e04fadd7f83e52fe965d8c73916a56f60425ba3d..5dff80ee287256ba40bfa496df6db60a18fbb9d7 100644
+index 6264f23d54d6028bb0158f12a9296ba67a846358..613300215766aeb108219b0d1c3b95ee02db964f 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -118,7 +118,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
+@@ -117,7 +117,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -145,7 +172,7 @@ index e04fadd7f83e52fe965d8c73916a56f60425ba3d..5dff80ee287256ba40bfa496df6db60a
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -136,7 +138,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -135,7 +137,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:
@@ -155,7 +182,7 @@ index e04fadd7f83e52fe965d8c73916a56f60425ba3d..5dff80ee287256ba40bfa496df6db60a
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 6698a1df81cb4e0947c86fb30c2d77fca8e2d9d1..dad297652b347819805b09fbfd869f1d037e31c1 100644
+index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b07824fc28a0 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;
@@ -238,7 +265,7 @@ index 6698a1df81cb4e0947c86fb30c2d77fca8e2d9d1..dad297652b347819805b09fbfd869f1d
    if (!buf.IsEmpty()) {
      args.GetReturnValue().Set(buf.ToLocalChecked());
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index c4960ee1427e3b29b873135a815a7a09bedcfb73..2c6d8cdeb37f7dce9f29b8f3b260036ae23e6fb5 100644
+index 9787b14352753c5e0f8dc2b90093680e7cd10f1a..31af9e62396368af1b81f8841a705fd313df2b9f 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
 @@ -132,12 +132,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {

@@ -28,8 +28,10 @@ class LoginHandlerDelegate {
         &LoginHandlerDelegate::OnRequestCancelled, base::Unretained(this)));
 
     login_handler_ = std::make_unique<LoginHandler>(
-        auth_info, nullptr, false, process_id, url, response_headers,
-        first_auth_attempt,
+        auth_info, nullptr /*web_contents*/,
+        false /*is_request_for_primary_main_frame*/,
+        false /*bool is_request_for_navigation*/, process_id, url,
+        response_headers, first_auth_attempt,
         base::BindOnce(&LoginHandlerDelegate::OnAuthCredentials,
                        weak_factory_.GetWeakPtr()));
   }

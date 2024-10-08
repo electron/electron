@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 373e250254e7f7dc9c2d40549549b1b8751d8fe0..68ace763b9040277e0a5306a03a7fc4736210bc5 100644
+index aa1654d428420e99bdce3abf3140f764d73e7c48..3d989d0d38ec85b44f89a525cda922e636aa3ce9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1036,6 +1036,7 @@ component("base") {
@@ -453,10 +453,10 @@ index f71ea08f64ab5cd36f6bd1e2d3d2908d4de80ba6..4b3450b3bd44a35964bd935453861101
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d5fbeedbbafcc5f498229ff465eba300bed69b29..4ba0b6669f76c9b2725e6665f3a8463e02327cc3 100644
+index 050ff22c63d6aba75ef1b41e5ffe3869e016a5a7..c72cff69afab53000392220abc7decde1236e178 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -374,6 +374,7 @@ viz_component("service") {
+@@ -376,6 +376,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -464,7 +464,7 @@ index d5fbeedbbafcc5f498229ff465eba300bed69b29..4ba0b6669f76c9b2725e6665f3a8463e
    }
  
    if (is_android || use_ozone) {
-@@ -648,6 +649,7 @@ viz_source_set("unit_tests") {
+@@ -650,6 +651,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -689,7 +689,7 @@ index 9f48c905f4abbb0f2e184299a915232cf6a0f6b0..83e1af29e9b035e54b447941d55b95eb
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 2ac766d0149f0405b3fcad0ec1b6e0685ed3658c..2fc827605b134a3bf24438b42405f70a819dbd9b 100644
+index 27ab1bc3f30877a498ce5061babe6005e6d4678c..d6a03a5725d2f1eb7d4d3e4f8ce2b42ff0725a24 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -336,6 +336,7 @@ target(link_target_type, "renderer") {
@@ -771,7 +771,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2cfb947c33e8479467b4aae213ee58b16fd42326..d235cf3d40a5804b7681160cf0c6ed4c4843c0d3 100644
+index 3788cc19ac4abf84ad856a15b94f88fb4fdec00d..26a601565370e0ae4479eea7207e58dedef38e14 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -638,6 +638,7 @@ static_library("test_support") {
@@ -798,7 +798,7 @@ index 2cfb947c33e8479467b4aae213ee58b16fd42326..d235cf3d40a5804b7681160cf0c6ed4c
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3211,6 +3214,7 @@ test("content_unittests") {
+@@ -3206,6 +3209,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1371,7 +1371,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f19b4c977e1d8ba14f35496660925f9f03440ad5..dd1661815cff79738b40e3e5543c4f7bcebbd5ac 100644
+index 2233bfae37c1339eee79fd3b5636e2e71d3ed2c7..ca2cb6a50970db35c2ac0694d3e165462b3ca6d9 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -403,6 +403,7 @@ component("core") {
@@ -1782,10 +1782,10 @@ index 35b71abc95f83bb01dba3f69e2d69a026840b7a2..6a2ff6768f16e503657cdb7ff6be7587
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c0a85b2cfc69a4f358ae03c65e774cdc45085bf6..27d77dfed33c69ede2b5a0326e763cb6c87200ef 100644
+index c95b3ce1e1e7b87aab25cf596eb34eea6590db68..0336b2332d8274bd5fe71e4506d3de7b15830576 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -333,6 +333,12 @@ component("gfx") {
+@@ -335,6 +335,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
