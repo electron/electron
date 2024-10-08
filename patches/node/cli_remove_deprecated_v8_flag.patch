@@ -18,22 +18,22 @@ Reviewed-By: Michaël Zasso <targos@protonmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 8f32a44ad41314dce2e4b58b318e4b5a7530b802..10dc8da655690d1ce020474256b2134fb881fa39 100644
+index ed0a43306e87962cf0e756d9e059ec5c08ad674b..7ada2802b2590e78fa5b9847935866b743cf94ed 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -2810,7 +2810,6 @@ V8 options that are allowed are:
- * `--abort-on-uncaught-exception`
+@@ -2868,7 +2868,6 @@ V8 options that are allowed are:
  * `--disallow-code-generation-from-strings`
  * `--enable-etw-stack-walking`
+ * `--expose-gc`
 -* `--huge-max-old-generation-size`
  * `--interpreted-frames-native-stack`
  * `--jitless`
  * `--max-old-space-size`
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 409c6e3918e3ef7c9d35f87e093cb965cb889dd7..eefdf7a48ed3ddebda3b6771b2d103455d2c8d70 100644
+index 4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9..38e173f72b446aa2db07f676b6ece26247bbf56b 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -854,11 +854,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
+@@ -866,11 +866,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
              "disallow eval and friends",
              V8Option{},
              kAllowedInEnvvar);
@@ -46,13 +46,13 @@ index 409c6e3918e3ef7c9d35f87e093cb965cb889dd7..eefdf7a48ed3ddebda3b6771b2d10345
              "disable runtime allocation of executable memory",
              V8Option{},
 diff --git a/test/parallel/test-cli-node-options.js b/test/parallel/test-cli-node-options.js
-index 4d659a7b212441963a8b8be35ad0d44440842380..6f90230a3a2a105b9eb8f5a57eaf94c7cc64215f 100644
+index 8d614e607177cdd922fef65a85a2ccdcf54116c0..146df3a21a0551e910c46248d2fd97dde8896164 100644
 --- a/test/parallel/test-cli-node-options.js
 +++ b/test/parallel/test-cli-node-options.js
-@@ -69,7 +69,6 @@ if (common.hasCrypto) {
- // V8 options
+@@ -70,7 +70,6 @@ if (common.hasCrypto) {
  expect('--abort_on-uncaught_exception', 'B\n');
  expect('--disallow-code-generation-from-strings', 'B\n');
+ expect('--expose-gc', 'B\n');
 -expect('--huge-max-old-generation-size', 'B\n');
  expect('--jitless', 'B\n');
  expect('--max-old-space-size=0', 'B\n');
