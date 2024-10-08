@@ -330,7 +330,11 @@ for:
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\junit\test-results-main.xml ( appveyor-retry appveyor PushArtifact electron\junit\test-results-main.xml )
       - ps: |
-          $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
-          $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
-          $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
-          C:\Users\appveyor\AppData\Roaming\npm\datadog-ci.ps1 junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
+          if ($env:RUN_TESTS -eq 'true') {
+            $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
+            $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
+            $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
+            if (Test-Path -Path "C:\projects\src\electron\junit\test-results-main.xml") {
+              C:\Users\appveyor\AppData\Roaming\npm\datadog-ci.ps1 junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
+            }
+          }
