@@ -30,6 +30,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "url/url_util.h"
 
 namespace gin {
 
@@ -121,6 +122,13 @@ bool MatchesDomain(std::string filter, const std::string& domain) {
   return false;
 }
 
+bool DomainIs(std::string_view host, const std::string_view domain) {
+  // Strip any leading '.'. character from the input cookie domain.
+  if (host.starts_with('.'))
+    host.remove_prefix(1);
+  return url::DomainIs(host, domain);
+}
+
 // Returns whether |cookie| matches |filter|.
 bool MatchesCookie(const base::Value::Dict& filter,
                    const net::CanonicalCookie& cookie) {
@@ -129,9 +137,13 @@ bool MatchesCookie(const base::Value::Dict& filter,
     return false;
   if ((str = filter.FindString("path")) && *str != cookie.Path())
     return false;
-  if ((str = filter.FindString("domain")) &&
-      !MatchesDomain(*str, cookie.Domain()))
-    return false;
+  if ((str = filter.FindString("domain"))) {
+    const bool old_domains_match = MatchesDomain(*str, cookie.Domain());
+    const bool new_domains_match = DomainIs(cookie.Domain(), *str);
+    CHECK_EQ(old_domains_match, new_domains_match);
+    if (!old_domains_match)
+      return false;
+  }
   std::optional<bool> secure_filter = filter.FindBool("secure");
   if (secure_filter && *secure_filter != cookie.SecureAttribute())
     return false;
