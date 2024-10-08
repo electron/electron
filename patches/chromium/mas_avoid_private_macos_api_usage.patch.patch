@@ -1343,7 +1343,7 @@ index 2e24201fcdc1ec65688e2b08d28a74a218792af2..53b399c13c344b72992b9433add202ed
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index f9bd6478bea53f2b005c2d57b5f1db5313f77595..41a032e34335c554eca40edd74e8c271b3570a08 100644
+index be442f6a2a67d07ec78fe00a3e864bf0088fe504..3a8c8a3900db26b10f2b7735b860d8935d2a6085 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -19,7 +19,9 @@
