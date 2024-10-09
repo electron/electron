@@ -27,6 +27,9 @@ class HeapSnapshotOutputStream : public v8::OutputStream {
   v8::OutputStream::WriteResult WriteAsciiChunk(char* data, int size) override {
     const uint8_t* udata = reinterpret_cast<const uint8_t*>(data);
     const size_t usize = static_cast<size_t>(std::max(0, size));
+    // SAFETY: since WriteAsciiChunk() only gives us data + size, our
+    // UNSAFE_BUFFERS macro call is unavoidable here. It can be removed
+    // if/when v8 changes WriteAsciiChunk() to pass a v8::MemorySpan.
     const auto data_span = UNSAFE_BUFFERS(base::span(udata, usize));
     return file_->WriteAtCurrentPosAndCheck(data_span) ? kContinue : kAbort;
   }
