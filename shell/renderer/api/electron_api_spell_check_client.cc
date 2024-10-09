@@ -15,6 +15,7 @@
 #include "base/containers/contains.h"
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
+#include "base/strings/utf_string_conversion_utils.h"
 #include "base/task/single_thread_task_runner.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -29,12 +30,9 @@ namespace electron::api {
 
 namespace {
 
-bool HasWordCharacters(const std::u16string& text, int index) {
-  const char16_t* data = text.data();
-  int length = text.length();
-  while (index < length) {
-    uint32_t code = 0;
-    U16_NEXT(data, index, length, code);
+bool HasWordCharacters(const std::u16string& text, size_t index) {
+  base_icu::UChar32 code;
+  while (base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)
       return true;
