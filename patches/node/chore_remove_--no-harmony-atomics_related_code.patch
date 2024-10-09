@@ -9,7 +9,7 @@ This patch can be removed when Node.js upgrades to a version of V8 containing
 the above CL.
 
 diff --git a/lib/.eslintrc.yaml b/lib/.eslintrc.yaml
-index 0cf84a0da5ee9e63d7b01d0a27946fc29090e516..ee16099ddc9abe5c19b319c111d1319c33b17be4 100644
+index 74e867ace6207751a96b4da03802b50b620dbd7b..53ceabeb58f56ebd27e60fd49c362d26e361e6d8 100644
 --- a/lib/.eslintrc.yaml
 +++ b/lib/.eslintrc.yaml
 @@ -30,10 +30,6 @@ rules:

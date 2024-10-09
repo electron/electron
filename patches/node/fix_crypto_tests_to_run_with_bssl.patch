@@ -608,7 +608,7 @@ index 61bd65fc92678c24baa3c0eb9ffb1ead64ace70b..cb690351696a811210b9d990ee4cde3c
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 56e5c16c2867f019caccf42f228193cae6167150..dc585c44db9894ae57a5e11d453af03e1ea4f211 100644
+index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..1a0d0cfc09fb61d65472723ba54e1d0be69b5c68 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -28,6 +28,7 @@ const keySize = 2048;
