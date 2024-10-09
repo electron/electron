@@ -125,20 +125,20 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
   content::HostZoomMap::SetZoomLevel(web_contents, level);
 }
 
-double GetNextZoomLevel(const double level, const bool out) {
+double GetNextZoomLevel(double level, bool out) {
   static constexpr std::array<double, 16U> kPresetFactors{
       0.25, 0.333, 0.5,  0.666, 0.75, 0.9, 1.0, 1.1,
       1.25, 1.5,   1.75, 2.0,   2.5,  3.0, 4.0, 5.0};
-  static constexpr auto kBegin = kPresetFactors.begin();
-  static constexpr auto kEnd = kPresetFactors.end();
+  static constexpr size_t size = std::size(kPresetFactors);
 
   const double factor = blink::ZoomLevelToZoomFactor(level);
-  auto matches = [=](auto val) { return blink::ZoomValuesEqual(factor, val); };
-  if (auto iter = std::find_if(kBegin, kEnd, matches); iter != kEnd) {
-    if (out && iter != kBegin)
-      return blink::ZoomFactorToZoomLevel(*--iter);
-    if (!out && ++iter != kEnd)
-      return blink::ZoomFactorToZoomLevel(*iter);
+  for (size_t i = 0U; i < size; ++i) {
+    if (!blink::ZoomValuesEqual(kPresetFactors[i], factor))
+      continue;
+    if (out && i > 0U)
+      return blink::ZoomFactorToZoomLevel(kPresetFactors[i - 1U]);
+    if (!out && i + 1U < size)
+      return blink::ZoomFactorToZoomLevel(kPresetFactors[i + 1U]);
   }
   return level;
 }
