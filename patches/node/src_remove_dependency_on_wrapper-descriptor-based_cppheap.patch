@@ -16,7 +16,7 @@ patch:
 (cherry picked from commit 30329d06235a9f9733b1d4da479b403462d1b326)
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 18b1461e50e456728cbc5e26259d06e7602a8d11..c5973e430debcf354afb9c9288c9ba8cf8f538ee 100644
+index d98a32d6ec311459877bc3b0de33cca4766aeda7..9fc934975b015b97ddd84bf3eea5d53144130035 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -62,31 +62,6 @@ inline uv_loop_t* IsolateData::event_loop() const {
@@ -52,7 +52,7 @@ index 18b1461e50e456728cbc5e26259d06e7602a8d11..c5973e430debcf354afb9c9288c9ba8c
    return &(wrapper_data_->cppgc_id);
  }
 diff --git a/src/env.cc b/src/env.cc
-index ea0ae4e08ec7dd98721bc89d2fe80fa47eaddfec..0f9846baeef6fd490cdc43893e29ea2d0a731d1d 100644
+index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fdea1edde29 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -22,6 +22,7 @@
@@ -86,7 +86,7 @@ index ea0ae4e08ec7dd98721bc89d2fe80fa47eaddfec..0f9846baeef6fd490cdc43893e29ea2d
  constexpr uint16_t kDefaultCppGCEmbedderID = 0x90de;
  Mutex IsolateData::isolate_data_mutex_;
  std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
-@@ -551,36 +559,16 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -567,36 +575,16 @@ IsolateData::IsolateData(Isolate* isolate,
    v8::CppHeap* cpp_heap = isolate->GetCppHeap();
  
    uint16_t cppgc_id = kDefaultCppGCEmbedderID;
@@ -130,7 +130,7 @@ index ea0ae4e08ec7dd98721bc89d2fe80fa47eaddfec..0f9846baeef6fd490cdc43893e29ea2d
  
    {
      // GC could still be run after the IsolateData is destroyed, so we store
-@@ -612,11 +600,12 @@ IsolateData::~IsolateData() {
+@@ -628,11 +616,12 @@ IsolateData::~IsolateData() {
    }
  }
  
@@ -146,10 +146,10 @@ index ea0ae4e08ec7dd98721bc89d2fe80fa47eaddfec..0f9846baeef6fd490cdc43893e29ea2d
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index c6cc2c874b603f595a008a7d3bc229d6b9834f55..f378e810e8b48dd07ec25c7eae7923767ef25270 100644
+index 7cb77fb4f35a60fbda5b868798321ac8b6340bfa..06746554e1d60a9377ff6d7d970220f3fa88e4ac 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -164,10 +164,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+@@ -174,10 +174,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
    uint16_t* embedder_id_for_cppgc() const;
    uint16_t* embedder_id_for_non_cppgc() const;
  
