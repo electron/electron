@@ -155,7 +155,7 @@ index 520674b0a5061057fa4b769ba5db93da81531d3f..b364e20f7bba27f3f167aa201e26c916
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 8bbaaba174a217b791cb12824332fba17961bde2..746185fb6a76febb63d84ac9cd240c93c7e58f2c 100644
+index bcc4841d7f953805f615b3fe5dd252216aa5e482..76a88284aa409b1458ce5f723a1445bd4b184573 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -183,14 +183,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(

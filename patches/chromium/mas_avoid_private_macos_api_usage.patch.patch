@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3a08c3bde5977eeb0bfa1f14713b715394f2cd6f..13a113dfa2975638e676a51f82222601487d3b31 100644
+index b44aacf83673ad9b9ea0698743b2dba50c4dfe90..c137f17f1fdbca2c32dae88237b2d4e41f5d0cef 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1038,6 +1038,7 @@ component("base") {
@@ -81,7 +81,7 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 569c1c83d82517d9cb65282f766368ce3d9d0572..8114bf8e9a9d002824b3804bff599591eacaba37 100644
+index 132d95689b56398b9f3726164668c2db1b4a13dc..eb96c4cdba8da942598765026bca82beab010f70 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,13 +21,19 @@
@@ -558,7 +558,7 @@ index 13c3fe06c417a2565e6af4552930a56c44a01fb3..ef67191f5d010451cde2b084d6165c7d
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 70e143feb497711d12857333d48ce2ac4325bcd9..3ec50c52f1d824c544c77515213f7a50c9870a11 100644
+index fbdfbd33a2715bccc92d39ae8fcc1e2fdc9b1151..839c1379211385bdaa506c265ad7021536b1c35f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -320,6 +320,7 @@ source_set("browser") {
@@ -771,7 +771,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7c02d9df26a999e8346ed4c289843f4ee0de236a..73537aff510b0576c40481787d0f1d2c37ab33e2 100644
+index 7a8f8b5ff02c8f8205450cdd009df19473ee0082..7e42eef46a5a02227035640b559de636be1d155a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -638,6 +638,7 @@ static_library("test_support") {
@@ -790,7 +790,7 @@ index 7c02d9df26a999e8346ed4c289843f4ee0de236a..73537aff510b0576c40481787d0f1d2c
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1931,6 +1933,7 @@ test("content_browsertests") {
+@@ -1930,6 +1932,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1752,7 +1752,7 @@ index 84afacf999c4905fdbaba332e19058a6471c3436..bbab402c8c11e62dad7fa946d9550efa
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 35b71abc95f83bb01dba3f69e2d69a026840b7a2..6a2ff6768f16e503657cdb7ff6be7587c45842ec 100644
+index c4ab83ca4f48e5357fe9bcf024b3f95612223cdf..d97c9731884769079e53fa334f44319e339b4fc2 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -30,6 +30,7 @@
@@ -1782,7 +1782,7 @@ index 35b71abc95f83bb01dba3f69e2d69a026840b7a2..6a2ff6768f16e503657cdb7ff6be7587
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c95b3ce1e1e7b87aab25cf596eb34eea6590db68..0336b2332d8274bd5fe71e4506d3de7b15830576 100644
+index 762ffff0e4a7ffc40e85dc82f5f0f243a447a85d..db4fbc65fded3beb58e6c336e1d4c4d33d3b2c25 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -335,6 +335,12 @@ component("gfx") {

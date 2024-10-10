@@ -85,7 +85,7 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index f1a415f7bd56ece5ab07d2408dbfddf658b45ff3..49bf8f75583cc7b2de415f4ebb42757366a7b51d 100644
+index bbea8fff37040029996d1e91e592f6cb5bf8fbc2..13bbd8486279bf575010ab5ad62ba24a0d4cb24f 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -110,7 +110,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(

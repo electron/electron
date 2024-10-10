@@ -20,10 +20,10 @@ index 7de8923518dbfb69fef62d7781f906b30cf62155..7a4310d6d8e85f07f0ae6c97726d909c
  
      case ssl_open_record_error:
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index 1458b456e5251b058e28c7f935f929af7addbee4..994e1c330255ffcc5212dd69fb77d3044068717c 100644
+index c84c50710475f5e0ac8633bb97abafdca7fb324f..724d854540ced9b57a7fc804f61fff89f6f9fadf 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
-@@ -1343,7 +1343,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
+@@ -1335,7 +1335,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
    }
  
    if (ret_code == 0) {
@@ -32,7 +32,7 @@ index 1458b456e5251b058e28c7f935f929af7addbee4..994e1c330255ffcc5212dd69fb77d304
        return SSL_ERROR_ZERO_RETURN;
      }
      // An EOF was observed which violates the protocol, and the underlying
-@@ -2725,13 +2725,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
+@@ -2707,13 +2707,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
    return CRYPTO_get_ex_data(&ctx->ex_data, idx);
  }
  
