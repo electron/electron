@@ -34,8 +34,7 @@ bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
                              double scale_factor);
 
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
-                            const unsigned char* data,
-                            size_t size,
+                            base::span<const uint8_t> data,
                             double scale_factor);
 
 #if BUILDFLAG(IS_WIN)

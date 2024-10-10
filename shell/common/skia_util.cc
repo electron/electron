@@ -56,11 +56,10 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 }
 
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
-                            const unsigned char* data,
-                            size_t size,
+                            const base::span<const uint8_t> data,
                             double scale_factor) {
   SkBitmap bitmap;
-  if (!gfx::PNGCodec::Decode(data, size, &bitmap))
+  if (!gfx::PNGCodec::Decode(data.data(), data.size(), &bitmap))
     return false;
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
@@ -94,7 +93,8 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
                                int height,
                                double scale_factor) {
   // Try PNG first.
-  if (AddImageSkiaRepFromPNG(image, data, size, scale_factor))
+  if (AddImageSkiaRepFromPNG(image, base::as_bytes(base::make_span(data, size)),
+                             scale_factor))
     return true;
 
   // Try JPEG second.
