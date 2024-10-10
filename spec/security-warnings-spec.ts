@@ -75,7 +75,7 @@ describe('security warnings', () => {
     });
 
     w.loadURL(`${serverUrl}/base-page-security.html`);
-    const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+    const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
     expect(message).to.include('Node.js Integration with Remote Content');
   });
 
@@ -88,7 +88,7 @@ describe('security warnings', () => {
     });
 
     w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
-    const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded);
+    const [{ message }] = await emittedUntil(w.webContents, 'console-message', isLoaded);
     expect(message).to.not.include('Node.js Integration with Remote Content');
   });
 
@@ -104,7 +104,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Disabled webSecurity');
       });
 
@@ -116,7 +116,7 @@ describe('security warnings', () => {
 
         useCsp = false;
         w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Insecure Content-Security-Policy');
       });
 
@@ -146,7 +146,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('allowRunningInsecureContent');
       });
 
@@ -160,7 +160,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('experimentalFeatures');
       });
 
@@ -174,7 +174,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('enableBlinkFeatures');
       });
 
@@ -185,7 +185,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/webview-allowpopups.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('allowpopups');
       });
 
@@ -196,7 +196,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/insecure-resources.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Insecure Resources');
       });
 
@@ -207,7 +207,7 @@ describe('security warnings', () => {
         });
 
         w.loadURL(`${serverUrl}/insecure-resources.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.not.include('insecure-resources.html');
       });
     });
