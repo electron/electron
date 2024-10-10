@@ -197,7 +197,10 @@ jobs:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_CIVISIBILITY_LOGS_ENABLED: true
         DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
-      run: datadog-ci junit upload src/electron/junit/test-results-main.xml
+      run: |
+        if [ -n $DD_API_KEY ]; then
+          datadog-ci junit upload src/electron/junit/test-results-main.xml
+        fi          
       if: always() && !cancelled()
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
