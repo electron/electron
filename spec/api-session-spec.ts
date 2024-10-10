@@ -16,6 +16,7 @@ import { defer, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
+  console.log('In SESSION MODULE');
   const fixtures = path.resolve(__dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 
