@@ -53,20 +53,19 @@ class FileSystemAccessPermissionContext
   // content::FileSystemAccessPermissionContext:
   scoped_refptr<content::FileSystemAccessPermissionGrant>
   GetReadPermissionGrant(const url::Origin& origin,
-                         const base::FilePath& path,
+                         const content::PathInfo& path,
                          HandleType handle_type,
                          UserAction user_action) override;
 
   scoped_refptr<content::FileSystemAccessPermissionGrant>
   GetWritePermissionGrant(const url::Origin& origin,
-                          const base::FilePath& path,
+                          const content::PathInfo& path,
                           HandleType handle_type,
                           UserAction user_action) override;
 
   void ConfirmSensitiveEntryAccess(
       const url::Origin& origin,
-      PathType path_type,
-      const base::FilePath& path,
+      const content::PathInfo& path,
       HandleType handle_type,
       UserAction user_action,
       content::GlobalRenderFrameHostId frame_id,
@@ -85,11 +84,10 @@ class FileSystemAccessPermissionContext
 
   void SetLastPickedDirectory(const url::Origin& origin,
                               const std::string& id,
-                              const base::FilePath& path,
-                              const PathType type) override;
+                              const content::PathInfo& path) override;
 
-  PathInfo GetLastPickedDirectory(const url::Origin& origin,
-                                  const std::string& id) override;
+  content::PathInfo GetLastPickedDirectory(const url::Origin& origin,
+                                           const std::string& id) override;
 
   base::FilePath GetWellKnownDirectoryPath(
       blink::mojom::WellKnownDirectory directory,
@@ -99,15 +97,15 @@ class FileSystemAccessPermissionContext
       const blink::mojom::FilePickerOptionsPtr& options) override;
 
   void NotifyEntryMoved(const url::Origin& origin,
-                        const base::FilePath& old_path,
-                        const base::FilePath& new_path) override;
+                        const content::PathInfo& old_path,
+                        const content::PathInfo& new_path) override;
 
   void OnFileCreatedFromShowSaveFilePicker(
       const GURL& file_picker_binding_context,
       const storage::FileSystemURL& url) override;
 
   void CheckPathsAgainstEnterprisePolicy(
-      std::vector<PathInfo> entries,
+      std::vector<content::PathInfo> entries,
       content::GlobalRenderFrameHostId frame_id,
       EntriesAllowedByEnterprisePolicyCallback callback) override;
 
@@ -135,12 +133,11 @@ class FileSystemAccessPermissionContext
 
   void PermissionGrantDestroyed(PermissionGrantImpl* grant);
 
-  void CheckPathAgainstBlocklist(PathType path_type,
-                                 const base::FilePath& path,
+  void CheckPathAgainstBlocklist(const content::PathInfo& path,
                                  HandleType handle_type,
                                  base::OnceCallback<void(bool)> callback);
   void DidCheckPathAgainstBlocklist(const url::Origin& origin,
-                                    const base::FilePath& path,
+                                    const content::PathInfo& path,
                                     HandleType handle_type,
                                     UserAction user_action,
                                     content::GlobalRenderFrameHostId frame_id,
