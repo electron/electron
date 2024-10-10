@@ -7,8 +7,8 @@
 
 #include <vector>
 
-#include "build/build_config.h"
-#include "v8/include/v8.h"
+#include "base/containers/span.h"
+#include "v8/include/v8-forward.h"
 
 namespace node {
 class Environment;
@@ -26,6 +26,11 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     const char* id,
     std::vector<v8::Local<v8::String>>* parameters,
     std::vector<v8::Local<v8::Value>>* arguments);
+
+// Convenience function to view a Node buffer's data as a base::span().
+// Analogous to base::as_byte_span()
+[[nodiscard]] base::span<uint8_t> as_byte_span(
+    v8::Local<v8::Value> node_buffer);
 
 }  // namespace electron::util
 

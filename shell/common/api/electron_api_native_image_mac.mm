@@ -25,6 +25,19 @@
 
 namespace electron::api {
 
+namespace {
+
+base::span<const uint8_t> as_byte_span(NSData* data) {
+  // SAFETY: There is no NSData API that passes the UNSAFE_BUFFER_USAGE
+  // test, so let's isolate the unsafe API use into this function. Instead of
+  // calling '[data bytes]' and '[data length]' directly, the rest of our
+  // code should prefer to use spans returned by this function.
+  return UNSAFE_BUFFERS(base::span{
+      reinterpret_cast<const uint8_t*>([data bytes]), [data length]});
+}
+
+}  // namespace
+
 NSData* bufferFromNSImage(NSImage* image) {
   CGImageRef ref = [image CGImageForProposedRect:nil context:nil hints:nil];
   NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithCGImage:ref];
@@ -126,9 +139,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
     NSData* png_data = bufferFromNSImage(image);
 
     if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
-      gfx::Image gfx_image = gfx::Image::CreateFrom1xPNGBytes(
-          reinterpret_cast<const unsigned char*>((char*)[png_data bytes]),
-          [png_data length]);
+      auto gfx_image = gfx::Image::CreateFrom1xPNGBytes(as_byte_span(png_data));
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
                                 safeShift(hsl_shift[1], 0.5),
                                 safeShift(hsl_shift[2], 0.5)};
@@ -138,8 +149,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
               .AsNSImage());
     }
 
-    return CreateFromPNG(args->isolate(), (char*)[png_data bytes],
-                         [png_data length]);
+    return CreateFromPNG(args->isolate(), as_byte_span(png_data));
   }
 }
 
