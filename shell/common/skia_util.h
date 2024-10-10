@@ -5,9 +5,13 @@
 #ifndef ELECTRON_SHELL_COMMON_SKIA_UTIL_H_
 #define ELECTRON_SHELL_COMMON_SKIA_UTIL_H_
 
+#include <cstdint>
+
+#include "base/containers/span.h"
+
 namespace base {
 class FilePath;
-}
+}  // namespace base
 
 namespace gfx {
 class ImageSkia;
@@ -26,8 +30,7 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
                                double scale_factor);
 
 bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
-                             const unsigned char* data,
-                             size_t size,
+                             base::span<const uint8_t> data,
                              double scale_factor);
 
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
