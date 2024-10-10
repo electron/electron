@@ -124,8 +124,8 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
       return false;
   }
 
-  return AddImageSkiaRepFromBuffer(
-      image, base::as_bytes(base::span(file_contents)), 0, 0, scale_factor);
+  return AddImageSkiaRepFromBuffer(image, base::as_byte_span(file_contents), 0,
+                                   0, scale_factor);
 }
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
