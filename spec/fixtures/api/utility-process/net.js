@@ -1,4 +1,5 @@
 const { net } = require('electron');
+
 const serverUrl = process.argv[2].split('=')[1];
 let configurableArg = null;
 if (process.argv[3]) {

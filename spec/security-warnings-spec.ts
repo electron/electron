@@ -1,14 +1,15 @@
-import { expect } from 'chai';
-import * as http from 'node:http';
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-
 import { BrowserWindow, WebPreferences } from 'electron/main';
 
-import { closeWindow } from './lib/window-helpers';
+import { expect } from 'chai';
+
+import * as fs from 'node:fs/promises';
+import * as http from 'node:http';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+
 import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
-import { setTimeout } from 'node:timers/promises';
+import { closeWindow } from './lib/window-helpers';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.includes('Electron Security Warning');

@@ -1,4 +1,5 @@
 const { appCredentialsFromString, getTokenForRepo } = require('@electron/github-app-auth');
+
 const cp = require('node:child_process');
 
 async function main () {

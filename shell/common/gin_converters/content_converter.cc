@@ -149,8 +149,6 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
   // Not all permissions are currently used by Electron but this will future
   // proof these conversions.
   switch (val) {
-    case blink::PermissionType::ACCESSIBILITY_EVENTS:
-      return StringToV8(isolate, "accessibility-events");
     case blink::PermissionType::AUTOMATIC_FULLSCREEN:
       return StringToV8(isolate, "automatic-fullscreen");
     case blink::PermissionType::AR:

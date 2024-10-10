@@ -6,7 +6,7 @@ Subject: fix: remove profiles from spellcheck_service
 Electron doesn't support profiles.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 073dbf4e3a71102ba67ad6ee34f6191207e62e7f..b4cfc512955204e1c64cb2276793cd4d950472f6 100644
+index b8d19927b6fe007f1db2413a2574e39b6d6c3500..b7910913d8ced30ad36062f63b4d6105140f8219 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -21,8 +21,10 @@

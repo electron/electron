@@ -24,7 +24,8 @@ namespace electron {
 LoginHandler::LoginHandler(
     const net::AuthChallengeInfo& auth_info,
     content::WebContents* web_contents,
-    bool is_main_frame,
+    bool is_request_for_primary_main_frame,
+    bool is_request_for_navigation,
     base::ProcessId process_id,
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
@@ -36,14 +37,16 @@ LoginHandler::LoginHandler(
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
       base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
-                     auth_info, web_contents, is_main_frame, process_id, url,
+                     auth_info, web_contents, is_request_for_primary_main_frame,
+                     is_request_for_navigation, process_id, url,
                      response_headers, first_auth_attempt));
 }
 
 void LoginHandler::EmitEvent(
     net::AuthChallengeInfo auth_info,
     content::WebContents* web_contents,
-    bool is_main_frame,
+    bool is_request_for_primary_main_frame,
+    bool is_request_for_navigation,
     base::ProcessId process_id,
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
@@ -67,7 +70,8 @@ void LoginHandler::EmitEvent(
   // These parameters aren't documented, and I'm not sure that they're useful,
   // but we might as well stick 'em on the details object. If it turns out they
   // are useful, we can add them to the docs :)
-  details.Set("isMainFrame", is_main_frame);
+  details.Set("isMainFrame", is_request_for_primary_main_frame);
+  details.Set("isRequestForNavigation", is_request_for_navigation);
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
 

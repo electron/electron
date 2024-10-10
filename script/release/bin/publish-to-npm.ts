@@ -1,18 +1,18 @@
 import { Octokit } from '@octokit/rest';
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as semver from 'semver';
 import * as temp from 'temp';
 
-import { getCurrentBranch, ELECTRON_DIR } from '../lib/utils';
-import { getElectronVersion } from '../lib/get-version';
+import * as childProcess from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-import { getAssetContents } from './get-asset';
-import { createGitHubTokenStrategy } from './github-token';
-import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+import { getElectronVersion } from '../../lib/get-version';
+import { getCurrentBranch, ELECTRON_DIR } from '../../lib/utils';
+import { getAssetContents } from '../get-asset';
+import { createGitHubTokenStrategy } from '../github-token';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
-const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'));
+const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../package.json'), 'utf-8'));
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP');

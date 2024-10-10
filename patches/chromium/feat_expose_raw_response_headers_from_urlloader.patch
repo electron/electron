@@ -112,18 +112,20 @@ index 3450c15835d8b792f37764f6edc4a4560be435ef..b1034aa141d6121f8e1524fb34a28a04
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 2b6a5854cf912d38aac207a4c74504b00aa7c97e..c8cbd70306f04f025ba7e9d121bb2287929f2d5c 100644
+index 490ccc66460c62eeb16c2b979e01efd54c4e3eb4..d68c15a828a1c16ad3644d7c4c036bf0e544d1b4 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -725,6 +725,7 @@ URLLoader::URLLoader(
-         request.trusted_params->allow_cookies_from_browser;
-     include_request_cookies_with_response_ =
-         request.trusted_params->include_request_cookies_with_response;
-+    report_raw_headers_ = request.trusted_params->report_raw_headers;
-   }
- 
-   // Store any cookies passed from the browser process to later attach them to
-@@ -763,7 +764,7 @@ URLLoader::URLLoader(
+@@ -578,6 +578,9 @@ URLLoader::URLLoader(
+           mojo::SimpleWatcher::ArmingPolicy::MANUAL,
+           base::SequencedTaskRunner::GetCurrentDefault()),
+       per_factory_orb_state_(context.GetMutableOrbState()),
++      report_raw_headers_(
++        request.trusted_params &&
++        request.trusted_params->report_raw_headers),
+       devtools_request_id_(request.devtools_request_id),
+       request_mode_(request.mode),
+       request_credentials_mode_(request.credentials_mode),
+@@ -839,7 +842,7 @@ void URLLoader::ConfigureRequest(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -132,7 +134,7 @@ index 2b6a5854cf912d38aac207a4c74504b00aa7c97e..c8cbd70306f04f025ba7e9d121bb2287
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1738,6 +1739,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1802,6 +1805,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,10 +155,10 @@ index 2b6a5854cf912d38aac207a4c74504b00aa7c97e..c8cbd70306f04f025ba7e9d121bb2287
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 3089be9b39552c8fc03ee97bd90a5f5626f66b26..e70b15cc3683d77e900fce644616da64851bc801 100644
+index c2a638fb6cf1360d8dcbed058ce295a2ef91000d..f80f2848281fd88f08d23a9b4377a29e2d1ba76e 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -680,6 +680,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -704,6 +704,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

@@ -1,6 +1,8 @@
-import { expect } from 'chai';
-import { closeWindow } from './lib/window-helpers';
 import { BaseWindow, View } from 'electron/main';
+
+import { expect } from 'chai';
+
+import { closeWindow } from './lib/window-helpers';
 
 describe('View', () => {
   let w: BaseWindow;

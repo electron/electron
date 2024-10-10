@@ -1,5 +1,6 @@
-import * as cp from 'node:child_process';
 import * as fs from 'original-fs';
+
+import * as cp from 'node:child_process';
 import * as os from 'node:os';
 import * as path from 'node:path';
 

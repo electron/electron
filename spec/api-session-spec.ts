@@ -1,17 +1,19 @@
+import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+
+import * as auth from 'basic-auth';
 import { expect } from 'chai';
-import * as crypto from 'node:crypto';
+import * as send from 'send';
+
+import * as ChildProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as ChildProcess from 'node:child_process';
-import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
-import * as send from 'send';
-import * as auth from 'basic-auth';
-import { closeAllWindows } from './lib/window-helpers';
-import { defer, listen } from './lib/spec-helpers';
-import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+
+import { defer, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -125,54 +127,6 @@ describe('session module', () => {
       await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
       const cs = await cookies.get({ domain: '127.0.0.1' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
-    });
-
-    it('does not match on empty domain filter strings', async () => {
-      const { cookies } = session.defaultSession;
-      const name = crypto.randomBytes(20).toString('hex');
-      const value = '1';
-      const url = 'https://microsoft.com/';
-
-      await cookies.set({ url, name, value });
-      const cs = await cookies.get({ domain: '' });
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
-      cookies.remove(url, name);
-    });
-
-    it('gets domain-equal cookies', async () => {
-      const { cookies } = session.defaultSession;
-      const name = crypto.randomBytes(20).toString('hex');
-      const value = '1';
-      const url = 'https://microsoft.com/';
-
-      await cookies.set({ url, name, value });
-      const cs = await cookies.get({ domain: 'microsoft.com' });
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
-      cookies.remove(url, name);
-    });
-
-    it('gets domain-inclusive cookies', async () => {
-      const { cookies } = session.defaultSession;
-      const name = crypto.randomBytes(20).toString('hex');
-      const value = '1';
-      const url = 'https://subdomain.microsoft.com/';
-
-      await cookies.set({ url, name, value });
-      const cs = await cookies.get({ domain: 'microsoft.com' });
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
-      cookies.remove(url, name);
-    });
-
-    it('omits domain-exclusive cookies', async () => {
-      const { cookies } = session.defaultSession;
-      const name = crypto.randomBytes(20).toString('hex');
-      const value = '1';
-      const url = 'https://microsoft.com';
-
-      await cookies.set({ url, name, value });
-      const cs = await cookies.get({ domain: 'subdomain.microsoft.com' });
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(false);
-      cookies.remove(url, name);
     });
 
     it('rejects when setting a cookie with missing required fields', async () => {

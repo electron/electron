@@ -1,4 +1,5 @@
 const asar = require('@electron/asar');
+
 const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');

@@ -33,10 +33,10 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index c26c322aafc64ed9ca2a7c1fd703555a251db9de..f94bc5824d6c83fd1feca31c572dcfd3ac130bda 100644
+index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327199acfd5 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
-@@ -10,8 +10,8 @@ const {
+@@ -8,8 +8,8 @@ const {
  const { setUnrefTimeout } = require('internal/timers');
  const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
  const {
@@ -47,7 +47,7 @@ index c26c322aafc64ed9ca2a7c1fd703555a251db9de..f94bc5824d6c83fd1feca31c572dcfd3
  } = require('internal/constants');
  
  let utcCache;
-@@ -46,11 +46,13 @@ function isTraceHTTPEnabled() {
+@@ -44,11 +44,13 @@ function isTraceHTTPEnabled() {
  const traceEventCategory = 'node,node.http';
  
  function traceBegin(...args) {

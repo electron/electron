@@ -6,13 +6,16 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
+import { nativeImage } from 'electron/common';
+import { app } from 'electron/main';
+
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { app } from 'electron/main';
-import { nativeImage } from 'electron/common';
-import { ifdescribe } from './lib/spec-helpers';
-import { promisify } from 'node:util';
+
 import * as path from 'node:path';
+import { promisify } from 'node:util';
+
+import { ifdescribe } from './lib/spec-helpers';
 
 const fixturesPath = path.join(__dirname, 'fixtures');
 

@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import { Module } from 'node:module';
 import * as path from 'node:path';
 import * as url from 'node:url';
+
 const { app, dialog } = electron;
 
 type DefaultAppOptions = {
