@@ -397,10 +397,11 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   v8::Local<v8::Value> buffer;
   GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
-    auto* data = reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer));
-    auto size = node::Buffer::Length(buffer);
     skia_rep_added = electron::util::AddImageSkiaRepFromBuffer(
-        &image_skia, data, size, width, height, scale_factor);
+        &image_skia,
+        base::span{reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
+                   node::Buffer::Length(buffer)},
+        width, height, scale_factor);
   } else if (options.Get("dataURL", &url)) {
     std::string mime_type, charset, data;
     if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
@@ -552,8 +553,10 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
 
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromBuffer(
-      &image_skia, reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
-      node::Buffer::Length(buffer), width, height, scale_factor);
+      &image_skia,
+      base::span{reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
+                 node::Buffer::Length(buffer)},
+      width, height, scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }
 

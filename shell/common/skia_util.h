@@ -23,8 +23,7 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
                                    const base::FilePath& path);
 
 bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
-                               const unsigned char* data,
-                               size_t size,
+                               base::span<const uint8_t> data,
                                int width,
                                int height,
                                double scale_factor);
