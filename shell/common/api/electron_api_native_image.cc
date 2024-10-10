@@ -441,12 +441,11 @@ gin::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromPNG(v8::Isolate* isolate,
-                                                    const char* buffer,
-                                                    size_t length) {
+gin::Handle<NativeImage> NativeImage::CreateFromPNG(
+    v8::Isolate* isolate,
+    const base::span<const uint8_t> data) {
   gfx::ImageSkia image_skia;
-  electron::util::AddImageSkiaRepFromPNG(
-      &image_skia, base::as_bytes(base::make_span(buffer, length)), 1.0);
+  electron::util::AddImageSkiaRepFromPNG(&image_skia, data, 1.0);
   return Create(isolate, gfx::Image(image_skia));
 }
 
@@ -564,7 +563,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
   std::string mime_type, charset, data;
   if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
     if (mime_type == "image/png")
-      return CreateFromPNG(isolate, data.c_str(), data.size());
+      return CreateFromPNG(isolate, base::as_bytes(base::span(data)));
     else if (mime_type == "image/jpeg")
       return CreateFromJPEG(isolate, data.c_str(), data.size());
   }

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "gin/wrappable.h"
@@ -61,8 +62,7 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,
                                          const gfx::Image& image);
   static gin::Handle<NativeImage> CreateFromPNG(v8::Isolate* isolate,
-                                                const char* buffer,
-                                                size_t length);
+                                                base::span<const uint8_t> data);
   static gin::Handle<NativeImage> CreateFromJPEG(v8::Isolate* isolate,
                                                  const char* buffer,
                                                  size_t length);
