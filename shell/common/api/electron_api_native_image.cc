@@ -30,6 +30,7 @@
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
@@ -398,10 +399,8 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
     skia_rep_added = electron::util::AddImageSkiaRepFromBuffer(
-        &image_skia,
-        base::span{reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
-                   node::Buffer::Length(buffer)},
-        width, height, scale_factor);
+        &image_skia, electron::util::as_byte_span(buffer), width, height,
+        scale_factor);
   } else if (options.Get("dataURL", &url)) {
     std::string mime_type, charset, data;
     if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
@@ -509,7 +508,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
   auto size_bytes = info.computeMinByteSize();
 
-  if (size_bytes != node::Buffer::Length(buffer)) {
+  const auto buffer_data = electron::util::as_byte_span(buffer);
+  if (size_bytes != buffer_data.size()) {
     thrower.ThrowError("invalid buffer size");
     return gin::Handle<NativeImage>();
   }
@@ -522,7 +522,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
 
   SkBitmap bitmap;
   bitmap.allocN32Pixels(width, height, false);
-  bitmap.writePixels({info, node::Buffer::Data(buffer), bitmap.rowBytes()});
+  bitmap.writePixels({info, buffer_data.data(), bitmap.rowBytes()});
 
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
@@ -553,10 +553,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
 
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromBuffer(
-      &image_skia,
-      base::span{reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
-                 node::Buffer::Length(buffer)},
-      width, height, scale_factor);
+      &image_skia, electron::util::as_byte_span(buffer), width, height,
+      scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }
 
