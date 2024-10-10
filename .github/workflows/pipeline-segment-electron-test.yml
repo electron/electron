@@ -198,7 +198,7 @@ jobs:
         DD_CIVISIBILITY_LOGS_ENABLED: true
         DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
       run: |
-        if [ -n $DD_API_KEY ]; then
+        if ! [ -z $DD_API_KEY ]; then
           datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
