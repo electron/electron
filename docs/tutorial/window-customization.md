@@ -16,6 +16,7 @@ constructor.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ frame: false })
 ```
 
@@ -30,6 +31,7 @@ content window.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 ```
 
@@ -46,6 +48,7 @@ use the native UI to control the window.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover' })
 ```
 
@@ -59,6 +62,7 @@ by a fixed amount.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ titleBarStyle: 'hiddenInset' })
 ```
 
@@ -68,6 +72,7 @@ constructor.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   trafficLightPosition: { x: 10, y: 10 }
@@ -82,6 +87,7 @@ on the value of its boolean parameter.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 // hides the traffic lights
 win.setWindowButtonVisibility(false)
@@ -108,6 +114,7 @@ system colors:
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   titleBarOverlay: true
@@ -120,6 +127,7 @@ If a color option is not specified, the color will default to its system color f
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   titleBarOverlay: {
@@ -140,6 +148,7 @@ By setting the `transparent` option to `true`, you can make a fully transparent 
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ transparent: true })
 ```
 
@@ -169,6 +178,7 @@ API:
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 win.setIgnoreMouseEvents(true)
 ```
@@ -182,6 +192,7 @@ allowing events such as `mouseleave` to be emitted:
 
 ```js title='main.js'
 const { BrowserWindow, ipcMain } = require('electron')
+
 const path = require('node:path')
 
 const win = new BrowserWindow({

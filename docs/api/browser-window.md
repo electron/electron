@@ -40,7 +40,9 @@ the window after this event will have no visual flash:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ show: false })
+
 win.once('ready-to-show', () => {
   win.show()
 })
@@ -353,7 +355,9 @@ e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
+
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
   if (cmd === 'browser-backward' && win.webContents.canGoBack()) {
@@ -788,6 +792,7 @@ Resizes and moves the window to the supplied bounds. Any properties that are not
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 // set all bounds properties
@@ -1043,6 +1048,7 @@ a HTML-rendered toolbar. For example:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 const toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
@@ -1195,9 +1201,10 @@ method:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
-const url = require('url').format({
+const url = require('node:url').format({
   protocol: 'file',
   slashes: true,
   pathname: require('node:path').join(__dirname, 'index.html')
@@ -1211,6 +1218,7 @@ the following:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 win.loadURL('http://localhost:8000/post', {
