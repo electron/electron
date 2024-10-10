@@ -4,6 +4,7 @@
 
 #include "shell/common/node_util.h"
 
+#include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "gin/converter.h"
 #include "shell/common/node_includes.h"
@@ -44,4 +45,13 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   return ret;
 }
 
+// SAFETY: There is no node::Buffer API that passes the UNSAFE_BUFFER_USAGE
+// test, so let's isolate the unsafe API use into this function. Instead of
+// calling `Buffer::Data()` and `Buffer::Length()` directly, the rest of our
+// code should prefer to use spans returned by this function.
+base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
+  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
+  const auto size = node::Buffer::Length(node_buffer);
+  return UNSAFE_BUFFERS(base::span{data, size});
+}
 }  // namespace electron::util
