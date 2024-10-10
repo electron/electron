@@ -335,7 +335,7 @@ for:
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\junit\test-results-main.xml ( appveyor-retry appveyor PushArtifact electron\junit\test-results-main.xml )
       - ps: |
-          if ($env:RUN_TESTS -eq 'true') {
+          if ($env:RUN_TESTS -eq 'true' -And $env:DD_API_KEY) {
             $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
             $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
             $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
