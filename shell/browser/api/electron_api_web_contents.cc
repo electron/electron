@@ -1689,7 +1689,8 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   //
   // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
-  auto* web_frame = WebFrameMain::FromRenderFrameHost(new_host);
+  auto* web_frame =
+      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
   if (web_frame) {
     web_frame->UpdateRenderFrameHost(new_host);
   }
@@ -1861,6 +1862,8 @@ bool WebContents::EmitNavigationEvent(
   dict.Set("url", url);
   dict.Set("isSameDocument", is_same_document);
   dict.Set("isMainFrame", is_main_frame);
+  dict.Set("processId", frame_process_id);
+  dict.Set("routingId", frame_routing_id);
   dict.SetGetter("frame", frame_host);
   dict.SetGetter("initiator", initiator_frame_host);
 
@@ -1980,8 +1983,10 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
     dict.Set("_replyChannel",
              ReplyChannel::Create(isolate, std::move(callback)));
   if (frame) {
+    dict.SetGetter("senderFrame", frame);
     dict.Set("frameId", frame->GetRoutingID());
     dict.Set("processId", frame->GetProcess()->GetID());
+    dict.Set("frameTreeNodeId", frame->GetFrameTreeNodeId());
   }
   return event;
 }
