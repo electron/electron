@@ -256,7 +256,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if BUILDFLAG(IS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type);
+    SetVibrancy(type, 0);
   }
 #elif BUILDFLAG(IS_WIN)
   std::string material;
@@ -463,7 +463,7 @@ std::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
   return "";  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type) {
+void NativeWindow::SetVibrancy(const std::string& type, int duration) {
   vibrancy_ = type;
 }
 
