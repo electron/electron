@@ -5,6 +5,9 @@
       "autolink": false,
       "shortcut": false
     },
+    "MD049": {
+      "style": "underscore"
+    },
     "no-angle-brackets": true,
     "no-curly-braces": true,
     "no-inline-html": {
