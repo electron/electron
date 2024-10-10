@@ -8,7 +8,7 @@ inputs:
     description: 'Target platform'
     required: true
   artifact-platform:
-    description: 'Artifact platform, should be linux, darwin or mas'
+    description: 'Artifact platform, should be linux, windows, darwin or mas'
     required: true
   step-suffix:
     description: 'Suffix for build steps'
@@ -71,18 +71,22 @@ runs:
         cd src
         e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
+          target_os=${{ inputs.target-platform == 'linux' && 'linux' || (inputs.target-platform == 'windows' && 'win' || 'mac') }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
-          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
+          target_arch=${{ inputs.target-arch }}
+          if [ "${{ inputs.target-arch }}" = "x86" ]; then
+            target_arch="ia32"
+          fi
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_arch.manifest
         fi
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
         e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
         if [ "`uname`" = "Darwin" ]; then
@@ -91,7 +95,7 @@ runs:
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
-        if [ "`uname`" = "Linux" ]; then
+        if [ "${{ inputs.target-platform }}" = "linux" ]; then
           if [ "${{ inputs.target-arch }}" = "arm" ]; then
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
@@ -105,7 +109,13 @@ runs:
         fi
 
         e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          cd out/Default
+          powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
+          powershell Compress-Archive -update gen/v8/embedded.S mksnapshot.zip
+        else
+          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
