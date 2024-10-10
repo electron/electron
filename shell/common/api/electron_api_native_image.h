@@ -63,9 +63,9 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
                                          const gfx::Image& image);
   static gin::Handle<NativeImage> CreateFromPNG(v8::Isolate* isolate,
                                                 base::span<const uint8_t> data);
-  static gin::Handle<NativeImage> CreateFromJPEG(v8::Isolate* isolate,
-                                                 const char* buffer,
-                                                 size_t length);
+  static gin::Handle<NativeImage> CreateFromJPEG(
+      v8::Isolate* isolate,
+      base::span<const uint8_t> data);
   static gin::Handle<NativeImage> CreateFromPath(v8::Isolate* isolate,
                                                  const base::FilePath& path);
   static gin::Handle<NativeImage> CreateFromBitmap(
