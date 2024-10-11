@@ -789,6 +789,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__type_traits/is_floating_point.h",
   "//third_party/libc++/src/include/__type_traits/is_function.h",
   "//third_party/libc++/src/include/__type_traits/is_fundamental.h",
+  "//third_party/libc++/src/include/__type_traits/is_implicit_lifetime.h",
   "//third_party/libc++/src/include/__type_traits/is_implicitly_default_constructible.h",
   "//third_party/libc++/src/include/__type_traits/is_integral.h",
   "//third_party/libc++/src/include/__type_traits/is_literal_type.h",
