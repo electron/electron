@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index c2e377d5b1603a2d3c67a61911545ce361d418c2..20fe5301a0120e926d118f8b27ef57621833a5bf 100644
+index a0d5a983bb46a50dcf31afadc10f597a0e3ed15d..b6bda9691f0ae96ee4ba5d0d96d4e57e4fa592c2 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9040,6 +9040,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9060,6 +9060,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -148,10 +148,10 @@ index a080fb57f00c712eb8a3a9be669413e1082ce3b3..4826eea9747c4860d7f5b4b8d478e62c
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d5e16b9e780efac46e088b3ef226e4418a90aeaf..724818204a4fa1578102c2fe1a8877735323595a 100644
+index 7b7e727c44a1477640f8702ad818f4a8607e3fb7..24904d0b6436353601aa43c603f9d12fb8eff960 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6834,6 +6834,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6837,6 +6837,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -210,10 +210,10 @@ index c576ace24e81cc877aa2595d40e0a13a7af9f6a2..210fb97d44c19c29af424cc7b9cb3169
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 7b8158aff39c247e1729edb032833cdebf949acf..7d77f26106950deb1bae43ca7dcd7e0cde0ac6b5 100644
+index fe3c23e1dd1c818b5cb07a609dbbf17763c6d583..77bcaaf388fe1fb4577e25880b10154db0b46ce4 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2248,6 +2248,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2251,6 +2251,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  
