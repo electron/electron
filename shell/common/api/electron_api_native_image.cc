@@ -238,10 +238,12 @@ v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  std::vector<unsigned char> encoded;
-  gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, &encoded);
-  const char* data = reinterpret_cast<char*>(encoded.data());
-  size_t size = encoded.size();
+  std::optional<std::vector<uint8_t>> encoded =
+      gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
+  if (!encoded.has_value())
+    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  const char* data = reinterpret_cast<char*>(encoded->data());
+  size_t size = encoded->size();
   return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
 }
 
