@@ -190,7 +190,7 @@ index 6c89a03712b9449e1a7b0e38ed9d019b30029c15..50b324ef3f1163e462ad145e58b42bf3
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 9a9189517762d3fe1273dd49a9fbf66be7bce61b..b5015fa8de8dd3cbf8e366326575c7e8268e384c 100644
+index 072e7d0dde701a8f2d1de2704c8a056363324390..9e5ace2b1f32d5e5c542439f5365f9d9458cbf37 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
 @@ -85,8 +85,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
