@@ -20,7 +20,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/transferable_message.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
