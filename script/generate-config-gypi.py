@@ -61,15 +61,10 @@ def main(target_file, target_cpu):
   v['node_module_version'] = int(args['node_module_version'])
   # Used by certain versions of node-gyp.
   v['build_v8_with_gn'] = 'false'
+  # Enable clang conditionally based on target platform
+  # in common.gypi
   if 'clang' in v:
     del v['clang']
-    v['conditions'] = [
-      ['OS == "mac"', {
-        'clang': 1,
-      }, {
-        'clang': 0,
-      }],
-    ]
 
   with open(target_file, 'w+', encoding='utf-8') as file_out:
     file_out.write(pprint.pformat(config, indent=2))
