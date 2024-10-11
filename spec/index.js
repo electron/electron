@@ -1,3 +1,5 @@
+const { app, protocol } = require('electron');
+
 const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
@@ -11,8 +13,6 @@ process.on('uncaughtException', (err) => {
 // Tell ts-node which tsconfig to use
 process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
-
-const { app, protocol } = require('electron');
 
 // Some Linux machines have broken hardware acceleration support.
 if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {

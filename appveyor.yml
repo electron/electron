@@ -29,14 +29,14 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-131.0.6734.0
+image: e-131.0.6734.0-node-20.17-0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
   ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
-  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, tap"
+  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
   DEPOT_TOOLS_WIN_TOOLCHAIN: 1
   DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
   GYP_MSVS_HASH_7393122652: 3ba76c5c20
@@ -248,6 +248,13 @@ for:
       only:
         - job_name: Test
 
+    environment:
+        DD_ENV: ci
+        DD_SERVICE: electron
+        DD_CIVISIBILITY_LOGS_ENABLED: true
+        DD_GIT_REPOSITORY_URL: "https://github.com/electron/electron.git"
+        ELECTRON_TEST_RESULTS_DIR: C:\projects\src\electron\junit
+
     init:
       - ps: |
           if ($env:RUN_TESTS -ne 'true') {
@@ -263,6 +270,7 @@ for:
           } else {
             $global:LASTEXITCODE = 0
           }
+      - npm install -g @datadog/datadog-ci
       - cd ..
       - mkdir out\Default
       - cd ..
@@ -320,3 +328,13 @@ for:
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      - if exist electron\junit\test-results-main.xml ( appveyor-retry appveyor PushArtifact electron\junit\test-results-main.xml )
+      - ps: |
+          if ($env:RUN_TESTS -eq 'true' -And $env:DD_API_KEY) {
+            $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
+            $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
+            $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
+            if (Test-Path -Path "C:\projects\src\electron\junit\test-results-main.xml") {
+              C:\Users\appveyor\AppData\Roaming\npm\datadog-ci.ps1 junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
+            }
+          }

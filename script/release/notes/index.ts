@@ -1,22 +1,24 @@
 #!/usr/bin/env node
 
-const { GitProcess } = require('dugite');
-const minimist = require('minimist');
-const path = require('node:path');
-const semver = require('semver');
+import { Octokit } from '@octokit/rest';
+import { GitProcess } from 'dugite';
+import { valid, compare, gte, lte } from 'semver';
 
-const { ELECTRON_DIR } = require('../../lib/utils');
-const notesGenerator = require('./notes.js');
+import { basename } from 'node:path';
+import { parseArgs } from 'node:util';
 
-const { Octokit } = require('@octokit/rest');
-const { createGitHubTokenStrategy } = require('../github-token');
+import { get, render } from './notes';
+import { ELECTRON_DIR } from '../../lib/utils';
+import { createGitHubTokenStrategy } from '../github-token';
+import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
+
 const octokit = new Octokit({
-  authStrategy: createGitHubTokenStrategy('electron')
+  authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
-const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
+const semverify = (version: string) => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
-const runGit = async (args) => {
+const runGit = async (args: string[]) => {
   console.info(`Running: git ${args.join(' ')}`);
   const response = await GitProcess.exec(args, ELECTRON_DIR);
   if (response.exitCode !== 0) {
@@ -25,28 +27,28 @@ const runGit = async (args) => {
   return response.stdout.trim();
 };
 
-const tagIsSupported = tag => tag && !tag.includes('nightly') && !tag.includes('unsupported');
-const tagIsAlpha = tag => tag && tag.includes('alpha');
-const tagIsBeta = tag => tag && tag.includes('beta');
-const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag) && !tagIsAlpha(tag);
+const tagIsSupported = (tag: string) => !!tag && !tag.includes('nightly') && !tag.includes('unsupported');
+const tagIsAlpha = (tag: string) => !!tag && tag.includes('alpha');
+const tagIsBeta = (tag: string) => !!tag && tag.includes('beta');
+const tagIsStable = (tag: string) => tagIsSupported(tag) && !tagIsBeta(tag) && !tagIsAlpha(tag);
 
-const getTagsOf = async (point) => {
+const getTagsOf = async (point: string) => {
   try {
     const tags = await runGit(['tag', '--merged', point]);
     return tags.split('\n')
       .map(tag => tag.trim())
-      .filter(tag => semver.valid(tag))
-      .sort(semver.compare);
+      .filter(tag => valid(tag))
+      .sort(compare);
   } catch (err) {
     console.error(`Failed to fetch tags for point ${point}`);
     throw err;
   }
 };
 
-const getTagsOnBranch = async (point) => {
+const getTagsOnBranch = async (point: string) => {
   const { data: { default_branch: defaultBranch } } = await octokit.repos.get({
-    owner: 'electron',
-    repo: 'electron'
+    owner: ELECTRON_ORG,
+    repo: ELECTRON_REPO
   });
   const mainTags = await getTagsOf(defaultBranch);
   if (point === defaultBranch) {
@@ -57,7 +59,7 @@ const getTagsOnBranch = async (point) => {
   return (await getTagsOf(point)).filter(tag => !mainTagsSet.has(tag));
 };
 
-const getBranchOf = async (point) => {
+const getBranchOf = async (point: string) => {
   try {
     const branches = (await runGit(['branch', '-a', '--contains', point]))
       .split('\n')
@@ -89,11 +91,11 @@ const getStabilizationBranches = async () => {
   return (await getAllBranches()).filter(branch => /^origin\/\d+-x-y$/.test(branch));
 };
 
-const getPreviousStabilizationBranch = async (current) => {
+const getPreviousStabilizationBranch = async (current: string) => {
   const stabilizationBranches = (await getStabilizationBranches())
     .filter(branch => branch !== current && branch !== `origin/${current}`);
 
-  if (!semver.valid(current)) {
+  if (!valid(current)) {
     // since we don't seem to be on a stabilization branch right now,
     // pick a placeholder name that will yield the newest branch
     // as a comparison point.
@@ -102,20 +104,20 @@ const getPreviousStabilizationBranch = async (current) => {
 
   let newestMatch = null;
   for (const branch of stabilizationBranches) {
-    if (semver.gte(semverify(branch), semverify(current))) {
+    if (gte(semverify(branch), semverify(current))) {
       continue;
     }
-    if (newestMatch && semver.lte(semverify(branch), semverify(newestMatch))) {
+    if (newestMatch && lte(semverify(branch), semverify(newestMatch))) {
       continue;
     }
     newestMatch = branch;
   }
-  return newestMatch;
+  return newestMatch!;
 };
 
-const getPreviousPoint = async (point) => {
+const getPreviousPoint = async (point: string) => {
   const currentBranch = await getBranchOf(point);
-  const currentTag = (await getTagsOf(point)).filter(tag => tagIsSupported(tag)).pop();
+  const currentTag = (await getTagsOf(point)).filter(tag => tagIsSupported(tag)).pop()!;
   const currentIsStable = tagIsStable(currentTag);
 
   try {
@@ -146,18 +148,18 @@ const getPreviousPoint = async (point) => {
   }
 };
 
-async function getReleaseNotes (range, newVersion, unique) {
+async function getReleaseNotes (range: string, newVersion?: string, unique?: boolean) {
   const rangeList = range.split('..') || ['HEAD'];
-  const to = rangeList.pop();
-  const from = rangeList.pop() || (await getPreviousPoint(to));
+  const to = rangeList.pop()!;
+  const from = rangeList.pop() || (await getPreviousPoint(to))!;
 
   if (!newVersion) {
     newVersion = to;
   }
 
-  const notes = await notesGenerator.get(from, to, newVersion);
-  const ret = {
-    text: notesGenerator.render(notes, unique)
+  const notes = await get(from, to, newVersion);
+  const ret: { text: string; warning?: string; } = {
+    text: render(notes, unique)
   };
 
   if (notes.unknown.length) {
@@ -168,13 +170,24 @@ async function getReleaseNotes (range, newVersion, unique) {
 }
 
 async function main () {
-  const opts = minimist(process.argv.slice(2), {
-    boolean: ['help', 'unique'],
-    string: ['version']
+  const { values: { help, unique, version }, positionals } = parseArgs({
+    options: {
+      help: {
+        type: 'boolean'
+      },
+      unique: {
+        type: 'boolean'
+      },
+      version: {
+        type: 'string'
+      }
+    },
+    allowPositionals: true
   });
-  opts.range = opts._.shift();
-  if (opts.help || !opts.range) {
-    const name = path.basename(process.argv[1]);
+
+  const range = positionals.shift();
+  if (help || !range) {
+    const name = basename(process.argv[1]);
     console.log(`
 easy usage: ${name} version
 
@@ -194,7 +207,7 @@ For example, these invocations are equivalent:
     return 0;
   }
 
-  const notes = await getReleaseNotes(opts.range, opts.version, opts.unique);
+  const notes = await getReleaseNotes(range, version, unique);
   console.log(notes.text);
   if (notes.warning) {
     throw new Error(notes.warning);
@@ -208,4 +221,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = getReleaseNotes;
+export default getReleaseNotes;
