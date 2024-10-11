@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 91b6fad0484400f25d7139667d1db9af12ae991c..7bdf5fd7fb2564ac45e72d93a1fa9ce7ae6b6bbf 100644
+index 67e4de60604edd0b182f5a5aec8b64beacdf37b9..33431a8357a500d1350a0ed6bc8772836b325776 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1037,6 +1037,7 @@ component("base") {
+@@ -1038,6 +1038,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -558,7 +558,7 @@ index 13c3fe06c417a2565e6af4552930a56c44a01fb3..ef67191f5d010451cde2b084d6165c7d
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fbdfbd33a2715bccc92d39ae8fcc1e2fdc9b1151..839c1379211385bdaa506c265ad7021536b1c35f 100644
+index 343fb081a9fcbd3c7e68a9b065686bcd27ae7a13..18adf795b1e4109724003749a9d3463c5dfb64a7 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -320,6 +320,7 @@ source_set("browser") {
@@ -1002,7 +1002,7 @@ index 70d5665ad7b9ef62370497636af919ede2508ad4..f4dc3e2b8053cdb3e8c439ab1a1d6369
    }
  
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index 299a028f23314f479d2da8f914a5bdf34698d854..67a56a3b4c8fc524f1ec8cfec856f24d30402134 100644
+index 4e53d573ff67615bc7dcee7db6f855c67094f414..8b061d66b1a854b51a5a38b6a71eadab6a7dbbec 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
 @@ -39,6 +39,7 @@ component("seatbelt") {
@@ -1782,7 +1782,7 @@ index c4ab83ca4f48e5357fe9bcf024b3f95612223cdf..d97c9731884769079e53fa334f44319e
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 762ffff0e4a7ffc40e85dc82f5f0f243a447a85d..db4fbc65fded3beb58e6c336e1d4c4d33d3b2c25 100644
+index 3fe00beafd7b6b4bb05c2da94dbb0d7c0076fa87..0b5460349192b7f2b8dc628a81213690f99d8f94 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -335,6 +335,12 @@ component("gfx") {
