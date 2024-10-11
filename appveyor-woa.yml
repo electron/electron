@@ -45,10 +45,16 @@ environment:
   matrix:
 
     - job_name: Build Arm on X64 Windows
-    - job_name: Test On Windows On Arm Hardware
+    - job_name: Test On Windows On Arm Hardware 1
       job_depends_on: Build Arm on X64 Windows
       APPVEYOR_BUILD_WORKER_IMAGE: base-woa
       APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
+      shard: 1
+    - job_name: Test On Windows On Arm Hardware 2
+      job_depends_on: Build Arm on X64 Windows
+      APPVEYOR_BUILD_WORKER_IMAGE: base-woa
+      APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
+      shard: 2
 
 clone_script:
 - ps: git clone -q $("--branch=" + $Env:APPVEYOR_REPO_BRANCH) $("https://github.com/" + $Env:APPVEYOR_REPO_NAME + ".git") $Env:APPVEYOR_BUILD_FOLDER
@@ -254,7 +260,8 @@ for:
           }
   - matrix:
       only:
-        - job_name: Test On Windows On Arm Hardware
+        - job_name: Test On Windows On Arm Hardware 1
+        - job_name: Test On Windows On Arm Hardware 2
 
     environment:
         IGNORE_YARN_INSTALL_ERROR: 1
@@ -326,7 +333,9 @@ for:
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
+      - ps: $env:tests_files=node script\split-tests $env:shard 2
+      - echo "Running shard %shard% specs %tests_files%"
+      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion --files %tests_files%
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
 
@@ -335,8 +344,11 @@ for:
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\junit\test-results-main.xml ( appveyor-retry appveyor PushArtifact electron\junit\test-results-main.xml )
       - ps: |
-          $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
-          $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
-          $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
-          C:\projects\src\electron\datadog-ci.exe junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
-
+          if ($env:DD_API_KEY) {
+            $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
+            $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
+            $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
+            if (Test-Path -Path "C:\projects\src\electron\junit\test-results-main.xml") {
+              C:\projects\src\electron\datadog-ci.exe junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
+            }
+          }
