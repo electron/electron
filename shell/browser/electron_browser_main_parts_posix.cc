@@ -24,6 +24,18 @@ namespace electron {
 
 namespace {
 
+// write |ref|'s raw bytes to |fd|.
+template <typename T>
+void WriteValToFd(int fd, const T& ref) {
+  base::span<const uint8_t> bytes = base::byte_span_from_ref(ref);
+  while (!bytes.empty()) {
+    const ssize_t rv = HANDLE_EINTR(write(fd, bytes.data(), bytes.size()));
+    RAW_CHECK(rv >= 0);
+    const size_t n_bytes_written = rv >= 0 ? static_cast<size_t>(rv) : 0U;
+    bytes = bytes.subspan(n_bytes_written);
+  }
+}
+
 // See comment in |PreEarlyInitialization()|, where sigaction is called.
 void SIGCHLDHandler(int signal) {}
 
@@ -48,15 +60,7 @@ void GracefulShutdownHandler(int signal) {
   RAW_CHECK(g_pipe_pid == getpid());
   RAW_CHECK(g_shutdown_pipe_write_fd != -1);
   RAW_CHECK(g_shutdown_pipe_read_fd != -1);
-  size_t bytes_written = 0;
-  do {
-    int rv = HANDLE_EINTR(
-        write(g_shutdown_pipe_write_fd,
-              reinterpret_cast<const char*>(&signal) + bytes_written,
-              sizeof(signal) - bytes_written));
-    RAW_CHECK(rv >= 0);
-    bytes_written += rv;
-  } while (bytes_written < sizeof(signal));
+  WriteValToFd(g_shutdown_pipe_write_fd, signal);
 }
 
 // See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
@@ -129,26 +133,33 @@ NOINLINE void ExitPosted() {
   sleep(UINT_MAX);
 }
 
+// read |sizeof(T)| raw bytes from |fd| and return the result
+template <typename T>
+[[nodiscard]] std::optional<T> ReadValFromFd(int fd) {
+  auto val = T{};
+  base::span<uint8_t> bytes = base::byte_span_from_ref(val);
+  while (!bytes.empty()) {
+    const ssize_t rv = HANDLE_EINTR(read(fd, bytes.data(), bytes.size()));
+    if (rv < 0) {
+      NOTREACHED() << "Unexpected error: " << strerror(errno);
+      ShutdownFDReadError();
+      return {};
+    }
+    if (rv == 0) {
+      NOTREACHED() << "Unexpected closure of shutdown pipe.";
+      ShutdownFDClosedError();
+      return {};
+    }
+    const size_t n_bytes_read = static_cast<size_t>(rv);
+    bytes = bytes.subspan(n_bytes_read);
+  }
+  return val;
+}
+
 void ShutdownDetector::ThreadMain() {
   base::PlatformThread::SetName("CrShutdownDetector");
 
-  int signal;
-  size_t bytes_read = 0;
-  do {
-    const ssize_t ret = HANDLE_EINTR(
-        read(shutdown_fd_, reinterpret_cast<char*>(&signal) + bytes_read,
-             sizeof(signal) - bytes_read));
-    if (ret < 0) {
-      NOTREACHED() << "Unexpected error: " << strerror(errno);
-      ShutdownFDReadError();
-      break;
-    } else if (ret == 0) {
-      NOTREACHED() << "Unexpected closure of shutdown pipe.";
-      ShutdownFDClosedError();
-      break;
-    }
-    bytes_read += ret;
-  } while (bytes_read < sizeof(signal));
+  const int signal = ReadValFromFd<int>(shutdown_fd_).value_or(0);
   VLOG(1) << "Handling shutdown for signal " << signal << ".";
 
   if (!task_runner_->PostTask(FROM_HERE,
