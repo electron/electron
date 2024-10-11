@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 11 Oct 2024 15:01:25 +0900
+Subject: build: restore clang as default compiler on macOS
+
+Refs https://github.com/nodejs/node/commit/6e0a2bb54c5bbeff0e9e33e1a0c683ed980a8a0f
+configures the value at build time which doesn't work in Electron
+as it depends on the environment in which the headers got generated from which
+cannot reflect the value per platform. It works for Node.js since
+node-gyp will use the result of `process.config` that reflects the environment
+in which the binary got built.
+
+diff --git a/common.gypi b/common.gypi
+index 2eb62610db2f0ebf68fa9a55ffba98291ecfe451..3ec08ee144b586d05c4e49c2251416734cbc02c5 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -125,6 +125,7 @@
+         'v8_base': '<(PRODUCT_DIR)/obj.target/tools/v8_gypfiles/libv8_snapshot.a',
+       }],
+       ['OS=="mac"', {
++        'clang%': 1,
+         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
+         'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
+       }],
