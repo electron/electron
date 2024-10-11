@@ -18,10 +18,10 @@ describe('webFrameMain module', () => {
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
 
-  type Server = { server: http.Server, url: string }
+  type Server = { server: http.Server, url: string, crossOriginUrl: string }
 
   /** Creates an HTTP server whose handler embeds the given iframe src. */
-  const createServer = async () => {
+  const createServer = async (): Promise<Server> => {
     const server = http.createServer((req, res) => {
       const params = new URLSearchParams(new URL(req.url || '', `http://${req.headers.host}`).search || '');
       if (params.has('frameSrc')) {
@@ -30,7 +30,15 @@ describe('webFrameMain module', () => {
         res.end('');
       }
     });
-    return { server, url: (await listen(server)).url + '/' };
+    const serverUrl = (await listen(server)).url + '/';
+    // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
+    // a separate origin because differing ports aren't enough 🤔
+    const crossOriginUrl = serverUrl.replace('127.0.0.1', 'localhost');
+    return {
+      server,
+      url: serverUrl,
+      crossOriginUrl
+    };
   };
 
   afterEach(closeAllWindows);
@@ -285,8 +293,15 @@ describe('webFrameMain module', () => {
   });
 
   describe('RenderFrame lifespan', () => {
+    let server: Awaited<ReturnType<typeof createServer>>;
     let w: BrowserWindow;
 
+    before(async () => {
+      server = await createServer();
+    });
+    after(() => {
+      server.server.close();
+    });
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
@@ -302,19 +317,15 @@ describe('webFrameMain module', () => {
     });
 
     it('persists through cross-origin navigation', async () => {
-      const server = await createServer();
-      // 'localhost' is treated as a separate origin.
-      const crossOriginUrl = server.url.replace('127.0.0.1', 'localhost');
       await w.loadURL(server.url);
       const { mainFrame } = w.webContents;
       expect(mainFrame.url).to.equal(server.url);
-      await w.loadURL(crossOriginUrl);
+      await w.loadURL(server.crossOriginUrl);
       expect(w.webContents.mainFrame).to.equal(mainFrame);
-      expect(mainFrame.url).to.equal(crossOriginUrl);
+      expect(mainFrame.url).to.equal(server.crossOriginUrl);
     });
 
     it('recovers from renderer crash on same-origin', async () => {
-      const server = await createServer();
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;
       await w.webContents.loadURL(server.url);
@@ -328,9 +339,6 @@ describe('webFrameMain module', () => {
 
     // Fixed by #34411
     it('recovers from renderer crash on cross-origin', async () => {
-      const server = await createServer();
-      // 'localhost' is treated as a separate origin.
-      const crossOriginUrl = server.url.replace('127.0.0.1', 'localhost');
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;
       await w.webContents.loadURL(server.url);
@@ -339,9 +347,78 @@ describe('webFrameMain module', () => {
       await crashEvent;
       // A short wait seems to be required to reproduce the crash.
       await setTimeout(100);
-      await w.webContents.loadURL(crossOriginUrl);
+      await w.webContents.loadURL(server.crossOriginUrl);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);
+    });
+
+    it('returns null upon accessing senderFrame after cross-origin navigation', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+      const preloadPromise = once(ipcMain, 'preload-ran');
+      await w.webContents.loadURL(server.url);
+      const [event] = await preloadPromise;
+      await w.webContents.loadURL(server.crossOriginUrl);
+      // senderFrame now points to a disposed RenderFrameHost. It should
+      // be null when attempting to access the lazily evaluated property.
+      expect(event.senderFrame).to.be.null();
+    });
+
+    it('is detached when unload handler sends IPC', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+      await w.webContents.loadURL(server.url);
+      const unloadPromise = new Promise<void>((resolve, reject) => {
+        ipcMain.once('preload-unload', (event) => {
+          try {
+            const { senderFrame } = event;
+            expect(senderFrame).to.not.be.null();
+            expect(senderFrame!.detached).to.be.true();
+            expect(senderFrame!.processId).to.equal(event.processId);
+            expect(senderFrame!.routingId).to.equal(event.frameId);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+      await w.webContents.loadURL(server.crossOriginUrl);
+      await expect(unloadPromise).to.eventually.be.fulfilled();
+    });
+
+    it('disposes detached frame after cross-origin navigation', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+      await w.webContents.loadURL(server.url);
+      // eslint-disable-next-line prefer-const
+      let crossOriginPromise: Promise<void>;
+      const unloadPromise = new Promise<void>((resolve, reject) => {
+        ipcMain.once('preload-unload', async (event) => {
+          try {
+            const { senderFrame } = event;
+            expect(senderFrame!.detached).to.be.true();
+            await crossOriginPromise;
+            expect(() => senderFrame!.url).to.throw(/Render frame was disposed/);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+      crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
+      await expect(unloadPromise).to.eventually.be.fulfilled();
     });
   });
 
@@ -388,10 +465,6 @@ describe('webFrameMain module', () => {
     it('is not emitted upon cross-origin navigation', async () => {
       const server = await createServer();
 
-      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
-      // a separate origin because differing ports aren't enough 🤔
-      const secondUrl = server.url.replace('127.0.0.1', 'localhost');
-
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadURL(server.url);
 
@@ -401,7 +474,7 @@ describe('webFrameMain module', () => {
         frameCreatedEmitted = true;
       });
 
-      await w.webContents.loadURL(secondUrl);
+      await w.webContents.loadURL(server.crossOriginUrl);
 
       expect(frameCreatedEmitted).to.be.false();
     });
@@ -419,8 +492,8 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
       const promise = new Promise<void>(resolve => {
         w.webContents.on('frame-created', (e, { frame }) => {
-          frame.on('dom-ready', () => {
-            if (frame.name === 'frameA') {
+          frame!.on('dom-ready', () => {
+            if (frame!.name === 'frameA') {
               resolve();
             }
           });
