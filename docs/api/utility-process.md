@@ -127,6 +127,9 @@ Returns:
 
 Emitted when the child process needs to terminate due to non continuable error from V8.
 
+No matter if you listen to the `error` event, the `exit` event will be emitted after the
+child process terminates.
+
 #### Event: 'exit'
 
 Returns:
