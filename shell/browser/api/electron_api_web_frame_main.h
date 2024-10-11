@@ -128,6 +128,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
+  std::string UnresponsiveDocumentJSCallStack() const;
+
   void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
