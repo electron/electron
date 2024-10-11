@@ -51,7 +51,8 @@ The following methods are available on instances of `WebRequest`:
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -94,7 +95,8 @@ Some examples of valid `urls`:
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -122,7 +124,8 @@ The `callback` has to be called with a `response` object.
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -142,7 +145,8 @@ response are visible by the time this listener is fired.
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -173,7 +177,8 @@ The `callback` has to be called with a `response` object.
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -197,7 +202,8 @@ and response headers are available.
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -222,7 +228,8 @@ redirect is about to occur.
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -245,7 +252,8 @@ completed.
     * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
-    * `frame` WebFrameMain (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
