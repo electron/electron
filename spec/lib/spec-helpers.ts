@@ -9,6 +9,7 @@ import * as http2 from 'node:http2';
 import * as https from 'node:https';
 import * as net from 'node:net';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import * as v8 from 'node:v8';
 
