@@ -66,7 +66,7 @@ index 61ee456a1bfb842aefd8b644ff0ae630a698ef7c..cbf4276337139a81d46fb263bce8f5ee
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a55557845dd8579761034ec5f215b9c059e5f815..e71feee64a9238a9ed20bae5492d5df47c55cfff 100644
+index 21967547790cacc162d9b125e60ca24919b6b485..af7126cec088e5ece113dfbea19674421182abaa 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -765,6 +765,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index a55557845dd8579761034ec5f215b9c059e5f815..e71feee64a9238a9ed20bae5492d5df4
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 57f1179aad3c73db83a2e7782099dd51aa67415e..aaec0b6099e24c673f9c9d8f59dab8960026f131 100644
+index 0f6781dc459e1072e1f538b2c60c21699b175852..ad94803577af27c84e247ace2137995a9ca886e0 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -196,6 +196,7 @@ class NetworkService;
@@ -163,7 +163,7 @@ index 1fd3487243760d5a64bcd27f7022d8d0326bab65..21ecced6578552e30c1a01841053f679
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 9e564b2be92aefc2b58617de92dd8d519c3c784f..bf096ab972cc945d19473cc1e55f6f7fc9618778 100644
+index b181f3d7429cdccfede3803b0659fc877d68e884..874753add7c176871fee299d32199ebfd9526c68 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
 @@ -520,6 +520,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
@@ -176,7 +176,7 @@ index 9e564b2be92aefc2b58617de92dd8d519c3c784f..bf096ab972cc945d19473cc1e55f6f7f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/web_test/browser/web_test_content_browser_client.h b/content/web_test/browser/web_test_content_browser_client.h
-index 4145d0d32ca1d1f02620a66f2437eaa58954b4d7..3cb5faab3f2e60d919dd7dd76fd320b8c63de84f 100644
+index 126fe65469971b91e763a5e7640649dff1a096c4..398feea2aec7ece17d62259320db9035edabeccd 100644
 --- a/content/web_test/browser/web_test_content_browser_client.h
 +++ b/content/web_test/browser/web_test_content_browser_client.h
 @@ -92,6 +92,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
