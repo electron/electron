@@ -1,0 +1,78 @@
+From 56be91796b858a088f67add4e074b9b016f25757 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Thu, 19 Sep 2024 03:15:18 +0000
+Subject: [PATCH] RubyLB: Fix a crash with a parent with a non-default text-align
+
+Update the LineInfo::GetTextAlign() logic so that it align with
+ApplyRubyAlign() behavior.
+
+This CL also removes stale comments.
+
+Bug: 367764861
+Change-Id: Idfe0f3c2f77c7a33ff9317c2b0f36ffa397405d1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5874482
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Auto-Submit: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1357460}
+---
+
+diff --git a/third_party/blink/renderer/core/layout/inline/line_info.cc b/third_party/blink/renderer/core/layout/inline/line_info.cc
+index 402e48a..ec44514 100644
+--- a/third_party/blink/renderer/core/layout/inline/line_info.cc
++++ b/third_party/blink/renderer/core/layout/inline/line_info.cc
+@@ -114,14 +114,25 @@
+ }
+ 
+ ETextAlign LineInfo::GetTextAlign(bool is_last_line) const {
+-  // See LayoutRubyBase::TextAlignmentForLine().
+   if (is_ruby_base_)
+     return ETextAlign::kJustify;
+ 
+-  // See LayoutRubyText::TextAlignmentForLine().
+-  if (is_ruby_text_ && LineStyle().GetTextAlign() ==
+-                           ComputedStyleInitialValues::InitialTextAlign())
+-    return ETextAlign::kJustify;
++  if (is_ruby_text_) {
++    ETextAlign text_align = LineStyle().GetTextAlign();
++    if (!RuntimeEnabledFeatures::RubyLineBreakableEnabled()) {
++      if (text_align == ComputedStyleInitialValues::InitialTextAlign()) {
++        return ETextAlign::kJustify;
++      }
++    } else {
++      ERubyAlign ruby_align = LineStyle().RubyAlign();
++      if ((ruby_align == ERubyAlign::kSpaceAround &&
++           (text_align == ComputedStyleInitialValues::InitialTextAlign() ||
++            text_align == ETextAlign::kJustify)) ||
++          ruby_align == ERubyAlign::kSpaceBetween) {
++        return ETextAlign::kJustify;
++      }
++    }
++  }
+ 
+   return LineStyle().GetTextAlign(is_last_line);
+ }
+diff --git a/third_party/blink/web_tests/fast/ruby/ruby-align-in-text-align-crash.html b/third_party/blink/web_tests/fast/ruby/ruby-align-in-text-align-crash.html
+new file mode 100644
+index 0000000..b456709
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/ruby/ruby-align-in-text-align-crash.html
+@@ -0,0 +1,18 @@
++<!DOCTYPE html>
++<head>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<style>
++span {
++  display: ruby-text;
++  ruby-align: space-between;
++}
++</style>
++</head>
++<body>
++<center><span><table></table></span></center>
++<script>
++test(() => {
++}, 'crbug.com/367764861: No crash by a ruby-text with ruby-align:space-between in a <center>');
++</script>
++</body>
