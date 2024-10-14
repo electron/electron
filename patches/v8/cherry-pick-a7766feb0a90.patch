@@ -1,0 +1,44 @@
+From a7766feb0a9062a4bb75431fa4dcff4062af1442 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Tue, 24 Sep 2024 18:20:18 +0000
+Subject: [PATCH] Revert "[maps] Re-enable side-step transitions"
+
+This reverts commit 62605e134c758be5148d8d7b2541122835006155.
+
+Reason for revert: https://crbug.com/369374536
+
+Original change's description:
+> [maps] Re-enable side-step transitions
+>
+> Bug: 40764103
+> Change-Id: Ie380d54e00a38cf8e8937990af321bc7e498d686
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5667163
+> Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+> Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+> Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#94738}
+
+Bug: 40764103
+Fixed: 369374536
+Change-Id: I94ed458ab17c9474b9d684a8b8c4414f4480e728
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5886972
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96265}
+---
+
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index 25c8d41..dfdf5ed 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -2514,7 +2514,7 @@
+ DEFINE_INT(max_valid_polymorphic_map_count, 4,
+            "maximum number of valid maps to track in POLYMORPHIC state")
+ DEFINE_BOOL(
+-    clone_object_sidestep_transitions, true,
++    clone_object_sidestep_transitions, false,
+     "support sidestep transitions for dependency tracking object clone maps")
+ DEFINE_WEAK_IMPLICATION(future, clone_object_sidestep_transitions)
+ 
