@@ -1,7 +1,10 @@
-From a7766feb0a9062a4bb75431fa4dcff4062af1442 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Tue, 24 Sep 2024 18:20:18 +0000
-Subject: [PATCH] Revert "[maps] Re-enable side-step transitions"
+Subject: Revert "[maps] Re-enable side-step transitions"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This reverts commit 62605e134c758be5148d8d7b2541122835006155.
 
@@ -27,18 +30,19 @@ Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Reviewed-by: Clemens Backes <clemensb@chromium.org>
 Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#96265}
----
 
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 25c8d41..dfdf5ed 100644
+index 686ce7445741f9afb21983098d64549d6e827447..8ad29e2b240a0f018bf418a8b240c1e1b223fcea 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -2514,7 +2514,7 @@
+@@ -2334,6 +2334,10 @@ DEFINE_BOOL_READONLY(fast_map_update, false,
+                      "enable fast map update by caching the migration target")
  DEFINE_INT(max_valid_polymorphic_map_count, 4,
             "maximum number of valid maps to track in POLYMORPHIC state")
- DEFINE_BOOL(
--    clone_object_sidestep_transitions, true,
++DEFINE_BOOL(
 +    clone_object_sidestep_transitions, false,
-     "support sidestep transitions for dependency tracking object clone maps")
- DEFINE_WEAK_IMPLICATION(future, clone_object_sidestep_transitions)
++    "support sidestep transitions for dependency tracking object clone maps")
++DEFINE_WEAK_IMPLICATION(future, clone_object_sidestep_transitions)
  
+ // map-inl.h
+ DEFINE_INT(fast_properties_soft_limit, 12,

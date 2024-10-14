@@ -1,7 +1,7 @@
-From c333ed99544992f66e6e03621fa938d75ad01f70 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Mon, 23 Sep 2024 19:26:24 +0000
-Subject: [PATCH] ipcz: Validate link state fragment before adoption
+Subject: ipcz: Validate link state fragment before adoption
 
 Fixed: 368208152
 Change-Id: I0e2ece4b0857b225d229134b2e55abc3e08348ee
@@ -9,13 +9,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5876623
 Commit-Queue: Ken Rockot <rockot@google.com>
 Reviewed-by: Daniel Cheng <dcheng@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1358968}
----
 
 diff --git a/third_party/ipcz/src/ipcz/node_link.cc b/third_party/ipcz/src/ipcz/node_link.cc
-index e862cf40..dde90c9 100644
+index 420377ac3d0c5a1f745e8c5d0030c21b5d3639f2..412cedc59eaabd79a35d7e299e42f720de9ac148 100644
 --- a/third_party/ipcz/src/ipcz/node_link.cc
 +++ b/third_party/ipcz/src/ipcz/node_link.cc
-@@ -36,21 +36,6 @@
+@@ -37,21 +37,6 @@
  
  namespace ipcz {
  
@@ -37,7 +36,7 @@ index e862cf40..dde90c9 100644
  // static
  Ref<NodeLink> NodeLink::CreateActive(Ref<Node> node,
                                       LinkSide link_side,
-@@ -714,8 +699,8 @@
+@@ -721,8 +706,8 @@ bool NodeLink::OnAcceptBypassLink(msg::AcceptBypassLink& accept) {
      return true;
    }
  
@@ -48,7 +47,7 @@ index e862cf40..dde90c9 100644
    if (link_state.is_null()) {
      // Bypass links must always come with a valid fragment for their
      // RouterLinkState. If one has not been provided, that's a validation
-@@ -753,8 +738,8 @@
+@@ -764,8 +749,8 @@ bool NodeLink::OnBypassPeerWithLink(msg::BypassPeerWithLink& bypass) {
      return true;
    }
  
@@ -60,10 +59,10 @@ index e862cf40..dde90c9 100644
      return false;
    }
 diff --git a/third_party/ipcz/src/ipcz/node_link_memory.h b/third_party/ipcz/src/ipcz/node_link_memory.h
-index c5e3d64..f457757 100644
+index c5e3d6494580412abf71e75f0736ad5a82abe95c..f457757cb703d56b8dd7d152b10f3fe6f8f8c84e 100644
 --- a/third_party/ipcz/src/ipcz/node_link_memory.h
 +++ b/third_party/ipcz/src/ipcz/node_link_memory.h
-@@ -98,14 +98,29 @@
+@@ -98,14 +98,29 @@ class NodeLinkMemory : public RefCounted<NodeLinkMemory> {
    // with the same BufferId and dimensions as `descriptor`.
    Fragment GetFragment(const FragmentDescriptor& descriptor);
  
@@ -96,10 +95,10 @@ index c5e3d64..f457757 100644
    // allocation capacity for blocks of size `block_size`. Note that the
    // contents of the mapped region must already be initialized as a
 diff --git a/third_party/ipcz/src/ipcz/node_link_memory_test.cc b/third_party/ipcz/src/ipcz/node_link_memory_test.cc
-index bcdd45e..fd51b78 100644
+index bcdd45ee866ec39d557ee1c762af04ae0af26b6a..fd51b78a2a4475b54f047310da4c91e40a61342e 100644
 --- a/third_party/ipcz/src/ipcz/node_link_memory_test.cc
 +++ b/third_party/ipcz/src/ipcz/node_link_memory_test.cc
-@@ -306,5 +306,54 @@
+@@ -306,5 +306,54 @@ TEST_F(NodeLinkMemoryTest, ParcelDataAllocation) {
    node_c->Close();
  }
  
@@ -155,10 +154,10 @@ index bcdd45e..fd51b78 100644
  }  // namespace
  }  // namespace ipcz
 diff --git a/third_party/ipcz/src/ipcz/router.cc b/third_party/ipcz/src/ipcz/router.cc
-index 820fafe..a2c65331 100644
+index 79c443d942c6613ea8a52990b93c1811e2d3d166..75c07fefabb093814960b13e9efb2f8fa5de63b4 100644
 --- a/third_party/ipcz/src/ipcz/router.cc
 +++ b/third_party/ipcz/src/ipcz/router.cc
-@@ -745,12 +745,16 @@
+@@ -765,12 +765,16 @@ Ref<Router> Router::Deserialize(const RouterDescriptor& descriptor,
                ? descriptor.decaying_incoming_sequence_length
                : descriptor.next_incoming_sequence_number);
  
@@ -170,7 +169,7 @@ index 820fafe..a2c65331 100644
 +        return nullptr;
 +      }
        new_outward_link = from_node_link.AddRemoteRouterLink(
--          descriptor.new_sublink,
+-          context, descriptor.new_sublink,
 -          from_node_link.memory().AdoptFragmentRef<RouterLinkState>(
 -              from_node_link.memory().GetFragment(
 -                  descriptor.new_link_state_fragment)),

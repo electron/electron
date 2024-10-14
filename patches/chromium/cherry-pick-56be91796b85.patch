@@ -1,7 +1,7 @@
-From 56be91796b858a088f67add4e074b9b016f25757 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kent Tamura <tkent@chromium.org>
 Date: Thu, 19 Sep 2024 03:15:18 +0000
-Subject: [PATCH] RubyLB: Fix a crash with a parent with a non-default text-align
+Subject: RubyLB: Fix a crash with a parent with a non-default text-align
 
 Update the LineInfo::GetTextAlign() logic so that it align with
 ApplyRubyAlign() behavior.
@@ -15,13 +15,12 @@ Commit-Queue: Koji Ishii <kojii@chromium.org>
 Reviewed-by: Koji Ishii <kojii@chromium.org>
 Auto-Submit: Kent Tamura <tkent@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1357460}
----
 
 diff --git a/third_party/blink/renderer/core/layout/inline/line_info.cc b/third_party/blink/renderer/core/layout/inline/line_info.cc
-index 402e48a..ec44514 100644
+index 07a450eb14effe561ac2811c1b0a1208e0263bf7..5b2451894b3e28b25e4293e94af2ff7b068c9e7e 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_info.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_info.cc
-@@ -114,14 +114,25 @@
+@@ -92,14 +92,25 @@ void LineInfo::SetLineStyle(const InlineNode& node,
  }
  
  ETextAlign LineInfo::GetTextAlign(bool is_last_line) const {
@@ -54,7 +53,7 @@ index 402e48a..ec44514 100644
  }
 diff --git a/third_party/blink/web_tests/fast/ruby/ruby-align-in-text-align-crash.html b/third_party/blink/web_tests/fast/ruby/ruby-align-in-text-align-crash.html
 new file mode 100644
-index 0000000..b456709
+index 0000000000000000000000000000000000000000..b4567097d39ede1f66bb84f0b00519896fd03a18
 --- /dev/null
 +++ b/third_party/blink/web_tests/fast/ruby/ruby-align-in-text-align-crash.html
 @@ -0,0 +1,18 @@
