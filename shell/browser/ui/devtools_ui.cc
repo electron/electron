@@ -14,7 +14,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
-#include "base/timer/elapsed_timer.h"
 #include "chrome/browser/ui/color/chrome_color_id.h"
 #include "chrome/browser/ui/color/chrome_color_provider_utils.h"
 #include "chrome/common/webui_url_constants.h"
@@ -183,7 +182,6 @@ class ThemeDataSource : public content::URLDataSource {
   void SendColorsCss(const GURL& url,
                      const content::WebContents::Getter& wc_getter,
                      content::URLDataSource::GotDataCallback callback) {
-    base::ElapsedTimer timer;
     const ui::ColorProvider& color_provider =
         wc_getter.Run()->GetColorProvider();
 
@@ -290,10 +288,6 @@ class ThemeDataSource : public content::URLDataSource {
 
     std::move(callback).Run(
         base::MakeRefCounted<base::RefCountedString>(std::move(css_string)));
-
-    // Measures the time it takes to generate the colors.css and queue it for
-    // the renderer.
-    UmaHistogramTimes("WebUI.ColorsStylesheetServingDuration", timer.Elapsed());
   }
 };
 }  // namespace
