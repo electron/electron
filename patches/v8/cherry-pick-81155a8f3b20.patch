@@ -1,7 +1,7 @@
-From 81155a8f3b20fbfc7e36c2419f5326f1d0ad7d75 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Victor Gomes <victorgomes@chromium.org>
-Date: Wed, 02 Oct 2024 10:59:42 +0200
-Subject: [PATCH] [turbofan] Consider WasmStruct in InferHasInPrototypeChain
+Date: Wed, 2 Oct 2024 10:59:42 +0200
+Subject: Consider WasmStruct in InferHasInPrototypeChain
 
 Drive-by: add some CHECKs in not _clearly_ safe uses of AsJSObject
 to turn possible vulnerablities into crashes.
@@ -13,13 +13,12 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Auto-Submit: Victor Gomes <victorgomes@chromium.org>
 Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#96386}
----
 
 diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
-index 8d40875..595f4ad 100644
+index a81a8e80a9b6b838037c6dcc5e9b6845e9a35f7e..beefe70ecc2e2b6e2c60757d441c67e5c137159b 100644
 --- a/src/compiler/access-info.cc
 +++ b/src/compiler/access-info.cc
-@@ -925,6 +925,7 @@
+@@ -926,6 +926,7 @@ PropertyAccessInfo AccessInfoFactory::ComputePropertyAccessInfo(
        return PropertyAccessInfo::NotFound(zone(), receiver_map, holder);
      }
  
@@ -28,10 +27,10 @@ index 8d40875..595f4ad 100644
      map = map_prototype_map;
  
 diff --git a/src/compiler/heap-refs.cc b/src/compiler/heap-refs.cc
-index c1c7b1a..e6272d8 100644
+index 205d13587589724d3525928be7172f2e157811a6..bb3b5f10b037ac8cb25fc6305adcaed317c9f86d 100644
 --- a/src/compiler/heap-refs.cc
 +++ b/src/compiler/heap-refs.cc
-@@ -1690,6 +1690,7 @@
+@@ -1655,6 +1655,7 @@ HolderLookupResult FunctionTemplateInfoRef::LookupHolderOfExpectedType(
    if (!expected_receiver_type->IsTemplateFor(prototype.object()->map())) {
      return not_found;
    }
@@ -40,10 +39,10 @@ index c1c7b1a..e6272d8 100644
                              prototype.AsJSObject());
  }
 diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
-index 7f74e12..e0a1e83 100644
+index b5de19c7e945badb8d5c1d5e07117b43f5b12870..45ec96a66f9826a773beb250ae924af9b98a3897 100644
 --- a/src/compiler/js-native-context-specialization.cc
 +++ b/src/compiler/js-native-context-specialization.cc
-@@ -882,7 +882,9 @@
+@@ -880,7 +880,9 @@ JSNativeContextSpecialization::InferHasInPrototypeChain(
        // might be a different object each time, so it's much simpler to include
        // {prototype}. That does, however, mean that we must check {prototype}'s
        // map stability.
@@ -56,7 +55,7 @@ index 7f74e12..e0a1e83 100644
      WhereToStart start = result == NodeProperties::kUnreliableMaps
 diff --git a/test/mjsunit/wasm/regress-367818758.js b/test/mjsunit/wasm/regress-367818758.js
 new file mode 100644
-index 0000000..69e8290
+index 0000000000000000000000000000000000000000..69e8290c88d85699f9845ed5dddb767f1be40441
 --- /dev/null
 +++ b/test/mjsunit/wasm/regress-367818758.js
 @@ -0,0 +1,221 @@
