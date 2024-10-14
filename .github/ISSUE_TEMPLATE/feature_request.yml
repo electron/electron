@@ -1,7 +1,6 @@
 name: Feature Request
 description: Suggest an idea for Electron
-title: "[Feature Request]: "
-labels: "enhancement :sparkles:"
+type: 'enhancement'
 body:
 - type: checkboxes
   attributes:

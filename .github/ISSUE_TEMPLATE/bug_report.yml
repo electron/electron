@@ -1,7 +1,6 @@
 name: Bug Report
-description: Report an Electron bug
-title: "[Bug]: "
-labels: "bug :beetle:"
+description: Report a bug in Electron
+type: 'bug'
 body:
 - type: checkboxes
   attributes:
