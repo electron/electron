@@ -9,6 +9,7 @@
 #include "ui/gfx/image/image_skia_rep.h"
 
 namespace v8 {
+class ArrayBufferView;
 class Isolate;
 template <class T>
 class Local;
@@ -29,6 +30,12 @@ v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         base::span<const uint8_t> data);
 
+namespace util {
+
+[[nodiscard]] base::span<uint8_t> as_byte_span(
+    v8::Local<v8::ArrayBufferView> abv);
+
+}  // namespace util
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_COMMON_V8_VALUE_SERIALIZER_H_
