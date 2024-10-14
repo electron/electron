@@ -1,3 +1,6 @@
 chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 fix_disable_scope_reuse_associated_dchecks.patch
+cherry-pick-9542895cdd3d.patch
+cherry-pick-259a5f8fed67.patch
+cherry-pick-81155a8f3b20.patch
