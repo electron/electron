@@ -749,6 +749,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__type_traits/common_type.h",
   "//third_party/libc++/src/include/__type_traits/conditional.h",
   "//third_party/libc++/src/include/__type_traits/conjunction.h",
+  "//third_party/libc++/src/include/__type_traits/container_traits.h",
   "//third_party/libc++/src/include/__type_traits/copy_cv.h",
   "//third_party/libc++/src/include/__type_traits/copy_cvref.h",
   "//third_party/libc++/src/include/__type_traits/datasizeof.h",
