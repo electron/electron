@@ -134,3 +134,5 @@ feat_enable_customizing_symbol_color_in_framecaptionbutton.patch
 cherry-pick-99cafbf4b4b9.patch
 cherry-pick-44b7fbf35b10.patch
 fix_potential_draggable_region_crash_when_no_mainframeimpl.patch
+cherry-pick-56be91796b85.patch
+cherry-pick-c333ed995449.patch
