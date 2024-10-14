@@ -1,0 +1,146 @@
+From 9542895cdd3dbd97da3d9032ddb36fd4feb612e4 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 24 Sep 2024 17:34:49 +0200
+Subject: [PATCH] [wasm][streaming] Properly check max module size
+
+and allow d8-based tests for it.
+
+Fixed: 368241697
+Change-Id: Iddc9f7e669de7a1d79dccbc99bcc5fb43dad67a1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5886728
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96272}
+---
+
+diff --git a/src/wasm/streaming-decoder.cc b/src/wasm/streaming-decoder.cc
+index 40a1180..f3745b4 100644
+--- a/src/wasm/streaming-decoder.cc
++++ b/src/wasm/streaming-decoder.cc
+@@ -294,6 +294,10 @@
+   if (!full_wire_bytes_.back().empty()) {
+     size_t total_length = 0;
+     for (auto& bytes : full_wire_bytes_) total_length += bytes.size();
++    if (ok()) {
++      // {DecodeSectionLength} enforces this with graceful error reporting.
++      CHECK_LE(total_length, max_module_size());
++    }
+     auto all_bytes = base::OwnedVector<uint8_t>::NewForOverwrite(total_length);
+     uint8_t* ptr = all_bytes.begin();
+     for (auto& bytes : full_wire_bytes_) {
+@@ -627,6 +631,18 @@
+ AsyncStreamingDecoder::DecodeSectionLength::NextWithValue(
+     AsyncStreamingDecoder* streaming) {
+   TRACE_STREAMING("DecodeSectionLength(%zu)\n", value_);
++  // Check if this section fits into the overall module length limit.
++  // Note: {this->module_offset_} is the position of the section ID byte,
++  // {streaming->module_offset_} is the start of the section's payload (i.e.
++  // right after the just-decoded section length varint).
++  // The latter can already exceed the max module size, when the previous
++  // section barely fit into it, and this new section's ID or length crossed
++  // the threshold.
++  uint32_t payload_start = streaming->module_offset();
++  size_t max_size = max_module_size();
++  if (payload_start > max_size || max_size - payload_start < value_) {
++    return streaming->ToErrorState();
++  }
+   SectionBuffer* buf =
+       streaming->CreateNewBuffer(module_offset_, section_id_, value_,
+                                  buffer().SubVector(0, bytes_consumed_));
+diff --git a/src/wasm/wasm-engine.cc b/src/wasm/wasm-engine.cc
+index 94f1cc2..5d989e8 100644
+--- a/src/wasm/wasm-engine.cc
++++ b/src/wasm/wasm-engine.cc
+@@ -2088,10 +2088,11 @@
+ 
+ // {max_module_size} is declared in wasm-limits.h.
+ size_t max_module_size() {
+-  // Clamp the value of --wasm-max-module-size between 16 and just below 2GB.
++  // Clamp the value of --wasm-max-module-size between 16 and the maximum
++  // that the implementation supports.
+   constexpr size_t kMin = 16;
+-  constexpr size_t kMax = RoundDown<kSystemPointerSize>(size_t{kMaxInt});
+-  static_assert(kMin <= kV8MaxWasmModuleSize && kV8MaxWasmModuleSize <= kMax);
++  constexpr size_t kMax = kV8MaxWasmModuleSize;
++  static_assert(kMin <= kV8MaxWasmModuleSize);
+   return std::clamp(v8_flags.wasm_max_module_size.value(), kMin, kMax);
+ }
+ 
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index cf05965..4b77039 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -202,8 +202,8 @@
+ #undef GET_FIRST_ARGUMENT_AS
+ 
+ i::wasm::ModuleWireBytes GetFirstArgumentAsBytes(
+-    const v8::FunctionCallbackInfo<v8::Value>& info, ErrorThrower* thrower,
+-    bool* is_shared) {
++    const v8::FunctionCallbackInfo<v8::Value>& info, size_t max_length,
++    ErrorThrower* thrower, bool* is_shared) {
+   DCHECK(i::ValidateCallbackInfo(info));
+   const uint8_t* start = nullptr;
+   size_t length = 0;
+@@ -234,7 +234,6 @@
+   if (length == 0) {
+     thrower->CompileError("BufferSource argument is empty");
+   }
+-  size_t max_length = i::wasm::max_module_size();
+   if (length > max_length) {
+     // The spec requires a CompileError for implementation-defined limits, see
+     // https://webassembly.github.io/spec/js-api/index.html#limits.
+@@ -644,7 +643,8 @@
+       new AsyncCompilationResolver(isolate, context, promise_resolver));
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+   if (thrower.error()) {
+     resolver->OnCompilationFailed(thrower.Reify());
+     return;
+@@ -676,8 +676,11 @@
+       v8::WasmStreaming::Unpack(info.GetIsolate(), info.Data());
+ 
+   bool is_shared = false;
++  // We don't check the buffer length up front, to allow d8 to test that the
++  // streaming decoder implementation handles overly large inputs correctly.
++  size_t unlimited = std::numeric_limits<size_t>::max();
+   i::wasm::ModuleWireBytes bytes =
+-      GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++      GetFirstArgumentAsBytes(info, unlimited, &thrower, &is_shared);
+   if (thrower.error()) {
+     streaming->Abort(Utils::ToLocal(thrower.Reify()));
+     return;
+@@ -778,7 +781,8 @@
+   ErrorThrower thrower(i_isolate, "WebAssembly.validate()");
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+ 
+   v8::ReturnValue<v8::Value> return_value = info.GetReturnValue();
+ 
+@@ -857,7 +861,8 @@
+   }
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+ 
+   if (thrower.error()) {
+     return;
+@@ -1175,7 +1180,8 @@
+   }
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+   if (thrower.error()) {
+     resolver->OnInstantiationFailed(thrower.Reify());
+     return;
