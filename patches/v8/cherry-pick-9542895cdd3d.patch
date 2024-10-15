@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 24 Sep 2024 17:34:49 +0200
+Subject: Properly check max module size
+
+and allow d8-based tests for it.
+
+Fixed: 368241697
+Change-Id: Iddc9f7e669de7a1d79dccbc99bcc5fb43dad67a1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5886728
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96272}
+
+diff --git a/src/wasm/streaming-decoder.cc b/src/wasm/streaming-decoder.cc
+index 786c5aa250f055a0f69ca28403bfa679638e6465..9eb2d2fb9f1e973b04c8cf7829cc7b2849b632f9 100644
+--- a/src/wasm/streaming-decoder.cc
++++ b/src/wasm/streaming-decoder.cc
+@@ -294,6 +294,10 @@ void AsyncStreamingDecoder::Finish(bool can_use_compiled_module) {
+   if (!full_wire_bytes_.back().empty()) {
+     size_t total_length = 0;
+     for (auto& bytes : full_wire_bytes_) total_length += bytes.size();
++    if (ok()) {
++      // {DecodeSectionLength} enforces this with graceful error reporting.
++      CHECK_LE(total_length, max_module_size());
++    }
+     auto all_bytes = base::OwnedVector<uint8_t>::NewForOverwrite(total_length);
+     uint8_t* ptr = all_bytes.begin();
+     for (auto& bytes : full_wire_bytes_) {
+@@ -627,6 +631,18 @@ std::unique_ptr<AsyncStreamingDecoder::DecodingState>
+ AsyncStreamingDecoder::DecodeSectionLength::NextWithValue(
+     AsyncStreamingDecoder* streaming) {
+   TRACE_STREAMING("DecodeSectionLength(%zu)\n", value_);
++  // Check if this section fits into the overall module length limit.
++  // Note: {this->module_offset_} is the position of the section ID byte,
++  // {streaming->module_offset_} is the start of the section's payload (i.e.
++  // right after the just-decoded section length varint).
++  // The latter can already exceed the max module size, when the previous
++  // section barely fit into it, and this new section's ID or length crossed
++  // the threshold.
++  uint32_t payload_start = streaming->module_offset();
++  size_t max_size = max_module_size();
++  if (payload_start > max_size || max_size - payload_start < value_) {
++    return streaming->ToErrorState();
++  }
+   SectionBuffer* buf =
+       streaming->CreateNewBuffer(module_offset_, section_id_, value_,
+                                  buffer().SubVector(0, bytes_consumed_));
+diff --git a/src/wasm/wasm-engine.cc b/src/wasm/wasm-engine.cc
+index 6b668b111c9d801e13f4d74f227c02029c4e80ec..8a3a855924fee296fd85e8b98d976e0c9f4c74c9 100644
+--- a/src/wasm/wasm-engine.cc
++++ b/src/wasm/wasm-engine.cc
+@@ -2009,10 +2009,11 @@ uint32_t max_table_init_entries() {
+ 
+ // {max_module_size} is declared in wasm-limits.h.
+ size_t max_module_size() {
+-  // Clamp the value of --wasm-max-module-size between 16 and just below 2GB.
++  // Clamp the value of --wasm-max-module-size between 16 and the maximum
++  // that the implementation supports.
+   constexpr size_t kMin = 16;
+-  constexpr size_t kMax = RoundDown<kSystemPointerSize>(size_t{kMaxInt});
+-  static_assert(kMin <= kV8MaxWasmModuleSize && kV8MaxWasmModuleSize <= kMax);
++  constexpr size_t kMax = kV8MaxWasmModuleSize;
++  static_assert(kMin <= kV8MaxWasmModuleSize);
+   return std::clamp(v8_flags.wasm_max_module_size.value(), kMin, kMax);
+ }
+ 
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index d8cff07657d4dd0e71a4c677b27e96fd67cd00a3..ae04f27efb30f2bf086bd4fe4bf9a3594c38c581 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -195,8 +195,8 @@ GET_FIRST_ARGUMENT_AS(Tag)
+ #undef GET_FIRST_ARGUMENT_AS
+ 
+ i::wasm::ModuleWireBytes GetFirstArgumentAsBytes(
+-    const v8::FunctionCallbackInfo<v8::Value>& info, ErrorThrower* thrower,
+-    bool* is_shared) {
++    const v8::FunctionCallbackInfo<v8::Value>& info, size_t max_length,
++    ErrorThrower* thrower, bool* is_shared) {
+   DCHECK(i::ValidateCallbackInfo(info));
+   const uint8_t* start = nullptr;
+   size_t length = 0;
+@@ -227,7 +227,6 @@ i::wasm::ModuleWireBytes GetFirstArgumentAsBytes(
+   if (length == 0) {
+     thrower->CompileError("BufferSource argument is empty");
+   }
+-  size_t max_length = i::wasm::max_module_size();
+   if (length > max_length) {
+     // The spec requires a CompileError for implementation-defined limits, see
+     // https://webassembly.github.io/spec/js-api/index.html#limits.
+@@ -624,7 +623,8 @@ void WebAssemblyCompileImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+       new AsyncCompilationResolver(isolate, context, promise_resolver));
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+   if (thrower.error()) {
+     resolver->OnCompilationFailed(thrower.Reify());
+     return;
+@@ -656,8 +656,11 @@ void WasmStreamingCallbackForTesting(
+       v8::WasmStreaming::Unpack(info.GetIsolate(), info.Data());
+ 
+   bool is_shared = false;
++  // We don't check the buffer length up front, to allow d8 to test that the
++  // streaming decoder implementation handles overly large inputs correctly.
++  size_t unlimited = std::numeric_limits<size_t>::max();
+   i::wasm::ModuleWireBytes bytes =
+-      GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++      GetFirstArgumentAsBytes(info, unlimited, &thrower, &is_shared);
+   if (thrower.error()) {
+     streaming->Abort(Utils::ToLocal(thrower.Reify()));
+     return;
+@@ -759,7 +762,8 @@ void WebAssemblyValidateImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   ErrorThrower thrower(i_isolate, "WebAssembly.validate()");
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+ 
+   v8::ReturnValue<v8::Value> return_value = info.GetReturnValue();
+ 
+@@ -838,7 +842,8 @@ void WebAssemblyModuleImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   }
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+ 
+   if (thrower.error()) {
+     return;
+@@ -1156,7 +1161,8 @@ void WebAssemblyInstantiateImpl(
+   }
+ 
+   bool is_shared = false;
+-  auto bytes = GetFirstArgumentAsBytes(info, &thrower, &is_shared);
++  auto bytes = GetFirstArgumentAsBytes(info, i::wasm::max_module_size(),
++                                       &thrower, &is_shared);
+   if (thrower.error()) {
+     resolver->OnInstantiationFailed(thrower.Reify());
+     return;
