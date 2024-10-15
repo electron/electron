@@ -11,6 +11,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 namespace {
 
@@ -98,15 +99,13 @@ std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer) {
 
   // ensures an error is thrown in Mac or Linux on
   // decryption failure, rather than failing silently
-  const char* data = node::Buffer::Data(buffer);
-  auto size = node::Buffer::Length(buffer);
-  std::string ciphertext(data, size);
-  if (ciphertext.empty()) {
+  const auto ciphertext =
+      std::string{base::as_string_view(electron::util::as_byte_span(buffer))};
+  if (ciphertext.empty())
     return "";
-  }
 
-  if (ciphertext.find(kEncryptionVersionPrefixV10) != 0 &&
-      ciphertext.find(kEncryptionVersionPrefixV11) != 0) {
+  if (!ciphertext.starts_with(kEncryptionVersionPrefixV10) &&
+      !ciphertext.starts_with(kEncryptionVersionPrefixV11)) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString. "
