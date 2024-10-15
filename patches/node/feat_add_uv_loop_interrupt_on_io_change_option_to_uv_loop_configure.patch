@@ -278,7 +278,7 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 -static void thread_main(void* arg) {
 -  ASSERT_LE(0, uv_barrier_wait(&barrier));
 -  uv_sleep(250);
--  ASSERT_EQ(0, uv_async_send(&async));
+-  ASSERT_OK(uv_async_send(&async));
 -}
 +static uv_timer_t main_timer;
 +static int main_timer_called;
@@ -333,9 +333,9 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 -  uv_loop_t* loop;
 -
 -  loop = uv_default_loop();
--  ASSERT_EQ(0, uv_async_init(loop, &async, async_cb));
--  ASSERT_EQ(0, uv_barrier_init(&barrier, 2));
--  ASSERT_EQ(0, uv_thread_create(&thread, thread_main, NULL));
+-  ASSERT_OK(uv_async_init(loop, &async, async_cb));
+-  ASSERT_OK(uv_barrier_init(&barrier, 2));
+-  ASSERT_OK(uv_thread_create(&thread, thread_main, NULL));
 -  ASSERT_LE(0, uv_barrier_wait(&barrier));
 -
 -  while (uv_loop_alive(loop)) {
@@ -457,7 +457,7 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +  uv_timer_init(&external_loop, &external_timer);
 +  uv_timer_start(&external_timer, external_timer_cb, 100, 0);
  
--  ASSERT_EQ(0, uv_thread_join(&thread));
+-  ASSERT_OK(uv_thread_join(&thread));
 -  uv_barrier_destroy(&barrier);
 +  run_loop();
 +  ASSERT_EQ(main_timer_called, 1);
