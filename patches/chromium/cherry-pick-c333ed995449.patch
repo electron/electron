@@ -154,10 +154,10 @@ index bcdd45ee866ec39d557ee1c762af04ae0af26b6a..fd51b78a2a4475b54f047310da4c91e4
  }  // namespace
  }  // namespace ipcz
 diff --git a/third_party/ipcz/src/ipcz/router.cc b/third_party/ipcz/src/ipcz/router.cc
-index 79c443d942c6613ea8a52990b93c1811e2d3d166..75c07fefabb093814960b13e9efb2f8fa5de63b4 100644
+index 723b47190d477564d8399edc093b7192c233b835..b1dc593427ecae67b6758edd82257f88daefcde1 100644
 --- a/third_party/ipcz/src/ipcz/router.cc
 +++ b/third_party/ipcz/src/ipcz/router.cc
-@@ -765,12 +765,16 @@ Ref<Router> Router::Deserialize(const RouterDescriptor& descriptor,
+@@ -765,6 +765,13 @@ Ref<Router> Router::Deserialize(const RouterDescriptor& descriptor,
                ? descriptor.decaying_incoming_sequence_length
                : descriptor.next_incoming_sequence_number);
  
@@ -169,13 +169,5 @@ index 79c443d942c6613ea8a52990b93c1811e2d3d166..75c07fefabb093814960b13e9efb2f8f
 +        return nullptr;
 +      }
        new_outward_link = from_node_link.AddRemoteRouterLink(
--          context, descriptor.new_sublink,
--          from_node_link.memory().AdoptFragmentRef<RouterLinkState>(
--              from_node_link.memory().GetFragment(
--                  descriptor.new_link_state_fragment)),
--          LinkType::kCentral, LinkSide::kB, router);
-+          descriptor.new_sublink, std::move(link_state), LinkType::kCentral,
-+          LinkSide::kB, router);
-       if (!new_outward_link) {
-         return nullptr;
-       }
+           context, descriptor.new_sublink, std::move(link_state), LinkType::kCentral,
+           LinkSide::kB, router);

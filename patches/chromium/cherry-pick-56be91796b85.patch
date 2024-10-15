@@ -75,3 +75,21 @@ index 0000000000000000000000000000000000000000..b4567097d39ede1f66bb84f0b0051989
 +}, 'crbug.com/367764861: No crash by a ruby-text with ruby-align:space-between in a <center>');
 +</script>
 +</body>
+diff --git a/third_party/ipcz/src/ipcz/router.cc b/third_party/ipcz/src/ipcz/router.cc
+index 79c443d942c6613ea8a52990b93c1811e2d3d166..723b47190d477564d8399edc093b7192c233b835 100644
+--- a/third_party/ipcz/src/ipcz/router.cc
++++ b/third_party/ipcz/src/ipcz/router.cc
+@@ -766,11 +766,8 @@ Ref<Router> Router::Deserialize(const RouterDescriptor& descriptor,
+               : descriptor.next_incoming_sequence_number);
+ 
+       new_outward_link = from_node_link.AddRemoteRouterLink(
+-          context, descriptor.new_sublink,
+-          from_node_link.memory().AdoptFragmentRef<RouterLinkState>(
+-              from_node_link.memory().GetFragment(
+-                  descriptor.new_link_state_fragment)),
+-          LinkType::kCentral, LinkSide::kB, router);
++          context, descriptor.new_sublink, std::move(link_state), LinkType::kCentral,
++          LinkSide::kB, router);
+       if (!new_outward_link) {
+         return nullptr;
+       }
