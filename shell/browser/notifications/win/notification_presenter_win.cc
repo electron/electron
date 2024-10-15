@@ -37,7 +37,7 @@ bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
   if (!png_data.has_value())
     return false;
 
-  return base::WriteFile(path, png_data);
+  return base::WriteFile(path, png_data.value());
 }
 
 }  // namespace
