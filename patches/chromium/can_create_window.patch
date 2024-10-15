@@ -148,10 +148,10 @@ index 19dff7ea3f62e5095ee03335978dac5d58cc1465..cbec82fe1fbc43c188ac9c0cf318ee49
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 1fd3487243760d5a64bcd27f7022d8d0326bab65..21ecced6578552e30c1a01841053f679355b7729 100644
+index 731064ab6b1b3856e05dec2800c0ce5768100bdb..612c7ba6cf8637e81631d63c36a618c812532879 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6858,6 +6858,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6859,6 +6859,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  

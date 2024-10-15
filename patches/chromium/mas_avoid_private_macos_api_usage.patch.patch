@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3d2dab5457c7e5f2de0dee28ec533b36fc767a40..e5eb12a276d346beb70d6115ccc6de838e5d8803 100644
+index 4c0e4645f64e3e9f4466bd59972f8587866da8c5..0867b4055e1463ae69857dcd35711257af6bd58d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1037,6 +1037,7 @@ component("base") {
@@ -81,7 +81,7 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index f8ab18cc6b0e5e3d63c1a548aa1d031703c3e96c..c9eb1f688a0ff8f99c8d869cf2cf14206347b359 100644
+index 697eff8aad0142ce0537feec816f9b31fd767061..504a3cba21622b8d79bf6563f3a009c47b093d50 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,13 +21,19 @@
@@ -1371,10 +1371,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 3bc370e0beafd792ba4737013b3e7d59da8cf306..aa391a0b23372c944ab11a6496771ecbbe6b5e1a 100644
+index c73b33c834353abcf2f209d5a2ee79f76e701e7d..f6a507adee7ff387f131eb14b27ee01e51a20714 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -403,6 +403,7 @@ component("core") {
+@@ -404,6 +404,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1837,7 +1837,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 4ba2f9a9ed0aa26cc54f0fbaa70eb280b1dd3a69..f7cf6cdb3038d962d7a2ce2be02c75a502ff7766 100644
+index ce482dc38f27ac1452df13d8c4152a092fb2a3bc..d4b5fffcf178523ace8db2867ae38d7900c7997d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -722,6 +722,8 @@ component("views") {
