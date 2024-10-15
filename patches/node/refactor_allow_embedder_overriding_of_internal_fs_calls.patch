@@ -21,25 +21,3 @@ index 12262f40ce123440a9a0f974386cfbe8511f4459..f3c15b61d33bdae44de528e106fcc6f9
  // process.config is serialized config.gypi
  const binding = internalBinding('builtins');
  
-diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
-index 88c079d10d116107aa34dc9281f64c799c48c0b5..069f922612777f226127dc44f4091eed30416925 100644
---- a/lib/internal/modules/package_json_reader.js
-+++ b/lib/internal/modules/package_json_reader.js
-@@ -12,7 +12,7 @@ const {
- const {
-   ERR_INVALID_PACKAGE_CONFIG,
- } = require('internal/errors').codes;
--const { internalModuleReadJSON } = internalBinding('fs');
-+const internalFsBinding = internalBinding('fs');
- const { resolve, sep, toNamespacedPath } = require('path');
- const permission = require('internal/process/permission');
- const { kEmptyObject } = require('internal/util');
-@@ -53,7 +53,7 @@ function read(jsonPath, { base, specifier, isESM } = kEmptyObject) {
-   const {
-     0: string,
-     1: containsKeys,
--  } = internalModuleReadJSON(
-+  } = internalFsBinding.internalModuleReadJSON(
-     toNamespacedPath(jsonPath),
-   );
-   const result = {
