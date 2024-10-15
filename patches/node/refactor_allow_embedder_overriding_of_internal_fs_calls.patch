@@ -21,28 +21,6 @@ index 12262f40ce123440a9a0f974386cfbe8511f4459..f3c15b61d33bdae44de528e106fcc6f9
  // process.config is serialized config.gypi
  const binding = internalBinding('builtins');
  
-diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index c794751ecd4448119ce33d661e694f83b3323f03..364469160af5e348f8890417de16a63c0d1dca67 100644
---- a/lib/internal/modules/cjs/loader.js
-+++ b/lib/internal/modules/cjs/loader.js
-@@ -138,7 +138,7 @@ const {
- const assert = require('internal/assert');
- const fs = require('fs');
- const path = require('path');
--const { internalModuleStat } = internalBinding('fs');
-+const internalFsBinding = internalBinding('fs');
- const { safeGetenv } = internalBinding('credentials');
- const {
-   privateSymbols: {
-@@ -233,7 +233,7 @@ function stat(filename) {
-     const result = statCache.get(filename);
-     if (result !== undefined) { return result; }
-   }
--  const result = internalModuleStat(filename);
-+  const result = internalFsBinding.internalModuleStat(filename);
-   if (statCache !== null && result >= 0) {
-     // Only set cache when `internalModuleStat(filename)` succeeds.
-     statCache.set(filename, result);
 diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
 index 88c079d10d116107aa34dc9281f64c799c48c0b5..069f922612777f226127dc44f4091eed30416925 100644
 --- a/lib/internal/modules/package_json_reader.js
