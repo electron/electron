@@ -23,11 +23,13 @@ jobs:
     steps:
       - name: Determine Major Version
         id: check-major-version
+        env:
+          BRANCH_NAME: ${{ github.event.inputs.branch-name || github.event.ref }}
         run: |
-          if [[ ${{ github.event.inputs.branch-name || github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
+          if [[ "$BRANCH_NAME" =~ ^([0-9]+)-x-y$ ]]; then
             echo "MAJOR=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
-            echo "Not a release branch: ${{ github.event.inputs.branch-name || github.event.ref }}"
+            echo "Not a release branch: $BRANCH_NAME"
           fi
       - name: New Release Branch Tasks
         if: ${{ steps.check-major-version.outputs.MAJOR }}
