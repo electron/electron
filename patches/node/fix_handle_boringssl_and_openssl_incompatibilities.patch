@@ -297,12 +297,12 @@ index 23b2b8c56dec8ac600b8f14b78d9e80b7fa3ed3b..e7a8fe4181542252d9142ea9460cacc5
        if (params->saltLength != nullptr) {
 -        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
 -          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
--          return Nothing<bool>();
+-          return Nothing<void>();
 -        }
 +        // TODO(codebytere): Upstream a shim to BoringSSL?
 +        // if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
 +        //   ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
-+        //   return Nothing<bool>();
++        //   return Nothing<void>();
 +        // }
        }
  
