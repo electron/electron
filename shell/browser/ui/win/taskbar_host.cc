@@ -5,6 +5,7 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 
 #include <objbase.h>
+#include <array>
 #include <string>
 
 #include "base/strings/utf_string_conversions.h"
@@ -25,10 +26,10 @@ namespace {
 // From MSDN:
 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#thumbbars
 // The thumbnail toolbar has a maximum of seven buttons due to the limited room.
-const size_t kMaxButtonsCount = 7;
+constexpr size_t kMaxButtonsCount = 7U;
 
 // The base id of Thumbar button.
-const int kButtonIdBase = 40001;
+constexpr int kButtonIdBase = 40001;
 
 bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
                            THUMBBUTTONFLAGS* out) {
@@ -72,10 +73,10 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
   // The number of buttons in thumbar can not be changed once it is created,
   // so we have to claim kMaxButtonsCount buttons initially in case users add
   // more buttons later.
-  base::win::ScopedHICON icons[kMaxButtonsCount] = {};
-  THUMBBUTTON thumb_buttons[kMaxButtonsCount] = {};
+  auto icons = std::array<base::win::ScopedHICON, kMaxButtonsCount>{};
+  auto thumb_buttons = std::array<THUMBBUTTON, kMaxButtonsCount>{};
 
-  for (size_t i = 0; i < kMaxButtonsCount; ++i) {
+  for (size_t i = 0U; i < kMaxButtonsCount; ++i) {
     THUMBBUTTON& thumb_button = thumb_buttons[i];
 
     // Set ID.
@@ -118,10 +119,11 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
   // Finally add them to taskbar.
   HRESULT r;
   if (thumbar_buttons_added_) {
-    r = taskbar_->ThumbBarUpdateButtons(window, kMaxButtonsCount,
-                                        thumb_buttons);
+    r = taskbar_->ThumbBarUpdateButtons(window, thumb_buttons.size(),
+                                        thumb_buttons.data());
   } else {
-    r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
+    r = taskbar_->ThumbBarAddButtons(window, thumb_buttons.size(),
+                                     thumb_buttons.data());
   }
 
   thumbar_buttons_added_ = true;
