@@ -275,18 +275,18 @@ index 8488fc57faaf722174032c5a927d150c76120d60..c51efc92d4818ee7701b4725585fb7e1
  
  void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 48154df7dc91ed7c0d65323199bc2f59dfc68135..6431e5c3062890975854780d15ecb84370b81770 100644
+index b59e394d9a7e2c19fdf1f2b0177753ff488da0fa..91218f49da5392c6f769495ee7f9275a47ce09b1 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -140,7 +140,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+@@ -134,7 +134,7 @@ Maybe<void> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
--  params->prime.reset(BN_secure_new());
-+  params->prime.reset(BN_new());
+-  params->prime = BignumPointer::NewSecure();
++  params->prime = BignumPointer::New();
    if (!params->prime) {
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
-     return Nothing<bool>();
+     return Nothing<void>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
 index 23b2b8c56dec8ac600b8f14b78d9e80b7fa3ed3b..e7a8fe4181542252d9142ea9460cacc5b4acd00d 100644
 --- a/src/crypto/crypto_rsa.cc
