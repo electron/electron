@@ -93,9 +93,7 @@ async function loadApplicationPackage (packagePath: string) {
       try {
         process.emitWarning = () => {};
         packageJson = (await import(url.pathToFileURL(packageJsonPath).toString(), {
-          assert: {
-            type: 'json'
-          }
+          with: { type: 'json' }
         })).default;
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${(e as Error).message}`);

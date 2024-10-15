@@ -58,8 +58,8 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
                             const base::span<const uint8_t> data,
                             double scale_factor) {
-  SkBitmap bitmap;
-  if (!gfx::PNGCodec::Decode(data.data(), data.size(), &bitmap))
+  SkBitmap bitmap = gfx::PNGCodec::Decode(data);
+  if (bitmap.isNull())
     return false;
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
@@ -69,8 +69,8 @@ bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
 bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
                              const base::span<const uint8_t> data,
                              double scale_factor) {
-  auto bitmap = gfx::JPEGCodec::Decode(data.data(), data.size());
-  if (!bitmap)
+  auto bitmap = gfx::JPEGCodec::Decode(data);
+  if (bitmap.isNull())
     return false;
 
   // `JPEGCodec::Decode()` doesn't tell `SkBitmap` instance it creates
@@ -80,9 +80,9 @@ bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
   // TODO(alexeykuzmin): This workaround should be removed
   // when the `JPEGCodec::Decode()` code is fixed.
   // See https://github.com/electron/electron/issues/11294.
-  bitmap->setAlphaType(SkAlphaType::kOpaque_SkAlphaType);
+  bitmap.setAlphaType(SkAlphaType::kOpaque_SkAlphaType);
 
-  image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, scale_factor));
+  image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
 }
 

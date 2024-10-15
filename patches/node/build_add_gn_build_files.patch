@@ -2386,10 +2386,10 @@ index 0000000000000000000000000000000000000000..37c16859003e61636fe2f1a4040b1e90
 +    f.write('\n')
 diff --git a/tools/generate_original_fs.py b/tools/generate_original_fs.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..9be3ac447f9a4dde23fefc26e0b922b4ba88f083
+index 0000000000000000000000000000000000000000..5259e6a7a1fd6b21df69dc461dee67d95800c2c8
 --- /dev/null
 +++ b/tools/generate_original_fs.py
-@@ -0,0 +1,19 @@
+@@ -0,0 +1,18 @@
 +import os
 +import sys
 +
@@ -2408,7 +2408,6 @@ index 0000000000000000000000000000000000000000..9be3ac447f9a4dde23fefc26e0b922b4
 +    with open(os.path.join(out_dir, original_fs_file), 'w') as transformed_f:
 +      transformed_contents = contents.replace('internal/fs/', 'internal/original-fs/').replace('require(\'fs', 'require(\'original-fs')
 +      transformed_f.write(transformed_contents)
-+
 diff --git a/tools/install.py b/tools/install.py
 index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae00b1bfca 100755
 --- a/tools/install.py

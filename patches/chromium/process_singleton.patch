@@ -51,7 +51,7 @@ index 23a8257aa2a0a671cf7af35aff9906891091606d..31f5b160e4cd755cfb56a62b04261ee1
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 14b9c99e81e0999d1a2e25557e6a731ec88f6a22..f8cf2fb4ab66dae92b80c17cdda8b984fe4807c7 100644
+index 80b0c47637a6726e1e43113d84187910911271b4..72cdfe2c4a0258dbd575f536ca42fa1d53f44988 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -59,6 +59,7 @@
@@ -129,7 +129,7 @@ index 14b9c99e81e0999d1a2e25557e6a731ec88f6a22..f8cf2fb4ab66dae92b80c17cdda8b984
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1053,11 +1077,32 @@ bool ProcessSingleton::Create() {
+@@ -1058,11 +1082,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
@@ -165,7 +165,7 @@ index 14b9c99e81e0999d1a2e25557e6a731ec88f6a22..f8cf2fb4ab66dae92b80c17cdda8b984
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index b6dba0d8f1de90c88ac4457351f068f6a111e435..a0ef81d42bd9a58786b00a1601625e6822bc26f6 100644
+index 3138eaa2c1e8ed806d81445149d4f88f54d19254..27216805188c77aa45b478e66b04a2d45f92fba6 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@
@@ -211,7 +211,7 @@ index b6dba0d8f1de90c88ac4457351f068f6a111e435..a0ef81d42bd9a58786b00a1601625e68
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -378,7 +389,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -381,7 +392,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
  bool ProcessSingleton::Create() {
    TRACE_EVENT0("startup", "ProcessSingleton::Create");
  
@@ -220,7 +220,7 @@ index b6dba0d8f1de90c88ac4457351f068f6a111e435..a0ef81d42bd9a58786b00a1601625e68
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -387,7 +398,7 @@ bool ProcessSingleton::Create() {
+@@ -390,7 +401,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -229,7 +229,7 @@ index b6dba0d8f1de90c88ac4457351f068f6a111e435..a0ef81d42bd9a58786b00a1601625e68
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -426,6 +437,17 @@ bool ProcessSingleton::Create() {
+@@ -429,6 +440,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
