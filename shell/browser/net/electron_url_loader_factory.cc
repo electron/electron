@@ -34,6 +34,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
 #include "shell/common/node_includes.h"
@@ -498,8 +499,7 @@ void ElectronURLLoaderFactory::StartLoadingBuffer(
     network::mojom::URLResponseHeadPtr head,
     v8::Local<v8::ArrayBufferView> buffer) {
   SendContents(std::move(client), std::move(head),
-               std::string(node::Buffer::Data(buffer.As<v8::Value>()),
-                           node::Buffer::Length(buffer.As<v8::Value>())));
+               base::as_string_view(electron::util::as_byte_span(buffer)));
 }
 
 // static
@@ -624,7 +624,7 @@ void ElectronURLLoaderFactory::StartLoadingStream(
 void ElectronURLLoaderFactory::SendContents(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     network::mojom::URLResponseHeadPtr head,
-    std::string data) {
+    const std::string_view data) {
   mojo::Remote<network::mojom::URLLoaderClient> client_remote(
       std::move(client));
 
@@ -645,7 +645,7 @@ void ElectronURLLoaderFactory::SendContents(
 
   auto write_data = std::make_unique<WriteData>();
   write_data->client = std::move(client_remote);
-  write_data->data = std::move(data);
+  write_data->data = data;
   write_data->producer =
       std::make_unique<mojo::DataPipeProducer>(std::move(producer));
   auto* producer_ptr = write_data->producer.get();

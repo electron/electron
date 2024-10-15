@@ -8,6 +8,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -175,7 +176,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   static void SendContents(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,
-      std::string data);
+      std::string_view data);
 
   ProtocolType type_;
   ProtocolHandler handler_;
