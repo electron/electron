@@ -40,13 +40,13 @@ index 697b8bba6a55358924d6986f2eb347a99ff73889..bdf1a1f33f3ea09d933757c7fee87c56
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index a6f66c41f75bffcfaf75d4415c694300b7624136..7ca0762fe3590fef7b88ba684de44d99aaecace4 100755
+index d03db1970fd7a1629a7a7719a5ff267402ab4a66..ce055fb5dfc84c75c486b99f01fea6b9531ff54b 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1585,6 +1585,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1634,6 +1634,7 @@ def configure_library(lib, output, pkgname=None):
+ def configure_v8(o, configs):
+   set_configuration_variable(configs, 'v8_enable_v8_checks', release=1, debug=0)
  
- 
- def configure_v8(o):
 +  o['variables']['using_electron_config_gypi'] = 1
    o['variables']['v8_enable_webassembly'] = 0 if options.v8_lite_mode else 1
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
