@@ -467,7 +467,7 @@ async function getMergedTrops (commit: Commit, pool: Pool) {
           backportRegex
         );
         return match
-          ? <const>[match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))]
+          ? [match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))] as const
           : null;
       };
 

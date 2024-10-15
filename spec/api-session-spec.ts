@@ -101,7 +101,7 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
-    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+    for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
       it(`sets cookies with samesite=${sameSite}`, async () => {
         const { cookies } = session.defaultSession;
         const value = 'hithere';

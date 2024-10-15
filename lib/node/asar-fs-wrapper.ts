@@ -64,7 +64,7 @@ const { URL: NodeURL } = __non_webpack_require__('internal/url');
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   // Shortcut for disabled asar.
-  if (isAsarDisabled()) return { isAsar: <const>false };
+  if (isAsarDisabled()) return { isAsar: false } as const;
 
   // Check for a bad argument type.
   let archivePath = archivePathOrBuffer;
@@ -74,8 +74,8 @@ const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   if (archivePath instanceof NodeURL) {
     archivePath = getValidatedPath(archivePath);
   }
-  if (typeof archivePath !== 'string') return { isAsar: <const>false };
-  if (!asarRe.test(archivePath)) return { isAsar: <const>false };
+  if (typeof archivePath !== 'string') return { isAsar: false } as const;
+  if (!asarRe.test(archivePath)) return { isAsar: false } as const;
 
   return asar.splitPath(path.normalize(archivePath));
 };
