@@ -1,0 +1,181 @@
+From 8068f489ec2c7e9de15e179c8c25b45224f7f96f Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 11 Sep 2024 15:29:39 +0200
+Subject: [PATCH] [parser] Fix initializer ids w/ computed property names
+
+Move the initializer id before the computed property name ids.
+
+Bug: 363538434
+Change-Id: Ife1abf50a9348242f5e5f6c69c2911106f5a67dd
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5850479
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96059}
+---
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index b7f7f01..f9df40e 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -620,26 +620,32 @@
+       return instance_members_scope != nullptr;
+     }
+ 
+-    DeclarationScope* EnsureStaticElementsScope(ParserBase* parser,
+-                                                int beg_pos) {
++    DeclarationScope* EnsureStaticElementsScope(ParserBase* parser, int beg_pos,
++                                                int info_id) {
+       if (!has_static_elements()) {
+         static_elements_scope = parser->NewFunctionScope(
+             FunctionKind::kClassStaticInitializerFunction);
+         static_elements_scope->SetLanguageMode(LanguageMode::kStrict);
+         static_elements_scope->set_start_position(beg_pos);
+-        static_elements_function_id = parser->GetNextInfoId();
++        static_elements_function_id = info_id;
++        // Actually consume the id. The id that was passed in might be an
++        // earlier id in case of computed property names.
++        parser->GetNextInfoId();
+       }
+       return static_elements_scope;
+     }
+ 
+     DeclarationScope* EnsureInstanceMembersScope(ParserBase* parser,
+-                                                 int beg_pos) {
++                                                 int beg_pos, int info_id) {
+       if (!has_instance_members()) {
+         instance_members_scope = parser->NewFunctionScope(
+             FunctionKind::kClassMembersInitializerFunction);
+         instance_members_scope->SetLanguageMode(LanguageMode::kStrict);
+         instance_members_scope->set_start_position(beg_pos);
+-        instance_members_function_id = parser->GetNextInfoId();
++        instance_members_function_id = info_id;
++        // Actually consume the id. The id that was passed in might be an
++        // earlier id in case of computed property names.
++        parser->GetNextInfoId();
+       }
+       return instance_members_scope;
+     }
+@@ -1321,7 +1327,7 @@
+                             ParseFunctionFlags flags, bool is_static,
+                             bool* has_seen_constructor);
+   ExpressionT ParseMemberInitializer(ClassInfo* class_info, int beg_pos,
+-                                     bool is_static);
++                                     int info_id, bool is_static);
+   BlockT ParseClassStaticBlock(ClassInfo* class_info);
+   ObjectLiteralPropertyT ParseObjectPropertyDefinition(
+       ParsePropertyInfo* prop_info, bool* has_seen_proto);
+@@ -2624,6 +2630,8 @@
+   DCHECK_NOT_NULL(class_info);
+   DCHECK_EQ(prop_info->position, PropertyPosition::kClassLiteral);
+ 
++  int next_info_id = PeekNextInfoId();
++
+   Token::Value name_token = peek();
+   int property_beg_pos = peek_position();
+   int name_token_position = property_beg_pos;
+@@ -2667,12 +2675,18 @@
+                                         // field.
+       DCHECK_IMPLIES(prop_info->is_computed_name, !prop_info->is_private);
+ 
+-      if (!prop_info->is_computed_name) {
++      if (prop_info->is_computed_name) {
++        if (next_info_id != PeekNextInfoId() &&
++            !(prop_info->is_static ? class_info->has_static_elements()
++                                   : class_info->has_instance_members())) {
++          impl()->ReindexComputedMemberName(name_expression);
++        }
++      } else {
+         CheckClassFieldName(prop_info->name, prop_info->is_static);
+       }
+ 
+-      ExpressionT value = ParseMemberInitializer(class_info, property_beg_pos,
+-                                                 prop_info->is_static);
++      ExpressionT value = ParseMemberInitializer(
++          class_info, property_beg_pos, next_info_id, prop_info->is_static);
+       ExpectSemicolon();
+ 
+       ClassLiteralPropertyT result;
+@@ -2786,11 +2800,12 @@
+ 
+ template <typename Impl>
+ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseMemberInitializer(
+-    ClassInfo* class_info, int beg_pos, bool is_static) {
++    ClassInfo* class_info, int beg_pos, int info_id, bool is_static) {
+   FunctionParsingScope body_parsing_scope(impl());
+   DeclarationScope* initializer_scope =
+-      is_static ? class_info->EnsureStaticElementsScope(this, beg_pos)
+-                : class_info->EnsureInstanceMembersScope(this, beg_pos);
++      is_static
++          ? class_info->EnsureStaticElementsScope(this, beg_pos, info_id)
++          : class_info->EnsureInstanceMembersScope(this, beg_pos, info_id);
+ 
+   if (Check(Token::kAssign)) {
+     FunctionState initializer_state(&function_state_, &scope_,
+@@ -2811,7 +2826,7 @@
+   Consume(Token::kStatic);
+ 
+   DeclarationScope* initializer_scope =
+-      class_info->EnsureStaticElementsScope(this, position());
++      class_info->EnsureStaticElementsScope(this, position(), PeekNextInfoId());
+ 
+   FunctionState initializer_state(&function_state_, &scope_, initializer_scope);
+   FunctionParsingScope body_parsing_scope(impl());
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index ea0ddfc..7b0c97f 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -2735,6 +2735,13 @@
+   }
+ }
+ 
++void Parser::ReindexComputedMemberName(Expression* computed_name) {
++  // Make space for the member initializer function above the computed property
++  // name.
++  AstFunctionLiteralIdReindexer reindexer(stack_limit_, 1);
++  reindexer.Reindex(computed_name);
++}
++
+ void Parser::PrepareGeneratorVariables() {
+   // Calling a generator returns a generator object.  That object is stored
+   // in a temporary variable, a definition that is used by "yield"
+diff --git a/src/parsing/parser.h b/src/parsing/parser.h
+index be1d71e..2525029 100644
+--- a/src/parsing/parser.h
++++ b/src/parsing/parser.h
+@@ -896,6 +896,7 @@
+   }
+ 
+   void ReindexArrowFunctionFormalParameters(ParserFormalParameters* parameters);
++  void ReindexComputedMemberName(Expression* computed_name);
+   void DeclareArrowFunctionFormalParameters(
+       ParserFormalParameters* parameters, Expression* params,
+       const Scanner::Location& params_loc);
+diff --git a/src/parsing/preparser.h b/src/parsing/preparser.h
+index f875c98..9cdb545 100644
+--- a/src/parsing/preparser.h
++++ b/src/parsing/preparser.h
+@@ -1560,6 +1560,8 @@
+ 
+   V8_INLINE void ReindexArrowFunctionFormalParameters(
+       PreParserFormalParameters* parameters) {}
++  V8_INLINE void ReindexComputedMemberName(
++      const PreParserExpression& expression) {}
+   V8_INLINE void DeclareFormalParameters(
+       const PreParserFormalParameters* parameters) {
+     if (!parameters->is_simple) parameters->scope->SetHasNonSimpleParameters();
+diff --git a/test/mjsunit/regress/regress-363538434.js b/test/mjsunit/regress/regress-363538434.js
+new file mode 100644
+index 0000000..0eb4c3f
+--- /dev/null
++++ b/test/mjsunit/regress/regress-363538434.js
+@@ -0,0 +1,9 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++try {
++  new class {
++      static [function(){}] = [].trigger_error();
++  }
++} catch (e) {}
