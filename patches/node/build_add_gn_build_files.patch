@@ -2309,23 +2309,6 @@ diff --git a/tools/install.py b/tools/install.py
 index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae00b1bfca 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -264,6 +264,7 @@ def headers(options, action):
-       'include/v8-forward.h',
-       'include/v8-function-callback.h',
-       'include/v8-function.h',
-+      'include/v8-handle-base.h',
-       'include/v8-initialization.h',
-       'include/v8-internal.h',
-       'include/v8-isolate.h',
-@@ -284,6 +285,8 @@ def headers(options, action):
-       'include/v8-promise.h',
-       'include/v8-proxy.h',
-       'include/v8-regexp.h',
-+      "include/v8-sandbox.h",
-+      "include/v8-source-location.h",
-       'include/v8-script.h',
-       'include/v8-snapshot.h',
-       'include/v8-statistics.h',
 @@ -390,7 +393,7 @@ def parse_options(args):
    parser.add_argument('--build-dir', help='the location of built binaries',
                        default='out/Release')
@@ -2487,4 +2470,3 @@ index e0f3d8844718ab8a6478c40ff713c1fd6bcff95a..c73a5b666dbaf555c749d836c20a7ae1
    return node::js2c::Main(argc, argv);
 -}
 +}
-\ No newline at end of file
