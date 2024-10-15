@@ -252,8 +252,8 @@ namespace util {
  * |v8::ArrayBufferView::ByteLength()|.
  */
 base::span<uint8_t> as_byte_span(v8::Local<v8::ArrayBufferView> val) {
-  uint8_t* data =
-      static_cast<uint8_t*>(val->Buffer()->Data()) + val->ByteOffset();
+  uint8_t* data = UNSAFE_BUFFERS(static_cast<uint8_t*>(val->Buffer()->Data()) +
+                                 val->ByteOffset());
   const size_t size = val->ByteLength();
   return UNSAFE_BUFFERS(base::span{data, size});
 }
