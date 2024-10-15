@@ -38,7 +38,7 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d58434af647d 100644
+index f05c6f99c0037193c5802024be46a967d6cf47a0..f3dad958b2ec275992554477b9344214c8c1e2c8 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {
@@ -49,17 +49,8 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
 +const fs = require('fs');
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
- const policy = getOptionValue('--experimental-policy') ?
-@@ -251,7 +251,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
-     throw err;
-   }
- 
--  const stats = internalModuleStat(toNamespacedPath(StringPrototypeEndsWith(path, '/') ?
-+  const stats = internalFsBinding.internalModuleStat(toNamespacedPath(StringPrototypeEndsWith(path, '/') ?
-     StringPrototypeSlice(path, -1) : path));
- 
-   // Check for stats.isDirectory()
-@@ -267,7 +267,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+ const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
+@@ -259,7 +259,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -68,15 +59,6 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
        [internalFS.realpathCacheKey]: realpathCache,
      });
      const { search, hash } = resolved;
-@@ -826,7 +826,7 @@ function packageResolve(specifier, base, conditions) {
-   let packageJSONPath = fileURLToPath(packageJSONUrl);
-   let lastPath;
-   do {
--    const stat = internalModuleStat(toNamespacedPath(StringPrototypeSlice(packageJSONPath, 0,
-+    const stat = internalFsBinding.internalModuleStat(toNamespacedPath(StringPrototypeSlice(packageJSONPath, 0,
-                                                                           packageJSONPath.length - 13)));
-     // Check for !stat.isDirectory()
-     if (stat !== 1) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
 index 89ca269294ee1afa7f5aeb0ac6b8958f7a8b49d0..f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd 100644
 --- a/lib/internal/modules/esm/translators.js
