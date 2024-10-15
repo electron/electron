@@ -8,10 +8,10 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 50b148bc25badf4d11c084dd279a7794514e0cbb..1cf7708f4ba89778de35f6953ff03df78fc0d4a7 100644
+index c9db1ca9b650effbdf3374038fea663574b414ad..9e6843c6477b9d1034951c51d64ca1b9bfb7bb17 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -43,7 +43,6 @@
+@@ -45,7 +45,6 @@
  #include "chrome/browser/ui/file_system_access/file_system_access_dangerous_file_dialog.h"
  #include "chrome/browser/ui/file_system_access/file_system_access_dialogs.h"
  #include "chrome/browser/ui/file_system_access/file_system_access_restricted_directory_dialog.h"
@@ -19,7 +19,7 @@ index 50b148bc25badf4d11c084dd279a7794514e0cbb..1cf7708f4ba89778de35f6953ff03df7
  #include "chrome/grit/generated_resources.h"
  #include "components/content_settings/core/browser/host_content_settings_map.h"
  #include "components/content_settings/core/common/content_settings.h"
-@@ -235,122 +234,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -239,126 +238,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -97,6 +97,10 @@ index 50b148bc25badf4d11c084dd279a7794514e0cbb..1cf7708f4ba89778de35f6953ff03df7
 -#if BUILDFLAG(IS_MAC)
 -    // Similar Mac specific blocks.
 -    {base::DIR_APP_DATA, nullptr, kBlockAllChildren},
+-    // Block access to the user's Applications directory.
+-    {base::DIR_HOME, FILE_PATH_LITERAL("Applications"), kBlockAllChildren},
+-    // Block access to the root Applications directory.
+-    {kNoBasePathKey, FILE_PATH_LITERAL("/Applications"), kBlockAllChildren},
 -    {base::DIR_HOME, FILE_PATH_LITERAL("Library"), kBlockAllChildren},
 -    // Allow access to other cloud files, such as Google Drive.
 -    {base::DIR_HOME, FILE_PATH_LITERAL("Library/CloudStorage"),
@@ -147,10 +151,10 @@ index 50b148bc25badf4d11c084dd279a7794514e0cbb..1cf7708f4ba89778de35f6953ff03df7
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index eaff88d9e4d14040a597b2739574231b6d2d8232..ec614eb4ad6984ebfa3e8360331db2ee8d11050d 100644
+index 67c777c9576587500f37d066689ec072ff483c8f..6390432e93d2517cf94902bd2cf66ad5ac7379f6 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-@@ -17,12 +17,13 @@
+@@ -17,7 +17,7 @@
  #include "base/time/default_clock.h"
  #include "chrome/browser/file_system_access/file_system_access_features.h"
  #include "chrome/browser/file_system_access/file_system_access_permission_request_manager.h"
@@ -159,13 +163,7 @@ index eaff88d9e4d14040a597b2739574231b6d2d8232..ec614eb4ad6984ebfa3e8360331db2ee
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
  #include "content/public/browser/file_system_access_permission_context.h"
- #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom-forward.h"
- 
-+
- #if !BUILDFLAG(IS_ANDROID)
- #include "chrome/browser/permissions/one_time_permissions_tracker.h"
- #include "chrome/browser/permissions/one_time_permissions_tracker_observer.h"
-@@ -30,7 +31,7 @@
+@@ -30,7 +30,7 @@
  #include "chrome/browser/web_applications/web_app_install_manager_observer.h"
  #endif
  
@@ -174,13 +172,13 @@ index eaff88d9e4d14040a597b2739574231b6d2d8232..ec614eb4ad6984ebfa3e8360331db2ee
  #include "components/enterprise/common/files_scan_data.h"
  #endif
  
-@@ -338,6 +339,123 @@ class ChromeFileSystemAccessPermissionContext
+@@ -333,6 +333,127 @@ class ChromeFileSystemAccessPermissionContext
    // KeyedService:
    void Shutdown() override;
  
 +  // Sentinel used to indicate that no PathService key is specified for a path in
 +  // the struct below.
-+  static constexpr int kNoBasePathKey = -1;
++  static constexpr const int kNoBasePathKey = -1;
 +
 +  enum BlockType {
 +    kBlockAllChildren,
@@ -252,24 +250,28 @@ index eaff88d9e4d14040a597b2739574231b6d2d8232..ec614eb4ad6984ebfa3e8360331db2ee
 +  #if BUILDFLAG(IS_MAC)
 +      // Similar Mac specific blocks.
 +      {base::DIR_APP_DATA, nullptr, kBlockAllChildren},
++      // Block access to the user's Applications directory.
++      {base::DIR_HOME, FILE_PATH_LITERAL("Applications"), kBlockAllChildren},
++      // Block access to the root Applications directory.
++      {kNoBasePathKey, FILE_PATH_LITERAL("/Applications"), kBlockAllChildren},
 +      {base::DIR_HOME, FILE_PATH_LITERAL("Library"), kBlockAllChildren},
 +      // Allow access to other cloud files, such as Google Drive.
 +      {base::DIR_HOME, FILE_PATH_LITERAL("Library/CloudStorage"),
-+      kDontBlockChildren},
++       kDontBlockChildren},
 +      // Allow the site to interact with data from its corresponding natively
 +      // installed (sandboxed) application. It would be nice to limit a site to
 +      // access only _its_ corresponding natively installed application,
 +      // but unfortunately there's no straightforward way to do that. See
 +      // https://crbug.com/984641#c22.
 +      {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
-+      kDontBlockChildren},
++       kDontBlockChildren},
 +      // Allow access to iCloud files...
 +      {base::DIR_HOME, FILE_PATH_LITERAL("Library/Mobile Documents"),
-+      kDontBlockChildren},
++       kDontBlockChildren},
 +      // ... which may also appear at this directory.
 +      {base::DIR_HOME,
-+      FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
-+      kDontBlockChildren},
++       FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
++       kDontBlockChildren},
 +  #endif
 +  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 +      // On Linux also block access to devices via /dev.
@@ -298,12 +300,12 @@ index eaff88d9e4d14040a597b2739574231b6d2d8232..ec614eb4ad6984ebfa3e8360331db2ee
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -357,7 +475,7 @@ class ChromeFileSystemAccessPermissionContext
+@@ -352,7 +473,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  
 -#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
 +#if 0
    void OnContentAnalysisComplete(
-       std::vector<PathInfo> entries,
+       std::vector<content::PathInfo> entries,
        EntriesAllowedByEnterprisePolicyCallback callback,

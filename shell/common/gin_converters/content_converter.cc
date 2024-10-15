@@ -21,28 +21,31 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/common/context_menu_data/untrustworthy_context_menu_params.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace gin {
 
 static constexpr auto MenuSourceTypes =
-    base::MakeFixedFlatMap<std::string_view, ui::MenuSourceType>({
-        {"adjustSelection", ui::MENU_SOURCE_ADJUST_SELECTION},
-        {"adjustSelectionReset", ui::MENU_SOURCE_ADJUST_SELECTION_RESET},
-        {"keyboard", ui::MENU_SOURCE_KEYBOARD},
-        {"longPress", ui::MENU_SOURCE_LONG_PRESS},
-        {"longTap", ui::MENU_SOURCE_LONG_TAP},
-        {"mouse", ui::MENU_SOURCE_MOUSE},
-        {"none", ui::MENU_SOURCE_NONE},
-        {"stylus", ui::MENU_SOURCE_STYLUS},
-        {"touch", ui::MENU_SOURCE_TOUCH},
-        {"touchHandle", ui::MENU_SOURCE_TOUCH_HANDLE},
-        {"touchMenu", ui::MENU_SOURCE_TOUCH_EDIT_MENU},
+    base::MakeFixedFlatMap<std::string_view, ui::mojom::MenuSourceType>({
+        {"adjustSelection", ui::mojom::MenuSourceType::kAdjustSelection},
+        {"adjustSelectionReset",
+         ui::mojom::MenuSourceType::kAdjustSelectionReset},
+        {"keyboard", ui::mojom::MenuSourceType::kKeyboard},
+        {"longPress", ui::mojom::MenuSourceType::kLongPress},
+        {"longTap", ui::mojom::MenuSourceType::kLongTap},
+        {"mouse", ui::mojom::MenuSourceType::kMouse},
+        {"none", ui::mojom::MenuSourceType::kNone},
+        {"stylus", ui::mojom::MenuSourceType::kStylus},
+        {"touch", ui::mojom::MenuSourceType::kTouch},
+        {"touchHandle", ui::mojom::MenuSourceType::kTouchHandle},
+        {"touchMenu", ui::mojom::MenuSourceType::kTouchEditMenu},
     });
 
 // let us know when upstream changes & we need to update MenuSourceTypes
-static_assert(std::size(MenuSourceTypes) == ui::MENU_SOURCE_TYPE_LAST + 1U);
+static_assert(std::size(MenuSourceTypes) ==
+              static_cast<int32_t>(ui::mojom::MenuSourceType::kMaxValue) + 1);
 
 // static
 v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(

@@ -116,9 +116,9 @@ for:
       - ps: >-
           $env:RBE_service = node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"
       - ps: >-
-          $env:RBE_experimental_credentials_helper = $env:RECLIENT_HELPER
+          $env:RBE_credentials_helper = $env:RECLIENT_HELPER
       - ps: >-
-          $env:RBE_experimental_credentials_helper_args = "print"
+          $env:RBE_credentials_helper_args = "print"
       - ps: >-
           if ($env:ELECTRON_RBE_JWT -eq '') {
             $env:RBE_fail_early_min_action_count = "0"
