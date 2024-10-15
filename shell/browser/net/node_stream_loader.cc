@@ -10,6 +10,7 @@
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 namespace electron {
 
@@ -138,14 +139,14 @@ void NodeStreamLoader::ReadMore() {
   // Hold the buffer until the write is done.
   buffer_.Reset(isolate_, buffer);
 
-  bytes_written_ += node::Buffer::Length(buffer);
+  const auto buffer_span = electron::util::as_byte_span(buffer);
+  bytes_written_ += buffer_span.size();
 
   // Write buffer to mojo pipe asynchronously.
   is_reading_ = false;
   is_writing_ = true;
   producer_->Write(std::make_unique<mojo::StringDataSource>(
-                       std::string_view{node::Buffer::Data(buffer),
-                                        node::Buffer::Length(buffer)},
+                       base::as_chars(buffer_span),
                        mojo::StringDataSource::AsyncWritingMode::
                            STRING_STAYS_VALID_UNTIL_COMPLETION),
                    base::BindOnce(&NodeStreamLoader::DidWrite, weak));
