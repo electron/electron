@@ -6,37 +6,37 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7..22248b753c14960122f1d6b9bfe6b89fdb8d2010 100644
+index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f7c591e12 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -10,7 +10,7 @@ const { kEmptyObject } = require('internal/util');
+@@ -8,7 +8,7 @@ const { kEmptyObject } = require('internal/util');
  const { defaultGetFormat } = require('internal/modules/esm/get_format');
  const { validateAttributes, emitImportAssertionWarning } = require('internal/modules/esm/assert');
  const { getOptionValue } = require('internal/options');
 -const { readFileSync } = require('fs');
 +const fs = require('fs');
  
- // Do not eagerly grab .manifest, it may be in TDZ
- const policy = getOptionValue('--experimental-policy') ?
-@@ -42,8 +42,7 @@ async function getSource(url, context) {
-   let responseURL = href;
+ const defaultType =
+   getOptionValue('--experimental-default-type');
+@@ -40,8 +40,7 @@ async function getSource(url, context) {
+   const responseURL = href;
    let source;
    if (protocol === 'file:') {
 -    const { readFile: readFileAsync } = require('internal/fs/promises').exports;
 -    source = await readFileAsync(url);
 +    source = await fs.promises.readFile(url);
    } else if (protocol === 'data:') {
-     const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
-     if (!match) {
-@@ -82,7 +81,7 @@ function getSourceSync(url, context) {
+     const result = dataURLProcessor(url);
+     if (result === 'failure') {
+@@ -65,7 +64,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
 -    source = readFileSync(url);
 +    source = fs.readFileSync(url);
    } else if (protocol === 'data:') {
-     const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
-     if (!match) {
+     const result = dataURLProcessor(url);
+     if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
 index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d58434af647d 100644
 --- a/lib/internal/modules/esm/resolve.js
