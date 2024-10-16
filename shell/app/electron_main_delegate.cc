@@ -271,12 +271,6 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
       kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
 #endif
 
-#if BUILDFLAG(IS_MAC)
-  OverrideChildProcessPath();
-  OverrideFrameworkBundlePath();
-  SetUpBundleOverrides();
-#endif
-
 #if BUILDFLAG(IS_WIN)
   // Ignore invalid parameter errors.
   _set_invalid_parameter_handler(InvalidParameterHandler);
