@@ -205,17 +205,6 @@ async function tagRelease (version: string) {
   }
 }
 
-// function to determine if there have been commits to main since the last release
-async function changesToRelease () {
-  const lastCommitWasRelease =
-    /^Bump v[0-9]+.[0-9]+.[0-9]+(-beta.[0-9]+)?(-alpha.[0-9]+)?(-nightly.[0-9]+)?$/g;
-  const lastCommit = await GitProcess.exec(
-    ['log', '-n', '1', "--pretty=format:'%s'"],
-    ELECTRON_DIR
-  );
-  return !lastCommitWasRelease.test(lastCommit.stdout);
-}
-
 export async function printNextVersion (options: PrepareReleaseOptions) {
   const newVersion = await getNewVersion(options, DryRunMode.DRY_RUN);
   console.log(newVersion);
@@ -225,17 +214,9 @@ export async function prepareRelease (options: PrepareReleaseOptions) {
   const currentBranch =
     options.targetBranch || (await getCurrentBranch(ELECTRON_DIR));
 
-  const changes = await changesToRelease();
-  if (changes) {
-    const newVersion = await getNewVersion(options, DryRunMode.DRY_RUN);
-    console.log(`${pass} Starting release of ${newVersion}`);
-    await createRelease(options, currentBranch);
-    await pushRelease(currentBranch);
-    await runReleaseBuilds(currentBranch, newVersion);
-  } else {
-    console.log(
-      'There are no new changes to this branch since the last release, aborting release.'
-    );
-    process.exit(1);
-  }
+  const newVersion = await getNewVersion(options, DryRunMode.DRY_RUN);
+  console.log(`${pass} Starting release of ${newVersion}`);
+  await createRelease(options, currentBranch);
+  await pushRelease(currentBranch);
+  await runReleaseBuilds(currentBranch, newVersion);
 }
