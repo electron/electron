@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index d18f5b091d33ef307ec7c416fd5963a002782af2..43fe136e619f0fd4473f44bfb48247d532550b11 100644
+index 2cff5a93d7494d6fe8138e90c3172dda6b3a653f..bc4544c40f3dd2a9f534991e3445ce1f4a12216c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -156,6 +156,11 @@
@@ -22,7 +22,7 @@ index d18f5b091d33ef307ec7c416fd5963a002782af2..43fe136e619f0fd4473f44bfb48247d5
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -580,6 +585,99 @@ mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParamsForPrefetch() {
+@@ -597,6 +602,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index d18f5b091d33ef307ec7c416fd5963a002782af2..43fe136e619f0fd4473f44bfb48247d5
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -961,6 +1059,13 @@ void NetworkContext::SetClient(
+@@ -978,6 +1076,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index d18f5b091d33ef307ec7c416fd5963a002782af2..43fe136e619f0fd4473f44bfb48247d5
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2509,6 +2614,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2526,6 +2631,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index d18f5b091d33ef307ec7c416fd5963a002782af2..43fe136e619f0fd4473f44bfb48247d5
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 256de870d2c6defd3f0b389ee5f596c01051533f..a898e09ac0c989952fe2032ca4ea6ddfdacc59e6 100644
+index 3ab2d4f27dc258bbb82aa2c929a5ee717a933bd8..345fa438ad2afea7946117b8bac7bb6f08669b28 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
