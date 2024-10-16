@@ -15,30 +15,21 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a6a794814 100644
+index f3dad958b2ec275992554477b9344214c8c1e2c8..e1116b44c4d01e79ecc4cb68802d176777c7c410 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -36,10 +36,9 @@ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
- const experimentalNetworkImports =
-   getOptionValue('--experimental-network-imports');
+@@ -31,10 +31,9 @@ const { sep, posix: { relative: relativePosixPath }, resolve } = require('path')
+ const preserveSymlinks = getOptionValue('--preserve-symlinks');
+ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
  const inputTypeFlag = getOptionValue('--input-type');
--const { URL, pathToFileURL, fileURLToPath, isURL } = require('internal/url');
-+const { URL, pathToFileURL, fileURLToPath, isURL, toPathIfFileURL } = require('internal/url');
+-const { URL, pathToFileURL, fileURLToPath, isURL, URLParse } = require('internal/url');
++const { URL, pathToFileURL, fileURLToPath, isURL, URLParse, toPathIfFileURL } = require('internal/url');
  const { getCWDURL, setOwnProperty } = require('internal/util');
  const { canParse: URLCanParse } = internalBinding('url');
 -const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -59,7 +58,7 @@ const { Module: CJSModule } = require('internal/modules/cjs/loader');
- const { getPackageScopeConfig } = require('internal/modules/esm/package_config');
- const { getConditionsSet } = require('internal/modules/esm/utils');
- const packageJsonReader = require('internal/modules/package_json_reader');
--const { internalModuleStat } = internalBinding('fs');
-+const internalFsBinding = internalBinding('fs');
- 
- /**
-  * @typedef {import('internal/modules/esm/package_config.js').PackageConfig} PackageConfig
 @@ -162,34 +161,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
  
  const realpathCache = new SafeMap();
@@ -142,7 +133,7 @@ index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736c24827e3 100644
+index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e7607210f58 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -19,14 +19,11 @@
@@ -160,7 +151,7 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
  #include "node_process-inl.h"
  #include "node_stat_watcher.h"
  #include "node_url.h"
-@@ -3127,135 +3124,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
+@@ -3208,146 +3205,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
  
  }  // namespace
  
@@ -202,14 +193,20 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
 -      return;
 -    }
 -
--    node::url::FromNamespacedPath(&initial_file_path.value());
+-    FromNamespacedPath(&initial_file_path.value());
 -
 -    package_initial_file = *initial_file_path;
 -
 -    for (int i = 0; i < legacy_main_extensions_with_main_end; i++) {
 -      file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
+-      // TODO(anonrig): Remove this when ToNamespacedPath supports std::string
+-      Local<Value> local_file_path =
+-          Buffer::Copy(env->isolate(), file_path.c_str(), file_path.size())
+-              .ToLocalChecked();
+-      BufferValue buff_file_path(isolate, local_file_path);
+-      ToNamespacedPath(env, &buff_file_path);
 -
--      switch (FilePathIsFile(env, file_path)) {
+-      switch (FilePathIsFile(env, buff_file_path.ToString())) {
 -        case BindingData::FilePathIsFileReturnType::kIsFile:
 -          return args.GetReturnValue().Set(i);
 -        case BindingData::FilePathIsFileReturnType::kIsNotFile:
@@ -239,14 +236,20 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
 -    return;
 -  }
 -
--  node::url::FromNamespacedPath(&initial_file_path.value());
+-  FromNamespacedPath(&initial_file_path.value());
 -
 -  for (int i = legacy_main_extensions_with_main_end;
 -       i < legacy_main_extensions_package_fallback_end;
 -       i++) {
 -    file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
+-    // TODO(anonrig): Remove this when ToNamespacedPath supports std::string
+-    Local<Value> local_file_path =
+-        Buffer::Copy(env->isolate(), file_path.c_str(), file_path.size())
+-            .ToLocalChecked();
+-    BufferValue buff_file_path(isolate, local_file_path);
+-    ToNamespacedPath(env, &buff_file_path);
 -
--    switch (FilePathIsFile(env, file_path)) {
+-    switch (FilePathIsFile(env, buff_file_path.ToString())) {
 -      case BindingData::FilePathIsFileReturnType::kIsFile:
 -        return args.GetReturnValue().Set(i);
 -      case BindingData::FilePathIsFileReturnType::kIsNotFile:
@@ -292,11 +295,10 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
 -                             package_initial_file,
 -                             *module_base);
 -}
--
+ 
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("stats_field_array", stats_field_array);
-   tracker->TrackField("stats_field_bigint_array", stats_field_bigint_array);
-@@ -3355,19 +3223,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+@@ -3448,19 +3305,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
    return info;
  }
  
@@ -316,15 +318,15 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
  static void CreatePerIsolateProperties(IsolateData* isolate_data,
                                         Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-@@ -3422,7 +3277,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
-   SetMethod(isolate, target, "mkdtemp", Mkdtemp);
+@@ -3520,7 +3364,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+   SetMethod(isolate, target, "cpSyncCheckPaths", CpSyncCheckPaths);
  
    StatWatcher::CreatePerIsolateProperties(isolate_data, target);
 -  BindingData::CreatePerIsolateProperties(isolate_data, target);
  
    target->Set(
        FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3495,7 +3349,6 @@ BindingData* FSReqBase::binding_data() {
+@@ -3593,7 +3436,6 @@ BindingData* FSReqBase::binding_data() {
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(Access);
    StatWatcher::RegisterExternalReferences(registry);
