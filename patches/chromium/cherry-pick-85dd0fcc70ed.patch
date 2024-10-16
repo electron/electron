@@ -1,7 +1,7 @@
-From 85dd0fcc70eda0537356940af29526cb49f77d87 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ben Wagner <bungeman@chromium.org>
-Date: Fri, 06 Sep 2024 14:19:38 +0000
-Subject: [PATCH] Roll src/third_party/expat/src/ a59c3edff..624da0f59 (50 commits)
+Date: Fri, 6 Sep 2024 14:19:38 +0000
+Subject: Roll src/third_party/expat/src/ a59c3edff..624da0f59 (50 commits)
 
 https://chromium.googlesource.com/external/github.com/libexpat/libexpat.git/+log/a59c3edffa54..624da0f593bb
 
@@ -67,13 +67,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5840329
 Reviewed-by: Daniel Cheng <dcheng@chromium.org>
 Commit-Queue: Ben Wagner <bungeman@google.com>
 Cr-Commit-Position: refs/heads/main@{#1352024}
----
 
 diff --git a/DEPS b/DEPS
-index 1d17b8f5..729abb3 100644
+index bc9fbaa06368b184c5364913288ca7c38cfa4f6e..7eb2dead66431b03cb78f0953363de5af8210a73 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -432,7 +432,7 @@
+@@ -435,7 +435,7 @@ vars = {
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling libexpat
    # and whatever else without interference from each other.
@@ -83,7 +82,7 @@ index 1d17b8f5..729abb3 100644
    # the commit queue can handle CLs rolling wuffs
    # and whatever else without interference from each other.
 diff --git a/third_party/expat/README.chromium b/third_party/expat/README.chromium
-index 492614b..05c8681 100644
+index 492614bf0a2899be186a536fa04ab27ec9148d89..05c8681e9c9475a19704bfef9799f40ece1d76ad 100644
 --- a/third_party/expat/README.chromium
 +++ b/third_party/expat/README.chromium
 @@ -1,10 +1,10 @@
@@ -102,7 +101,7 @@ index 492614b..05c8681 100644
  Shipped: yes
  License: MIT
 diff --git a/third_party/expat/include/expat_config/expat_config.h b/third_party/expat/include/expat_config/expat_config.h
-index 2291dcbe..9f07441 100644
+index 2291dcbeb28adc6f8602a03b63496176e4c3973f..9f07441a2816f81248111ac1769ef2b37f2b342f 100644
 --- a/third_party/expat/include/expat_config/expat_config.h
 +++ b/third_party/expat/include/expat_config/expat_config.h
 @@ -83,7 +83,7 @@
@@ -141,7 +140,7 @@ index 2291dcbe..9f07441 100644
 -
  #endif // ndef EXPAT_CONFIG_H
 diff --git a/third_party/expat/src b/third_party/expat/src
-index a59c3ed..624da0f5 160000
+index a59c3edffa54a77b8d7b268ef527da541076ca6a..624da0f593bb8d7e146b9f42b06d8e6c80d032a3 160000
 --- a/third_party/expat/src
 +++ b/third_party/expat/src
 @@ -1 +1 @@

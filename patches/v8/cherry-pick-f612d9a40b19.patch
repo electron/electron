@@ -1,7 +1,7 @@
-From f612d9a40b194cc7fc1d9cffdd295a78fa2f10c9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thibaud Michaud <thibaudm@chromium.org>
 Date: Tue, 17 Sep 2024 16:49:30 +0200
-Subject: [PATCH] [wasm] Check strict type equality for Tag imports
+Subject: Check strict type equality for Tag imports
 
 R=manoskouk@chromium.org
 
@@ -11,13 +11,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5868875
 Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
 Reviewed-by: Manos Koukoutos <manoskouk@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#96143}
----
 
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index 959b337..7fa81ed 100644
+index 85dca1183a22039732def26e473b42645c497856..9b24adc335fc0326041cf60117212134ae955762 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
-@@ -2117,8 +2117,8 @@
+@@ -1843,8 +1843,8 @@ Handle<WasmTagObject> WasmTagObject::New(Isolate* isolate,
  }
  
  bool WasmTagObject::MatchesSignature(uint32_t expected_canonical_type_index) {
