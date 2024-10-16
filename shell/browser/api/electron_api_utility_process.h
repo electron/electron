@@ -96,6 +96,7 @@ class UtilityProcessWrapper final
   int stdout_read_fd_ = -1;
   int stderr_read_fd_ = -1;
   bool connector_closed_ = false;
+  bool terminated_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
