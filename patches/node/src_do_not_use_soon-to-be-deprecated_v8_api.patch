@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Fri, 19 Apr 2024 12:29:53 +0200
+Subject: src: do not use soon-to-be-deprecated V8 API
+
+V8 announced deprecation of the following methods:
+ - v8::Object::SetAccessor(...) in favor of
+   v8::Object::SetNativeDataProperty(...),
+ - v8::ObjectTemplate::SetNativeDataProperty(...) with AccessControl
+   parameter in favor of
+   v8::ObjectTemplate::SetNativeDataProperty(...) without AccessControl
+   parameter.
+
+See https://crrev.com/c/5006387.
+
+This slightly changes behavior of the following properties:
+ - process.debugPort (for worker processes),
+ - process.title (for worker processes),
+ - process.ppid.
+
+The difference is that they will now behave like a regular writable
+JavaScript data properties - in case setter callback is not provided
+they will be be reconfigured from a native data property (the one
+that calls C++ callbacks upon get/set operations) to a real data
+property (so subsequent reads will no longer trigger C++ getter
+callbacks).
+
+PR-URL: https://github.com/nodejs/node/pull/53174
+Reviewed-By: Michael Dawson <midawson@redhat.com>
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+
+diff --git a/src/node_process_object.cc b/src/node_process_object.cc
+index a13f8d15724cb00fe0e9d722395bd9b9514a3943..3f8a4fbd1a65971645e6785e469bc887a1afbad1 100644
+--- a/src/node_process_object.cc
++++ b/src/node_process_object.cc
+@@ -13,7 +13,6 @@
+ 
+ namespace node {
+ using v8::Context;
+-using v8::DEFAULT;
+ using v8::EscapableHandleScope;
+ using v8::Function;
+ using v8::FunctionCallbackInfo;
+@@ -188,13 +187,12 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+ 
+   // process.title
+   CHECK(process
+-            ->SetAccessor(
++            ->SetNativeDataProperty(
+                 context,
+                 FIXED_ONE_BYTE_STRING(isolate, "title"),
+                 ProcessTitleGetter,
+                 env->owns_process_state() ? ProcessTitleSetter : nullptr,
+                 Local<Value>(),
+-                DEFAULT,
+                 None,
+                 SideEffectType::kHasNoSideEffect)
+             .FromJust());
+@@ -213,9 +211,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+   READONLY_PROPERTY(process, "pid",
+                     Integer::New(isolate, uv_os_getpid()));
+ 
+-  CHECK(process->SetAccessor(context,
+-                             FIXED_ONE_BYTE_STRING(isolate, "ppid"),
+-                             GetParentProcessId).FromJust());
++  CHECK(process
++            ->SetNativeDataProperty(context,
++                                    FIXED_ONE_BYTE_STRING(isolate, "ppid"),
++                                    GetParentProcessId,
++                                    nullptr,
++                                    Local<Value>(),
++                                    None,
++                                    SideEffectType::kHasNoSideEffect)
++            .FromJust());
+ 
+   // --security-revert flags
+ #define V(code, _, __)                                                        \
+@@ -240,12 +244,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+ 
+   // process.debugPort
+   CHECK(process
+-            ->SetAccessor(context,
+-                          FIXED_ONE_BYTE_STRING(isolate, "debugPort"),
+-                          DebugPortGetter,
+-                          env->owns_process_state() ? DebugPortSetter : nullptr,
+-                          Local<Value>())
+-            .FromJust());
++            ->SetNativeDataProperty(
++                context,
++                FIXED_ONE_BYTE_STRING(isolate, "debugPort"),
++                DebugPortGetter,
++                env->owns_process_state() ? DebugPortSetter : nullptr,
++                Local<Value>(),
++                None,
++                SideEffectType::kHasNoSideEffect)
++             .FromJust());
+ 
+   // process.versions
+   Local<Object> versions = Object::New(isolate);
+diff --git a/test/parallel/test-worker-unsupported-things.js b/test/parallel/test-worker-unsupported-things.js
+index 18c1617c3cde5ef12f9c97828840c39e0be3dc2c..95d93d24dec9f1944091a97574f01c94d617cc49 100644
+--- a/test/parallel/test-worker-unsupported-things.js
++++ b/test/parallel/test-worker-unsupported-things.js
+@@ -14,14 +14,16 @@ if (!process.env.HAS_STARTED_WORKER) {
+ } else {
+   {
+     const before = process.title;
+-    process.title += ' in worker';
+-    assert.strictEqual(process.title, before);
++    const after = before + ' in worker';
++    process.title = after;
++    assert.strictEqual(process.title, after);
+   }
+ 
+   {
+     const before = process.debugPort;
+-    process.debugPort++;
+-    assert.strictEqual(process.debugPort, before);
++    const after = before + 1;
++    process.debugPort = after;
++    assert.strictEqual(process.debugPort, after);
+   }
+ 
+   {
