@@ -33,7 +33,7 @@ index f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd..b6f2d7194cb75ecc8c47869761c63184
    if (!loaded) {
      module = new CJSModule(filename);
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index ca401044c0178c46db9b439b27c440a5d7924c84..dc1a682f0a3cf1ba1095c60bf6a6ca992d6043b3 100644
+index 1e1a1ea46fc6c1b43cad4038ab0d9cdf21d6ba3d..7daf0cb5f6cc7cb7f3f6cd88af3443558ff0e82f 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
 @@ -2,6 +2,7 @@
@@ -41,9 +41,9 @@ index ca401044c0178c46db9b439b27c440a5d7924c84..dc1a682f0a3cf1ba1095c60bf6a6ca99
  const {
    StringPrototypeEndsWith,
 +  StringPrototypeStartsWith,
+   globalThis,
  } = primordials;
  
- const { containsModuleSyntax } = internalBinding('contextify');
 @@ -22,6 +23,13 @@ const {
   * @param {string} main - Entry point path
   */
