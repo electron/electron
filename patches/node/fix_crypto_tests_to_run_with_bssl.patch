@@ -122,7 +122,7 @@ index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af5
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index 8ae0a002fec0944737d2c6ae73fc8956e41beb50..5b37236a6c2f1ec1761d8143c8ea6a7e2a837a7a 100644
+index 9ebe14011eed223994e0901bc22dcc582b4b0739..e06f10cbfa933e87f459e6a7fca0e51930be7564 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -55,18 +55,17 @@ const crypto = require('crypto');
@@ -152,7 +152,7 @@ index 8ae0a002fec0944737d2c6ae73fc8956e41beb50..5b37236a6c2f1ec1761d8143c8ea6a7e
      };
    }
  
-@@ -100,10 +100,16 @@ const crypto = require('crypto');
+@@ -100,10 +99,16 @@ const crypto = require('crypto');
  // Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
  {
    const g = 0;
@@ -171,7 +171,6 @@ index 8ae0a002fec0944737d2c6ae73fc8956e41beb50..5b37236a6c2f1ec1761d8143c8ea6a7e
 +    name: 'Error'
 +  });
  }
-
 diff --git a/test/parallel/test-crypto-getcipherinfo.js b/test/parallel/test-crypto-getcipherinfo.js
 index 64b79fc36ccf4d38f763fcd8c1930473c82cefd7..892490fc7dd8da09f8aa10a20bec69385c0fee28 100644
 --- a/test/parallel/test-crypto-getcipherinfo.js
@@ -213,7 +212,7 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
 diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.js
-index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b565814f2dd 100644
+index 83218c105a4596e0ae0381136f176bb8d759899e..afb3c8c592d2a8e2a053fd44f455af06c592a85e 100644
 --- a/test/parallel/test-crypto-hash.js
 +++ b/test/parallel/test-crypto-hash.js
 @@ -182,6 +182,7 @@ assert.throws(
@@ -337,7 +336,7 @@ index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..73bb53b0405b20f51b13326cc70e5275
  }
 +*/
 diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
-index 61bd65fc92678c24baa3c0eb9ffb1ead64ace70b..cb690351696a811210b9d990ee4cde3cfb2a3446 100644
+index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88bfb23d85f 100644
 --- a/test/parallel/test-crypto-scrypt.js
 +++ b/test/parallel/test-crypto-scrypt.js
 @@ -178,7 +178,7 @@ for (const options of bad) {
@@ -518,10 +517,10 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
  }
 +*/
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b65795857da1b 100644
+index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a5f1eeffc 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
-@@ -67,7 +67,7 @@ assert.throws(() => {
+@@ -61,7 +61,7 @@ assert.throws(() => {
    // Throws general Error, so there is no opensslErrorStack property.
    return err instanceof Error &&
           err.name === 'Error' &&
@@ -530,7 +529,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
           !('opensslErrorStack' in err);
  });
  
-@@ -77,7 +77,7 @@ assert.throws(() => {
+@@ -71,7 +71,7 @@ assert.throws(() => {
    // Throws general Error, so there is no opensslErrorStack property.
    return err instanceof Error &&
           err.name === 'Error' &&
@@ -539,7 +538,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
           !('opensslErrorStack' in err);
  });
  
-@@ -87,7 +87,7 @@ assert.throws(() => {
+@@ -81,7 +81,7 @@ assert.throws(() => {
    // Throws general Error, so there is no opensslErrorStack property.
    return err instanceof Error &&
           err.name === 'Error' &&
@@ -548,7 +547,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
           !('opensslErrorStack' in err);
  });
  
-@@ -150,8 +150,6 @@ assert(crypto.getHashes().includes('sha1'));
+@@ -144,8 +144,6 @@ assert(crypto.getHashes().includes('sha1'));
  assert(crypto.getHashes().includes('sha256'));
  assert(!crypto.getHashes().includes('SHA1'));
  assert(!crypto.getHashes().includes('SHA256'));
@@ -557,7 +556,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
  validateList(crypto.getHashes());
  // Make sure all of the hashes are supported by OpenSSL
  for (const algo of crypto.getHashes())
-@@ -219,7 +217,7 @@ assert.throws(
+@@ -195,7 +193,7 @@ assert.throws(
      return true;
    }
  );
@@ -566,7 +565,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
  assert.throws(() => {
    const priv = [
      '-----BEGIN RSA PRIVATE KEY-----',
-@@ -232,6 +230,7 @@ assert.throws(() => {
+@@ -208,6 +206,7 @@ assert.throws(() => {
    ].join('\n');
    crypto.createSign('SHA256').update('test').sign(priv);
  }, (err) => {
@@ -574,7 +573,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
    if (!common.hasOpenSSL3)
      assert.ok(!('opensslErrorStack' in err));
    assert.throws(() => { throw err; }, common.hasOpenSSL3 ? {
-@@ -240,10 +239,10 @@ assert.throws(() => {
+@@ -216,10 +215,10 @@ assert.throws(() => {
      library: 'rsa routines',
    } : {
      name: 'Error',
@@ -589,7 +588,7 @@ index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b6579
      code: 'ERR_OSSL_RSA_DIGEST_TOO_BIG_FOR_RSA_KEY'
    });
    return true;
-@@ -276,7 +275,7 @@ if (!common.hasOpenSSL3) {
+@@ -252,7 +251,7 @@ if (!common.hasOpenSSL3) {
      return true;
    });
  }

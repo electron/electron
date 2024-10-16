@@ -71,10 +71,10 @@ index 1fbbb6773c9479128408fa1f27cf19f1a7786ba6..f05c6f99c0037193c5802024be46a967
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f7a8b49d0 100644
+index 8f88214f558c52ef26000fb0e1ef4d391327e84e..d182eedf5e96039e0029d36e51f40b75c6fb2a39 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -272,7 +272,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -246,7 +246,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -83,7 +83,7 @@ index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -294,8 +294,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -268,8 +268,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -106,10 +106,10 @@ index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f
  // This translator function must be sync, as `require` is sync.
  translators.set('require-commonjs-typescript', (url, source, isMain) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index e6ed5466b8807a52633d8406824058bdc8c2ce13..e055facddf086eb8fb456b865ce006cdb7602b0a 100644
+index 3cb186182947a14407e9d5c4d94ab0554298a658..e35ae9ac316ba2e5b8f562d353b2c5ae978abb63 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1485,6 +1485,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1495,6 +1495,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

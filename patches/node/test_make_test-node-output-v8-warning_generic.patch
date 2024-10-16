@@ -14,7 +14,7 @@ meaningless. Fix it for now by replacing the process.argv0 basename instead.
 Some form of fix for this should be upstreamed.
 
 diff --git a/test/parallel/test-node-output-v8-warning.mjs b/test/parallel/test-node-output-v8-warning.mjs
-index 8e497739d21c70d5c792f43c268746a200916063..cad1910e020b15775ee16122bc9d310680fed687 100644
+index 309e904c49b7124b64831293e0473a5d35249081..6636144f5074811f95bbe53a62718c8084088bdc 100644
 --- a/test/parallel/test-node-output-v8-warning.mjs
 +++ b/test/parallel/test-node-output-v8-warning.mjs
 @@ -2,11 +2,18 @@ import '../common/index.mjs';
@@ -36,7 +36,7 @@ index 8e497739d21c70d5c792f43c268746a200916063..cad1910e020b15775ee16122bc9d3106
  describe('v8 output', { concurrency: !process.env.TEST_PARALLEL }, () => {
    function normalize(str) {
      return str.replaceAll(snapshot.replaceWindowsPaths(process.cwd()), '')
-@@ -15,10 +22,10 @@ describe('v8 output', { concurrency: true }, () => {
+@@ -15,10 +22,10 @@ describe('v8 output', { concurrency: !process.env.TEST_PARALLEL }, () => {
      .replaceAll('*test*', '*')
      .replaceAll(/.*?\*fixtures\*v8\*/g, '(node:*) V8: *') // Replace entire path before fixtures/v8
      .replaceAll('*fixtures*v8*', '*')

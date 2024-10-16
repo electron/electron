@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f3dad958b2ec275992554477b9344214c8c1e2c8..e1116b44c4d01e79ecc4cb68802d176777c7c410 100644
+index f3dad958b2ec275992554477b9344214c8c1e2c8..870af88c7dfb3174816a933912fee7379dae4085 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -31,10 +31,9 @@ const { sep, posix: { relative: relativePosixPath }, resolve } = require('path')
@@ -30,7 +30,7 @@ index f3dad958b2ec275992554477b9344214c8c1e2c8..e1116b44c4d01e79ecc4cb68802d1767
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -162,34 +161,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
+@@ -154,34 +153,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
  
  const realpathCache = new SafeMap();
  
@@ -72,7 +72,7 @@ index f3dad958b2ec275992554477b9344214c8c1e2c8..e1116b44c4d01e79ecc4cb68802d1767
  
  /**
   * Legacy CommonJS main resolution:
-@@ -204,22 +182,44 @@ const legacyMainResolveExtensionsIndexes = {
+@@ -196,22 +174,44 @@ const legacyMainResolveExtensionsIndexes = {
   * @returns {URL}
   */
  function legacyMainResolve(packageJSONUrl, packageConfig, base) {
@@ -335,7 +335,7 @@ index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e76
    registry->Register(GetFormatOfExtensionlessFile);
    registry->Register(Close);
 diff --git a/src/node_file.h b/src/node_file.h
-index 6f1b55284db0f4f8c70081b4834a074c717f3cc9..a969fff32bd156aa9393c1db9eec474eb7432cea 100644
+index bdad1ae25f4892cbbfd8cc30c4d8b4a6f600edbc..5a3c462853aa784d9ef61ff4f63010848c48b92c 100644
 --- a/src/node_file.h
 +++ b/src/node_file.h
 @@ -86,13 +86,6 @@ class BindingData : public SnapshotableObject {

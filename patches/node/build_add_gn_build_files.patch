@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 1ed186b597eece7c34cb69c8e1e20870555a040d..e36168f0a051ca2fa2fc024aadcf5375b860105e 100644
+index 1ed186b597eece7c34cb69c8e1e20870555a040d..226fe430f4e62577c53778389cabe7c3864a0db1 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -1,14 +1,405 @@
@@ -2158,10 +2158,10 @@ index 909fd14345fcd988c381e640280f4b33f2e0c351..3b430a666a7d5cb52ec41f8d82828462
 +  args = rebase_path(inputs + outputs, root_build_dir)
  }
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 706ea4f5cb90525c8ea56f794320a733c45a193f..c7ae7759595bfc7fdc31dab174a7514ddd8345e7 100644
+index 2bc7155f7c075e5a22ece7159a64a1c9ba3d8ac9..48d29a0d05538cd1d992f3f086d826e78d0d8882 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -773,6 +773,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -775,6 +775,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -2306,10 +2306,10 @@ index 0000000000000000000000000000000000000000..37c16859003e61636fe2f1a4040b1e90
 +    f.write(json.dumps(out, sort_keys=True, indent=2, separators=(',', ': ')))
 +    f.write('\n')
 diff --git a/tools/install.py b/tools/install.py
-index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae00b1bfca 100755
+index bf54249b66c0d4e179deaae5a9fd55568e694fe0..57b51b03d237fba4b25aa69a663c88e9541b6cb5 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -390,7 +393,7 @@ def parse_options(args):
+@@ -392,7 +392,7 @@ def parse_options(args):
    parser.add_argument('--build-dir', help='the location of built binaries',
                        default='out/Release')
    parser.add_argument('--v8-dir', help='the location of V8',
@@ -2321,7 +2321,7 @@ index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index e0f3d8844718ab8a6478c40ff713c1fd6bcff95a..c73a5b666dbaf555c749d836c20a7ae19a840847
+index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd786f64bb
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -30,6 +30,7 @@ namespace js2c {
@@ -2456,7 +2456,7 @@ index e0f3d8844718ab8a6478c40ff713c1fd6bcff95a..c73a5b666dbaf555c749d836c20a7ae1
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -932,6 +989,7 @@ int Main(int argc, char* argv[]) {
+@@ -939,6 +996,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
@@ -2464,9 +2464,3 @@ index e0f3d8844718ab8a6478c40ff713c1fd6bcff95a..c73a5b666dbaf555c749d836c20a7ae1
  }
  }  // namespace js2c
  }  // namespace node
-@@ -940,4 +998,4 @@ NODE_MAIN(int argc, node::argv_type raw_argv[]) {
-   char** argv;
-   node::FixupMain(argc, raw_argv, &argv);
-   return node::js2c::Main(argc, argv);
--}
-+}
