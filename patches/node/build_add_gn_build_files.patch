@@ -407,6 +407,26 @@ index 119d49456911e99944294bd00b3f182a8f0e35b5..ce38c3633a228306622a7237067393d2
 +    "-Wno-unused-function",
 +  ]
  }
+diff --git a/deps/sqlite/unofficial.gni b/deps/sqlite/unofficial.gni
+index ebb3ffcd6d42b4c16b6865a91ccf4428cffe864b..00225afa1fb4205f1e02d9f185aeb97d642b3fd9 100644
+--- a/deps/sqlite/unofficial.gni
++++ b/deps/sqlite/unofficial.gni
+@@ -18,8 +18,14 @@ template("sqlite_gn_build") {
+     forward_variables_from(invoker, "*")
+     public_configs = [ ":sqlite_config" ]
+     sources = gypi_values.sqlite_sources
++    cflags_c = [
++      "-Wno-implicit-fallthrough",
++      "-Wno-unreachable-code-break",
++      "-Wno-unreachable-code-return",
++      "-Wno-unreachable-code",
++    ]
+     if (is_win) {
+-      cflags_c = [
++      cflags_c += [
+         "-Wno-sign-compare",
+         "-Wno-unused-but-set-variable",
+         "-Wno-unused-function",
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 index 8e6ac27048b5965e20f35c7a63e469beb6fa5970..7518168141db7958550c7f5dc1ed17ccdbbe4a60 100644
 --- a/deps/uv/BUILD.gn
