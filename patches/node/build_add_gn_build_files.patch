@@ -1776,3 +1776,20 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }
  }  // namespace js2c
  }  // namespace node
+diff --git a/unofficial.gni b/unofficial.gni
+index c3b311e4a7f5444b07d4d7028d4621806959804e..20632680d696f8af66c7d73c1f0c93e7842554dd 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -178,8 +178,10 @@ template("node_gn_build") {
+       deps += [ "//third_party/icu" ]
+     }
+     if (node_use_openssl) {
+-      deps += [ "deps/ncrypto" ]
+-      public_deps += [ "deps/openssl" ]
++      deps += [
++        "deps/ncrypto",
++        "//third_party/boringssl"
++      ]
+       sources += gypi_values.node_crypto_sources
+     }
+     if (node_enable_inspector) {
