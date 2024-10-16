@@ -926,3 +926,23 @@ index 1e15568ad872c01c7c588ced81897f8dc229247a..ca528863a2dab2f437bbe95b343ccd33
  namespace sandbox::policy {
  
  base::FilePath GetCanonicalPath(const base::FilePath& path) {
+diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
+index d86fbcf969f2fa0d176ead903703ab612e5464c2..6b963ea8401d20e655d068a69105586814bab320 100644
+--- a/ui/gtk/gtk_util.cc
++++ b/ui/gtk/gtk_util.cc
+@@ -227,9 +227,13 @@ aura::Window* GetAuraTransientParent(GtkWidget* dialog) {
+ }
+ 
+ void ClearAuraTransientParent(GtkWidget* dialog, aura::Window* parent) {
++  if (!parent || !parent->GetHost()) {
++    return;
++  }
++
+   g_object_set_data(G_OBJECT(dialog), kAuraTransientParent, nullptr);
+-  GtkUi::GetPlatform()->ClearTransientFor(
+-      parent->GetHost()->GetAcceleratedWidget());
++  gfx::AcceleratedWidget parent_id = parent->GetHost()->GetAcceleratedWidget();
++  GtkUi::GetPlatform()->ClearTransientFor(parent_id);
+ }
+ 
+ base::OnceClosure DisableHostInputHandling(GtkWidget* dialog,
