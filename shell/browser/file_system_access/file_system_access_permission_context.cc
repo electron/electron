@@ -165,8 +165,10 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
        ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
     if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
       rules.emplace_back(base::FilePath{rule_path}, type);
-    } else if (base::FilePath path; base::PathService::Get(key, &path)) {
-      rules.emplace_back(rule_path ? path.Append(rule_path) : path, type);
+    } else if (base::FilePath block_path;
+               base::PathService::Get(key, &block_path)) {
+      rules.emplace_back(rule_path ? block_path.Append(rule_path) : block_path,
+                         type);
     }
   }
 
