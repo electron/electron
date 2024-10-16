@@ -6,15 +6,33 @@ Subject: build: allow electron to use exec_script
 This is similar to the //build usecase so we're OK adding ourselves here
 
 diff --git a/.gn b/.gn
-index 44a11ec90ec9b67cf22b6d529c6843e6b6af12bc..783dd77dcdf92ec32cc6594b739eab9738f3e3ba 100644
+index 44a11ec90ec9b67cf22b6d529c6843e6b6af12bc..727000b6a095bff4e757aa00369a36f1d71a0738 100644
 --- a/.gn
 +++ b/.gn
-@@ -172,4 +172,8 @@ exec_script_whitelist =
+@@ -172,4 +172,26 @@ exec_script_whitelist =
  
        "//tools/grit/grit_rule.gni",
        "//tools/gritsettings/BUILD.gn",
 +
 +      "//electron/BUILD.gn",
++      "//third_party/electron_node/deps/ada/unofficial.gni",
 +      "//third_party/electron_node/deps/base64/BUILD.gn",
 +      "//third_party/electron_node/deps/base64/unofficial.gni",
++      "//third_party/electron_node/node.gni",
++      "//third_party/electron_node/unofficial.gni",
++      "//third_party/electron_node/deps/brotli/unofficial.gni",
++      "//third_party/electron_node/deps/cares/unofficial.gni",
++      "//third_party/electron_node/deps/googletest/unofficial.gni",
++      "//third_party/electron_node/deps/histogram/unofficial.gni",
++      "//third_party/electron_node/deps/llhttp/unofficial.gni",
++      "//third_party/electron_node/deps/nbytes/unofficial.gni",
++      "//third_party/electron_node/deps/ncrypto/unofficial.gni",
++      "//third_party/electron_node/deps/ngtcp2/unofficial.gni",
++      "//third_party/electron_node/deps/openssl/unofficial.gni",
++      "//third_party/electron_node/deps/simdutf/unofficial.gni",
++      "//third_party/electron_node/deps/simdjson/unofficial.gni",
++      "//third_party/electron_node/deps/sqlite/unofficial.gni",
++      "//third_party/electron_node/deps/uv/unofficial.gni",
++      "//third_party/electron_node/deps/uvwasi/unofficial.gni",
++      "//third_party/electron_node/src/inspector/unofficial.gni",
      ]
