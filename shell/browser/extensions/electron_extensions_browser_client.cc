@@ -121,21 +121,18 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
 
 content::BrowserContext*
 ElectronExtensionsBrowserClient::GetContextRedirectedToOriginal(
-    content::BrowserContext* context,
-    bool force_guest_profile) {
+    content::BrowserContext* context) {
   return GetOriginalContext(context);
 }
 
 content::BrowserContext* ElectronExtensionsBrowserClient::GetContextOwnInstance(
-    content::BrowserContext* context,
-    bool force_guest_profile) {
+    content::BrowserContext* context) {
   return context;
 }
 
 content::BrowserContext*
 ElectronExtensionsBrowserClient::GetContextForOriginalOnly(
-    content::BrowserContext* context,
-    bool force_guest_profile) {
+    content::BrowserContext* context) {
   return context->IsOffTheRecord() ? nullptr : context;
 }
 
