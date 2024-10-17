@@ -8,10 +8,10 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index c9db1ca9b650effbdf3374038fea663574b414ad..9e6843c6477b9d1034951c51d64ca1b9bfb7bb17 100644
+index 8d310a8b983cc784f9fe9d61818ed6090bd5a923..2d63be89170cf824b3b3b5673621868ed41c1076 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -45,7 +45,6 @@
+@@ -46,7 +46,6 @@
  #include "chrome/browser/ui/file_system_access/file_system_access_dangerous_file_dialog.h"
  #include "chrome/browser/ui/file_system_access/file_system_access_dialogs.h"
  #include "chrome/browser/ui/file_system_access/file_system_access_restricted_directory_dialog.h"
@@ -19,7 +19,7 @@ index c9db1ca9b650effbdf3374038fea663574b414ad..9e6843c6477b9d1034951c51d64ca1b9
  #include "chrome/grit/generated_resources.h"
  #include "components/content_settings/core/browser/host_content_settings_map.h"
  #include "components/content_settings/core/common/content_settings.h"
-@@ -239,126 +238,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -250,126 +249,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -151,11 +151,11 @@ index c9db1ca9b650effbdf3374038fea663574b414ad..9e6843c6477b9d1034951c51d64ca1b9
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 67c777c9576587500f37d066689ec072ff483c8f..6390432e93d2517cf94902bd2cf66ad5ac7379f6 100644
+index b28cc5b1227060ae7cb889a0689ceb55fc52a8f8..dd2f36727d547f26406ea8e0bc8c276cac2b163c 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-@@ -17,7 +17,7 @@
- #include "base/time/default_clock.h"
+@@ -18,7 +18,7 @@
+ #include "base/types/expected.h"
  #include "chrome/browser/file_system_access/file_system_access_features.h"
  #include "chrome/browser/file_system_access/file_system_access_permission_request_manager.h"
 -#include "components/enterprise/buildflags/buildflags.h"
@@ -163,7 +163,7 @@ index 67c777c9576587500f37d066689ec072ff483c8f..6390432e93d2517cf94902bd2cf66ad5
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
  #include "content/public/browser/file_system_access_permission_context.h"
-@@ -30,7 +30,7 @@
+@@ -31,7 +31,7 @@
  #include "chrome/browser/web_applications/web_app_install_manager_observer.h"
  #endif
  
@@ -172,7 +172,7 @@ index 67c777c9576587500f37d066689ec072ff483c8f..6390432e93d2517cf94902bd2cf66ad5
  #include "components/enterprise/common/files_scan_data.h"
  #endif
  
-@@ -333,6 +333,127 @@ class ChromeFileSystemAccessPermissionContext
+@@ -337,6 +337,127 @@ class ChromeFileSystemAccessPermissionContext
    // KeyedService:
    void Shutdown() override;
  
@@ -300,7 +300,7 @@ index 67c777c9576587500f37d066689ec072ff483c8f..6390432e93d2517cf94902bd2cf66ad5
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -352,7 +473,7 @@ class ChromeFileSystemAccessPermissionContext
+@@ -356,7 +477,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  
