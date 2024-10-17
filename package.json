@@ -46,7 +46,7 @@
     "null-loader": "^4.0.1",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
-    "remark-cli": "^10.0.0",
+    "remark-cli": "^12.0.1",
     "remark-preset-lint-markdown-style-guide": "^4.0.0",
     "semver": "^7.6.3",
     "shx": "^0.3.4",
