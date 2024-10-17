@@ -560,6 +560,12 @@ bool FileSystemAccessPermissionContext::IsFileTypeDangerous(
   return false;
 }
 
+base::expected<void, std::string>
+FileSystemAccessPermissionContext::CanShowFilePicker(
+    content::RenderFrameHost* rfh) {
+  return base::ok();
+}
+
 bool FileSystemAccessPermissionContext::CanObtainReadPermission(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
