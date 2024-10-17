@@ -123,8 +123,6 @@ for:
           if ($env:ELECTRON_RBE_JWT -eq '') {
             $env:RBE_fail_early_min_action_count = "0"
             $env:RBE_fail_early_min_fallback_ratio = "0"
-            $env:RBE_exec_strategy = "local"
-            $env:RBE_remote_update_cache= "false"
           }
       - cd ..\..
       - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
@@ -153,7 +151,7 @@ for:
       - gn check out/Default //electron:electron_app
       - gn check out/Default //electron/shell/common:mojo
       - gn check out/Default //electron/shell/common:plugin
-      - if DEFINED ELECTRON_RBE_JWT (autoninja -j 300 -C out/Default electron:electron_app) else (autoninja -C out/Default electron:electron_app)
+      - autoninja -j 300 -C out/Default electron:electron_app
       - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
       - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true %GN_EXTRA_ARGS%"
       - autoninja -C out/ffmpeg electron:electron_ffmpeg_zip
