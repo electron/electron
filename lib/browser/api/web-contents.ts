@@ -549,6 +549,8 @@ WebContents.prototype.goToOffset = function (index: number) {
   return this._goToOffset(index);
 };
 
+const consoleMessageDeprecated = deprecate.warnOnceMessage('\'console-message\' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.');
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   const prefs = this.getLastWebPreferences() || {};
@@ -907,6 +909,15 @@ WebContents.prototype._init = function () {
   this.on('-cancel-dialogs', () => {
     for (const controller of openDialogs) { controller.abort(); }
     openDialogs.clear();
+  });
+
+  // TODO(samuelmaddock): remove deprecated 'console-message' arguments
+  this.on('-console-message' as any, (event: Electron.Event<Electron.WebContentsConsoleMessageEventParams>) => {
+    const hasDeprecatedListener = this.listeners('console-message').some(listener => listener.length > 1);
+    if (hasDeprecatedListener) {
+      consoleMessageDeprecated();
+    }
+    this.emit('console-message', event, (event as any)._level, event.message, event.lineNumber, event.sourceId);
   });
 
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);

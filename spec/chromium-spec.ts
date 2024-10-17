@@ -379,7 +379,7 @@ describe('web security', () => {
                 console.log(e.message)
               }
             </script>`);
-              const [,, message] = await once(w.webContents, 'console-message');
+              const [{ message }] = await once(w.webContents, 'console-message');
               expect(message).to.match(/Refused to evaluate a string/);
             });
 
@@ -399,7 +399,7 @@ describe('web security', () => {
                 console.log(e.message)
               }
             </script>`);
-              const [,, message] = await once(w.webContents, 'console-message');
+              const [{ message }] = await once(w.webContents, 'console-message');
               expect(message).to.equal('true');
             });
 
@@ -1428,7 +1428,7 @@ describe('chromium features', () => {
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
       const [, { webContents }] = await once(app, 'browser-window-created');
-      const [,, message] = await once(webContents, 'console-message');
+      const [{ message }] = await once(webContents, 'console-message');
       expect(message).to.equal('{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}');
     });
 
