@@ -1344,22 +1344,44 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
   original_frame_ = [window_ frame];
 }
 
-void NativeWindowMac::SetVibrancy(const std::string& type) {
-  NativeWindow::SetVibrancy(type);
+void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
+  NativeWindow::SetVibrancy(type, duration);
 
   NSVisualEffectView* vibrantView = [window_ vibrantView];
   views::View* rootView = GetContentsView();
+  bool animate = duration > 0;
 
   if (type.empty()) {
-    if (vibrant_native_view_host_ != nullptr) {
-      // Transfers ownership back to caller in the form of a unique_ptr which is
-      // subsequently deleted.
-      rootView->RemoveChildViewT(vibrant_native_view_host_);
-      vibrant_native_view_host_ = nullptr;
-    }
+    vibrancy_type_ = type;
 
-    if (vibrantView != nil) {
-      [window_ setVibrantView:nil];
+    auto cleanupHandler = ^{
+      if (vibrant_native_view_host_ != nullptr) {
+        // Transfers ownership back to caller in the form of a unique_ptr which
+        // is subsequently deleted.
+        rootView->RemoveChildViewT(vibrant_native_view_host_);
+        vibrant_native_view_host_ = nullptr;
+      }
+
+      if (vibrantView != nil) {
+        [window_ setVibrantView:nil];
+      }
+    };
+
+    if (animate) {
+      __weak ElectronNSWindowDelegate* weak_delegate = window_delegate_;
+      [NSAnimationContext
+          runAnimationGroup:^(NSAnimationContext* context) {
+            context.duration = duration / 1000.0f;
+            vibrantView.animator.alphaValue = 0.0;
+          }
+          completionHandler:^{
+            if (!weak_delegate)
+              return;
+
+            cleanupHandler();
+          }];
+    } else {
+      cleanupHandler();
     }
 
     return;
@@ -1425,6 +1447,16 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       rootView->DeprecatedLayoutImmediately();
 
       UpdateVibrancyRadii(IsFullscreen());
+    }
+
+    if (animate) {
+      [vibrantView setAlphaValue:0.0];
+      [NSAnimationContext
+          runAnimationGroup:^(NSAnimationContext* context) {
+            context.duration = duration / 1000.0f;
+            vibrantView.animator.alphaValue = 1.0;
+          }
+          completionHandler:nil];
     }
 
     [vibrantView setMaterial:vibrancyType];

@@ -218,7 +218,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Vibrancy API
   const std::string& vibrancy() const { return vibrancy_; }
-  virtual void SetVibrancy(const std::string& type);
+  virtual void SetVibrancy(const std::string& type, int duration);
 
   const std::string& background_material() const {
     return background_material_;
