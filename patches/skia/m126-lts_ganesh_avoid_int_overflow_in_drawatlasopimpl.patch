@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Godfrey-Kittle <jamesgk@google.com>
+Date: Wed, 11 Sep 2024 16:18:40 -0400
+Subject: Avoid int overflow in DrawAtlasOpImpl
+
+Bug: b/365884464
+Change-Id: I4dc9f259165c88c1d7ae5dc38c6cae02ca18f509
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/898756
+Commit-Queue: James Godfrey-Kittle <jamesgk@google.com>
+Reviewed-by: Brian Osman <brianosman@google.com>
+(cherry picked from commit 2b40b50ea423e11073b742b3bd785975a6019046)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/901177
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+(cherry picked from commit dda581d538cb6532cda841444e7b4ceacde01ec9)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/901496
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Reviewed-by: James Godfrey-Kittle <jamesgk@google.com>
+
+diff --git a/src/gpu/ganesh/ops/DrawAtlasOp.cpp b/src/gpu/ganesh/ops/DrawAtlasOp.cpp
+index 065011699f755b3c87f6cf9a9b19e4d5d42e91df..edf201a8bf9e26cda3e80e9c142bb777beb9549a 100644
+--- a/src/gpu/ganesh/ops/DrawAtlasOp.cpp
++++ b/src/gpu/ganesh/ops/DrawAtlasOp.cpp
+@@ -111,6 +111,7 @@ DrawAtlasOpImpl::DrawAtlasOpImpl(GrProcessorSet* processorSet, const SkPMColor4f
+         : GrMeshDrawOp(ClassID()), fHelper(processorSet, aaType), fColor(color) {
+     SkASSERT(xforms);
+     SkASSERT(rects);
++    SkASSERT(spriteCount >= 0);
+ 
+     fViewMatrix = viewMatrix;
+     Geometry& installedGeo = fGeoData.push_back();
+@@ -126,6 +127,11 @@ DrawAtlasOpImpl::DrawAtlasOpImpl(GrProcessorSet* processorSet, const SkPMColor4f
+         vertexStride += sizeof(GrColor);
+     }
+ 
++    // Bail out if we'd overflow from a really large draw
++    if (spriteCount > SK_MaxS32 / static_cast<int>(4 * vertexStride)) {
++        return;
++    }
++
+     // Compute buffer size and alloc buffer
+     fQuadCount = spriteCount;
+     int allocSize = static_cast<int>(4 * vertexStride * spriteCount);
