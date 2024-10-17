@@ -133,10 +133,10 @@ index f3dad958b2ec275992554477b9344214c8c1e2c8..870af88c7dfb3174816a933912fee737
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e7607210f58 100644
+index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..b565beae625d970ba92ab667a145d8897d4e8a6e 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -19,14 +19,11 @@
+@@ -19,14 +19,12 @@
  // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
  // USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "node_file.h"  // NOLINT(build/include_inline)
@@ -144,14 +144,14 @@ index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e76
  #include "aliased_buffer-inl.h"
  #include "memory_tracker-inl.h"
  #include "node_buffer.h"
--#include "node_errors.h"
+ #include "node_errors.h"
  #include "node_external_reference.h"
  #include "node_file-inl.h"
 -#include "node_metadata.h"
  #include "node_process-inl.h"
  #include "node_stat_watcher.h"
  #include "node_url.h"
-@@ -3208,146 +3205,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
+@@ -3208,146 +3206,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
  
  }  // namespace
  
@@ -298,7 +298,7 @@ index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e76
  
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("stats_field_array", stats_field_array);
-@@ -3448,19 +3305,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+@@ -3448,19 +3306,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
    return info;
  }
  
@@ -318,7 +318,7 @@ index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e76
  static void CreatePerIsolateProperties(IsolateData* isolate_data,
                                         Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-@@ -3520,7 +3364,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+@@ -3520,7 +3365,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
    SetMethod(isolate, target, "cpSyncCheckPaths", CpSyncCheckPaths);
  
    StatWatcher::CreatePerIsolateProperties(isolate_data, target);
@@ -326,7 +326,7 @@ index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..e4b8bc27390013d1374f454c200f4e76
  
    target->Set(
        FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3593,7 +3436,6 @@ BindingData* FSReqBase::binding_data() {
+@@ -3593,7 +3437,6 @@ BindingData* FSReqBase::binding_data() {
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(Access);
    StatWatcher::RegisterExternalReferences(registry);
