@@ -565,9 +565,9 @@ describe('command line switches', () => {
       }
     });
 
-    // Disable the test on linux arm to avoid startup crash
+    // Disable the test on linux arm and arm64 to avoid startup crash
     // https://github.com/electron/electron/issues/44293#issuecomment-2420077154
-    ifit(process.platform !== 'linux' || process.arch !== 'arm')('creates startup trace', async () => {
+    ifit(process.platform !== 'linux' || (process.arch !== 'arm' && process.arch !== 'arm64'))('creates startup trace', async () => {
       const rc = await startRemoteControlApp(['--trace-startup=*', `--trace-startup-file=${outputFilePath}`, '--trace-startup-duration=1', '--enable-logging']);
       const stderrComplete = new Promise<string>(resolve => {
         let stderr = '';
