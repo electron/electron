@@ -75,7 +75,7 @@ jobs:
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
