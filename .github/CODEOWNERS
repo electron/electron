@@ -8,6 +8,7 @@
 DEPS                                    @electron/wg-upgrades
 
 # Releases WG
+/.github/workflows/update_appveyor_image.yml @electron/wg-releases
 /docs/breaking-changes.md               @electron/wg-releases
 /npm/                                   @electron/wg-releases
 /script/release                         @electron/wg-releases
