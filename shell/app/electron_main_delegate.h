@@ -34,6 +34,12 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate(const ElectronMainDelegate&) = delete;
   ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
 
+#if BUILDFLAG(IS_MAC)
+  void OverrideChildProcessPath();
+  void OverrideFrameworkBundlePath();
+  void SetUpBundleOverrides();
+#endif
+
  protected:
   // content::ContentMainDelegate:
   std::string_view GetBrowserV8SnapshotFilename() override;
@@ -57,12 +63,6 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 #endif
 
  private:
-#if BUILDFLAG(IS_MAC)
-  void OverrideChildProcessPath();
-  void OverrideFrameworkBundlePath();
-  void SetUpBundleOverrides();
-#endif
-
   std::unique_ptr<content::ContentBrowserClient> browser_client_;
   std::unique_ptr<content::ContentClient> content_client_;
   std::unique_ptr<content::ContentGpuClient> gpu_client_;
