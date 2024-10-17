@@ -11,7 +11,7 @@
     "@electron/github-app-auth": "^2.2.1",
     "@electron/lint-roller": "^2.4.0",
     "@electron/typescript-definitions": "^9.0.0",
-    "@octokit/rest": "^20.0.2",
+    "@octokit/rest": "^21.0.2",
     "@primer/octicons": "^10.0.0",
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.9.0",
