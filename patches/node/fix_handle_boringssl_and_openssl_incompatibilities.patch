@@ -17,10 +17,55 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index eb3533bb4623b152605c3c590f37f086cce5f073..ce60ca610cc5e5fab38258639453c0914bf15b1b 100644
+index eb3533bb4623b152605c3c590f37f086cce5f073..4c223fd926a1bd0a68ef1f35b2b8429e01800eee 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
-@@ -1057,8 +1057,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
+@@ -6,13 +6,11 @@
+ #include <openssl/evp.h>
+ #include <openssl/hmac.h>
+ #include <openssl/pkcs12.h>
++#include <openssl/rand.h>
+ #include <openssl/x509v3.h>
+ #if OPENSSL_VERSION_MAJOR >= 3
+ #include <openssl/provider.h>
+ #endif
+-#ifdef OPENSSL_IS_BORINGSSL
+-#include "dh-primes.h"
+-#endif  // OPENSSL_IS_BORINGSSL
+ 
+ namespace ncrypto {
+ namespace {
+@@ -665,7 +663,7 @@ bool SafeX509SubjectAltNamePrint(const BIOPointer& out, X509_EXTENSION* ext) {
+ 
+   bool ok = true;
+ 
+-  for (int i = 0; i < sk_GENERAL_NAME_num(names); i++) {
++  for (size_t i = 0; i < sk_GENERAL_NAME_num(names); i++) {
+     GENERAL_NAME* gen = sk_GENERAL_NAME_value(names, i);
+ 
+     if (i != 0)
+@@ -691,7 +689,7 @@ bool SafeX509InfoAccessPrint(const BIOPointer& out, X509_EXTENSION* ext) {
+ 
+   bool ok = true;
+ 
+-  for (int i = 0; i < sk_ACCESS_DESCRIPTION_num(descs); i++) {
++  for (size_t i = 0; i < sk_ACCESS_DESCRIPTION_num(descs); i++) {
+     ACCESS_DESCRIPTION* desc = sk_ACCESS_DESCRIPTION_value(descs, i);
+ 
+     if (i != 0)
+@@ -1002,7 +1000,11 @@ BIOPointer BIOPointer::NewMem() {
+ }
+ 
+ BIOPointer BIOPointer::NewSecMem() {
++#ifdef OPENSSL_IS_BORINGSSL
++  return BIOPointer(BIO_new(BIO_s_mem()));
++#else
+   return BIOPointer(BIO_new(BIO_s_secmem()));
++#endif
+ }
+ 
+ BIOPointer BIOPointer::New(const BIO_METHOD* method) {
+@@ -1057,8 +1059,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
                                     FindGroupOption option) {
  #define V(n, p) if (EqualNoCase(name, n)) return BignumPointer(p(nullptr));
    if (option != FindGroupOption::NO_SMALL_PRIMES) {
@@ -31,6 +76,47 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ce60ca610cc5e5fab38258639453c091
      V("modp5", BN_get_rfc3526_prime_1536);
    }
    V("modp14", BN_get_rfc3526_prime_2048);
+@@ -1130,6 +1134,7 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
+   int codes = 0;
+   if (DH_check_pub_key(dh_.get(), pub_key.get(), &codes) != 1)
+     return DHPointer::CheckPublicKeyResult::CHECK_FAILED;
++#ifndef OPENSSL_IS_BORINGSSL
+   if (codes & DH_CHECK_PUBKEY_TOO_SMALL) {
+     return DHPointer::CheckPublicKeyResult::TOO_SMALL;
+   } else if (codes & DH_CHECK_PUBKEY_TOO_SMALL) {
+@@ -1137,6 +1142,7 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
+   } else if (codes != 0) {
+     return DHPointer::CheckPublicKeyResult::INVALID;
+   }
++#endif
+   return CheckPublicKeyResult::NONE;
+ }
+ 
+diff --git a/deps/ncrypto/unofficial.gni b/deps/ncrypto/unofficial.gni
+index ea024af73e215b3cad5f08796ac405f419530c86..41061b524eea74330b8d2452635a38c48f21386b 100644
+--- a/deps/ncrypto/unofficial.gni
++++ b/deps/ncrypto/unofficial.gni
+@@ -27,6 +27,6 @@ template("ncrypto_gn_build") {
+     forward_variables_from(invoker, "*")
+     public_configs = [ ":ncrypto_config" ]
+     sources = gypi_values.ncrypto_sources
+-    deps = [ "../openssl" ]
++    deps = [ "$node_crypto_path" ]
+   }
+ }
+diff --git a/node.gni b/node.gni
+index 19ed9873ca47fafeab74aa6bac02235f552c0502..e4f85f3db061350902397b5cee384ef9a9e0e62e 100644
+--- a/node.gni
++++ b/node.gni
+@@ -10,6 +10,8 @@ declare_args() {
+   # The location of V8, use the one from node's deps by default.
+   node_v8_path = "//v8"
+ 
++  node_crypto_path = "//third_party/boringssl"
++
+   # The NODE_MODULE_VERSION defined in node_version.h.
+   node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
+ 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
 index fe35a8e0f6bbb7ab515a0343a7ed046c44e86474..43a7abbf237d8d809953e302b83755a3283a1bf4 100644
 --- a/src/crypto/crypto_cipher.cc
@@ -142,18 +228,9 @@ index 6a967702b22df0eb8aa10e853fd232794955860d..31058cccc6ffeed6b09aaecda320ee2f
    crypto::EVPKeyPointer key(raw_key);
  
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index c924a54639e8c22d765dc240dffacfffb200ca0c..94fd301b9dc81aa86f41151417f67e7dbe2f3e4f 100644
+index c924a54639e8c22d765dc240dffacfffb200ca0c..287afcc792a0a2b7e19126ee9a48ebe21cc8844e 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -64,7 +64,7 @@ X509_STORE* GetOrCreateRootCertStore() {
- // Caller responsible for BIO_free_all-ing the returned object.
- BIOPointer LoadBIO(Environment* env, Local<Value> v) {
-   if (v->IsString() || v->IsArrayBufferView()) {
--    auto bio = BIOPointer::NewSecMem();
-+    auto bio = BIOPointer::NewMem();
-     if (!bio) return {};
-     ByteSource bsrc = ByteSource::FromStringOrBuffer(env, v);
-     if (bsrc.size() > INT_MAX) return {};
 @@ -94,7 +94,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
@@ -493,3 +570,37 @@ index 9e656a2815045aa5da7eb267708c03058be9f362..600e0850f01e01024414d42b25605f25
  #include "openssl/opensslv.h"
  #endif
  
+diff --git a/unofficial.gni b/unofficial.gni
+index 20632680d696f8af66c7d73c1f0c93e7842554dd..4898f32db73dfb0d4f71fe2db03ee96b1c204356 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -144,7 +144,6 @@ template("node_gn_build") {
+     ]
+     deps = [
+       ":run_node_js2c",
+-      "deps/brotli",
+       "deps/cares",
+       "deps/histogram",
+       "deps/llhttp",
+@@ -156,6 +155,8 @@ template("node_gn_build") {
+       "deps/sqlite",
+       "deps/uvwasi",
+       "//third_party/zlib",
++      "//third_party/brotli:dec",
++      "//third_party/brotli:enc",
+       "$node_v8_path:v8_libplatform",
+     ]
+ 
+@@ -178,10 +179,8 @@ template("node_gn_build") {
+       deps += [ "//third_party/icu" ]
+     }
+     if (node_use_openssl) {
+-      deps += [
+-        "deps/ncrypto",
+-        "//third_party/boringssl"
+-      ]
++      deps += [ "deps/ncrypto" ]
++      public_deps += [ "$node_crypto_path" ]
+       sources += gypi_values.node_crypto_sources
+     }
+     if (node_enable_inspector) {
