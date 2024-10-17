@@ -85,7 +85,7 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index bbea8fff37040029996d1e91e592f6cb5bf8fbc2..13bbd8486279bf575010ab5ad62ba24a0d4cb24f 100644
+index 572f23d579c0bce81b4b63f7030297d469ef3fbd..5a6ce0a7888f449ad73c6870bab569df7a23bd80 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -110,7 +110,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -98,7 +98,7 @@ index bbea8fff37040029996d1e91e592f6cb5bf8fbc2..13bbd8486279bf575010ab5ad62ba24a
    options->disclaim_responsibility = delegate_->DisclaimResponsibility();
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
-@@ -176,6 +177,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -177,6 +178,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
          base::StringPrintf("%s%d", sandbox::switches::kSeatbeltClient, pipe));
    }
  
@@ -347,10 +347,10 @@ index faa41e5f2571f7a8aa4eef927eca003801d787f6..16d5efc5f9191020aa2180d665cf5207
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 6285d8eb5d05f7afbe45a314f423786d5ae01f53..5954f509ee80460ab73042ed39e236067e6f0d9b 100644
+index 87bff385e6893206aedb9bbf108254056b4e93a7..e845a03fb69ff5997c0facc0bacdfcc3df0e0bdb 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
-@@ -34,17 +34,19 @@ UtilitySandboxedProcessLauncherDelegate::
+@@ -41,17 +41,19 @@ UtilitySandboxedProcessLauncherDelegate::
      UtilitySandboxedProcessLauncherDelegate(
          sandbox::mojom::Sandbox sandbox_type,
          const base::EnvironmentMap& env,
@@ -374,7 +374,7 @@ index 6285d8eb5d05f7afbe45a314f423786d5ae01f53..5954f509ee80460ab73042ed39e23606
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -113,11 +115,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -120,11 +122,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -406,10 +406,10 @@ index 6285d8eb5d05f7afbe45a314f423786d5ae01f53..5954f509ee80460ab73042ed39e23606
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index 27cef06ded34680c6bfa3e954924de645a1b8217..7c114956a77da7b60526dd93593d84627356bb16 100644
+index f3167c642c1f594c29ef7aa2a92a246f1d045344..f1f1dc8082b6039bf119ce10e7e4ca0e941d4cbd 100644
 --- a/content/browser/utility_sandbox_delegate.h
 +++ b/content/browser/utility_sandbox_delegate.h
-@@ -30,7 +30,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -34,7 +34,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
   public:
    UtilitySandboxedProcessLauncherDelegate(sandbox::mojom::Sandbox sandbox_type,
                                            const base::EnvironmentMap& env,
@@ -420,7 +420,7 @@ index 27cef06ded34680c6bfa3e954924de645a1b8217..7c114956a77da7b60526dd93593d8462
    ~UtilitySandboxedProcessLauncherDelegate() override;
  
    sandbox::mojom::Sandbox GetSandboxType() override;
-@@ -55,18 +57,21 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -59,9 +61,14 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    ZygoteCommunication* GetZygote() override;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -437,7 +437,8 @@ index 27cef06ded34680c6bfa3e954924de645a1b8217..7c114956a77da7b60526dd93593d8462
  
  #if BUILDFLAG(USE_ZYGOTE)
    void SetZygote(ZygoteCommunication* handle);
- #endif  // BUILDFLAG(USE_ZYGOTE_HANDLE)
+@@ -72,9 +79,7 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+ #endif  // BUILDFLAG(IS_MAC)
  
   private:
 -#if BUILDFLAG(IS_POSIX)
@@ -446,7 +447,7 @@ index 27cef06ded34680c6bfa3e954924de645a1b8217..7c114956a77da7b60526dd93593d8462
  
  #if BUILDFLAG(IS_WIN)
    std::vector<base::FilePath> preload_libraries_;
-@@ -76,12 +81,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -84,12 +89,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -641,10 +642,10 @@ index 5c24090e3311a89dc2a9162045feaacda574bb99..b772a2a054e9d19025ebd2909acf1b92
  
  }  // namespace content
 diff --git a/content/public/common/sandboxed_process_launcher_delegate.cc b/content/public/common/sandboxed_process_launcher_delegate.cc
-index 8656215a709012eef80532e7aac197818ac292df..74ad339d8f8fcc62628006171e0a7ad265143625 100644
+index 4792134063125aba1a6a21cf9ab4a91d8d9e9486..61b98eb66722ed8e6cb83d5e08cf0c618449d1e0 100644
 --- a/content/public/common/sandboxed_process_launcher_delegate.cc
 +++ b/content/public/common/sandboxed_process_launcher_delegate.cc
-@@ -64,11 +64,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
+@@ -70,11 +70,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -671,18 +672,18 @@ index 8656215a709012eef80532e7aac197818ac292df..74ad339d8f8fcc62628006171e0a7ad2
  #if BUILDFLAG(IS_MAC)
  
 diff --git a/content/public/common/sandboxed_process_launcher_delegate.h b/content/public/common/sandboxed_process_launcher_delegate.h
-index 4b2ea0e2680c552b853fcbe4f5e4765a908f8915..6e8af760d986911ed6030b24244e9b21eeba865c 100644
+index b67f4f87d588386409a90cd49e8338272c6e0d51..c34a80ec8db1b868a7f387ea4a11d71d550cdb15 100644
 --- a/content/public/common/sandboxed_process_launcher_delegate.h
 +++ b/content/public/common/sandboxed_process_launcher_delegate.h
-@@ -6,6 +6,7 @@
- #define CONTENT_PUBLIC_COMMON_SANDBOXED_PROCESS_LAUNCHER_DELEGATE_H_
+@@ -8,6 +8,7 @@
+ #include <optional>
  
  #include "base/environment.h"
 +#include "base/files/file_path.h"
  #include "base/files/scoped_file.h"
  #include "base/process/process.h"
  #include "build/build_config.h"
-@@ -56,10 +57,19 @@ class CONTENT_EXPORT SandboxedProcessLauncherDelegate
+@@ -62,10 +63,19 @@ class CONTENT_EXPORT SandboxedProcessLauncherDelegate
    virtual ZygoteCommunication* GetZygote();
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
