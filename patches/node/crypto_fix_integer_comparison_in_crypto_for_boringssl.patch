@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 17 Oct 2024 10:07:45 +0200
+Subject: crypto: fix integer comparison in crypto for BoringSSL
+
+Fixes the following errors:
+
+../../third_party/electron_node/src/crypto/crypto_common.cc:289:21: error: comparison of integers of different signs: 'int' and 'size_t' (aka 'unsigned long') [-Werror,-Wsign-compare]
+  289 |   for (int i = 0; i < sk_X509_num(ssl_certs); i++) {
+      |                   ~ ^ ~~~~~~~~~~~~~~~~~~~~~~
+../../third_party/electron_node/src/crypto/crypto_common.cc:306:19: error: comparison of integers of different signs: 'int' and 'size_t' (aka 'unsigned long') [-Werror,-Wsign-compare]
+  306 |     for (i = 0; i < sk_X509_num(peer_certs.get()); i++) {
+      |                 ~ ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../../third_party/electron_node/src/crypto/crypto_common.cc:329:11: error: comparison of integers of different signs: 'int' and 'size_t' (aka 'unsigned long') [-Werror,-Wsign-compare]
+  329 |     if (i == sk_X509_num(peer_certs.get()))
+      |         ~ ^  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3 errors generated.
+
+This should be upstreamed.
+
+diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
+index b5631ed9d55339705a9b52dad66ac4a884df5f31..31058cccc6ffeed6b09aaecda320ee2f15849ec8 100644
+--- a/src/crypto/crypto_common.cc
++++ b/src/crypto/crypto_common.cc
+@@ -286,7 +286,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
+   if (!peer_certs) return StackOfX509();
+   if (cert && !sk_X509_push(peer_certs.get(), cert.release()))
+     return StackOfX509();
+-  for (int i = 0; i < sk_X509_num(ssl_certs); i++) {
++  for (size_t i = 0; i < sk_X509_num(ssl_certs); i++) {
+     X509Pointer cert(X509_dup(sk_X509_value(ssl_certs, i)));
+     if (!cert || !sk_X509_push(peer_certs.get(), cert.get()))
+       return StackOfX509();
+@@ -302,7 +302,7 @@ MaybeLocal<Object> AddIssuerChainToObject(X509Pointer* cert,
+                                           Environment* const env) {
+   cert->reset(sk_X509_delete(peer_certs.get(), 0));
+   for (;;) {
+-    int i;
++    size_t i;
+     for (i = 0; i < sk_X509_num(peer_certs.get()); i++) {
+       ncrypto::X509View ca(sk_X509_value(peer_certs.get(), i));
+       if (!cert->view().isIssuedBy(ca)) continue;
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index 661e8a13c9245f76441414982dc4a996f4896a81..94fd301b9dc81aa86f41151417f67e7dbe2f3e4f 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -94,7 +94,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+     // the CA certificates.
+     SSL_CTX_clear_extra_chain_certs(ctx);
+ 
+-    for (int i = 0; i < sk_X509_num(extra_certs); i++) {
++    for (size_t i = 0; i < sk_X509_num(extra_certs); i++) {
+       X509* ca = sk_X509_value(extra_certs, i);
+ 
+       // NOTE: Increments reference count on `ca`
+@@ -1151,7 +1151,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+   }
+ 
+   // Add CA certs too
+-  for (int i = 0; i < sk_X509_num(extra_certs.get()); i++) {
++  for (size_t i = 0; i < sk_X509_num(extra_certs.get()); i++) {
+     X509* ca = sk_X509_value(extra_certs.get(), i);
+ 
+     X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
