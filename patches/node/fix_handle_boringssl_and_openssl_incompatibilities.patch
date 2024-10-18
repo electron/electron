@@ -571,10 +571,10 @@ index 9e656a2815045aa5da7eb267708c03058be9f362..600e0850f01e01024414d42b25605f25
  #endif
  
 diff --git a/unofficial.gni b/unofficial.gni
-index 20632680d696f8af66c7d73c1f0c93e7842554dd..4898f32db73dfb0d4f71fe2db03ee96b1c204356 100644
+index bea19a9c4f30534046fb2ff24018c07a1bd15fd4..2aad895bd250056981c457f0b770bfe6cdcd0382 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -144,7 +144,6 @@ template("node_gn_build") {
+@@ -145,7 +145,6 @@ template("node_gn_build") {
      ]
      deps = [
        ":run_node_js2c",
@@ -582,7 +582,7 @@ index 20632680d696f8af66c7d73c1f0c93e7842554dd..4898f32db73dfb0d4f71fe2db03ee96b
        "deps/cares",
        "deps/histogram",
        "deps/llhttp",
-@@ -156,6 +155,8 @@ template("node_gn_build") {
+@@ -157,6 +156,8 @@ template("node_gn_build") {
        "deps/sqlite",
        "deps/uvwasi",
        "//third_party/zlib",
@@ -591,7 +591,7 @@ index 20632680d696f8af66c7d73c1f0c93e7842554dd..4898f32db73dfb0d4f71fe2db03ee96b
        "$node_v8_path:v8_libplatform",
      ]
  
-@@ -178,10 +179,8 @@ template("node_gn_build") {
+@@ -180,10 +181,8 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {
