@@ -1161,7 +1161,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }  // namespace js2c
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..bea19a9c4f30534046fb2ff24018c07a1bd15fd4 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..68e2c47a563166e5dab2f291d2152f540877a197 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -139,6 +139,7 @@ template("node_gn_build") {
@@ -1172,15 +1172,16 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..bea19a9c4f30534046fb2ff24018c07a
        "deps/simdjson",
        "$node_v8_path",
      ]
-@@ -160,6 +161,7 @@ template("node_gn_build") {
+@@ -160,6 +161,8 @@ template("node_gn_build") {
      ]
  
      sources = [
++      "src/node_snapshot_stub.cc",
 +      "$root_gen_dir/electron_natives.cc",
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -178,8 +180,10 @@ template("node_gn_build") {
+@@ -178,8 +181,10 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {
