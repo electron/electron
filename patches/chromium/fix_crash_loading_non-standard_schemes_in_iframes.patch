@@ -40,7 +40,7 @@ index 53bba48293111e74daba50dde617fb78f1bcc7ee..67083fb13db2020f432ec488a784bcfb
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 547a483db71e2980cc040fe853775fbc07723979..85c6d240a68e52b9d59fae7bbe36603e627b2893 100644
+index ca0f254f2d38c238851ae0daf50b49b10922c186..c5063f9b0b428b8ece8816a812e6616e207504b0 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2264,6 +2264,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
