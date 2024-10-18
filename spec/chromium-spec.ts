@@ -2819,6 +2819,38 @@ describe('chromium features', () => {
       await new Promise((resolve) => { utter.onend = resolve; });
     });
   });
+
+  describe('devtools', () => {
+    it('fetch colors.css', async () => {
+      // <link href="devtools://theme/colors.css?sets=ui,chrome" rel="stylesheet">
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      const devToolsOpened = once(w.webContents, 'devtools-opened');
+
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      w.webContents.openDevTools();
+      await devToolsOpened;
+      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true();
+
+      const result = await devtools.webContents.executeJavaScript(`
+        document.body.querySelector('link[href*=\\'//theme/colors.css\\']')?.getAttribute('href');
+      `);
+      expect(result.startsWith('devtools://theme/colors.css?sets=ui,chrome')).to.be.true();
+      const colorAccentResult = await devtools.webContents.executeJavaScript(`
+        const style = getComputedStyle(document.body);
+        style.getPropertyValue('--color-accent');
+      `);
+      expect(colorAccentResult).to.not.equal('');
+      const colorAppMenuHighlightSeverityLow = await devtools.webContents.executeJavaScript(`
+        style.getPropertyValue('--color-app-menu-highlight-severity-low');
+      `);
+      expect(colorAppMenuHighlightSeverityLow).to.not.equal('');
+      const rgb = await devtools.webContents.executeJavaScript(`
+        style.getPropertyValue('--color-accent-rgb');
+      `);
+      expect(rgb).to.equal('');
+    });
+  });
 });
 
 describe('font fallback', () => {
