@@ -31,6 +31,34 @@ Additionally, `level` is now a string with possible values of `info`, `warning`,
 
 ## Planned Breaking API Changes (33.0)
 
+### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all
+
+APIs which provide access to a `WebFrameMain` instance may return an instance
+with `frame.detached` set to `true`, or possibly return `null`.
+
+When a frame performs a cross-origin navigation, it enters into a detached state
+in which it's no longer attached to the page. In this state, it may be running
+[unload](https://developer.mozilla.org/en-US/docs/Web/API/Window/unload_event)
+handlers prior to being deleted. In the event of an IPC sent during this state,
+`frame.detached` will be set to `true` with the frame being destroyed shortly
+thereafter.
+
+When receiving an event, it's important to access WebFrameMain properties
+immediately upon being received. Otherwise, it's not guaranteed to point to the
+same webpage as when received. To avoid misaligned expectations, Electron will
+return `null` in the case of late access where the webpage has changed.
+
+```ts
+ipcMain.on('unload-event', (event) => {
+  event.senderFrame; // ✅ accessed immediately
+});
+
+ipcMain.on('unload-event', async (event) => {
+  await crossOriginNavigationPromise;
+  event.senderFrame; // ❌ returns `null` due to late access
+});
+```
+
 ### Behavior Changed: custom protocol URL handling on Windows
 
 Due to changes made in Chromium to support [Non-Special Scheme URLs](http://bit.ly/url-non-special), custom protocol URLs that use Windows file paths will no longer work correctly with the deprecated `protocol.registerFileProtocol` and the `baseURLForDataURL` property on `BrowserWindow.loadURL`, `WebContents.loadURL`, and `<webview>.loadURL`.  `protocol.handle` will also not work with these types of URLs but this is not a change since it has always worked that way.

@@ -36,10 +36,10 @@ index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c9
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index cf5bde2e431fd137ce3501e2a913aa5a3dad5d5b..2f1d64464d76fdbd9af69c8b122e508219d1cced 100644
+index 9c2335c7c96b037cf45882fb0fadb7eeacc14745..7a0a3259975161efceea9a338cea52875890bacf 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -205,7 +205,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
+@@ -193,7 +193,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
  bool FrameResources::Initialize() {
    auto* context = pool_->GetContext();
  
@@ -48,7 +48,7 @@ index cf5bde2e431fd137ce3501e2a913aa5a3dad5d5b..2f1d64464d76fdbd9af69c8b122e5082
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -219,6 +219,23 @@ bool FrameResources::Initialize() {
+@@ -207,6 +207,23 @@ bool FrameResources::Initialize() {
    const gfx::Size buffer_size_in_pixels =
        GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
  
@@ -69,29 +69,15 @@ index cf5bde2e431fd137ce3501e2a913aa5a3dad5d5b..2f1d64464d76fdbd9af69c8b122e5082
 +  }
 +#endif
 +
-   // Create the GpuMemoryBuffer if MappableSharedImages is not enabled. When its
-   // enabled, clients only create a mappable shared image directly without
-   // needing to create a GMB.
-@@ -226,11 +243,11 @@ bool FrameResources::Initialize() {
-       kUseMappableSIForRenderableGpuMemoryBufferVideoFramePool);
-   if (!is_mappable_si_enabled) {
-     gpu_memory_buffer_ = context->CreateGpuMemoryBuffer(
--        buffer_size_in_pixels, buffer_format, kBufferUsage);
-+        buffer_size_in_pixels, buffer_format, buffer_usage);
-     if (!gpu_memory_buffer_) {
-       LOG(ERROR) << "Failed to allocate GpuMemoryBuffer for frame: coded_size="
-                  << coded_size_.ToString()
--                 << ", usage=" << static_cast<int>(kBufferUsage);
-+                 << ", usage=" << static_cast<int>(buffer_usage);
-       return false;
-     }
+   constexpr gpu::SharedImageUsageSet kSharedImageUsage =
+ #if BUILDFLAG(IS_MAC)
+       gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
+@@ -231,7 +248,7 @@ bool FrameResources::Initialize() {
+       viz::GetSharedImageFormat(buffer_format);
  
-@@ -264,7 +281,7 @@ bool FrameResources::Initialize() {
- 
-   if (is_mappable_si_enabled) {
-     shared_image_ = context->CreateSharedImage(
--        buffer_size_in_pixels, kBufferUsage, si_format, color_space_,
-+        buffer_size_in_pixels, buffer_usage, si_format, color_space_,
-         kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType, kSharedImageUsage,
-         sync_token_);
-   } else {
+   shared_image_ = context->CreateSharedImage(
+-      buffer_size_in_pixels, kBufferUsage, si_format, color_space_,
++      buffer_size_in_pixels, buffer_usage, si_format, color_space_,
+       kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType, kSharedImageUsage,
+       sync_token_);
+   if (!shared_image_) {

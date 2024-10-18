@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2f36496cf77258fe7e7b5eb7c93c6c53ff55abd0..0808df2627a4630c9e573fdb4f620ef601252026 100644
+index c72cff69afab53000392220abc7decde1236e178..a94783f6dee223294d1ac0d332067b490303bc98 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -172,6 +172,8 @@ viz_component("service") {
@@ -103,7 +103,7 @@ index 2f36496cf77258fe7e7b5eb7c93c6c53ff55abd0..0808df2627a4630c9e573fdb4f620ef6
      "display_embedder/software_output_surface.h",
      "display_embedder/vsync_parameter_listener.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider.h b/components/viz/service/display_embedder/output_surface_provider.h
-index 524df4c2a1382e6d009ab1165305a79894dca15e..a21da0785be3884e5e299643d306d25e6e97c841 100644
+index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36880ce229 100644
 --- a/components/viz/service/display_embedder/output_surface_provider.h
 +++ b/components/viz/service/display_embedder/output_surface_provider.h
 @@ -42,7 +42,8 @@ class OutputSurfaceProvider {
@@ -117,7 +117,7 @@ index 524df4c2a1382e6d009ab1165305a79894dca15e..a21da0785be3884e5e299643d306d25e
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index bddaacb09fcf9f94594b55bd82b903804c2d6970..3aa4753e4d2dd7b391a1dc4057fce7162ba63110 100644
+index 87722045daafa87f7111df943217ceaa8518e55c..badf8c3dc5fb768388a19814d8428a46d3c5648b 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -204,7 +204,7 @@ index e4b46a79560e7698a6400b2ab8a57f38205a8718..3cb2518c6644cf0618f625d981befd46
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 7d58c00ddee8b8e14f89b9ba0f82f734294a4828..b9f7c11f28a7fd61cac594cac862d6524b83296d 100644
+index 446229f7dea794a0148543d112c63b8c38183262..15d097a5761a07cfbc763d6fc739ca35cf3c8660 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
 @@ -111,6 +111,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
@@ -521,7 +521,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 463a0f71f75884b78ff33fc459891fbf31a44422..96a74c4b8be58fa7cc5b5066e22c836423ac2a41 100644
+index ad65e087075b576222fe9541948afdd777e76cbf..20f0f50e226ce6e488a7636d4d3c08e3d2e2f5e5 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(

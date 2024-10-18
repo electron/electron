@@ -311,10 +311,10 @@ index 128bca8bb64113418551a20164f67ef5e5a88253..93f86ec79364db1f46c5d2eb015a11cf
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 7adf8264cfa9980c4a8414bf0f8bfa9ad70ec0b3..bab2f0282b191a4263fc964125e199e52c62554b 100644
+index 5b76ef79789414fd1f18b0629873e7722c9fbd1c..fff10d51944ba27556b97abc3222308e440645cd 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -332,8 +332,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -329,8 +329,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -332,10 +332,10 @@ index 7adf8264cfa9980c4a8414bf0f8bfa9ad70ec0b3..bab2f0282b191a4263fc964125e199e5
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -360,13 +368,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
-           std::move(after_start_capture_callback));
-       break;
- #else
+@@ -346,13 +354,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+       }
+ #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
+ 
 +      media::VideoCaptureParams updated_params = params;
 +      updated_params.use_native_picker = stream_type != blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE;
        // All cases other than tab capture or Aura desktop/window capture.
@@ -363,7 +363,7 @@ index 415156d403a59bf426cf4561a9d58ecdb27524b4..78aa7b2359c684d5305bf6352751dfbb
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index f2b75f5b2f547ad135c1288bf3639b26dedc8053..ef18724d9f2ea68a47b66fc3981f58a73ac1b51d 100644
+index 53e8077c9c0b635df0abdeca43fa9a6373c68252..2805e36cc42190d8197d83f5df235094570e3d5d 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
 @@ -355,6 +355,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {

@@ -1,9 +1,9 @@
-import * as path from 'path';
-import { pathToFileURL } from 'url';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
+
+import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 

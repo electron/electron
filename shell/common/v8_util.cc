@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 
 #include <utility>
 #include <vector>
@@ -240,4 +240,23 @@ v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
   return V8Deserializer(isolate, data).Deserialize();
 }
 
+namespace util {
+
+/**
+ * SAFETY: There is not yet any v8::ArrayBufferView API that passes the
+ * UNSAFE_BUFFER_USAGE test, so let's isolate the unsafe API here.
+ *
+ * Where possible, Electron should use spans returned here instead of
+ * |v8::ArrayBufferView::Buffer()->Data()|,
+ * |v8::ArrayBufferView::ByteOffset()|,
+ * |v8::ArrayBufferView::ByteLength()|.
+ */
+base::span<uint8_t> as_byte_span(v8::Local<v8::ArrayBufferView> val) {
+  uint8_t* data = UNSAFE_BUFFERS(static_cast<uint8_t*>(val->Buffer()->Data()) +
+                                 val->ByteOffset());
+  const size_t size = val->ByteLength();
+  return UNSAFE_BUFFERS(base::span{data, size});
+}
+
+}  // namespace util
 }  // namespace electron

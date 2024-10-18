@@ -1,13 +1,16 @@
-import { expect } from 'chai';
 import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
+
+import { expect } from 'chai';
+import * as WebSocket from 'ws';
+
+import { once } from 'node:events';
+import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
-import * as WebSocket from 'ws';
+
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen, waitUntil } from './lib/spec-helpers';
-import { once } from 'node:events';
+import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
 const uuid = require('uuid');
 

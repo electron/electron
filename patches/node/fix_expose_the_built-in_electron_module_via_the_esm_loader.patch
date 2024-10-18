@@ -6,10 +6,10 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 1931688e85d05ee2da4f88efb05d635cb43be233..afccc24392abff9eef2b9953fcffeb79ee71ad15 100644
+index 1fe5564545dbc86d7f2968274a25ee1579bcbf28..b876af21a0e97ae06dc344d9f78c8f5c7e403d43 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
-@@ -30,6 +30,7 @@ const protocolHandlers = {
+@@ -31,6 +31,7 @@ const protocolHandlers = {
    'http:': getHttpProtocolModuleFormat,
    'https:': getHttpProtocolModuleFormat,
    'node:'() { return 'builtin'; },
@@ -108,10 +108,10 @@ index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f
  // or as the initial entry point when the ESM loader handles a CommonJS entry.
  translators.set('commonjs', async function commonjsStrategy(url, source,
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 4103775560644e4f1a78bf11da6cc07d5dc4cda2..474cf3b44d680c4c897553d5e98c3c43699e6592 100644
+index e6ed5466b8807a52633d8406824058bdc8c2ce13..e055facddf086eb8fb456b865ce006cdb7602b0a 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1459,6 +1459,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1485,6 +1485,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

@@ -80,7 +80,7 @@ index 5c16d0d1b32e2d056f4fcfa0e01781292932a0fa..ce6277dec5a2b9313ecd3699b39ec175
    // This is a bit of a hack. See the override in async_wrap.cc for details.
    virtual bool IsDoneInitializing() const;
 diff --git a/src/stream_base.cc b/src/stream_base.cc
-index af714734f49b836de79ebb25e61f1376b757d5ed..a8f9f98d413c8573eb22960a4cefb47408215469 100644
+index d2649ea0a649bb2f6c6becf1891c0b6d773c1a62..9d855c2992492d3394d9f8af4e53781027a2dd83 100644
 --- a/src/stream_base.cc
 +++ b/src/stream_base.cc
 @@ -492,6 +492,29 @@ Local<Object> StreamBase::GetObject() {

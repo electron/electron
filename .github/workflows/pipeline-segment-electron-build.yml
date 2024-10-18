@@ -83,7 +83,7 @@ jobs:
     - name: Create src dir
       run: mkdir src
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
       with:
         path: src/electron
         fetch-depth: 0
@@ -156,7 +156,7 @@ jobs:
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
       with:
         path: src/electron
         fetch-depth: 0
@@ -164,7 +164,7 @@ jobs:
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --only-sdk
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Run Electron Only Hooks
       run: |
         gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
@@ -177,18 +177,9 @@ jobs:
     - name: Fix Sync (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/fix-sync-macos
-    - name: Install build-tools & Setup RBE
+    - name: Setup Number of Ninja Processes
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform == 'linux' && '300' || '200' }}" >> $GITHUB_ENV
-        cd ~/.electron_build_tools
-        npx yarn --ignore-engines
-        # Pull down credential helper and print status
-        node -e "require('./src/utils/reclient.js').downloadAndPrepare({})"
-        HELPER=$(node -p "require('./src/utils/reclient.js').helperPath({})")
-        $HELPER login
-        echo 'RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $GITHUB_ENV
-        echo 'RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath({}))"` >> $GITHUB_ENV
-        echo 'RBE_experimental_credentials_helper_args=print' >> $GITHUB_ENV
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos

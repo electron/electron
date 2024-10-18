@@ -142,7 +142,7 @@ index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 80ff36f2463035ed32cb8b7b826bfe94c339dbe2..cca6c6775bc8dd35b897498c7dd65b2e3957ee40 100644
+index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736c24827e3 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -19,14 +19,11 @@
