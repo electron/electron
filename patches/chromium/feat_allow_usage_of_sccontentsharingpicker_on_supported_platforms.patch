@@ -363,7 +363,7 @@ index 415156d403a59bf426cf4561a9d58ecdb27524b4..78aa7b2359c684d5305bf6352751dfbb
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 53e8077c9c0b635df0abdeca43fa9a6373c68252..2805e36cc42190d8197d83f5df235094570e3d5d 100644
+index f2b75f5b2f547ad135c1288bf3639b26dedc8053..ef18724d9f2ea68a47b66fc3981f58a73ac1b51d 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
 @@ -355,6 +355,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
