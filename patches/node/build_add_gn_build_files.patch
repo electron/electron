@@ -818,7 +818,7 @@ index 0000000000000000000000000000000000000000..7900ee5299a8ff2cd73fa99bcf43fe3d
 +  ]
 +}
 diff --git a/node.gni b/node.gni
-index 9dca810decebd75aab427e306b3cc37c80fb55c9..19ed9873ca47fafeab74aa6bac02235f552c0502 100644
+index 9dca810decebd75aab427e306b3cc37c80fb55c9..32709b860ccb12d8d1e75342a65dda0b86129b21 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -834,6 +834,24 @@ index 9dca810decebd75aab427e306b3cc37c80fb55c9..19ed9873ca47fafeab74aa6bac02235f
  
    # The NODE_MODULE_VERSION defined in node_version.h.
    node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
+@@ -38,7 +38,7 @@ declare_args() {
+   node_openssl_system_ca_path = ""
+ 
+   # Initialize v8 platform during node.js startup.
+-  node_use_v8_platform = true
++  node_use_v8_platform = false
+ 
+   # Custom build tag.
+   node_tag = ""
+@@ -58,7 +58,7 @@ declare_args() {
+   # TODO(zcbenz): There are few broken things for now:
+   #   1. cross-os compilation is not supported.
+   #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
+-  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
++  node_use_node_snapshot = false
+ }
+ 
+ assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
 index 2bc7155f7c075e5a22ece7159a64a1c9ba3d8ac9..48d29a0d05538cd1d992f3f086d826e78d0d8882 100644
 --- a/src/node_builtins.cc
@@ -999,7 +1017,7 @@ index bf54249b66c0d4e179deaae5a9fd55568e694fe0..57b51b03d237fba4b25aa69a663c88e9
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd48b3fb99
+index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd786f64bb
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -30,6 +30,7 @@ namespace js2c {
@@ -1077,7 +1095,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd
  Fragment Format(const Fragments& definitions,
                  const Fragments& initializers,
                  const Fragments& registrations) {
-@@ -237,13 +282,13 @@ Fragment Format(const Fragments& definitions,
+@@ -237,13 +282,12 @@ Fragment Format(const Fragments& definitions,
    size_t init_size = init_buf.size();
    std::vector<char> reg_buf = Join(registrations, "\n");
    size_t reg_size = reg_buf.size();
@@ -1087,7 +1105,6 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd
 +  size_t result_size = def_size + init_size + reg_size +
 +          strlen(only_js ? kEmbedderTemplate: kTemplate) + 300;
    std::vector<char> result(result_size, 0);
-+  printf("we are using %s\n", only_js ? "kEmbedderTemplate" : "kTemplate");
    int r = snprintf(result.data(),
                     result_size,
 -                   kTemplate,
@@ -1095,7 +1112,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd
                     static_cast<int>(def_buf.size()),
                     def_buf.data(),
                     static_cast<int>(init_buf.size()),
-@@ -834,12 +879,15 @@ int JS2C(const FileList& js_files,
+@@ -834,12 +878,15 @@ int JS2C(const FileList& js_files,
      }
    }
  
@@ -1111,7 +1128,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd
    Fragment out = Format(definitions, initializers, registrations);
    return WriteIfChanged(out, dest);
  }
-@@ -865,6 +913,8 @@ int Main(int argc, char* argv[]) {
+@@ -865,6 +912,8 @@ int Main(int argc, char* argv[]) {
      std::string arg(argv[i]);
      if (arg == "--verbose") {
        is_verbose = true;
@@ -1120,7 +1137,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd
      } else if (arg == "--root") {
        if (i == argc - 1) {
          fprintf(stderr, "--root must be followed by a path\n");
-@@ -913,6 +963,14 @@ int Main(int argc, char* argv[]) {
+@@ -913,6 +962,14 @@ int Main(int argc, char* argv[]) {
      }
    }
  
@@ -1135,7 +1152,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -939,6 +997,7 @@ int Main(int argc, char* argv[]) {
+@@ -939,6 +996,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);

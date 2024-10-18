@@ -105,7 +105,7 @@ index ea024af73e215b3cad5f08796ac405f419530c86..41061b524eea74330b8d2452635a38c4
    }
  }
 diff --git a/node.gni b/node.gni
-index 19ed9873ca47fafeab74aa6bac02235f552c0502..e4f85f3db061350902397b5cee384ef9a9e0e62e 100644
+index 32709b860ccb12d8d1e75342a65dda0b86129b21..18d58591e3d0f1f3512db00033c3410a65702864 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -10,6 +10,8 @@ declare_args() {
