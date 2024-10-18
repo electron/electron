@@ -1068,14 +1068,31 @@ void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   }
 }
 
-bool WebContents::DidAddMessageToConsole(
-    content::WebContents* source,
+void WebContents::OnDidAddMessageToConsole(
+    content::RenderFrameHost* source_frame,
     blink::mojom::ConsoleMessageLevel level,
     const std::u16string& message,
     int32_t line_no,
-    const std::u16string& source_id) {
-  return Emit("console-message", static_cast<int32_t>(level), message, line_no,
-              source_id);
+    const std::u16string& source_id,
+    const std::optional<std::u16string>& untrusted_stack_trace) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.SetGetter("frame", source_frame);
+  dict.Set("level", level);
+  dict.Set("message", message);
+  dict.Set("lineNumber", line_no);
+  dict.Set("sourceId", source_id);
+
+  // TODO(samuelmaddock): Delete when deprecated arguments are fully removed.
+  dict.Set("_level", static_cast<int32_t>(level));
+
+  EmitWithoutEvent("-console-message", event);
 }
 
 void WebContents::OnCreateWindow(
