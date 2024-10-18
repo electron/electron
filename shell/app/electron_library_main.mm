@@ -23,6 +23,13 @@ int ElectronMain(int argc, char* argv[]) {
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
   electron::ElectronCommandLine::Init(argc, argv);
+
+  // Ensure that Bundle Id is set before ContentMain.
+  // Refs https://chromium-review.googlesource.com/c/chromium/src/+/5581006
+  delegate.OverrideChildProcessPath();
+  delegate.OverrideFrameworkBundlePath();
+  delegate.SetUpBundleOverrides();
+
   return content::ContentMain(std::move(params));
 }
 
