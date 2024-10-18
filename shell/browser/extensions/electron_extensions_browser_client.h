@@ -63,14 +63,11 @@ class ElectronExtensionsBrowserClient
   content::BrowserContext* GetOriginalContext(
       content::BrowserContext* context) override;
   content::BrowserContext* GetContextRedirectedToOriginal(
-      content::BrowserContext* context,
-      bool force_guest_profile) override;
+      content::BrowserContext* context) override;
   content::BrowserContext* GetContextOwnInstance(
-      content::BrowserContext* context,
-      bool force_guest_profile) override;
+      content::BrowserContext* context) override;
   content::BrowserContext* GetContextForOriginalOnly(
-      content::BrowserContext* context,
-      bool force_guest_profile) override;
+      content::BrowserContext* context) override;
   bool AreExtensionsDisabledForContext(
       content::BrowserContext* context) override;
   bool IsGuestSession(content::BrowserContext* context) const override;

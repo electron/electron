@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 2cff5a93d7494d6fe8138e90c3172dda6b3a653f..bc4544c40f3dd2a9f534991e3445ce1f4a12216c 100644
+index a9af5589e17c4480bfe553f76769ed50a63d596f..0b78b88754394cbbd5ffcc5694b2fdbd862ff6a8 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -156,6 +156,11 @@
+@@ -157,6 +157,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index 2cff5a93d7494d6fe8138e90c3172dda6b3a653f..bc4544c40f3dd2a9f534991e3445ce1f
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -597,6 +602,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -598,6 +603,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index 2cff5a93d7494d6fe8138e90c3172dda6b3a653f..bc4544c40f3dd2a9f534991e3445ce1f
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -978,6 +1076,13 @@ void NetworkContext::SetClient(
+@@ -979,6 +1077,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index 2cff5a93d7494d6fe8138e90c3172dda6b3a653f..bc4544c40f3dd2a9f534991e3445ce1f
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2526,6 +2631,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2529,6 +2634,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -177,10 +177,10 @@ index 3ab2d4f27dc258bbb82aa2c929a5ee717a933bd8..345fa438ad2afea7946117b8bac7bb6f
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 83bce4a3bf9dc2574bc0f9ab8921f3dfe632ec27..362d2c79a4f8bda162f87841ba0629e88347bf14 100644
+index 7a77b8dcf945d4b2d25ea51a6aebcf1663324139..f4c35e58af2eb5e009772de967000546fff9d290 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -298,6 +298,16 @@ struct SocketBrokerRemotes {
+@@ -299,6 +299,16 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -197,7 +197,7 @@ index 83bce4a3bf9dc2574bc0f9ab8921f3dfe632ec27..362d2c79a4f8bda162f87841ba0629e8
  
  // Parameters for constructing a network context.
  struct NetworkContextParams {
-@@ -976,6 +986,9 @@ interface NetworkContext {
+@@ -911,6 +921,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

@@ -199,10 +199,10 @@ index 58985ce62dc569256bad5e94de9c0d125fc470d0..33436784b691c860d58f8b4dfcc6718e
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 1495d07341d8991cf167fd7018c0ef52decc3554..4ee2cab4de9da4e9ae8f64f3b23c9db489b21cd2 100644
+index 2658b98695703b994319b85a4e033dd3d8e639d9..4a829931097d657f35636649cb743b264925a359 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -44,7 +44,9 @@ constexpr char kMethodStartServiceByName[] = "StartServiceByName";
+@@ -40,7 +40,9 @@ namespace {
  constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
  constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
  
@@ -213,7 +213,7 @@ index 1495d07341d8991cf167fd7018c0ef52decc3554..4ee2cab4de9da4e9ae8f64f3b23c9db4
  
  constexpr char kXdgPortalRequestInterfaceName[] =
      "org.freedesktop.portal.Request";
-@@ -221,6 +223,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -214,6 +216,8 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
                       weak_factory_.GetWeakPtr()));
    info_->type = type;
    info_->main_task_runner = base::SequencedTaskRunner::GetCurrentDefault();
@@ -222,7 +222,7 @@ index 1495d07341d8991cf167fd7018c0ef52decc3554..4ee2cab4de9da4e9ae8f64f3b23c9db4
  
    if (owning_window) {
      if (auto* root = owning_window->GetRootWindow()) {
-@@ -550,7 +554,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -455,7 +459,9 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
                       response_handle_token);
  
    if (type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER) {
@@ -233,7 +233,7 @@ index 1495d07341d8991cf167fd7018c0ef52decc3554..4ee2cab4de9da4e9ae8f64f3b23c9db4
                         l10n_util::GetStringUTF8(
                             IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
    }
-@@ -559,6 +565,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
+@@ -464,6 +470,8 @@ void SelectFileDialogLinuxPortal::DialogInfo::AppendOptions(
        type == SelectFileDialog::Type::SELECT_UPLOAD_FOLDER ||
        type == SelectFileDialog::Type::SELECT_EXISTING_FOLDER) {
      AppendBoolOption(&options_writer, kFileChooserOptionDirectory, true);
@@ -243,10 +243,10 @@ index 1495d07341d8991cf167fd7018c0ef52decc3554..4ee2cab4de9da4e9ae8f64f3b23c9db4
      AppendBoolOption(&options_writer, kFileChooserOptionMultiple, true);
    }
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
-index 47e3b0e658858ba5f3219f04d258bdf6dd7c26ed..ff8eaabb406cdf759f7a62725171aaf9f74ce183 100644
+index d57a52b3ccbd3bd6d390615351ea2ad1e475b157..433f34ac6779611623241cd977dd1214e97fece7 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.h
-@@ -117,6 +117,8 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {
+@@ -120,6 +120,8 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {
      Type type;
      // The task runner the SelectFileImpl method was called on.
      scoped_refptr<base::SequencedTaskRunner> main_task_runner;
