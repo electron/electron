@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Tue, 17 Sep 2024 16:49:30 +0200
+Subject: Check strict type equality for Tag imports
+
+R=manoskouk@chromium.org
+
+Fixed: 365802567
+Change-Id: I38d70f157f9a78fe56eb0c377776dfe794872473
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5868875
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Manos Koukoutos <manoskouk@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96143}
+
+diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
+index 85dca1183a22039732def26e473b42645c497856..9b24adc335fc0326041cf60117212134ae955762 100644
+--- a/src/wasm/wasm-objects.cc
++++ b/src/wasm/wasm-objects.cc
+@@ -1843,8 +1843,8 @@ Handle<WasmTagObject> WasmTagObject::New(Isolate* isolate,
+ }
+ 
+ bool WasmTagObject::MatchesSignature(uint32_t expected_canonical_type_index) {
+-  return wasm::GetWasmEngine()->type_canonicalizer()->IsCanonicalSubtype(
+-      this->canonical_type_index(), expected_canonical_type_index);
++  return static_cast<uint32_t>(this->canonical_type_index()) ==
++         expected_canonical_type_index;
+ }
+ 
+ const wasm::FunctionSig* WasmCapiFunction::GetSignature(Zone* zone) const {
