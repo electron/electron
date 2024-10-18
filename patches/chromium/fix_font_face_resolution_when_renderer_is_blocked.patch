@@ -11,7 +11,7 @@ while the renderer is blocked. This Cl takes an approach similar to that taken i
 MediaQueryList in order to enable the promise to be resolved.
 
 diff --git a/third_party/blink/renderer/core/css/font_face_set_document.cc b/third_party/blink/renderer/core/css/font_face_set_document.cc
-index 01b075079fd7a75fb8cb5d876f6db927678c60db..436d04c3c739a7273c44130f6ed86486568f413c 100644
+index 921e3339e967b759e3074278e920616bc85b40b3..c0ffacc4082367e0296359fa5e0aedae53217506 100644
 --- a/third_party/blink/renderer/core/css/font_face_set_document.cc
 +++ b/third_party/blink/renderer/core/css/font_face_set_document.cc
 @@ -27,6 +27,7 @@
@@ -22,7 +22,7 @@ index 01b075079fd7a75fb8cb5d876f6db927678c60db..436d04c3c739a7273c44130f6ed86486
  #include "third_party/blink/renderer/bindings/core/v8/dictionary.h"
  #include "third_party/blink/renderer/core/css/css_font_face.h"
  #include "third_party/blink/renderer/core/css/css_font_selector.h"
-@@ -150,21 +151,27 @@ FontFaceSetDocument::CSSConnectedFontFaceList() const {
+@@ -144,21 +145,27 @@ FontFaceSetDocument::CSSConnectedFontFaceList() const {
  }
  
  void FontFaceSetDocument::FireDoneEventIfPossible() {

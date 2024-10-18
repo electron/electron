@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-131.0.6734.0-node-20.17-0
+image: e-132.0.6781.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -39,7 +39,7 @@ environment:
   MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
   DEPOT_TOOLS_WIN_TOOLCHAIN: 1
   DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
-  GYP_MSVS_HASH_7393122652: 3ba76c5c20
+  GYP_MSVS_HASH_698eb5635a: e2bf90edff
   PYTHONIOENCODING: UTF-8
 
   matrix:
@@ -116,15 +116,13 @@ for:
       - ps: >-
           $env:RBE_service = node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"
       - ps: >-
-          $env:RBE_experimental_credentials_helper = $env:RECLIENT_HELPER
+          $env:RBE_credentials_helper = $env:RECLIENT_HELPER
       - ps: >-
-          $env:RBE_experimental_credentials_helper_args = "print"
+          $env:RBE_credentials_helper_args = "print"
       - ps: >-
           if ($env:ELECTRON_RBE_JWT -eq '') {
             $env:RBE_fail_early_min_action_count = "0"
             $env:RBE_fail_early_min_fallback_ratio = "0"
-            $env:RBE_exec_strategy = "local"
-            $env:RBE_remote_update_cache= "false"
           }
       - cd ..\..
       - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
@@ -153,7 +151,7 @@ for:
       - gn check out/Default //electron:electron_app
       - gn check out/Default //electron/shell/common:mojo
       - gn check out/Default //electron/shell/common:plugin
-      - if DEFINED ELECTRON_RBE_JWT (autoninja -j 300 -C out/Default electron:electron_app) else (autoninja -C out/Default electron:electron_app)
+      - autoninja -j 300 -C out/Default electron:electron_app
       - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
       - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true %GN_EXTRA_ARGS%"
       - autoninja -C out/ffmpeg electron:electron_ffmpeg_zip

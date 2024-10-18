@@ -244,8 +244,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
       base::BindOnce(
           [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
-            SkBitmap bitmap;
-            gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
+            SkBitmap bitmap = gfx::PNGCodec::Decode(result);
             image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
             std::move(cb).Run();
           },
