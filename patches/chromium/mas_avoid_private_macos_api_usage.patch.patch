@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 922488fc0980d2460daf12e0011795bfa57682d1..5c38c8a7cc5e22b529c9a2c6b5cb6aa36efd6843 100644
+index 00bf31f3b8fd7a144281406177f694f3afb42d91..273ebd2260f278c7a7f279d59aea8684a0d5eaeb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1038,6 +1038,7 @@ component("base") {
+@@ -1040,6 +1040,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -604,7 +604,7 @@ index 2285564db47ef15eb9a83affd1e481b5671c3940..cf5e79a5540d8208c34579d7e8b5a571
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index c6512e8ce79f757a77a0d952e8d82d12d8be449c..69eb2ad17a15a17ca274a3a3128de9b841061a95 100644
+index 5e4a6756da36b544a419319acb1a2ced383fa0bf..a11678b06a83132b91fed2f6728829ec12588acb 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -48,6 +48,7 @@
@@ -677,10 +677,10 @@ index c6512e8ce79f757a77a0d952e8d82d12d8be449c..69eb2ad17a15a17ca274a3a3128de9b8
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 9f48c905f4abbb0f2e184299a915232cf6a0f6b0..83e1af29e9b035e54b447941d55b95eb960219f1 100644
+index ead12a24cc3045ba0a732dac08b6ee4c3b70a521..853162df29df5f5deb87d7d607753831c0a5ebb7 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -287,6 +287,7 @@ source_set("common") {
+@@ -285,6 +285,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
