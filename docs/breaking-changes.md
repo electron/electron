@@ -14,6 +14,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (33.0)
 
+### Removed: macOS 10.15 support
+
+macOS 10.15 (Catalina) is no longer supported by [Chromium](https://chromium.googlesource.com/chromium/src/+/165142f8df90e3a06b6e4780f0f69f58c9af7495).
+
+Older versions of Electron will continue to run on these operating systems, but macOS 11 (Big Sur)
+or later will be required to run Electron v33.0.0 and higher.
+
 ### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all
 
 APIs which provide access to a `WebFrameMain` instance may return an instance
