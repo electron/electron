@@ -92,6 +92,7 @@ const char kDefaultLastPickedDirectoryKey[] = "default-id";
 const char kCustomLastPickedDirectoryKey[] = "custom-id";
 const char kPathKey[] = "path";
 const char kPathTypeKey[] = "path-type";
+const char kDisplayNameKey[] = "display-name";
 const char kTimestampKey[] = "timestamp";
 
 constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
@@ -155,11 +156,8 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 #if BUILDFLAG(IS_WIN)
   // On Windows, local UNC paths are rejected, as UNC path can be written in a
   // way that can bypass the blocklist.
-  if (base::FeatureList::IsEnabled(
-          features::kFileSystemAccessLocalUNCPathBlock) &&
-      MaybeIsLocalUNCPath(path)) {
+  if (MaybeIsLocalUNCPath(path))
     return true;
-  }
 #endif  // BUILDFLAG(IS_WIN)
 
   // Add the hard-coded rules to the dynamic rules.
@@ -213,6 +211,10 @@ std::string GenerateLastPickedDirectoryKey(const std::string& id) {
                     : base::StrCat({kCustomLastPickedDirectoryKey, "-", id});
 }
 
+std::string StringOrEmpty(const std::string* s) {
+  return s ? *s : std::string();
+}
+
 }  // namespace
 
 namespace electron {
@@ -222,7 +224,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
  public:
   PermissionGrantImpl(base::WeakPtr<FileSystemAccessPermissionContext> context,
                       const url::Origin& origin,
-                      const base::FilePath& path,
+                      const content::PathInfo& path_info,
                       HandleType handle_type,
                       GrantType type,
                       UserAction user_action)
@@ -230,7 +232,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
         origin_{origin},
         handle_type_{handle_type},
         type_{type},
-        path_{path} {}
+        path_info_{path_info} {}
 
   // FileSystemAccessPermissionGrant:
   PermissionStatus GetStatus() override {
@@ -240,7 +242,12 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
 
   base::FilePath GetPath() override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    return path_;
+    return path_info_.path;
+  }
+
+  std::string GetDisplayName() override {
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+    return path_info_.display_name;
   }
 
   void RequestPermission(
@@ -314,7 +321,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
         electron::WebContentsPermissionHelper::PermissionType::FILE_SYSTEM);
 
     base::Value::Dict details;
-    details.Set("filePath", base::FilePathToValue(path_));
+    details.Set("filePath", base::FilePathToValue(path_info_.path));
     details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
     details.Set("fileAccessType",
                 type_ == GrantType::kWrite ? "writable" : "readable");
@@ -353,12 +360,13 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
 
   static void UpdateGrantPath(
       std::map<base::FilePath, PermissionGrantImpl*>& grants,
-      const base::FilePath& old_path,
-      const base::FilePath& new_path) {
+      const content::PathInfo& old_path,
+      const content::PathInfo& new_path) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    auto entry_it = std::ranges::find_if(
-        grants,
-        [&old_path](const auto& entry) { return entry.first == old_path; });
+    auto entry_it =
+        std::ranges::find_if(grants, [&old_path](const auto& entry) {
+          return entry.first == old_path.path;
+        });
 
     if (entry_it == grants.end()) {
       // There must be an entry for an ancestor of this entry. Nothing to do
@@ -373,7 +381,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
 
     // Update the permission grant's key in the map of active permissions.
     grants.erase(entry_it);
-    grants.emplace(new_path, grant_impl);
+    grants.emplace(new_path.path, grant_impl);
   }
 
  protected:
@@ -399,13 +407,13 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     }
   }
 
-  void SetPath(const base::FilePath& new_path) {
+  void SetPath(const content::PathInfo& new_path) {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-    if (path_ == new_path)
+    if (path_info_ == new_path)
       return;
 
-    path_ = new_path;
+    path_info_ = new_path;
     NotifyPermissionStatusChanged();
   }
 
@@ -415,7 +423,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
   const url::Origin origin_;
   const HandleType handle_type_;
   const GrantType type_;
-  base::FilePath path_;
+  content::PathInfo path_info_;
 
   // This member should only be updated via SetStatus().
   PermissionStatus status_ = PermissionStatus::ASK;
@@ -443,14 +451,14 @@ FileSystemAccessPermissionContext::~FileSystemAccessPermissionContext() =
 scoped_refptr<content::FileSystemAccessPermissionGrant>
 FileSystemAccessPermissionContext::GetReadPermissionGrant(
     const url::Origin& origin,
-    const base::FilePath& path,
+    const content::PathInfo& path_info,
     HandleType handle_type,
     UserAction user_action) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
   auto& origin_state = active_permissions_map_[origin];
-  auto*& existing_grant = origin_state.read_grants[path];
+  auto*& existing_grant = origin_state.read_grants[path_info.path];
   scoped_refptr<PermissionGrantImpl> new_grant;
 
   if (existing_grant && existing_grant->handle_type() != handle_type) {
@@ -463,15 +471,15 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
 
   if (!existing_grant) {
     new_grant = base::MakeRefCounted<PermissionGrantImpl>(
-        weak_factory_.GetWeakPtr(), origin, path, handle_type, GrantType::kRead,
-        user_action);
+        weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
+        GrantType::kRead, user_action);
     existing_grant = new_grant.get();
   }
 
   // If a parent directory is already readable this new grant should also be
   // readable.
   if (new_grant &&
-      AncestorHasActivePermission(origin, path, GrantType::kRead)) {
+      AncestorHasActivePermission(origin, path_info.path, GrantType::kRead)) {
     existing_grant->SetStatus(PermissionStatus::GRANTED);
   } else {
     switch (user_action) {
@@ -498,14 +506,14 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
 scoped_refptr<content::FileSystemAccessPermissionGrant>
 FileSystemAccessPermissionContext::GetWritePermissionGrant(
     const url::Origin& origin,
-    const base::FilePath& path,
+    const content::PathInfo& path_info,
     HandleType handle_type,
     UserAction user_action) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
   auto& origin_state = active_permissions_map_[origin];
-  auto*& existing_grant = origin_state.write_grants[path];
+  auto*& existing_grant = origin_state.write_grants[path_info.path];
   scoped_refptr<PermissionGrantImpl> new_grant;
 
   if (existing_grant && existing_grant->handle_type() != handle_type) {
@@ -518,7 +526,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
 
   if (!existing_grant) {
     new_grant = base::MakeRefCounted<PermissionGrantImpl>(
-        weak_factory_.GetWeakPtr(), origin, path, handle_type,
+        weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
         GrantType::kWrite, user_action);
     existing_grant = new_grant.get();
   }
@@ -526,7 +534,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   // If a parent directory is already writable this new grant should also be
   // writable.
   if (new_grant &&
-      AncestorHasActivePermission(origin, path, GrantType::kWrite)) {
+      AncestorHasActivePermission(origin, path_info.path, GrantType::kWrite)) {
     existing_grant->SetStatus(PermissionStatus::GRANTED);
   } else {
     switch (user_action) {
@@ -545,6 +553,19 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   return existing_grant;
 }
 
+bool FileSystemAccessPermissionContext::IsFileTypeDangerous(
+    const base::FilePath& path,
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  return false;
+}
+
+base::expected<void, std::string>
+FileSystemAccessPermissionContext::CanShowFilePicker(
+    content::RenderFrameHost* rfh) {
+  return base::ok();
+}
+
 bool FileSystemAccessPermissionContext::CanObtainReadPermission(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -559,8 +580,7 @@ bool FileSystemAccessPermissionContext::CanObtainWritePermission(
 
 void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     const url::Origin& origin,
-    PathType path_type,
-    const base::FilePath& path,
+    const content::PathInfo& path_info,
     HandleType handle_type,
     UserAction user_action,
     content::GlobalRenderFrameHostId frame_id,
@@ -570,14 +590,13 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
 
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
-      GetWeakPtr(), origin, path, handle_type, user_action, frame_id);
-  CheckPathAgainstBlocklist(path_type, path, handle_type,
+      GetWeakPtr(), origin, path_info, handle_type, user_action, frame_id);
+  CheckPathAgainstBlocklist(path_info, handle_type,
                             std::move(after_blocklist_check_callback));
 }
 
 void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
-    PathType path_type,
-    const base::FilePath& path,
+    const content::PathInfo& path_info,
     HandleType handle_type,
     base::OnceCallback<void(bool)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -586,7 +605,7 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
   // blocked directories based on that, but that doesn't work well. Instead we
   // should have a separate Chrome OS only code path to block for example the
   // root of certain external file systems.
-  if (path_type == PathType::kExternal) {
+  if (path_info.type == content::PathType::kExternal) {
     std::move(callback).Run(/*should_block=*/false);
     return;
   }
@@ -597,7 +616,8 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
 
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-      base::BindOnce(&ShouldBlockAccessToPath, path, handle_type, extra_rules),
+      base::BindOnce(&ShouldBlockAccessToPath, path_info.path, handle_type,
+                     extra_rules),
       std::move(callback));
 }
 
@@ -624,7 +644,7 @@ void FileSystemAccessPermissionContext::OnRestrictedPathResult(
 
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     const url::Origin& origin,
-    const base::FilePath& path,
+    const content::PathInfo& path_info,
     HandleType handle_type,
     UserAction user_action,
     content::GlobalRenderFrameHostId frame_id,
@@ -646,7 +666,7 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
         gin::DataObjectBuilder(isolate)
             .Set("origin", origin.GetURL().spec())
             .Set("isDirectory", handle_type == HandleType::kDirectory)
-            .Set("path", path)
+            .Set("path", path_info.path)
             .Build();
     session->Emit(
         "file-system-access-restricted", details,
@@ -695,14 +715,14 @@ void FileSystemAccessPermissionContext::MaybeEvictEntries(
 void FileSystemAccessPermissionContext::SetLastPickedDirectory(
     const url::Origin& origin,
     const std::string& id,
-    const base::FilePath& path,
-    const PathType type) {
+    const content::PathInfo& path_info) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   // Create an entry into the nested dictionary.
   base::Value::Dict entry;
-  entry.Set(kPathKey, base::FilePathToValue(path));
-  entry.Set(kPathTypeKey, static_cast<int>(type));
+  entry.Set(kPathKey, base::FilePathToValue(path_info.path));
+  entry.Set(kPathTypeKey, static_cast<int>(path_info.type));
+  entry.Set(kDisplayNameKey, path_info.display_name);
   entry.Set(kTimestampKey, base::TimeToValue(clock_->Now()));
 
   auto it = id_pathinfo_map_.find(origin);
@@ -718,15 +738,14 @@ void FileSystemAccessPermissionContext::SetLastPickedDirectory(
   }
 }
 
-FileSystemAccessPermissionContext::PathInfo
-FileSystemAccessPermissionContext::GetLastPickedDirectory(
+content::PathInfo FileSystemAccessPermissionContext::GetLastPickedDirectory(
     const url::Origin& origin,
     const std::string& id) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   auto it = id_pathinfo_map_.find(origin);
 
-  PathInfo path_info;
+  content::PathInfo path_info;
   if (it == id_pathinfo_map_.end()) {
     return path_info;
   }
@@ -736,13 +755,14 @@ FileSystemAccessPermissionContext::GetLastPickedDirectory(
     return path_info;
   }
 
-  auto type_int =
-      entry->FindInt(kPathTypeKey).value_or(static_cast<int>(PathType::kLocal));
-  path_info.type = type_int == static_cast<int>(PathType::kExternal)
-                       ? PathType::kExternal
-                       : PathType::kLocal;
+  auto type_int = entry->FindInt(kPathTypeKey)
+                      .value_or(static_cast<int>(content::PathType::kLocal));
+  path_info.type = type_int == static_cast<int>(content::PathType::kExternal)
+                       ? content::PathType::kExternal
+                       : content::PathType::kLocal;
   path_info.path =
       base::ValueToFilePath(entry->Find(kPathKey)).value_or(base::FilePath());
+  path_info.display_name = StringOrEmpty(entry->FindString(kDisplayNameKey));
   return path_info;
 }
 
@@ -808,8 +828,8 @@ std::u16string FileSystemAccessPermissionContext::GetPickerTitle(
 
 void FileSystemAccessPermissionContext::NotifyEntryMoved(
     const url::Origin& origin,
-    const base::FilePath& old_path,
-    const base::FilePath& new_path) {
+    const content::PathInfo& old_path,
+    const content::PathInfo& new_path) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   if (old_path == new_path) {
@@ -830,7 +850,7 @@ void FileSystemAccessPermissionContext::OnFileCreatedFromShowSaveFilePicker(
     const storage::FileSystemURL& url) {}
 
 void FileSystemAccessPermissionContext::CheckPathsAgainstEnterprisePolicy(
-    std::vector<PathInfo> entries,
+    std::vector<content::PathInfo> entries,
     content::GlobalRenderFrameHostId frame_id,
     EntriesAllowedByEnterprisePolicyCallback callback) {
   std::move(callback).Run(std::move(entries));

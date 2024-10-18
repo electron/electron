@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "shell/browser/native_window.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/display/display_observer.h"

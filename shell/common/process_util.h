@@ -6,16 +6,9 @@
 #define ELECTRON_SHELL_COMMON_PROCESS_UTIL_H_
 
 #include <string>
-
-namespace node {
-class Environment;
-}
+#include <string_view>
 
 namespace electron {
-
-void EmitWarning(node::Environment* env,
-                 const std::string& warning_msg,
-                 const std::string& warning_type);
 
 std::string GetProcessType();
 

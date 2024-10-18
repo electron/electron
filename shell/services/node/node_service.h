@@ -61,7 +61,9 @@ class NodeService : public node::mojom::NodeService {
   NodeService& operator=(const NodeService&) = delete;
 
   // mojom::NodeService implementation:
-  void Initialize(node::mojom::NodeServiceParamsPtr params) override;
+  void Initialize(node::mojom::NodeServiceParamsPtr params,
+                  mojo::PendingRemote<node::mojom::NodeServiceClient>
+                      client_pending_remote) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last

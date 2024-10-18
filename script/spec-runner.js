@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
+
+const chalk = require('chalk');
+const { hashElement } = require('folder-hash');
+const minimist = require('minimist');
+
 const childProcess = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
-const { hashElement } = require('folder-hash');
 const os = require('node:os');
 const path = require('node:path');
+
 const unknownFlags = [];
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
-const args = require('minimist')(process.argv, {
+const args = minimist(process.argv, {
   string: ['runners', 'target', 'electronVersion'],
   unknown: arg => unknownFlags.push(arg)
 });
@@ -189,7 +193,7 @@ async function installSpecModules (dir) {
   const env = {
     ...process.env,
     CXXFLAGS: process.env.CXXFLAGS,
-    npm_config_msvs_version: '2019',
+    npm_config_msvs_version: '2022',
     npm_config_yes: 'true'
   };
   if (args.electronVersion) {

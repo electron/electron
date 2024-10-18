@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/observer_list_types.h"
-#include "electron/shell/common/api/api.mojom.h"
 
 namespace gfx {
 class Rect;

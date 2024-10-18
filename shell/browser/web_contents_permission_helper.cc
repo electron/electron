@@ -15,6 +15,8 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
+#include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
@@ -59,19 +61,19 @@ namespace {
 bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
   if (request.audio_type == MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     const auto system_audio_permission =
-        system_media_permissions::CheckSystemAudioCapturePermission();
+        system_permission_settings::CheckSystemAudioCapturePermission();
     return system_audio_permission ==
-               system_media_permissions::SystemPermission::kRestricted ||
+               system_permission_settings::SystemPermission::kRestricted ||
            system_audio_permission ==
-               system_media_permissions::SystemPermission::kDenied;
+               system_permission_settings::SystemPermission::kDenied;
   }
   if (request.video_type == MediaStreamType::DEVICE_VIDEO_CAPTURE) {
     const auto system_video_permission =
-        system_media_permissions::CheckSystemVideoCapturePermission();
+        system_permission_settings::CheckSystemVideoCapturePermission();
     return system_video_permission ==
-               system_media_permissions::SystemPermission::kRestricted ||
+               system_permission_settings::SystemPermission::kRestricted ||
            system_video_permission ==
-               system_media_permissions::SystemPermission::kDenied;
+               system_permission_settings::SystemPermission::kDenied;
   }
 
   return false;

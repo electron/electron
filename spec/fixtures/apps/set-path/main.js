@@ -1,5 +1,6 @@
-const http = require('node:http');
 const { app, ipcMain, BrowserWindow } = require('electron');
+
+const http = require('node:http');
 
 if (process.argv.length > 3) {
   app.setPath(process.argv[2], process.argv[3]);

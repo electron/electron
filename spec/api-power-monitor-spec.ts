@@ -8,10 +8,12 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers';
-import { promisify } from 'node:util';
-import { setTimeout } from 'node:timers/promises';
+
 import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
+import { promisify } from 'node:util';
+
+import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers';
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;

@@ -1,9 +1,12 @@
-import { expect } from 'chai';
-import { startRemoteControlApp } from './lib/spec-helpers';
-import { once } from 'node:events';
-import { spawn, spawnSync } from 'node:child_process';
 import { BrowserWindow } from 'electron';
+
+import { expect } from 'chai';
+
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
 import path = require('node:path');
+
+import { startRemoteControlApp } from './lib/spec-helpers';
 
 describe('fuses', () => {
   it('can be enabled by command-line argument during testing', async () => {

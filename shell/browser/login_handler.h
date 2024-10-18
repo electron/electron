@@ -24,7 +24,8 @@ class LoginHandler : public content::LoginDelegate {
  public:
   LoginHandler(const net::AuthChallengeInfo& auth_info,
                content::WebContents* web_contents,
-               bool is_main_frame,
+               bool is_request_for_primary_main_frame,
+               bool is_request_for_navigation,
                base::ProcessId process_id,
                const GURL& url,
                scoped_refptr<net::HttpResponseHeaders> response_headers,
@@ -39,7 +40,8 @@ class LoginHandler : public content::LoginDelegate {
  private:
   void EmitEvent(net::AuthChallengeInfo auth_info,
                  content::WebContents* web_contents,
-                 bool is_main_frame,
+                 bool is_request_for_primary_main_frame,
+                 bool is_request_for_navigation,
                  base::ProcessId process_id,
                  const GURL& url,
                  scoped_refptr<net::HttpResponseHeaders> response_headers,

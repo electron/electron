@@ -1,5 +1,7 @@
-const fs = require('node:fs');
 const glob = require('glob');
+
+const fs = require('node:fs');
+const path = require('node:path');
 
 const currentShard = parseInt(process.argv[2], 10);
 const shardCount = parseInt(process.argv[3], 10);
@@ -24,7 +26,7 @@ specFiles.sort((a, b) => {
 
 let shard = 0;
 for (const specFile of specFiles) {
-  buckets[shard].push(specFile);
+  buckets[shard].push(path.normalize(specFile));
   shard++;
   if (shard === shardCount) shard = 0;
 }

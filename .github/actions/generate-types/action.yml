@@ -1,0 +1,24 @@
+name: 'Generate Types for Archaeologist Dig'
+description: 'Generate Types for Archaeologist Dig'
+inputs:
+  sha-file:
+    description: 'File containing sha'
+    required: true
+  filename:
+    description: 'Filename to write types to'
+    required: true
+runs:
+  using: "composite"
+  steps:
+  - name: Generating Types for SHA in ${{ inputs.sha-file }}
+    shell: bash
+    run: |
+      git checkout $(cat ${{ inputs.sha-file }})
+      rm -rf node_modules
+      yarn install --frozen-lockfile --ignore-scripts
+      echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
+      node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development
+      node node_modules/.bin/electron-typescript-definitions --api=electron-api.json --outDir=artifacts
+      mv artifacts/electron.d.ts artifacts/${{ inputs.filename }}
+      git checkout .
+    working-directory: ./electron

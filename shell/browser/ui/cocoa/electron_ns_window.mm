@@ -5,6 +5,7 @@
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 
 #include "base/strings/sys_string_conversions.h"
+#include "electron/mas.h"
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"

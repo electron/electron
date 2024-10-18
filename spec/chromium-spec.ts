@@ -1,20 +1,23 @@
-import { expect } from 'chai';
-import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+import { MediaAccessPermissionRequest } from 'electron';
 import { clipboard } from 'electron/common';
-import { closeAllWindows } from './lib/window-helpers';
-import * as https from 'node:https';
-import * as http from 'node:http';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as url from 'node:url';
+import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+
+import { expect } from 'chai';
+import * as ws from 'ws';
+
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
-import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
-import { PipeTransport } from './pipe-transport';
-import * as ws from 'ws';
-import { setTimeout } from 'node:timers/promises';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
 import { AddressInfo } from 'node:net';
-import { MediaAccessPermissionRequest } from 'electron';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { PipeTransport } from './pipe-transport';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -553,6 +556,36 @@ describe('command line switches', () => {
       });
     });
   });
+
+  describe('--trace-startup switch', () => {
+    const outputFilePath = path.join(app.getPath('temp'), 'trace.json');
+    afterEach(() => {
+      if (fs.existsSync(outputFilePath)) {
+        fs.unlinkSync(outputFilePath);
+      }
+    });
+
+    it('creates startup trace', async () => {
+      const rc = await startRemoteControlApp(['--trace-startup=*', `--trace-startup-file=${outputFilePath}`, '--trace-startup-duration=1', '--enable-logging']);
+      const stderrComplete = new Promise<string>(resolve => {
+        let stderr = '';
+        rc.process.stderr!.on('data', (chunk) => {
+          stderr += chunk.toString('utf8');
+        });
+        rc.process.on('close', () => { resolve(stderr); });
+      });
+      rc.remotely(() => {
+        global.setTimeout(() => {
+          require('electron').app.quit();
+        }, 5000);
+      });
+      const stderr = await stderrComplete;
+      expect(stderr).to.match(/Completed startup tracing to/);
+      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.statSync(outputFilePath).size).to.be.above(0,
+        `the trace output file is empty, check "${outputFilePath}"`);
+    });
+  });
 });
 
 describe('chromium features', () => {
@@ -709,7 +742,7 @@ describe('chromium features', () => {
     it('should register for intercepted file scheme', (done) => {
       const customSession = session.fromPartition('intercept-file');
       customSession.protocol.interceptBufferProtocol('file', (request, callback) => {
-        let file = url.parse(request.url).pathname!;
+        let file = new URL(request.url).pathname!;
         if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
 
         const content = fs.readFileSync(path.normalize(file));
@@ -750,7 +783,7 @@ describe('chromium features', () => {
     it('should register for custom scheme', (done) => {
       const customSession = session.fromPartition('custom-scheme');
       customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
-        let file = url.parse(request.url).pathname!;
+        let file = new URL(request.url).pathname!;
         if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
 
         callback({ path: path.normalize(file) } as any);
@@ -2004,7 +2037,7 @@ describe('chromium features', () => {
       let contents: WebContents;
       before(() => {
         protocol.registerFileProtocol(protocolName, (request, callback) => {
-          const parsedUrl = url.parse(request.url);
+          const parsedUrl = new URL(request.url);
           let filename;
           switch (parsedUrl.pathname) {
             case '/localStorage' : filename = 'local_storage.html'; break;
@@ -2459,7 +2492,7 @@ describe('chromium features', () => {
     it('has user agent', async () => {
       const server = http.createServer();
       const { port } = await listen(server);
-      const wss = new ws.Server({ server: server });
+      const wss = new ws.Server({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -3444,6 +3477,7 @@ describe('navigator.hid', () => {
             haveDevices = true;
             return true;
           }
+          return false;
         });
         if (foundDevice) {
           callback(foundDevice.deviceId);
@@ -3491,6 +3525,7 @@ describe('navigator.hid', () => {
               return true;
             }
           }
+          return false;
         });
       }
       callback();
@@ -3670,6 +3705,7 @@ describe('navigator.usb', () => {
             haveDevices = true;
             return true;
           }
+          return false;
         });
         if (foundDevice) {
           callback(foundDevice.deviceId);

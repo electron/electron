@@ -32,27 +32,28 @@ bool IsDebuggingNotifications() {
 }
 
 bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
-  std::vector<unsigned char> png_data;
-  if (!gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, &png_data))
+  std::optional<std::vector<uint8_t>> png_data =
+      gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
+  if (!png_data.has_value())
     return false;
 
-  return base::WriteFile(path, png_data);
+  return base::WriteFile(path, png_data.value());
 }
 
 }  // namespace
 
 // static
-NotificationPresenter* NotificationPresenter::Create() {
+std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
   if (!WindowsToastNotification::Initialize())
-    return nullptr;
+    return {};
   auto presenter = std::make_unique<NotificationPresenterWin>();
   if (!presenter->Init())
-    return nullptr;
+    return {};
 
   if (IsDebuggingNotifications())
     LOG(INFO) << "Successfully created Windows notifications presenter";
 
-  return presenter.release();
+  return presenter;
 }
 
 NotificationPresenterWin::NotificationPresenterWin() = default;

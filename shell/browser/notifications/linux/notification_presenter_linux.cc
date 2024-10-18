@@ -10,10 +10,10 @@
 namespace electron {
 
 // static
-NotificationPresenter* NotificationPresenter::Create() {
-  if (!LibnotifyNotification::Initialize())
-    return nullptr;
-  return new NotificationPresenterLinux;
+std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
+  if (LibnotifyNotification::Initialize())
+    return std::make_unique<NotificationPresenterLinux>();
+  return {};
 }
 
 NotificationPresenterLinux::NotificationPresenterLinux() = default;

@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/extension_registry.h"
@@ -29,7 +30,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     const std::string& extension_id,
     const std::string& stream_id,
     bool embedded,
-    int frame_tree_node_id,
+    content::FrameTreeNodeId frame_tree_node_id,
     blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
     const GURL& original_url,
     const std::string& internal_id) {

@@ -6,11 +6,18 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
+import { nativeImage } from 'electron/common';
+import { app } from 'electron/main';
+
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { app } from 'electron/main';
-import { ifdescribe } from './lib/spec-helpers';
+
+import * as path from 'node:path';
 import { promisify } from 'node:util';
+
+import { ifdescribe } from './lib/spec-helpers';
+
+const fixturesPath = path.join(__dirname, 'fixtures');
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
@@ -92,6 +99,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
         title: 'title',
         subtitle: 'subtitle',
         body: 'body',
+        icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
         replyPlaceholder: 'replyPlaceholder',
         sound: 'sound',
         closeButtonText: 'closeButtonText'
@@ -117,7 +125,9 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
         actions: [],
         hints: {
           append: 'true',
+          image_data: [3, 3, 12, true, 8, 4, Buffer.from([255, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 76, 255, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 38, 255, 255, 0, 0, 0, 255, 0, 0, 0, 0])],
           'desktop-entry': appName,
+          'sender-pid': process.pid,
           urgency: 1
         }
       });

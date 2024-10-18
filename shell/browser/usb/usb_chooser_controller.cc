@@ -23,8 +23,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/usb_device_info_converter.h"
-#include "shell/common/node_includes.h"
-#include "shell/common/process_util.h"
+#include "shell/common/node_util.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/gurl.h"
 
@@ -91,10 +90,9 @@ void UsbChooserController::OnDeviceChosen(gin::Arguments* args) {
     if (device_info) {
       RunCallback(device_info->Clone());
     } else {
-      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-      node::Environment* env = node::Environment::GetCurrent(isolate);
-      EmitWarning(env, "The device id " + device_id + " was not found.",
-                  "UnknownUsbDeviceId");
+      util::EmitWarning(
+          base::StrCat({"The device id ", device_id, " was not found."}),
+          "UnknownUsbDeviceId");
       RunCallback(/*device_info=*/nullptr);
     }
   }
@@ -118,7 +116,7 @@ void UsbChooserController::GotUsbDeviceList(
   if (session) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
+    v8::HandleScope handle_scope{isolate};
 
     // "select-usb-device" should respect |filters|.
     std::erase_if(devices, [this](const auto& device_info) {

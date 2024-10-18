@@ -7,10 +7,10 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 689e7fb2339253d0f2be3ccf33ecd76660ccf176..8736ad12eec294070a5160a64248044cd16347c9 100644
+index 697b8bba6a55358924d6986f2eb347a99ff73889..bdf1a1f33f3ea09d933757c7fee87c563cc833ab 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -87,6 +87,8 @@
+@@ -86,6 +86,8 @@
      'v8_use_perfetto': 0,
      'tsan%': 0,
  
@@ -19,7 +19,7 @@ index 689e7fb2339253d0f2be3ccf33ecd76660ccf176..8736ad12eec294070a5160a64248044c
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -287,6 +289,7 @@
+@@ -285,6 +287,7 @@
      # Defines these mostly for node-gyp to pickup.
      'defines': [
        '_GLIBCXX_USE_CXX11_ABI=1',
@@ -27,7 +27,7 @@ index 689e7fb2339253d0f2be3ccf33ecd76660ccf176..8736ad12eec294070a5160a64248044c
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -416,6 +419,11 @@
+@@ -414,6 +417,11 @@
            }],
          ],
        }],
@@ -40,10 +40,10 @@ index 689e7fb2339253d0f2be3ccf33ecd76660ccf176..8736ad12eec294070a5160a64248044c
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index 3084cc964cbe6d02f98d08cd6f847ea7f4a3d0db..5b6a3b62082985debf6ebc4bc09a7d056f58514a 100755
+index a6f66c41f75bffcfaf75d4415c694300b7624136..7ca0762fe3590fef7b88ba684de44d99aaecace4 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1559,6 +1559,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1585,6 +1585,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):

@@ -1,20 +1,23 @@
+import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+
 import { expect } from 'chai';
 import { v4 } from 'uuid';
-import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+
 import * as ChildProcess from 'node:child_process';
-import * as path from 'node:path';
-import * as url from 'node:url';
-import * as http from 'node:http';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
 import * as streamConsumers from 'node:stream/consumers';
 import * as webStream from 'node:stream/web';
-import { EventEmitter, once } from 'node:events';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
-import { WebmGenerator } from './lib/video-helpers';
-import { listen, defer, ifit } from './lib/spec-helpers';
 import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { listen, defer, ifit } from './lib/spec-helpers';
+import { WebmGenerator } from './lib/video-helpers';
+import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -649,7 +652,7 @@ describe('protocol module', () => {
       const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
-          url: url,
+          url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
@@ -910,7 +913,7 @@ describe('protocol module', () => {
     });
 
     it('allows CORS requests by default', async () => {
-      await allowsCORSRequests('cors', 200, new RegExp(''), () => {
+      await allowsCORSRequests('cors', 200, /(?:)/, () => {
         const { ipcRenderer } = require('electron');
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status);
@@ -1695,7 +1698,7 @@ describe('protocol module', () => {
       const filePath = path.join(fixturesPath, 'pages', 'form-with-data.html');
       await contents.loadFile(filePath);
 
-      const loadPromise = new Promise((resolve, reject) => {
+      const loadPromise = new Promise<void>((resolve, reject) => {
         contents.once('did-finish-load', resolve);
         contents.once('did-fail-load', (_, errorCode, errorDescription) =>
           reject(new Error(`did-fail-load: ${errorCode} ${errorDescription}. See AssertionError for details.`))

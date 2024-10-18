@@ -1,5 +1,5 @@
-import type { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 import { WEB_VIEW_ATTRIBUTES, WEB_VIEW_ERROR_MESSAGES } from '@electron/internal/renderer/web-view/web-view-constants';
+import type { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 
 const resolveURL = function (url?: string | null) {
   return url ? new URL(url, location.href).href : '';

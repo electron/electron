@@ -1,16 +1,19 @@
-import { expect } from 'chai';
-import * as cp from 'node:child_process';
-import * as http from 'node:http';
-import * as express from 'express';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as psList from 'ps-list';
-import { AddressInfo } from 'node:net';
-import { ifdescribe, ifit } from './lib/spec-helpers';
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
-import * as uuid from 'uuid';
 import { autoUpdater, systemPreferences } from 'electron';
+
+import { expect } from 'chai';
+import * as express from 'express';
+import * as psList from 'ps-list';
+import * as uuid from 'uuid';
+
+import * as cp from 'node:child_process';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import { AddressInfo } from 'node:net';
+import * as path from 'node:path';
+
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 // We can only test the auto updater on darwin non-component builds
 ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {

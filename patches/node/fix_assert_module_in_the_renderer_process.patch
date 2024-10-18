@@ -12,19 +12,19 @@ if the override has been disabled.
 
 This will be upstreamed.
 
-diff --git a/lib/assert.js b/lib/assert.js
-index eadc3844c20128bb9f9a269e5d599f8febf17421..e4615e55c0847d969e9c95295ddecfc640019c99 100644
---- a/lib/assert.js
-+++ b/lib/assert.js
-@@ -66,6 +66,7 @@ const { inspect } = require('internal/util/inspect');
- const { isPromise, isRegExp } = require('internal/util/types');
+diff --git a/lib/internal/assert/utils.js b/lib/internal/assert/utils.js
+index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480283278ff 100644
+--- a/lib/internal/assert/utils.js
++++ b/lib/internal/assert/utils.js
+@@ -25,6 +25,7 @@ const AssertionError = require('internal/assert/assertion_error');
+ const { openSync, closeSync, readSync } = require('fs');
  const { EOL } = require('internal/constants');
  const { BuiltinModule } = require('internal/bootstrap/realm');
 +const { getEmbedderOptions } = require('internal/options');
- const { isError, deprecate } = require('internal/util');
+ const { isError } = require('internal/util');
  
  const errorCache = new SafeMap();
-@@ -294,8 +295,16 @@ function getErrMessage(message, fn) {
+@@ -167,8 +168,16 @@ function getErrMessage(message, fn) {
    ErrorCaptureStackTrace(err, fn);
    if (errorStackTraceLimitIsWritable) Error.stackTraceLimit = tmpLimit;
  
@@ -44,7 +44,7 @@ index eadc3844c20128bb9f9a269e5d599f8febf17421..e4615e55c0847d969e9c95295ddecfc6
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index fe41619f45913fe31a59771c8d1af6cde3b89f66..bb6c6d51846fed1d160ec9dcd5a5dd67b4fef911 100644
+index b9098d102b40adad7fafcc331ac62870617019b9..cb9269a31e073caf86164aa39c0640370ade60fd 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -244,6 +244,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
@@ -58,10 +58,10 @@ index fe41619f45913fe31a59771c8d1af6cde3b89f66..bb6c6d51846fed1d160ec9dcd5a5dd67
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 74955717117001393e8b55809b4e4a1424019dad..409c6e3918e3ef7c9d35f87e093cb965cb889dd7 100644
+index 818baf611fcab7838a339f3ea137467653e270d0..4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1393,14 +1393,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1405,14 +1405,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    }
    Isolate* isolate = args.GetIsolate();
  

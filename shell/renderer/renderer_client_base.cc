@@ -287,7 +287,7 @@ void RendererClientBase::RenderThreadStarted() {
       ParseSchemesCLISwitch(command_line, switches::kBypassCSPSchemes);
   for (const std::string& scheme : csp_bypassing_schemes)
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        WTF::String::FromUTF8(scheme.data(), scheme.length()));
+        WTF::String::FromUTF8(scheme));
 
   std::vector<std::string> code_cache_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/browser/web_contents.h"
@@ -109,17 +110,18 @@ SerialChooserController::SerialChooserController(
     content::SerialChooser::Callback callback,
     content::WebContents* web_contents,
     base::WeakPtr<ElectronSerialDelegate> serial_delegate)
-    : WebContentsObserver(web_contents),
+    : web_contents_{web_contents ? web_contents->GetWeakPtr()
+                                 : base::WeakPtr<content::WebContents>()},
       filters_(std::move(filters)),
       allowed_bluetooth_service_class_ids_(
           std::move(allowed_bluetooth_service_class_ids)),
       callback_(std::move(callback)),
       serial_delegate_(serial_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
-  origin_ = web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin();
+  origin_ = web_contents_->GetPrimaryMainFrame()->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
-                         web_contents->GetBrowserContext())
+                         web_contents_->GetBrowserContext())
                          ->AsWeakPtr();
   DCHECK(chooser_context_);
   chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
@@ -132,10 +134,10 @@ SerialChooserController::~SerialChooserController() {
 }
 
 api::Session* SerialChooserController::GetSession() {
-  if (!web_contents()) {
+  if (!web_contents_) {
     return nullptr;
   }
-  return api::Session::FromBrowserContext(web_contents()->GetBrowserContext());
+  return api::Session::FromBrowserContext(web_contents_->GetBrowserContext());
 }
 
 void SerialChooserController::OnPortAdded(
@@ -147,7 +149,7 @@ void SerialChooserController::OnPortAdded(
 
   api::Session* session = GetSession();
   if (session) {
-    session->Emit("serial-port-added", port.Clone(), web_contents());
+    session->Emit("serial-port-added", port.Clone(), web_contents_.get());
   }
 }
 
@@ -156,10 +158,8 @@ void SerialChooserController::OnPortRemoved(
   const auto it = std::ranges::find(ports_, port.token,
                                     &device::mojom::SerialPortInfo::token);
   if (it != ports_.end()) {
-    api::Session* session = GetSession();
-    if (session) {
-      session->Emit("serial-port-removed", port.Clone(), web_contents());
-    }
+    if (api::Session* session = GetSession())
+      session->Emit("serial-port-removed", port.Clone(), web_contents_.get());
     ports_.erase(it);
   }
 }
@@ -202,10 +202,9 @@ void SerialChooserController::OnGetDevices(
   }
 
   bool prevent_default = false;
-  api::Session* session = GetSession();
-  if (session) {
+  if (api::Session* session = GetSession()) {
     prevent_default = session->Emit(
-        "select-serial-port", ports_, web_contents(),
+        "select-serial-port", ports_, web_contents_.get(),
         base::BindRepeating(&SerialChooserController::OnDeviceChosen,
                             weak_factory_.GetWeakPtr()));
   }

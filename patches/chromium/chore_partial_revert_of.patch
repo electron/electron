@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Sat, 28 Sep 2024 17:33:51 -0500
+Subject: chore: partial revert of
+ https://chromium-review.googlesource.com/c/chromium/src/+/5894233
+
+The `CHECK_EQ()` being removed here is failing in the Chromium roll.
+I experimented with backporting the `CHECK_EQ()` to `main` and it's
+failing there as well, so some pre-existing behavior in Electron is
+incompatible with this assertion.
+
+I will file an upgrades-followup-task issue in Electron and try to
+track down the source of this problem & figure out if we can fix it
+by changing something in Electron.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index c1e2bf39aa70776b7e3b26ac78c82995cd376c58..c26d53d7555cbdaae5c167aabf49135afb667259 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -4707,9 +4707,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   bool renderer_started_hidden =
+       params.disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB;
+ 
+-  // While some guest types do not have a guest SiteInstance, the ones that
+-  // don't all override WebContents creation above.
+-  CHECK_EQ(source_site_instance->IsGuest(), IsGuest());
+   bool is_guest = IsGuest();
+ 
+   // We usually create the new window in the same BrowsingInstance (group of

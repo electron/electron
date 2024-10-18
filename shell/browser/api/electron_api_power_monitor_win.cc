@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <wtsapi32.h>
 
+#include "base/logging.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "content/public/browser/browser_task_traits.h"

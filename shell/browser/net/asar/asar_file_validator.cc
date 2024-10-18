@@ -5,10 +5,12 @@
 #include "shell/browser/net/asar/asar_file_validator.h"
 
 #include <algorithm>
+#include <array>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -25,50 +27,51 @@ AsarFileValidator::AsarFileValidator(IntegrityPayload integrity,
 
 AsarFileValidator::~AsarFileValidator() = default;
 
+void AsarFileValidator::EnsureBlockHashExists() {
+  if (current_hash_)
+    return;
+
+  current_hash_byte_count_ = 0U;
+  switch (integrity_.algorithm) {
+    case HashAlgorithm::kSHA256:
+      current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+      break;
+    case HashAlgorithm::kNone:
+      CHECK(false);
+      break;
+  }
+}
+
 void AsarFileValidator::OnRead(base::span<char> buffer,
                                mojo::FileDataSource::ReadResult* result) {
   DCHECK(!done_reading_);
 
-  uint64_t buffer_size = result->bytes_read;
+  const uint32_t block_size = integrity_.block_size;
 
-  // Compute how many bytes we should hash, and add them to the current hash.
-  uint32_t block_size = integrity_.block_size;
-  uint64_t bytes_added = 0;
-  while (bytes_added < buffer_size) {
-    if (current_block_ > max_block_) {
-      LOG(FATAL)
-          << "Unexpected number of blocks while validating ASAR file stream";
-    }
+  // |buffer| contains the read buffer. |result->bytes_read| is the actual
+  // bytes number that |source| read that should be less than buffer.size().
+  auto hashme = base::as_bytes(buffer.subspan(0U, result->bytes_read));
 
-    // Create a hash if we don't have one yet
-    if (!current_hash_) {
-      current_hash_byte_count_ = 0;
-      switch (integrity_.algorithm) {
-        case HashAlgorithm::kSHA256:
-          current_hash_ =
-              crypto::SecureHash::Create(crypto::SecureHash::SHA256);
-          break;
-        case HashAlgorithm::kNone:
-          CHECK(false);
-          break;
-      }
-    }
+  while (!std::empty(hashme)) {
+    if (current_block_ > max_block_)
+      LOG(FATAL) << "Unexpected block count while validating ASAR file stream";
 
-    // Compute how many bytes we should hash, and add them to the current hash.
-    // We need to either add just enough bytes to fill up a block (block_size -
-    // current_bytes) or use every remaining byte (buffer_size - bytes_added)
-    int bytes_to_hash = std::min(block_size - current_hash_byte_count_,
-                                 buffer_size - bytes_added);
-    DCHECK_GT(bytes_to_hash, 0);
-    current_hash_->Update(buffer.data() + bytes_added, bytes_to_hash);
-    bytes_added += bytes_to_hash;
-    current_hash_byte_count_ += bytes_to_hash;
-    total_hash_byte_count_ += bytes_to_hash;
+    EnsureBlockHashExists();
 
-    if (current_hash_byte_count_ == block_size && !FinishBlock()) {
-      LOG(FATAL) << "Failed to validate block while streaming ASAR file: "
-                 << current_block_;
-    }
+    // hash as many bytes as will fit in the current block.
+    const auto n_left_in_block = block_size - current_hash_byte_count_;
+    const auto n_now = std::min(n_left_in_block, uint64_t{std::size(hashme)});
+    DCHECK_GT(n_now, 0U);
+    const auto [hashme_now, hashme_next] = hashme.split_at(n_now);
+
+    current_hash_->Update(hashme_now);
+    current_hash_byte_count_ += n_now;
+    total_hash_byte_count_ += n_now;
+
+    if (current_hash_byte_count_ == block_size && !FinishBlock())
+      LOG(FATAL) << "Streaming ASAR file block hash failed: " << current_block_;
+
+    hashme = hashme_next;
   }
 }
 
@@ -84,8 +87,6 @@ bool AsarFileValidator::FinishBlock() {
     // hash in this case.
     current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
   }
-
-  uint8_t actual[crypto::kSHA256Length];
 
   // If the file reader is done we need to make sure we've either read up to the
   // end of the file (the check below) or up to the end of a block_size byte
@@ -103,21 +104,18 @@ bool AsarFileValidator::FinishBlock() {
     if (!file_.ReadAndCheck(offset, abandoned_buffer)) {
       LOG(FATAL) << "Failed to read required portion of streamed ASAR archive";
     }
-
-    current_hash_->Update(&abandoned_buffer.front(), bytes_needed);
+    current_hash_->Update(abandoned_buffer);
   }
 
-  current_hash_->Finish(actual, sizeof(actual));
+  auto actual = std::array<uint8_t, crypto::kSHA256Length>{};
+  current_hash_->Finish(actual);
   current_hash_.reset();
   current_hash_byte_count_ = 0;
 
-  const std::string expected_hash = integrity_.blocks[current_block_];
-  const std::string actual_hex_hash =
-      base::ToLowerASCII(base::HexEncode(actual, sizeof(actual)));
-
-  if (expected_hash != actual_hex_hash) {
+  const auto& expected_hash = integrity_.blocks[current_block_];
+  const auto actual_hex_hash = base::ToLowerASCII(base::HexEncode(actual));
+  if (expected_hash != actual_hex_hash)
     return false;
-  }
 
   current_block_++;
 

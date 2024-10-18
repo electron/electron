@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 71a9ce1f6b57b6b8843abda6bd3e4999530aa828..6048a08e872a81f3dbaa60efc0019f349cabbb22 100644
+index 6884198248d78e707efc5ed5c4d121db5d5dbeec..a161b0d95bbc23f78200febbc9b2e83eccd2fe0d 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -405,6 +405,10 @@
@@ -22,7 +22,7 @@ index 71a9ce1f6b57b6b8843abda6bd3e4999530aa828..6048a08e872a81f3dbaa60efc0019f34
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -509,6 +513,7 @@
+@@ -510,6 +514,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,7 +31,7 @@ index 71a9ce1f6b57b6b8843abda6bd3e4999530aa828..6048a08e872a81f3dbaa60efc0019f34
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 6ec67f8c283779fc76d38ba15c095152bf3aba76..964cd58619476634299c067498f09d4665117c93 100644
+index ea23df934bde3fc4841d2a896e53a82be5eeca59..cb9cf5a2c3f0736d0a958df6895b55e07275cbdc 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -180,6 +180,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
@@ -52,7 +52,7 @@ index 6ec67f8c283779fc76d38ba15c095152bf3aba76..964cd58619476634299c067498f09d46
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -291,6 +302,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -275,6 +286,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
