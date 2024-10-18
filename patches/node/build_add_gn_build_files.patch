@@ -999,7 +999,7 @@ index bf54249b66c0d4e179deaae5a9fd55568e694fe0..57b51b03d237fba4b25aa69a663c88e9
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd786f64bb
+index a536b5dcd857275d3b02e361bd7d37a939f6b573..5ecc6c3a91e6c4254917338c265722fd48b3fb99
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -30,6 +30,7 @@ namespace js2c {
@@ -1077,7 +1077,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  Fragment Format(const Fragments& definitions,
                  const Fragments& initializers,
                  const Fragments& registrations) {
-@@ -237,13 +282,12 @@ Fragment Format(const Fragments& definitions,
+@@ -237,13 +282,13 @@ Fragment Format(const Fragments& definitions,
    size_t init_size = init_buf.size();
    std::vector<char> reg_buf = Join(registrations, "\n");
    size_t reg_size = reg_buf.size();
@@ -1087,6 +1087,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
 +  size_t result_size = def_size + init_size + reg_size +
 +          strlen(only_js ? kEmbedderTemplate: kTemplate) + 300;
    std::vector<char> result(result_size, 0);
++  printf("we are using %s\n", only_js ? "kEmbedderTemplate" : "kTemplate");
    int r = snprintf(result.data(),
                     result_size,
 -                   kTemplate,
@@ -1094,7 +1095,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
                     static_cast<int>(def_buf.size()),
                     def_buf.data(),
                     static_cast<int>(init_buf.size()),
-@@ -834,12 +878,15 @@ int JS2C(const FileList& js_files,
+@@ -834,12 +879,15 @@ int JS2C(const FileList& js_files,
      }
    }
  
@@ -1110,7 +1111,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
    Fragment out = Format(definitions, initializers, registrations);
    return WriteIfChanged(out, dest);
  }
-@@ -865,6 +912,8 @@ int Main(int argc, char* argv[]) {
+@@ -865,6 +913,8 @@ int Main(int argc, char* argv[]) {
      std::string arg(argv[i]);
      if (arg == "--verbose") {
        is_verbose = true;
@@ -1119,7 +1120,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
      } else if (arg == "--root") {
        if (i == argc - 1) {
          fprintf(stderr, "--root must be followed by a path\n");
-@@ -913,6 +962,14 @@ int Main(int argc, char* argv[]) {
+@@ -913,6 +963,14 @@ int Main(int argc, char* argv[]) {
      }
    }
  
@@ -1134,7 +1135,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -939,6 +996,7 @@ int Main(int argc, char* argv[]) {
+@@ -939,6 +997,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
@@ -1143,10 +1144,26 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }  // namespace js2c
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..20632680d696f8af66c7d73c1f0c93e7842554dd 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..bea19a9c4f30534046fb2ff24018c07a1bd15fd4 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -178,8 +178,10 @@ template("node_gn_build") {
+@@ -139,6 +139,7 @@ template("node_gn_build") {
+     public_deps = [
+       "deps/ada",
+       "deps/uv",
++      "//electron:electron_js2c",
+       "deps/simdjson",
+       "$node_v8_path",
+     ]
+@@ -160,6 +161,7 @@ template("node_gn_build") {
+     ]
+ 
+     sources = [
++      "$root_gen_dir/electron_natives.cc",
+       "$target_gen_dir/node_javascript.cc",
+     ] + gypi_values.node_sources
+ 
+@@ -178,8 +180,10 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {
