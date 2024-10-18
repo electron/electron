@@ -13,10 +13,10 @@ adding associated guards there should be relatively small.
 We should upstream this as it will eventually impact Node.js as well.
 
 diff --git a/filenames.json b/filenames.json
-index 7900ee5299a8ff2cd73fa99bcf43fe3dcd5263f7..b789fc97977c13dc940b553427dbcb29806425f0 100644
+index 5af3886d8d3d74d31249a4d79030a8373b8dad52..8ab04d0b1b58454c6ea21f33870f9557f3a57b56 100644
 --- a/filenames.json
 +++ b/filenames.json
-@@ -738,8 +738,6 @@
+@@ -739,8 +739,6 @@
      "src/tcp_wrap.h",
      "src/timers.h",
      "src/tracing/agent.h",
