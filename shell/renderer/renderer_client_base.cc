@@ -405,6 +405,14 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #endif
 }
 
+bool RendererClientBase::AllowPopup() {
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  return ElectronExtensionsRendererClient::GetInstance()->AllowPopup();
+#else
+  return false;
+#endif
+}
+
 bool RendererClientBase::IsPluginHandledExternally(
     content::RenderFrame* render_frame,
     const blink::WebElement& plugin_element,
@@ -429,13 +437,9 @@ bool RendererClientBase::IsPluginHandledExternally(
     }
   }
 
-  return extensions::MimeHandlerViewContainerManager::Get(
-             content::RenderFrame::FromWebFrame(
-                 plugin_element.GetDocument().GetFrame()),
-             true /* create_if_does_not_exist */)
-      ->CreateFrameContainer(plugin_element, original_url,
-                             plugin_info->actual_mime_type,
-                             plugin_info->plugin);
+  return ElectronExtensionsRendererClient::MaybeCreateMimeHandlerView(
+      plugin_element, original_url, plugin_info->actual_mime_type,
+      plugin_info->plugin);
 #else
   return false;
 #endif
@@ -445,17 +449,11 @@ v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
     const blink::WebElement& plugin_element,
     v8::Isolate* isolate) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // If there is a MimeHandlerView that can provide the scriptable object then
-  // MaybeCreateMimeHandlerView must have been called before and a container
-  // manager should exist.
-  auto* container_manager = extensions::MimeHandlerViewContainerManager::Get(
-      content::RenderFrame::FromWebFrame(
-          plugin_element.GetDocument().GetFrame()),
-      false /* create_if_does_not_exist */);
-  if (container_manager)
-    return container_manager->GetScriptableObject(plugin_element, isolate);
-#endif
+  return ElectronExtensionsRendererClient::GetInstance()->GetScriptableObject(
+      plugin_element, isolate);
+#else
   return v8::Local<v8::Object>();
+#endif
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
