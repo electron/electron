@@ -62,7 +62,7 @@ The `protocol` module has the following methods:
 * `customSchemes` [CustomScheme[]](structures/custom-scheme.md)
 
 **Note:** This method can only be used before the `ready` event of the `app`
-module gets emitted and can be called only once.
+module gets emitted.
 
 Registers the `scheme` as standard, secure, bypasses content security policy for
 resources, allows registering ServiceWorker, supports fetch API, streaming
