@@ -146,8 +146,7 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   for (size_t i = 0; i < filterspec.size(); ++i) {
     std::wstring spec(filterspec[i].pszSpec);
     // only need first extension
-    size_t semicolonPos = spec.find(L';');
-    std::wstring firstSpec = (semicolonPos == std::wstring::npos) ? spec : spec.substr(0, semicolonPos);
+    std::wstring firstSpec = spec.substr(0, spec.find(L';'));
     if (firstSpec != L"*.*") {
       // SetFileTypeIndex is regarded as one-based index.
       dialog->SetFileTypeIndex(i + 1);
