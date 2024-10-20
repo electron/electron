@@ -53,14 +53,14 @@ index c8e200ba27bd5e9307469ea8fb4e3f8e8466877d..7add0446eaa276bbfbbb7bf4eb90f8b6
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -673,6 +690,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -689,6 +705,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
  
-   SEQUENCE_CHECKER(sequence_checker_);
- };
+   // Obtaining the PrefersAlwaysShowScrollbar system setting can be expensive,
+   // so it is cached in this boolean.
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
 index c1523bbdbf16e1df1bf158b7b053dce09116f2fc..06831ec767f6ba81e76f52322fc2d81a45c2c275 100644
 --- a/ui/native_theme/native_theme_win.cc
