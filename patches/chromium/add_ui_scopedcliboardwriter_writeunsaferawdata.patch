@@ -11,9 +11,9 @@ diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/sc
 index 28df49366e87d17c831b8f941e30faa19cf36626..d68c58edeb6abec865f6ad051e5da2c0bdc7981d 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -237,6 +237,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
+@@ -227,6 +227,16 @@ void ScopedClipboardWriter::WriteData(const std::u16string& format,
+   }
  }
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
  
 +void ScopedClipboardWriter::WriteUnsafeRawData(const std::u16string& format,
 +                                               mojo_base::BigBuffer data) {
@@ -29,10 +29,10 @@ index 28df49366e87d17c831b8f941e30faa19cf36626..d68c58edeb6abec865f6ad051e5da2c0
    objects_.clear();
    platform_representations_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index 96ba9abb9b7efab79adbf299c6bd3b4f7a4501e1..0916b81ec5b3cb123185b7cff332120ee498fb57 100644
+index af932ade8d50f..a907fdebfa901 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
-@@ -89,6 +89,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
+@@ -88,6 +88,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
    // This is only used to write custom format data.
    void WriteData(const std::u16string& format, mojo_base::BigBuffer data);
  
@@ -42,4 +42,4 @@ index 96ba9abb9b7efab79adbf299c6bd3b4f7a4501e1..0916b81ec5b3cb123185b7cff332120e
 +
    void WriteImage(const SkBitmap& bitmap);
  
- #if BUILDFLAG(IS_CHROMEOS_LACROS)
+   // Mark the data to be written as confidential.
