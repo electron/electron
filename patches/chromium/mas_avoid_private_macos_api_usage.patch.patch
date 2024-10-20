@@ -198,17 +198,17 @@ index e7a65e97b51d93bff864889813317fb7c6ffc846..bb1fc0c99164ae4bdaaaa78e87c30e88
  using crypto::AppleKeychain;
  
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 1458e7d8edcf2fe17b0ab09b8552bdd817b700f9..f5ebc83573ef3fe7e50910cb8ff1ae33fbb7c35b 100644
+index da8b246916811..3bcd78507a15b 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
-@@ -86,6 +86,7 @@ component("app_shim") {
-     "//ui/gfx",
-     "//ui/gfx/geometry",
-     "//ui/strings:ui_strings_grit",
+@@ -75,6 +75,7 @@ component("app_shim") {
+     "//components/crash/core/common",
+     "//components/remote_cocoa/common:mojo",
+     "//components/system_media_controls",
 +    "//electron/build/config:generate_mas_config",
-   ]
-   frameworks = [
-     "Cocoa.framework",
+     "//mojo/public/cpp/bindings",
+     "//net",
+     "//ui/accelerated_widget_mac",
 diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
 index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0d62f7c9f 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
