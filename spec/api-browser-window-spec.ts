@@ -589,7 +589,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when a cross-origin iframe navigates _top', async () => {
           w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
           await emittedUntil(w.webContents, 'did-frame-finish-load', (e: any, isMainFrame: boolean) => !isMainFrame);
-          let initiator: WebFrameMain | undefined;
+          let initiator: WebFrameMain | null | undefined;
           w.webContents.on('will-navigate', (e) => {
             initiator = e.initiator;
           });
