@@ -1162,7 +1162,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }  // namespace js2c
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..68e2c47a563166e5dab2f291d2152f540877a197 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..0452960c093cec5097a5294a8b0246a0f5a44a59 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -139,6 +139,7 @@ template("node_gn_build") {
@@ -1195,3 +1195,98 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..68e2c47a563166e5dab2f291d2152f54
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
+@@ -289,23 +294,68 @@ template("node_gn_build") {
+     include_dirs = [ "src" ]
+   }
+ 
++  node_deps_files = gypi_values.deps_files + node_builtin_shareable_builtins
++  node_library_files = exec_script("./tools/search_files.py",
++                                    [ rebase_path(".", root_build_dir),
++                                      rebase_path("lib", root_build_dir),
++                                      "js" ],
++                                    "list lines")
++
++  fs_files = [
++    "lib/internal/fs/cp/cp-sync.js",
++    "lib/internal/fs/cp/cp.js",
++    "lib/internal/fs/dir.js",
++    "lib/internal/fs/glob.js",
++    "lib/internal/fs/promises.js",
++    "lib/internal/fs/read/context.js",
++    "lib/internal/fs/recursive_watch.js",
++    "lib/internal/fs/rimraf.js",
++    "lib/internal/fs/streams.js",
++    "lib/internal/fs/sync_write_stream.js",
++    "lib/internal/fs/utils.js",
++    "lib/internal/fs/watchers.js",
++    "lib/fs.js",
++    "lib/fs/promises.js"
++  ]
++
++  original_fs_files = []
++  foreach(file, fs_files) {
++    original_fs_files += [string_replace(string_replace(string_replace(file, "internal/fs/", "internal/original-fs/"), "lib/fs.js", "lib/original-fs.js"), "lib/fs/", "lib/original-fs/")]
++  }
++
++  copy("node_js2c_inputs") {
++    sources = node_deps_files + node_library_files
++    outputs = [
++      "$target_gen_dir/js2c_inputs/{{source_target_relative}}",
++    ]
++  }
++
++  action("node_js2c_original_fs") {
++    script = "tools/generate_original_fs.py"
++    inputs = fs_files
++    deps = [ ":node_js2c_inputs" ]
++
++    outputs = []
++    foreach(file, original_fs_files) {
++      outputs += ["$target_gen_dir/js2c_inputs/$file"]
++    }
++
++    args = [rebase_path("$target_gen_dir/js2c_inputs")] + fs_files
++  }
++
+   action("run_node_js2c") {
+-    script = "$node_v8_path/tools/run.py"
++    script = "//electron/build/run-in-dir.py"
+     deps = [
++      ":node_js2c_original_fs",
+       ":node_js2c($host_toolchain)",
+       ":generate_config_gypi",
+     ]
+ 
+-    node_deps_files = gypi_values.deps_files + node_builtin_shareable_builtins
+-    node_library_files = exec_script("./tools/search_files.py",
+-                                     [ rebase_path(".", root_build_dir),
+-                                       rebase_path("lib", root_build_dir),
+-                                       "js" ],
+-                                     "list lines")
+-
++    config_gypi = [ "$target_gen_dir/config.gypi" ]
+     inputs = node_library_files +
+              node_deps_files +
+-             [ "$target_gen_dir/config.gypi" ]
++             get_target_outputs(":node_js2c_original_fs") +
++             config_gypi
+     outputs = [ "$target_gen_dir/node_javascript.cc" ]
+ 
+     # Get the path to node_js2c executable of the host toolchain.
+@@ -319,11 +369,11 @@ template("node_gn_build") {
+         get_label_info(":node_js2c($host_toolchain)", "name") +
+         host_executable_suffix
+ 
+-    args = [ rebase_path(node_js2c_path),
+-             rebase_path("$target_gen_dir/node_javascript.cc"),
+-             "--root", rebase_path("."),
+-             "lib", rebase_path("$target_gen_dir/config.gypi") ] +
+-           node_deps_files
++    args = [ rebase_path("$target_gen_dir/js2c_inputs"),
++             rebase_path(node_js2c_path),
++             rebase_path("$target_gen_dir/node_javascript.cc")] +
++             rebase_path(config_gypi) + node_deps_files +
++             original_fs_files + node_library_files
+   }
+ 
+   executable("node_cctest") {
