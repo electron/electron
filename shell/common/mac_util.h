@@ -6,15 +6,11 @@
 #define ELECTRON_SHELL_MAC_UTIL_H_
 
 #include "base/containers/span.h"
-#include "electron/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_MAC)
-class NSData;
+@class NSData;
 
 namespace electron::util {
 
 base::span<const uint8_t> as_byte_span(NSData* data);
 
 }  // namespace electron::util
-
-#endif  // BUILDFLAG(IS_MAC)
