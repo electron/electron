@@ -189,7 +189,7 @@ int NodeMain(int argc, char* argv[]) {
     std::vector<std::string> args(argv, argv + argc);
     ExitIfContainsDisallowedFlags(args);
 
-    std::unique_ptr<node::InitializationResult> result =
+    std::shared_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
             args,
             {node::ProcessInitializationFlags::kNoInitializeV8,
