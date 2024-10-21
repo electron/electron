@@ -141,7 +141,7 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 520674b0a5061057fa4b769ba5db93da81531d3f..b364e20f7bba27f3f167aa201e26c9160f1128cd 100644
+index bd31ef4d919c9ddce958024a93edf1aab44436b6..6b7c5c7b2dd0fa83797ef57a34f7eb9969779488 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -97,8 +97,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
@@ -380,10 +380,10 @@ index 6d1f959d85f7c96d5d9ac84d4ae7831bec5cc706..682ff6a2f4cbde454c1ab06db43dd128
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 0b9e6f37e0a5fcf1c4a1871f6750708abc5d0a1c..eb30d03da8dfa5e1a701f2b871bdfe9879a59e75 100644
+index d9c8efd5dfadddc923c9bf4abc21c029ed9f842e..efb45a765c1a2cace1d4ae5dca344e7542f66bfd 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -197,8 +197,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -207,8 +207,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

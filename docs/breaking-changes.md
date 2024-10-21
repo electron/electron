@@ -12,6 +12,23 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (34.0)
+
+### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
+
+The `console-message` event on `WebContents` has been updated to provide details on the `Event`
+argument.
+
+```js
+// Deprecated
+webContents.on('console-message', (event, level, message, line, sourceId) => {})
+
+// Replace with:
+webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
+```
+
+Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
+
 ## Planned Breaking API Changes (33.0)
 
 ### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all

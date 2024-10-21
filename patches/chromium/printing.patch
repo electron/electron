@@ -860,7 +860,7 @@ index 9c91fdf50b38ad437279eaada4359a7a95911d07..8eed4887949d0c30f067d86aaa971ee5
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 325d64062663ee217d575b483186f791241be993..c468cd434538da0119021b6b955807852e8e5d9b 100644
+index f51437492310908f582d3d68cf460c1f8892436c..dbff945f9e54a5c947c23efff4d11d57d07b8a4e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -3001,8 +3001,9 @@ source_set("browser") {
@@ -926,23 +926,3 @@ index 1e15568ad872c01c7c588ced81897f8dc229247a..ca528863a2dab2f437bbe95b343ccd33
  namespace sandbox::policy {
  
  base::FilePath GetCanonicalPath(const base::FilePath& path) {
-diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
-index d86fbcf969f2fa0d176ead903703ab612e5464c2..6b963ea8401d20e655d068a69105586814bab320 100644
---- a/ui/gtk/gtk_util.cc
-+++ b/ui/gtk/gtk_util.cc
-@@ -227,9 +227,13 @@ aura::Window* GetAuraTransientParent(GtkWidget* dialog) {
- }
- 
- void ClearAuraTransientParent(GtkWidget* dialog, aura::Window* parent) {
-+  if (!parent || !parent->GetHost()) {
-+    return;
-+  }
-+
-   g_object_set_data(G_OBJECT(dialog), kAuraTransientParent, nullptr);
--  GtkUi::GetPlatform()->ClearTransientFor(
--      parent->GetHost()->GetAcceleratedWidget());
-+  gfx::AcceleratedWidget parent_id = parent->GetHost()->GetAcceleratedWidget();
-+  GtkUi::GetPlatform()->ClearTransientFor(parent_id);
- }
- 
- base::OnceClosure DisableHostInputHandling(GtkWidget* dialog,
