@@ -1162,7 +1162,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }  // namespace js2c
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..0452960c093cec5097a5294a8b0246a0f5a44a59 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..0c2b5d0c11fabd488203aba942f3f68bf2253d3a 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -139,6 +139,7 @@ template("node_gn_build") {
@@ -1173,7 +1173,15 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0452960c093cec5097a5294a8b0246a0
        "deps/simdjson",
        "$node_v8_path",
      ]
-@@ -160,6 +161,8 @@ template("node_gn_build") {
+@@ -150,7 +151,6 @@ template("node_gn_build") {
+       "deps/llhttp",
+       "deps/nbytes",
+       "deps/nghttp2",
+-      "deps/ngtcp2",
+       "deps/postject",
+       "deps/simdutf",
+       "deps/sqlite",
+@@ -160,6 +160,8 @@ template("node_gn_build") {
      ]
  
      sources = [
@@ -1182,7 +1190,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0452960c093cec5097a5294a8b0246a0
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -178,8 +181,10 @@ template("node_gn_build") {
+@@ -178,8 +180,10 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {
@@ -1195,7 +1203,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0452960c093cec5097a5294a8b0246a0
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -289,23 +294,68 @@ template("node_gn_build") {
+@@ -289,23 +293,68 @@ template("node_gn_build") {
      include_dirs = [ "src" ]
    }
  
@@ -1273,7 +1281,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0452960c093cec5097a5294a8b0246a0
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -319,11 +369,11 @@ template("node_gn_build") {
+@@ -319,11 +368,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  
