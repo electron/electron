@@ -25,6 +25,38 @@ index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
+index c9e32ee754cec137f3e7673956e6af1360cb767f..9851b90aad27084504e5b4b0bfd861097d57b180 100644
+--- a/src/crypto/crypto_dh.cc
++++ b/src/crypto/crypto_dh.cc
+@@ -51,6 +51,19 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+ namespace {
+ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
+                                       ncrypto::DataPointer&& data) {
++#if defined(V8_ENABLE_SANDBOX)
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(data.size());
++  CHECK(v8_data);
++  memcpy(v8_data, data.get(), data.size());
++  std::unique_ptr<v8::BackingStore> backing = ArrayBuffer::NewBackingStore(
++      v8_data,
++      data.size(),
++      [](void* data, size_t length, void*) {
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
++#else
+   auto backing = ArrayBuffer::NewBackingStore(
+       data.get(),
+       data.size(),
+@@ -59,6 +72,7 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
+       },
+       nullptr);
+   data.release();
++#endif
+ 
+   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
+   return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35a1014a58 100644
 --- a/src/crypto/crypto_util.cc
@@ -117,6 +149,39 @@ index 922e77091d72172ed6cfc5e8477901e3608396c5..16a236c69caed6d60248c7973531a95a
  
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90cccb4fea 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -174,6 +174,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+   if (bio == nullptr || !*bio) return {};
+   BUF_MEM* mem = *bio;
++#if defined(V8_ENABLE_SANDBOX)
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(mem->length);
++  CHECK(v8_data);
++  memcpy(v8_data, mem->data, mem->length);
++  std::unique_ptr<v8::BackingStore> backing = ArrayBuffer::NewBackingStore(
++      v8_data,
++      mem->length,
++      [](void* data, size_t length, void*) {
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
++#else
+   auto backing = ArrayBuffer::NewBackingStore(
+       mem->data,
+       mem->length,
+@@ -181,6 +194,8 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+         BIOPointer free_me(static_cast<BIO*>(data));
+       },
+       bio->release());
++#endif
++
+   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
+   Local<Value> ret;
+   if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
 index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c82a6c771 100644
 --- a/src/node_i18n.cc
