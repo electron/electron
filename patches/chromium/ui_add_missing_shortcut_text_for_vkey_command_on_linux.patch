@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 22 Oct 2024 00:27:27 +0900
+Subject: Add missing shortcut text for VKEY_COMMAND on linux
+
+Backports https://chromium-review.googlesource.com/c/chromium/src/+/5947724
+
+diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
+index 32a3fc0843656eaa87b85dd63ac1ade6d83b6e5b..ed1ff076b1db6b77d0684bae1931714bf575ebe8 100644
+--- a/ui/base/accelerators/accelerator.cc
++++ b/ui/base/accelerators/accelerator.cc
+@@ -419,6 +419,8 @@ std::u16string Accelerator::ApplyLongFormModifiers(
+     result = ApplyModifierToAcceleratorString(result, IDS_APP_SEARCH_KEY);
+ #elif BUILDFLAG(IS_WIN)
+     result = ApplyModifierToAcceleratorString(result, IDS_APP_WINDOWS_KEY);
++#elif BUILDFLAG(IS_LINUX)
++    result = ApplyModifierToAcceleratorString(result, IDS_APP_SUPER_KEY);
+ #else
+     NOTREACHED();
+ #endif
+diff --git a/ui/base/accelerators/accelerator_unittest.cc b/ui/base/accelerators/accelerator_unittest.cc
+index 3b29229c02b0dac7197d3e4bf6014733e0f9669a..cfd9396184e16237cbf49c693af0bd80f8a2ee16 100644
+--- a/ui/base/accelerators/accelerator_unittest.cc
++++ b/ui/base/accelerators/accelerator_unittest.cc
+@@ -58,6 +58,9 @@ TEST(AcceleratorTest, MAYBE_GetShortcutText) {
+     {VKEY_OEM_COMMA, EF_CONTROL_DOWN, u"Ctrl+Comma", u"⌃,"},
+ #if BUILDFLAG(IS_MAC)
+     {VKEY_T, EF_COMMAND_DOWN | EF_CONTROL_DOWN, nullptr, u"⌃⌘T"},
++#endif
++#if BUILDFLAG(IS_LINUX)
++    {VKEY_T, EF_COMMAND_DOWN | EF_CONTROL_DOWN, u"Super+Ctrl+T", nullptr},
+ #endif
+   };
+ 
+diff --git a/ui/strings/ui_strings.grd b/ui/strings/ui_strings.grd
+index bf64f8fbc6d8f6700b40aa0d798dadc67ecc5db6..9307df9b60bcc7bd2a44bb98bc0720901cd8f4a0 100644
+--- a/ui/strings/ui_strings.grd
++++ b/ui/strings/ui_strings.grd
+@@ -767,6 +767,11 @@ need to be translated for each locale.-->
+           Win
+         </message>
+       </if>
++      <if expr="is_linux">
++        <message name="IDS_APP_SUPER_KEY" desc="Windows key on Windows keyboards, and Command key on Mac keyboards.">
++          Super
++        </message>
++      </if>
+       <if expr="chromeos_ash">
+         <message name="IDS_APP_META_KEY" desc="External Meta key (Search key on ChromeOS keyboards, Windows key on Windows keyboards, and Command key on Mac keyboards)">
+           Meta
