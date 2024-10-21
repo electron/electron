@@ -926,6 +926,20 @@ describe('Menu module', function () {
       });
       w.show();
     });
+
+    it('does not crash when rendering menu item with Super or meta accelerator', async () => {
+      const menu = Menu.buildFromTemplate([{
+        label: 'Test Super',
+        accelerator: 'Super+Ctrl+T'
+      }, {
+        label: 'Test Meta',
+        accelerator: 'Meta+Ctrl+T'
+      }]);
+      const menuWillClose = once(menu, 'menu-will-close');
+      menu.popup({ window: w });
+      menu.closePopup();
+      await menuWillClose;
+    });
   });
 
   describe('Menu.setApplicationMenu', () => {
