@@ -505,6 +505,8 @@ filenames = {
     "shell/browser/ui/devtools_manager_delegate.h",
     "shell/browser/ui/devtools_ui.cc",
     "shell/browser/ui/devtools_ui.h",
+    "shell/browser/ui/devtools_ui_data_source.cc",
+    "shell/browser/ui/devtools_ui_data_source.h",
     "shell/browser/ui/drag_util.cc",
     "shell/browser/ui/drag_util.h",
     "shell/browser/ui/electron_menu_model.cc",

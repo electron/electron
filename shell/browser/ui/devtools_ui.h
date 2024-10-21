@@ -14,6 +14,7 @@ class DevToolsUI : public content::WebUIController {
  public:
   explicit DevToolsUI(content::BrowserContext* browser_context,
                       content::WebUI* web_ui);
+  ~DevToolsUI() override = default;
 
   // disable copy
   DevToolsUI(const DevToolsUI&) = delete;
