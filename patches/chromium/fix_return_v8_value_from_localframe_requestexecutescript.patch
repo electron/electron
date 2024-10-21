@@ -64,7 +64,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 0778fbf495f43257b1ea218e18776c1893589f3e..61914f3d8f580bcd5b67b6fce9e967da472b33d8 100644
+index 0614c5e043fd0b88397863e02fd23feee2c19016..8549807e503c70c4d080b726e89972b71c60f3d3 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3131,6 +3131,7 @@ void LocalFrame::RequestExecuteScript(
@@ -85,10 +85,10 @@ index 0778fbf495f43257b1ea218e18776c1893589f3e..61914f3d8f580bcd5b67b6fce9e967da
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 72722ddbecb7a006ec407b374c8d75c5054f9574..cb4c93a8356f35e5766e843006161143e539666f 100644
+index acbb40738b38a5c029ca89473927b53ad9a43e16..d9fa5bb2cfff5a08d884358c4b4e4ffbac80e7ea 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
-@@ -818,6 +818,7 @@ class CORE_EXPORT LocalFrame final
+@@ -824,6 +824,7 @@ class CORE_EXPORT LocalFrame final
                              mojom::blink::EvaluationTiming,
                              mojom::blink::LoadEventBlockingOption,
                              WebScriptExecutionCallback,
@@ -97,7 +97,7 @@ index 72722ddbecb7a006ec407b374c8d75c5054f9574..cb4c93a8356f35e5766e843006161143
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index b719b08633f5b705aa76283440a9f4d09d7ee472..44e5535f3117ef267f0bddcc34598c4214cdff7e 100644
+index e169f07a251ae3d00058e5831b104cff2b1d412c..a85f0ae8a0536efa5f6d4c56d65d414a7be8ec40 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -968,6 +968,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
