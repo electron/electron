@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@electron/get": "^2.0.0",
-    "@types/node": "^20.9.0",
+    "@types/node": "^22.7.7",
     "extract-zip": "^2.0.1"
   },
   "engines": {
