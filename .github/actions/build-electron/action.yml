@@ -159,21 +159,19 @@ runs:
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-        autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        cd src
-        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        cd src
-        autoninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        autoninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        autoninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash

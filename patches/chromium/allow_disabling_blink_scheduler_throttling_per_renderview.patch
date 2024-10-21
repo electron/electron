@@ -23,10 +23,10 @@ index e392efaf2e1ac3cfbef2d787ba40f0491b67f3cc..d45c7570484a7c1bfca25c860a1ddd2d
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 52ce9d2c8c5e29b8dce26116c04dac087b83571d..1c9573708b1b27cffaac175740e1ed826c8115ec 100644
+index b1196c76de2092b41c139b040cef0915b9a1015e..5583bcd62964a2d9d5ed6223034b4201d5bc7932 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -746,6 +746,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -760,6 +760,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -155,7 +155,7 @@ index b5281ba47164159d10ca16b7641cfdc8a4bfbbef..734c055e1828d790f2abb80243bc10fa
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index e85443e4492d31f043b50e4d6e51b1b36ee2c11e..cadc45e27f3d45fbf7a2edc713e1e1f5a714d01e 100644
+index bd7c22360193d52e1acf5a8dc82e3da34285ea37..78aabb76e02b7713d47242c28b0b7a3818faf6e9 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -448,6 +448,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
