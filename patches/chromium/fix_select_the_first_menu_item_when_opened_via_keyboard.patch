@@ -182,7 +182,7 @@ index b0d033493973054d3fb140c63da77eda46d60dce..da3f1732e79802b164f019455a61990c
        std::optional<gfx::RoundedCornersF> corners,
        std::optional<std::string> show_menu_host_duration_histogram) override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index c585f056973e2f8b299e7af81c384b67ad74958b..2e0c2d1e5cfa1ca7306e5687b5fda93f0705c477 100644
+index d9ee2469c6f5e2e9eb674013740a97c9fd201a7c..8602f6cd6afd77c8c77561207f994b217023e537 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 @@ -69,6 +69,7 @@

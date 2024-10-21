@@ -2514,6 +2514,22 @@ describe('BrowserWindow module', () => {
       expect(c.isAlwaysOnTop()).to.be.true('child is not always on top');
       expect(c._getAlwaysOnTopLevel()).to.equal('screen-saver');
     });
+
+    it('works when called prior to show', async () => {
+      w = new BrowserWindow({ show: false });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.show();
+      await setTimeout(1000);
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+    });
+
+    it('works when called prior to showInactive', async () => {
+      w = new BrowserWindow({ show: false });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.showInactive();
+      await setTimeout(1000);
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+    });
   });
 
   describe('preconnect feature', () => {
