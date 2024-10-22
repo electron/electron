@@ -1,0 +1,290 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 22 Oct 2024 17:02:43 +0000
+Subject: revert: PA Remove runtime conditional branches from
+ LightweightQuarantine
+
+This reverts commit 1700fa063e33c540e4041a77ca350cd51c9a741c.
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.cc b/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.cc
+index 49a63c256446223ec7ad13c25522fdaef2cf6efe..5f8727b30471900354af76ad12227850dd7583bd 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.cc
++++ b/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.cc
+@@ -9,48 +9,19 @@
+ #include "partition_alloc/partition_root.h"
+ 
+ namespace partition_alloc::internal {
++namespace {
+ 
+-// Utility classes to lock only if a condition is met.
+-
+-template <>
+-class PA_SCOPED_LOCKABLE
+-    LightweightQuarantineBranch::CompileTimeConditionalScopedGuard<
+-        LightweightQuarantineBranch::LockRequired::kNotRequired> {
+- public:
+-  PA_ALWAYS_INLINE explicit CompileTimeConditionalScopedGuard(Lock& lock)
+-      PA_EXCLUSIVE_LOCK_FUNCTION(lock) {}
+-  PA_ALWAYS_INLINE ~CompileTimeConditionalScopedGuard() PA_UNLOCK_FUNCTION() {}
+-};
+-
+-template <>
+-class PA_SCOPED_LOCKABLE
+-    LightweightQuarantineBranch::CompileTimeConditionalScopedGuard<
+-        LightweightQuarantineBranch::LockRequired::kRequired> {
++// An utility to lock only if a condition is met.
++class PA_SCOPED_LOCKABLE ConditionalScopedGuard {
+  public:
+-  PA_ALWAYS_INLINE explicit CompileTimeConditionalScopedGuard(Lock& lock)
+-      PA_EXCLUSIVE_LOCK_FUNCTION(lock)
+-      : lock_(lock) {
+-    lock_.Acquire();
+-  }
+-  PA_ALWAYS_INLINE ~CompileTimeConditionalScopedGuard() PA_UNLOCK_FUNCTION() {
+-    lock_.Release();
+-  }
+-
+- private:
+-  Lock& lock_;
+-};
+-
+-class PA_SCOPED_LOCKABLE
+-    LightweightQuarantineBranch::RuntimeConditionalScopedGuard {
+- public:
+-  PA_ALWAYS_INLINE RuntimeConditionalScopedGuard(bool condition, Lock& lock)
++  PA_ALWAYS_INLINE ConditionalScopedGuard(bool condition, Lock& lock)
+       PA_EXCLUSIVE_LOCK_FUNCTION(lock)
+       : condition_(condition), lock_(lock) {
+     if (condition_) {
+       lock_.Acquire();
+     }
+   }
+-  PA_ALWAYS_INLINE ~RuntimeConditionalScopedGuard() PA_UNLOCK_FUNCTION() {
++  PA_ALWAYS_INLINE ~ConditionalScopedGuard() PA_UNLOCK_FUNCTION() {
+     if (condition_) {
+       lock_.Release();
+     }
+@@ -61,6 +32,8 @@ class PA_SCOPED_LOCKABLE
+   Lock& lock_;
+ };
+ 
++}  // namespace
++
+ LightweightQuarantineBranch LightweightQuarantineRoot::CreateBranch(
+     const LightweightQuarantineBranchConfig& config) {
+   return LightweightQuarantineBranch(*this, config);
+@@ -88,40 +61,16 @@ LightweightQuarantineBranch::~LightweightQuarantineBranch() {
+   Purge();
+ }
+ 
+-bool LightweightQuarantineBranch::IsQuarantinedForTesting(void* object) {
+-  RuntimeConditionalScopedGuard guard(lock_required_, lock_);
+-  uintptr_t slot_start =
+-      root_.allocator_root_.ObjectToSlotStartUnchecked(object);
+-  for (const auto& slot : slots_) {
+-    if (slot.slot_start == slot_start) {
+-      return true;
+-    }
+-  }
+-  return false;
+-}
+-
+-void LightweightQuarantineBranch::SetCapacityInBytes(size_t capacity_in_bytes) {
+-  branch_capacity_in_bytes_.store(capacity_in_bytes, std::memory_order_relaxed);
+-}
+-
+-void LightweightQuarantineBranch::Purge() {
+-  RuntimeConditionalScopedGuard guard(lock_required_, lock_);
+-  PurgeInternal(0);
+-  slots_.shrink_to_fit();
+-}
+-
+-template <LightweightQuarantineBranch::LockRequired lock_required>
+-bool LightweightQuarantineBranch::QuarantineInternal(
++bool LightweightQuarantineBranch::Quarantine(
+     void* object,
+     SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+     uintptr_t slot_start,
+     size_t usable_size) {
+-  PA_DCHECK(lock_required_ ? lock_required == LockRequired::kRequired
+-                           : lock_required == LockRequired::kNotRequired);
+   PA_DCHECK(usable_size == root_.allocator_root_.GetSlotUsableSize(slot_span));
+ 
+   const size_t capacity_in_bytes =
+       branch_capacity_in_bytes_.load(std::memory_order_relaxed);
++
+   if (capacity_in_bytes < usable_size) [[unlikely]] {
+     // Even if this branch dequarantines all entries held by it, this entry
+     // cannot fit within the capacity.
+@@ -131,7 +80,7 @@ bool LightweightQuarantineBranch::QuarantineInternal(
+   }
+ 
+   {
+-    CompileTimeConditionalScopedGuard<lock_required> guard(lock_);
++    ConditionalScopedGuard guard(lock_required_, lock_);
+ 
+     // Dequarantine some entries as required.
+     PurgeInternal(capacity_in_bytes - usable_size);
+@@ -155,19 +104,28 @@ bool LightweightQuarantineBranch::QuarantineInternal(
+   return true;
+ }
+ 
+-template bool LightweightQuarantineBranch::QuarantineInternal<
+-    LightweightQuarantineBranch::LockRequired::kNotRequired>(
+-    void* object,
+-    SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-    uintptr_t slot_start,
+-    size_t usable_size);
++bool LightweightQuarantineBranch::IsQuarantinedForTesting(void* object) {
++  ConditionalScopedGuard guard(lock_required_, lock_);
++  uintptr_t slot_start =
++      root_.allocator_root_.ObjectToSlotStartUnchecked(object);
++  for (const auto& slot : slots_) {
++    if (slot.slot_start == slot_start) {
++      return true;
++    }
++  }
++  return false;
++}
+ 
+-template bool LightweightQuarantineBranch::QuarantineInternal<
+-    LightweightQuarantineBranch::LockRequired::kRequired>(
+-    void* object,
+-    SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-    uintptr_t slot_start,
+-    size_t usable_size);
++void LightweightQuarantineBranch::SetCapacityInBytes(size_t capacity_in_bytes) {
++  branch_capacity_in_bytes_.store(capacity_in_bytes, std::memory_order_relaxed);
++}
++
++void LightweightQuarantineBranch::Purge() {
++  ConditionalScopedGuard guard(lock_required_, lock_);
++  PurgeInternal(0);
++  PA_DCHECK(slots_.empty());
++  slots_.shrink_to_fit();
++}
+ 
+ PA_ALWAYS_INLINE void LightweightQuarantineBranch::PurgeInternal(
+     size_t target_size_in_bytes) {
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.h b/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.h
+index 341c2d31938522830260b31b3950dac44b807043..701c0e32133767ae6e565e17ee9104ea5418a846 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.h
++++ b/base/allocator/partition_allocator/src/partition_alloc/lightweight_quarantine.h
+@@ -108,35 +108,10 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) LightweightQuarantineBranch {
+   // as much as possible.  If the object is too large, this may return
+   // `false`, meaning that quarantine request has failed (and freed
+   // immediately). Otherwise, returns `true`.
+-  PA_ALWAYS_INLINE bool Quarantine(
+-      void* object,
+-      SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-      uintptr_t slot_start,
+-      size_t usable_size) {
+-    return lock_required_ ? QuarantineWithAcquiringLock(object, slot_span,
+-                                                        slot_start, usable_size)
+-                          : QuarantineWithoutAcquiringLock(
+-                                object, slot_span, slot_start, usable_size);
+-  }
+-  // Despite that LightweightQuarantineBranchConfig::lock_required_ is already
+-  // specified, we provide two versions `With/WithoutAcquiringLock` so that we
+-  // can avoid the overhead of runtime conditional branches.
+-  PA_ALWAYS_INLINE bool QuarantineWithAcquiringLock(
+-      void* object,
+-      SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-      uintptr_t slot_start,
+-      size_t usable_size) {
+-    PA_MUSTTAIL return QuarantineInternal<LockRequired::kRequired>(
+-        object, slot_span, slot_start, usable_size);
+-  }
+-  PA_ALWAYS_INLINE bool QuarantineWithoutAcquiringLock(
+-      void* object,
+-      SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-      uintptr_t slot_start,
+-      size_t usable_size) {
+-    PA_MUSTTAIL return QuarantineInternal<LockRequired::kNotRequired>(
+-        object, slot_span, slot_start, usable_size);
+-  }
++  bool Quarantine(void* object,
++                  SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
++                  uintptr_t slot_start,
++                  size_t usable_size);
+ 
+   // Dequarantine all entries **held by this branch**.
+   // It is possible that another branch with entries and it remains untouched.
+@@ -155,20 +130,9 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) LightweightQuarantineBranch {
+   void SetCapacityInBytes(size_t capacity_in_bytes);
+ 
+  private:
+-  enum class LockRequired { kNotRequired, kRequired };
+-  template <LockRequired lock_required>
+-  class PA_SCOPED_LOCKABLE CompileTimeConditionalScopedGuard;
+-  class PA_SCOPED_LOCKABLE RuntimeConditionalScopedGuard;
+-
+   LightweightQuarantineBranch(Root& root,
+                               const LightweightQuarantineBranchConfig& config);
+ 
+-  template <LockRequired lock_required>
+-  bool QuarantineInternal(void* object,
+-                          SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-                          uintptr_t slot_start,
+-                          size_t usable_size);
+-
+   // Try to dequarantine entries to satisfy below:
+   //   root_.size_in_bytes_ <=  target_size_in_bytes
+   // It is possible that this branch cannot satisfy the
+@@ -200,21 +164,6 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) LightweightQuarantineBranch {
+   friend class LightweightQuarantineRoot;
+ };
+ 
+-extern template PA_COMPONENT_EXPORT(
+-    PARTITION_ALLOC) bool LightweightQuarantineBranch::
+-    QuarantineInternal<LightweightQuarantineBranch::LockRequired::kNotRequired>(
+-        void* object,
+-        SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-        uintptr_t slot_start,
+-        size_t usable_size);
+-extern template PA_COMPONENT_EXPORT(
+-    PARTITION_ALLOC) bool LightweightQuarantineBranch::
+-    QuarantineInternal<LightweightQuarantineBranch::LockRequired::kRequired>(
+-        void* object,
+-        SlotSpanMetadata<MetadataKind::kReadOnly>* slot_span,
+-        uintptr_t slot_start,
+-        size_t usable_size);
+-
+ }  // namespace internal
+ 
+ }  // namespace partition_alloc
+diff --git a/components/gwp_asan/client/extreme_lightweight_detector_malloc_shims.cc b/components/gwp_asan/client/extreme_lightweight_detector_malloc_shims.cc
+index 4a3fee6aad4cfa4bb0451bd2c40d4024d9c3a5fc..9e42df043bd338a1a60308bc132f678d0a357720 100644
+--- a/components/gwp_asan/client/extreme_lightweight_detector_malloc_shims.cc
++++ b/components/gwp_asan/client/extreme_lightweight_detector_malloc_shims.cc
+@@ -45,9 +45,9 @@ std::atomic<bool> is_quarantine_initialized = false;
+ // The PartitionRoot used by the PartitionAlloc-Everywhere (i.e. PartitionAlloc
+ // as malloc), which is also the target partition root of the quarantine.
+ // Since LightweightQuarantineRoot is designed to be used for a certain
+-// PartitionRoot and LightweightQuarantineBranch::QuarantineWithAcquiringLock()
+-// cannot handle an object in an unknown root, the Extreme LUD performs only for
+-// the objects in this PartitionRoot.
++// PartitionRoot and LightweightQuarantineBranch::Quarantine() cannot handle
++// an object in an unknown root, the Extreme LUD performs only for the objects
++// in this PartitionRoot.
+ partition_alloc::PartitionRoot* lightweight_quarantine_partition_root;
+ // A raw pointer to the LightweightQuarantineBranch as the fast path to the
+ // object. This bypasses the access check and indirect access due to the
+@@ -185,13 +185,11 @@ inline bool Quarantine(void* object) {
+ 
+   uintptr_t slot_start = root->ObjectToSlotStart(object);
+   if (usable_size <= init_options.object_size_threshold_in_bytes) [[likely]] {
+-    lightweight_quarantine_branch_for_small_objects
+-        ->QuarantineWithAcquiringLock(object, slot_span, slot_start,
+-                                      usable_size);
++    lightweight_quarantine_branch_for_small_objects->Quarantine(
++        object, slot_span, slot_start, usable_size);
+   } else {
+-    lightweight_quarantine_branch_for_large_objects
+-        ->QuarantineWithAcquiringLock(object, slot_span, slot_start,
+-                                      usable_size);
++    lightweight_quarantine_branch_for_large_objects->Quarantine(
++        object, slot_span, slot_start, usable_size);
+   }
+ 
+   return true;
